@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Twitter.SendTweet", "Twitter.SendTweet\Twitter.SendTweet.csproj", "{4773D6CE-8607-4900-BCFB-07F71B17869F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4773D6CE-8607-4900-BCFB-07F71B17869F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4773D6CE-8607-4900-BCFB-07F71B17869F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4773D6CE-8607-4900-BCFB-07F71B17869F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4773D6CE-8607-4900-BCFB-07F71B17869F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
