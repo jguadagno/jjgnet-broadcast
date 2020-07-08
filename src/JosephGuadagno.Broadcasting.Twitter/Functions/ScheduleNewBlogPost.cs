@@ -2,39 +2,44 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.ServiceModel.Syndication;
 using System.Threading.Tasks;
+using System.Xml;
+using JosephGuadagno.Broadcasting.Data;
+using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Twitter.Models;
+using JosephGuadagno.Utilities.Web.Shortener.Models;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
-using System.ServiceModel.Syndication;
-using System.Xml;
-using JosephGuadagno.Utilities.Web.Shortener.Models;
 
-namespace JosephGuadagno.Broadcasting.Twitter
+namespace JosephGuadagno.Broadcasting.Twitter.Functions
 {
     public static class ScheduleNewBlogPost
     {
         [FunctionName("tweet_new_blog_post")]
         public static async Task RunAsync(
             [TimerTrigger("0 */5 * * * *")] TimerInfo myTimer, 
-            [Queue(Constants.Queues.TwitterTweetsToSend, Connection = Constants.Settings.StorageAccount)] ICollector<string> outboundMessages,
+            [Queue(Constants.Queues.TwitterTweetsToSend, Connection = Settings.StorageAccount)] ICollector<string> outboundMessages,
             ILogger log)
         {
             var startedAt = DateTime.Now;
             
-            log.LogInformation($"C# Timer trigger function executed at: {DateTime.UtcNow}");
+            log.LogInformation($"Tweet New Blog Post function executed at: {DateTime.UtcNow}");
 
-            var configurationHelper = new ConfigurationHelper(
-                Environment.GetEnvironmentVariable(Constants.Settings.StorageAccount), Constants.Tables.Configuration);
-            var configuration = await configurationHelper.GetConfigurationAsync() ?? new Configuration {LastCheckedFeed = DateTime.Now}; ;
+            var configurationRepository =
+                new ConfigurationRepository(Environment.GetEnvironmentVariable(Settings.StorageAccount));
+            var configuration = await configurationRepository.GetAsync(
+                Constants.ConfigurationFunctionNames.NewPostChecker,
+                Constants.Tables.Configuration) ?? new NewPostCheckerConfiguration {LastCheckedFeed = DateTime.Now};
             
-            var url = Environment.GetEnvironmentVariable(Constants.Settings.FeedUrl);
+            var url = Environment.GetEnvironmentVariable(Settings.FeedUrl);
             log.LogInformation($"Checking '{url}' for posts since '{configuration.LastCheckedFeed}'");
             var newItems = GetPostsSince(url, configuration.LastCheckedFeed);
 
             if (newItems == null || newItems.Count == 0)
             {
                 configuration.LastCheckedFeed = startedAt;
-                await configurationHelper.SaveConfigurationAsync(configuration);
+                await configurationRepository.SaveAsync(configuration);
                 log.LogDebug($"No new post found at '{url}'.");
                 return;
             }
@@ -50,7 +55,7 @@ namespace JosephGuadagno.Broadcasting.Twitter
             }
 
             configuration.LastCheckedFeed = startedAt;
-            await configurationHelper.SaveConfigurationAsync(configuration);
+            await configurationRepository.SaveAsync(configuration);
             log.LogDebug("Done.");
         }
         
@@ -102,8 +107,8 @@ namespace JosephGuadagno.Broadcasting.Twitter
             var bitly = new JosephGuadagno.Utilities.Web.Shortener.Bitly(new HttpClient(),
                 new BitlyConfiguration
                 {
-                    ApiRootUri = Environment.GetEnvironmentVariable(Constants.Settings.BitlyAPIRootUri),
-                    Token = Environment.GetEnvironmentVariable(Constants.Settings.BitlyToken)
+                    ApiRootUri = Environment.GetEnvironmentVariable(Settings.BitlyAPIRootUri),
+                    Token = Environment.GetEnvironmentVariable(Settings.BitlyToken)
                 });
 
             var result = await bitly.Shorten(originalUrl, "jjg.me");
