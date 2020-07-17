@@ -1,5 +1,3 @@
-using System.Net.NetworkInformation;
-
 namespace JosephGuadagno.Broadcasting.Domain
 {
     public static class Constants
@@ -12,12 +10,17 @@ namespace JosephGuadagno.Broadcasting.Domain
         public static class Tables
         {
             public const string Configuration  = "Configuration";
-            public const string ScheduledTweets = "ScheduledTweets";
+            public const string SourceData = "SourceData";
         }
 
         public static class ConfigurationFunctionNames
         {
-            public const string NewPostChecker = "NewPostChecker";
+            public const string CollectorsFeedCollector = "CollectorsFeedCollector";
+        }
+
+        public static class Topics
+        {
+            public const string NewSourceData = "new-source-data";
         }
     }
 }

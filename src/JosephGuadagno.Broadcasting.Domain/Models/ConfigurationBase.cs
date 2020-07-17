@@ -1,7 +1,6 @@
-using System;
 using Microsoft.Azure.Cosmos.Table;
 
-namespace JosephGuadagno.Broadcasting.Domain
+namespace JosephGuadagno.Broadcasting.Domain.Models
 {
     /// <summary>
     /// This is the configuration that is saved to and from Table Storage for each function

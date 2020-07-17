@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Azure.Cosmos.Table;
 
-namespace JosephGuadagno.Broadcasting.Domain
+namespace JosephGuadagno.Broadcasting.Domain.Models
 {
     public class ScheduledSocialPost : TableEntity
     {
