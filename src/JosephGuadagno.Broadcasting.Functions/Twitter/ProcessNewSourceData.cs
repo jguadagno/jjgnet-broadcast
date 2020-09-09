@@ -29,7 +29,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
         )
         {
             // Get the Source Data identifier for the event
-            
             var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridEvent.Data.ToString());
             if (tableEvent == null)
             {
@@ -38,9 +37,17 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
             }
 
             // Create the scheduled tweets for it
-            log.LogInformation($"Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'");
+            log.LogDebug($"Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'");
             var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
-            log.LogInformation($"Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was {sourceData!=null}.");
+
+            if (sourceData == null)
+            {
+                log.LogDebug($"Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found");
+                return;
+            }
+            
+            log.LogDebug($"Composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
+            
             var tweet = ComposeTweet(sourceData);
             if (!string.IsNullOrEmpty(tweet))
             {
@@ -48,7 +55,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
             }
             
             // Done
-            // log?
+            log.LogDebug("Done with record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
         }
         
         private string ComposeTweet(SourceData item)

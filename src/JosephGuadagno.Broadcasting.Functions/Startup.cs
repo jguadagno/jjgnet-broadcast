@@ -1,10 +1,14 @@
+using System;
+using System.IO;
 using System.Net.Http;
+using System.Reflection;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Functions;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -16,13 +20,26 @@ namespace JosephGuadagno.Broadcasting.Functions
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
+            // Setup the Configuration Source
+            var config = new ConfigurationBuilder()
+                .SetBasePath(Environment.CurrentDirectory)
+                .AddJsonFile("local.settings.json", false)
+                .AddUserSecrets(Assembly.GetExecutingAssembly(), false)
+                .AddEnvironmentVariables()
+                .Build();
+            builder.Services.AddSingleton<IConfiguration>(config);
+            
+            // Bind the 'Settings' section to the ISettings class
+            var settings = new Domain.Models.Settings();
+            config.Bind("Settings", settings);
+            builder.Services.TryAddSingleton<ISettings>(settings);
+            
             ConfigureTwitter(builder);
             ConfigureCollectors(builder);
         }
 
         public void ConfigureTwitter(IFunctionsHostBuilder builder)
         {
-            builder.Services.TryAddSingleton<ISettings>(s => new Domain.Models.Settings());
             builder.Services.TryAddSingleton<IAuthorizer>(s =>
             {
                 var settings = s.GetService<ISettings>();
@@ -52,7 +69,7 @@ namespace JosephGuadagno.Broadcasting.Functions
         public void ConfigureCollectors(IFunctionsHostBuilder builder)
         {
             builder.Services.AddHttpClient();
-            builder.Services.TryAddSingleton<ISettings>(s => new Domain.Models.Settings());
+            
             builder.Services.TryAddSingleton(s =>
             {
                 var settings = s.GetService<ISettings>();

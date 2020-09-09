@@ -37,7 +37,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
             ILogger log)
         {
             var startedAt = DateTime.UtcNow;
-            log.LogInformation($"C# Timer trigger function executed at: {startedAt}");
+            log.LogInformation($"{Constants.ConfigurationFunctionNames.CollectorsFeedCollector} Collector started at: {startedAt}");
             
             var configuration = await _configurationRepository.GetAsync(
                 Constants.ConfigurationFunctionNames.CollectorsFeedCollector,
