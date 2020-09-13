@@ -8,14 +8,20 @@ App Service (jjgnet) with an Application Insights services
 
 ### Function
 
-|---|---|---|---|
-| Name | Purpose | Project | Class |
-| `collector_feed` | Gets new posts from xml feed | `JosephGuadagno.Broadcasting.Collectors.Functions` | `FeedCollector` |
-| `twitter_send_tweet` | Sends a tweet | `JosephGuadagno.Broadcasting.Twitter.Functions` | `SendTweet` |
+
+| Category | Name | Purpose | Project | Class |
+| --- | ---|---|---|---|
+| Collectors | `collectors_feed_check_for_updates` | Gets new posts from xml feed | `JosephGuadagno.Broadcasting.Functions` | `Collectors.CheckFeedForUpdates` |
+| Collectors | `collectors_feed_load_json_feed_items` | Gets all posts from Json feed | `JosephGuadagno.Broadcasting.Functions` | `LoadJsonFeedItems` |
+| Twitter | `twitter_process_new_source_data` | Generates a queue message based on a *New Source* event being triggered | `JosephGuadagno.Broadcasting` | `Twitter.ProcessNeSourceData` |
+| Twitter | `twitter_send_tweet` | Sends a tweet from **twitter-tweets-to-send** queue | `JosephGuadagno.Broadcasting.Functions` | `Twitter.SendTweet` |
+| Facebook | `facebook_process_new_source_data` | Generates a queue message based on a *New Source* event being triggered | `JosephGuadagno.Broadcasting | `Facebook.ProcessNeSourceData` |
+| Facebook | `facebook_send_tweet` | Sends a tweet from **facebook-post-status-to-page** queue | `JosephGuadagno.Broadcasting.Functions` | `Facebook.PostPageStatus` |
 
 ### Queues
 
 * twitter-tweets-to-send
+* facebook-post-status-to-page
 
 ### Storage - Blob
 
@@ -36,9 +42,20 @@ Topic Endpoint: `https://new-source-data.westus2-1.eventgrid.azure.net/api/event
 
 [Azure Resource Manager](https://new-source-data.westus2-1.eventgrid.azure.net/api/events)
 
-|---|---|---|
+##### Event Grid - Twitter
+
 | Name | Value | Description |
+|---|---|---|
 | Name | `source-data-to-twitter` | |
 | Event Schema | `Event Grid Scheme` | |
 | Endpoint Type | `Azure Functions` | |
 | Endpoint | `twitter-process-new-source-data` | |
+
+##### Event Grid - Facebook
+
+| Name | Value | Description |
+|---|---|---|
+| Name | `source-data-to-facebook` | |
+| Event Schema | `Event Grid Scheme` | |
+| Endpoint Type | `Azure Functions` | |
+| Endpoint | `facebook-process-new-source-data` | |
