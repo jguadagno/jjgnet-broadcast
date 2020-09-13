@@ -13,14 +13,14 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Collectors
 {
-    public class FeedCollector
+    public class CheckFeedForUpdates
     {
         private readonly ISettings _settings;
         private readonly ConfigurationRepository _configurationRepository;
         private readonly SourceDataRepository _sourceDataRepository;
         private readonly Bitly _bitly;
 
-        public FeedCollector(ISettings settings, 
+        public CheckFeedForUpdates(ISettings settings, 
             ConfigurationRepository configurationRepository,
             SourceDataRepository sourceDataRepository,
             Bitly bitly)
@@ -31,20 +31,20 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
             _bitly = bitly;
         }
         
-        [FunctionName("collector_feed")]
+        [FunctionName("collectors_feed_check_for_updates")]
         public async Task RunAsync(
             [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer, 
             ILogger log)
         {
             var startedAt = DateTime.UtcNow;
-            log.LogInformation($"{Constants.ConfigurationFunctionNames.CollectorsFeedCollector} Collector started at: {startedAt}");
+            log.LogDebug($"{Constants.ConfigurationFunctionNames.CollectorsCheckForFeedUpdates} Collector started at: {startedAt}");
             
             var configuration = await _configurationRepository.GetAsync(
-                Constants.ConfigurationFunctionNames.CollectorsFeedCollector,
+                Constants.ConfigurationFunctionNames.CollectorsCheckForFeedUpdates,
                 Constants.Tables.Configuration) ?? new FeedCollectorConfiguration() {LastCheckedFeed = startedAt};
             
             // Check for new items
-            log.LogInformation($"Checking '{_settings.FeedUrl}' for posts since '{configuration.LastCheckedFeed}'");
+            log.LogDebug($"Checking '{_settings.FeedUrl}' for posts since '{configuration.LastCheckedFeed}'");
             var feedReader = new FeedReader.FeedReader(_settings.FeedUrl);
             var newItems = feedReader.Get(configuration.LastCheckedFeed);
             
@@ -53,7 +53,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
             {
                 configuration.LastCheckedFeed = startedAt;
                 await _configurationRepository.SaveAsync(configuration);
-                log.LogDebug($"No new post found at '{_settings.FeedUrl}'.");
+                log.LogDebug($"No new posts found at '{_settings.FeedUrl}'.");
                 return;
             }
             
@@ -109,7 +109,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
                             RowKey = sourceData.RowKey
                         },
                         EventTime = DateTime.UtcNow,
-                        Subject = Constants.ConfigurationFunctionNames.CollectorsFeedCollector,
+                        Subject = Constants.ConfigurationFunctionNames.CollectorsCheckForFeedUpdates,
                         DataVersion = "1.0"
                     });
             }

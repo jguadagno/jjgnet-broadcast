@@ -21,6 +21,9 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
         
         // Debug Locally: https://docs.microsoft.com/en-us/azure/azure-functions/functions-debug-event-grid-trigger-local
         // Sample Code: https://github.com/Azure-Samples/event-grid-dotnet-publish-consume-events
+        // When debugging locally start ngrok
+        // Create a new EventGrid endpoint in Azure similar to
+        // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=twitter_process_new_source_data`
         [FunctionName("twitter_process_new_source_data")]
         public async Task RunAsync(
             [EventGridTrigger()] EventGridEvent eventGridEvent,
@@ -32,7 +35,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
             var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridEvent.Data.ToString());
             if (tableEvent == null)
             {
-                log.LogInformation($"Failed to parse the TableEvent data for event '{eventGridEvent.Id}'");
+                log.LogError($"Failed to parse the TableEvent data for event '{eventGridEvent.Id}'");
                 return;
             }
 
@@ -55,7 +58,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
             }
             
             // Done
-            log.LogDebug("Done with record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
+            log.LogDebug($"Done with record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
         }
         
         private string ComposeTweet(SourceData item)

@@ -11,6 +11,7 @@ namespace JosephGuadagno.Broadcasting.Domain.Models
         public string TwitterAccessToken { get; set; }
         public string TwitterAccessTokenSecret { get; set; }
         public string FeedUrl { get; set; }
+        public string JsonFeedUrl { get; set; }
         public string BitlyToken { get; set; }
         public string BitlyAPIRootUri { get; set; }
         public string TopicNewSourceDataEndpoint { get; set; }

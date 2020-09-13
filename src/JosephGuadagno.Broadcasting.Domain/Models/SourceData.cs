@@ -28,7 +28,9 @@ namespace JosephGuadagno.Broadcasting.Domain.Models
         public DateTimeOffset AddedOn { get; set; }
         public string Author { get; set; }
         public string Title { get; set; }
-        public string Text { get; set; }
+        // Text was commented out due to a size limitation of Azure Table Storage
+        //     this will be revisited if we determine text is needed.
+        //public string Text { get; set; }
         public string Url { get; set; }
         public string ShortenedUrl { get; set; }
         public DateTimeOffset PublicationDate { get; set; }

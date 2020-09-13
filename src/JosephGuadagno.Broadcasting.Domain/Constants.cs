@@ -15,7 +15,8 @@ namespace JosephGuadagno.Broadcasting.Domain
 
         public static class ConfigurationFunctionNames
         {
-            public const string CollectorsFeedCollector = "CollectorsFeedCollector";
+            public const string CollectorsCheckForFeedUpdates = "CollectorsCheckForFeedUpdates";
+            public const string CollectorsLoadJsonFeedItems = "CollectorsLoadJsonFeedItems";
         }
 
         public static class Topics

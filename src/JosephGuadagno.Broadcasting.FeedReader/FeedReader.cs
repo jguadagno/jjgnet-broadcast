@@ -37,11 +37,11 @@ namespace JosephGuadagno.Broadcasting.FeedReader
 
             foreach (var syndicationItem in items)
             {
-                feedItems.Add(new SourceData("RssFeed")
+                feedItems.Add(new SourceData("RssFeed", syndicationItem.Id)
                 {
                     Author = syndicationItem.Authors.FirstOrDefault()?.Name,
                     PublicationDate = syndicationItem.PublishDate,
-                    Text = ((TextSyndicationContent) syndicationItem.Content).Text,
+                    //Text = ((TextSyndicationContent) syndicationItem.Content).Text,
                     Title =  syndicationItem.Title.Text,
                     Url = syndicationItem.Id,
                     EndAfter = null,

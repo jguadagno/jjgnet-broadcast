@@ -21,6 +21,7 @@
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj" />
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.FeedReader\JosephGuadagno.Broadcasting.FeedReader.csproj" />
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.JsonFeedReader\JosephGuadagno.Broadcasting.JsonFeedReader.csproj" />
     </ItemGroup>
     <ItemGroup>
       <None Update="host.json">
