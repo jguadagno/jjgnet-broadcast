@@ -33,7 +33,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
         
         [FunctionName("collectors_feed_check_for_updates")]
         public async Task RunAsync(
-            [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer, 
+            [TimerTrigger("0 */2 * * * *")] 
             ILogger log)
         {
             var startedAt = DateTime.UtcNow;
@@ -58,11 +58,33 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
             }
             
             // Save the new items to SourceDataRepository
+            // TODO: Handle duplicate posts?
+            var savedCount = 0;
             foreach (var item in newItems)
             {
+                // shorten the url
                 item.ShortenedUrl = await GetShortenedUrlAsync(item.Url);
+                
+                // attempt to save the item
+                var saveWasSuccessful = false;
+                try
+                {
+                    saveWasSuccessful = await _sourceDataRepository.SaveAsync(item);
+                }
+                catch (Exception e)
+                {
+                    log.LogError($"Was not able to save post with the id of '{item.Id}'. Exception: {e.Message}");
+                }
+                
+                if (!saveWasSuccessful)
+                {
+                    log.LogError($"Was not able to save post with the id of '{item.Id}'.");
+                }
+                else
+                {
+                    savedCount++;
+                }
             }
-            await _sourceDataRepository.AddAllAsync(newItems);
             
             // Send the events 
             await PublishEvents(_settings.TopicNewSourceDataEndpoint, _settings.TopicNewSourceDataKey, newItems);
@@ -70,7 +92,10 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
             // Save the last checked value
             configuration.LastCheckedFeed = startedAt;
             await _configurationRepository.SaveAsync(configuration);
-            log.LogDebug("Done.");
+            
+            // Return
+            var doneMessage = $"Loaded {savedCount} of {newItems.Count} post(s).";
+            log.LogInformation(doneMessage);
         }
         
         private async Task<string> GetShortenedUrlAsync(string originalUrl)

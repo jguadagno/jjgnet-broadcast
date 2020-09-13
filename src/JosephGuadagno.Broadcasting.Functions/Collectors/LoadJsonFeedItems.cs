@@ -84,7 +84,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
                 }
             }
             
-            // Save the last checked value
+            // Return
             var doneMessage = $"Loaded {savedCount} of {newItems.Count} post(s).";
             log.LogInformation(doneMessage);
             return new OkObjectResult(doneMessage);
