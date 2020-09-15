@@ -16,7 +16,7 @@ App Service (jjgnet) with an Application Insights services
 | Twitter | `twitter_process_new_source_data` | Generates a queue message based on a *New Source* event being triggered | `JosephGuadagno.Broadcasting` | `Twitter.ProcessNeSourceData` |
 | Twitter | `twitter_send_tweet` | Sends a tweet from **twitter-tweets-to-send** queue | `JosephGuadagno.Broadcasting.Functions` | `Twitter.SendTweet` |
 | Facebook | `facebook_process_new_source_data` | Generates a queue message based on a *New Source* event being triggered | `JosephGuadagno.Broadcasting | `Facebook.ProcessNeSourceData` |
-| Facebook | `facebook_send_tweet` | Sends a tweet from **facebook-post-status-to-page** queue | `JosephGuadagno.Broadcasting.Functions` | `Facebook.PostPageStatus` |
+| Facebook | `facebook_post_status_to_page` | Sends a tweet from **facebook-post-status-to-page** queue | `JosephGuadagno.Broadcasting.Functions` | `Facebook.PostPageStatus` |
 
 ### Queues
 

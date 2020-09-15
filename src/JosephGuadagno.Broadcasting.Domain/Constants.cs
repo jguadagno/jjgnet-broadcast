@@ -5,6 +5,7 @@ namespace JosephGuadagno.Broadcasting.Domain
         public static class Queues
         {
             public const string TwitterTweetsToSend = "twitter-tweets-to-send";
+            public const string FacebookPostStatusToPage = "facebook-post-status-to-page";
         }
 
         public static class Tables

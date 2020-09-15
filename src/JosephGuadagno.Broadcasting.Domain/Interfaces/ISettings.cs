@@ -14,5 +14,8 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces
         
         public string TopicNewSourceDataEndpoint { get; set; }
         public string TopicNewSourceDataKey { get; set; }
+        
+        public string FacebookPageId { get; set; }
+        public string FacebookPageAccessToken { get; set; }
     }
 }

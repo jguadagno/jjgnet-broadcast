@@ -16,5 +16,7 @@ namespace JosephGuadagno.Broadcasting.Domain.Models
         public string BitlyAPIRootUri { get; set; }
         public string TopicNewSourceDataEndpoint { get; set; }
         public string TopicNewSourceDataKey { get; set; }
+        public string FacebookPageId { get; set; }
+        public string FacebookPageAccessToken { get; set; }
     }
 }
