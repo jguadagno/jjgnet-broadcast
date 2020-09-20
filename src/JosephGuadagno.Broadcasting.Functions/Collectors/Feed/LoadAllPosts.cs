@@ -1,9 +1,8 @@
 using System;
 using System.Threading.Tasks;
-using JosephGuadagno.Broadcasting.Data;
+using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Utilities.Web.Shortener;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -16,15 +15,15 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
     {
         private readonly ISettings _settings;
         private readonly SourceDataRepository _sourceDataRepository;
-        private readonly Bitly _bitly;
+        private readonly IUrlShortener _urlShortener;
 
         public LoadAllPosts(ISettings settings, 
             SourceDataRepository sourceDataRepository,
-            Bitly bitly)
+            IUrlShortener urlShortener)
         {
             _settings = settings;
             _sourceDataRepository = sourceDataRepository;
-            _bitly = bitly;
+            _urlShortener = urlShortener;
         }
 
         [FunctionName("collectors_feed_load_all_posts")]
@@ -61,7 +60,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             foreach (var item in newItems)
             {
                 // shorten the url
-                item.ShortenedUrl = await GetShortenedUrlAsync(item.Url);
+                item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, "jjg.me");
                 
                 // attempt to save the item
                 var saveWasSuccessful = false;
@@ -88,17 +87,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             var doneMessage = $"Loaded {savedCount} of {newItems.Count} post(s).";
             log.LogInformation(doneMessage);
             return new OkObjectResult(doneMessage);
-        }
-        
-        private async Task<string> GetShortenedUrlAsync(string originalUrl)
-        {
-            if (string.IsNullOrEmpty(originalUrl))
-            {
-                return null;
-            }
-
-            var result = await _bitly.Shorten(originalUrl, "jjg.me");
-            return result == null ? originalUrl : result.Link;
         }
     }
 }

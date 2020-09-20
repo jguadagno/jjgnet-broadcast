@@ -1,13 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using JosephGuadagno.Broadcasting.Data;
+using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Utilities.Web.Shortener;
-using Microsoft.Azure.EventGrid;
-using Microsoft.Azure.EventGrid.Models;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
@@ -18,17 +14,20 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
         private readonly ISettings _settings;
         private readonly ConfigurationRepository _configurationRepository;
         private readonly SourceDataRepository _sourceDataRepository;
-        private readonly Bitly _bitly;
+        private readonly IUrlShortener _urlShortener;
+        private readonly IEventPublisher _eventPublisher;
 
         public LoadNewVideos(ISettings settings, 
             ConfigurationRepository configurationRepository,
             SourceDataRepository sourceDataRepository,
-            Bitly bitly)
+            IUrlShortener urlShortener,
+            IEventPublisher eventPublisher) 
         {
             _settings = settings;
             _configurationRepository = configurationRepository;
             _sourceDataRepository = sourceDataRepository;
-            _bitly = bitly;
+            _urlShortener = urlShortener;
+            _eventPublisher = eventPublisher;
         }
         
         [FunctionName("collectors_youtube_load_new_videos")]
@@ -66,7 +65,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             foreach (var item in newItems)
             {
                 // shorten the url
-                item.ShortenedUrl = await GetShortenedUrlAsync(item.Url);
+                item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, "jjg.me");
                 
                 // attempt to save the item
                 var saveWasSuccessful = false;
@@ -90,61 +89,22 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             }
             
             // Send the events 
-            await PublishEvents(_settings.TopicNewSourceDataEndpoint, _settings.TopicNewSourceDataKey, newItems);
+            var eventsPublished = await _eventPublisher.PublishEventsAsync(_settings.TopicNewSourceDataEndpoint,
+                _settings.TopicNewSourceDataKey, Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos,
+                newItems);
             
-            // Save the last checked value
+            if (!eventsPublished)
+            {
+                log.LogError("Failed to publish the events.");
+            }
+            
+            // Save the last checked valueif
             configuration.LastCheckedFeed = startedAt;
             await _configurationRepository.SaveAsync(configuration);
             
             // Return
             var doneMessage = $"Loaded {savedCount} of {newItems.Count} post(s).";
             log.LogInformation(doneMessage);
-        }
-        
-        private async Task<string> GetShortenedUrlAsync(string originalUrl)
-        {
-            if (string.IsNullOrEmpty(originalUrl))
-            {
-                return null;
-            }
-
-            var result = await _bitly.Shorten(originalUrl, "jjg.me");
-            return result == null ? originalUrl : result.Link;
-        }
-
-        private async Task<bool> PublishEvents(string topicUrl, string topicKey, List<SourceData> sourceDataItems)
-        {
-            if (sourceDataItems == null || sourceDataItems.Count == 0)
-            {
-                return false;
-            }
-            var topicHostName = new Uri(topicUrl).Host;
-            var topicCredentials = new TopicCredentials(topicKey);
-            var client= new EventGridClient(topicCredentials);
-
-            var eventList = new List<EventGridEvent>();
-            foreach (var sourceData in sourceDataItems)
-            {
-                eventList.Add(
-                    new EventGridEvent
-                    {
-                        Id = sourceData.RowKey,
-                        EventType= Constants.Topics.NewSourceData,
-                        Data = new TableEvent
-                        {
-                            TableName = Constants.Tables.SourceData, 
-                            PartitionKey = sourceData.PartitionKey,
-                            RowKey = sourceData.RowKey
-                        },
-                        EventTime = DateTime.UtcNow,
-                        Subject = Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts,
-                        DataVersion = "1.0"
-                    });
-            }
-
-            await client.PublishEventsAsync(topicHostName, eventList);
-
-            return true;
         }
     }
 }

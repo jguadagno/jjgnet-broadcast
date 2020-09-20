@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using JosephGuadagno.Broadcasting.Data;
+using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Functions;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
@@ -92,6 +93,8 @@ namespace JosephGuadagno.Broadcasting.Functions
                         Token = settings.BitlyToken
                     });
             });
+            builder.Services.TryAddSingleton<IUrlShortener, UrlShortener>();
+            builder.Services.TryAddSingleton<IEventPublisher, EventPublisher>();
         }
     }
 }

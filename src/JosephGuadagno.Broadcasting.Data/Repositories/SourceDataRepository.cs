@@ -1,6 +1,6 @@
 using JosephGuadagno.Broadcasting.Domain.Models;
 
-namespace JosephGuadagno.Broadcasting.Data
+namespace JosephGuadagno.Broadcasting.Data.Repositories
 {
     public class SourceDataRepository: TableRepository<SourceData>
     {

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using JosephGuadagno.AzureHelpers.Cosmos;
 using Microsoft.Azure.Cosmos.Table;
 
-namespace JosephGuadagno.Broadcasting.Data
+namespace JosephGuadagno.Broadcasting.Data.Repositories
 {
     public class TableRepository<T> where T : TableEntity
     {
