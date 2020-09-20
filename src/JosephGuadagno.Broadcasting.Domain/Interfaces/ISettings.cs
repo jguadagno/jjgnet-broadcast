@@ -17,5 +17,8 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces
         
         public string FacebookPageId { get; set; }
         public string FacebookPageAccessToken { get; set; }
+        
+        public string YouTubeApiKey { get; set; }
+        public string YouTubeChannelId { get; set; }
     }
 }

@@ -10,15 +10,15 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 
-namespace JosephGuadagno.Broadcasting.Functions.Collectors
+namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
 {
-    public class LoadJsonFeedItems
+    public class LoadAllPosts
     {
         private readonly ISettings _settings;
         private readonly SourceDataRepository _sourceDataRepository;
         private readonly Bitly _bitly;
 
-        public LoadJsonFeedItems(ISettings settings, 
+        public LoadAllPosts(ISettings settings, 
             SourceDataRepository sourceDataRepository,
             Bitly bitly)
         {
@@ -27,7 +27,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
             _bitly = bitly;
         }
 
-        [FunctionName("collectors_feed_load_json_feed_items")]
+        [FunctionName("collectors_feed_load_all_posts")]
         public async Task<IActionResult> RunAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]
             Domain.Models.LoadJsonFeedItemsRequest requestModel,
@@ -35,7 +35,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
             ILogger log)
         {
             var startedAt = DateTime.UtcNow;
-            log.LogInformation($"{Constants.ConfigurationFunctionNames.CollectorsLoadJsonFeedItems} Collector started at: {startedAt}");
+            log.LogInformation($"{Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts} Collector started at: {startedAt}");
 
             // Check for the from date
             var dateToCheckFrom = DateTime.MinValue;

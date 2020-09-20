@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JsonFeedNet;
@@ -36,7 +37,7 @@ namespace JosephGuadagno.Broadcasting.JsonFeedReader
 
             foreach (var jsonFeedItem in items)
             {
-                sourceItems.Add(new SourceData("RssFeed")
+                sourceItems.Add(new SourceData(SourceSystems.SyndicationFeed)
                 {
                     Author = jsonFeedItem.Author?.Name,
                     PublicationDate = jsonFeedItem.DatePublished ?? DateTimeOffset.UtcNow,

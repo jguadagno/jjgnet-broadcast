@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel.Syndication;
 using System.Xml;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
@@ -37,7 +38,7 @@ namespace JosephGuadagno.Broadcasting.FeedReader
 
             foreach (var syndicationItem in items)
             {
-                feedItems.Add(new SourceData("RssFeed", syndicationItem.Id)
+                feedItems.Add(new SourceData(SourceSystems.SyndicationFeed, syndicationItem.Id)
                 {
                     Author = syndicationItem.Authors.FirstOrDefault()?.Name,
                     PublicationDate = syndicationItem.PublishDate,

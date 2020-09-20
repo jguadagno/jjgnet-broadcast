@@ -73,7 +73,18 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
             const int maxStatusText = 2000;
             
             // Build Facebook Status
-            var statusText = "New Blog Post: ";
+            // Build Tweet
+            var statusText = "";
+            switch (item.SourceSystem)
+            {
+                case nameof(SourceSystems.SyndicationFeed):
+                    statusText = "New Blog Post: ";
+                    break;
+                case nameof(SourceSystems.YouTube):
+                    statusText = "New Video: ";
+                    break;
+            }
+            
             var url = item.ShortenedUrl ?? item.Url;
             var postTitle = item.Title;
         

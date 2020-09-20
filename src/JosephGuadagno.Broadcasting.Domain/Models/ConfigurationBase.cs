@@ -7,10 +7,9 @@ namespace JosephGuadagno.Broadcasting.Domain.Models
     /// </summary>
     public class ConfigurationBase: TableEntity
     {
-        public ConfigurationBase(string functionName)
+        public ConfigurationBase()
         {
-            PartitionKey = functionName;
-            RowKey = Constants.Tables.Configuration;
+            PartitionKey = Constants.Tables.Configuration;
         }
     }
 }

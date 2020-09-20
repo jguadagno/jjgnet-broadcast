@@ -71,7 +71,17 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
             const int maxTweetLenght = 240;
             
             // Build Tweet
-            var tweetStart = "New Blog Post: ";
+            var tweetStart = "";
+            switch (item.SourceSystem)
+            {
+                case nameof(SourceSystems.SyndicationFeed):
+                    tweetStart = "New Blog Post: ";
+                    break;
+                case nameof(SourceSystems.YouTube):
+                    tweetStart = "New Video: ";
+                    break;
+            }
+            
             var url = item.ShortenedUrl ?? item.Url;
             var postTitle = item.Title;
         

@@ -11,16 +11,16 @@ using Microsoft.Azure.EventGrid.Models;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
-namespace JosephGuadagno.Broadcasting.Functions.Collectors
+namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
 {
-    public class CheckFeedForUpdates
+    public class LoadNewVideos
     {
         private readonly ISettings _settings;
         private readonly ConfigurationRepository _configurationRepository;
         private readonly SourceDataRepository _sourceDataRepository;
         private readonly Bitly _bitly;
 
-        public CheckFeedForUpdates(ISettings settings, 
+        public LoadNewVideos(ISettings settings, 
             ConfigurationRepository configurationRepository,
             SourceDataRepository sourceDataRepository,
             Bitly bitly)
@@ -31,34 +31,37 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
             _bitly = bitly;
         }
         
-        [FunctionName("collectors_feed_check_for_updates")]
+        [FunctionName("collectors_youtube_load_new_videos")]
         public async Task RunAsync(
-            [TimerTrigger("0 */2 * * * *")] 
+            [TimerTrigger("0 */15 * * * *")] TimerInfo myTimer,
             ILogger log)
         {
             var startedAt = DateTime.UtcNow;
-            log.LogDebug($"{Constants.ConfigurationFunctionNames.CollectorsCheckForFeedUpdates} Collector started at: {startedAt}");
-            
+            log.LogDebug($"{Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos} Collector started at: {startedAt}");
+
             var configuration = await _configurationRepository.GetAsync(
-                Constants.ConfigurationFunctionNames.CollectorsCheckForFeedUpdates,
-                Constants.Tables.Configuration) ?? new FeedCollectorConfiguration() {LastCheckedFeed = startedAt};
+                                    Constants.Tables.Configuration,
+                                    Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos) ??
+                                new CollectorConfiguration(Constants.ConfigurationFunctionNames
+                                        .CollectorsYouTubeLoadNewVideos)
+                                    {LastCheckedFeed = startedAt};
             
             // Check for new items
-            log.LogDebug($"Checking '{_settings.FeedUrl}' for posts since '{configuration.LastCheckedFeed}'");
-            var feedReader = new FeedReader.FeedReader(_settings.FeedUrl);
-            var newItems = feedReader.Get(configuration.LastCheckedFeed);
+            log.LogDebug($"Checking channel '{_settings.YouTubeChannelId}' for videos since '{configuration.LastCheckedFeed}'");
+            var youTubeReader = new YouTubeReader.YouTubeReader(_settings.YouTubeApiKey, _settings.YouTubeChannelId);
+            var newItems = youTubeReader.Get(configuration.LastCheckedFeed);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)
             {
                 configuration.LastCheckedFeed = startedAt;
                 await _configurationRepository.SaveAsync(configuration);
-                log.LogDebug($"No new posts found at '{_settings.FeedUrl}'.");
+                log.LogDebug($"No new videos found at '{_settings.YouTubeChannelId}'.");
                 return;
             }
             
             // Save the new items to SourceDataRepository
-            // TODO: Handle duplicate posts?
+            // TODO: Handle duplicate videos?
             var savedCount = 0;
             foreach (var item in newItems)
             {
@@ -73,12 +76,12 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
                 }
                 catch (Exception e)
                 {
-                    log.LogError($"Was not able to save post with the id of '{item.Id}'. Exception: {e.Message}");
+                    log.LogError($"Was not able to save video with the id of '{item.Id}'. Exception: {e.Message}");
                 }
                 
                 if (!saveWasSuccessful)
                 {
-                    log.LogError($"Was not able to save post with the id of '{item.Id}'.");
+                    log.LogError($"Was not able to save video with the id of '{item.Id}'.");
                 }
                 else
                 {
@@ -134,7 +137,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors
                             RowKey = sourceData.RowKey
                         },
                         EventTime = DateTime.UtcNow,
-                        Subject = Constants.ConfigurationFunctionNames.CollectorsCheckForFeedUpdates,
+                        Subject = Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts,
                         DataVersion = "1.0"
                     });
             }
