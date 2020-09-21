@@ -4,12 +4,11 @@ using System.Linq;
 using System.ServiceModel.Syndication;
 using System.Xml;
 using JosephGuadagno.Broadcasting.Domain;
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
 namespace JosephGuadagno.Broadcasting.FeedReader
 {
-    public class FeedReader: ISourceReader
+    public class FeedReader: IFeedReader
     {
         private readonly string _sourceUrl;
         public FeedReader(string sourceUrl)

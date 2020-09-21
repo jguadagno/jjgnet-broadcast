@@ -4,6 +4,7 @@ using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.FeedReader;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
@@ -11,18 +12,21 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
 {
     public class CheckFeedForUpdates
     {
+        private readonly IFeedReader _feedReader;
         private readonly ISettings _settings;
         private readonly ConfigurationRepository _configurationRepository;
         private readonly SourceDataRepository _sourceDataRepository;
         private readonly IUrlShortener _urlShortener;
         private readonly IEventPublisher _eventPublisher;
 
-        public CheckFeedForUpdates(ISettings settings, 
+        public CheckFeedForUpdates(IFeedReader feedReader,
+            ISettings settings, 
             ConfigurationRepository configurationRepository,
             SourceDataRepository sourceDataRepository,
             IUrlShortener urlShortener, 
             IEventPublisher eventPublisher)
         {
+            _feedReader = feedReader;
             _settings = settings;
             _configurationRepository = configurationRepository;
             _sourceDataRepository = sourceDataRepository;
@@ -35,7 +39,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer,
             ILogger log)
         {
-            // TODO: Set timer back to two minutes
             var startedAt = DateTime.UtcNow;
             log.LogDebug($"{Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts} Collector started at: {startedAt}");
 
@@ -48,8 +51,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             
             // Check for new items
             log.LogDebug($"Checking '{_settings.FeedUrl}' for posts since '{configuration.LastCheckedFeed}'");
-            var feedReader = new FeedReader.FeedReader(_settings.FeedUrl);
-            var newItems = feedReader.Get(configuration.LastCheckedFeed);
+            var newItems = _feedReader.Get(configuration.LastCheckedFeed);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)

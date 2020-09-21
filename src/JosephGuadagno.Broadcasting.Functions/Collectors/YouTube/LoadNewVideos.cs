@@ -4,6 +4,7 @@ using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.YouTubeReader;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
@@ -11,18 +12,21 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
 {
     public class LoadNewVideos
     {
+        private readonly IYouTubeReader _youTubeReader;
         private readonly ISettings _settings;
         private readonly ConfigurationRepository _configurationRepository;
         private readonly SourceDataRepository _sourceDataRepository;
         private readonly IUrlShortener _urlShortener;
         private readonly IEventPublisher _eventPublisher;
 
-        public LoadNewVideos(ISettings settings, 
+        public LoadNewVideos(IYouTubeReader youTubeReader,
+            ISettings settings, 
             ConfigurationRepository configurationRepository,
             SourceDataRepository sourceDataRepository,
             IUrlShortener urlShortener,
-            IEventPublisher eventPublisher) 
+            IEventPublisher eventPublisher)
         {
+            _youTubeReader = youTubeReader;
             _settings = settings;
             _configurationRepository = configurationRepository;
             _sourceDataRepository = sourceDataRepository;
@@ -47,8 +51,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             
             // Check for new items
             log.LogDebug($"Checking channel '{_settings.YouTubeChannelId}' for videos since '{configuration.LastCheckedFeed}'");
-            var youTubeReader = new YouTubeReader.YouTubeReader(_settings.YouTubeApiKey, _settings.YouTubeChannelId);
-            var newItems = youTubeReader.Get(configuration.LastCheckedFeed);
+            var newItems = _youTubeReader.Get(configuration.LastCheckedFeed);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)

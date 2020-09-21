@@ -10,7 +10,7 @@ using Microsoft.Azure.Documents.SystemFunctions;
 
 namespace JosephGuadagno.Broadcasting.YouTubeReader
 {
-    public class YouTubeReader: ISourceReader
+    public class YouTubeReader: IYouTubeReader
     {
         private readonly string _apiKey;
         private readonly string _channelId;

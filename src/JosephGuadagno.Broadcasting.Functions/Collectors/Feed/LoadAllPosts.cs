@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.JsonFeedReader;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -13,17 +14,19 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
 {
     public class LoadAllPosts
     {
+        private readonly IJsonReader _jsonReader;
         private readonly ISettings _settings;
         private readonly SourceDataRepository _sourceDataRepository;
         private readonly IUrlShortener _urlShortener;
 
-        public LoadAllPosts(ISettings settings, 
+        public LoadAllPosts(IJsonReader jsonReader, ISettings settings, 
             SourceDataRepository sourceDataRepository,
             IUrlShortener urlShortener)
         {
             _settings = settings;
             _sourceDataRepository = sourceDataRepository;
             _urlShortener = urlShortener;
+            _jsonReader = jsonReader;
         }
 
         [FunctionName("collectors_feed_load_all_posts")]
@@ -44,8 +47,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             }
 
             log.LogInformation($"Getting all items from feed '{_settings.JsonFeedUrl}'.");
-            var feedReader = new JsonFeedReader.JsonFeedReader(_settings.JsonFeedUrl);
-            var newItems = feedReader.Get(dateToCheckFrom);
+            var newItems = _jsonReader.Get(dateToCheckFrom);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)

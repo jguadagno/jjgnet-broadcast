@@ -5,7 +5,10 @@ using System.Reflection;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.FeedReader;
 using JosephGuadagno.Broadcasting.Functions;
+using JosephGuadagno.Broadcasting.JsonFeedReader;
+using JosephGuadagno.Broadcasting.YouTubeReader;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
@@ -95,6 +98,21 @@ namespace JosephGuadagno.Broadcasting.Functions
             });
             builder.Services.TryAddSingleton<IUrlShortener, UrlShortener>();
             builder.Services.TryAddSingleton<IEventPublisher, EventPublisher>();
+            builder.Services.TryAddSingleton<IFeedReader>(s =>
+            {
+                var settings = s.GetService<ISettings>();
+                return new FeedReader.FeedReader(settings.FeedUrl);
+            });
+            builder.Services.TryAddSingleton<IJsonReader>(s =>
+            {
+                var settings = s.GetService<ISettings>();
+                return new JsonFeedReader.JsonFeedReader(settings.JsonFeedUrl);
+            });
+            builder.Services.TryAddSingleton<IYouTubeReader>(s =>
+            {
+                var settings = s.GetService<ISettings>();
+                return new YouTubeReader.YouTubeReader(settings.YouTubeApiKey, settings.YouTubeChannelId);
+            });
         }
     }
 }

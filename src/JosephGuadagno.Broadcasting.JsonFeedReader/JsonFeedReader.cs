@@ -8,7 +8,7 @@ using JsonFeedNet;
 
 namespace JosephGuadagno.Broadcasting.JsonFeedReader
 {
-    public class JsonFeedReader: ISourceReader
+    public class JsonFeedReader: IJsonReader
     {
         private readonly string _sourceUrl;
         
