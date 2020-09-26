@@ -14,7 +14,7 @@ Say I am speaking a conference in one month, I will be able to announce '*Hey, I
 
 ## Infrastructure Needs
 
-The infrastructure requirements are documented in [infrastructure-needs](infrastructure-needs.md). Currently there are no scripts to automatically create the infrastructure.  There is an [issue](#16) to build the script.
+The infrastructure requirements are documented in [infrastructure-needs](infrastructure-needs.md). Currently there are no scripts to automatically create the infrastructure.  There is an [issue](https://github.com/jguadagno/jjgnet-broadcast/issues/16) to build the script.
 
 Most of the settings are stored in users secrets and not committed to the repository.  I've kept the [local.settings.json](src/JosephGuadagno.Broadcasting.Functions/local.settings.json) file update to date with the settings that are required.  You'll just have to fill in the blanks. 
 
