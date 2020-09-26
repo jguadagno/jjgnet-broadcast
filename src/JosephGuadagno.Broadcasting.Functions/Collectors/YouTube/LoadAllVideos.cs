@@ -3,33 +3,33 @@ using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.JsonFeedReader;
+using JosephGuadagno.Broadcasting.YouTubeReader;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 
-namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
+namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
 {
-    public class LoadAllPosts
+    public class LoadAllVideos
     {
-        private readonly IJsonReader _jsonReader;
+        private readonly IYouTubeReader _youTubeReader;
         private readonly ISettings _settings;
         private readonly SourceDataRepository _sourceDataRepository;
         private readonly IUrlShortener _urlShortener;
 
-        public LoadAllPosts(IJsonReader jsonReader, ISettings settings, 
+        public LoadAllVideos(IYouTubeReader youTubeReader, ISettings settings, 
             SourceDataRepository sourceDataRepository,
             IUrlShortener urlShortener)
         {
             _settings = settings;
             _sourceDataRepository = sourceDataRepository;
             _urlShortener = urlShortener;
-            _jsonReader = jsonReader;
+            _youTubeReader = youTubeReader;
         }
 
-        [FunctionName("collectors_feed_load_all_posts")]
+        [FunctionName("collectors_youtube_load_all_videos")]
         public async Task<IActionResult> RunAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]
             Domain.Models.LoadJsonFeedItemsRequest requestModel,
@@ -37,7 +37,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             ILogger log)
         {
             var startedAt = DateTime.UtcNow;
-            log.LogInformation($"{Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts} Collector started at: {startedAt}");
+            log.LogInformation($"{Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos} Collector started at: {startedAt}");
 
             // Check for the from date
             var dateToCheckFrom = DateTime.MinValue;
@@ -46,14 +46,14 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                 dateToCheckFrom = requestModel.CheckFrom;
             }
 
-            log.LogInformation($"Getting all items from feed '{_settings.JsonFeedUrl}'.");
-            var newItems = await _jsonReader.GetAsync(dateToCheckFrom);
+            log.LogInformation($"Getting all items from YouTube '{_settings.YouTubeChannelId}'.");
+            var newItems = await _youTubeReader.GetAsync(dateToCheckFrom);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)
             {
-                log.LogDebug($"No posts found at '{_settings.JsonFeedUrl}'.");
-                return new OkObjectResult("0 posts were found");
+                log.LogDebug($"No videos found at '{_settings.YouTubeChannelId}'.");
+                return new OkObjectResult("0 videos were found");
             }
             
             // Save the new items to SourceDataRepository
@@ -72,12 +72,12 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                 }
                 catch (Exception e)
                 {
-                    log.LogError($"Was not able to save post with the id of '{item.Id}'. Exception: {e.Message}");
+                    log.LogError($"Was not able to save video with the id of '{item.Id}'. Exception: {e.Message}");
                 }
                 
                 if (!saveWasSuccessful)
                 {
-                    log.LogError($"Was not able to save post with the id of '{item.Id}'.");
+                    log.LogError($"Was not able to save video with the id of '{item.Id}'.");
                 }
                 else
                 {
@@ -86,7 +86,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             }
             
             // Return
-            var doneMessage = $"Loaded {savedCount} of {newItems.Count} post(s).";
+            var doneMessage = $"Loaded {savedCount} of {newItems.Count} videos(s).";
             log.LogInformation(doneMessage);
             return new OkObjectResult(doneMessage);
         }

@@ -36,7 +36,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
         
         [FunctionName("collectors_youtube_load_new_videos")]
         public async Task RunAsync(
-            [TimerTrigger("0 */15 * * * *")] TimerInfo myTimer,
+            [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer,
             ILogger log)
         {
             var startedAt = DateTime.UtcNow;
@@ -51,7 +51,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             
             // Check for new items
             log.LogDebug($"Checking channel '{_settings.YouTubeChannelId}' for videos since '{configuration.LastCheckedFeed}'");
-            var newItems = _youTubeReader.Get(configuration.LastCheckedFeed);
+            var newItems = await _youTubeReader.GetAsync(configuration.LastCheckedFeed);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)

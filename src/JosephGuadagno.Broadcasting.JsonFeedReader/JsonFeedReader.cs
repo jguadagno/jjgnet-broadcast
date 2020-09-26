@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -24,14 +25,18 @@ namespace JosephGuadagno.Broadcasting.JsonFeedReader
         
         public List<SourceData> Get(DateTime sinceWhen)
         {
+            return GetAsync(sinceWhen).Result;
+        }
+
+        public async Task<List<SourceData>> GetAsync(DateTime sinceWhen)
+        {
             var sourceItems = new List<SourceData>();
             if (string.IsNullOrEmpty(_sourceUrl))
             {
                 return sourceItems;
             }
 
-            // TODO: Make this call and the Get method Async
-            var jsonFeed = JsonFeed.ParseFromUriAsync(new Uri(_sourceUrl)).Result;
+            var jsonFeed = await JsonFeed.ParseFromUriAsync(new Uri(_sourceUrl));
 
             var items = jsonFeed.Items.Where(i => i.DatePublished >= sinceWhen).ToList();
 

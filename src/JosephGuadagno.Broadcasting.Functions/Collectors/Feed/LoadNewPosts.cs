@@ -51,7 +51,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             
             // Check for new items
             log.LogDebug($"Checking '{_settings.FeedUrl}' for posts since '{configuration.LastCheckedFeed}'");
-            var newItems = _feedReader.Get(configuration.LastCheckedFeed);
+            var newItems = await _feedReader.GetAsync(configuration.LastCheckedFeed);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)

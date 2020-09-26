@@ -20,5 +20,6 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces
         
         public string YouTubeApiKey { get; set; }
         public string YouTubeChannelId { get; set; }
+        public string YouTubePlaylistId { get; set; }
     }
 }

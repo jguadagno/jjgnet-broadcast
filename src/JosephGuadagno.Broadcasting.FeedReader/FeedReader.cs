@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel.Syndication;
+using System.Threading.Tasks;
 using System.Xml;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -23,7 +24,6 @@ namespace JosephGuadagno.Broadcasting.FeedReader
 
         public List<SourceData> Get(DateTime sinceWhen)
         {
-
             var feedItems = new List<SourceData>();
             if (string.IsNullOrEmpty(_sourceUrl))
             {
@@ -49,6 +49,11 @@ namespace JosephGuadagno.Broadcasting.FeedReader
                 });
             }
             return feedItems;
+        }
+
+        public async Task<List<SourceData>> GetAsync(DateTime sinceWhen)
+        {
+            return Get(sinceWhen);
         }
     }
 }
