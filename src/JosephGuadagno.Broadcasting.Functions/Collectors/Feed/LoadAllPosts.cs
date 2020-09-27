@@ -58,6 +58,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             
             // Save the new items to SourceDataRepository
             // TODO: Handle duplicate posts?
+            // GitHub Issue #4
             var savedCount = 0;
             foreach (var item in newItems)
             {

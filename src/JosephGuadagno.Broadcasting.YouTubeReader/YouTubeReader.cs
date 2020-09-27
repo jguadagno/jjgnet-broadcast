@@ -14,8 +14,9 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
         private readonly string _channelId;
         private readonly YouTubeService _youTubeService;
         private readonly string _playlistId;
+        private readonly int _pagedVideoResults;
 
-        public YouTubeReader(string apiKey, string channelId, string playlistId)
+        public YouTubeReader(string apiKey, string channelId, string playlistId, int pageVideoResults = 10)
         {
             if (string.IsNullOrEmpty(apiKey))
             {
@@ -35,6 +36,7 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
             _apiKey = apiKey;
             _channelId = channelId;
             _playlistId = playlistId;
+            _pagedVideoResults = pageVideoResults;
             
             _youTubeService = new YouTubeService(new BaseClientService.Initializer()
             {
@@ -58,7 +60,7 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
             
             var playlistItemsRequest = _youTubeService.PlaylistItems.List("snippet");
             playlistItemsRequest.PlaylistId = _playlistId;
-            playlistItemsRequest.MaxResults = 10; // TODO: Make this a configurable value
+            playlistItemsRequest.MaxResults = _pagedVideoResults;
             
             var nextPageToken = "";
             while (nextPageToken != null)
@@ -79,9 +81,7 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
                             videoItems.Add(new SourceData(SourceSystems.YouTube,
                                 playlistItem.Snippet.ResourceId.VideoId)
                             {
-                                // TODO: Look to get author name and not channel name
                                 Author = playlistItem.Snippet.ChannelTitle,
-                                // TODO: Safely parse the date time.
                                 PublicationDate = publishedAt,
                                 //Text = searchResult.Snippet.Description,
                                 Title = playlistItem.Snippet.Title,

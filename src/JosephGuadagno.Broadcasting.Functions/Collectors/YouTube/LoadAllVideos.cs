@@ -58,6 +58,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             
             // Save the new items to SourceDataRepository
             // TODO: Handle duplicate posts?
+            // GitHub Issue #17
             var savedCount = 0;
             foreach (var item in newItems)
             {

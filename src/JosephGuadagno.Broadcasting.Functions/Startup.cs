@@ -111,7 +111,8 @@ namespace JosephGuadagno.Broadcasting.Functions
             builder.Services.TryAddSingleton<IYouTubeReader>(s =>
             {
                 var settings = s.GetService<ISettings>();
-                return new YouTubeReader.YouTubeReader(settings.YouTubeApiKey, settings.YouTubeChannelId, settings.YouTubePlaylistId);
+                return new YouTubeReader.YouTubeReader(settings.YouTubeApiKey, settings.YouTubeChannelId,
+                    settings.YouTubePlaylistId, settings.YouTubePagedVideoResults);
             });
         }
     }

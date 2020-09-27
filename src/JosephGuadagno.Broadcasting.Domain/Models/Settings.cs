@@ -21,5 +21,6 @@ namespace JosephGuadagno.Broadcasting.Domain.Models
         public string YouTubeApiKey { get; set; }
         public string YouTubeChannelId { get; set; }
         public string YouTubePlaylistId { get; set; }
+        public int YouTubePagedVideoResults { get; set; }
     }
 }
