@@ -6,31 +6,35 @@ using System.Threading.Tasks;
 using System.Xml;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 
-namespace JosephGuadagno.Broadcasting.FeedReader
+namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
 {
-    public class FeedReader: IFeedReader
+    public class SyndicationFeedReader: ISyndicationFeedReader
     {
-        private readonly string _sourceUrl;
-        public FeedReader(string sourceUrl)
+        private readonly ISyndicationFeedReaderSettings _syndicationFeedReaderSettings;
+        
+        public SyndicationFeedReader(ISyndicationFeedReaderSettings syndicationFeedReaderSettings)
         {
-            if (string.IsNullOrEmpty(sourceUrl))
+            if (syndicationFeedReaderSettings == null)
             {
-                throw new ArgumentNullException(nameof(sourceUrl), "The source url is required");
+                throw new ArgumentNullException(nameof(syndicationFeedReaderSettings), "The SyndicationFeedReaderSettings cannot be null");
+            }
+            
+            if (string.IsNullOrEmpty(syndicationFeedReaderSettings.FeedUrl))
+            {
+                throw new ArgumentNullException(nameof(syndicationFeedReaderSettings.FeedUrl), "The FeedUrl of the SyndicationFeedReaderSettings" +
+                    " is required");
             }
 
-            _sourceUrl = sourceUrl;
+            _syndicationFeedReaderSettings = syndicationFeedReaderSettings;
         }
 
         public List<SourceData> Get(DateTime sinceWhen)
         {
             var feedItems = new List<SourceData>();
-            if (string.IsNullOrEmpty(_sourceUrl))
-            {
-                return feedItems;
-            }
 
-            using var reader = XmlReader.Create(_sourceUrl);
+            using var reader = XmlReader.Create(_syndicationFeedReaderSettings.FeedUrl);
             var feed = SyndicationFeed.Load(reader);
 
             var items = feed.Items.Where(i => i.PublishDate >= sinceWhen).ToList();

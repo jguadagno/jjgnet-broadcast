@@ -4,6 +4,7 @@ using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader;
+using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -46,13 +47,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                 dateToCheckFrom = requestModel.CheckFrom;
             }
 
-            log.LogInformation($"Getting all items from YouTube '{_settings.YouTubeChannelId}'.");
+            log.LogInformation($"Getting all items from YouTube for the playlist'.");
             var newItems = await _youTubeReader.GetAsync(dateToCheckFrom);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)
             {
-                log.LogDebug($"No videos found at '{_settings.YouTubeChannelId}'.");
+                log.LogDebug($"No videos found in the playlist.");
                 return new OkObjectResult("0 videos were found");
             }
             
@@ -63,7 +64,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             foreach (var item in newItems)
             {
                 // shorten the url
-                item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, "jjg.me");
+                item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, _settings.BitlyShortenedDomain);
                 
                 // attempt to save the item
                 var saveWasSuccessful = false;

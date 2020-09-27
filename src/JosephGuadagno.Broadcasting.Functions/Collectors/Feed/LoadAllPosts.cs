@@ -4,6 +4,7 @@ using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader;
+using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -14,19 +15,19 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
 {
     public class LoadAllPosts
     {
-        private readonly IJsonReader _jsonReader;
+        private readonly IJsonFeedReader _jsonFeedReader;
         private readonly ISettings _settings;
         private readonly SourceDataRepository _sourceDataRepository;
         private readonly IUrlShortener _urlShortener;
 
-        public LoadAllPosts(IJsonReader jsonReader, ISettings settings, 
+        public LoadAllPosts(IJsonFeedReader jsonFeedReader, ISettings settings, 
             SourceDataRepository sourceDataRepository,
             IUrlShortener urlShortener)
         {
             _settings = settings;
             _sourceDataRepository = sourceDataRepository;
             _urlShortener = urlShortener;
-            _jsonReader = jsonReader;
+            _jsonFeedReader = jsonFeedReader;
         }
 
         [FunctionName("collectors_feed_load_all_posts")]
@@ -46,13 +47,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                 dateToCheckFrom = requestModel.CheckFrom;
             }
 
-            log.LogInformation($"Getting all items from feed '{_settings.JsonFeedUrl}'.");
-            var newItems = await _jsonReader.GetAsync(dateToCheckFrom);
+            log.LogInformation($"Getting all items from feed.");
+            var newItems = await _jsonFeedReader.GetAsync(dateToCheckFrom);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)
             {
-                log.LogDebug($"No posts found at '{_settings.JsonFeedUrl}'.");
+                log.LogDebug($"No posts found in the Json Feed.");
                 return new OkObjectResult("0 posts were found");
             }
             
@@ -63,7 +64,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             foreach (var item in newItems)
             {
                 // shorten the url
-                item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, "jjg.me");
+                item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, _settings.BitlyShortenedDomain);
                 
                 // attempt to save the item
                 var saveWasSuccessful = false;

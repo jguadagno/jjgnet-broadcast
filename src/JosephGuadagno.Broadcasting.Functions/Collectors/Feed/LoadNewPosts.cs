@@ -4,7 +4,8 @@ using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.FeedReader;
+using JosephGuadagno.Broadcasting.SyndicationFeedReader;
+using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
@@ -12,21 +13,21 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
 {
     public class CheckFeedForUpdates
     {
-        private readonly IFeedReader _feedReader;
+        private readonly ISyndicationFeedReader _syndicationFeedReader;
         private readonly ISettings _settings;
         private readonly ConfigurationRepository _configurationRepository;
         private readonly SourceDataRepository _sourceDataRepository;
         private readonly IUrlShortener _urlShortener;
         private readonly IEventPublisher _eventPublisher;
 
-        public CheckFeedForUpdates(IFeedReader feedReader,
+        public CheckFeedForUpdates(ISyndicationFeedReader syndicationFeedReader,
             ISettings settings, 
             ConfigurationRepository configurationRepository,
             SourceDataRepository sourceDataRepository,
             IUrlShortener urlShortener, 
             IEventPublisher eventPublisher)
         {
-            _feedReader = feedReader;
+            _syndicationFeedReader = syndicationFeedReader;
             _settings = settings;
             _configurationRepository = configurationRepository;
             _sourceDataRepository = sourceDataRepository;
@@ -50,15 +51,15 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                                     {LastCheckedFeed = startedAt};
             
             // Check for new items
-            log.LogDebug($"Checking '{_settings.FeedUrl}' for posts since '{configuration.LastCheckedFeed}'");
-            var newItems = await _feedReader.GetAsync(configuration.LastCheckedFeed);
+            log.LogDebug($"Checking the syndication feed for posts since '{configuration.LastCheckedFeed}'");
+            var newItems = await _syndicationFeedReader.GetAsync(configuration.LastCheckedFeed);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)
             {
                 configuration.LastCheckedFeed = startedAt;
                 await _configurationRepository.SaveAsync(configuration);
-                log.LogDebug($"No new posts found at '{_settings.FeedUrl}'.");
+                log.LogDebug($"No new posts found in the syndication feed.");
                 return;
             }
             
@@ -69,7 +70,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             foreach (var item in newItems)
             {
                 // shorten the url
-                item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, "jjg.me");
+                item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, _settings.BitlyShortenedDomain);
                 
                 // attempt to save the item
                 var saveWasSuccessful = false;

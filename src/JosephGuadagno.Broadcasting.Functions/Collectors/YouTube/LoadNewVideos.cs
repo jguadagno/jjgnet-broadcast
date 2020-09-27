@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader;
+using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
@@ -50,7 +51,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                                     {LastCheckedFeed = startedAt};
             
             // Check for new items
-            log.LogDebug($"Checking channel '{_settings.YouTubeChannelId}' for videos since '{configuration.LastCheckedFeed}'");
+            log.LogDebug($"Checking playlist for videos since '{configuration.LastCheckedFeed}'");
             var newItems = await _youTubeReader.GetAsync(configuration.LastCheckedFeed);
             
             // If there is nothing new, save the last checked value and exit
@@ -58,7 +59,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             {
                 configuration.LastCheckedFeed = startedAt;
                 await _configurationRepository.SaveAsync(configuration);
-                log.LogDebug($"No new videos found at '{_settings.YouTubeChannelId}'.");
+                log.LogDebug($"No new videos found in the playlist.");
                 return;
             }
             
@@ -69,7 +70,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             foreach (var item in newItems)
             {
                 // shorten the url
-                item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, "jjg.me");
+                item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, _settings.BitlyShortenedDomain);
                 
                 // attempt to save the item
                 var saveWasSuccessful = false;
@@ -102,7 +103,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                 log.LogError("Failed to publish the events.");
             }
             
-            // Save the last checked valueif
+            // Save the last checked value
             configuration.LastCheckedFeed = startedAt;
             await _configurationRepository.SaveAsync(configuration);
             

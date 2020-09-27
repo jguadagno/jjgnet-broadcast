@@ -4,7 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Data", "JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj", "{838E1AC2-C3E6-4BCA-A6A9-28888DFD2A33}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.FeedReader", "JosephGuadagno.Broadcasting.FeedReader\JosephGuadagno.Broadcasting.FeedReader.csproj", "{E5D03375-97E6-4236-BE64-785C99A65F56}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.SyndicationFeedReader", "JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj", "{E5D03375-97E6-4236-BE64-785C99A65F56}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", "{CA7CFF1F-4DB2-4B9A-BB46-5D922C457D29}"
 ProjectSection(SolutionItems) = preProject

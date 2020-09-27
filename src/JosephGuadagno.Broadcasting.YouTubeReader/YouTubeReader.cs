@@ -5,42 +5,46 @@ using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 
 namespace JosephGuadagno.Broadcasting.YouTubeReader
 {
     public class YouTubeReader: IYouTubeReader
     {
-        private readonly string _apiKey;
-        private readonly string _channelId;
         private readonly YouTubeService _youTubeService;
-        private readonly string _playlistId;
-        private readonly int _pagedVideoResults;
-
-        public YouTubeReader(string apiKey, string channelId, string playlistId, int pageVideoResults = 10)
+        private readonly IYouTubeSettings _youTubeSettings;
+        
+        public YouTubeReader(IYouTubeSettings youTubeSettings)
         {
-            if (string.IsNullOrEmpty(apiKey))
+            if (youTubeSettings == null)
             {
-                throw new ArgumentNullException(nameof(apiKey), "The api key is required.");
+                throw new ArgumentNullException(nameof(youTubeSettings), "The YouTube settings are required");
+            }
+            
+            if (string.IsNullOrEmpty(youTubeSettings.ApiKey))
+            {
+                throw new ArgumentNullException(nameof(youTubeSettings.ApiKey), "The api key of the YouTube settings is required.");
             }
 
-            if (string.IsNullOrEmpty(channelId))
+            if (string.IsNullOrEmpty(youTubeSettings.ChannelId))
             {
-                throw new ArgumentNullException(nameof(channelId), "The channel id is required.");
+                throw new ArgumentNullException(nameof(youTubeSettings.ChannelId), "The channel id of the YouTube settings is required.");
             }
 
-            if (string.IsNullOrEmpty(playlistId))
+            if (string.IsNullOrEmpty(youTubeSettings.PlaylistId))
             {
-                throw new ArgumentNullException(nameof(playlistId), "The playlist id is required.");
+                throw new ArgumentNullException(nameof(youTubeSettings.PlaylistId), "The playlist id of the YouTube settings is required.");
             }
-
-            _apiKey = apiKey;
-            _channelId = channelId;
-            _playlistId = playlistId;
-            _pagedVideoResults = pageVideoResults;
+            
+            _youTubeSettings = youTubeSettings;
+            if (_youTubeSettings.ResultSetPageSize <= 0 || _youTubeSettings.ResultSetPageSize > 50)
+            {
+                _youTubeSettings.ResultSetPageSize = 10;
+            }
             
             _youTubeService = new YouTubeService(new BaseClientService.Initializer()
             {
-                ApiKey = _apiKey,
+                ApiKey = _youTubeSettings.ApiKey,
                 ApplicationName = GetType().ToString()
             });
         }
@@ -53,14 +57,10 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
         public async Task<List<SourceData>> GetAsync(DateTime sinceWhen)
         {
             var videoItems = new List<SourceData>();
-            if (string.IsNullOrEmpty(_apiKey) || string.IsNullOrEmpty(_channelId))
-            {
-                return videoItems;
-            }
             
             var playlistItemsRequest = _youTubeService.PlaylistItems.List("snippet");
-            playlistItemsRequest.PlaylistId = _playlistId;
-            playlistItemsRequest.MaxResults = _pagedVideoResults;
+            playlistItemsRequest.PlaylistId = _youTubeSettings.PlaylistId;
+            playlistItemsRequest.MaxResults = _youTubeSettings.ResultSetPageSize;
             
             var nextPageToken = "";
             while (nextPageToken != null)
