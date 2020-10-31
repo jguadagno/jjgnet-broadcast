@@ -24,7 +24,7 @@ jobs:
     - name: Install dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build ./src/JosephGuadagnoNet.Broadcasting.sln --configuration Release --no-restore --output ./output
     - name: Test
       run: dotnet test --no-restore --verbosity normal
     - name: 'Run Azure Functions Action'
