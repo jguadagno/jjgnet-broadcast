@@ -9,6 +9,7 @@ on:
 env:
   AZURE_FUNCTIONAPP_NAME: jjgnet          # set this to your application's name
   AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'    # set this to the path to your web app project, defaults to the repository root
+  SOLUTION_TO_BUILD:  './src/JosephGuadagnoNet.Broadcasting.sln'
 
 jobs:
   build:
@@ -22,11 +23,11 @@ jobs:
       with:
         dotnet-version: 3.1.402
     - name: Install dependencies
-      run: dotnet restore
+      run: dotnet restore ${{ env.SOLUTION_TO_BUILD }}
     - name: Build
-      run: dotnet build ./src/JosephGuadagnoNet.Broadcasting.sln --configuration Release --no-restore --output ./output
+      run: dotnet build ${{ env.SOLUTION_TO_BUILD }} --configuration Release --no-restore --output ./output
     - name: Test
-      run: dotnet test --no-restore --verbosity normal
+      run: dotnet test ${{ env.SOLUTION_TO_BUILD }} --no-restore --verbosity normal
     - name: 'Run Azure Functions Action'
       uses: Azure/functions-action@v1
       id: fa
