@@ -30,20 +30,26 @@ namespace JosephGuadagno.Broadcasting.Functions
 {
     public class Startup : FunctionsStartup
     {
+
+        private string _applicationDirectory;
+        
+        public Startup()
+        {
+            var localRoot = Environment.GetEnvironmentVariable("AzureWebJobsScriptRoot");
+            var azureRoot = $"{Environment.GetEnvironmentVariable("HOME")}/site/wwwroot";
+
+            _applicationDirectory = localRoot ?? azureRoot;
+            LogManager.Setup()
+                .SetupExtensions(e => e.AutoLoadAssemblies(false))
+                .LoadConfigurationFromFile(_applicationDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
+                .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
+        }
         
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            ExecutionContextOptions executionContextOptions = builder.Services.BuildServiceProvider().GetService<IOptions<ExecutionContextOptions>>().Value;
-            var applicationDirectory = executionContextOptions.AppDirectory;  
-            
-            LogManager.Setup()
-                .SetupExtensions(e => e.AutoLoadAssemblies(false))
-                .LoadConfigurationFromFile(applicationDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
-                .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
-            
             // Setup the Configuration Source
             var config = new ConfigurationBuilder()
-                .SetBasePath(applicationDirectory)
+                .SetBasePath(_applicationDirectory)
                 .AddJsonFile("local.settings.json", true)
                 .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
                 .AddEnvironmentVariables()
