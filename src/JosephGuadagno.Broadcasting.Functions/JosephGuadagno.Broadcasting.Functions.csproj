@@ -33,6 +33,9 @@
         </None>
     </ItemGroup>
     <ItemGroup>
+      <Content Include="host.prod.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
       <Content Include="nlog.prod.config">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>

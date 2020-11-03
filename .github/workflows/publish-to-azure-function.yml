@@ -24,6 +24,8 @@ jobs:
         dotnet-version: 3.1.402
     - name: Replace nlog.config
       run: yes | cp -i ./src/JosephGuadagno.Broadcasting.Functions/nlog.prod.config ./src/JosephGuadagno.Broadcasting.Functions/nlog.config
+    - name: Replace host.json
+        run: yes | cp -i ./src/JosephGuadagno.Broadcasting.Functions/host.prod.json ./src/JosephGuadagno.Broadcasting.Functions/host.json
     - name: Install dependencies
       run: dotnet restore ${{ env.SOLUTION_TO_BUILD }}
     - name: Build
