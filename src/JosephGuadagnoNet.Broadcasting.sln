@@ -10,6 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 ProjectSection(SolutionItems) = preProject
 	..\infrastructure-needs.md = ..\infrastructure-needs.md
 	..\README.md = ..\README.md
+	..\.github\workflows\publish-to-azure-function.yml = ..\.github\workflows\publish-to-azure-function.yml
 EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Functions", "JosephGuadagno.Broadcasting.Functions\JosephGuadagno.Broadcasting.Functions.csproj", "{3982BC47-81CD-4D61-82D6-17749CB36032}"

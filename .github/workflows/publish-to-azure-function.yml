@@ -22,6 +22,8 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.402
+    - name: Replace nlog.config
+      run: yes | cp -i ./src/JosephGuadagno.Broadcasting.Functions/nlog.prod.config ./src/JosephGuadagno.Broadcasting.Functions/nlog.config
     - name: Install dependencies
       run: dotnet restore ${{ env.SOLUTION_TO_BUILD }}
     - name: Build
