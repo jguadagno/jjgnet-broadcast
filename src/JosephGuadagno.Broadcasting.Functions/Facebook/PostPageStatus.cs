@@ -13,20 +13,21 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
     {
         private readonly ISettings _settings;
         private readonly HttpClient _httpClient;
+        private readonly ILogger<PostPageStatus> _logger;
         
         private readonly string _statusUrl = "https://graph.facebook.com/{page_id}/feed?message={message}&link={link}&access_token={access_token}";
         
-        public PostPageStatus(ISettings settings, HttpClient httpClient)
+        public PostPageStatus(ISettings settings, HttpClient httpClient, ILogger<PostPageStatus> logger)
         {
             _settings = settings;
             _httpClient = httpClient;
+            _logger = logger;
         }
         
         [FunctionName("facebook_post_status_to_page")]
         public async Task Run(
             [QueueTrigger(Constants.Queues.FacebookPostStatusToPage)]
-            Domain.Models.Messages.FacebookPostStatus facebookPostStatus,
-            ILogger log)
+            Domain.Models.Messages.FacebookPostStatus facebookPostStatus)
         {
             var url = _statusUrl.Replace("{page_id}", _settings.FacebookPageId)
                 .Replace("{message}", facebookPostStatus.StatusText)
@@ -43,17 +44,17 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
 
                 if (response.StatusCode == HttpStatusCode.OK)
                 {
-                    log.LogDebug($"Successfully posted the status: '{postStatusResponse.Id}'");
+                    _logger.LogDebug($"Successfully posted the status: '{postStatusResponse.Id}'");
                 }
                 else
                 {
-                    log.LogError(
+                    _logger.LogError(
                         $"Failed to post status.  Error Code: {postStatusResponse.Error.Code}, Subcode: {postStatusResponse.Error.ErrorSubcode}, Message: '{postStatusResponse.Error.Message}'");
                 }
             }
             else
             {
-                log.LogError("Failed to post status. Could not deserialize the response.");
+                _logger.LogError("Failed to post status. Could not deserialize the response.");
             }
         }
     }

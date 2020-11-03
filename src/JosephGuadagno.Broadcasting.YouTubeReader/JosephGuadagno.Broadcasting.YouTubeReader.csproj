@@ -10,6 +10,7 @@
 
     <ItemGroup>
       <PackageReference Include="Google.Apis.YouTube.v3" Version="1.49.0.2084" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.9" />
     </ItemGroup>
 
 </Project>

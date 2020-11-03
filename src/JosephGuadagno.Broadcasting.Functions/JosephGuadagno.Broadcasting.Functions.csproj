@@ -11,10 +11,13 @@
         <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.8" />
         <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.2" />
         <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.0.0" />
-
         <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.9" />
+        <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.15.0" />
         <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.9" />
         <PackageReference Include="linqtotwitter" Version="5.1.3" />
+        <PackageReference Include="NLog" Version="4.7.5" />
+        <PackageReference Include="NLog.Extensions.Logging" Version="1.6.5" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj" />
@@ -24,13 +27,23 @@
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj" />
     </ItemGroup>
     <ItemGroup>
-      <None Update="host.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
-      <None Update="local.settings.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-      </None>
+        <None Update="local.settings.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+        </None>
+    </ItemGroup>
+    <ItemGroup>
+      <Content Include="nlog.prod.config">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <None Remove="nlog.config" />
+      <Content Include="nlog.config">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <None Remove="host.json" />
+      <Content Include="host.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>

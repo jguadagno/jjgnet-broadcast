@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Threading.Tasks;
-using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -14,10 +13,12 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
     public class ProcessNewSourceData
     {
         private readonly SourceDataRepository _sourceDataRepository;
+        private readonly ILogger<ProcessNewSourceData> _logger;
 
-        public ProcessNewSourceData(SourceDataRepository sourceDataRepository)
+        public ProcessNewSourceData(SourceDataRepository sourceDataRepository, ILogger<ProcessNewSourceData> logger)
         {
             _sourceDataRepository = sourceDataRepository;
+            _logger = logger;
         }
         
         // Debug Locally: https://docs.microsoft.com/en-us/azure/azure-functions/functions-debug-event-grid-trigger-local
@@ -28,29 +29,27 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
         [FunctionName("twitter_process_new_source_data")]
         public async Task RunAsync(
             [EventGridTrigger()] EventGridEvent eventGridEvent,
-            [Queue(Constants.Queues.TwitterTweetsToSend)] ICollector<string> outboundMessages,
-            ILogger log
-        )
+            [Queue(Constants.Queues.TwitterTweetsToSend)] ICollector<string> outboundMessages)
         {
             // Get the Source Data identifier for the event
             var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridEvent.Data.ToString());
             if (tableEvent == null)
             {
-                log.LogError($"Failed to parse the TableEvent data for event '{eventGridEvent.Id}'");
+                _logger.LogError($"Failed to parse the TableEvent data for event '{eventGridEvent.Id}'");
                 return;
             }
 
             // Create the scheduled tweets for it
-            log.LogDebug($"Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'");
+            _logger.LogDebug($"Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'");
             var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
 
             if (sourceData == null)
             {
-                log.LogDebug($"Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found");
+                _logger.LogWarning($"Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found");
                 return;
             }
             
-            log.LogDebug($"Composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
+            _logger.LogDebug($"Composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
             
             var tweet = ComposeTweet(sourceData);
             if (!string.IsNullOrEmpty(tweet))
@@ -59,7 +58,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
             }
             
             // Done
-            log.LogDebug($"Done with record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
+            _logger.LogDebug($"Done composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
         }
         
         private string ComposeTweet(SourceData item)
@@ -93,7 +92,8 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
             }
             
             var tweet = $"{tweetStart} {postTitle} {url}";
-        
+            _logger.LogDebug($"Composed tweet '{tweet}'", tweet);
+            
             return tweet;
         }
     }

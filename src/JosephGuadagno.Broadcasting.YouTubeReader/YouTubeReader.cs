@@ -6,6 +6,7 @@ using Google.Apis.YouTube.v3;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.YouTubeReader
 {
@@ -13,8 +14,9 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
     {
         private readonly YouTubeService _youTubeService;
         private readonly IYouTubeSettings _youTubeSettings;
+        private readonly ILogger _logger;
         
-        public YouTubeReader(IYouTubeSettings youTubeSettings)
+        public YouTubeReader(IYouTubeSettings youTubeSettings, ILogger<YouTubeReader> logger)
         {
             if (youTubeSettings == null)
             {
@@ -47,6 +49,8 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
                 ApiKey = _youTubeSettings.ApiKey,
                 ApplicationName = GetType().ToString()
             });
+
+            _logger = logger;
         }
 
         public List<SourceData> Get(DateTime sinceWhen)

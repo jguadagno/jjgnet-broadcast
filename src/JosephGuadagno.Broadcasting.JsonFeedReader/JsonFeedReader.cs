@@ -6,14 +6,16 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
 using JsonFeedNet;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.JsonFeedReader
 {
     public class JsonFeedReader: IJsonFeedReader
     {
         private readonly IJsonFeedReaderSettings _jsonFeedReaderSettings;
+        private readonly ILogger _logger;
         
-        public JsonFeedReader(IJsonFeedReaderSettings jsonFeedReaderSettings)
+        public JsonFeedReader(IJsonFeedReaderSettings jsonFeedReaderSettings, ILogger<JsonFeedReader> logger)
         {
             if (jsonFeedReaderSettings == null)
             {
@@ -26,6 +28,7 @@ namespace JosephGuadagno.Broadcasting.JsonFeedReader
             }
 
             _jsonFeedReaderSettings = jsonFeedReaderSettings;
+            _logger = logger;
 
         }
         

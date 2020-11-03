@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using JosephGuadagno.Broadcasting.Data;
@@ -17,6 +18,9 @@ using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using NLog;
+using NLog.Extensions.Logging;
 
 [assembly: FunctionsStartup(typeof(Startup))]
 
@@ -24,6 +28,14 @@ namespace JosephGuadagno.Broadcasting.Functions
 {
     public class Startup : FunctionsStartup
     {
+        public Startup()
+        {
+            LogManager.Setup()
+                .SetupExtensions(e => e.AutoLoadAssemblies(false))
+                .LoadConfigurationFromFile(Environment.CurrentDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
+                .LoadConfiguration(builder => builder.LogFactory.AutoShutdown = false);
+        }
+        
         public override void Configure(IFunctionsHostBuilder builder)
         {
             // Setup the Configuration Source
@@ -40,6 +52,16 @@ namespace JosephGuadagno.Broadcasting.Functions
             config.Bind("Settings", settings);
             builder.Services.TryAddSingleton<ISettings>(settings);
             
+            // Configure the logger
+            builder.Services.AddLogging((loggingBuilder =>
+            {
+                //loggingBuilder.ClearProviders();
+                loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
+                loggingBuilder.AddConfiguration(config);
+                loggingBuilder.AddNLog(new NLogProviderOptions {ShutdownOnDispose = true});
+            }));
+
+            // Configure all the services
             ConfigureTwitter(builder);
             ConfigureJsonFeedReader(builder);
             ConfigureSyndicationFeedReader(builder);

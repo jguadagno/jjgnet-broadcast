@@ -6,6 +6,12 @@
             "samplingSettings": {
                 "isEnabled": true
             }
+        },
+        "logLevel": {
+            "Default": "Debug",
+            "System": "Information",
+            "Microsoft": "Information",
+            "JosephGuadagno": "Debug"
         }
     }
 }

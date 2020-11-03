@@ -7,14 +7,16 @@ using System.Xml;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
 {
     public class SyndicationFeedReader: ISyndicationFeedReader
     {
         private readonly ISyndicationFeedReaderSettings _syndicationFeedReaderSettings;
+        private readonly ILogger _logger;
         
-        public SyndicationFeedReader(ISyndicationFeedReaderSettings syndicationFeedReaderSettings)
+        public SyndicationFeedReader(ISyndicationFeedReaderSettings syndicationFeedReaderSettings, ILogger<SyndicationFeedReader> logger)
         {
             if (syndicationFeedReaderSettings == null)
             {
@@ -28,6 +30,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
             }
 
             _syndicationFeedReaderSettings = syndicationFeedReaderSettings;
+            _logger = logger;
         }
 
         public List<SourceData> Get(DateTime sinceWhen)

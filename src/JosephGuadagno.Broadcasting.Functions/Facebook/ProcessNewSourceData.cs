@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Threading.Tasks;
-using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -15,10 +14,12 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
     public class ProcessNewSourceData
     {
         private readonly SourceDataRepository _sourceDataRepository;
+        private readonly ILogger<ProcessNewSourceData> _logger;
 
-        public ProcessNewSourceData(SourceDataRepository sourceDataRepository)
+        public ProcessNewSourceData(SourceDataRepository sourceDataRepository, ILogger<ProcessNewSourceData> logger)
         {
             _sourceDataRepository = sourceDataRepository;
+            _logger = logger;
         }
         
         // Debug Locally: https://docs.microsoft.com/en-us/azure/azure-functions/functions-debug-event-grid-trigger-local
@@ -30,29 +31,27 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
         public async Task RunAsync(
             [EventGridTrigger()] EventGridEvent eventGridEvent,
             [Queue(Constants.Queues.FacebookPostStatusToPage)] 
-            ICollector<FacebookPostStatus> outboundMessages,
-            ILogger log
-        )
+            ICollector<FacebookPostStatus> outboundMessages)
         {
             // Get the Source Data identifier for the event
             var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridEvent.Data.ToString());
             if (tableEvent == null)
             {
-                log.LogError($"Failed to parse the TableEvent data for event '{eventGridEvent.Id}'");
+                _logger.LogError($"Failed to parse the TableEvent data for event '{eventGridEvent.Id}'");
                 return;
             }
 
             // Create the scheduled tweets for it
-            log.LogDebug($"Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'");
+            _logger.LogDebug($"Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'");
             var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
 
             if (sourceData == null)
             {
-                log.LogDebug($"Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found");
+                _logger.LogWarning($"Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found");
                 return;
             }
             
-            log.LogDebug($"Composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
+            _logger.LogDebug($"Composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
             
             var status = ComposeStatus(sourceData);
             if (status != null)
@@ -61,7 +60,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
             }
             
             // Done
-            log.LogDebug($"Done with record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
+            _logger.LogDebug($"Done composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
         }
         
         private FacebookPostStatus ComposeStatus(SourceData item)
@@ -74,7 +73,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
             const int maxStatusText = 2000;
             
             // Build Facebook Status
-            // Build Tweet
             var statusText = "";
             switch (item.SourceSystem)
             {
@@ -95,11 +93,14 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
                 postTitle = postTitle.Substring(0, newLength - 4) + "...";
             }
             
-            return new FacebookPostStatus
+            var facebookPostStatus = new FacebookPostStatus
             {
                 StatusText =  $"{statusText} {postTitle}",
                 LinkUri = url                
             };
+            
+            _logger.LogDebug($"Composed Facebook Status: StatusText='{facebookPostStatus.StatusText}', LinkUrl='{facebookPostStatus.LinkUri}'", facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
+            return facebookPostStatus;
         }
     }
 }

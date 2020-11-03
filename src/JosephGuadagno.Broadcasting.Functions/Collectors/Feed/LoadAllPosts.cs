@@ -19,26 +19,28 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
         private readonly ISettings _settings;
         private readonly SourceDataRepository _sourceDataRepository;
         private readonly IUrlShortener _urlShortener;
+        private readonly ILogger<LoadAllPosts> _logger;
 
         public LoadAllPosts(IJsonFeedReader jsonFeedReader, ISettings settings, 
             SourceDataRepository sourceDataRepository,
-            IUrlShortener urlShortener)
+            IUrlShortener urlShortener,
+            ILogger<LoadAllPosts> logger)
         {
             _settings = settings;
             _sourceDataRepository = sourceDataRepository;
             _urlShortener = urlShortener;
             _jsonFeedReader = jsonFeedReader;
+            _logger = logger;
         }
 
         [FunctionName("collectors_feed_load_all_posts")]
         public async Task<IActionResult> RunAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]
             Domain.Models.LoadJsonFeedItemsRequest requestModel,
-            HttpRequest req,
-            ILogger log)
+            HttpRequest req)
         {
             var startedAt = DateTime.UtcNow;
-            log.LogInformation($"{Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts} Collector started at: {startedAt}");
+            _logger.LogDebug($"{Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts} Collector started at: {startedAt}");
 
             // Check for the from date
             var dateToCheckFrom = DateTime.MinValue;
@@ -47,13 +49,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                 dateToCheckFrom = requestModel.CheckFrom;
             }
 
-            log.LogInformation($"Getting all items from feed.");
+            _logger.LogDebug($"Getting all items from feed from '{dateToCheckFrom}'.");
             var newItems = await _jsonFeedReader.GetAsync(dateToCheckFrom);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)
             {
-                log.LogDebug($"No posts found in the Json Feed.");
+                _logger.LogDebug($"No posts found in the Json Feed.");
                 return new OkObjectResult("0 posts were found");
             }
             
@@ -74,12 +76,12 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                 }
                 catch (Exception e)
                 {
-                    log.LogError($"Was not able to save post with the id of '{item.Id}'. Exception: {e.Message}");
+                    _logger.LogError($"Was not able to save post with the id of '{item.Id}'. Exception: {e.Message}");
                 }
                 
                 if (!saveWasSuccessful)
                 {
-                    log.LogError($"Was not able to save post with the id of '{item.Id}'.");
+                    _logger.LogError($"Was not able to save post with the id of '{item.Id}'.");
                 }
                 else
                 {
@@ -89,7 +91,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             
             // Return
             var doneMessage = $"Loaded {savedCount} of {newItems.Count} post(s).";
-            log.LogInformation(doneMessage);
+            _logger.LogDebug(doneMessage);
             return new OkObjectResult(doneMessage);
         }
     }

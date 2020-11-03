@@ -4,7 +4,6 @@ using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.SyndicationFeedReader;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
@@ -19,13 +18,14 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
         private readonly SourceDataRepository _sourceDataRepository;
         private readonly IUrlShortener _urlShortener;
         private readonly IEventPublisher _eventPublisher;
+        private readonly ILogger<CheckFeedForUpdates> _logger;
 
         public CheckFeedForUpdates(ISyndicationFeedReader syndicationFeedReader,
-            ISettings settings, 
+            ISettings settings,
             ConfigurationRepository configurationRepository,
             SourceDataRepository sourceDataRepository,
-            IUrlShortener urlShortener, 
-            IEventPublisher eventPublisher)
+            IUrlShortener urlShortener,
+            IEventPublisher eventPublisher, ILogger<CheckFeedForUpdates> logger)
         {
             _syndicationFeedReader = syndicationFeedReader;
             _settings = settings;
@@ -33,15 +33,15 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             _sourceDataRepository = sourceDataRepository;
             _urlShortener = urlShortener;
             _eventPublisher = eventPublisher;
+            _logger = logger;
         }
         
         [FunctionName("collectors_feed_check_for_updates")]
         public async Task RunAsync(
-            [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer,
-            ILogger log)
+            [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer)
         {
             var startedAt = DateTime.UtcNow;
-            log.LogDebug($"{Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts} Collector started at: {startedAt}");
+            _logger.LogDebug($"{Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts} Collector started at: {startedAt}");
 
             var configuration = await _configurationRepository.GetAsync(Constants.Tables.Configuration,
                                     Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts
@@ -51,7 +51,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                                     {LastCheckedFeed = startedAt};
             
             // Check for new items
-            log.LogDebug($"Checking the syndication feed for posts since '{configuration.LastCheckedFeed}'");
+            _logger.LogDebug($"Checking the syndication feed for posts since '{configuration.LastCheckedFeed}'");
             var newItems = await _syndicationFeedReader.GetAsync(configuration.LastCheckedFeed);
             
             // If there is nothing new, save the last checked value and exit
@@ -59,7 +59,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             {
                 configuration.LastCheckedFeed = startedAt;
                 await _configurationRepository.SaveAsync(configuration);
-                log.LogDebug($"No new posts found in the syndication feed.");
+                _logger.LogDebug($"No new posts found in the syndication feed.");
                 return;
             }
             
@@ -80,12 +80,12 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                 }
                 catch (Exception e)
                 {
-                    log.LogError($"Was not able to save post with the id of '{item.Id}'. Exception: {e.Message}");
+                    _logger.LogError($"Was not able to save post with the id of '{item.Id}'. Exception: {e.Message}");
                 }
                 
                 if (!saveWasSuccessful)
                 {
-                    log.LogError($"Was not able to save post with the id of '{item.Id}'.");
+                    _logger.LogError($"Was not able to save post with the id of '{item.Id}'.");
                 }
                 else
                 {
@@ -99,7 +99,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
 
             if (!eventsPublished)
             {
-                log.LogError("Failed to publish the events.");
+                _logger.LogError("Failed to publish the events.");
             }
             
             // Save the last checked value
@@ -108,7 +108,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             
             // Return
             var doneMessage = $"Loaded {savedCount} of {newItems.Count} post(s).";
-            log.LogInformation(doneMessage);
+            _logger.LogDebug(doneMessage);
         }
     }
 }
