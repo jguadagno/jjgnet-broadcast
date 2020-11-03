@@ -15,10 +15,12 @@ using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NLog;
 using NLog.Extensions.Logging;
 
@@ -28,19 +30,20 @@ namespace JosephGuadagno.Broadcasting.Functions
 {
     public class Startup : FunctionsStartup
     {
-        public Startup()
-        {
-            LogManager.Setup()
-                .SetupExtensions(e => e.AutoLoadAssemblies(false))
-                .LoadConfigurationFromFile(Environment.CurrentDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
-                .LoadConfiguration(builder => builder.LogFactory.AutoShutdown = false);
-        }
         
         public override void Configure(IFunctionsHostBuilder builder)
         {
+            ExecutionContextOptions executionContextOptions = builder.Services.BuildServiceProvider().GetService<IOptions<ExecutionContextOptions>>().Value;
+            var applicationDirectory = executionContextOptions.AppDirectory;  
+            
+            LogManager.Setup()
+                .SetupExtensions(e => e.AutoLoadAssemblies(false))
+                .LoadConfigurationFromFile(applicationDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
+                .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
+            
             // Setup the Configuration Source
             var config = new ConfigurationBuilder()
-                .SetBasePath(Environment.CurrentDirectory)
+                .SetBasePath(applicationDirectory)
                 .AddJsonFile("local.settings.json", true)
                 .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
                 .AddEnvironmentVariables()
