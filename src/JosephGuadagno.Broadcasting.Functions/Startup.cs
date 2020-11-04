@@ -38,7 +38,7 @@ namespace JosephGuadagno.Broadcasting.Functions
         {
             var localRoot = Environment.GetEnvironmentVariable("AzureWebJobsScriptRoot");
             var azureRoot = $"{Environment.GetEnvironmentVariable("HOME")}/site/wwwroot";
-            var configPaths = LogManager.LogFactory.GetCandidateConfigFilePaths();
+            var configPaths = String.Join(",", LogManager.LogFactory.GetCandidateConfigFilePaths());
 
             _placeholder = $"localRoot: '{localRoot}', azureRoot: '{azureRoot}', configPaths: '{configPaths}'";
 
