@@ -40,7 +40,7 @@ namespace JosephGuadagno.Broadcasting.Functions
             var azureRoot = $"{Environment.GetEnvironmentVariable("HOME")}/site/wwwroot";
             var configPaths = LogManager.LogFactory.GetCandidateConfigFilePaths();
 
-            var _placeholder = $"localRoot: '{localRoot}', azureRoot: '{azureRoot}', configPaths: '{configPaths}'";
+            _placeholder = $"localRoot: '{localRoot}', azureRoot: '{azureRoot}', configPaths: '{configPaths}'";
 
             _applicationDirectory = localRoot ?? azureRoot;
             LogManager.Setup()
