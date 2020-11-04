@@ -32,11 +32,15 @@ namespace JosephGuadagno.Broadcasting.Functions
     {
 
         private string _applicationDirectory;
+        private string _placeholder;
         
         public Startup()
         {
             var localRoot = Environment.GetEnvironmentVariable("AzureWebJobsScriptRoot");
             var azureRoot = $"{Environment.GetEnvironmentVariable("HOME")}/site/wwwroot";
+            var configPaths = LogManager.LogFactory.GetCandidateConfigFilePaths();
+
+            var _placeholder = $"localRoot: '{localRoot}', azureRoot: '{azureRoot}', configPaths: '{configPaths}'";
 
             _applicationDirectory = localRoot ?? azureRoot;
             LogManager.Setup()
@@ -76,6 +80,9 @@ namespace JosephGuadagno.Broadcasting.Functions
             ConfigureSyndicationFeedReader(builder);
             ConfigureYouTubeReader(builder);
             ConfigureFunction(builder);
+
+            var logger = NLog.LogManager.GetCurrentClassLogger();
+            logger.Log(NLog.LogLevel.Info, _placeholder);
         }
 
         public void ConfigureTwitter(IFunctionsHostBuilder builder)
