@@ -21,8 +21,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.PlatformAbstractions;
 using NLog;
 using NLog.Extensions.Logging;
+using LogLevel = NLog.LogLevel;
 
 [assembly: FunctionsStartup(typeof(Startup))]
 
@@ -31,16 +33,17 @@ namespace JosephGuadagno.Broadcasting.Functions
     public class Startup : FunctionsStartup
     {
 
-        private string _applicationDirectory;
-        private string _placeholder;
+        private readonly string _applicationDirectory;
+        private string _startupLogMessage;
         
         public Startup()
         {
             var localRoot = Environment.GetEnvironmentVariable("AzureWebJobsScriptRoot");
             var azureRoot = $"{Environment.GetEnvironmentVariable("HOME")}/site/wwwroot";
             var configPaths = String.Join(",", LogManager.LogFactory.GetCandidateConfigFilePaths());
+            
 
-            _placeholder = $"localRoot: '{localRoot}', azureRoot: '{azureRoot}', configPaths: '{configPaths}'";
+            _startupLogMessage = $"localRoot: '{localRoot}', azureRoot: '{azureRoot}', configPaths: '{configPaths}'";
 
             _applicationDirectory = localRoot ?? azureRoot;
             LogManager.Setup()
@@ -81,8 +84,17 @@ namespace JosephGuadagno.Broadcasting.Functions
             ConfigureYouTubeReader(builder);
             ConfigureFunction(builder);
 
+            var executionContextOptions = builder.Services.BuildServiceProvider()
+                .GetService<IOptions<ExecutionContextOptions>>().Value;
+            var currentDirectory = executionContextOptions.AppDirectory;
+
+            
             var logger = NLog.LogManager.GetCurrentClassLogger();
-            logger.Log(NLog.LogLevel.Info, _placeholder);
+            logger.Log(NLog.LogLevel.Info, $"From Constructor: {_startupLogMessage}");
+            logger.Log(NLog.LogLevel.Info, $"From Constructor: Current Directory via ExecutionContextOptions: '{currentDirectory}'");
+            logger.Log(NLog.LogLevel.Info, $"Configure: '{PlatformServices.Default.Application.ApplicationBasePath}'");
+            logger.Log(NLog.LogLevel.Info, $"Configure: GetCurrentDirectory: '{System.IO.Directory.GetCurrentDirectory()}'");
+            logger.Log(NLog.LogLevel.Info, $"Configure: GetExecutingAssembly().Location: '{System.Reflection.Assembly.GetExecutingAssembly().Location}'");
         }
 
         public void ConfigureTwitter(IFunctionsHostBuilder builder)
