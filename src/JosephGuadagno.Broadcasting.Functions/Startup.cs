@@ -46,17 +46,23 @@ namespace JosephGuadagno.Broadcasting.Functions
             _startupLogMessage = $"localRoot: '{localRoot}', azureRoot: '{azureRoot}', configPaths: '{configPaths}'";
 
             _applicationDirectory = localRoot ?? azureRoot;
-            LogManager.Setup()
-                .SetupExtensions(e => e.AutoLoadAssemblies(false))
-                .LoadConfigurationFromFile(_applicationDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
-                .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
+            
         }
         
         public override void Configure(IFunctionsHostBuilder builder)
         {
+            var executionContextOptions = builder.Services.BuildServiceProvider()
+                .GetService<IOptions<ExecutionContextOptions>>().Value;
+            var currentDirectory = executionContextOptions.AppDirectory;
+            
+            LogManager.Setup()
+                .SetupExtensions(e => e.AutoLoadAssemblies(false))
+                .LoadConfigurationFromFile(currentDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
+                .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
+            
             // Setup the Configuration Source
             var config = new ConfigurationBuilder()
-                .SetBasePath(_applicationDirectory)
+                .SetBasePath(currentDirectory)
                 .AddJsonFile("local.settings.json", true)
                 .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
                 .AddEnvironmentVariables()
@@ -84,15 +90,10 @@ namespace JosephGuadagno.Broadcasting.Functions
             ConfigureYouTubeReader(builder);
             ConfigureFunction(builder);
 
-            var executionContextOptions = builder.Services.BuildServiceProvider()
-                .GetService<IOptions<ExecutionContextOptions>>().Value;
-            var currentDirectory = executionContextOptions.AppDirectory;
-
-            
             var logger = NLog.LogManager.GetCurrentClassLogger();
             logger.Log(NLog.LogLevel.Info, $"From Constructor: {_startupLogMessage}");
-            logger.Log(NLog.LogLevel.Info, $"From Constructor: Current Directory via ExecutionContextOptions: '{currentDirectory}'");
-            logger.Log(NLog.LogLevel.Info, $"Configure: '{PlatformServices.Default.Application.ApplicationBasePath}'");
+            logger.Log(NLog.LogLevel.Info, $"Configure: Current Directory via ExecutionContextOptions: '{currentDirectory}'");
+            logger.Log(NLog.LogLevel.Info, $"Configure: PlatformServices.Default.Application.ApplicationBasePath: '{PlatformServices.Default.Application.ApplicationBasePath}'");
             logger.Log(NLog.LogLevel.Info, $"Configure: GetCurrentDirectory: '{System.IO.Directory.GetCurrentDirectory()}'");
             logger.Log(NLog.LogLevel.Info, $"Configure: GetExecutingAssembly().Location: '{System.Reflection.Assembly.GetExecutingAssembly().Location}'");
         }
