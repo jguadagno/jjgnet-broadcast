@@ -43,7 +43,7 @@ namespace JosephGuadagno.Broadcasting.JsonFeedReader
 
             var jsonFeed = await JsonFeed.ParseFromUriAsync(new Uri(_jsonFeedReaderSettings.FeedUrl));
 
-            var items = jsonFeed.Items.Where(i => i.DatePublished >= sinceWhen).ToList();
+            var items = jsonFeed.Items.Where(i => i.DateModified >= sinceWhen).ToList();
 
             foreach (var jsonFeedItem in items)
             {
