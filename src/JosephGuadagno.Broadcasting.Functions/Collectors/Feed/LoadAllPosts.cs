@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.JsonFeedReader;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

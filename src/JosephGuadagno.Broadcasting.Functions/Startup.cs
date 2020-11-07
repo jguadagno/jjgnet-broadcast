@@ -35,11 +35,6 @@ namespace JosephGuadagno.Broadcasting.Functions
                 .GetService<IOptions<ExecutionContextOptions>>().Value;
             var currentDirectory = executionContextOptions.AppDirectory;
             
-            LogManager.Setup()
-                .SetupExtensions(e => e.AutoLoadAssemblies(false))
-                .LoadConfigurationFromFile(currentDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
-                .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
-            
             // Setup the Configuration Source
             var config = new ConfigurationBuilder()
                 .SetBasePath(currentDirectory)
@@ -48,6 +43,11 @@ namespace JosephGuadagno.Broadcasting.Functions
                 .AddEnvironmentVariables()
                 .Build();
             builder.Services.AddSingleton<IConfiguration>(config);
+
+            LogManager.Setup()
+                .SetupExtensions(e => e.AutoLoadAssemblies(false))
+                .LoadConfigurationFromFile(currentDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
+                .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
             
             // Bind the 'Settings' section to the ISettings class
             var settings = new Domain.Models.Settings();
