@@ -42,20 +42,26 @@ namespace JosephGuadagno.Broadcasting.JsonFeedReader
             var sourceItems = new List<SourceData>();
 
             var jsonFeed = await JsonFeed.ParseFromUriAsync(new Uri(_jsonFeedReaderSettings.FeedUrl));
+            
+            _logger.LogDebug($"Checking feed '{_jsonFeedReaderSettings.FeedUrl}' for new posts since '{sinceWhen:u}'");
 
             var items = jsonFeed.Items.Where(i => i.DateModified >= sinceWhen).ToList();
+            
+            _logger.LogDebug($"Found {items.Count} posts.");
+            
+            var currentTime = DateTime.UtcNow;
 
             foreach (var jsonFeedItem in items)
             {
                 sourceItems.Add(new SourceData(SourceSystems.SyndicationFeed)
                 {
                     Author = jsonFeedItem.Author?.Name,
-                    PublicationDate = jsonFeedItem.DatePublished ?? DateTimeOffset.UtcNow,
+                    PublicationDate = jsonFeedItem.DatePublished?.UtcDateTime ?? currentTime,
                     //Text = jsonFeedItem.ContentHtml,
                     Title =  jsonFeedItem.Title,
                     Url = jsonFeedItem.Id,
                     EndAfter = null,
-                    AddedOn = DateTimeOffset.UtcNow
+                    AddedOn = currentTime
                 });
             }
             return sourceItems;

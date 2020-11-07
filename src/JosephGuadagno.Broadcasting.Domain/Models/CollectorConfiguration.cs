@@ -16,6 +16,10 @@ namespace JosephGuadagno.Broadcasting.Domain.Models
             RowKey = collectorName;
         }
         
+        /// <summary>
+        /// The date and time the feed was last checked
+        /// </summary>
+        /// <remarks>The date and time should be in UTC</remarks>
         public DateTime LastCheckedFeed { get; set; }
     }
 }

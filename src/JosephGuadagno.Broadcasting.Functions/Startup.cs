@@ -108,7 +108,7 @@ namespace JosephGuadagno.Broadcasting.Functions
                 configuration.Bind("Settings:JsonFeedReader", settings);
                 return settings;
             });
-            builder.Services.TryAddSingleton<IJsonFeedReaderSettings, JsonFeedReaderSettings>();
+            builder.Services.TryAddSingleton<IJsonFeedReader, JsonFeedReader.JsonFeedReader>();
         }
         
         public void ConfigureSyndicationFeedReader(IFunctionsHostBuilder builder)

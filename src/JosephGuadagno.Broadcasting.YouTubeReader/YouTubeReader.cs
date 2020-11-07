@@ -60,6 +60,8 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
 
         public async Task<List<SourceData>> GetAsync(DateTime sinceWhen)
         {
+            var currentTime = DateTime.Now;
+            
             var videoItems = new List<SourceData>();
             
             var playlistItemsRequest = _youTubeService.PlaylistItems.List("snippet");
@@ -67,6 +69,7 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
             playlistItemsRequest.MaxResults = _youTubeSettings.ResultSetPageSize;
             
             var nextPageToken = "";
+            
             while (nextPageToken != null)
             {
                 playlistItemsRequest.PageToken = nextPageToken;
@@ -91,7 +94,7 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
                                 Title = playlistItem.Snippet.Title,
                                 Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",
                                 EndAfter = null,
-                                AddedOn = DateTimeOffset.UtcNow
+                                AddedOn = currentTime
                             });
                         }
                         else

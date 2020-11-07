@@ -35,6 +35,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
 
         public List<SourceData> Get(DateTime sinceWhen)
         {
+            var currentTime = DateTime.UtcNow;
             var feedItems = new List<SourceData>();
 
             using var reader = XmlReader.Create(_syndicationFeedReaderSettings.FeedUrl);
@@ -47,12 +48,12 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
                 feedItems.Add(new SourceData(SourceSystems.SyndicationFeed, syndicationItem.Id)
                 {
                     Author = syndicationItem.Authors.FirstOrDefault()?.Name,
-                    PublicationDate = syndicationItem.PublishDate,
+                    PublicationDate = syndicationItem.PublishDate.UtcDateTime, 
                     //Text = ((TextSyndicationContent) syndicationItem.Content).Text,
                     Title =  syndicationItem.Title.Text,
                     Url = syndicationItem.Id,
                     EndAfter = null,
-                    AddedOn = DateTimeOffset.UtcNow
+                    AddedOn = currentTime
                 });
             }
             return feedItems;
