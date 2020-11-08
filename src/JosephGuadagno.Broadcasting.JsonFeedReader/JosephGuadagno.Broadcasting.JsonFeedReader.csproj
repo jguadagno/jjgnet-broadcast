@@ -2,6 +2,24 @@
 
     <PropertyGroup>
         <TargetFramework>netcoreapp3.1</TargetFramework>
+        <Company>JosephGuadagno.NET, LLC</Company>
+        <Authors>Joseph Guadagno</Authors>
+        <Product>JosephGuadagno.NET Broadcasting - Json Feed Reader</Product>
+        <Description>This library reads Json Feeds for the JosephGuadagno.NET Broadcasting application</Description>
+        <Copyright>Copyright ©2014-2020, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Title>JosephGuadagno.NET Broadcasting - Json Feed Reader</Title>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <VersionMajor>1</VersionMajor>
+        <VersionMinor>1</VersionMinor>
+        <VersionBuild>0</VersionBuild>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <VersionPrefix Condition=" '$(GITHUB_RUN_ID)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionBuild)-local</VersionPrefix>
+        <VersionPrefix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(VersionMajor).$(VersionMinor).$(VersionBuild)-$(BUILD_BUILDNUMBER)-preview</VersionPrefix>
+        <VersionPrefix Condition=" '$(Configuration)' != 'Debug'">$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
     </PropertyGroup>
 
     <ItemGroup>
