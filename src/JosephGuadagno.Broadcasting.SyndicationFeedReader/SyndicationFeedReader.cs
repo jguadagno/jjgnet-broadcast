@@ -61,7 +61,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
 
         public async Task<List<SourceData>> GetAsync(DateTime sinceWhen)
         {
-            return Get(sinceWhen);
+            return await Task.Run(() => Get(sinceWhen));
         }
     }
 }
