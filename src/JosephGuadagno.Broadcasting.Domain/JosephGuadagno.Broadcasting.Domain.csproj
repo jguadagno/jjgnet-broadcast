@@ -18,7 +18,7 @@
 
     <PropertyGroup>
         <VersionPrefix Condition=" '$(GITHUB_RUN_ID)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionBuild)-local</VersionPrefix>
-        <VersionPrefix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(VersionMajor).$(VersionMinor).$(VersionBuild)-$(BUILD_BUILDNUMBER)-preview</VersionPrefix>
+        <VersionPrefix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(VersionMajor).$(VersionMinor).$(VersionBuild)-$(GITHUB_RUN_ID)-preview</VersionPrefix>
         <VersionPrefix Condition=" '$(Configuration)' != 'Debug'">$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
     </PropertyGroup>
     
