@@ -12,14 +12,27 @@
 
     <PropertyGroup>
         <VersionMajor>1</VersionMajor>
-        <VersionMinor>1</VersionMinor>
+        <VersionMinor>2</VersionMinor>
         <VersionBuild>0</VersionBuild>
     </PropertyGroup>
 
     <PropertyGroup>
-        <VersionPrefix Condition=" '$(GITHUB_RUN_ID)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionBuild)-local</VersionPrefix>
-        <VersionPrefix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(VersionMajor).$(VersionMinor).$(VersionBuild)-$(GITHUB_RUN_ID)-preview</VersionPrefix>
-        <VersionPrefix Condition=" '$(Configuration)' != 'Debug'">$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
+        <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' == '' ">local</VersionSuffix>
+        <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(GITHUB_RUN_ID)-preview</VersionSuffix>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
+        <AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</AssemblyVersion>
+    </PropertyGroup>
+    <PropertyGroup>
+        <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
+        <FileVersion>$(VersionPrefix)</FileVersion>
+        <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
     </PropertyGroup>
     
     <ItemGroup>
