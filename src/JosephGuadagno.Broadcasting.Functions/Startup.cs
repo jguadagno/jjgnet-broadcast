@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
@@ -48,7 +49,8 @@ namespace JosephGuadagno.Broadcasting.Functions
                 .SetupExtensions(e => e.AutoLoadAssemblies(false))
                 .LoadConfigurationFromFile(currentDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
                 .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
-            
+            SetLoggingGlobalDiagnoticsContext();
+
             // Bind the 'Settings' section to the ISettings class
             var settings = new Domain.Models.Settings();
             config.Bind("Settings", settings);
@@ -69,6 +71,18 @@ namespace JosephGuadagno.Broadcasting.Functions
             ConfigureSyndicationFeedReader(builder);
             ConfigureYouTubeReader(builder);
             ConfigureFunction(builder);
+        }
+
+        public void SetLoggingGlobalDiagnoticsContext()
+        {
+            
+            var executingAssembly = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
+            var fileVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion;
+            var productVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
+
+            GlobalDiagnosticsContext.Set("ExecutingAssembly-AssemblyVersion", executingAssembly);
+            GlobalDiagnosticsContext.Set("ExecutingAssembly-FileVersion", fileVersion);
+            GlobalDiagnosticsContext.Set("ExecutingAssembly-ProductVersion", productVersion);
         }
 
         public void ConfigureTwitter(IFunctionsHostBuilder builder)
