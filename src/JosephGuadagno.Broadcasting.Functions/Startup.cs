@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -14,6 +15,8 @@ using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Extensions.Configuration;
@@ -49,7 +52,7 @@ namespace JosephGuadagno.Broadcasting.Functions
                 .SetupExtensions(e => e.AutoLoadAssemblies(false))
                 .LoadConfigurationFromFile(currentDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
                 .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
-            SetLoggingGlobalDiagnoticsContext();
+            SetLoggingGlobalDiagnosticsContext();
 
             // Bind the 'Settings' section to the ISettings class
             var settings = new Domain.Models.Settings();
@@ -73,7 +76,7 @@ namespace JosephGuadagno.Broadcasting.Functions
             ConfigureFunction(builder);
         }
 
-        public void SetLoggingGlobalDiagnoticsContext()
+        public void SetLoggingGlobalDiagnosticsContext()
         {
             
             var executingAssembly = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
