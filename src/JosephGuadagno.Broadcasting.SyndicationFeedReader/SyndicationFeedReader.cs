@@ -45,7 +45,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
 
             foreach (var syndicationItem in items)
             {
-                feedItems.Add(new SourceData(SourceSystems.SyndicationFeed, syndicationItem.Id)
+                feedItems.Add(new SourceData(SourceSystems.SyndicationFeed)
                 {
                     Author = syndicationItem.Authors.FirstOrDefault()?.Name,
                     PublicationDate = syndicationItem.PublishDate.UtcDateTime, 
