@@ -46,6 +46,13 @@ namespace JosephGuadagno.Broadcasting.Domain.Models
         /// </remarks>
         public DateTime PublicationDate { get; set; }
         /// <summary>
+        /// When the item was updated at the source
+        /// </summary>
+        /// <remarks>
+        /// The date time is in UTC. If the last modified date is not available from the source, the value will be the same as the <see cref="PublicationDate"/> property.
+        /// </remarks>
+        public DateTime? UpdatedOnDate { get; set; }
+        /// <summary>
         /// Indicates when we should stop sending out social posts on this item
         /// </summary>
         /// <remarks>The date time is in UTC</remarks>

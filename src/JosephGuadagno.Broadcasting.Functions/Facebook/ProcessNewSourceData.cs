@@ -77,10 +77,10 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
             switch (item.SourceSystem)
             {
                 case nameof(SourceSystems.SyndicationFeed):
-                    statusText = "New Blog Post: ";
+                    statusText = item.UpdatedOnDate > item.PublicationDate ? "Updated Blog Post: " : "New Blog Post: ";
                     break;
                 case nameof(SourceSystems.YouTube):
-                    statusText = "New Video: ";
+                    statusText = item.UpdatedOnDate > item.PublicationDate ? "Updated Video: " : "New Video: ";
                     break;
             }
             

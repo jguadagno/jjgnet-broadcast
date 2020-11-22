@@ -90,6 +90,7 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
                             {
                                 Author = playlistItem.Snippet.ChannelTitle,
                                 PublicationDate = publishedAt,
+                                UpdatedOnDate = publishedAt,
                                 //Text = searchResult.Snippet.Description,
                                 Title = playlistItem.Snippet.Title,
                                 Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",

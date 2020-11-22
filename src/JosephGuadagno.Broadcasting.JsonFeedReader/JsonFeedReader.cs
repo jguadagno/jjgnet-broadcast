@@ -57,6 +57,7 @@ namespace JosephGuadagno.Broadcasting.JsonFeedReader
                 {
                     Author = jsonFeedItem.Author?.Name,
                     PublicationDate = jsonFeedItem.DatePublished?.UtcDateTime ?? currentTime,
+                    UpdatedOnDate = jsonFeedItem.DateModified?.UtcDateTime ?? currentTime,
                     //Text = jsonFeedItem.ContentHtml,
                     Title =  jsonFeedItem.Title,
                     Url = jsonFeedItem.Id,

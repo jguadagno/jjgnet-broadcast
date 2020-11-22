@@ -49,6 +49,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
                 {
                     Author = syndicationItem.Authors.FirstOrDefault()?.Name,
                     PublicationDate = syndicationItem.PublishDate.UtcDateTime, 
+                    UpdatedOnDate = syndicationItem.LastUpdatedTime.UtcDateTime,
                     //Text = ((TextSyndicationContent) syndicationItem.Content).Text,
                     Title =  syndicationItem.Title.Text,
                     Url = syndicationItem.Id,

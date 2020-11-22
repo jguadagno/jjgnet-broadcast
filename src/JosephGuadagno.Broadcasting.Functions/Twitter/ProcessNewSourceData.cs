@@ -75,10 +75,10 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
             switch (item.SourceSystem)
             {
                 case nameof(SourceSystems.SyndicationFeed):
-                    tweetStart = "New Blog Post: ";
+                    tweetStart = item.UpdatedOnDate > item.PublicationDate ? "Updated Blog Post: " : "New Blog Post: ";
                     break;
                 case nameof(SourceSystems.YouTube):
-                    tweetStart = "New Video: ";
+                    tweetStart = item.UpdatedOnDate > item.PublicationDate ? "Updated Video: " : "New Video: ";
                     break;
             }
             
