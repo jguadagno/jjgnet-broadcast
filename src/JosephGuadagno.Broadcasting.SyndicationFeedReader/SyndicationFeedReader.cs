@@ -41,7 +41,8 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
             using var reader = XmlReader.Create(_syndicationFeedReaderSettings.FeedUrl);
             var feed = SyndicationFeed.Load(reader);
 
-            var items = feed.Items.Where(i => (i.PublishDate >= sinceWhen) || (i.LastUpdatedTime >= sinceWhen)).ToList();
+            var items = feed.Items.Where(i => (i.PublishDate >= sinceWhen) || (i.LastUpdatedTime >= sinceWhen))
+                .ToList();
 
             foreach (var syndicationItem in items)
             {

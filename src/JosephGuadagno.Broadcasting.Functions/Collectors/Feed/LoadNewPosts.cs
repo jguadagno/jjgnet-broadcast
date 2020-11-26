@@ -97,8 +97,9 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             }
             
             // Publish the events
-            
-            var eventsPublished = await _eventPublisher.PublishEventsAsync(_settings.TopicNewSourceDataEndpoint, _settings.TopicNewSourceDataKey,
+
+            var eventsPublished = await _eventPublisher.PublishEventsAsync(_settings.TopicNewSourceDataEndpoint,
+                _settings.TopicNewSourceDataKey,
                 Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
             if (!eventsPublished)
             {
@@ -109,7 +110,9 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             configuration.LastCheckedFeed = startedAt;
             var latestAdded = newItems.Max(item => item.PublicationDate);
             var latestUpdated = newItems.Max(item => item.UpdatedOnDate);
-            configuration.LastItemAddedOrUpdated = latestUpdated > latestAdded ? latestUpdated.Value : latestAdded;
+            configuration.LastItemAddedOrUpdated = latestUpdated > latestAdded
+                ? latestUpdated.Value.ToUniversalTime()
+                : latestAdded.ToUniversalTime();
 
             await _configurationRepository.SaveAsync(configuration);
             
