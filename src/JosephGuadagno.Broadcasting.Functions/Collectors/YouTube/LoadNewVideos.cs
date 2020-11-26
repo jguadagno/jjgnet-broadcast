@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
@@ -49,11 +51,11 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                                     Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos) ??
                                 new CollectorConfiguration(Constants.ConfigurationFunctionNames
                                         .CollectorsYouTubeLoadNewVideos)
-                                    {LastCheckedFeed = startedAt};
+                                    {LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTime.MinValue};
             
             // Check for new items
-            _logger.LogDebug($"Checking playlist for videos since '{configuration.LastCheckedFeed}'");
-            var newItems = await _youTubeReader.GetAsync(configuration.LastCheckedFeed);
+            _logger.LogDebug($"Checking playlist for videos since '{configuration.LastItemAddedOrUpdated}'");
+            var newItems = await _youTubeReader.GetAsync(configuration.LastItemAddedOrUpdated);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)
@@ -68,48 +70,52 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             // TODO: Handle duplicate videos?
             // GitHub Issue #6
             var savedCount = 0;
+            var eventsToPublish = new List<SourceData>();
             foreach (var item in newItems)
             {
                 // shorten the url
                 item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, _settings.BitlyShortenedDomain);
                 
                 // attempt to save the item
-                var saveWasSuccessful = false;
                 try
                 {
-                    saveWasSuccessful = await _sourceDataRepository.SaveAsync(item);
+                    var wasSaved = await _sourceDataRepository.SaveAsync(item);
+                    if (wasSaved)
+                    {
+                        eventsToPublish.Add(item);
+                        savedCount++;
+                    }
+                    else
+                    {
+                        _logger.LogError($"Failed to save the video of Id: '{item.Id}' Url:'{item.Url}'");
+                    }
+                    
                 }
                 catch (Exception e)
                 {
                     _logger.LogError($"Was not able to save video with the id of '{item.Id}'. Exception: {e.Message}");
                 }
-                
-                if (!saveWasSuccessful)
-                {
-                    _logger.LogError($"Was not able to save video with the id of '{item.Id}'.");
-                }
-                else
-                {
-                    savedCount++;
-                }
             }
             
-            // Send the events 
-            var eventsPublished = await _eventPublisher.PublishEventsAsync(_settings.TopicNewSourceDataEndpoint,
-                _settings.TopicNewSourceDataKey, Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos,
-                newItems);
+            // Publish the events
             
+            var eventsPublished = await _eventPublisher.PublishEventsAsync(_settings.TopicNewSourceDataEndpoint, _settings.TopicNewSourceDataKey,
+                Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
             if (!eventsPublished)
             {
-                _logger.LogError("Failed to publish the events.");
+                _logger.LogError($"Failed to publish the events.");
             }
             
             // Save the last checked value
             configuration.LastCheckedFeed = startedAt;
+            var latestAdded = newItems.Max(item => item.PublicationDate);
+            var latestUpdated = newItems.Max(item => item.UpdatedOnDate);
+            configuration.LastItemAddedOrUpdated = latestUpdated > latestAdded ? latestUpdated.Value : latestAdded;
+
             await _configurationRepository.SaveAsync(configuration);
             
             // Return
-            var doneMessage = $"Loaded {savedCount} of {newItems.Count} post(s).";
+            var doneMessage = $"Loaded {savedCount} of {newItems.Count} video(s).";
             _logger.LogDebug(doneMessage);
         }
     }

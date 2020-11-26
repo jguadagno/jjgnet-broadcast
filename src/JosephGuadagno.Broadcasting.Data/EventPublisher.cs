@@ -6,11 +6,20 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.Azure.EventGrid;
 using Microsoft.Azure.EventGrid.Models;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Data
 {
     public class EventPublisher: IEventPublisher
     {
+
+        private readonly ILogger _logger;
+        
+        public EventPublisher(ILogger<EventPublisher> logger)
+        {
+            _logger = logger;
+        }
+        
         public bool PublishEvents(string topicUrl, string topicKey, string subject, IReadOnlyCollection<SourceData> sourceDataItems)
         {
             return PublishEventsAsync(topicUrl, topicKey, subject, sourceDataItems).Result;
@@ -63,9 +72,17 @@ namespace JosephGuadagno.Broadcasting.Data
                     });
             }
 
-            await client.PublishEventsAsync(topicHostName, eventList);
+            try
+            {
+                await client.PublishEventsAsync(topicHostName, eventList);
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Failed to publish the event to TopicUrl: '{topicUrl}'. Exception: '{e}'", e);   
+                return false;
+            }
 
-            return true;
         }
     }
 }

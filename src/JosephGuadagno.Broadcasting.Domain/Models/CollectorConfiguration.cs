@@ -21,5 +21,11 @@ namespace JosephGuadagno.Broadcasting.Domain.Models
         /// </summary>
         /// <remarks>The date and time should be in UTC</remarks>
         public DateTime LastCheckedFeed { get; set; }
+        
+        /// <summary>
+        /// The date and time the last item was added or updated from the feed
+        /// </summary>
+        /// <remarks>The date and time should be in UTC</remarks>
+        public DateTime LastItemAddedOrUpdated { get; set; }
     }
 }

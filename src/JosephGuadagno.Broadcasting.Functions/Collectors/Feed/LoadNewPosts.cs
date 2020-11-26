@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
@@ -48,18 +50,18 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                                 ) ??
                                 new CollectorConfiguration(Constants.ConfigurationFunctionNames
                                         .CollectorsFeedLoadNewPosts)
-                                    {LastCheckedFeed = startedAt};
+                                    {LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTime.MinValue};
             
             // Check for new items
-            _logger.LogDebug($"Checking the syndication feed for posts since '{configuration.LastCheckedFeed}'");
-            var newItems = await _syndicationFeedReader.GetAsync(configuration.LastCheckedFeed);
+            _logger.LogDebug($"Checking the syndication feed for posts since '{configuration.LastItemAddedOrUpdated}'");
+            var newItems = await _syndicationFeedReader.GetAsync(configuration.LastItemAddedOrUpdated);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)
             {
                 configuration.LastCheckedFeed = startedAt;
                 await _configurationRepository.SaveAsync(configuration);
-                _logger.LogDebug($"No new posts found in the syndication feed.");
+                _logger.LogDebug($"No new or updated posts found in the syndication feed.");
                 return;
             }
             
@@ -67,43 +69,48 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             // TODO: Handle duplicate posts?
             // GitHub Issue #5
             var savedCount = 0;
+            var eventsToPublish = new List<SourceData>();
             foreach (var item in newItems)
             {
                 // shorten the url
                 item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, _settings.BitlyShortenedDomain);
                 
                 // attempt to save the item
-                var saveWasSuccessful = false;
                 try
                 {
-                    saveWasSuccessful = await _sourceDataRepository.SaveAsync(item);
+                    var wasSaved = await _sourceDataRepository.SaveAsync(item);
+                    if (wasSaved)
+                    {
+                        eventsToPublish.Add(item);
+                        savedCount++;
+                    }
+                    else
+                    {
+                        _logger.LogError($"Failed to save the blog post of Id: '{item.Id}' Url:'{item.Url}'");
+                    }
+                    
                 }
                 catch (Exception e)
                 {
                     _logger.LogError($"Was not able to save post with the id of '{item.Id}'. Exception: {e.Message}");
                 }
-                
-                if (!saveWasSuccessful)
-                {
-                    _logger.LogError($"Was not able to save post with the id of '{item.Id}'.");
-                }
-                else
-                {
-                    savedCount++;
-                }
             }
             
-            // Send the events 
+            // Publish the events
+            
             var eventsPublished = await _eventPublisher.PublishEventsAsync(_settings.TopicNewSourceDataEndpoint, _settings.TopicNewSourceDataKey,
-                Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, newItems);
-
+                Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
             if (!eventsPublished)
             {
-                _logger.LogError("Failed to publish the events.");
+                _logger.LogError($"Failed to publish the events.");
             }
             
             // Save the last checked value
             configuration.LastCheckedFeed = startedAt;
+            var latestAdded = newItems.Max(item => item.PublicationDate);
+            var latestUpdated = newItems.Max(item => item.UpdatedOnDate);
+            configuration.LastItemAddedOrUpdated = latestUpdated > latestAdded ? latestUpdated.Value : latestAdded;
+
             await _configurationRepository.SaveAsync(configuration);
             
             // Return
