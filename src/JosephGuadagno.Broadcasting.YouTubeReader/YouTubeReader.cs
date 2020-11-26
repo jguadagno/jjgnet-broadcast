@@ -83,7 +83,7 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
                             continue;
                         }
                        
-                        if (publishedAt >= sinceWhen)
+                        if (publishedAt > sinceWhen)
                         {
                             videoItems.Add(new SourceData(SourceSystems.YouTube,
                                 playlistItem.Snippet.ResourceId.VideoId)

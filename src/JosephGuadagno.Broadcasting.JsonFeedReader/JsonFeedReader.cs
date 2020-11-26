@@ -45,7 +45,7 @@ namespace JosephGuadagno.Broadcasting.JsonFeedReader
             
             _logger.LogDebug($"Checking feed '{_jsonFeedReaderSettings.FeedUrl}' for new posts since '{sinceWhen:u}'");
 
-            var items = jsonFeed.Items.Where(i => i.DateModified >= sinceWhen).ToList();
+            var items = jsonFeed.Items.Where(i => i.DateModified > sinceWhen || i.DatePublished > sinceWhen).ToList();
             
             _logger.LogDebug($"Found {items.Count} posts.");
             
