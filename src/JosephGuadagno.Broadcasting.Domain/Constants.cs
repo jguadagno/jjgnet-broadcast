@@ -26,5 +26,11 @@ namespace JosephGuadagno.Broadcasting.Domain
         {
             public const string NewSourceData = "new-source-data";
         }
+
+        public static class Metrics
+        {
+            public const string PostAddedOrUpdated = "PostAddedOrUpdated";
+            public const string VideoAddedOrUpdated = "VideoAddedOrUpdated";
+        }
     }
 }

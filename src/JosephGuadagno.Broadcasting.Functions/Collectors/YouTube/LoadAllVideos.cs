@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
@@ -48,13 +49,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                 dateToCheckFrom = requestModel.CheckFrom;
             }
 
-            _logger.LogDebug($"Getting all items from YouTube for the playlist'.");
+            _logger.LogInformation($"Getting all items from YouTube for the playlist'.");
             var newItems = await _youTubeReader.GetAsync(dateToCheckFrom);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)
             {
-                _logger.LogDebug($"No videos found in the playlist.");
+                _logger.LogInformation($"No videos found in the playlist.");
                 return new OkObjectResult("0 videos were found");
             }
             
@@ -68,29 +69,33 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                 item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, _settings.BitlyShortenedDomain);
                 
                 // attempt to save the item
-                var saveWasSuccessful = false;
                 try
                 {
-                    saveWasSuccessful = await _sourceDataRepository.SaveAsync(item);
+                    var saveWasSuccessful = await _sourceDataRepository.SaveAsync(item);
+                    if (saveWasSuccessful)
+                    {
+                        _logger.LogMetric(Constants.Metrics.VideoAddedOrUpdated, 1, new Dictionary<string, object>
+                        {
+                            {"Id", item.Id},
+                            {"Url", item.Url}
+                        });
+                        savedCount++;
+                    }
+                    else
+                    {
+                        _logger.LogError($"Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'", item);
+                    }
+                    
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError($"Was not able to save video with the id of '{item.Id}'. Exception: {e.Message}");
-                }
-                
-                if (!saveWasSuccessful)
-                {
-                    _logger.LogError($"Was not able to save video with the id of '{item.Id}'.");
-                }
-                else
-                {
-                    savedCount++;
+                    _logger.LogError($"Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}", item, e);
                 }
             }
             
             // Return
             var doneMessage = $"Loaded {savedCount} of {newItems.Count} videos(s).";
-            _logger.LogDebug(doneMessage);
+            _logger.LogInformation(doneMessage);
             return new OkObjectResult(doneMessage);
         }
     }

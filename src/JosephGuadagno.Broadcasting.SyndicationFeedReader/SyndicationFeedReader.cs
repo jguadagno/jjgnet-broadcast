@@ -25,8 +25,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
             
             if (string.IsNullOrEmpty(syndicationFeedReaderSettings.FeedUrl))
             {
-                throw new ArgumentNullException(nameof(syndicationFeedReaderSettings.FeedUrl), "The FeedUrl of the SyndicationFeedReaderSettings" +
-                    " is required");
+                throw new ArgumentNullException(nameof(syndicationFeedReaderSettings.FeedUrl), "The FeedUrl of the SyndicationFeedReaderSettings is required");
             }
 
             _syndicationFeedReaderSettings = syndicationFeedReaderSettings;

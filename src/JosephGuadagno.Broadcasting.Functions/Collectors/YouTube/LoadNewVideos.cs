@@ -83,17 +83,23 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                     if (wasSaved)
                     {
                         eventsToPublish.Add(item);
+                        _logger.LogMetric(Constants.Metrics.VideoAddedOrUpdated, 1, new Dictionary<string, object>
+                        {
+                            {"Id", item.Id},
+                            {"Url", item.Url}
+                        });
                         savedCount++;
                     }
+                    
                     else
                     {
-                        _logger.LogError($"Failed to save the video of Id: '{item.Id}' Url:'{item.Url}'");
+                        _logger.LogError($"Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'", item);
                     }
                     
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError($"Was not able to save video with the id of '{item.Id}'. Exception: {e.Message}");
+                    _logger.LogError($"Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}", item, e);
                 }
             }
             
@@ -104,7 +110,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                 Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
             if (!eventsPublished)
             {
-                _logger.LogError($"Failed to publish the events.");
+                _logger.LogError($"Failed to publish the events for the new or updated videos.");
             }
             
             // Save the last checked value

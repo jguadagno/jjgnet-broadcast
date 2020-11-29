@@ -82,17 +82,22 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                     if (wasSaved)
                     {
                         eventsToPublish.Add(item);
+                        _logger.LogMetric(Constants.Metrics.PostAddedOrUpdated, 1, new Dictionary<string, object>
+                        {
+                            {"Id", item.Id},
+                            {"Url", item.Url}
+                        });
                         savedCount++;
                     }
                     else
                     {
-                        _logger.LogError($"Failed to save the blog post of Id: '{item.Id}' Url:'{item.Url}'");
+                        _logger.LogError($"Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'", item);
                     }
                     
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError($"Was not able to save post with the id of '{item.Id}'. Exception: {e.Message}");
+                    _logger.LogError($"Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}", item, e);
                 }
             }
             
@@ -103,7 +108,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                 Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
             if (!eventsPublished)
             {
-                _logger.LogError($"Failed to publish the events.");
+                _logger.LogError($"Failed to publish the events for the new or updated blog posts.");
             }
             
             // Save the last checked value
