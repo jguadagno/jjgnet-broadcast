@@ -7,6 +7,7 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
@@ -21,13 +22,16 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
         private readonly IUrlShortener _urlShortener;
         private readonly IEventPublisher _eventPublisher;
         private readonly ILogger<CheckFeedForUpdates> _logger;
+        private readonly TelemetryClient _telemetryClient;
 
         public CheckFeedForUpdates(ISyndicationFeedReader syndicationFeedReader,
             ISettings settings,
             ConfigurationRepository configurationRepository,
             SourceDataRepository sourceDataRepository,
             IUrlShortener urlShortener,
-            IEventPublisher eventPublisher, ILogger<CheckFeedForUpdates> logger)
+            IEventPublisher eventPublisher,
+            ILogger<CheckFeedForUpdates> logger,
+            TelemetryClient telemetryClient)
         {
             _syndicationFeedReader = syndicationFeedReader;
             _settings = settings;
@@ -36,6 +40,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             _urlShortener = urlShortener;
             _eventPublisher = eventPublisher;
             _logger = logger;
+            _telemetryClient = telemetryClient;
         }
         
         [FunctionName("collectors_feed_check_for_updates")]
@@ -82,11 +87,12 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                     if (wasSaved)
                     {
                         eventsToPublish.Add(item);
-                        _logger.LogMetric(Constants.Metrics.PostAddedOrUpdated, 1, new Dictionary<string, object>
-                        {
-                            {"Id", item.Id},
-                            {"Url", item.Url}
-                        });
+                        _telemetryClient.TrackEvent(Constants.Metrics.PostAddedOrUpdated,
+                            new Dictionary<string, string>
+                            {
+                                {"Id", item.Id},
+                                {"Url", item.Url}
+                            });
                         savedCount++;
                     }
                     else

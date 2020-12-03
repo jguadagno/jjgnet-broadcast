@@ -7,6 +7,8 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +23,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
         private readonly IUrlShortener _urlShortener;
         private readonly IEventPublisher _eventPublisher;
         private readonly ILogger<LoadNewVideos> _logger;
+        private readonly TelemetryClient _telemetryClient;
 
         public LoadNewVideos(IYouTubeReader youTubeReader,
             ISettings settings, 
@@ -28,7 +31,8 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             SourceDataRepository sourceDataRepository,
             IUrlShortener urlShortener,
             IEventPublisher eventPublisher,
-            ILogger<LoadNewVideos> logger)
+            ILogger<LoadNewVideos> logger,
+            TelemetryClient telemetryClient)
         {
             _youTubeReader = youTubeReader;
             _settings = settings;
@@ -37,6 +41,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             _urlShortener = urlShortener;
             _eventPublisher = eventPublisher;
             _logger = logger;
+            _telemetryClient = telemetryClient;
         }
         
         [FunctionName("collectors_youtube_load_new_videos")]
@@ -83,11 +88,12 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                     if (wasSaved)
                     {
                         eventsToPublish.Add(item);
-                        _logger.LogMetric(Constants.Metrics.VideoAddedOrUpdated, 1, new Dictionary<string, object>
-                        {
-                            {"Id", item.Id},
-                            {"Url", item.Url}
-                        });
+                        _telemetryClient.TrackEvent(Constants.Metrics.VideoAddedOrUpdated,
+                            new Dictionary<string, string>
+                            {
+                                {"Id", item.Id},
+                                {"Url", item.Url}
+                            });
                         savedCount++;
                     }
                     

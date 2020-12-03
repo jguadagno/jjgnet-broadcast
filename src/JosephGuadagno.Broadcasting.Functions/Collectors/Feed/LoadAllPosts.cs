@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
+using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -20,17 +21,21 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
         private readonly SourceDataRepository _sourceDataRepository;
         private readonly IUrlShortener _urlShortener;
         private readonly ILogger<LoadAllPosts> _logger;
+        private readonly TelemetryClient _telemetryClient;
 
-        public LoadAllPosts(IJsonFeedReader jsonFeedReader, ISettings settings, 
+        public LoadAllPosts(IJsonFeedReader jsonFeedReader,
+            ISettings settings, 
             SourceDataRepository sourceDataRepository,
             IUrlShortener urlShortener,
-            ILogger<LoadAllPosts> logger)
+            ILogger<LoadAllPosts> logger,
+            TelemetryClient telemetryClient)
         {
             _settings = settings;
             _sourceDataRepository = sourceDataRepository;
             _urlShortener = urlShortener;
             _jsonFeedReader = jsonFeedReader;
             _logger = logger;
+            _telemetryClient = telemetryClient;
         }
 
         [FunctionName("collectors_feed_load_all_posts")]
@@ -74,11 +79,12 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                     var saveWasSuccessful = await _sourceDataRepository.SaveAsync(item);
                     if (saveWasSuccessful)
                     {
-                        _logger.LogMetric(Domain.Constants.Metrics.PostAddedOrUpdated, 1, new Dictionary<string, object>
-                        {
-                            {"Id", item.Id},
-                            {"Url", item.Url}
-                        });
+                        _telemetryClient.TrackEvent(Constants.Metrics.PostAddedOrUpdated,
+                            new Dictionary<string, string>
+                            {
+                                {"Id", item.Id},
+                                {"Url", item.Url}
+                            });
                         savedCount++;
                     }
                     else
