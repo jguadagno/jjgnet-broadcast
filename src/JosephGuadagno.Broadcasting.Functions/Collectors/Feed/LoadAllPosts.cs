@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
@@ -45,7 +44,9 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             HttpRequest req)
         {
             var startedAt = DateTime.UtcNow;
-            _logger.LogDebug($"{Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts} Collector started at: {startedAt}");
+            _logger.LogDebug(
+                "{Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts} Collector started at: {startedAt}",
+                Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts, startedAt);
 
             // Check for the from date
             var dateToCheckFrom = DateTime.MinValue;
@@ -54,13 +55,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                 dateToCheckFrom = requestModel.CheckFrom;
             }
 
-            _logger.LogInformation($"Getting all items from feed from '{dateToCheckFrom}'.");
+            _logger.LogInformation("Getting all items from feed from '{dateToCheckFrom}'.", dateToCheckFrom);
             var newItems = await _jsonFeedReader.GetAsync(dateToCheckFrom);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)
             {
-                _logger.LogInformation($"No posts found in the Json Feed.");
+                _logger.LogInformation("No posts found in the Json Feed.");
                 return new OkObjectResult("0 posts were found");
             }
             
@@ -79,22 +80,20 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                     var saveWasSuccessful = await _sourceDataRepository.SaveAsync(item);
                     if (saveWasSuccessful)
                     {
-                        _telemetryClient.TrackEvent(Constants.Metrics.PostAddedOrUpdated,
-                            new Dictionary<string, string>
-                            {
-                                {"Id", item.Id},
-                                {"Url", item.Url}
-                            });
+                        _telemetryClient.TrackEvent(Constants.Metrics.PostAddedOrUpdated, item.ToDictionary());
                         savedCount++;
                     }
                     else
                     {
-                        _logger.LogError($"Failed to save the posts with the id of: '{item.Id}', Url:'{item.Url}'", item);
+                        _logger.LogError("Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'", item);
                     }
+                    
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError($"Failed to save post with the id of: '{item.Id}', Url:'{item.Url}'. Exception: {e.Message}", item, e);
+                    _logger.LogError(e,
+                        "Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}",
+                        item, e);
                 }
             }
             

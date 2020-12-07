@@ -37,21 +37,21 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
             var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridEvent.Data.ToString());
             if (tableEvent == null)
             {
-                _logger.LogError($"Failed to parse the TableEvent data for event '{eventGridEvent.Id}'");
+                _logger.LogError("Failed to parse the TableEvent data for event '{eventGridEvent.Id}'", eventGridEvent);
                 return;
             }
 
             // Create the scheduled tweets for it
-            _logger.LogDebug($"Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'");
+            _logger.LogDebug("Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'", tableEvent);
             var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
 
             if (sourceData == null)
             {
-                _logger.LogWarning($"Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found");
+                _logger.LogWarning("Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found", tableEvent);
                 return;
             }
             
-            _logger.LogDebug($"Composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
+            _logger.LogDebug("Composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.", tableEvent);
             
             var status = ComposeStatus(sourceData);
             if (status != null)
@@ -60,7 +60,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
             }
             
             // Done
-            _logger.LogDebug($"Done composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
+            _logger.LogDebug("Done composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.", tableEvent);
         }
         
         private FacebookPostStatus ComposeStatus(SourceData item)
@@ -99,7 +99,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
                 LinkUri = url                
             };
             
-            _logger.LogDebug($"Composed Facebook Status: StatusText='{facebookPostStatus.StatusText}', LinkUrl='{facebookPostStatus.LinkUri}'", facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
+            _logger.LogDebug("Composed Facebook Status: StatusText='{facebookPostStatus.StatusText}', LinkUrl='{facebookPostStatus.LinkUri}'", facebookPostStatus);
             return facebookPostStatus;
         }
     }

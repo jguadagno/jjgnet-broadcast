@@ -8,7 +8,6 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 
@@ -49,7 +48,9 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer)
         {
             var startedAt = DateTime.UtcNow;
-            _logger.LogDebug($"{Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos} Collector started at: {startedAt}");
+            _logger.LogDebug(
+                "{Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos} Collector started at: {startedAt}",
+                Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos, startedAt);
 
             var configuration = await _configurationRepository.GetAsync(
                                     Constants.Tables.Configuration,
@@ -59,7 +60,8 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                                     {LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTime.MinValue};
             
             // Check for new items
-            _logger.LogDebug($"Checking playlist for videos since '{configuration.LastItemAddedOrUpdated}'");
+            _logger.LogDebug($"Checking playlist for videos since '{configuration.LastItemAddedOrUpdated}'",
+                configuration.LastItemAddedOrUpdated);
             var newItems = await _youTubeReader.GetAsync(configuration.LastItemAddedOrUpdated);
             
             // If there is nothing new, save the last checked value and exit
@@ -67,7 +69,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             {
                 configuration.LastCheckedFeed = startedAt;
                 await _configurationRepository.SaveAsync(configuration);
-                _logger.LogDebug($"No new videos found in the playlist.");
+                _logger.LogDebug("No new videos found in the playlist.");
                 return;
             }
             
@@ -80,7 +82,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             {
                 // shorten the url
                 item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, _settings.BitlyShortenedDomain);
-                
+
                 // attempt to save the item
                 try
                 {
@@ -88,27 +90,23 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                     if (wasSaved)
                     {
                         eventsToPublish.Add(item);
-                        _telemetryClient.TrackEvent(Constants.Metrics.VideoAddedOrUpdated,
-                            new Dictionary<string, string>
-                            {
-                                {"Id", item.Id},
-                                {"Url", item.Url}
-                            });
+                        _telemetryClient.TrackEvent(Constants.Metrics.VideoAddedOrUpdated, item.ToDictionary());
                         savedCount++;
                     }
-                    
                     else
                     {
-                        _logger.LogError($"Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'", item);
+                        _logger.LogError("Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'", item);
                     }
-                    
+
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError($"Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}", item, e);
+                    _logger.LogError(e,
+                        "Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}",
+                        item, e);
                 }
             }
-            
+
             // Publish the events
 
             var eventsPublished = await _eventPublisher.PublishEventsAsync(_settings.TopicNewSourceDataEndpoint,
@@ -116,7 +114,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                 Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
             if (!eventsPublished)
             {
-                _logger.LogError($"Failed to publish the events for the new or updated videos.");
+                _logger.LogError("Failed to publish the events for the new or updated videos.");
             }
             
             // Save the last checked value

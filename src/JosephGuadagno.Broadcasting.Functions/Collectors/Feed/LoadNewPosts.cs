@@ -48,7 +48,9 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer)
         {
             var startedAt = DateTime.UtcNow;
-            _logger.LogDebug($"{Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts} Collector started at: {startedAt}");
+            _logger.LogDebug(
+                "{Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts} Collector started at: {startedAt}",
+                Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, startedAt);
 
             var configuration = await _configurationRepository.GetAsync(Constants.Tables.Configuration,
                                     Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts
@@ -58,7 +60,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                                     {LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTime.MinValue};
             
             // Check for new items
-            _logger.LogDebug($"Checking the syndication feed for posts since '{configuration.LastItemAddedOrUpdated}'");
+            _logger.LogDebug("Checking the syndication feed for posts since '{configuration.LastItemAddedOrUpdated}'", configuration.LastItemAddedOrUpdated);
             var newItems = await _syndicationFeedReader.GetAsync(configuration.LastItemAddedOrUpdated);
             
             // If there is nothing new, save the last checked value and exit
@@ -66,7 +68,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             {
                 configuration.LastCheckedFeed = startedAt;
                 await _configurationRepository.SaveAsync(configuration);
-                _logger.LogDebug($"No new or updated posts found in the syndication feed.");
+                _logger.LogDebug("No new or updated posts found in the syndication feed.");
                 return;
             }
             
@@ -79,7 +81,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
             {
                 // shorten the url
                 item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, _settings.BitlyShortenedDomain);
-                
+
                 // attempt to save the item
                 try
                 {
@@ -87,26 +89,24 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                     if (wasSaved)
                     {
                         eventsToPublish.Add(item);
-                        _telemetryClient.TrackEvent(Constants.Metrics.PostAddedOrUpdated,
-                            new Dictionary<string, string>
-                            {
-                                {"Id", item.Id},
-                                {"Url", item.Url}
-                            });
+                        _telemetryClient.TrackEvent(Constants.Metrics.PostAddedOrUpdated, item.ToDictionary());
                         savedCount++;
                     }
                     else
                     {
-                        _logger.LogError($"Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'", item);
+                        _logger.LogError("Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'",
+                            item);
                     }
-                    
+
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError($"Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}", item, e);
+                    _logger.LogError(e,
+                        "Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}",
+                        item, e);
                 }
             }
-            
+
             // Publish the events
 
             var eventsPublished = await _eventPublisher.PublishEventsAsync(_settings.TopicNewSourceDataEndpoint,
@@ -114,7 +114,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                 Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
             if (!eventsPublished)
             {
-                _logger.LogError($"Failed to publish the events for the new or updated blog posts.");
+                _logger.LogError("Failed to publish the events for the new or updated blog posts.");
             }
             
             // Save the last checked value

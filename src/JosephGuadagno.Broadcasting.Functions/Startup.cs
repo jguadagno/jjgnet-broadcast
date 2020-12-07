@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -15,8 +14,6 @@ using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
-using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Extensions.Configuration;
@@ -42,7 +39,7 @@ namespace JosephGuadagno.Broadcasting.Functions
             // Setup the Configuration Source
             var config = new ConfigurationBuilder()
                 .SetBasePath(currentDirectory)
-                .AddJsonFile("local.settings.json", true)
+                .AddJsonFile("local.settings.json", false)
                 .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
                 .AddEnvironmentVariables()
                 .Build();
@@ -140,6 +137,7 @@ namespace JosephGuadagno.Broadcasting.Functions
             builder.Services.TryAddSingleton<ISyndicationFeedReader, SyndicationFeedReader.SyndicationFeedReader>();
 
         }
+        
         public void ConfigureYouTubeReader(IFunctionsHostBuilder builder)
         {
             builder.Services.TryAddSingleton<IYouTubeSettings>(s =>

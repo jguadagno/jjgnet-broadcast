@@ -39,18 +39,28 @@ namespace JosephGuadagno.Broadcasting.JsonFeedReader
 
         public async Task<List<SourceData>> GetAsync(DateTime sinceWhen)
         {
+            var currentTime = DateTime.UtcNow;
             var sourceItems = new List<SourceData>();
 
-            var jsonFeed = await JsonFeed.ParseFromUriAsync(new Uri(_jsonFeedReaderSettings.FeedUrl));
-            
-            _logger.LogDebug($"Checking feed '{_jsonFeedReaderSettings.FeedUrl}' for new posts since '{sinceWhen:u}'");
+            _logger.LogDebug("Checking the Json feed '{_jsonFeedReaderSettings.FeedUrl}' for new posts since '{sinceWhen:u}'",
+                _jsonFeedReaderSettings, sinceWhen);
 
-            var items = jsonFeed.Items.Where(i => i.DateModified > sinceWhen || i.DatePublished > sinceWhen).ToList();
-            
+            List<JsonFeedItem> items = null;
+            try
+            {
+                var jsonFeed = await JsonFeed.ParseFromUriAsync(new Uri(_jsonFeedReaderSettings.FeedUrl));
+
+                items = jsonFeed.Items.Where(i => i.DateModified > sinceWhen || i.DatePublished > sinceWhen).ToList();
+
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error parsing the Json feed for: {_jsonFeedReaderSettings.FeedUrl}.",
+                    _jsonFeedReaderSettings);
+                throw;
+            }
             _logger.LogDebug($"Found {items.Count} posts.");
             
-            var currentTime = DateTime.UtcNow;
-
             foreach (var jsonFeedItem in items)
             {
                 sourceItems.Add(new SourceData(SourceSystems.SyndicationFeed)

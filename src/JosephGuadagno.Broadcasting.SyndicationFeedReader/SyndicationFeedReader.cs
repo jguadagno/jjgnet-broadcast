@@ -37,11 +37,27 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
             var currentTime = DateTime.UtcNow;
             var feedItems = new List<SourceData>();
 
-            using var reader = XmlReader.Create(_syndicationFeedReaderSettings.FeedUrl);
-            var feed = SyndicationFeed.Load(reader);
+            _logger.LogDebug("Checking syndication feed '{_syndicationFeedReaderSettings.FeedUrl}' for new posts since '{sinceWhen:u}'",
+                _syndicationFeedReaderSettings, sinceWhen);
 
-            var items = feed.Items.Where(i => (i.PublishDate > sinceWhen) || (i.LastUpdatedTime > sinceWhen))
-                .ToList();
+            List<SyndicationItem> items = null;
+
+            try
+            {
+                using var reader = XmlReader.Create(_syndicationFeedReaderSettings.FeedUrl);
+                var feed = SyndicationFeed.Load(reader);
+
+                items = feed.Items.Where(i => (i.PublishDate > sinceWhen) || (i.LastUpdatedTime > sinceWhen))
+                    .ToList();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error parsing the syndication feed for: {_syndicationFeedReaderSettings.FeedUrl}.",
+                    _syndicationFeedReaderSettings);
+                throw;
+            }
+            
+            _logger.LogDebug($"Found {items.Count} posts.");
 
             foreach (var syndicationItem in items)
             {

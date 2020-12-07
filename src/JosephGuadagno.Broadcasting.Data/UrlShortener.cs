@@ -25,7 +25,7 @@ namespace JosephGuadagno.Broadcasting.Data
         {
             if (string.IsNullOrEmpty(url))
             {
-                _logger.LogDebug($"Url was null or empty.");
+                _logger.LogDebug("Url was null or empty.");
                 return null;
             }
 
@@ -33,10 +33,10 @@ namespace JosephGuadagno.Broadcasting.Data
 
             if (result == null)
             {
-                _logger.LogDebug($"Could not shorten the url of '{url}'", url);
+                _logger.LogDebug("Could not shorten the url of '{url}'", url);
                 return url;
             }
-            _logger.LogDebug($"Shorten the url of '{url}' to '{result.Link}'", url, result.Link);
+            _logger.LogDebug("Shortened the url of '{url}' to '{result.Link}'", url, result);
             return result.Link;
         }
     }

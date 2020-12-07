@@ -35,21 +35,21 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
             var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridEvent.Data.ToString());
             if (tableEvent == null)
             {
-                _logger.LogError($"Failed to parse the TableEvent data for event '{eventGridEvent.Id}'");
+                _logger.LogError("Failed to parse the TableEvent data for event '{eventGridEvent.Id}'", eventGridEvent);
                 return;
             }
 
             // Create the scheduled tweets for it
-            _logger.LogDebug($"Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'");
+            _logger.LogDebug("Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'", tableEvent);
             var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
 
             if (sourceData == null)
             {
-                _logger.LogWarning($"Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found");
+                _logger.LogWarning("Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found", tableEvent);
                 return;
             }
             
-            _logger.LogDebug($"Composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
+            _logger.LogDebug("Composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.",tableEvent);
             
             var tweet = ComposeTweet(sourceData);
             if (!string.IsNullOrEmpty(tweet))
@@ -58,7 +58,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
             }
             
             // Done
-            _logger.LogDebug($"Done composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.");
+            _logger.LogDebug("Done composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.", tableEvent);
         }
         
         private string ComposeTweet(SourceData item)
@@ -92,7 +92,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
             }
             
             var tweet = $"{tweetStart} {postTitle} {url}";
-            _logger.LogDebug($"Composed tweet '{tweet}'", tweet);
+            _logger.LogDebug("Composed tweet '{tweet}'", tweet);
             
             return tweet;
         }

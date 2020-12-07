@@ -79,7 +79,7 @@ namespace JosephGuadagno.Broadcasting.Data
             }
             catch (Exception e)
             {
-                _logger.LogError($"Failed to publish the event to TopicUrl: '{topicUrl}'. Exception: '{e}'", e);   
+                _logger.LogError(e, "Failed to publish the event to TopicUrl: '{topicUrl}'. Exception: '{e}'", topicUrl, e);   
                 return false;
             }
 

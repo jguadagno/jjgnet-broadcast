@@ -2,13 +2,13 @@
     "version": "2.0",
     "logging": {
         "applicationInsights": {
-            "samplingExcludedTypes": "Request",
+            "samplingExcludedTypes": "Request;Exception",
             "samplingSettings": {
-                "isEnabled": true
+                "isEnabled": false
             }
         },
         "logLevel": {
-            "Default": "Debug",
+            "default": "Trace",
             "System": "Information",
             "Microsoft": "Information",
             "JosephGuadagno": "Debug"

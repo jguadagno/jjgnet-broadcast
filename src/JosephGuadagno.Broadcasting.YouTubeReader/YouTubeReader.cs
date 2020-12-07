@@ -25,7 +25,7 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
             
             if (string.IsNullOrEmpty(youTubeSettings.ApiKey))
             {
-                throw new ArgumentNullException(nameof(youTubeSettings.ApiKey), "The api key of the YouTube settings is required.");
+                throw new ArgumentNullException(nameof(youTubeSettings.ApiKey), "The API key of the YouTube settings is required.");
             }
 
             if (string.IsNullOrEmpty(youTubeSettings.ChannelId))
@@ -61,7 +61,6 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
         public async Task<List<SourceData>> GetAsync(DateTime sinceWhen)
         {
             var currentTime = DateTime.Now;
-            
             var videoItems = new List<SourceData>();
             
             var playlistItemsRequest = _youTubeService.PlaylistItems.List("snippet");
@@ -69,46 +68,55 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
             playlistItemsRequest.MaxResults = _youTubeSettings.ResultSetPageSize;
             
             var nextPageToken = "";
-            
-            while (nextPageToken != null)
+
+            try
             {
-                playlistItemsRequest.PageToken = nextPageToken;
-                var playlistItems = await playlistItemsRequest.ExecuteAsync();
-                foreach (var playlistItem in playlistItems.Items)
+                while (nextPageToken != null)
                 {
-                    if (playlistItem.Kind == "youtube#playlistItem")
+                    playlistItemsRequest.PageToken = nextPageToken;
+                    var playlistItems = await playlistItemsRequest.ExecuteAsync();
+                    foreach (var playlistItem in playlistItems.Items)
                     {
-                        if (!DateTime.TryParse(playlistItem.Snippet.PublishedAt, out var publishedAt))
+                        if (playlistItem.Kind == "youtube#playlistItem")
                         {
-                            continue;
-                        }
-                       
-                        if (publishedAt > sinceWhen)
-                        {
-                            videoItems.Add(new SourceData(SourceSystems.YouTube,
-                                playlistItem.Snippet.ResourceId.VideoId)
+                            if (!DateTime.TryParse(playlistItem.Snippet.PublishedAt, out var publishedAt))
                             {
-                                Author = playlistItem.Snippet.ChannelTitle,
-                                PublicationDate = publishedAt,
-                                UpdatedOnDate = publishedAt,
-                                //Text = searchResult.Snippet.Description,
-                                Title = playlistItem.Snippet.Title,
-                                Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",
-                                EndAfter = null,
-                                AddedOn = currentTime
-                            });
-                        }
-                        else
-                        {
-                            // Need to break out of the for when the publishDate is less than sinceWhen
-                            // This assumes the API returns items from oldest to newest
-                            playlistItems.NextPageToken = null;
-                            break;
+                                continue;
+                            }
+                       
+                            if (publishedAt > sinceWhen)
+                            {
+                                videoItems.Add(new SourceData(SourceSystems.YouTube,
+                                    playlistItem.Snippet.ResourceId.VideoId)
+                                {
+                                    Author = playlistItem.Snippet.ChannelTitle,
+                                    PublicationDate = publishedAt,
+                                    UpdatedOnDate = publishedAt,
+                                    //Text = searchResult.Snippet.Description,
+                                    Title = playlistItem.Snippet.Title,
+                                    Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",
+                                    EndAfter = null,
+                                    AddedOn = currentTime
+                                });
+                            }
+                            else
+                            {
+                                // Need to break out of the for when the publishDate is less than sinceWhen
+                                // This assumes the API returns items from oldest to newest
+                                playlistItems.NextPageToken = null;
+                                break;
+                            }
                         }
                     }
-                }
 
-                nextPageToken = playlistItems.NextPageToken;
+                    nextPageToken = playlistItems.NextPageToken;
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error calling the YouTube API: {_youTubeSettings.ChannelId}, {_youTubeSettings.PlaylistId}.",
+                    _youTubeSettings);
+                throw;
             }
 
             return videoItems;

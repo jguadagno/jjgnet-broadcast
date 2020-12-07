@@ -45,7 +45,9 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
             HttpRequest req)
         {
             var startedAt = DateTime.UtcNow;
-            _logger.LogDebug($"{Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos} Collector started at: {startedAt}");
+            _logger.LogDebug(
+                $"{Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos} Collector started at: {startedAt}",
+                Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos, startedAt);
 
             // Check for the from date
             var dateToCheckFrom = DateTime.MinValue;
@@ -54,13 +56,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                 dateToCheckFrom = requestModel.CheckFrom;
             }
 
-            _logger.LogInformation($"Getting all items from YouTube for the playlist'.");
+            _logger.LogInformation($"Getting all items from YouTube for the playlist since '{dateToCheckFrom}'.", dateToCheckFrom);
             var newItems = await _youTubeReader.GetAsync(dateToCheckFrom);
             
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)
             {
-                _logger.LogInformation($"No videos found in the playlist.");
+                _logger.LogInformation("No videos found in the playlist.");
                 return new OkObjectResult("0 videos were found");
             }
             
@@ -79,23 +81,20 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                     var saveWasSuccessful = await _sourceDataRepository.SaveAsync(item);
                     if (saveWasSuccessful)
                     {
-                        _telemetryClient.TrackEvent(Constants.Metrics.VideoAddedOrUpdated,
-                            new Dictionary<string, string>
-                            {
-                                {"Id", item.Id},
-                                {"Url", item.Url}
-                            });
+                        _telemetryClient.TrackEvent(Constants.Metrics.VideoAddedOrUpdated, item.ToDictionary());
                         savedCount++;
                     }
                     else
                     {
-                        _logger.LogError($"Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'", item);
+                        _logger.LogError("Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'", item);
                     }
                     
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError($"Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}", item, e);
+                    _logger.LogError(e,
+                        "Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}",
+                        item, e);
                 }
             }
             
