@@ -39,7 +39,7 @@ namespace JosephGuadagno.Broadcasting.Functions
             // Setup the Configuration Source
             var config = new ConfigurationBuilder()
                 .SetBasePath(currentDirectory)
-                .AddJsonFile("local.settings.json", false)
+                .AddJsonFile("local.settings.json", true)
                 .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
                 .AddEnvironmentVariables()
                 .Build();
