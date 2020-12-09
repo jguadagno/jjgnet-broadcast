@@ -98,8 +98,10 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
                 StatusText =  $"{statusText} {postTitle}",
                 LinkUri = url                
             };
-            
-            _logger.LogDebug("Composed Facebook Status: StatusText='{facebookPostStatus.StatusText}', LinkUrl='{facebookPostStatus.LinkUri}'", facebookPostStatus);
+
+            _logger.LogDebug(
+                "Composed Facebook Status: StatusText='{facebookPostStatus.StatusText}', LinkUrl='{facebookPostStatus.LinkUri}'",
+                facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
             return facebookPostStatus;
         }
     }
