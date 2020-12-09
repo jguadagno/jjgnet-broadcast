@@ -37,21 +37,21 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
             var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridEvent.Data.ToString());
             if (tableEvent == null)
             {
-                _logger.LogError("Failed to parse the TableEvent data for event '{eventGridEvent.Id}'", eventGridEvent);
+                _logger.LogError("Failed to parse the TableEvent data for event '{eventGridEvent.Id}'", eventGridEvent.Id);
                 return;
             }
 
             // Create the scheduled tweets for it
-            _logger.LogDebug("Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'", tableEvent);
+            _logger.LogDebug("Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
             var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
 
             if (sourceData == null)
             {
-                _logger.LogWarning("Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found", tableEvent);
+                _logger.LogWarning("Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found", tableEvent.PartitionKey, tableEvent.RowKey);
                 return;
             }
             
-            _logger.LogDebug("Composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.", tableEvent);
+            _logger.LogDebug("Composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.", tableEvent.PartitionKey, tableEvent.RowKey);
             
             var status = ComposeStatus(sourceData);
             if (status != null)
@@ -60,7 +60,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
             }
             
             // Done
-            _logger.LogDebug("Done composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.", tableEvent);
+            _logger.LogDebug("Done composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.", tableEvent.PartitionKey, tableEvent.RowKey);
         }
         
         private FacebookPostStatus ComposeStatus(SourceData item)
