@@ -115,7 +115,7 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
             catch (Exception e)
             {
                 _logger.LogError(e, "Error calling the YouTube API: {_youTubeSettings.ChannelId}, {_youTubeSettings.PlaylistId}.",
-                    _youTubeSettings);
+                    _youTubeSettings.ChannelId, _youTubeSettings.PlaylistId);
                 throw;
             }
 

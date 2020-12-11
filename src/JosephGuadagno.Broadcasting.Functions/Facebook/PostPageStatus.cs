@@ -49,12 +49,14 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
 
                     if (response.StatusCode == HttpStatusCode.OK)
                     {
-                        _logger.LogDebug("Successfully posted the status: '{postStatusResponse.Id}'", postStatusResponse);
+                        _logger.LogDebug("Successfully posted the status: '{postStatusResponse.Id}'", postStatusResponse.Id);
                     }
                     else
                     {
                         _logger.LogError(
-                            "Failed to post status.  Error Code: {postStatusResponse.Error.Code}, Subcode: {postStatusResponse.Error.ErrorSubcode}, Message: '{postStatusResponse.Error.Message}'", postStatusResponse, response);
+                            "Failed to post status.  Error Code: {postStatusResponse.Error.Code}, Subcode: {postStatusResponse.Error.ErrorSubcode}, Message: '{postStatusResponse.Error.Message}'",
+                            postStatusResponse.Error.Code, postStatusResponse.Error.ErrorSubcode,
+                            postStatusResponse.Error.Message, response);
                     }
                 }
                 else

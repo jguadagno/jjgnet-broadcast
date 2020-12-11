@@ -95,7 +95,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                     else
                     {
                         _logger.LogError("Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'",
-                            item);
+                            item.Id, item.Url);
                     }
 
                 }
@@ -103,7 +103,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed
                 {
                     _logger.LogError(e,
                         "Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}",
-                        item, e);
+                        item.Id, item.Url, e);
                 }
             }
 

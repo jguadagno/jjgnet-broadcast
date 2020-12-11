@@ -36,7 +36,7 @@ namespace JosephGuadagno.Broadcasting.Data
                 _logger.LogDebug("Could not shorten the url of '{url}'", url);
                 return url;
             }
-            _logger.LogDebug("Shortened the url of '{url}' to '{result.Link}'", url, result);
+            _logger.LogDebug("Shortened the url of '{url}' to '{result.Link}'", url, result.Link);
             return result.Link;
         }
     }
