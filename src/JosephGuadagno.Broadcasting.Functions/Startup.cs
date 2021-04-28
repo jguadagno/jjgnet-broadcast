@@ -55,6 +55,10 @@ namespace JosephGuadagno.Broadcasting.Functions
             var settings = new Domain.Models.Settings();
             config.Bind("Settings", settings);
             builder.Services.TryAddSingleton<ISettings>(settings);
+
+            var randomPostSettings = new Domain.Models.RandomPostSettings();
+            config.Bind("Settings:RandomPost", randomPostSettings);
+            builder.Services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
             
             // Configure the logger
             builder.Services.AddLogging((loggingBuilder =>
@@ -73,7 +77,7 @@ namespace JosephGuadagno.Broadcasting.Functions
             ConfigureFunction(builder);
         }
 
-        public void SetLoggingGlobalDiagnosticsContext()
+        private void SetLoggingGlobalDiagnosticsContext()
         {
             
             var executingAssembly = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
@@ -85,7 +89,7 @@ namespace JosephGuadagno.Broadcasting.Functions
             GlobalDiagnosticsContext.Set("ExecutingAssembly-ProductVersion", productVersion);
         }
 
-        public void ConfigureTwitter(IFunctionsHostBuilder builder)
+        private void ConfigureTwitter(IFunctionsHostBuilder builder)
         {
             builder.Services.TryAddSingleton<IAuthorizer>(s =>
             {
@@ -113,7 +117,7 @@ namespace JosephGuadagno.Broadcasting.Functions
             });
         }
 
-        public void ConfigureJsonFeedReader(IFunctionsHostBuilder builder)
+        private void ConfigureJsonFeedReader(IFunctionsHostBuilder builder)
         {
             builder.Services.TryAddSingleton<IJsonFeedReaderSettings>(s =>
             {
@@ -124,8 +128,8 @@ namespace JosephGuadagno.Broadcasting.Functions
             });
             builder.Services.TryAddSingleton<IJsonFeedReader, JsonFeedReader.JsonFeedReader>();
         }
-        
-        public void ConfigureSyndicationFeedReader(IFunctionsHostBuilder builder)
+
+        private void ConfigureSyndicationFeedReader(IFunctionsHostBuilder builder)
         {
             builder.Services.TryAddSingleton<ISyndicationFeedReaderSettings>(s =>
             {
@@ -137,8 +141,8 @@ namespace JosephGuadagno.Broadcasting.Functions
             builder.Services.TryAddSingleton<ISyndicationFeedReader, SyndicationFeedReader.SyndicationFeedReader>();
 
         }
-        
-        public void ConfigureYouTubeReader(IFunctionsHostBuilder builder)
+
+        private void ConfigureYouTubeReader(IFunctionsHostBuilder builder)
         {
             builder.Services.TryAddSingleton<IYouTubeSettings>(s =>
             {
@@ -150,7 +154,7 @@ namespace JosephGuadagno.Broadcasting.Functions
             builder.Services.TryAddSingleton<IYouTubeReader, YouTubeReader.YouTubeReader>();
         }
 
-        public void ConfigureFunction(IFunctionsHostBuilder builder)
+        private void ConfigureFunction(IFunctionsHostBuilder builder)
         {
             builder.Services.AddHttpClient();
             

@@ -20,6 +20,7 @@ namespace JosephGuadagno.Broadcasting.Domain
             public const string CollectorsFeedLoadAllPosts = "CollectorsFeedLoadAllPosts";
             public const string CollectorsYouTubeLoadNewVideos = "CollectorsYouTubeLoadNewVideos";
             public const string CollectorsYouTubeLoadAllVideos = "CollectorsYouTubeLoadAllVideos";
+            public const string PublishersRandomPosts = "PublishersRandomPosts";
         }
 
         public static class Topics
@@ -31,6 +32,7 @@ namespace JosephGuadagno.Broadcasting.Domain
         {
             public const string PostAddedOrUpdated = "PostAddedOrUpdated";
             public const string VideoAddedOrUpdated = "VideoAddedOrUpdated";
+            public const string RandomTweetSent = "RandomTweetSent";
         }
     }
 }

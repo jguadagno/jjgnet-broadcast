@@ -80,5 +80,35 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
         {
             return await Task.Run(() => Get(sinceWhen));
         }
+
+        public List<SyndicationItem> GetSyndicationItems(DateTime sinceWhen, List<string> excludeCategories)
+        {
+            var currentTime = DateTime.UtcNow;
+
+            _logger.LogDebug("Checking syndication feed '{_syndicationFeedReaderSettings.FeedUrl}' for posts since '{sinceWhen:u}'",
+                _syndicationFeedReaderSettings, sinceWhen);
+
+            List<SyndicationItem> items = null;
+
+            try
+            {
+                using var reader = XmlReader.Create(_syndicationFeedReaderSettings.FeedUrl);
+                var feed = SyndicationFeed.Load(reader);
+
+                items = feed.Items.Where(i => (i.PublishDate > sinceWhen) || (i.LastUpdatedTime > sinceWhen) && 
+                         i.Categories.Any(x => excludeCategories.Contains(x.Name.ToLower())))
+                    .ToList();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error parsing the syndication feed for: {_syndicationFeedReaderSettings.FeedUrl}.",
+                    _syndicationFeedReaderSettings);
+                throw;
+            }
+            
+            _logger.LogDebug($"Found {items.Count} posts.");
+
+            return items;
+        }
     }
 }
