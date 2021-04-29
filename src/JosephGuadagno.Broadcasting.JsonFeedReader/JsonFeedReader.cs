@@ -43,7 +43,7 @@ namespace JosephGuadagno.Broadcasting.JsonFeedReader
             var sourceItems = new List<SourceData>();
 
             _logger.LogDebug("Checking the Json feed '{_jsonFeedReaderSettings.FeedUrl}' for new posts since '{sinceWhen:u}'",
-                _jsonFeedReaderSettings, sinceWhen);
+                _jsonFeedReaderSettings.FeedUrl, sinceWhen);
 
             List<JsonFeedItem> items = null;
             try
@@ -56,7 +56,7 @@ namespace JosephGuadagno.Broadcasting.JsonFeedReader
             catch (Exception e)
             {
                 _logger.LogError(e, "Error parsing the Json feed for: {_jsonFeedReaderSettings.FeedUrl}.",
-                    _jsonFeedReaderSettings);
+                    _jsonFeedReaderSettings.FeedUrl);
                 throw;
             }
             _logger.LogDebug($"Found {items.Count} posts.");

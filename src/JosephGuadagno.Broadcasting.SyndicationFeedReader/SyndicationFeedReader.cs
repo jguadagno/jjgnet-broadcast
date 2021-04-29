@@ -38,7 +38,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
             var feedItems = new List<SourceData>();
 
             _logger.LogDebug("Checking syndication feed '{_syndicationFeedReaderSettings.FeedUrl}' for new posts since '{sinceWhen:u}'",
-                _syndicationFeedReaderSettings, sinceWhen);
+                _syndicationFeedReaderSettings.FeedUrl, sinceWhen);
 
             List<SyndicationItem> items = null;
 
@@ -53,7 +53,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
             catch (Exception e)
             {
                 _logger.LogError(e, "Error parsing the syndication feed for: {_syndicationFeedReaderSettings.FeedUrl}.",
-                    _syndicationFeedReaderSettings);
+                    _syndicationFeedReaderSettings.FeedUrl);
                 throw;
             }
             

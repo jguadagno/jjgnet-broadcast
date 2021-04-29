@@ -86,7 +86,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                     }
                     else
                     {
-                        _logger.LogError("Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'", item);
+                        _logger.LogError("Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'", item.Id, item.Url);
                     }
                     
                 }
@@ -94,7 +94,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube
                 {
                     _logger.LogError(e,
                         "Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}",
-                        item, e);
+                        item.Id, item.Url, e);
                 }
             }
             
