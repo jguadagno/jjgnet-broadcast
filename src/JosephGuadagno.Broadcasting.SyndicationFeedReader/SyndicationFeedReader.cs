@@ -96,7 +96,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
                 var feed = SyndicationFeed.Load(reader);
 
                 items = feed.Items.Where(i => (i.PublishDate > sinceWhen) || (i.LastUpdatedTime > sinceWhen) && 
-                         i.Categories.Any(x => excludeCategories.Contains(x.Name.ToLower())))
+                         !i.Categories.Any(x => excludeCategories.Contains(x.Name.ToLower())))
                     .ToList();
             }
             catch (Exception e)
