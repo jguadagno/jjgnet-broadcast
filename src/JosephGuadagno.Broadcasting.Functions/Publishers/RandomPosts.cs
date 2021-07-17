@@ -53,7 +53,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Publishers
 
             _logger.LogInformation($"Getting all items from feed from '{cutoffDate}'", cutoffDate);
             var feedItems = _syndicationFeedReader.GetSyndicationItems(cutoffDate, _randomPostSettings.ExcludedCategories);
-            
+
             // If there is nothing new, save the last checked value and exit
             if (feedItems == null || feedItems.Count == 0)
             {
