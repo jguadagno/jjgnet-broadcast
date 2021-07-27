@@ -30,8 +30,8 @@ jobs:
       run: dotnet restore ${{ env.SOLUTION_TO_BUILD }}
     - name: Build
       run: dotnet build ${{ env.SOLUTION_TO_BUILD }} --configuration Release --no-restore --output ./output
-    - name: Test
-      run: dotnet test ${{ env.SOLUTION_TO_BUILD }} --no-restore --verbosity normal
+    #- name: Test
+    #  run: dotnet test ${{ env.SOLUTION_TO_BUILD }} --no-restore --verbosity normal
     - name: 'Run Azure Functions Action'
       uses: Azure/functions-action@v1
       id: fa
