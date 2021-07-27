@@ -1,7 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <Company>JosephGuadagno.NET, LLC</Company>
+        <Authors>Joseph Guadagno</Authors>
+        <Product>JosephGuadagno.NET Broadcasting - Syndication Feed Reader Test Library</Product>
+        <Description>This library contains the unit/integration test for the library that reads Syndication Feeds for the JosephGuadagno.NET Broadcasting application</Description>
+        <Copyright>Copyright ©2014-2021, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Title>JosephGuadagno.NET Broadcasting - Syndication Feed Reader Tests</Title>
         <UserSecretsId>bba0c3bc-df5e-4c6c-a82c-ab974102a8a4</UserSecretsId>
         <IsPackable>false</IsPackable>
     </PropertyGroup>
