@@ -83,9 +83,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
 
         public List<SyndicationItem> GetSyndicationItems(DateTime sinceWhen, List<string> excludeCategories)
         {
-            var currentTime = DateTime.UtcNow;
-            
-            _logger.LogDebug("Checking syndication feed '{_syndicationFeedReaderSettings.FeedUrl}' for posts since '{sinceWhen:u}'",
+            _logger.LogDebug($"Checking syndication feed '{_syndicationFeedReaderSettings.FeedUrl}' for posts since '{sinceWhen:u}'",
                 _syndicationFeedReaderSettings, sinceWhen);
 
             List<SyndicationItem> items = new List<SyndicationItem>();
@@ -112,6 +110,31 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
             _logger.LogDebug($"Found {items.Count} posts");
 
             return items;
+        }
+
+        public SyndicationItem GetRandomSyndicationItem(DateTime sinceWhen, List<string> excludeCategories)
+        {
+            _logger.LogDebug(
+                $"Getting a random syndication item from feed '{_syndicationFeedReaderSettings.FeedUrl}' for posts since '{sinceWhen:u}",
+                _syndicationFeedReaderSettings, sinceWhen);
+
+            var syndicationItems = GetSyndicationItems(sinceWhen, excludeCategories);
+            
+            // Pick a Random one
+            var randomPost = syndicationItems
+                .OrderBy(p => Guid.NewGuid())
+                .FirstOrDefault();
+
+            if (randomPost == null)
+            {
+                _logger.LogWarning(
+                    $"Could not get a random posts from feed '{_syndicationFeedReaderSettings.FeedUrl}' for posts since '{sinceWhen:u}",
+                    _syndicationFeedReaderSettings, sinceWhen);
+                Console.WriteLine("Could not get a post. Exiting");
+                return null;
+            }
+
+            return randomPost;
         }
     }
 }

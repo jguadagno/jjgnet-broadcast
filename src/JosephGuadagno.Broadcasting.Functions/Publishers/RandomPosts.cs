@@ -52,40 +52,29 @@ namespace JosephGuadagno.Broadcasting.Functions.Publishers
             }
 
             _logger.LogInformation($"Getting all items from feed from '{cutoffDate}'", cutoffDate);
-            var feedItems = _syndicationFeedReader.GetSyndicationItems(cutoffDate, _randomPostSettings.ExcludedCategories);
+            var randomSyndicationItem = _syndicationFeedReader.GetRandomSyndicationItem(cutoffDate, _randomPostSettings.ExcludedCategories);
 
             // If there is nothing new, save the last checked value and exit
-            if (feedItems == null || feedItems.Count == 0)
+            if (randomSyndicationItem == null)
             {
-                _logger.LogInformation("No posts found in the Json Feed");
-                return;
-            }
-            
-            // Pick a Random one
-            var randomPost = feedItems
-                .OrderBy(p => Guid.NewGuid())
-                .FirstOrDefault();
-
-            if (randomPost == null)
-            {
-                Console.WriteLine("Could not get a post. Exiting");
+                _logger.LogInformation($"Could not find a random post from feed since '{cutoffDate:u}'");
                 return;
             }
 
             // Build the tweet
-            var hashtags = HashTagList(randomPost.Categories);
+            var hashtags = HashTagList(randomSyndicationItem.Categories);
             var status =
-                $"ICYMI: ({randomPost.PublishDate.Date.ToShortDateString()}): \"{randomPost.Title.Text}.\" RTs and feedback are always appreciated! {randomPost.Links[0].Uri} {hashtags}";
+                $"ICYMI: ({randomSyndicationItem.PublishDate.Date.ToShortDateString()}): \"{randomSyndicationItem.Title.Text}.\" RTs and feedback are always appreciated! {randomSyndicationItem.Links[0].Uri} {hashtags}";
             
             // Post the message to the Queue
             outboundMessages.Add(status);
             
             // Return
-            var doneMessage = $"Picked a random post '{randomPost.Title}'";
+            var doneMessage = $"Picked a random post '{randomSyndicationItem.Title}'";
             _telemetryClient.TrackEvent(Constants.Metrics.RandomTweetSent, new Dictionary<string, string>
             {
-                {"title", randomPost.Title.Text },
-                { "tweet", status}
+                {"title", randomSyndicationItem.Title.Text}, 
+                {"tweet", status}
             });
             _logger.LogDebug(doneMessage);
         }

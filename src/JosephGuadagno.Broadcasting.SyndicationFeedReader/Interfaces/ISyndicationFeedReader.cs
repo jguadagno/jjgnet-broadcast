@@ -8,5 +8,6 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces
     public interface ISyndicationFeedReader : ISourceReader
     {
         public List<SyndicationItem> GetSyndicationItems(DateTime sinceWhen, List<string> excludeCategories = null);
+        public SyndicationItem GetRandomSyndicationItem(DateTime sinceWhen, List<string> excludeCategories = null);
     }
 }
