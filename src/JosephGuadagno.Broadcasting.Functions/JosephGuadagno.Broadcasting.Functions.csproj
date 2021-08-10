@@ -13,7 +13,7 @@
     <PropertyGroup>
         <VersionMajor>1</VersionMajor>
         <VersionMinor>2</VersionMinor>
-        <VersionBuild>0</VersionBuild>
+        <VersionBuild>1</VersionBuild>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -38,7 +38,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.ApplicationInsights.NLogTarget" Version="2.15.0" />
         <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="5.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="3.1.18" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.2" />
         <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.8" />
         <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.2" />
