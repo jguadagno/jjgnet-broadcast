@@ -8,7 +8,9 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using Microsoft.ApplicationInsights;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Publishers
@@ -19,6 +21,14 @@ namespace JosephGuadagno.Broadcasting.Functions.Publishers
         private readonly ILogger<RandomPosts> _logger;
         private readonly TelemetryClient _telemetryClient;
         private readonly IRandomPostSettings _randomPostSettings;
+
+        #if DEBUG
+        // Debug Timer Settings
+        private const string JobSchedule = "0 */2 * * * *";
+        #else
+        // Production Timer Settings
+        private const string JobSchedule = "0 0 9,16 * * *";
+        #endif
 
         public RandomPosts(ISyndicationFeedReader syndicationFeedReader,
             IRandomPostSettings randomPostSettings,
@@ -33,11 +43,10 @@ namespace JosephGuadagno.Broadcasting.Functions.Publishers
         
         [FunctionName("publishers_random_posts")]
         public void RunAsync(
-            [TimerTrigger("0 0 9,16 * * *")] TimerInfo myTimer,
+            [TimerTrigger(JobSchedule)] TimerInfo myTimer,
             [Queue(Constants.Queues.TwitterTweetsToSend)] ICollector<string> outboundMessages)
         {
-            // 0 */2 * * * *
-            // 0 0 9,16 * * *
+            
             var startedAt = DateTime.UtcNow;
             _logger.LogDebug(
                 $"{Constants.ConfigurationFunctionNames.PublishersRandomPosts} Publisher started at: {{startedAt}}",

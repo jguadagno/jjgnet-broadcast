@@ -1,12 +1,13 @@
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
-using JosephGuadagno.Broadcasting.Functions;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
@@ -15,70 +16,80 @@ using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
 using LinqToTwitter.OAuth;
-using Microsoft.Azure.Functions.Extensions.DependencyInjection;
-using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using NLog;
 using NLog.Extensions.Logging;
 
-[assembly: FunctionsStartup(typeof(Startup))]
-
 namespace JosephGuadagno.Broadcasting.Functions
 {
-    public class Startup : FunctionsStartup
+    public class Startup
     {
-        public override void Configure(IFunctionsHostBuilder builder)
+        static Task Main(string[] args)
         {
-            var executionContextOptions = builder.Services.BuildServiceProvider()
-                .GetService<IOptions<ExecutionContextOptions>>().Value;
-            var currentDirectory = executionContextOptions.AppDirectory;
+
+            var currentDirectory = AppContext.BaseDirectory;
+            var host = new HostBuilder()
+                .ConfigureFunctionsWorkerDefaults()
+                .ConfigureAppConfiguration(configurationBuilder =>
+                {
+                    configurationBuilder
+                        .SetBasePath(currentDirectory)
+                        .AddJsonFile("local.settings.json", true)
+                        .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
+                        .AddEnvironmentVariables();
+                })
+                .ConfigureServices((context, services) => 
+                {
+                    // Add Logging
+                    services.AddLogging();
+                    LogManager.Setup()
+                        .SetupExtensions(e => e.AutoLoadAssemblies(false))
+                        .LoadConfigurationFromFile(currentDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
+                        .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
+                    SetLoggingGlobalDiagnosticsContext();
+
+                    // Add HttpClient
+                    services.AddHttpClient();
+
+                    // Add Custom Services
+                    
+                    // Bind the 'Settings' section to the ISettings class
+                    var config = context.Configuration;
+                    var settings = new Domain.Models.Settings();
+                    config.Bind("Settings", settings);
+                    services.TryAddSingleton<ISettings>(settings);
+
+                    var randomPostSettings = new Domain.Models.RandomPostSettings();
+                    config.Bind("Settings:RandomPost", randomPostSettings);
+                    services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
             
-            // Setup the Configuration Source
-            var config = new ConfigurationBuilder()
-                .SetBasePath(currentDirectory)
-                .AddJsonFile("local.settings.json", true)
-                .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
-                .AddEnvironmentVariables()
+                    // Configure the logger
+                    services.AddLogging((loggingBuilder =>
+                    {
+                        //loggingBuilder.ClearProviders();
+                        loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
+                        loggingBuilder.AddConfiguration(config);
+                        loggingBuilder.AddNLog(new NLogProviderOptions {ShutdownOnDispose = true});
+                    }));
+
+                    // Configure all the services
+                    ConfigureTwitter(services);
+                    ConfigureJsonFeedReader(services);
+                    ConfigureSyndicationFeedReader(services);
+                    ConfigureYouTubeReader(services);
+                    ConfigureFunction(services);
+                    
+                })
                 .Build();
-            builder.Services.AddSingleton<IConfiguration>(config);
 
-            LogManager.Setup()
-                .SetupExtensions(e => e.AutoLoadAssemblies(false))
-                .LoadConfigurationFromFile(currentDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
-                .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
-            SetLoggingGlobalDiagnosticsContext();
-
-            // Bind the 'Settings' section to the ISettings class
-            var settings = new Domain.Models.Settings();
-            config.Bind("Settings", settings);
-            builder.Services.TryAddSingleton<ISettings>(settings);
-
-            var randomPostSettings = new Domain.Models.RandomPostSettings();
-            config.Bind("Settings:RandomPost", randomPostSettings);
-            builder.Services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
-            
-            // Configure the logger
-            builder.Services.AddLogging((loggingBuilder =>
-            {
-                //loggingBuilder.ClearProviders();
-                loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
-                loggingBuilder.AddConfiguration(config);
-                loggingBuilder.AddNLog(new NLogProviderOptions {ShutdownOnDispose = true});
-            }));
-
-            // Configure all the services
-            ConfigureTwitter(builder);
-            ConfigureJsonFeedReader(builder);
-            ConfigureSyndicationFeedReader(builder);
-            ConfigureYouTubeReader(builder);
-            ConfigureFunction(builder);
+            return host.RunAsync();
         }
 
-        private void SetLoggingGlobalDiagnosticsContext()
+        private static void SetLoggingGlobalDiagnosticsContext()
         {
             
             var executingAssembly = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
@@ -90,9 +101,9 @@ namespace JosephGuadagno.Broadcasting.Functions
             GlobalDiagnosticsContext.Set("ExecutingAssembly-ProductVersion", productVersion);
         }
 
-        private void ConfigureTwitter(IFunctionsHostBuilder builder)
+        private static void ConfigureTwitter(IServiceCollection services)
         {
-            builder.Services.TryAddSingleton<IAuthorizer>(s =>
+            services.TryAddSingleton<IAuthorizer>(s =>
             {
                 var settings = s.GetService<ISettings>();
                 return new SingleUserAuthorizer
@@ -106,70 +117,70 @@ namespace JosephGuadagno.Broadcasting.Functions
                     }
                 };
             });
-            builder.Services.TryAddSingleton(s =>
+            services.TryAddSingleton(s =>
             {
                 var authorizer = s.GetService<IAuthorizer>();
                 return new TwitterContext(authorizer);
             });
-            builder.Services.TryAddSingleton(s =>
+            services.TryAddSingleton(s =>
             {
                 var settings = s.GetService<ISettings>();
                 return new SourceDataRepository(settings.StorageAccount);
             });
         }
 
-        private void ConfigureJsonFeedReader(IFunctionsHostBuilder builder)
+        private static void ConfigureJsonFeedReader(IServiceCollection services)
         {
-            builder.Services.TryAddSingleton<IJsonFeedReaderSettings>(s =>
+            services.TryAddSingleton<IJsonFeedReaderSettings>(s =>
             {
                 var settings = new JsonFeedReaderSettings();
                 var configuration = s.GetService<IConfiguration>();
                 configuration.Bind("Settings:JsonFeedReader", settings);
                 return settings;
             });
-            builder.Services.TryAddSingleton<IJsonFeedReader, JsonFeedReader.JsonFeedReader>();
+            services.TryAddSingleton<IJsonFeedReader, JsonFeedReader.JsonFeedReader>();
         }
 
-        private void ConfigureSyndicationFeedReader(IFunctionsHostBuilder builder)
+        private static void ConfigureSyndicationFeedReader(IServiceCollection services)
         {
-            builder.Services.TryAddSingleton<ISyndicationFeedReaderSettings>(s =>
+            services.TryAddSingleton<ISyndicationFeedReaderSettings>(s =>
             {
                 var settings = new SyndicationFeedReaderSettings();
                 var configuration = s.GetService<IConfiguration>();
                 configuration.Bind("Settings:SyndicationFeedReader", settings);
                 return settings;
             });
-            builder.Services.TryAddSingleton<ISyndicationFeedReader, SyndicationFeedReader.SyndicationFeedReader>();
+            services.TryAddSingleton<ISyndicationFeedReader, SyndicationFeedReader.SyndicationFeedReader>();
 
         }
 
-        private void ConfigureYouTubeReader(IFunctionsHostBuilder builder)
+        private static void ConfigureYouTubeReader(IServiceCollection services)
         {
-            builder.Services.TryAddSingleton<IYouTubeSettings>(s =>
+            services.TryAddSingleton<IYouTubeSettings>(s =>
             {
                 var settings = new YouTubeSettings();
                 var configuration = s.GetService<IConfiguration>();
                 configuration.Bind("Settings:YouTube", settings);
                 return settings;
             });
-            builder.Services.TryAddSingleton<IYouTubeReader, YouTubeReader.YouTubeReader>();
+            services.TryAddSingleton<IYouTubeReader, YouTubeReader.YouTubeReader>();
         }
 
-        private void ConfigureFunction(IFunctionsHostBuilder builder)
+        private static void ConfigureFunction(IServiceCollection services)
         {
-            builder.Services.AddHttpClient();
+            services.AddHttpClient();
             
-            builder.Services.TryAddSingleton(s =>
+            services.TryAddSingleton(s =>
             {
                 var settings = s.GetService<ISettings>();
                 return new ConfigurationRepository(settings.StorageAccount);
             });
-            builder.Services.TryAddSingleton(s =>
+            services.TryAddSingleton(s =>
             {
                 var settings = s.GetService<ISettings>();
                 return new SourceDataRepository(settings.StorageAccount);
             });
-            builder.Services.TryAddSingleton(s =>
+            services.TryAddSingleton(s =>
             {
                 var settings = s.GetService<ISettings>();
                 var httpClient = s.GetService(typeof(HttpClient)) as HttpClient;
@@ -181,8 +192,8 @@ namespace JosephGuadagno.Broadcasting.Functions
                         Token = settings.BitlyToken
                     });
             });
-            builder.Services.TryAddSingleton<IUrlShortener, UrlShortener>();
-            builder.Services.TryAddSingleton<IEventPublisher, EventPublisher>();
+            services.TryAddSingleton<IUrlShortener, UrlShortener>();
+            services.TryAddSingleton<IEventPublisher, EventPublisher>();
         }
     }
 }
