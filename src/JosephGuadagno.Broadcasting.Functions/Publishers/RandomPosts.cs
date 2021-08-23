@@ -32,7 +32,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Publishers
         }
         
         [FunctionName("publishers_random_posts")]
-        public async Task RunAsync(
+        public void RunAsync(
             [TimerTrigger("0 0 9,16 * * *")] TimerInfo myTimer,
             [Queue(Constants.Queues.TwitterTweetsToSend)] ICollector<string> outboundMessages)
         {

@@ -1,13 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net5.0</TargetFramework>
         <Company>JosephGuadagno.NET, LLC</Company>
         <Authors>Joseph Guadagno</Authors>
         <Product>JosephGuadagno.NET Broadcasting - Domain</Product>
         <Description>The domain/models for the JosephGuadagno.NET Broadcasting application</Description>
         <Copyright>Copyright ©2014-2020, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
         <Title>JosephGuadagno.NET Broadcasting - Data</Title>
+        <LangVersion>default</LangVersion>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -36,9 +37,9 @@
     </PropertyGroup>
     
     <ItemGroup>
-      <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.2" />
-      <PackageReference Include="Microsoft.Azure.Cosmos.Table" Version="1.0.7" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.9" />
+      <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.3" />
+      <PackageReference Include="Microsoft.Azure.Cosmos.Table" Version="1.0.8" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
     </ItemGroup>
 
 </Project>
