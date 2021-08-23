@@ -6,14 +6,14 @@
         <Authors>Joseph Guadagno</Authors>
         <Product>JosephGuadagno.NET Broadcasting - Functions</Product>
         <Description>The Azure functions for the JosephGuadagno.NET Broadcasting application</Description>
-        <Copyright>Copyright ©2014-2020, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Copyright>Copyright ©2014-2021, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
         <Title>JosephGuadagno.NET Broadcasting - Azure Functions</Title>
         <LangVersion>default</LangVersion>
     </PropertyGroup>
 
     <PropertyGroup>
         <VersionMajor>1</VersionMajor>
-        <VersionMinor>2</VersionMinor>
+        <VersionMinor>3</VersionMinor>
         <VersionBuild>1</VersionBuild>
     </PropertyGroup>
 
