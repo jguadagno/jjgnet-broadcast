@@ -61,7 +61,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook
                 }
                 else
                 {
-                    _logger.LogError("Failed to post status. Could not deserialize the response (Response was null)");
+                    _logger.LogError("Failed to post status. Could not deserialize the response (Response was null).");
                 }
             }
             catch (Exception e)

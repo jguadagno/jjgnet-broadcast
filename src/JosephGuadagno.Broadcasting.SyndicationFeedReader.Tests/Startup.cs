@@ -11,12 +11,13 @@ using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
-using LinqToTwitter.OAuth;
+using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests
 {
@@ -38,7 +39,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests
         {
             var config = hostBuilderContext.Configuration;
             
-            services.AddSingleton(config);
+            services.AddSingleton<IConfiguration>(config);
 
             // Bind the 'Settings' section to the ISettings class
             var settings = new Domain.Models.Settings();

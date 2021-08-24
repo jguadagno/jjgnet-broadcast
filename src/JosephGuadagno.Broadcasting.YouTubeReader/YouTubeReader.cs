@@ -79,19 +79,19 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader
                     {
                         if (playlistItem.Kind == "youtube#playlistItem")
                         {
-                            if (playlistItem.Snippet.PublishedAt is null)
+                            if (!DateTime.TryParse(playlistItem.Snippet.PublishedAt, out var publishedAt))
                             {
                                 continue;
                             }
                        
-                            if (playlistItem.Snippet.PublishedAt.Value > sinceWhen)
+                            if (publishedAt > sinceWhen)
                             {
                                 videoItems.Add(new SourceData(SourceSystems.YouTube,
                                     playlistItem.Snippet.ResourceId.VideoId)
                                 {
                                     Author = playlistItem.Snippet.ChannelTitle,
-                                    PublicationDate = playlistItem.Snippet.PublishedAt.Value,
-                                    UpdatedOnDate = playlistItem.Snippet.PublishedAt,
+                                    PublicationDate = publishedAt,
+                                    UpdatedOnDate = publishedAt,
                                     //Text = searchResult.Snippet.Description,
                                     Title = playlistItem.Snippet.Title,
                                     Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",
