@@ -70,7 +70,8 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader
                     Title =  syndicationItem.Title.Text,
                     Url = syndicationItem.Id,
                     EndAfter = null,
-                    AddedOn = currentTime
+                    AddedOn = currentTime,
+                    Tags = syndicationItem.Categories is null ? null : string.Join(",", syndicationItem.Categories.Select(c => c.Name))
                 });
             }
             return feedItems;

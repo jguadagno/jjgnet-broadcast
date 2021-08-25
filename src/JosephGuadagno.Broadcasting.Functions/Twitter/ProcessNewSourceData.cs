@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
@@ -84,17 +85,32 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter
             
             var url = item.ShortenedUrl ?? item.Url;
             var postTitle = item.Title;
+            var hashTagList = HashTagList(item.Tags);
         
-            if (tweetStart.Length + url.Length + postTitle.Length + 3 >= maxTweetLenght)
+            if (tweetStart.Length + url.Length + postTitle.Length + 3 + hashTagList.Length >= maxTweetLenght)
             {
-                var newLength = maxTweetLenght - tweetStart.Length - url.Length - 1;
+                var newLength = maxTweetLenght - tweetStart.Length - url.Length - hashTagList.Length - 1;
                 postTitle = postTitle.Substring(0, newLength - 4) + "...";
             }
             
-            var tweet = $"{tweetStart} {postTitle} {url}";
+            var tweet = $"{tweetStart} {postTitle} {url} {hashTagList}";
             _logger.LogDebug("Composed tweet '{tweet}'", tweet);
             
             return tweet;
+        }
+        
+        private string HashTagList(string tags)
+        {
+            if (string.IsNullOrEmpty(tags))
+            {
+                return "#dotnet #csharp #dotnetcore";
+            }
+
+            var tagList = tags.Split(',');
+            var hashTagCategories = tagList.Where(tag => !tag.Contains("Article"));
+
+            return hashTagCategories.Aggregate("",
+                (current, tag) => current + $" #{tag.Replace(" ", "").Replace(".", "")}");
         }
     }
 }

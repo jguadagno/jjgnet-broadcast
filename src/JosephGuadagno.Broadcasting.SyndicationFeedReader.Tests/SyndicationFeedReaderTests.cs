@@ -25,7 +25,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests
         // Test the GetRandomSyndicationItem with no categories
         
         [Fact]
-        public void Test1()
+        public void GetRandomSyndicationItem_ReturnsNonNullPost()
         {
             var randomPost = _syndicationFeedReader.GetRandomSyndicationItem(_randomPostSettings.CutoffDate,
                 _randomPostSettings.ExcludedCategories);

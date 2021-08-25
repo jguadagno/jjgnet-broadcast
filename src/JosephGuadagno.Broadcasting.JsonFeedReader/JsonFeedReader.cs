@@ -72,10 +72,12 @@ namespace JosephGuadagno.Broadcasting.JsonFeedReader
                     Title =  jsonFeedItem.Title,
                     Url = jsonFeedItem.Id,
                     EndAfter = null,
-                    AddedOn = currentTime
+                    AddedOn = currentTime,
+                    Tags = jsonFeedItem.Tags is null ? null : string.Join(",", jsonFeedItem.Tags)
                 });
             }
             return sourceItems;
+            
         }
     }
 }

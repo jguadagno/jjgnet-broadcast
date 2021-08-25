@@ -84,7 +84,12 @@ namespace JosephGuadagno.Broadcasting.Domain.Models
         /// </summary>
         /// <remarks>The date time is in UTC</remarks>
         public DateTime? EndAfter { get; set; }
-
+        
+        /// <summary>
+        /// A comma separated list of tags or categories
+        /// </summary>
+        public string Tags { get; set; }
+        
         /// <summary>
         /// Returns certain properties in a Dictionary
         /// </summary>
