@@ -15,9 +15,9 @@ App Service (jjgnet) with an Application Insights services
 | Collectors | `collectors_feed_load_json_feed_items` | Gets all posts from Json feed | `JosephGuadagno.Broadcasting.Functions` | `LoadJsonFeedItems` |
 | Collectors | `collectors_youtube_load_new_videos` | Gets new videos from YouTube channel | `JosephGuadagno.Broadcasting.Functions` | `Collectors.YouTube.LoadNewVideos` |
 | Collectors | `collectors_youtube_load_all_videos` | Gets all videos from a YouTube channel | `JosephGuadagno.Broadcasting.Functions` | `Collectors.YouTube.LoadAllVideos` |
-| Twitter | `twitter_process_new_source_data` | Generates a queue message based on a *New Source* event being triggered | `JosephGuadagno.Broadcasting` | `Twitter.ProcessNeSourceData` |
+| Twitter | `twitter_process_new_source_data` | Generates a queue message based on a *New Source* event being triggered | `JosephGuadagno.Broadcasting` | `Twitter.ProcessNewSourceData` |
 | Twitter | `twitter_send_tweet` | Sends a tweet from **twitter-tweets-to-send** queue | `JosephGuadagno.Broadcasting.Functions` | `Twitter.SendTweet` |
-| Facebook | `facebook_process_new_source_data` | Generates a queue message based on a *New Source* event being triggered | `JosephGuadagno.Broadcasting | `Facebook.ProcessNeSourceData` |
+| Facebook | `facebook_process_new_source_data` | Generates a queue message based on a *New Source* event being triggered | `JosephGuadagno.Broadcasting` | `Facebook.ProcessNewSourceData` |
 | Facebook | `facebook_post_status_to_page` | Sends a tweet from **facebook-post-status-to-page** queue | `JosephGuadagno.Broadcasting.Functions` | `Facebook.PostPageStatus` |
 
 ### Queues
@@ -33,6 +33,9 @@ App Service (jjgnet) with an Application Insights services
 
 * Configuration
 * SourceData
+* Engagements
+* Talks
+* ScheduledItems
 
 ### Event Grid Topics
 

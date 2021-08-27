@@ -5,7 +5,7 @@ using Microsoft.Azure.Cosmos.Table;
 
 namespace JosephGuadagno.Broadcasting.Data.Repositories
 {
-    public class TableRepository<T> where T : TableEntity
+    public class TableRepository<T> where T : TableEntity, new()
     {
         private readonly Table _table;
         
@@ -14,18 +14,18 @@ namespace JosephGuadagno.Broadcasting.Data.Repositories
             _table = new Table(connectionString, tableName);
         }
 
-        public async Task<T> GetAsync(string partitionKey, string rowKey)
+        public virtual async Task<T> GetAsync(string partitionKey, string rowKey)
         {
             return await _table.GetTableEntityAsync<T>(partitionKey, rowKey);
         }
         
-        public async Task<bool> SaveAsync(T entity)
+        public virtual async Task<bool> SaveAsync(T entity)
         {
             var tableResult = await _table.InsertOrReplaceEntityAsync(entity);
             return tableResult.WasSuccessful;
         }
 
-        public async Task<bool> AddAllAsync(List<T> entities)
+        public virtual async Task<bool> AddAllAsync(List<T> entities)
         {
             if (entities == null)
             {
@@ -43,6 +43,11 @@ namespace JosephGuadagno.Broadcasting.Data.Repositories
             }
 
             return allSuccessful;
+        }
+
+        public virtual async Task<List<T>> GetAllAsync(string partitionKey)
+        {
+            return await _table.GetPartitionAsync<T>(partitionKey);
         }
     }
 }

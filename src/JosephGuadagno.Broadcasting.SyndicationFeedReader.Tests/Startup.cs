@@ -148,6 +148,11 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests
             services.TryAddSingleton(s =>
             {
                 var settings = s.GetService<ISettings>();
+                return new EngagementRepository(settings.StorageAccount);
+            });
+            services.TryAddSingleton(s =>
+            {
+                var settings = s.GetService<ISettings>();
                 var httpClient = s.GetService(typeof(HttpClient)) as HttpClient;
                 
                 return new Utilities.Web.Shortener.Bitly(httpClient,

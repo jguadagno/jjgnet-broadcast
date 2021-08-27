@@ -12,6 +12,9 @@ namespace JosephGuadagno.Broadcasting.Domain
         {
             public const string Configuration  = "Configuration";
             public const string SourceData = "SourceData";
+            public const string Engagements = "Engagements";
+            public const string Talks = "Talks";
+            public const string ScheduledItems = "ScheduledItems";
         }
 
         public static class ConfigurationFunctionNames
