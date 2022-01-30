@@ -1,83 +1,72 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using JosephGuadagno.AzureHelpers.Cosmos;
-using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
-namespace JosephGuadagno.Broadcasting.Data.Repositories
+namespace JosephGuadagno.Broadcasting.Data.Repositories;
+
+public class EngagementRepository: IEngagementRepository
 {
-    public class EngagementRepository
+
+    private readonly IEngagementDataStore _emgEngagementDataStore;
+
+    public EngagementRepository(IEngagementDataStore emgEngagementDataStore)
     {
-        private readonly Table _engagementTable;
-        private readonly Table _talkTable;
+        _emgEngagementDataStore = emgEngagementDataStore;
+    }
         
-        public EngagementRepository(string connectionString)
-        {
-            _engagementTable = new Table(connectionString, Constants.Tables.Engagements);
-            _talkTable = new Table(connectionString, Constants.Tables.Talks);
-        
-        }
+    public async Task<Engagement> GetAsync(int primaryKey)
+    {
+        return await _emgEngagementDataStore.GetAsync(primaryKey);
+    }
 
-        public async Task<Engagement> GetAsync(string partitionKey, string rowKey)
-        {
-            var engagement = await _engagementTable.GetTableEntityAsync<Engagement>(partitionKey, rowKey);
-            var talks = await _talkTable.GetPartitionAsync<Talk>(rowKey);
-            engagement.Talks = talks;
+    public async Task<bool> SaveAsync(Engagement entity)
+    {
+        return await _emgEngagementDataStore.SaveAsync(entity);
+    }
 
-            return engagement;
-        }
-        
-        public async Task<bool> SaveAsync(Engagement engagement)
-        {
-            
-            var tableResult = await _engagementTable.InsertOrReplaceEntityAsync(engagement);
-            if (!tableResult.WasSuccessful)
-            {
-                return false;
-            }
+    public async Task<bool> SaveAllAsync(List<Engagement> entities)
+    {
+        return await _emgEngagementDataStore.SaveAllAsync(entities);
+    }
 
-            foreach (var talk in engagement.Talks)
-            {
-                if (string.IsNullOrEmpty(talk.PartitionKey))
-                {
-                    talk.PartitionKey = engagement.RowKey;
-                }
+    public async Task<List<Engagement>> GetAllAsync()
+    {
+        return await _emgEngagementDataStore.GetAllAsync();
+    }
 
-                if (string.IsNullOrEmpty(talk.RowKey))
-                {
-                    talk.RowKey = Guid.NewGuid().ToString();
-                }
+    public async Task<bool> DeleteAsync(Engagement entity)
+    {
+        return await _emgEngagementDataStore.DeleteAsync(entity);
+    }
 
-                tableResult = await _talkTable.InsertOrReplaceEntityAsync(talk);
-                if (tableResult.WasSuccessful == false)
-                {
-                    return false;
-                }
-            }
+    public async Task<bool> DeleteAsync(int primaryKey)
+    {
+        return await _emgEngagementDataStore.DeleteAsync(primaryKey);
+    }
 
-            return true;
-        }
-       
-        public async Task<bool> AddAllAsync(List<Engagement> entities)
-        {
-            if (entities == null)
-            {
-                return false;
-            }
+    public async Task<bool> AddTalkToEngagementAsync(Engagement engagement, Talk talk)
+    {
+        return await _emgEngagementDataStore.AddTalkToEngagementAsync(engagement, talk);
+    }
 
-            var allSuccessful = true;
-            foreach (var entity in entities)
-            {
-                var wasSuccessful = await SaveAsync(entity);
-                if (wasSuccessful == false)
-                {
-                    allSuccessful = false;
-                }
-            }
+    public async Task<bool> AddTalkToEngagementAsync(int engagementId, Talk talk)
+    {
+        return await _emgEngagementDataStore.AddTalkToEngagementAsync(engagementId, talk);
+    }
 
-            return allSuccessful;
-        }
+    public async Task<bool> SaveTalkAsync(Talk talk)
+    {
+        return await _emgEngagementDataStore.SaveTalkAsync(talk);
+    }
 
+    public async Task<bool> RemoveTalkFromEngagementAsync(int talkId)
+    {
+        return await _emgEngagementDataStore.RemoveTalkFromEngagementAsync(talkId);
+    }
+
+    public async Task<bool> RemoveTalkFromEngagementAsync(Talk talk)
+    {
+        return await _emgEngagementDataStore.RemoveTalkFromEngagementAsync(talk);
     }
 }

@@ -1,8 +1,7 @@
-namespace JosephGuadagno.Broadcasting.Domain
+namespace JosephGuadagno.Broadcasting.Domain;
+
+public static class SourceSystems
 {
-    public static class SourceSystems
-    {
-        public static readonly string SyndicationFeed = "SyndicationFeed";
-        public static readonly string YouTube = "YouTube";
-    }
+    public static readonly string SyndicationFeed = "SyndicationFeed";
+    public static readonly string YouTube = "YouTube";
 }

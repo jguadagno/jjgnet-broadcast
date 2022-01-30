@@ -8,81 +8,80 @@ using Microsoft.Azure.EventGrid;
 using Microsoft.Azure.EventGrid.Models;
 using Microsoft.Extensions.Logging;
 
-namespace JosephGuadagno.Broadcasting.Data
+namespace JosephGuadagno.Broadcasting.Data;
+
+public class EventPublisher: IEventPublisher
 {
-    public class EventPublisher: IEventPublisher
+
+    private readonly ILogger _logger;
+        
+    public EventPublisher(ILogger<EventPublisher> logger)
     {
-
-        private readonly ILogger _logger;
+        _logger = logger;
+    }
         
-        public EventPublisher(ILogger<EventPublisher> logger)
+    public bool PublishEvents(string topicUrl, string topicKey, string subject, IReadOnlyCollection<SourceData> sourceDataItems)
+    {
+        return PublishEventsAsync(topicUrl, topicKey, subject, sourceDataItems).Result;
+    }
+
+    public async Task<bool> PublishEventsAsync(string topicUrl, string topicKey, string subject, IReadOnlyCollection<SourceData> sourceDataItems)
+    {
+            
+        if (string.IsNullOrEmpty(topicUrl))
         {
-            _logger = logger;
+            throw new ArgumentNullException(nameof(topicUrl), "The topic url is required.");
         }
-        
-        public bool PublishEvents(string topicUrl, string topicKey, string subject, IReadOnlyCollection<SourceData> sourceDataItems)
+
+        if (string.IsNullOrEmpty(topicKey))
         {
-            return PublishEventsAsync(topicUrl, topicKey, subject, sourceDataItems).Result;
+            throw new ArgumentNullException(nameof(topicKey), "The topic key is required.");
         }
-
-        public async Task<bool> PublishEventsAsync(string topicUrl, string topicKey, string subject, IReadOnlyCollection<SourceData> sourceDataItems)
+            
+        if (string.IsNullOrEmpty(subject))
         {
+            throw new ArgumentNullException(nameof(subject), "The subject is required.");
+        }
             
-            if (string.IsNullOrEmpty(topicUrl))
-            {
-                throw new ArgumentNullException(nameof(topicUrl), "The topic url is required.");
-            }
+        if (sourceDataItems == null || sourceDataItems.Count == 0)
+        {
+            return false;
+        }
+            
+        var topicHostName = new Uri(topicUrl).Host;
+        var topicCredentials = new TopicCredentials(topicKey);
+        var client= new EventGridClient(topicCredentials);
 
-            if (string.IsNullOrEmpty(topicKey))
-            {
-                throw new ArgumentNullException(nameof(topicKey), "The topic key is required.");
-            }
-            
-            if (string.IsNullOrEmpty(subject))
-            {
-                throw new ArgumentNullException(nameof(subject), "The subject is required.");
-            }
-            
-            if (sourceDataItems == null || sourceDataItems.Count == 0)
-            {
-                return false;
-            }
-            
-            var topicHostName = new Uri(topicUrl).Host;
-            var topicCredentials = new TopicCredentials(topicKey);
-            var client= new EventGridClient(topicCredentials);
-
-            var eventList = new List<EventGridEvent>();
-            foreach (var sourceData in sourceDataItems)
-            {
-                eventList.Add(
-                    new EventGridEvent
+        var eventList = new List<EventGridEvent>();
+        foreach (var sourceData in sourceDataItems)
+        {
+            eventList.Add(
+                new EventGridEvent
+                {
+                    Id = sourceData.RowKey,
+                    EventType= Constants.Topics.NewSourceData,
+                    Data = new TableEvent
                     {
-                        Id = sourceData.RowKey,
-                        EventType= Constants.Topics.NewSourceData,
-                        Data = new TableEvent
-                        {
-                            TableName = Constants.Tables.SourceData, 
-                            PartitionKey = sourceData.PartitionKey,
-                            RowKey = sourceData.RowKey
-                        },
-                        EventTime = DateTime.UtcNow,
-                        Subject = subject,
-                        DataVersion = "1.0"
-                    });
-            }
-
-            try
-            {
-                await client.PublishEventsAsync(topicHostName, eventList);
-                return true;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Failed to publish the event to TopicUrl: '{topicUrl}'. Exception: '{e}'", topicUrl, e);   
-                return false;
-            }
-
+                        TableName = Constants.Tables.SourceData, 
+                        PartitionKey = sourceData.PartitionKey,
+                        RowKey = sourceData.RowKey
+                    },
+                    EventTime = DateTime.UtcNow,
+                    Subject = subject,
+                    DataVersion = "1.0"
+                });
         }
+
+        try
+        {
+            await client.PublishEventsAsync(topicHostName, eventList);
+            return true;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to publish the event to TopicUrl: '{topicUrl}'. Exception: '{e}'", topicUrl, e);   
+            return false;
+        }
+
     }
 }

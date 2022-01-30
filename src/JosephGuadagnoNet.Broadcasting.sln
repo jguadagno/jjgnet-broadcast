@@ -11,6 +11,8 @@ ProjectSection(SolutionItems) = preProject
 	..\infrastructure-needs.md = ..\infrastructure-needs.md
 	..\README.md = ..\README.md
 	..\.github\workflows\publish-to-azure-function.yml = ..\.github\workflows\publish-to-azure-function.yml
+	..\scripts\database-create.sql = ..\scripts\database-create.sql
+	..\scripts\table-create.sql = ..\scripts\table-create.sql
 EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Functions", "JosephGuadagno.Broadcasting.Functions\JosephGuadagno.Broadcasting.Functions.csproj", "{3982BC47-81CD-4D61-82D6-17749CB36032}"
@@ -20,6 +22,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.YouTubeReader", "JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj", "{C7A60E25-3A0F-48BB-97B3-5A4BBD187F0D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests", "JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests\JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests.csproj", "{55F131EB-35B1-4F78-95BB-3D44BD43D33A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Data.Sql", "JosephGuadagno.Broadcasting.Data.Sql\JosephGuadagno.Broadcasting.Data.Sql.csproj", "{D4B7D4FC-2CB1-460D-ADFF-73DF5CD6C7C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers", "JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj", "{927735BA-6402-4F03-A684-6004F824BE33}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -55,5 +61,13 @@ Global
 		{55F131EB-35B1-4F78-95BB-3D44BD43D33A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{55F131EB-35B1-4F78-95BB-3D44BD43D33A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{55F131EB-35B1-4F78-95BB-3D44BD43D33A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4B7D4FC-2CB1-460D-ADFF-73DF5CD6C7C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4B7D4FC-2CB1-460D-ADFF-73DF5CD6C7C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4B7D4FC-2CB1-460D-ADFF-73DF5CD6C7C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4B7D4FC-2CB1-460D-ADFF-73DF5CD6C7C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{927735BA-6402-4F03-A684-6004F824BE33}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{927735BA-6402-4F03-A684-6004F824BE33}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{927735BA-6402-4F03-A684-6004F824BE33}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{927735BA-6402-4F03-A684-6004F824BE33}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <Company>JosephGuadagno.NET, LLC</Company>
         <Authors>Joseph Guadagno</Authors>
         <Product>JosephGuadagno.NET Broadcasting - YouTube Reader</Product>
         <Description>This library checks YouTube for Videos for the JosephGuadagno.NET Broadcasting application</Description>
-        <Copyright>Copyright ©2014-2020, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Copyright>Copyright ©2014-2022, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
         <Title>JosephGuadagno.NET Broadcasting - YouTube Reader</Title>
     </PropertyGroup>
 
     <PropertyGroup>
         <VersionMajor>1</VersionMajor>
-        <VersionMinor>2</VersionMinor>
+        <VersionMinor>3</VersionMinor>
         <VersionBuild>0</VersionBuild>
     </PropertyGroup>
 
@@ -40,8 +40,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Google.Apis.YouTube.v3" Version="1.49.0.2084" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.9" />
+      <PackageReference Include="Google.Apis.YouTube.v3" Version="1.55.0.2449" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
     </ItemGroup>
 
 </Project>

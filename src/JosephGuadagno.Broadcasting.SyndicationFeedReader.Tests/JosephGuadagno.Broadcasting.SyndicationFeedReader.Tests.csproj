@@ -1,26 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <Company>JosephGuadagno.NET, LLC</Company>
         <Authors>Joseph Guadagno</Authors>
         <Product>JosephGuadagno.NET Broadcasting - Syndication Feed Reader Test Library</Product>
         <Description>This library contains the unit/integration test for the library that reads Syndication Feeds for the JosephGuadagno.NET Broadcasting application</Description>
-        <Copyright>Copyright ©2014-2021, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Copyright>Copyright ©2014-2022, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
         <Title>JosephGuadagno.NET Broadcasting - Syndication Feed Reader Tests</Title>
         <UserSecretsId>bba0c3bc-df5e-4c6c-a82c-ab974102a8a4</UserSecretsId>
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="linqtotwitter" Version="5.1.3" />
-        <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.18" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="3.1.18" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.18" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.8" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.10.0" />
+        <PackageReference Include="linqtotwitter" Version="6.10.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
         <PackageReference Include="xunit" Version="2.4.1" />
-        <PackageReference Include="Xunit.DependencyInjection" Version="7.3.0" />
+        <PackageReference Include="Xunit.DependencyInjection" Version="8.3.0" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
@@ -32,10 +32,12 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.Sql\JosephGuadagno.Broadcasting.Data.Sql.csproj" />
       <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj" />
       <ProjectReference Include="..\JosephGuadagno.Broadcasting.JsonFeedReader\JosephGuadagno.Broadcasting.JsonFeedReader.csproj" />
       <ProjectReference Include="..\JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj" />
       <ProjectReference Include="..\JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj" />
+      <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj" />
     </ItemGroup>
 
     <ItemGroup>
