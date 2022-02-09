@@ -23,7 +23,7 @@ public class ProcessScheduledItemFired
     private readonly IEngagementManager _engagementManager;
     private readonly ILogger<ProcessScheduledItemFired> _logger;
     
-    const int MaxTweetLength = 2000;
+    const int MaxTweetLength = 240;
     
     public ProcessScheduledItemFired(
         SourceDataRepository sourceDataRepository,
