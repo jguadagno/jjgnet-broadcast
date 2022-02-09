@@ -12,9 +12,6 @@ public static class Constants
     {
         public const string Configuration  = "Configuration";
         public const string SourceData = "SourceData";
-        public const string Engagements = "Engagements";
-        public const string Talks = "Talks";
-        public const string ScheduledItems = "ScheduledItems";
     }
 
     public static class ConfigurationFunctionNames
@@ -24,11 +21,13 @@ public static class Constants
         public const string CollectorsYouTubeLoadNewVideos = "CollectorsYouTubeLoadNewVideos";
         public const string CollectorsYouTubeLoadAllVideos = "CollectorsYouTubeLoadAllVideos";
         public const string PublishersRandomPosts = "PublishersRandomPosts";
+        public const string PublishersScheduledItems = "PublishersScheduledItems";
     }
 
     public static class Topics
     {
         public const string NewSourceData = "new-source-data";
+        public const string ScheduledItemFired = "scheduled-item-fired";
     }
 
     public static class Metrics
@@ -36,5 +35,6 @@ public static class Constants
         public const string PostAddedOrUpdated = "PostAddedOrUpdated";
         public const string VideoAddedOrUpdated = "VideoAddedOrUpdated";
         public const string RandomTweetSent = "RandomTweetSent";
+        public const string ScheduledItemFired = "ScheduledItemFired";
     }
 }

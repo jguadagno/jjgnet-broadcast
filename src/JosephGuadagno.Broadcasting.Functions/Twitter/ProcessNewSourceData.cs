@@ -69,7 +69,7 @@ public class ProcessNewSourceData
             return null;
         }
 
-        const int maxTweetLenght = 240;
+        const int maxTweetLength = 240;
             
         // Build Tweet
         var tweetStart = "";
@@ -87,9 +87,9 @@ public class ProcessNewSourceData
         var postTitle = item.Title;
         var hashTagList = HashTagList(item.Tags);
         
-        if (tweetStart.Length + url.Length + postTitle.Length + 3 + hashTagList.Length >= maxTweetLenght)
+        if (tweetStart.Length + url.Length + postTitle.Length + 3 + hashTagList.Length >= maxTweetLength)
         {
-            var newLength = maxTweetLenght - tweetStart.Length - url.Length - hashTagList.Length - 1;
+            var newLength = maxTweetLength - tweetStart.Length - url.Length - hashTagList.Length - 1;
             postTitle = postTitle.Substring(0, newLength - 4) + "...";
         }
             

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace JosephGuadagno.Broadcasting.Domain.Models;
 
@@ -22,17 +23,37 @@ public class ScheduledItem
     public string SourceTableName { get; set; }
         
     /// <summary>
-    /// The partition key in the <see cref="SourceTableName"/>
+    /// The primary key for this record.
     /// </summary>
-    public string ItemPartitionKey { get; set; }
+    /// <remarks>
+    /// For <see cref="SourceData"/> it is the PartitionKey.
+    /// For <see cref="Engagement"/> it is the Id field/>
+    /// </remarks>
+    public string ItemPrimaryKey { get; set; }
         
     /// <summary>
-    /// The RowKey in the <see cref="SourceTableName"/>
+    /// The secondary key for the record
     /// </summary>
-    public string ItemRoyKey { get; set; }
+    /// <remarks>
+    /// For <see cref="SourceData"/> it is the RowKey.
+    /// For <see cref="Engagement"/> it is not applicable.
+    /// </remarks>
+    public string ItemSecondaryKey { get; set; }
         
     /// <summary>
     /// The date and time this item is scheduled to go out
     /// </summary>
     public DateTime ScheduleDateTime { get; set; }
+
+    public Dictionary<string, string> ToDictionary()
+    {
+        return new Dictionary<string, string>
+        {
+            { "Id", Id.ToString() },
+            { "SourceTableName", SourceTableName },
+            { "ItemPrimaryKey", ItemPrimaryKey },
+            { "ItemSecondaryKey", ItemSecondaryKey },
+            { "ScheduledDate", ScheduleDateTime.ToString("f") }
+        };
+    }
 }

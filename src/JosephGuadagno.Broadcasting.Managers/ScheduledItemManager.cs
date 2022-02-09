@@ -47,9 +47,9 @@ public class ScheduledItemManager: IScheduledItemManager
         return await _scheduledItemRepository.DeleteAsync(primaryKey);
     }
 
-    public async Task<List<ScheduledItem>> GetUpcomingScheduledItemsAsync(DateTimeOffset lastChecked)
+    public async Task<List<ScheduledItem>> GetUpcomingScheduledItemsAsync()
     {
-        return await _scheduledItemRepository.GetUpcomingScheduledItemsAsync(lastChecked);
+        return await _scheduledItemRepository.GetUpcomingScheduledItemsAsync();
     }
 
     public async Task<bool> SentScheduledItemAsync(int primaryKey)

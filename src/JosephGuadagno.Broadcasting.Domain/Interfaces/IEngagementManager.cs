@@ -10,4 +10,5 @@ public interface IEngagementManager: IManager<Engagement>
     public Task<bool> SaveTalkAsync(Talk talk);
     public Task<bool> RemoveTalkFromEngagementAsync(int talkId);
     public Task<bool> RemoveTalkFromEngagementAsync(Talk talk);
+    public Task<Talk> GetTalkAsync(int talkId);
 }

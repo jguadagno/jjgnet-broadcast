@@ -46,9 +46,9 @@ public class ScheduledItemRepository: IScheduledItemRepository
         return await _scheduledItemDataStore.DeleteAsync(primaryKey);
     }
 
-    public async Task<List<ScheduledItem>> GetUpcomingScheduledItemsAsync(DateTimeOffset lastChecked)
+    public async Task<List<ScheduledItem>> GetUpcomingScheduledItemsAsync()
     {
-        return await _scheduledItemDataStore.GetUpcomingScheduledItemsAsync(lastChecked);
+        return await _scheduledItemDataStore.GetUpcomingScheduledItemsAsync();
     }
 
     public async Task<bool> SentScheduledItemAsync(int primaryKey, DateTimeOffset sentOn)

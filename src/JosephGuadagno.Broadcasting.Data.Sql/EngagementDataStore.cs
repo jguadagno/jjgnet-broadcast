@@ -24,24 +24,24 @@ public class EngagementDataStore: IEngagementDataStore
         _mapper = new Mapper(mapperConfiguration);
     }
         
-    public async Task<Engagement> GetAsync(int primaryKey)
+    public async Task<Domain.Models.Engagement> GetAsync(int primaryKey)
     {
         var dbEngagement =
             await _broadcastingContext.Engagements.Include(e => e.Talks)
                 .FirstOrDefaultAsync(e => e.Id == primaryKey);
-        return _mapper.Map<Engagement>(dbEngagement);
+        return _mapper.Map<Domain.Models.Engagement>(dbEngagement);
     }
 
-    public async Task<bool> SaveAsync(Engagement engagement)
+    public async Task<bool> SaveAsync(Domain.Models.Engagement engagement)
     {
-        var dbEngagement = _mapper.Map<Sql.Models.Engagement>(engagement);
+        var dbEngagement = _mapper.Map<Models.Engagement>(engagement);
         _broadcastingContext.Entry(dbEngagement).State =
             dbEngagement.Id == 0 ? EntityState.Added : EntityState.Modified;
 
         return await _broadcastingContext.SaveChangesAsync() != 0;
     }
 
-    public async Task<bool> SaveAllAsync(List<Engagement> engagements)
+    public async Task<bool> SaveAllAsync(List<Domain.Models.Engagement> engagements)
     {
         foreach (var engagement in engagements)
         {
@@ -54,13 +54,13 @@ public class EngagementDataStore: IEngagementDataStore
         return true;
     }
 
-    public async Task<List<Engagement>> GetAllAsync()
+    public async Task<List<Domain.Models.Engagement>> GetAllAsync()
     {
         var dbEngagements = await _broadcastingContext.Engagements.ToListAsync();
-        return _mapper.Map<List<Engagement>>(dbEngagements);
+        return _mapper.Map<List<Domain.Models.Engagement>>(dbEngagements);
     }
 
-    public async Task<bool> DeleteAsync(Engagement engagement)
+    public async Task<bool> DeleteAsync(Domain.Models.Engagement engagement)
     {
         return await DeleteAsync(engagement.Id);
     }
@@ -85,7 +85,7 @@ public class EngagementDataStore: IEngagementDataStore
         return await _broadcastingContext.SaveChangesAsync() != 0;
     }
 
-    public async Task<bool> AddTalkToEngagementAsync(Engagement engagement, Talk talk)
+    public async Task<bool> AddTalkToEngagementAsync(Domain.Models.Engagement engagement, Domain.Models.Talk talk)
     {
         ArgumentNullException.ThrowIfNull(engagement);
         ArgumentNullException.ThrowIfNull(talk);
@@ -113,7 +113,7 @@ public class EngagementDataStore: IEngagementDataStore
         return await _broadcastingContext.SaveChangesAsync() != 0;
     }
 
-    public async Task<bool> AddTalkToEngagementAsync(int engagementId, Talk talk)
+    public async Task<bool> AddTalkToEngagementAsync(int engagementId, Domain.Models.Talk talk)
     {
         ArgumentNullException.ThrowIfNull(talk);
         if (engagementId <= 0)
@@ -135,7 +135,7 @@ public class EngagementDataStore: IEngagementDataStore
         return await _broadcastingContext.SaveChangesAsync() != 0;
     }
 
-    public async Task<bool> SaveTalkAsync(Talk talk)
+    public async Task<bool> SaveTalkAsync(Domain.Models.Talk talk)
     {
         ArgumentNullException.ThrowIfNull(talk);
         var dbTalk = _mapper.Map<Models.Talk>(talk);
@@ -161,12 +161,23 @@ public class EngagementDataStore: IEngagementDataStore
         return await _broadcastingContext.SaveChangesAsync() != 0;
     }
 
-    public async Task<bool> RemoveTalkFromEngagementAsync(Talk talk)
+    public async Task<bool> RemoveTalkFromEngagementAsync(Domain.Models.Talk talk)
     {
         ArgumentNullException.ThrowIfNull(talk);
 
         var dbTalk = _mapper.Map<Models.Talk>(talk);
         _broadcastingContext.Talks.Remove(dbTalk);
         return await _broadcastingContext.SaveChangesAsync() != 0;
+    }
+
+    public async Task<Talk?> GetTalkAsync(int talkId)
+    {
+        if (talkId <= 0)
+        {
+            throw new ApplicationException("The TalkId can not be <=0");
+        }
+
+        var dbTalk = await _broadcastingContext.Talks.FindAsync(talkId);
+        return dbTalk is null ? null : _mapper.Map<Domain.Models.Talk>(dbTalk);
     }
 }

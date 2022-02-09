@@ -15,6 +15,8 @@ public class Settings : ISettings
     public string BitlyShortenedDomain { get; set; }
     public string TopicNewSourceDataEndpoint { get; set; }
     public string TopicNewSourceDataKey { get; set; }
+    public string TopicScheduledItemFiredDataEndpoint { get; set; }
+    public string TopicScheduledItemFiredDataKey { get; set; }
     public string FacebookPageId { get; set; }
     public string FacebookPageAccessToken { get; set; }
 }

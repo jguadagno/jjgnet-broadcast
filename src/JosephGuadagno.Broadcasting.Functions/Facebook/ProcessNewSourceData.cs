@@ -35,6 +35,11 @@ public class ProcessNewSourceData
         ICollector<FacebookPostStatus> outboundMessages)
     {
         // Get the Source Data identifier for the event
+        if (eventGridEvent.Data is null)
+        {
+            _logger.LogError("The event data was null for event '{eventGridEvent.Id}'", eventGridEvent.Id);
+            return;
+        }
         var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridEvent.Data.ToString());
         if (tableEvent == null)
         {
@@ -42,7 +47,7 @@ public class ProcessNewSourceData
             return;
         }
 
-        // Create the scheduled tweets for it
+        // Create the Facebook posts for it
         _logger.LogDebug("Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
         var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
 
@@ -64,34 +69,34 @@ public class ProcessNewSourceData
         _logger.LogDebug("Done composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.", tableEvent.PartitionKey, tableEvent.RowKey);
     }
         
-    private FacebookPostStatus ComposeStatus(SourceData item)
+    private FacebookPostStatus ComposeStatus(SourceData sourceData)
     {
-        if (item == null)
+        if (sourceData == null)
         {
             return null;
         }
 
-        const int maxStatusText = 2000;
+        const int maxFacebookStatusText = 2000;
             
         // Build Facebook Status
-        var statusText = "";
-        switch (item.SourceSystem)
+        var statusText = sourceData.SourceSystem switch
         {
-            case nameof(SourceSystems.SyndicationFeed):
-                statusText = item.UpdatedOnDate > item.PublicationDate ? "Updated Blog Post: " : "New Blog Post: ";
-                break;
-            case nameof(SourceSystems.YouTube):
-                statusText = item.UpdatedOnDate > item.PublicationDate ? "Updated Video: " : "New Video: ";
-                break;
-        }
-            
-        var url = item.ShortenedUrl ?? item.Url;
-        var postTitle = item.Title;
-        var hashTagList = HashTagList(item.Tags);
+            nameof(SourceSystems.SyndicationFeed) => sourceData.UpdatedOnDate > sourceData.PublicationDate
+                ? "Updated Blog Post: "
+                : "New Blog Post: ",
+            nameof(SourceSystems.YouTube) => sourceData.UpdatedOnDate > sourceData.PublicationDate
+                ? "Updated Video: "
+                : "New Video: ",
+            _ => ""
+        };
+
+        var url = sourceData.ShortenedUrl ?? sourceData.Url;
+        var postTitle = sourceData.Title;
+        var hashTagList = HashTagList(sourceData.Tags);
         
-        if (statusText.Length + url.Length + postTitle.Length + 3 + hashTagList.Length >= maxStatusText)
+        if (statusText.Length + url.Length + postTitle.Length + 3 + hashTagList.Length >= maxFacebookStatusText)
         {
-            var newLength = maxStatusText - statusText.Length - url.Length - hashTagList.Length - 1;
+            var newLength = maxFacebookStatusText - statusText.Length - url.Length - hashTagList.Length - 1;
             postTitle = postTitle.Substring(0, newLength - 4) + "...";
         }
             

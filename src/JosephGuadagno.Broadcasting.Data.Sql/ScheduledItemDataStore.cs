@@ -4,13 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
-public class ScheduledItemDataStore:IScheduledItemDataStore
+public class ScheduledItemDataStore: IScheduledItemDataStore
 {
 
     private readonly BroadcastingContext _broadcastingContext;
@@ -26,13 +25,13 @@ public class ScheduledItemDataStore:IScheduledItemDataStore
         _mapper = new Mapper(mappingConfiguration);
     }
         
-    public async Task<ScheduledItem> GetAsync(int primaryKey)
+    public async Task<Domain.Models.ScheduledItem> GetAsync(int primaryKey)
     {
         var dbScheduledItem = await _broadcastingContext.ScheduledItems.FindAsync(primaryKey);
-        return _mapper.Map<ScheduledItem>(dbScheduledItem);
+        return _mapper.Map<Domain.Models.ScheduledItem>(dbScheduledItem);
     }
 
-    public async Task<bool> SaveAsync(ScheduledItem talk)
+    public async Task<bool> SaveAsync(Domain.Models.ScheduledItem talk)
     {
         var dbScheduledItem = _mapper.Map<Sql.Models.ScheduledItem>(talk);
         _broadcastingContext.Entry(dbScheduledItem).State = talk.Id == 0 ? EntityState.Added : EntityState.Modified;
@@ -40,7 +39,7 @@ public class ScheduledItemDataStore:IScheduledItemDataStore
         return await _broadcastingContext.SaveChangesAsync() != 0;
     }
 
-    public async Task<bool> SaveAllAsync(List<ScheduledItem> talks)
+    public async Task<bool> SaveAllAsync(List<Domain.Models.ScheduledItem> talks)
     {
         foreach (var scheduledItem in talks)
         {
@@ -53,13 +52,13 @@ public class ScheduledItemDataStore:IScheduledItemDataStore
         return true;
     }
 
-    public async Task<List<ScheduledItem>> GetAllAsync()
+    public async Task<List<Domain.Models.ScheduledItem>> GetAllAsync()
     {
         var dbScheduledItems = await _broadcastingContext.ScheduledItems.ToListAsync();
-        return _mapper.Map<List<ScheduledItem>>(dbScheduledItems);
+        return _mapper.Map<List<Domain.Models.ScheduledItem>>(dbScheduledItems);
     }
 
-    public async Task<bool> DeleteAsync(ScheduledItem scheduledItem)
+    public async Task<bool> DeleteAsync(Domain.Models.ScheduledItem scheduledItem)
     {
         return await DeleteAsync(scheduledItem.Id);
     }
@@ -75,12 +74,12 @@ public class ScheduledItemDataStore:IScheduledItemDataStore
         return await _broadcastingContext.SaveChangesAsync() != 0;
     }
 
-    public async Task<List<ScheduledItem>> GetUpcomingScheduledItemsAsync(DateTimeOffset lastChecked)
+    public async Task<List<Domain.Models.ScheduledItem>> GetUpcomingScheduledItemsAsync()
     {
         var dbScheduledItems = await _broadcastingContext.ScheduledItems
             .Where(si => si.MessageSent == false && si.SendOnDateTime <= DateTimeOffset.Now)
             .ToListAsync();
-        return _mapper.Map<List<ScheduledItem>>(dbScheduledItems);
+        return _mapper.Map<List<Domain.Models.ScheduledItem>>(dbScheduledItems);
     }
 
     public async Task<bool> SentScheduledItemAsync(int primaryKey, DateTimeOffset sentOn)

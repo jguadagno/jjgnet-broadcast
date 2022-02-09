@@ -67,4 +67,9 @@ public class EngagementManager: IEngagementManager
     {
         return await _engagementRepository.RemoveTalkFromEngagementAsync(talk);
     }
+
+    public async Task<Talk> GetTalkAsync(int talkId)
+    {
+        return await _engagementRepository.GetTalkAsync(talkId);
+    }
 }

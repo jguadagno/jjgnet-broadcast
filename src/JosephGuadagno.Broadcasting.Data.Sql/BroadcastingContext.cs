@@ -4,40 +4,28 @@ using Microsoft.Extensions.Configuration;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
-// TODO: Look into fixing the nullability of this class
-
 public partial class BroadcastingContext : DbContext
 {
     private readonly IConfiguration _configuration;
-        
     public BroadcastingContext(IConfiguration configuration)
     {
         _configuration = configuration;
     }
 
-    public BroadcastingContext(DbContextOptions<BroadcastingContext> options)
-        : base(options)
-    {
-    }
-
-    public virtual DbSet<Engagement> Engagements { get; set; }
-    public virtual DbSet<ScheduledItem> ScheduledItems { get; set; }
-    public virtual DbSet<Talk> Talks { get; set; }
+    public virtual DbSet<Engagement> Engagements { get; set; } = null!;
+    public virtual DbSet<ScheduledItem> ScheduledItems { get; set; } = null!;
+    public virtual DbSet<Talk> Talks { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
         optionsBuilder.UseSqlServer(_configuration.GetConnectionString("JJGNetDatabaseSqlServer"));
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasAnnotation("Relational:Collation", "SQL_Latin1_General_CP1_CI_AS");
-
         modelBuilder.Entity<Engagement>(entity =>
         {
             entity.HasKey(e => e.Id)
                 .HasName("Engagements_pk")
                 .IsClustered(false);
-
-            entity.Property(e => e.Name).IsRequired();
         });
 
         modelBuilder.Entity<ScheduledItem>(entity =>
@@ -46,13 +34,17 @@ public partial class BroadcastingContext : DbContext
                 .HasName("ScheduledItems_pk")
                 .IsClustered(false);
 
+            entity.HasIndex(e => e.MessageSentOn, "ScheduledItems_MessageSentOn_index");
+
             entity.Property(e => e.ItemPrimaryKey)
-                .IsRequired()
+                .HasMaxLength(255)
+                .IsUnicode(false);
+
+            entity.Property(e => e.ItemSecondaryKey)
                 .HasMaxLength(255)
                 .IsUnicode(false);
 
             entity.Property(e => e.ItemTable)
-                .IsRequired()
                 .HasMaxLength(255)
                 .IsUnicode(false);
         });
@@ -62,8 +54,6 @@ public partial class BroadcastingContext : DbContext
             entity.HasKey(e => e.Id)
                 .HasName("Talks_pk")
                 .IsClustered(false);
-
-            entity.Property(e => e.Name).IsRequired();
 
             entity.HasOne(d => d.Engagement)
                 .WithMany(p => p.Talks)
