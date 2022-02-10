@@ -93,36 +93,10 @@ Topic Endpoint: `https://scheduled-item-fired.westus2-1.eventgrid.azure.net/api/
 
 SQL Server
 
-### Create Script
+### Create Script - Database and Users
 
-Replace the `<REPLACE_ME>` with the password
+Location in file [database-create.sql](scripts/database-create.sql)
 
-```sql
-CREATE DATABASE JJGNet
-    ON
-    ( NAME = JJGNet_Data,
-        FILENAME = '/var/opt/mssql/data/jjgnet.mdf',
-        SIZE = 10,
-        MAXSIZE = 50,
-        FILEGROWTH = 5 )
-    LOG ON
-    ( NAME = JJGNet_Log,
-        FILENAME = '/var/opt/mssql/data/jjgnet.ldf',
-        SIZE = 5MB,
-        MAXSIZE = 25MB,
-        FILEGROWTH = 5MB ) ;
-GO
+### Create Script - Tables
 
-USE master
-CREATE Login jjgnet_user
-WITH Password='<REPLACE_ME>'
-GO
-
-USE JJGNet
-CREATE USER jjgnet_user FOR LOGIN jjgnet_user;
-
-ALTER ROLE db_datareader ADD MEMBER jjgnet_user;
-ALTER ROLE db_datawriter ADD MEMBER jjgnet_user;
-GO
-
-```
+Located in [table-create.sql](scripts/table-create.sql)
