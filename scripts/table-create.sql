@@ -34,7 +34,7 @@ create table dbo.ScheduledItems
     Id               int identity
         constraint ScheduledItems_pk
             primary key nonclustered,
-    ItemTable        varchar(255)   not null,
+    ItemTableName    varchar(255)   not null,
     ItemPrimaryKey   varchar(255)   not null,
     Message          nvarchar(max),
     SendOnDateTime   datetimeoffset not null,

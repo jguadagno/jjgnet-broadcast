@@ -127,7 +127,7 @@ public class EventPublisher: IEventPublisher
                     EventType= Constants.Topics.ScheduledItemFired,
                     Data = new TableEvent
                     {
-                        TableName = scheduledItem.SourceTableName, 
+                        TableName = scheduledItem.ItemTableName, 
                         PartitionKey = scheduledItem.ItemPrimaryKey,
                         RowKey = scheduledItem.ItemSecondaryKey
                     },

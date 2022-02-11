@@ -14,9 +14,9 @@ public class EngagementDataStore: IEngagementDataStore
     private readonly BroadcastingContext _broadcastingContext;
     private readonly Mapper _mapper;
 
-    public EngagementDataStore(IConfiguration configuration)
+    public EngagementDataStore(ISettings settings)
     {
-        _broadcastingContext = new BroadcastingContext(configuration);
+        _broadcastingContext = new BroadcastingContext(settings);
         var mapperConfiguration = new MapperConfiguration(cfg =>
         {
             cfg.AddProfile<MappingProfiles.BroadcastingProfile>();

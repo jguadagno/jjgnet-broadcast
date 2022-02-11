@@ -1,15 +1,15 @@
 ﻿using JosephGuadagno.Broadcasting.Data.Sql.Models;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
 public partial class BroadcastingContext : DbContext
 {
-    private readonly IConfiguration _configuration;
-    public BroadcastingContext(IConfiguration configuration)
+    private readonly ISettings _settings;
+    public BroadcastingContext(ISettings settings)
     {
-        _configuration = configuration;
+        _settings = settings;
     }
 
     public virtual DbSet<Engagement> Engagements { get; set; } = null!;
@@ -17,7 +17,7 @@ public partial class BroadcastingContext : DbContext
     public virtual DbSet<Talk> Talks { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
-        optionsBuilder.UseSqlServer(_configuration.GetConnectionString("JJGNetDatabaseSqlServer"));
+        optionsBuilder.UseSqlServer(_settings.JJGNetDatabaseSqlServer);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,7 +44,7 @@ public partial class BroadcastingContext : DbContext
                 .HasMaxLength(255)
                 .IsUnicode(false);
 
-            entity.Property(e => e.ItemTable)
+            entity.Property(e => e.ItemTableName)
                 .HasMaxLength(255)
                 .IsUnicode(false);
         });

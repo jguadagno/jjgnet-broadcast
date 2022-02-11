@@ -20,6 +20,7 @@ using LinqToTwitter;
 using LinqToTwitter.OAuth;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Host.Bindings;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -181,51 +182,51 @@ public class Startup : FunctionsStartup
     {
         services.TryAddSingleton(s =>
         {
-            var configuration = s.GetService<IConfiguration>();
-            if (configuration is null)
+            var settings = s.GetService<ISettings>();
+            if (settings is null)
             {
-                throw new ApplicationException("Failed to get a configuration object from ServiceCollection");
+                throw new ApplicationException("Failed to get a settings object from ServiceCollection");
             }
-            return new BroadcastingContext(configuration);
+            return new BroadcastingContext(settings);
         });
             
         // Engagements
-        services.TryAddSingleton(s =>
+        services.TryAddSingleton<IEngagementDataStore>(s =>
         {
-            var configuration = s.GetService<IConfiguration>();
-            if (configuration is null)
+            var settings = s.GetService<ISettings>();
+            if (settings is null)
             {
-                throw new ApplicationException("Failed to get a configuration object from ServiceCollection");
+                throw new ApplicationException("Failed to get a Settings object from ServiceCollection");
             }
-            return new EngagementDataStore(configuration);
+            return new EngagementDataStore(settings);
         });
-        services.TryAddSingleton(s =>
+        services.TryAddSingleton<IEngagementRepository>(s =>
         {
-            var engagementDataStore = s.GetService<EngagementRepository>();
+            var engagementDataStore = s.GetService<IEngagementDataStore>();
             if (engagementDataStore is null)
             {
-                throw new ApplicationException("Failed to get a configuration object from ServiceCollection");
+                throw new ApplicationException("Failed to get an EngagementDataStore from ServiceCollection");
             }
             return new Data.Repositories.EngagementRepository(engagementDataStore);
         });
         services.TryAddSingleton<IEngagementManager, EngagementManager>();
 
         // ScheduledItem
-        services.TryAddSingleton(s =>
+        services.TryAddSingleton<IScheduledItemDataStore>(s =>
         {
-            var configuration = s.GetService<IConfiguration>();
-            if (configuration is null)
+            var settings = s.GetService<ISettings>();
+            if (settings is null)
             {
-                throw new ApplicationException("Failed to get a configuration object from ServiceCollection");
+                throw new ApplicationException("Failed to get a settings object from ServiceCollection");
             }
-            return new ScheduledItemDataStore(configuration);
+            return new ScheduledItemDataStore(settings);
         });
-        services.TryAddSingleton(s =>
+        services.TryAddSingleton<IScheduledItemRepository>(s =>
         {
-            var scheduledItemDataStore = s.GetService<ScheduledItemDataStore>();
+            var scheduledItemDataStore = s.GetService<IScheduledItemDataStore>();
             if (scheduledItemDataStore is null)
             {
-                throw new ApplicationException("Failed to get a configuration object from ServiceCollection");
+                throw new ApplicationException("Failed to get a ScheduledItemDataStore object from ServiceCollection");
             }
             return new ScheduledItemRepository(scheduledItemDataStore);
         });

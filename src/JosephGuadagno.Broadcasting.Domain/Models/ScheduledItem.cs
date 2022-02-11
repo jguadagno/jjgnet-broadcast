@@ -20,7 +20,7 @@ public class ScheduledItem
     /// <remarks>
     /// This could be SourceData, Engagements, or more
     /// </remarks>
-    public string SourceTableName { get; set; }
+    public string ItemTableName { get; set; }
         
     /// <summary>
     /// The primary key for this record.
@@ -43,14 +43,14 @@ public class ScheduledItem
     /// <summary>
     /// The date and time this item is scheduled to go out
     /// </summary>
-    public DateTime ScheduleDateTime { get; set; }
+    public DateTimeOffset ScheduleDateTime { get; set; }
 
     public Dictionary<string, string> ToDictionary()
     {
         return new Dictionary<string, string>
         {
             { "Id", Id.ToString() },
-            { "SourceTableName", SourceTableName },
+            { "ItemTableName", ItemTableName },
             { "ItemPrimaryKey", ItemPrimaryKey },
             { "ItemSecondaryKey", ItemSecondaryKey },
             { "ScheduledDate", ScheduleDateTime.ToString("f") }

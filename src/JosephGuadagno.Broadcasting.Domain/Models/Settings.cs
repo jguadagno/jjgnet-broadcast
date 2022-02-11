@@ -19,4 +19,5 @@ public class Settings : ISettings
     public string TopicScheduledItemFiredDataKey { get; set; }
     public string FacebookPageId { get; set; }
     public string FacebookPageAccessToken { get; set; }
+    public string JJGNetDatabaseSqlServer { get; set; }
 }

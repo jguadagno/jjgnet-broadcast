@@ -150,30 +150,30 @@ public class Startup
     {
         services.TryAddSingleton(s =>
         {
-            var configuration = s.GetService<IConfiguration>();
-            if (configuration is null)
+            var settings = s.GetService<ISettings>();
+            if (settings is null)
             {
-                throw new ApplicationException("Failed to get a configuration object from ServiceCollection");
+                throw new ApplicationException("Failed to get a settings object from ServiceCollection");
             }
-            return new BroadcastingContext(configuration);
+            return new BroadcastingContext(settings);
         });
             
         // Engagements
         services.TryAddSingleton(s =>
         {
-            var configuration = s.GetService<IConfiguration>();
-            if (configuration is null)
+            var settings = s.GetService<ISettings>();
+            if (settings is null)
             {
-                throw new ApplicationException("Failed to get a configuration object from ServiceCollection");
+                throw new ApplicationException("Failed to get a settings object from ServiceCollection");
             }
-            return new EngagementDataStore(configuration);
+            return new EngagementDataStore(settings);
         });
         services.TryAddSingleton(s =>
         {
             var engagementDataStore = s.GetService<EngagementRepository>();
             if (engagementDataStore is null)
             {
-                throw new ApplicationException("Failed to get a configuration object from ServiceCollection");
+                throw new ApplicationException("Failed to get a Engagement Repository object from ServiceCollection");
             }
             return new Data.Repositories.EngagementRepository(engagementDataStore);
         });
@@ -182,19 +182,19 @@ public class Startup
         // ScheduledItem
         services.TryAddSingleton(s =>
         {
-            var configuration = s.GetService<IConfiguration>();
-            if (configuration is null)
+            var settings = s.GetService<ISettings>();
+            if (settings is null)
             {
-                throw new ApplicationException("Failed to get a configuration object from ServiceCollection");
+                throw new ApplicationException("Failed to get a settings object from ServiceCollection");
             }
-            return new ScheduledItemDataStore(configuration);
+            return new ScheduledItemDataStore(settings);
         });
         services.TryAddSingleton(s =>
         {
             var scheduledItemDataStore = s.GetService<ScheduledItemDataStore>();
             if (scheduledItemDataStore is null)
             {
-                throw new ApplicationException("Failed to get a configuration object from ServiceCollection");
+                throw new ApplicationException("Failed to get a Scheduled Item Data Store object from ServiceCollection");
             }
             return new ScheduledItemRepository(scheduledItemDataStore);
         });
