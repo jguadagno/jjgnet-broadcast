@@ -1,9 +1,8 @@
 using System;
 
-namespace JosephGuadagno.Broadcasting.Domain.Models
+namespace JosephGuadagno.Broadcasting.Domain.Models;
+
+public class LoadJsonFeedItemsRequest
 {
-    public class LoadJsonFeedItemsRequest
-    {
-        public DateTime CheckFrom { get; set; }
-    }
+    public DateTime CheckFrom { get; set; }
 }

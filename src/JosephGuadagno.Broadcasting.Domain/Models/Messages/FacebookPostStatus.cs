@@ -1,8 +1,7 @@
-namespace JosephGuadagno.Broadcasting.Domain.Models.Messages
+namespace JosephGuadagno.Broadcasting.Domain.Models.Messages;
+
+public class FacebookPostStatus
 {
-    public class FacebookPostStatus
-    {
-        public string StatusText { get; set; }
-        public string LinkUri { get; set; }
-    }
+    public string StatusText { get; set; }
+    public string LinkUri { get; set; }
 }

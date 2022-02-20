@@ -1,19 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <Company>JosephGuadagno.NET, LLC</Company>
         <Authors>Joseph Guadagno</Authors>
         <Product>JosephGuadagno.NET Broadcasting - Data</Product>
         <Description>The repositories for the JosephGuadagno.NET Broadcasting application</Description>
-        <Copyright>Copyright ©2014-2020, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Copyright>Copyright ©2014-2022, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
         <Title>JosephGuadagno.NET Broadcasting - Data</Title>
     </PropertyGroup>
 
     <PropertyGroup>
         <VersionMajor>1</VersionMajor>
-        <VersionMinor>2</VersionMinor>
-        <VersionBuild>1</VersionBuild>
+        <VersionMinor>3</VersionMinor>
+        <VersionBuild>0</VersionBuild>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -36,13 +36,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.4" />
-        <PackageReference Include="JosephGuadagno.Utilities.Web" Version="1.1.3" />
-        <PackageReference Include="Microsoft.Azure.EventGrid" Version="3.2.0" />
-        <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.EventGrid" Version="2.1.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.18" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.18" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.9" />
+        <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.5" />
+        <PackageReference Include="JosephGuadagno.Utilities.Web" Version="1.1.4" />
+        <PackageReference Include="Microsoft.Azure.EventGrid" Version="3.2.1" />
+        <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.EventGrid" Version="3.1.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
     </ItemGroup>
 
     <ItemGroup>

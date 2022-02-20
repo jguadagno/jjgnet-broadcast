@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <AssemblyName>JosephGuadagno.Broadcasting.Managers</AssemblyName>
+        <RootNamespace>JosephGuadagno.Broadcasting.Managers</RootNamespace>
+        <Company>JosephGuadagno.NET, LLC</Company>
+        <Authors>Joseph Guadagno</Authors>
+        <Product>JosephGuadagno.NET Broadcasting - Managers</Product>
+        <Description>The managers for the JosephGuadagno.NET Broadcasting application</Description>
+        <Copyright>Copyright ©2014-2022, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Title>JosephGuadagno.NET Broadcasting - Managers</Title>
+    </PropertyGroup>
+    <PropertyGroup>
+        <VersionMajor>1</VersionMajor>
+        <VersionMinor>3</VersionMinor>
+        <VersionBuild>0</VersionBuild>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' == '' ">local</VersionSuffix>
+        <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(GITHUB_RUN_ID)-preview</VersionSuffix>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
+        <AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</AssemblyVersion>
+    </PropertyGroup>
+    <PropertyGroup>
+        <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
+        <FileVersion>$(VersionPrefix)</FileVersion>
+        <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
+    </PropertyGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
+    </ItemGroup>
+
+</Project>
