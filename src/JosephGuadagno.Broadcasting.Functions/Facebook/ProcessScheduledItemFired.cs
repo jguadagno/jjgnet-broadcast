@@ -162,7 +162,7 @@ public class ProcessScheduledItemFired
             return null;
         }
         
-        var statusText = $"I'm speaking at {engagement.Name} ({engagement.Url}) starting on {engagement.StartDateTime:f}";
+        var statusText = $"I'm speaking at {engagement.Name} ({engagement.Url}) starting on {engagement.StartDateTime:f}\n";
         var comments = engagement.Comments;
         statusText += comments;
         

@@ -31,12 +31,12 @@ public class Talk
     /// <summary>
     /// The start date and time of the talk
     /// </summary>
-    public DateTime StartDateTime { get; set; }
+    public DateTimeOffset StartDateTime { get; set; }
         
     /// <summary>
     /// The end date and time of the talk
     /// </summary>
-    public DateTime EndDateTime { get; set; }
+    public DateTimeOffset EndDateTime { get; set; }
         
     /// <summary>
     /// The room/channel/url for the talk
@@ -47,4 +47,6 @@ public class Talk
     /// Comments for the talk
     /// </summary>
     public string Comments { get; set; }
+    
+    public int? EngagementId { get; set; }
 }

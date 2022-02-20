@@ -77,7 +77,21 @@ public class ScheduledItems
         {
             _logger.LogError("Failed to publish the events for some scheduled items");
         }
-        
+        else
+        {
+            // Mark the messages as sent
+            // foreach (var scheduledItem in scheduledItems)
+            // {
+            //     var wasSent = await _scheduledItemManager.SentScheduledItemAsync(scheduledItem.Id);
+            //     if (!wasSent)
+            //     {
+            //         _logger.LogWarning(
+            //             "Failed to update the sent flag for scheduled items with the id of '{scheduledItem.Id}'",
+            //             scheduledItem.Id);
+            //     }
+            // }
+        }
+
         // Save the last checked value
         configuration.LastCheckedFeed = startedAt;
         await _configurationRepository.SaveAsync(configuration);
