@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Data.Sql.Tests", "JosephGuadagno.Broadcasting.Data.Sql.Tests\JosephGuadagno.Broadcasting.Data.Sql.Tests.csproj", "{484611B0-CB3F-4CFF-8B80-A78A31775FA7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Functions.Tests", "JosephGuadagno.Broadcasting.Functions.Tests\JosephGuadagno.Broadcasting.Functions.Tests.csproj", "{D34B771F-E95B-4F72-BB25-64EBE122DADA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,5 +77,9 @@ Global
 		{484611B0-CB3F-4CFF-8B80-A78A31775FA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{484611B0-CB3F-4CFF-8B80-A78A31775FA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{484611B0-CB3F-4CFF-8B80-A78A31775FA7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
