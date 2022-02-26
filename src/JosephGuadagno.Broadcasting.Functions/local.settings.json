@@ -15,7 +15,7 @@
         "AzureWebJobs.publishers_random_posts.Disabled": true,
         "AzureWebJobs.publishers_scheduled_items.Disabled": false,
         "AzureWebJobs.facebook_process_scheduled_item_fired.Disabled": false,
-        "AzureWebJobs.twitter_process_scheduled_item_fired.Disabled": true
+        "AzureWebJobs.twitter_process_scheduled_item_fired.Disabled": false
 
     },
     "Settings": {

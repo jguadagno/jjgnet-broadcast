@@ -180,15 +180,16 @@ public class Startup : FunctionsStartup
         
     private void ConfigureRepositories(IServiceCollection services)
     {
-        services.TryAddSingleton(s =>
-        {
-            var settings = s.GetService<ISettings>();
-            if (settings is null)
-            {
-                throw new ApplicationException("Failed to get a settings object from ServiceCollection");
-            }
-            return new BroadcastingContext(settings);
-        });
+        services.AddDbContext<BroadcastingContext>(ServiceLifetime.Scoped);
+        // services.TryAddSingleton(s =>
+        // {
+        //     var settings = s.GetService<ISettings>();
+        //     if (settings is null)
+        //     {
+        //         throw new ApplicationException("Failed to get a settings object from ServiceCollection");
+        //     }
+        //     return new BroadcastingContext(settings);
+        // });
             
         // Engagements
         services.TryAddSingleton<IEngagementDataStore>(s =>
