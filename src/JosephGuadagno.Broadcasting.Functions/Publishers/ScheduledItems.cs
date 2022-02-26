@@ -80,16 +80,16 @@ public class ScheduledItems
         else
         {
             // Mark the messages as sent
-            // foreach (var scheduledItem in scheduledItems)
-            // {
-            //     var wasSent = await _scheduledItemManager.SentScheduledItemAsync(scheduledItem.Id);
-            //     if (!wasSent)
-            //     {
-            //         _logger.LogWarning(
-            //             "Failed to update the sent flag for scheduled items with the id of '{scheduledItem.Id}'",
-            //             scheduledItem.Id);
-            //     }
-            // }
+            foreach (var scheduledItem in scheduledItems)
+            {
+                var wasSent = await _scheduledItemManager.SentScheduledItemAsync(scheduledItem.Id);
+                if (!wasSent)
+                {
+                    _logger.LogWarning(
+                        "Failed to update the sent flag for scheduled items with the id of '{scheduledItem.Id}'",
+                        scheduledItem.Id);
+                }
+            }
         }
 
         // Save the last checked value
