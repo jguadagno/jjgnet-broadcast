@@ -45,7 +45,7 @@ public class LoadAllPosts
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug(
-            "{Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts} Collector started at: {startedAt}",
+            "{Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts} Collector started at: {StartedAt}",
             Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts, startedAt);
 
         // Check for the from date
@@ -55,13 +55,13 @@ public class LoadAllPosts
             dateToCheckFrom = requestModel.CheckFrom;
         }
 
-        _logger.LogInformation("Getting all items from feed from '{dateToCheckFrom}'.", dateToCheckFrom);
+        _logger.LogInformation("Getting all items from feed from '{DateToCheckFrom}'", dateToCheckFrom);
         var newItems = await _jsonFeedReader.GetAsync(dateToCheckFrom);
             
         // If there is nothing new, save the last checked value and exit
         if (newItems == null || newItems.Count == 0)
         {
-            _logger.LogInformation("No posts found in the Json Feed.");
+            _logger.LogInformation("No posts found in the Json Feed");
             return new OkObjectResult("0 posts were found");
         }
             
@@ -98,8 +98,7 @@ public class LoadAllPosts
         }
             
         // Return
-        var doneMessage = $"Loaded {savedCount} of {newItems.Count} post(s).";
-        _logger.LogInformation(doneMessage);
-        return new OkObjectResult(doneMessage);
+        _logger.LogInformation("Loaded {SavedCount} of {newItems.Count} post(s)", savedCount, newItems.Count);
+        return new OkObjectResult($"Loaded {savedCount} of {newItems.Count} post(s)");
     }
 }

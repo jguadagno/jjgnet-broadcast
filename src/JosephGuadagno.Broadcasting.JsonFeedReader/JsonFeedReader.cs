@@ -13,7 +13,7 @@ namespace JosephGuadagno.Broadcasting.JsonFeedReader;
 public class JsonFeedReader: IJsonFeedReader
 {
     private readonly IJsonFeedReaderSettings _jsonFeedReaderSettings;
-    private readonly ILogger _logger;
+    private readonly ILogger<JsonFeedReader> _logger;
         
     public JsonFeedReader(IJsonFeedReaderSettings jsonFeedReaderSettings, ILogger<JsonFeedReader> logger)
     {
@@ -42,10 +42,10 @@ public class JsonFeedReader: IJsonFeedReader
         var currentTime = DateTime.UtcNow;
         var sourceItems = new List<SourceData>();
 
-        _logger.LogDebug("Checking the Json feed '{_jsonFeedReaderSettings.FeedUrl}' for new posts since '{sinceWhen:u}'",
+        _logger.LogDebug("Checking the Json feed '{_jsonFeedReaderSettings.FeedUrl}' for new posts since '{SinceWhen:u}'",
             _jsonFeedReaderSettings.FeedUrl, sinceWhen);
 
-        List<JsonFeedItem> items = null;
+        List<JsonFeedItem> items;
         try
         {
             var jsonFeed = await JsonFeed.ParseFromUriAsync(new Uri(_jsonFeedReaderSettings.FeedUrl));
@@ -55,11 +55,11 @@ public class JsonFeedReader: IJsonFeedReader
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error parsing the Json feed for: {_jsonFeedReaderSettings.FeedUrl}.",
+            _logger.LogError(e, "Error parsing the Json feed for: {_jsonFeedReaderSettings.FeedUrl}",
                 _jsonFeedReaderSettings.FeedUrl);
             throw;
         }
-        _logger.LogDebug($"Found {items.Count} posts.");
+        _logger.LogDebug("Found {items.Count} posts", items.Count);
             
         foreach (var jsonFeedItem in items)
         {
@@ -77,6 +77,5 @@ public class JsonFeedReader: IJsonFeedReader
             });
         }
         return sourceItems;
-            
     }
 }

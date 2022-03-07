@@ -49,7 +49,7 @@ public class CheckFeedForUpdates
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug(
-            "{Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts} Collector started at: {startedAt}",
+            "{Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts} Collector started at: {StartedAt}",
             Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, startedAt);
 
         var configuration = await _configurationRepository.GetAsync(Constants.Tables.Configuration,
@@ -68,7 +68,7 @@ public class CheckFeedForUpdates
         {
             configuration.LastCheckedFeed = startedAt;
             await _configurationRepository.SaveAsync(configuration);
-            _logger.LogDebug("No new or updated posts found in the syndication feed.");
+            _logger.LogDebug("No new or updated posts found in the syndication feed");
             return;
         }
             
@@ -114,7 +114,7 @@ public class CheckFeedForUpdates
             Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
         if (!eventsPublished)
         {
-            _logger.LogError("Failed to publish the events for the new or updated blog posts.");
+            _logger.LogError("Failed to publish the events for the new or updated blog posts");
         }
             
         // Save the last checked value
@@ -128,7 +128,6 @@ public class CheckFeedForUpdates
         await _configurationRepository.SaveAsync(configuration);
             
         // Return
-        var doneMessage = $"Loaded {savedCount} of {newItems.Count} post(s).";
-        _logger.LogDebug(doneMessage);
+        _logger.LogDebug("Loaded {SavedCount} of {newItems.Count} post(s)", savedCount, newItems.Count);
     }
 }

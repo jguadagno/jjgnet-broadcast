@@ -1,4 +1,3 @@
-using System;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 
 namespace JosephGuadagno.Broadcasting.Domain.Models;

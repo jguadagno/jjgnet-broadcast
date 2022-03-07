@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
@@ -46,7 +45,7 @@ public class LoadAllVideos
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug(
-            $"{Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos} Collector started at: {startedAt}",
+            "{Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos} Collector started at: {StartedAt}",
             Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos, startedAt);
 
         // Check for the from date
@@ -56,13 +55,13 @@ public class LoadAllVideos
             dateToCheckFrom = requestModel.CheckFrom;
         }
 
-        _logger.LogInformation($"Getting all items from YouTube for the playlist since '{dateToCheckFrom}'.", dateToCheckFrom);
+        _logger.LogInformation("Getting all items from YouTube for the playlist since '{DateToCheckFrom}'", dateToCheckFrom);
         var newItems = await _youTubeReader.GetAsync(dateToCheckFrom);
             
         // If there is nothing new, save the last checked value and exit
         if (newItems == null || newItems.Count == 0)
         {
-            _logger.LogInformation("No videos found in the playlist.");
+            _logger.LogInformation("No videos found in the playlist");
             return new OkObjectResult("0 videos were found");
         }
             
@@ -99,8 +98,7 @@ public class LoadAllVideos
         }
             
         // Return
-        var doneMessage = $"Loaded {savedCount} of {newItems.Count} videos(s).";
-        _logger.LogInformation(doneMessage);
-        return new OkObjectResult(doneMessage);
+        _logger.LogInformation("Loaded {SavedCount} of {newItems.Count} videos(s)", savedCount, newItems.Count);
+        return new OkObjectResult($"Loaded {savedCount} of {newItems.Count} videos(s)");
     }
 }

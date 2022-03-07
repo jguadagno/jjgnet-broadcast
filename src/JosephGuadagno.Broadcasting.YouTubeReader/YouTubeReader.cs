@@ -14,7 +14,7 @@ public class YouTubeReader: IYouTubeReader
 {
     private readonly YouTubeService _youTubeService;
     private readonly IYouTubeSettings _youTubeSettings;
-    private readonly ILogger _logger;
+    private readonly ILogger<YouTubeReader> _logger;
         
     public YouTubeReader(IYouTubeSettings youTubeSettings, ILogger<YouTubeReader> logger)
     {

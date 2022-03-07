@@ -14,7 +14,7 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader;
 public class SyndicationFeedReader: ISyndicationFeedReader
 {
     private readonly ISyndicationFeedReaderSettings _syndicationFeedReaderSettings;
-    private readonly ILogger _logger;
+    private readonly ILogger<SyndicationFeedReader> _logger;
         
     public SyndicationFeedReader(ISyndicationFeedReaderSettings syndicationFeedReaderSettings, ILogger<SyndicationFeedReader> logger)
     {
@@ -35,12 +35,11 @@ public class SyndicationFeedReader: ISyndicationFeedReader
     public List<SourceData> Get(DateTime sinceWhen)
     {
         var currentTime = DateTime.UtcNow;
-        var feedItems = new List<SourceData>();
 
-        _logger.LogDebug("Checking syndication feed '{_syndicationFeedReaderSettings.FeedUrl}' for new posts since '{sinceWhen:u}'",
+        _logger.LogDebug("Checking syndication feed '{_syndicationFeedReaderSettings.FeedUrl}' for new posts since '{SinceWhen:u}'",
             _syndicationFeedReaderSettings.FeedUrl, sinceWhen);
 
-        List<SyndicationItem> items = null;
+        List<SyndicationItem> items;
 
         try
         {
@@ -52,29 +51,26 @@ public class SyndicationFeedReader: ISyndicationFeedReader
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"Error parsing the syndication feed for: {_syndicationFeedReaderSettings.FeedUrl}",
+            _logger.LogError(e, "Error parsing the syndication feed for: {_syndicationFeedReaderSettings.FeedUrl}",
                 _syndicationFeedReaderSettings.FeedUrl);
             throw;
         }
             
-        _logger.LogDebug($"Found {items.Count} posts");
+        _logger.LogDebug("Found {items.Count} posts", items.Count);
 
-        foreach (var syndicationItem in items)
-        {
-            feedItems.Add(new SourceData(SourceSystems.SyndicationFeed)
+        return items.Select(syndicationItem => new SourceData(SourceSystems.SyndicationFeed)
             {
                 Author = syndicationItem.Authors.FirstOrDefault()?.Name,
-                PublicationDate = syndicationItem.PublishDate.UtcDateTime, 
+                PublicationDate = syndicationItem.PublishDate.UtcDateTime,
                 UpdatedOnDate = syndicationItem.LastUpdatedTime.UtcDateTime,
                 //Text = ((TextSyndicationContent) syndicationItem.Content).Text,
-                Title =  syndicationItem.Title.Text,
+                Title = syndicationItem.Title.Text,
                 Url = syndicationItem.Id,
                 EndAfter = null,
                 AddedOn = currentTime,
                 Tags = syndicationItem.Categories is null ? null : string.Join(",", syndicationItem.Categories.Select(c => c.Name))
-            });
-        }
-        return feedItems;
+            })
+            .ToList();
     }
 
     public async Task<List<SourceData>> GetAsync(DateTime sinceWhen)
@@ -84,7 +80,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
 
     public List<SyndicationItem> GetSyndicationItems(DateTime sinceWhen, List<string> excludeCategories)
     {
-        _logger.LogDebug($"Checking syndication feed '{_syndicationFeedReaderSettings.FeedUrl}' for posts since '{sinceWhen:u}'",
+        _logger.LogDebug("Checking syndication feed '{_syndicationFeedReaderSettings.FeedUrl}' for posts since '{SinceWhen:u}'",
             _syndicationFeedReaderSettings, sinceWhen);
 
         List<SyndicationItem> items = new List<SyndicationItem>();
@@ -108,7 +104,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
             throw;
         }
             
-        _logger.LogDebug($"Found {items.Count} posts");
+        _logger.LogDebug("Found {items.Count} posts", items.Count);
 
         return items;
     }
@@ -116,20 +112,20 @@ public class SyndicationFeedReader: ISyndicationFeedReader
     public SyndicationItem GetRandomSyndicationItem(DateTime sinceWhen, List<string> excludeCategories)
     {
         _logger.LogDebug(
-            $"Getting a random syndication item from feed '{_syndicationFeedReaderSettings.FeedUrl}' for posts since '{sinceWhen:u}",
+            "Getting a random syndication item from feed '{_syndicationFeedReaderSettings.FeedUrl}' for posts since '{SinceWhen:u}",
             _syndicationFeedReaderSettings, sinceWhen);
 
         var syndicationItems = GetSyndicationItems(sinceWhen, excludeCategories);
             
         // Pick a Random one
         var randomPost = syndicationItems
-            .OrderBy(p => Guid.NewGuid())
+            .OrderBy(_ => Guid.NewGuid())
             .FirstOrDefault();
 
         if (randomPost == null)
         {
             _logger.LogWarning(
-                $"Could not get a random posts from feed '{_syndicationFeedReaderSettings.FeedUrl}' for posts since '{sinceWhen:u}",
+                "Could not get a random posts from feed '{_syndicationFeedReaderSettings.FeedUrl}' for posts since '{SinceWhen:u}",
                 _syndicationFeedReaderSettings, sinceWhen);
             Console.WriteLine("Could not get a post. Exiting");
             return null;

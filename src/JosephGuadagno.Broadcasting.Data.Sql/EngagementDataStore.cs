@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
@@ -170,7 +168,7 @@ public class EngagementDataStore: IEngagementDataStore
         return await _broadcastingContext.SaveChangesAsync() != 0;
     }
 
-    public async Task<Talk?> GetTalkAsync(int talkId)
+    public async Task<Domain.Models.Talk?> GetTalkAsync(int talkId)
     {
         if (talkId <= 0)
         {

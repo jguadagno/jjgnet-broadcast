@@ -33,7 +33,20 @@ public class ProcessNewSourceData
         [Queue(Constants.Queues.TwitterTweetsToSend)] ICollector<string> outboundMessages)
     {
         // Get the Source Data identifier for the event
-        var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridEvent.Data.ToString());
+        if (eventGridEvent.Data is null)
+        {
+            _logger.LogError("The event data was null for event '{eventGridEvent.Id}'", eventGridEvent.Id);
+            return;
+        }
+
+        var eventGridData = eventGridEvent.Data.ToString();
+        if (eventGridData is null)
+        {
+            _logger.LogError("Failed to retrieve the value of the eventGrid for event '{eventGridEvent.Id}'", eventGridEvent.Id);
+            return;
+        }
+        
+        var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
             _logger.LogError("Failed to parse the TableEvent data for event '{eventGridEvent.Id}'", eventGridEvent.Id);
@@ -41,16 +54,19 @@ public class ProcessNewSourceData
         }
 
         // Create the scheduled tweets for it
-        _logger.LogDebug("Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
+        _logger.LogDebug("Looking for source with fields '{tableEvent.PartitionKey}' and '{tableEvent.RowKey}'",
+            tableEvent.PartitionKey, tableEvent.RowKey);
         var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
 
         if (sourceData == null)
         {
-            _logger.LogWarning("Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found", tableEvent.PartitionKey, tableEvent.RowKey);
+            _logger.LogWarning("Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was NOT found",
+                tableEvent.PartitionKey, tableEvent.RowKey);
             return;
         }
-            
-        _logger.LogDebug("Composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.",tableEvent.PartitionKey, tableEvent.RowKey);
+
+        _logger.LogDebug("Composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'",
+            tableEvent.PartitionKey, tableEvent.RowKey);
             
         var tweet = ComposeTweet(sourceData);
         if (!string.IsNullOrEmpty(tweet))
@@ -59,7 +75,8 @@ public class ProcessNewSourceData
         }
             
         // Done
-        _logger.LogDebug("Done composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.", tableEvent.PartitionKey, tableEvent.RowKey);
+        _logger.LogDebug("Done composing tweet for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'",
+            tableEvent.PartitionKey, tableEvent.RowKey);
     }
         
     private string ComposeTweet(SourceData item)
@@ -94,7 +111,7 @@ public class ProcessNewSourceData
         }
             
         var tweet = $"{tweetStart} {postTitle} {url} {hashTagList}";
-        _logger.LogDebug("Composed tweet '{tweet}'", tweet);
+        _logger.LogDebug("Composed tweet '{Tweet}'", tweet);
             
         return tweet;
     }

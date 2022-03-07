@@ -47,13 +47,22 @@ public class ProcessScheduledItemFired
         [Queue(Constants.Queues.FacebookPostStatusToPage)] ICollector<FacebookPostStatus> outboundMessages)
     {
         var startedOn = DateTimeOffset.Now;
-        _logger.LogDebug($"Started {Constants.ConfigurationFunctionNames.PublishersScheduledItems} at {startedOn:f}");
+        _logger.LogDebug("Started {Constants.ConfigurationFunctionNames.PublishersScheduledItems} at {StartedOn:f}",
+            Constants.ConfigurationFunctionNames.PublishersScheduledItems, startedOn);
         if (eventGridEvent.Data is null)
         {
             _logger.LogError("The event data was null for event '{eventGridEvent.Id}'", eventGridEvent.Id);
             return;
         }
-        var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridEvent.Data.ToString());
+        
+        var eventGridData = eventGridEvent.Data.ToString();
+        if (eventGridData is null)
+        {
+            _logger.LogError("Failed to retrieve the value of the eventGrid for event '{eventGridEvent.Id}'", eventGridEvent.Id);
+            return;
+        }
+        
+        var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
             _logger.LogError("Failed to parse the TableEvent data for event '{eventGridEvent.Id}'", eventGridEvent.Id);
@@ -75,12 +84,15 @@ public class ProcessScheduledItemFired
 
         if (facebookPostStatus is null)
         {
-            _logger.LogDebug($"Could not generate the Facebook post text for {tableEvent.TableName}, {tableEvent.PartitionKey}, {tableEvent.RowKey}");
+            _logger.LogDebug(
+                "Could not generate the Facebook post text for {tableEvent.TableName}, {tableEvent.PartitionKey}, {tableEvent.RowKey}",
+                tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
             return;
         }
         
         outboundMessages.Add(facebookPostStatus);
-        _logger.LogDebug($"Generated the Facebook post text for {tableEvent.TableName}, {tableEvent.PartitionKey}, {tableEvent.RowKey}");
+        _logger.LogDebug("Generated the Facebook post text for {tableEvent.TableName}, {tableEvent.PartitionKey}, {tableEvent.RowKey}",
+            tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
     }
     
     private async Task<FacebookPostStatus> GetFacebookPostStatusForSourceData(TableEvent tableEvent)
@@ -94,7 +106,8 @@ public class ProcessScheduledItemFired
         var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
         if (sourceData is null)
         {
-            _logger.LogWarning($"Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was not found.");
+            _logger.LogWarning("Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was not found",
+                tableEvent.TableName, tableEvent.PartitionKey);
             return null;
         }
 

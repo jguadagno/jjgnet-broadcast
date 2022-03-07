@@ -29,13 +29,3 @@ public class BroadcastingProfile: Profile
 
     }
 }
-/*
-===================================================================================================
-Talk -> Talk (Destination member list)
-JosephGuadagno.Broadcasting.Domain.Models.Talk -> JosephGuadagno.Broadcasting.Data.Sql.Models.Talk (Destination member list)
-
-Unmapped properties:
-EngagementId
-Engagement
-
-*/

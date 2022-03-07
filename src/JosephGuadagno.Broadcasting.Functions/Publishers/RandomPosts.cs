@@ -32,7 +32,7 @@ public class RandomPosts
     }
         
     [FunctionName("publishers_random_posts")]
-    public async Task RunAsync(
+    public Task RunAsync(
         [TimerTrigger("0 0 9,16 * * *")] TimerInfo myTimer,
         [Queue(Constants.Queues.TwitterTweetsToSend)] ICollector<string> outboundMessages)
     {
@@ -40,7 +40,7 @@ public class RandomPosts
         // 0 0 9,16 * * *
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug(
-            $"{Constants.ConfigurationFunctionNames.PublishersRandomPosts} Publisher started at: {{startedAt}}",
+            "{Constants.ConfigurationFunctionNames.PublishersRandomPosts} Publisher started at: {StartedAt}",
             Constants.ConfigurationFunctionNames.PublishersRandomPosts, startedAt);
 
         // Get the feed items
@@ -51,14 +51,14 @@ public class RandomPosts
             cutoffDate = _randomPostSettings.CutoffDate;
         }
 
-        _logger.LogInformation($"Getting all items from feed from '{cutoffDate}'", cutoffDate);
+        _logger.LogInformation("Getting all items from feed from '{CutoffDate}'", cutoffDate);
         var randomSyndicationItem = _syndicationFeedReader.GetRandomSyndicationItem(cutoffDate, _randomPostSettings.ExcludedCategories);
 
         // If there is nothing new, save the last checked value and exit
         if (randomSyndicationItem == null)
         {
-            _logger.LogInformation($"Could not find a random post from feed since '{cutoffDate:u}'");
-            return;
+            _logger.LogInformation("Could not find a random post from feed since '{CutoffDate:u}'", cutoffDate);
+            return Task.CompletedTask;
         }
 
         // Build the tweet
@@ -70,13 +70,13 @@ public class RandomPosts
         outboundMessages.Add(status);
             
         // Return
-        var doneMessage = $"Picked a random post '{randomSyndicationItem.Title}'";
         _telemetryClient.TrackEvent(Constants.Metrics.RandomTweetSent, new Dictionary<string, string>
         {
             {"title", randomSyndicationItem.Title.Text}, 
             {"tweet", status}
         });
-        _logger.LogDebug(doneMessage);
+        _logger.LogDebug("Picked a random post '{randomSyndicationItem.Title}'", randomSyndicationItem.Title);
+        return Task.CompletedTask;
     }
         
     private static string HashTagList(Collection<SyndicationCategory> categories)

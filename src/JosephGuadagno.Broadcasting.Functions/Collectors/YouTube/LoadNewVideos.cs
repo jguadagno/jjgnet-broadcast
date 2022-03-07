@@ -49,7 +49,7 @@ public class LoadNewVideos
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug(
-            "{Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos} Collector started at: {startedAt}",
+            "{Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos} Collector started at: {StartedAt}",
             Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos, startedAt);
 
         var configuration = await _configurationRepository.GetAsync(
@@ -60,7 +60,7 @@ public class LoadNewVideos
                                 {LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTime.MinValue};
             
         // Check for new items
-        _logger.LogDebug($"Checking playlist for videos since '{configuration.LastItemAddedOrUpdated}'",
+        _logger.LogDebug("Checking playlist for videos since '{configuration.LastItemAddedOrUpdated}'",
             configuration.LastItemAddedOrUpdated);
         var newItems = await _youTubeReader.GetAsync(configuration.LastItemAddedOrUpdated);
             
@@ -69,7 +69,7 @@ public class LoadNewVideos
         {
             configuration.LastCheckedFeed = startedAt;
             await _configurationRepository.SaveAsync(configuration);
-            _logger.LogDebug("No new videos found in the playlist.");
+            _logger.LogDebug("No new videos found in the playlist");
             return;
         }
             
@@ -115,7 +115,7 @@ public class LoadNewVideos
             Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
         if (!eventsPublished)
         {
-            _logger.LogError("Failed to publish the events for the new or updated videos.");
+            _logger.LogError("Failed to publish the events for the new or updated videos");
         }
             
         // Save the last checked value
@@ -129,7 +129,6 @@ public class LoadNewVideos
         await _configurationRepository.SaveAsync(configuration);
             
         // Return
-        var doneMessage = $"Loaded {savedCount} of {newItems.Count} video(s).";
-        _logger.LogDebug(doneMessage);
+        _logger.LogDebug("Loaded {SavedCount} of {newItems.Count} video(s)", savedCount, newItems.Count);
     }
 }

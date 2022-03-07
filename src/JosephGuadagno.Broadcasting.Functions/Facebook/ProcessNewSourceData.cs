@@ -40,7 +40,15 @@ public class ProcessNewSourceData
             _logger.LogError("The event data was null for event '{eventGridEvent.Id}'", eventGridEvent.Id);
             return;
         }
-        var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridEvent.Data.ToString());
+
+        var eventGridData = eventGridEvent.Data.ToString();
+        if (eventGridData is null)
+        {
+            _logger.LogError("Failed to retrieve the value of the eventGrid for event '{eventGridEvent.Id}'", eventGridEvent.Id);
+            return;
+        }
+        
+        var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
             _logger.LogError("Failed to parse the TableEvent data for event '{eventGridEvent.Id}'", eventGridEvent.Id);
@@ -57,7 +65,7 @@ public class ProcessNewSourceData
             return;
         }
             
-        _logger.LogDebug("Composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.", tableEvent.PartitionKey, tableEvent.RowKey);
+        _logger.LogDebug("Composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
             
         var status = ComposeStatus(sourceData);
         if (status != null)
@@ -66,7 +74,7 @@ public class ProcessNewSourceData
         }
             
         // Done
-        _logger.LogDebug("Done composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'.", tableEvent.PartitionKey, tableEvent.RowKey);
+        _logger.LogDebug("Done composing Facebook status for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
     }
         
     private FacebookPostStatus ComposeStatus(SourceData sourceData)

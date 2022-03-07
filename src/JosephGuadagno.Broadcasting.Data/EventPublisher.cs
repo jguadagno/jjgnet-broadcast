@@ -13,7 +13,7 @@ namespace JosephGuadagno.Broadcasting.Data;
 public class EventPublisher: IEventPublisher
 {
 
-    private readonly ILogger _logger;
+    private readonly ILogger<EventPublisher> _logger;
         
     public EventPublisher(ILogger<EventPublisher> logger)
     {
@@ -79,7 +79,7 @@ public class EventPublisher: IEventPublisher
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Failed to publish the event to TopicUrl: '{topicUrl}'. Exception: '{e}'", topicUrl, e);   
+            _logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicUrl, e);   
             return false;
         }
     }
@@ -144,7 +144,7 @@ public class EventPublisher: IEventPublisher
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Failed to publish the event to TopicUrl: '{topicUrl}'. Exception: '{e}'", topicUrl, e);   
+            _logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicUrl, e);   
             return false;
         }
     }

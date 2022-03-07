@@ -39,8 +39,8 @@ public class ScheduledItems
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug(
-            $"{Constants.ConfigurationFunctionNames.PublishersScheduledItems} Publisher started at: {{startedAt}}",
-            Constants.ConfigurationFunctionNames.PublishersRandomPosts);
+            "{Constants.ConfigurationFunctionNames.PublishersScheduledItems} Publisher started at: {StartedAt}",
+            Constants.ConfigurationFunctionNames.PublishersRandomPosts, startedAt);
 
         var configuration = await _configurationRepository.GetAsync(Constants.Tables.Configuration,
                                 Constants.ConfigurationFunctionNames.PublishersScheduledItems
@@ -96,7 +96,7 @@ public class ScheduledItems
         configuration.LastCheckedFeed = startedAt;
         await _configurationRepository.SaveAsync(configuration);
         
-        _logger.LogDebug("Done publishing the events for schedule items.");
+        _logger.LogDebug("Done publishing the events for schedule items");
         
     }
 }

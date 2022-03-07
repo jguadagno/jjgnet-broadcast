@@ -8,7 +8,7 @@ namespace JosephGuadagno.Broadcasting.Data;
 public class UrlShortener: IUrlShortener
 {
     private readonly Bitly _bitly;
-    private readonly ILogger _logger;
+    private readonly ILogger<UrlShortener> _logger;
         
     public UrlShortener(Bitly bitly, ILogger<UrlShortener> logger)
     {
@@ -25,7 +25,7 @@ public class UrlShortener: IUrlShortener
     {
         if (string.IsNullOrEmpty(url))
         {
-            _logger.LogDebug("Url was null or empty.");
+            _logger.LogDebug("Url was null or empty");
             return null;
         }
 
@@ -33,10 +33,10 @@ public class UrlShortener: IUrlShortener
 
         if (result == null)
         {
-            _logger.LogDebug("Could not shorten the url of '{url}'", url);
+            _logger.LogDebug("Could not shorten the url of '{Url}'", url);
             return url;
         }
-        _logger.LogDebug("Shortened the url of '{url}' to '{result.Link}'", url, result.Link);
+        _logger.LogDebug("Shortened the url of '{Url}' to '{result.Link}'", url, result.Link);
         return result.Link;
     }
 }

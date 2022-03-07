@@ -1,5 +1,4 @@
 using System;
-using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -38,35 +37,40 @@ public class PostPageStatus
 
 
         var response = await _httpClient.PostAsync(url,null);
-        PostStatusResponse postStatusResponse = null;
         try
         {
-                
-            if (response != null)
+            if (!response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
-                postStatusResponse = JsonSerializer.Deserialize<PostStatusResponse>(content);
+                var postStatusResponse = JsonSerializer.Deserialize<PostStatusResponse>(content);
 
-                if (response.StatusCode == HttpStatusCode.OK)
+                if (response.IsSuccessStatusCode && postStatusResponse is not null)
                 {
-                    _logger.LogDebug("Successfully posted the status: '{postStatusResponse.Id}'", postStatusResponse.Id);
+                    _logger.LogDebug("Successfully posted the status: '{postStatusResponse.Id}'", postStatusResponse);
                 }
                 else
                 {
-                    _logger.LogError(
-                        "Failed to post status.  Error Code: {postStatusResponse.Error.Code}, Subcode: {postStatusResponse.Error.ErrorSubcode}, Message: '{postStatusResponse.Error.Message}'",
-                        postStatusResponse.Error.Code, postStatusResponse.Error.ErrorSubcode,
-                        postStatusResponse.Error.Message, response);
+                    if (postStatusResponse is null)
+                    {
+                        _logger.LogError("Failed to post status. Reason '{response.ReasonMessage}'", response);
+                    }
+                    else
+                    {
+                        _logger.LogError(
+                            "Failed to post status.  Error Code: {postStatusResponse.Error.Code}, Subcode: {postStatusResponse.Error.ErrorSubcode}, Message: '{postStatusResponse.Error.Message}'",
+                            postStatusResponse.Error.Code, postStatusResponse.Error.ErrorSubcode,
+                            postStatusResponse.Error.Message);
+                    }
                 }
             }
             else
             {
-                _logger.LogError("Failed to post status. Could not deserialize the response (Response was null).");
+                _logger.LogError("Failed to post status. Could not deserialize the response (Response was {response.StatusCode})", response);
             }
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Failed to post status. Exception: {e.Message}", response, postStatusResponse);
+            _logger.LogError(e, "Failed to post status. Exception: {e.Message}", response);
         }
     }
 }

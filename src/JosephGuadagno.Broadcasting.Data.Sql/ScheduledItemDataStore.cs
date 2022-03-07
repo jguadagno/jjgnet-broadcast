@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
@@ -33,7 +32,7 @@ public class ScheduledItemDataStore: IScheduledItemDataStore
 
     public async Task<bool> SaveAsync(Domain.Models.ScheduledItem talk)
     {
-        var dbScheduledItem = _mapper.Map<Sql.Models.ScheduledItem>(talk);
+        var dbScheduledItem = _mapper.Map<Models.ScheduledItem>(talk);
         _broadcastingContext.Entry(dbScheduledItem).State = talk.Id == 0 ? EntityState.Added : EntityState.Modified;
 
         return await _broadcastingContext.SaveChangesAsync() != 0;

@@ -6,8 +6,6 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
-// TODO: Add AzureFunction to process ScheduledItems
-
 public class ScheduledItemManager: IScheduledItemManager
 {
     private readonly IScheduledItemRepository _scheduledItemRepository;
