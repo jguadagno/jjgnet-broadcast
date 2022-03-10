@@ -116,7 +116,7 @@ public class YouTubeReader: IYouTubeReader
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error calling the YouTube API: {_youTubeSettings.ChannelId}, {_youTubeSettings.PlaylistId}",
+            _logger.LogError(e, "Error calling the YouTube API: {ChannelId}, {PlaylistId}",
                 _youTubeSettings.ChannelId, _youTubeSettings.PlaylistId);
             throw;
         }

@@ -44,8 +44,7 @@ public class LoadAllVideos
         HttpRequest req)
     {
         var startedAt = DateTime.UtcNow;
-        _logger.LogDebug(
-            "{Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos} Collector started at: {StartedAt}",
+        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos, startedAt);
 
         // Check for the from date
@@ -55,7 +54,7 @@ public class LoadAllVideos
             dateToCheckFrom = requestModel.CheckFrom;
         }
 
-        _logger.LogInformation("Getting all items from YouTube for the playlist since '{DateToCheckFrom}'", dateToCheckFrom);
+        _logger.LogDebug("Getting all items from YouTube for the playlist since '{DateToCheckFrom}'", dateToCheckFrom);
         var newItems = await _youTubeReader.GetAsync(dateToCheckFrom);
             
         // If there is nothing new, save the last checked value and exit
@@ -85,20 +84,20 @@ public class LoadAllVideos
                 }
                 else
                 {
-                    _logger.LogError("Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'", item.Id, item.Url);
+                    _logger.LogError("Failed to save the video with the id of: '{Id}' Url:'{Url}'", item.Id, item.Url);
                 }
                     
             }
             catch (Exception e)
             {
                 _logger.LogError(e,
-                    "Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}",
+                    "Failed to save the video with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
                     item.Id, item.Url, e);
             }
         }
             
         // Return
-        _logger.LogInformation("Loaded {SavedCount} of {newItems.Count} videos(s)", savedCount, newItems.Count);
+        _logger.LogInformation("Loaded {SavedCount} of {TotalVideoCount} videos(s)", savedCount, newItems.Count);
         return new OkObjectResult($"Loaded {savedCount} of {newItems.Count} videos(s)");
     }
 }

@@ -39,8 +39,7 @@ public class RandomPosts
         // 0 */2 * * * *
         // 0 0 9,16 * * *
         var startedAt = DateTime.UtcNow;
-        _logger.LogDebug(
-            "{Constants.ConfigurationFunctionNames.PublishersRandomPosts} Publisher started at: {StartedAt}",
+        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             Constants.ConfigurationFunctionNames.PublishersRandomPosts, startedAt);
 
         // Get the feed items
@@ -51,13 +50,13 @@ public class RandomPosts
             cutoffDate = _randomPostSettings.CutoffDate;
         }
 
-        _logger.LogInformation("Getting all items from feed from '{CutoffDate}'", cutoffDate);
+        _logger.LogDebug("Getting all items from feed from '{CutoffDate:u}'", cutoffDate);
         var randomSyndicationItem = _syndicationFeedReader.GetRandomSyndicationItem(cutoffDate, _randomPostSettings.ExcludedCategories);
 
         // If there is nothing new, save the last checked value and exit
         if (randomSyndicationItem == null)
         {
-            _logger.LogInformation("Could not find a random post from feed since '{CutoffDate:u}'", cutoffDate);
+            _logger.LogDebug("Could not find a random post from feed since '{CutoffDate:u}'", cutoffDate);
             return Task.CompletedTask;
         }
 
@@ -75,7 +74,7 @@ public class RandomPosts
             {"title", randomSyndicationItem.Title.Text}, 
             {"tweet", status}
         });
-        _logger.LogDebug("Picked a random post '{randomSyndicationItem.Title}'", randomSyndicationItem.Title);
+        _logger.LogDebug("Picked a random post {Title}", randomSyndicationItem.Title.Text);
         return Task.CompletedTask;
     }
         

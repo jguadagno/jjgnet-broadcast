@@ -48,8 +48,7 @@ public class LoadNewVideos
         [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer)
     {
         var startedAt = DateTime.UtcNow;
-        _logger.LogDebug(
-            "{Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos} Collector started at: {StartedAt}",
+        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos, startedAt);
 
         var configuration = await _configurationRepository.GetAsync(
@@ -60,7 +59,7 @@ public class LoadNewVideos
                                 {LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTime.MinValue};
             
         // Check for new items
-        _logger.LogDebug("Checking playlist for videos since '{configuration.LastItemAddedOrUpdated}'",
+        _logger.LogDebug("Checking playlist for videos since '{LastItemAddedOrUpdated}'",
             configuration.LastItemAddedOrUpdated);
         var newItems = await _youTubeReader.GetAsync(configuration.LastItemAddedOrUpdated);
             
@@ -95,7 +94,7 @@ public class LoadNewVideos
                 }
                 else
                 {
-                    _logger.LogError("Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'",
+                    _logger.LogError("Failed to save the video with the id of: '{Id}' Url:'{Url}'",
                         item.Id, item.Url);
                 }
 
@@ -103,7 +102,7 @@ public class LoadNewVideos
             catch (Exception e)
             {
                 _logger.LogError(e,
-                    "Failed to save the video with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}",
+                    "Failed to save the video with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
                     item.Id, item.Url, e);
             }
         }
@@ -129,6 +128,6 @@ public class LoadNewVideos
         await _configurationRepository.SaveAsync(configuration);
             
         // Return
-        _logger.LogDebug("Loaded {SavedCount} of {newItems.Count} video(s)", savedCount, newItems.Count);
+        _logger.LogInformation("Loaded {SavedCount} of {TotalVideoCount} video(s)", savedCount, newItems.Count);
     }
 }

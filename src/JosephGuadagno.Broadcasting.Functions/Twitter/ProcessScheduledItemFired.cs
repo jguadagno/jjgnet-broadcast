@@ -45,28 +45,28 @@ public class ProcessScheduledItemFired
         [EventGridTrigger] EventGridEvent eventGridEvent,
         [Queue(Constants.Queues.TwitterTweetsToSend)] ICollector<string> outboundMessages)
     {
-        var startedOn = DateTimeOffset.Now;
-        _logger.LogDebug("Started {Constants.ConfigurationFunctionNames.PublishersScheduledItems} at {StartedOn:f}",
-            Constants.ConfigurationFunctionNames.PublishersScheduledItems, startedOn);
+        var startedAt = DateTime.UtcNow;
+        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
+            Constants.ConfigurationFunctionNames.TwitterProcessScheduledItemFired, startedAt);
         
         // Get the Source Data identifier for the event
         if (eventGridEvent.Data is null)
         {
-            _logger.LogError("The event data was null for event '{eventGridEvent.Id}'", eventGridEvent.Id);
+            _logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
             return;
         }
 
         var eventGridData = eventGridEvent.Data.ToString();
         if (eventGridData is null)
         {
-            _logger.LogError("Failed to retrieve the value of the eventGrid for event '{eventGridEvent.Id}'", eventGridEvent.Id);
+            _logger.LogError("Failed to retrieve the value of the eventGrid for event '{Id}'", eventGridEvent.Id);
             return;
         }
         
         var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
-            _logger.LogError("Failed to parse the TableEvent data for event '{eventGridEvent.Id}'", eventGridEvent.Id);
+            _logger.LogError("Failed to parse the TableEvent data for event '{Id}'", eventGridEvent.Id);
             return;
         }
         
@@ -86,13 +86,13 @@ public class ProcessScheduledItemFired
         if (tweetText is null)
         {
             _logger.LogDebug(
-                "Could not generate the tweet for {tableEvent.TableName}, {tableEvent.PartitionKey}, {tableEvent.RowKey}",
+                "Could not generate the tweet for {TableName}, {PartitionKey}, {RowKey}",
                 tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
             return;
         }
         
         outboundMessages.Add(tweetText);
-        _logger.LogDebug("Generated the tweet for {tableEvent.TableName}, {tableEvent.PartitionKey}, {tableEvent.RowKey}",
+        _logger.LogDebug("Generated the tweet for {TableName}, {PartitionKey}, {RowKey}",
             tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
     }
     
@@ -107,7 +107,7 @@ public class ProcessScheduledItemFired
         var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
         if (sourceData is null)
         {
-            _logger.LogWarning("Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was not found",
+            _logger.LogWarning("Record for '{PartitionKey}', '{RowKey}' was not found",
                 tableEvent.TableName, tableEvent.PartitionKey);
             return null;
         }

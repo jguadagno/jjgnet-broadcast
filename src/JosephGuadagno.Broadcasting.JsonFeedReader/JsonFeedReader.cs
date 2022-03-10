@@ -42,7 +42,7 @@ public class JsonFeedReader: IJsonFeedReader
         var currentTime = DateTime.UtcNow;
         var sourceItems = new List<SourceData>();
 
-        _logger.LogDebug("Checking the Json feed '{_jsonFeedReaderSettings.FeedUrl}' for new posts since '{SinceWhen:u}'",
+        _logger.LogDebug("Checking the Json feed '{FeedUrl}' for new posts since '{SinceWhen:u}'",
             _jsonFeedReaderSettings.FeedUrl, sinceWhen);
 
         List<JsonFeedItem> items;
@@ -55,11 +55,11 @@ public class JsonFeedReader: IJsonFeedReader
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error parsing the Json feed for: {_jsonFeedReaderSettings.FeedUrl}",
+            _logger.LogError(e, "Error parsing the Json feed for: {FeedUrl}",
                 _jsonFeedReaderSettings.FeedUrl);
             throw;
         }
-        _logger.LogDebug("Found {items.Count} posts", items.Count);
+        _logger.LogDebug("Found {PostCount} posts", items.Count);
             
         foreach (var jsonFeedItem in items)
         {

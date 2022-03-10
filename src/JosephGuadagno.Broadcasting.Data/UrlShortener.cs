@@ -33,7 +33,7 @@ public class UrlShortener: IUrlShortener
 
         if (result == null)
         {
-            _logger.LogDebug("Could not shorten the url of '{Url}'", url);
+            _logger.LogWarning("Could not shorten the url of '{Url}'. The response was null", url);
             return url;
         }
         _logger.LogDebug("Shortened the url of '{Url}' to '{result.Link}'", url, result.Link);

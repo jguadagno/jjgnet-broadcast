@@ -38,9 +38,8 @@ public class ScheduledItems
     public async Task RunAsync([TimerTrigger("0 */2 * * * *")] TimerInfo myTimer, ILogger log)
     {
         var startedAt = DateTime.UtcNow;
-        _logger.LogDebug(
-            "{Constants.ConfigurationFunctionNames.PublishersScheduledItems} Publisher started at: {StartedAt}",
-            Constants.ConfigurationFunctionNames.PublishersRandomPosts, startedAt);
+        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
+            Constants.ConfigurationFunctionNames.PublishersScheduledItems, startedAt);
 
         var configuration = await _configurationRepository.GetAsync(Constants.Tables.Configuration,
                                 Constants.ConfigurationFunctionNames.PublishersScheduledItems
@@ -86,7 +85,7 @@ public class ScheduledItems
                 if (!wasSent)
                 {
                     _logger.LogWarning(
-                        "Failed to update the sent flag for scheduled items with the id of '{scheduledItem.Id}'",
+                        "Failed to update the sent flag for scheduled items with the id of '{ScheduledItemId}'",
                         scheduledItem.Id);
                 }
             }
@@ -97,6 +96,5 @@ public class ScheduledItems
         await _configurationRepository.SaveAsync(configuration);
         
         _logger.LogDebug("Done publishing the events for schedule items");
-        
     }
 }

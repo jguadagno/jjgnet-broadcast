@@ -44,8 +44,7 @@ public class LoadAllPosts
         HttpRequest req)
     {
         var startedAt = DateTime.UtcNow;
-        _logger.LogDebug(
-            "{Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts} Collector started at: {StartedAt}",
+        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts, startedAt);
 
         // Check for the from date
@@ -55,13 +54,13 @@ public class LoadAllPosts
             dateToCheckFrom = requestModel.CheckFrom;
         }
 
-        _logger.LogInformation("Getting all items from feed from '{DateToCheckFrom}'", dateToCheckFrom);
+        _logger.LogDebug("Getting all items from feed from '{DateToCheckFrom}'", dateToCheckFrom);
         var newItems = await _jsonFeedReader.GetAsync(dateToCheckFrom);
             
         // If there is nothing new, save the last checked value and exit
         if (newItems == null || newItems.Count == 0)
         {
-            _logger.LogInformation("No posts found in the Json Feed");
+            _logger.LogDebug("No posts found in the Json Feed");
             return new OkObjectResult("0 posts were found");
         }
             
@@ -85,20 +84,20 @@ public class LoadAllPosts
                 }
                 else
                 {
-                    _logger.LogError("Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'", item.Id, item.Url);
+                    _logger.LogError("Failed to save the blog post with the id of: '{Id}' Url:'{Url}'", item.Id, item.Url);
                 }
                     
             }
             catch (Exception e)
             {
                 _logger.LogError(e,
-                    "Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}",
+                    "Failed to save the blog post with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
                     item.Id, item.Url, e);
             }
         }
             
         // Return
-        _logger.LogInformation("Loaded {SavedCount} of {newItems.Count} post(s)", savedCount, newItems.Count);
+        _logger.LogInformation("Loaded {SavedCount} of {TotalPostsCount} post(s)", savedCount, newItems.Count);
         return new OkObjectResult($"Loaded {savedCount} of {newItems.Count} post(s)");
     }
 }

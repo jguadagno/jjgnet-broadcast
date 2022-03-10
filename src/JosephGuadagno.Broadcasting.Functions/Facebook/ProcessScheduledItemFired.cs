@@ -47,25 +47,26 @@ public class ProcessScheduledItemFired
         [Queue(Constants.Queues.FacebookPostStatusToPage)] ICollector<FacebookPostStatus> outboundMessages)
     {
         var startedOn = DateTimeOffset.Now;
-        _logger.LogDebug("Started {Constants.ConfigurationFunctionNames.PublishersScheduledItems} at {StartedOn:f}",
-            Constants.ConfigurationFunctionNames.PublishersScheduledItems, startedOn);
+        _logger.LogDebug("Started {FunctionName} at {StartedOn:f}",
+            Constants.ConfigurationFunctionNames.FacebookProcessScheduledItemFired, startedOn);
+        
         if (eventGridEvent.Data is null)
         {
-            _logger.LogError("The event data was null for event '{eventGridEvent.Id}'", eventGridEvent.Id);
+            _logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
             return;
         }
         
         var eventGridData = eventGridEvent.Data.ToString();
         if (eventGridData is null)
         {
-            _logger.LogError("Failed to retrieve the value of the eventGrid for event '{eventGridEvent.Id}'", eventGridEvent.Id);
+            _logger.LogError("Failed to retrieve the value of the eventGrid for event '{Id}'", eventGridEvent.Id);
             return;
         }
         
         var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
-            _logger.LogError("Failed to parse the TableEvent data for event '{eventGridEvent.Id}'", eventGridEvent.Id);
+            _logger.LogError("Failed to parse the TableEvent data for event '{Id}'", eventGridEvent.Id);
             return;
         }
         
@@ -85,13 +86,13 @@ public class ProcessScheduledItemFired
         if (facebookPostStatus is null)
         {
             _logger.LogDebug(
-                "Could not generate the Facebook post text for {tableEvent.TableName}, {tableEvent.PartitionKey}, {tableEvent.RowKey}",
+                "Could not generate the Facebook post text for {TableName}, {PartitionKey}, {RowKey}",
                 tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
             return;
         }
         
         outboundMessages.Add(facebookPostStatus);
-        _logger.LogDebug("Generated the Facebook post text for {tableEvent.TableName}, {tableEvent.PartitionKey}, {tableEvent.RowKey}",
+        _logger.LogDebug("Generated the Facebook post text for {TableName}, {PartitionKey}, {RowKey}",
             tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
     }
     
@@ -106,7 +107,7 @@ public class ProcessScheduledItemFired
         var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
         if (sourceData is null)
         {
-            _logger.LogWarning("Record for '{tableEvent.PartitionKey}', '{tableEvent.RowKey}' was not found",
+            _logger.LogWarning("Record for '{PartitionKey}', '{RowKey}' was not found",
                 tableEvent.TableName, tableEvent.PartitionKey);
             return null;
         }
@@ -135,7 +136,7 @@ public class ProcessScheduledItemFired
         };
 
         _logger.LogDebug(
-            "Composed Facebook Status: StatusText='{facebookPostStatus.StatusText}', LinkUrl='{facebookPostStatus.LinkUri}'",
+            "Composed Facebook Status: StatusText={StatusText}, LinkUrl={LinkUri}",
             facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
         return facebookPostStatus;
     }
@@ -192,7 +193,7 @@ public class ProcessScheduledItemFired
         };
 
         _logger.LogDebug(
-            "Composed Facebook Status: StatusText='{facebookPostStatus.StatusText}', LinkUrl='{facebookPostStatus.LinkUri}'",
+            "Composed Facebook Status: StatusText={StatusText}, LinkUrl={LinkUri}",
             facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
         return facebookPostStatus;
     }
@@ -229,7 +230,7 @@ public class ProcessScheduledItemFired
         };
 
         _logger.LogDebug(
-            "Composed Facebook Status: StatusText='{facebookPostStatus.StatusText}', LinkUrl='{facebookPostStatus.LinkUri}'",
+            "Composed Facebook Status: StatusText={StatusText}, LinkUrl={LinkUri}",
             facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
         return facebookPostStatus;
     }

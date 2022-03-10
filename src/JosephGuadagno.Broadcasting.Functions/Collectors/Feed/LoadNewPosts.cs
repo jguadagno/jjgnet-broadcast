@@ -48,8 +48,7 @@ public class CheckFeedForUpdates
         [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer)
     {
         var startedAt = DateTime.UtcNow;
-        _logger.LogDebug(
-            "{Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts} Collector started at: {StartedAt}",
+        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, startedAt);
 
         var configuration = await _configurationRepository.GetAsync(Constants.Tables.Configuration,
@@ -60,7 +59,7 @@ public class CheckFeedForUpdates
                                 {LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTime.MinValue};
             
         // Check for new items
-        _logger.LogDebug("Checking the syndication feed for posts since '{configuration.LastItemAddedOrUpdated}'", configuration.LastItemAddedOrUpdated);
+        _logger.LogDebug("Checking the syndication feed for posts since '{LastItemAddedOrUpdated}'", configuration.LastItemAddedOrUpdated);
         var newItems = await _syndicationFeedReader.GetAsync(configuration.LastItemAddedOrUpdated);
             
         // If there is nothing new, save the last checked value and exit
@@ -94,7 +93,7 @@ public class CheckFeedForUpdates
                 }
                 else
                 {
-                    _logger.LogError("Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'",
+                    _logger.LogError("Failed to save the blog post with the id of: '{Id}' Url:'{Url}'",
                         item.Id, item.Url);
                 }
 
@@ -102,13 +101,12 @@ public class CheckFeedForUpdates
             catch (Exception e)
             {
                 _logger.LogError(e,
-                    "Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'. Exception: {e.Message}",
+                    "Failed to save the blog post with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
                     item.Id, item.Url, e);
             }
         }
 
         // Publish the events
-
         var eventsPublished = await _eventPublisher.PublishEventsAsync(_settings.TopicNewSourceDataEndpoint,
             _settings.TopicNewSourceDataKey,
             Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
@@ -128,6 +126,6 @@ public class CheckFeedForUpdates
         await _configurationRepository.SaveAsync(configuration);
             
         // Return
-        _logger.LogDebug("Loaded {SavedCount} of {newItems.Count} post(s)", savedCount, newItems.Count);
+        _logger.LogInformation("Loaded {SavedCount} of {TotalPostsCount} post(s)", savedCount, newItems.Count);
     }
 }

@@ -30,11 +30,14 @@ public class PostPageStatus
         [QueueTrigger(Constants.Queues.FacebookPostStatusToPage)]
         Domain.Models.Messages.FacebookPostStatus facebookPostStatus)
     {
+        var startedAt = DateTime.UtcNow;
+        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
+            Constants.ConfigurationFunctionNames.FacebookPostPageStatus, startedAt);
+        
         var url = StatusUrl.Replace("{page_id}", _settings.FacebookPageId)
             .Replace("{message}", facebookPostStatus.StatusText)
             .Replace("{link}", facebookPostStatus.LinkUri)
             .Replace("{access_token}", _settings.FacebookPageAccessToken);
-
 
         var response = await _httpClient.PostAsync(url,null);
         try
@@ -46,18 +49,18 @@ public class PostPageStatus
 
                 if (response.IsSuccessStatusCode && postStatusResponse is not null)
                 {
-                    _logger.LogDebug("Successfully posted the status: '{postStatusResponse.Id}'", postStatusResponse);
+                    _logger.LogDebug("Successfully posted the status: '{Id}'", postStatusResponse.Id);
                 }
                 else
                 {
                     if (postStatusResponse is null)
                     {
-                        _logger.LogError("Failed to post status. Reason '{response.ReasonMessage}'", response);
+                        _logger.LogError("Failed to post status. Reason '{ReasonPhrase}'", response.ReasonPhrase);
                     }
                     else
                     {
                         _logger.LogError(
-                            "Failed to post status.  Error Code: {postStatusResponse.Error.Code}, Subcode: {postStatusResponse.Error.ErrorSubcode}, Message: '{postStatusResponse.Error.Message}'",
+                            "Failed to post status.  Error Code: {Error.Code}, Subcode: {Error.ErrorSubcode}, Message: '{Error.Message}'",
                             postStatusResponse.Error.Code, postStatusResponse.Error.ErrorSubcode,
                             postStatusResponse.Error.Message);
                     }
@@ -65,12 +68,12 @@ public class PostPageStatus
             }
             else
             {
-                _logger.LogError("Failed to post status. Could not deserialize the response (Response was {response.StatusCode})", response);
+                _logger.LogError("Failed to post status. Could not deserialize the response (Response was {StatusCode})", response.StatusCode);
             }
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Failed to post status. Exception: {e.Message}", response);
+            _logger.LogError(e, "Failed to post status. Exception: {ExceptionMessage}", e.Message, response);
         }
     }
 }

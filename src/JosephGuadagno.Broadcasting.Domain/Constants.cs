@@ -22,6 +22,13 @@ public static class Constants
         public const string CollectorsYouTubeLoadAllVideos = "CollectorsYouTubeLoadAllVideos";
         public const string PublishersRandomPosts = "PublishersRandomPosts";
         public const string PublishersScheduledItems = "PublishersScheduledItems";
+        public const string FacebookPostPageStatus = "FacebookPostPageStatus";
+        public const string FacebookProcessNewSourceData = "FacebookProcessNewSourceData";
+        public const string FacebookProcessScheduledItemFired = "FacebookProcessScheduledItemFired";
+        public const string TwitterSendTweet = "TwitterSendTweet";
+        public const string TwitterProcessNewSourceData = "TwitterProcessNewSourceData";
+        public const string TwitterProcessScheduledItemFired = "TwitterProcessScheduledItemFired";
+        
     }
 
     public static class Topics
