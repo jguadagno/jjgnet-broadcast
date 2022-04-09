@@ -19,14 +19,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Serilog;
 using EngagementRepository = JosephGuadagno.Broadcasting.Data.Sql.EngagementDataStore;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests;
 
 public class Startup
 {
-
     public void ConfigureHost(IHostBuilder hostBuilder)
     {
         hostBuilder.ConfigureHostConfiguration(configurationBuilder =>
@@ -37,7 +36,7 @@ public class Startup
                 .AddEnvironmentVariables();
         });
     }
-        
+    
     public void ConfigureServices(IServiceCollection services, HostBuilderContext hostBuilderContext)
     {
         var config = hostBuilderContext.Configuration;
@@ -52,14 +51,15 @@ public class Startup
         var randomPostSettings = new Domain.Models.RandomPostSettings();
         config.Bind("Settings:RandomPost", randomPostSettings);
         services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
-            
+        
         // Configure the logger
-        services.AddLogging((loggingBuilder =>
-        {
-            //loggingBuilder.ClearProviders();
-            loggingBuilder.SetMinimumLevel(LogLevel.Trace);
-            loggingBuilder.AddConfiguration(config);
-        }));
+        var logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(config)
+            .Enrich.WithEnvironmentName()
+            .Enrich.WithAssemblyName()
+            .Enrich.WithAssemblyVersion(true)
+            .CreateLogger();
+        services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(logger));
 
         // Configure all the services
         ConfigureTwitter(services);

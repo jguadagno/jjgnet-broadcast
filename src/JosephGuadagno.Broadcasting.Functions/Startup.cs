@@ -1,6 +1,4 @@
 using System;
-using System.Diagnostics;
-using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using JosephGuadagno.Broadcasting.Data;
@@ -18,15 +16,14 @@ using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
 using LinqToTwitter.OAuth;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NLog;
-using NLog.Extensions.Logging;
+using Serilog;
 using EngagementRepository = JosephGuadagno.Broadcasting.Data.Sql.EngagementDataStore;
 
 [assembly: FunctionsStartup(typeof(Startup))]
@@ -56,12 +53,6 @@ public class Startup : FunctionsStartup
             .Build();
         builder.Services.AddSingleton<IConfiguration>(config);
 
-        LogManager.Setup()
-            .SetupExtensions(e => e.AutoLoadAssemblies(false))
-            .LoadConfigurationFromFile(currentDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
-            .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
-        SetLoggingGlobalDiagnosticsContext();
-
         // Bind the 'Settings' section to the ISettings class
         var settings = new Domain.Models.Settings();
         config.Bind("Settings", settings);
@@ -70,34 +61,22 @@ public class Startup : FunctionsStartup
         var randomPostSettings = new Domain.Models.RandomPostSettings();
         config.Bind("Settings:RandomPost", randomPostSettings);
         builder.Services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
-            
+        
         // Configure the logger
-        builder.Services.AddLogging((loggingBuilder =>
-        {
-            //loggingBuilder.ClearProviders();
-            loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
-            loggingBuilder.AddConfiguration(config);
-            loggingBuilder.AddNLog(new NLogProviderOptions {ShutdownOnDispose = true});
-        }));
-
+        var logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(config)
+            .Enrich.WithEnvironmentName()
+            .Enrich.WithAssemblyName()
+            .Enrich.WithAssemblyVersion(true)
+            .CreateLogger();
+        builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(logger));
+        
         // Configure all the services
         ConfigureTwitter(builder);
         ConfigureJsonFeedReader(builder);
         ConfigureSyndicationFeedReader(builder);
         ConfigureYouTubeReader(builder);
         ConfigureFunction(builder);
-    }
-
-    private void SetLoggingGlobalDiagnosticsContext()
-    {
-            
-        var executingAssembly = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
-        var fileVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion;
-        var productVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
-
-        GlobalDiagnosticsContext.Set("ExecutingAssembly-AssemblyVersion", executingAssembly);
-        GlobalDiagnosticsContext.Set("ExecutingAssembly-FileVersion", fileVersion);
-        GlobalDiagnosticsContext.Set("ExecutingAssembly-ProductVersion", productVersion);
     }
 
     private void ConfigureTwitter(IFunctionsHostBuilder builder)
