@@ -15,10 +15,12 @@ using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
 using LinqToTwitter.OAuth;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using EngagementRepository = JosephGuadagno.Broadcasting.Data.Sql.EngagementDataStore;
 
@@ -59,7 +61,11 @@ public class Startup
             .Enrich.WithAssemblyName()
             .Enrich.WithAssemblyVersion(true)
             .CreateLogger();
-        services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(logger));
+        services.AddLogging(loggingBuilder =>
+        {
+            loggingBuilder.AddApplicationInsights(config["Values:APPINSIGHTS_INSTRUMENTATIONKEY"]);
+            loggingBuilder.AddSerilog(logger);
+        });
 
         // Configure all the services
         ConfigureTwitter(services);

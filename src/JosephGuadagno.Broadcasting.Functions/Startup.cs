@@ -22,6 +22,7 @@ using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
 using EngagementRepository = JosephGuadagno.Broadcasting.Data.Sql.EngagementDataStore;
@@ -69,7 +70,11 @@ public class Startup : FunctionsStartup
             .Enrich.WithAssemblyName()
             .Enrich.WithAssemblyVersion(true)
             .CreateLogger();
-        builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(logger));
+        builder.Services.AddLogging(loggingBuilder =>
+        {
+            loggingBuilder.AddApplicationInsights(config["Values:APPINSIGHTS_INSTRUMENTATIONKEY"]);
+            loggingBuilder.AddSerilog(logger);
+        });
         
         // Configure all the services
         ConfigureTwitter(builder);
