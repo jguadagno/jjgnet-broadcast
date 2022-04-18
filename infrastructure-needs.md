@@ -35,6 +35,7 @@ App Service (jjgnet) with an Application Insights services
 
 * Configuration
 * SourceData
+* Logging
 
 ### Event Grid Topics
 

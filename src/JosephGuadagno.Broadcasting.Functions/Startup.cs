@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
@@ -25,8 +24,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NLog;
-using NLog.Extensions.Logging;
+using Serilog;
+using Serilog.Exceptions;
 using EngagementRepository = JosephGuadagno.Broadcasting.Data.Sql.EngagementDataStore;
 
 [assembly: FunctionsStartup(typeof(Startup))]
@@ -56,12 +55,6 @@ public class Startup : FunctionsStartup
             .Build();
         builder.Services.AddSingleton<IConfiguration>(config);
 
-        LogManager.Setup()
-            .SetupExtensions(e => e.AutoLoadAssemblies(false))
-            .LoadConfigurationFromFile(currentDirectory + Path.DirectorySeparatorChar + "nlog.config", optional: false)
-            .LoadConfiguration(configurationBuilder => configurationBuilder.LogFactory.AutoShutdown = false);
-        SetLoggingGlobalDiagnosticsContext();
-
         // Bind the 'Settings' section to the ISettings class
         var settings = new Domain.Models.Settings();
         config.Bind("Settings", settings);
@@ -70,16 +63,11 @@ public class Startup : FunctionsStartup
         var randomPostSettings = new Domain.Models.RandomPostSettings();
         config.Bind("Settings:RandomPost", randomPostSettings);
         builder.Services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
-            
+        
         // Configure the logger
-        builder.Services.AddLogging((loggingBuilder =>
-        {
-            //loggingBuilder.ClearProviders();
-            loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
-            loggingBuilder.AddConfiguration(config);
-            loggingBuilder.AddNLog(new NLogProviderOptions {ShutdownOnDispose = true});
-        }));
-
+        string logPath = Path.Combine(currentDirectory, "logs\\logs.txt");
+        ConfigureLogging(builder.Services, config, logPath, "Functions");
+        
         // Configure all the services
         ConfigureTwitter(builder);
         ConfigureJsonFeedReader(builder);
@@ -88,16 +76,29 @@ public class Startup : FunctionsStartup
         ConfigureFunction(builder);
     }
 
-    private void SetLoggingGlobalDiagnosticsContext()
+    private void ConfigureLogging(IServiceCollection services, IConfiguration config, string logPath, string applicationName)
     {
-            
-        var executingAssembly = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
-        var fileVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion;
-        var productVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
-
-        GlobalDiagnosticsContext.Set("ExecutingAssembly-AssemblyVersion", executingAssembly);
-        GlobalDiagnosticsContext.Set("ExecutingAssembly-FileVersion", fileVersion);
-        GlobalDiagnosticsContext.Set("ExecutingAssembly-ProductVersion", productVersion);
+        var logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .Enrich.WithMachineName()
+            .Enrich.WithThreadId()
+            .Enrich.WithEnvironmentName()
+            .Enrich.WithAssemblyName()
+            .Enrich.WithAssemblyVersion(true)
+            .Enrich.WithExceptionDetails()
+            .Enrich.WithProperty("Application", applicationName)
+            .Destructure.ToMaximumDepth(4)
+            .Destructure.ToMaximumStringLength(100)
+            .Destructure.ToMaximumCollectionCount(10)
+            .WriteTo.Console()
+            .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
+            .WriteTo.AzureTableStorage(config["Values:AzureWebJobsStorage"], storageTableName:"Logging")
+            .CreateLogger();
+        services.AddLogging(loggingBuilder =>
+        {
+            loggingBuilder.AddApplicationInsights(config["Values:APPINSIGHTS_INSTRUMENTATIONKEY"]);
+            loggingBuilder.AddSerilog(logger);
+        });
     }
 
     private void ConfigureTwitter(IFunctionsHostBuilder builder)

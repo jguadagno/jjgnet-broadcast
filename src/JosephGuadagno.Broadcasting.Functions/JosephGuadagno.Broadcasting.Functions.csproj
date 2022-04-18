@@ -52,8 +52,13 @@
         <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0" />
         <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.0.1" />
         <PackageReference Include="linqtotwitter" Version="6.14.0" />
-        <PackageReference Include="NLog" Version="4.7.13" />
-        <PackageReference Include="NLog.Extensions.Logging" Version="1.7.4" />
+        <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
+        <PackageReference Include="Serilog.Enrichers.AssemblyName" Version="1.0.9" />
+        <PackageReference Include="Serilog.Enrichers.Environment" Version="2.2.0" />
+        <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
+        <PackageReference Include="Serilog.Exceptions" Version="8.1.0" />
+        <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="3.1.0" />
+        <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="5.0.0" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.Sql\JosephGuadagno.Broadcasting.Data.Sql.csproj" />
@@ -74,13 +79,7 @@
       <Content Include="host.prod.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Include="nlog.prod.config">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
       <None Remove="nlog.config" />
-      <Content Include="nlog.config">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
       <None Remove="host.json" />
       <Content Include="host.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>

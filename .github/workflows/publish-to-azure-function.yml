@@ -22,8 +22,6 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 6.0.x
-    - name: Replace nlog.config
-      run: yes | cp -i ./src/JosephGuadagno.Broadcasting.Functions/nlog.prod.config ./src/JosephGuadagno.Broadcasting.Functions/nlog.config
     - name: Replace host.json
       run: yes | cp -i ./src/JosephGuadagno.Broadcasting.Functions/host.prod.json ./src/JosephGuadagno.Broadcasting.Functions/host.json
     - name: Install dependencies

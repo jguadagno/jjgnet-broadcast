@@ -20,7 +20,6 @@
     },
     "Settings": {
         "StorageAccount": "UseDevelopmentStorage=true",
-        
         "TwitterApiKey": "",
         "TwitterApiSecret": "",
         "TwitterAccessToken": "",
@@ -35,19 +34,19 @@
         "FacebookPageId": "",
         "FacebookPageAccessToken": "",
         "JJGNetDatabaseSqlServer": "Set in User Secrets",
-        "SyndicationFeedReader" : {
+        "SyndicationFeedReader": {
             "FeedUrl": "https://www.josephguadagno.net/feed.xml"
         },
         "JsonFeedReader": {
-            "FeedUrl" : "http://localhost:4000/feed.json" 
+            "FeedUrl": "http://localhost:4000/feed.json"
         },
-        "YouTube" : {
+        "YouTube": {
             "ApiKey": "",
             "ChannelId": "",
             "PlaylistId": "",
             "ResultSetPageSize": 10
         },
-        "RandomPost" :{
+        "RandomPost": {
             "ExcludedCategories": [
                 "books",
                 "book reviews",
