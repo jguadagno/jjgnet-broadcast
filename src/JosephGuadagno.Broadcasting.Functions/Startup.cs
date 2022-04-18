@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using JosephGuadagno.Broadcasting.Data;
@@ -16,7 +17,6 @@ using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
 using LinqToTwitter.OAuth;
-using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Extensions.Configuration;
@@ -25,6 +25,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Serilog.Exceptions;
 using EngagementRepository = JosephGuadagno.Broadcasting.Data.Sql.EngagementDataStore;
 
 [assembly: FunctionsStartup(typeof(Startup))]
@@ -64,17 +65,8 @@ public class Startup : FunctionsStartup
         builder.Services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
         
         // Configure the logger
-        var logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(config)
-            .Enrich.WithEnvironmentName()
-            .Enrich.WithAssemblyName()
-            .Enrich.WithAssemblyVersion(true)
-            .CreateLogger();
-        builder.Services.AddLogging(loggingBuilder =>
-        {
-            loggingBuilder.AddApplicationInsights(config["Values:APPINSIGHTS_INSTRUMENTATIONKEY"]);
-            loggingBuilder.AddSerilog(logger);
-        });
+        string logPath = Path.Combine(currentDirectory, "logs\\logs.txt");
+        ConfigureLogging(builder.Services, config, logPath, "Functions");
         
         // Configure all the services
         ConfigureTwitter(builder);
@@ -82,6 +74,31 @@ public class Startup : FunctionsStartup
         ConfigureSyndicationFeedReader(builder);
         ConfigureYouTubeReader(builder);
         ConfigureFunction(builder);
+    }
+
+    private void ConfigureLogging(IServiceCollection services, IConfiguration config, string logPath, string applicationName)
+    {
+        var logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .Enrich.WithMachineName()
+            .Enrich.WithThreadId()
+            .Enrich.WithEnvironmentName()
+            .Enrich.WithAssemblyName()
+            .Enrich.WithAssemblyVersion(true)
+            .Enrich.WithExceptionDetails()
+            .Enrich.WithProperty("Application", applicationName)
+            .Destructure.ToMaximumDepth(4)
+            .Destructure.ToMaximumStringLength(100)
+            .Destructure.ToMaximumCollectionCount(10)
+            .WriteTo.Console()
+            .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
+            .WriteTo.AzureTableStorage(config["Values:AzureWebJobsStorage"], storageTableName:"Logging")
+            .CreateLogger();
+        services.AddLogging(loggingBuilder =>
+        {
+            loggingBuilder.AddApplicationInsights(config["Values:APPINSIGHTS_INSTRUMENTATIONKEY"]);
+            loggingBuilder.AddSerilog(logger);
+        });
     }
 
     private void ConfigureTwitter(IFunctionsHostBuilder builder)
