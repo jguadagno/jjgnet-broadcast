@@ -6,6 +6,7 @@ using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Models;
 using JosephGuadagno.Broadcasting.Managers;
@@ -50,8 +51,10 @@ public class Startup
         var settings = new Domain.Models.Settings();
         config.Bind("Settings", settings);
         services.TryAddSingleton<ISettings>(settings);
+        services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
+            { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
 
-        var randomPostSettings = new Domain.Models.RandomPostSettings();
+        var randomPostSettings = new RandomPostSettings();
         config.Bind("Settings:RandomPost", randomPostSettings);
         services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
         
@@ -173,23 +176,23 @@ public class Startup
     {
         services.TryAddSingleton(s =>
         {
-            var settings = s.GetService<ISettings>();
-            if (settings is null)
+            var databaseSettings = s.GetService<IDatabaseSettings>();
+            if (databaseSettings is null)
             {
                 throw new ApplicationException("Failed to get a settings object from ServiceCollection");
             }
-            return new BroadcastingContext(settings);
+            return new BroadcastingContext(databaseSettings);
         });
             
         // Engagements
         services.TryAddSingleton(s =>
         {
-            var settings = s.GetService<ISettings>();
-            if (settings is null)
+            var databaseSettings = s.GetService<IDatabaseSettings>();
+            if (databaseSettings is null)
             {
                 throw new ApplicationException("Failed to get a settings object from ServiceCollection");
             }
-            return new EngagementDataStore(settings);
+            return new EngagementDataStore(databaseSettings);
         });
         services.TryAddSingleton(s =>
         {
@@ -205,12 +208,12 @@ public class Startup
         // ScheduledItem
         services.TryAddSingleton(s =>
         {
-            var settings = s.GetService<ISettings>();
-            if (settings is null)
+            var databaseSettings = s.GetService<IDatabaseSettings>();
+            if (databaseSettings is null)
             {
                 throw new ApplicationException("Failed to get a settings object from ServiceCollection");
             }
-            return new ScheduledItemDataStore(settings);
+            return new ScheduledItemDataStore(databaseSettings);
         });
         services.TryAddSingleton(s =>
         {

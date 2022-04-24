@@ -18,6 +18,5 @@ public interface ISettings
         
     public string FacebookPageId { get; set; }
     public string FacebookPageAccessToken { get; set; }
-    public string JJGNetDatabaseSqlServer { get; set; }
 
 }

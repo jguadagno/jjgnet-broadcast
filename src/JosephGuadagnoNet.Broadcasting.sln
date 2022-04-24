@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Functions.Tests", "JosephGuadagno.Broadcasting.Functions.Tests\JosephGuadagno.Broadcasting.Functions.Tests.csproj", "{D34B771F-E95B-4F72-BB25-64EBE122DADA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Api", "JosephGuadagno.Broadcasting.Api\JosephGuadagno.Broadcasting.Api.csproj", "{B96A2B19-0F69-44F5-A026-8C9236678FF0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -81,5 +83,9 @@ Global
 		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B96A2B19-0F69-44F5-A026-8C9236678FF0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B96A2B19-0F69-44F5-A026-8C9236678FF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B96A2B19-0F69-44F5-A026-8C9236678FF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B96A2B19-0F69-44F5-A026-8C9236678FF0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

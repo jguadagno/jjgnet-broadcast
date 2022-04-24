@@ -181,25 +181,16 @@ public class Startup : FunctionsStartup
     private void ConfigureRepositories(IServiceCollection services)
     {
         services.AddDbContext<BroadcastingContext>(ServiceLifetime.Scoped);
-        // services.TryAddSingleton(s =>
-        // {
-        //     var settings = s.GetService<ISettings>();
-        //     if (settings is null)
-        //     {
-        //         throw new ApplicationException("Failed to get a settings object from ServiceCollection");
-        //     }
-        //     return new BroadcastingContext(settings);
-        // });
             
         // Engagements
         services.TryAddSingleton<IEngagementDataStore>(s =>
         {
-            var settings = s.GetService<ISettings>();
-            if (settings is null)
+            var databaseSettings = s.GetService<IDatabaseSettings>();
+            if (databaseSettings is null)
             {
                 throw new ApplicationException("Failed to get a Settings object from ServiceCollection");
             }
-            return new EngagementDataStore(settings);
+            return new EngagementDataStore(databaseSettings);
         });
         services.TryAddSingleton<IEngagementRepository>(s =>
         {
@@ -215,12 +206,12 @@ public class Startup : FunctionsStartup
         // ScheduledItem
         services.TryAddSingleton<IScheduledItemDataStore>(s =>
         {
-            var settings = s.GetService<ISettings>();
-            if (settings is null)
+            var databaseSettings = s.GetService<IDatabaseSettings>();
+            if (databaseSettings is null)
             {
                 throw new ApplicationException("Failed to get a settings object from ServiceCollection");
             }
-            return new ScheduledItemDataStore(settings);
+            return new ScheduledItemDataStore(databaseSettings);
         });
         services.TryAddSingleton<IScheduledItemRepository>(s =>
         {

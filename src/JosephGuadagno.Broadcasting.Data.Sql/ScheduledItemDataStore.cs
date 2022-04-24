@@ -14,9 +14,9 @@ public class ScheduledItemDataStore: IScheduledItemDataStore
     private readonly BroadcastingContext _broadcastingContext;
     private readonly Mapper _mapper;
 
-    public ScheduledItemDataStore(ISettings settings)
+    public ScheduledItemDataStore(IDatabaseSettings databaseSettings)
     {
-        _broadcastingContext = new BroadcastingContext(settings);
+        _broadcastingContext = new BroadcastingContext(databaseSettings);
         var mappingConfiguration = new MapperConfiguration(cfg =>
         {
             cfg.AddProfile<MappingProfiles.BroadcastingProfile>();
