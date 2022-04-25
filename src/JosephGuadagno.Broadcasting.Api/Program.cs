@@ -39,7 +39,7 @@ builder.Services.AddSwaggerGen(c =>
         {
             Title = "JosephGuadagno.NET Broadcasting API", 
             Version = "v1",
-            Description = "The API for the JosephGuadagno.NET Broadcasting Application on Coding with JoeG",
+            Description = "The API for the JosephGuadagno.NET Broadcasting Application",
             TermsOfService = new Uri("https://example.com/terms"),
             Contact = new OpenApiContact
             {
@@ -107,7 +107,7 @@ void ConfigureRepositories(IServiceCollection services)
     services.AddDbContext<BroadcastingContext>(ServiceLifetime.Scoped);
             
     // Engagements
-    services.TryAddSingleton<IEngagementDataStore>(s =>
+    services.TryAddScoped<IEngagementDataStore>(s =>
     {
         var databaseSettings = s.GetService<IDatabaseSettings>();
         if (databaseSettings is null)
@@ -116,7 +116,7 @@ void ConfigureRepositories(IServiceCollection services)
         }
         return new EngagementDataStore(databaseSettings);
     });
-    services.TryAddSingleton<IEngagementRepository>(s =>
+    services.TryAddScoped<IEngagementRepository>(s =>
     {
         var engagementDataStore = s.GetService<IEngagementDataStore>();
         if (engagementDataStore is null)
@@ -125,10 +125,10 @@ void ConfigureRepositories(IServiceCollection services)
         }
         return new EngagementRepository(engagementDataStore);
     });
-    services.TryAddSingleton<IEngagementManager, EngagementManager>();
+    services.TryAddScoped<IEngagementManager, EngagementManager>();
 
     // ScheduledItem
-    services.TryAddSingleton<IScheduledItemDataStore>(s =>
+    services.TryAddScoped<IScheduledItemDataStore>(s =>
     {
         var databaseSettings = s.GetService<IDatabaseSettings>();
         if (databaseSettings is null)
@@ -137,7 +137,7 @@ void ConfigureRepositories(IServiceCollection services)
         }
         return new ScheduledItemDataStore(databaseSettings);
     });
-    services.TryAddSingleton<IScheduledItemRepository>(s =>
+    services.TryAddScoped<IScheduledItemRepository>(s =>
     {
         var scheduledItemDataStore = s.GetService<IScheduledItemDataStore>();
         if (scheduledItemDataStore is null)
@@ -146,5 +146,5 @@ void ConfigureRepositories(IServiceCollection services)
         }
         return new ScheduledItemRepository(scheduledItemDataStore);
     });
-    services.TryAddSingleton<IScheduledItemManager, ScheduledItemManager>();
+    services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
 }

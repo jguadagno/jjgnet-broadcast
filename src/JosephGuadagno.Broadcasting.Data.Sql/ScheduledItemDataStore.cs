@@ -30,25 +30,18 @@ public class ScheduledItemDataStore: IScheduledItemDataStore
         return _mapper.Map<Domain.Models.ScheduledItem>(dbScheduledItem);
     }
 
-    public async Task<bool> SaveAsync(Domain.Models.ScheduledItem talk)
+    public async Task<Domain.Models.ScheduledItem> SaveAsync(Domain.Models.ScheduledItem scheduledItem)
     {
-        var dbScheduledItem = _mapper.Map<Models.ScheduledItem>(talk);
-        _broadcastingContext.Entry(dbScheduledItem).State = talk.Id == 0 ? EntityState.Added : EntityState.Modified;
+        var dbScheduledItem = _mapper.Map<Models.ScheduledItem>(scheduledItem);
+        _broadcastingContext.Entry(dbScheduledItem).State = scheduledItem.Id == 0 ? EntityState.Added : EntityState.Modified;
 
-        return await _broadcastingContext.SaveChangesAsync() != 0;
-    }
-
-    public async Task<bool> SaveAllAsync(List<Domain.Models.ScheduledItem> talks)
-    {
-        foreach (var scheduledItem in talks)
+        var result = await _broadcastingContext.SaveChangesAsync() != 0;
+        if (result)
         {
-            var wasSaved = await SaveAsync(scheduledItem);
-            if (wasSaved == false)
-            {
-                return false;
-            }
+            return _mapper.Map<Domain.Models.ScheduledItem>(dbScheduledItem);
         }
-        return true;
+
+        throw new ApplicationException("Failed to save scheduled item");
     }
 
     public async Task<List<Domain.Models.ScheduledItem>> GetAllAsync()

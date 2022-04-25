@@ -30,26 +30,19 @@ public class EngagementDataStore: IEngagementDataStore
         return _mapper.Map<Domain.Models.Engagement>(dbEngagement);
     }
 
-    public async Task<bool> SaveAsync(Domain.Models.Engagement engagement)
+    public async Task<Domain.Models.Engagement> SaveAsync(Domain.Models.Engagement engagement)
     {
         var dbEngagement = _mapper.Map<Models.Engagement>(engagement);
         _broadcastingContext.Entry(dbEngagement).State =
             dbEngagement.Id == 0 ? EntityState.Added : EntityState.Modified;
 
-        return await _broadcastingContext.SaveChangesAsync() != 0;
-    }
-
-    public async Task<bool> SaveAllAsync(List<Domain.Models.Engagement> engagements)
-    {
-        foreach (var engagement in engagements)
+        var result = await _broadcastingContext.SaveChangesAsync() != 0;
+        if (result)
         {
-            var wasSaved = await SaveAsync(engagement);
-            if (wasSaved == false)
-            {
-                return false;
-            }
+            return _mapper.Map<Domain.Models.Engagement>(dbEngagement);
         }
-        return true;
+
+        throw new ApplicationException("Filed to save engagement");
     }
 
     public async Task<List<Domain.Models.Engagement>> GetAllAsync()

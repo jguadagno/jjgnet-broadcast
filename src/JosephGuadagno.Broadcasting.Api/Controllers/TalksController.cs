@@ -5,7 +5,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class TalksController
+public class TalksController: ControllerBase
 {
     private readonly IEngagementManager _engagementManager;
     private readonly ILogger<TalksController> _logger;

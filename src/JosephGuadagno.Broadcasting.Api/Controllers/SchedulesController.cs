@@ -5,7 +5,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class SchedulesController
+public class SchedulesController: ControllerBase
 {
     private readonly IScheduledItemManager _scheduledItemManager;
     private readonly ILogger<SchedulesController> _logger;

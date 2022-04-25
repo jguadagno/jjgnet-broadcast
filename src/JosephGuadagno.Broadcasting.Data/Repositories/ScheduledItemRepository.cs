@@ -21,14 +21,9 @@ public class ScheduledItemRepository: IScheduledItemRepository
         return await _scheduledItemDataStore.GetAsync(primaryKey);
     }
 
-    public async Task<bool> SaveAsync(ScheduledItem entity)
+    public async Task<ScheduledItem> SaveAsync(ScheduledItem entity)
     {
         return await _scheduledItemDataStore.SaveAsync(entity);
-    }
-
-    public async Task<bool> SaveAllAsync(List<ScheduledItem> entities)
-    {
-        return await _scheduledItemDataStore.SaveAllAsync(entities);
     }
 
     public async Task<List<ScheduledItem>> GetAllAsync()

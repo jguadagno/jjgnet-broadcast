@@ -20,14 +20,9 @@ public class EngagementRepository: IEngagementRepository
         return await _engagementDataStore.GetAsync(primaryKey);
     }
 
-    public async Task<bool> SaveAsync(Engagement entity)
+    public async Task<Engagement> SaveAsync(Engagement entity)
     {
         return await _engagementDataStore.SaveAsync(entity);
-    }
-
-    public async Task<bool> SaveAllAsync(List<Engagement> entities)
-    {
-        return await _engagementDataStore.SaveAllAsync(entities);
     }
 
     public async Task<List<Engagement>> GetAllAsync()

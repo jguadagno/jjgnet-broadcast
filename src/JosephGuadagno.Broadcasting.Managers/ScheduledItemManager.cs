@@ -20,14 +20,9 @@ public class ScheduledItemManager: IScheduledItemManager
         return await _scheduledItemRepository.GetAsync(primaryKey);
     }
 
-    public async Task<bool> SaveAsync(ScheduledItem entity)
+    public async Task<ScheduledItem> SaveAsync(ScheduledItem entity)
     {
         return await _scheduledItemRepository.SaveAsync(entity);
-    }
-
-    public async Task<bool> SaveAllAsync(List<ScheduledItem> entities)
-    {
-        return await _scheduledItemRepository.SaveAllAsync(entities);
     }
 
     public async Task<List<ScheduledItem>> GetAllAsync()
