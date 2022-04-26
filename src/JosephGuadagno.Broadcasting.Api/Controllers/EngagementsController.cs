@@ -34,7 +34,7 @@ public class EngagementsController: ControllerBase
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(List<Engagement>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<List<Engagement>> GetEngagements()
+    public async Task<ActionResult<List<Engagement>>> GetEngagementsAsync()
     {
         _logger.LogDebug("Call to Engagements.GetEngagements");
 
@@ -44,20 +44,18 @@ public class EngagementsController: ControllerBase
     /// <summary>
     /// Returns an engagement by it's identifier
     /// </summary>
-    /// <param name="id">The identifier of the engagement</param>
+    /// <param name="engagementId">The identifier of the engagement</param>
     /// <returns>An <see cref="Engagement"/></returns>
     /// <response code="200">If the item was found</response>
     /// <response code="400">If the request is poorly formatted</response>            
     /// <response code="404">If the requested id was not found</response>            
-    [HttpGet("{id:int}")]
+    [HttpGet("{engagementId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Engagement))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<Engagement>> GetEngagement(int id)
+    public async Task<ActionResult<Engagement>> GetEngagementAsync(int engagementId)
     {
-        _logger.LogDebug("Call to Engagements.GetEngagement(id)");
-
-        var engagement = await _engagementManager.GetAsync(id);
+        var engagement = await _engagementManager.GetAsync(engagementId);
         if (engagement is null)
         {
             return new NotFoundResult();
@@ -74,31 +72,62 @@ public class EngagementsController: ControllerBase
     /// <response code="201">Returns the newly created item</response>
     /// <response code="400">If the item is null or there are data violations</response>            
     [HttpPost, HttpPut]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(Engagement))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<Engagement>> SaveEngagement(Engagement engagement)
+    public async Task<ActionResult<Engagement>> SaveEngagementAsync(Engagement engagement)
     {
-        var savedEngagement = await _engagementManager.SaveAsync(engagement);
-
-        return CreatedAtAction(nameof(GetEngagement), new {id = savedEngagement.Id}, savedEngagement);
-        
+        var savedEngagement = await _engagementManager.SaveAsync(engagement); 
+        return CreatedAtRoute(nameof(GetEngagementAsync), new {engagementId = savedEngagement.Id}, savedEngagement);
     }
     
     /// <summary>
     /// Deletes the specified contact
     /// </summary>
-    /// <param name="id">The primary identifier for the engagement</param>
+    /// <param name="engagementId">The primary identifier for the engagement</param>
     /// <returns></returns>
     /// <response code="204">If the item was deleted</response>
     /// <response code="400">If the request is poorly formatted</response>            
     /// <response code="404">If the requested id was not found</response>            
-    [HttpDelete("{id}")]
+    [HttpDelete("{engagementId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<bool>> DeleteContact(int id)
+    public async Task<ActionResult<bool>> DeleteContactAsync(int engagementId)
     {
-        var wasDeleted = await _engagementManager.DeleteAsync(id);
+        var wasDeleted = await _engagementManager.DeleteAsync(engagementId);
+        if (wasDeleted)
+        {
+            return new NoContentResult();
+        }
+        return new NotFoundResult();
+    }
+    
+    [HttpGet("{engagementId:int}/talks")]
+    public async Task<ActionResult<List<Talk>>> GetTalksForEngagementAsync(int engagementId)
+    {
+        return await _engagementManager.GetTalksForEngagementAsync(engagementId);
+    }
+    
+    [HttpPost("{engagementId:int}/talks/{talkId:int}")]
+    [HttpPut("{engagementId:int}/talks/{talkId:int}")]
+    public async Task<ActionResult<Talk>> SaveTalkAsync(Talk talk)
+    {
+        var savedTalk = await _engagementManager.SaveTalkAsync(talk);
+        return CreatedAtRoute(nameof(GetTalkAsync), new { engagementId = talk.EngagementId, talkId = talk.Id }, savedTalk);
+    }
+    
+    [HttpGet("{engagementId:int}/talks/{talkId:int}")]
+    public async Task<Talk> GetTalkAsync(int engagementId, int talkId)
+    {
+        return await _engagementManager.GetTalkAsync(talkId);
+    }
+    
+    // /engagements/{id}/talks/{id} DELETE
+    [HttpDelete("{engagementId:int}/talks/{talkId:int}")]
+    public async Task<ActionResult<bool>> DeleteTalkAsync(int engagementId, int talkId)
+    {
+        var wasDeleted =  await _engagementManager.RemoveTalkFromEngagementAsync(talkId);
+        
         if (wasDeleted)
         {
             return new NoContentResult();

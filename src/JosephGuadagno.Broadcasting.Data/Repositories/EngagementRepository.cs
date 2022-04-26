@@ -40,6 +40,11 @@ public class EngagementRepository: IEngagementRepository
         return await _engagementDataStore.DeleteAsync(primaryKey);
     }
 
+    public async Task<List<Talk>> GetTalksForEngagementAsync(int engagementId)
+    {
+        return await _engagementDataStore.GetTalksForEngagementAsync(engagementId);
+    }
+
     public async Task<bool> AddTalkToEngagementAsync(Engagement engagement, Talk talk)
     {
         return await _engagementDataStore.AddTalkToEngagementAsync(engagement, talk);

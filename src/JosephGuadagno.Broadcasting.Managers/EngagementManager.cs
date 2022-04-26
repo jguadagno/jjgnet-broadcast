@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.Azure.Documents;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
@@ -44,6 +45,11 @@ public class EngagementManager: IEngagementManager
         return await _engagementRepository.AddTalkToEngagementAsync(engagement, talk);
     }
 
+    public async Task<List<Talk>> GetTalksForEngagementAsync(int engagementId)
+    {
+        return await _engagementRepository.GetTalksForEngagementAsync(engagementId);
+    }
+    
     public async Task<bool> AddTalkToEngagementAsync(int engagementId, Talk talk)
     {
         return await _engagementRepository.AddTalkToEngagementAsync(engagementId, talk);

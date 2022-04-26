@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -74,6 +75,12 @@ public class EngagementDataStore: IEngagementDataStore
         _broadcastingContext.Engagements.Remove(dbEngagement);
 
         return await _broadcastingContext.SaveChangesAsync() != 0;
+    }
+
+    public async Task<List<Domain.Models.Talk>> GetTalksForEngagementAsync(int engagementId)
+    {
+        var talks = await _broadcastingContext.Talks.Where(e => e.EngagementId == engagementId).ToListAsync();
+        return _mapper.Map<List<Domain.Models.Talk>>(talks);
     }
 
     public async Task<bool> AddTalkToEngagementAsync(Domain.Models.Engagement engagement, Domain.Models.Talk talk)
