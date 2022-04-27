@@ -50,6 +50,7 @@ public class EngagementsController: ControllerBase
     /// <response code="400">If the request is poorly formatted</response>            
     /// <response code="404">If the requested id was not found</response>            
     [HttpGet("{engagementId:int}")]
+    [ActionName(nameof(GetEngagementAsync))]
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Engagement))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -77,7 +78,7 @@ public class EngagementsController: ControllerBase
     public async Task<ActionResult<Engagement>> SaveEngagementAsync(Engagement engagement)
     {
         var savedEngagement = await _engagementManager.SaveAsync(engagement); 
-        return CreatedAtRoute(nameof(GetEngagementAsync), new {engagementId = savedEngagement.Id}, savedEngagement);
+        return CreatedAtAction(nameof(GetEngagementAsync), new {engagementId = savedEngagement.Id}, savedEngagement);
     }
     
     /// <summary>
@@ -113,10 +114,11 @@ public class EngagementsController: ControllerBase
     public async Task<ActionResult<Talk>> SaveTalkAsync(Talk talk)
     {
         var savedTalk = await _engagementManager.SaveTalkAsync(talk);
-        return CreatedAtRoute(nameof(GetTalkAsync), new { engagementId = talk.EngagementId, talkId = talk.Id }, savedTalk);
+        return CreatedAtAction(nameof(GetTalkAsync), new { engagementId = talk.EngagementId, talkId = talk.Id }, savedTalk);
     }
     
     [HttpGet("{engagementId:int}/talks/{talkId:int}")]
+    [ActionName(nameof(GetTalkAsync))]
     public async Task<Talk> GetTalkAsync(int engagementId, int talkId)
     {
         return await _engagementManager.GetTalkAsync(talkId);
