@@ -68,7 +68,7 @@ public class EngagementsController: ControllerBase
     /// <summary>
     /// Saves an engagement
     /// </summary>
-    /// <param name="engagement">An engagement</param>
+    /// <param name="engagement">The engagement to save</param>
     /// <returns>The engagement with the Url to view its details</returns>
     /// <response code="201">Returns the newly created item</response>
     /// <response code="400">If the item is null or there are data violations</response>            
@@ -82,7 +82,7 @@ public class EngagementsController: ControllerBase
     }
     
     /// <summary>
-    /// Deletes the specified contact
+    /// Deletes the specified engagement
     /// </summary>
     /// <param name="engagementId">The primary identifier for the engagement</param>
     /// <returns></returns>
@@ -103,29 +103,68 @@ public class EngagementsController: ControllerBase
         return new NotFoundResult();
     }
     
+    /// <summary>
+    /// Gets the talks for a given engagement
+    /// </summary>
+    /// <param name="engagementId">The identifier of the engagement</param>
+    /// <returns>A List&lt;<see cref="Talk"/>&gt;s</returns>
+    /// <response code="200">Upon success</response>
     [HttpGet("{engagementId:int}/talks")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(List<Talk>))]
     public async Task<ActionResult<List<Talk>>> GetTalksForEngagementAsync(int engagementId)
     {
         return await _engagementManager.GetTalksForEngagementAsync(engagementId);
     }
     
+    /// <summary>
+    /// Saves a talk
+    /// </summary>
+    /// <param name="talk">The talk to save</param>
+    /// <returns>The talk with the Url to view its details</returns>
+    /// <response code="201">Returns the newly created item</response>
+    /// <response code="400">If the item is null or there are data violations</response>      
     [HttpPost("{engagementId:int}/talks/{talkId:int}")]
     [HttpPut("{engagementId:int}/talks/{talkId:int}")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(Talk))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Talk>> SaveTalkAsync(Talk talk)
     {
         var savedTalk = await _engagementManager.SaveTalkAsync(talk);
         return CreatedAtAction(nameof(GetTalkAsync), new { engagementId = talk.EngagementId, talkId = talk.Id }, savedTalk);
     }
     
+    /// <summary>
+    /// Returns a talk by it's identifier
+    /// </summary>
+    /// <param name="engagementId">The identifier of the engagement</param>
+    /// <param name="talkId">The identifier of the talk</param>
+    /// <returns>An <see cref="Talk"/></returns>
+    /// <response code="200">If the item was found</response>
+    /// <response code="400">If the request is poorly formatted</response>            
+    /// <response code="404">If the requested id was not found</response>   
     [HttpGet("{engagementId:int}/talks/{talkId:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Talk))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ActionName(nameof(GetTalkAsync))]
     public async Task<Talk> GetTalkAsync(int engagementId, int talkId)
     {
         return await _engagementManager.GetTalkAsync(talkId);
     }
     
-    // /engagements/{id}/talks/{id} DELETE
+    /// <summary>
+    /// Deletes the specified talk
+    /// </summary>
+    /// <param name="engagementId">The primary identifier for the engagement</param>
+    /// <param name="talkId">The primary identifier for the talk</param>
+    /// <returns></returns>
+    /// <response code="204">If the item was deleted</response>
+    /// <response code="400">If the request is poorly formatted</response>            
+    /// <response code="404">If the requested id was not found</response>   
     [HttpDelete("{engagementId:int}/talks/{talkId:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<bool>> DeleteTalkAsync(int engagementId, int talkId)
     {
         var wasDeleted =  await _engagementManager.RemoveTalkFromEngagementAsync(talkId);
