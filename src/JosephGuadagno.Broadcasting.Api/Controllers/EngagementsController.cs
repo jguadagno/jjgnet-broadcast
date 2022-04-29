@@ -93,7 +93,7 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<bool>> DeleteContactAsync(int engagementId)
+    public async Task<ActionResult<bool>> DeleteEngagementAsync(int engagementId)
     {
         var wasDeleted = await _engagementManager.DeleteAsync(engagementId);
         if (wasDeleted)
