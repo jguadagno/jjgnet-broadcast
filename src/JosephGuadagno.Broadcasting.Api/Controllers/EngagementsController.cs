@@ -70,15 +70,23 @@ public class EngagementsController: ControllerBase
     /// </summary>
     /// <param name="engagement">The engagement to save</param>
     /// <returns>The engagement with the Url to view its details</returns>
-    /// <response code="201">Returns the newly created item</response>
-    /// <response code="400">If the item is null or there are data violations</response>            
+    /// <response code="200">Returns if the engagement was updated</response>
+    /// <response code="201">Returns the newly created talk</response>
+    /// <response code="400">If the talk is null or there are data violations</response>            
     [HttpPost, HttpPut]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Engagement))]
     [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(Engagement))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Engagement>> SaveEngagementAsync(Engagement engagement)
     {
-        var savedEngagement = await _engagementManager.SaveAsync(engagement); 
-        return CreatedAtAction(nameof(GetEngagementAsync), new {engagementId = savedEngagement.Id}, savedEngagement);
+        var savedEngagement = await _engagementManager.SaveAsync(engagement);
+        if (engagement.Id == 0)
+        {
+            return CreatedAtAction(nameof(GetEngagementAsync), new { engagementId = savedEngagement.Id },
+                savedEngagement);
+        }
+
+        return Ok();
     }
     
     /// <summary>
@@ -121,16 +129,24 @@ public class EngagementsController: ControllerBase
     /// </summary>
     /// <param name="talk">The talk to save</param>
     /// <returns>The talk with the Url to view its details</returns>
-    /// <response code="201">Returns the newly created item</response>
-    /// <response code="400">If the item is null or there are data violations</response>      
+    /// <response code="200">Returns if the talk was successfully updated</response>
+    /// <response code="201">Returns the newly created talk</response>
+    /// <response code="400">If the data provided is null or there are data violations</response>      
     [HttpPost("{engagementId:int}/talks/{talkId:int}")]
     [HttpPut("{engagementId:int}/talks/{talkId:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Talk))]
     [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(Talk))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Talk>> SaveTalkAsync(Talk talk)
     {
         var savedTalk = await _engagementManager.SaveTalkAsync(talk);
-        return CreatedAtAction(nameof(GetTalkAsync), new { engagementId = talk.EngagementId, talkId = talk.Id }, savedTalk);
+        if (talk.Id == 0)
+        {
+            return CreatedAtAction(nameof(GetTalkAsync), new { engagementId = talk.EngagementId, talkId = talk.Id },
+                savedTalk);
+        }
+
+        return Ok();
     }
     
     /// <summary>
