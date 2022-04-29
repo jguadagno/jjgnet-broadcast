@@ -33,7 +33,8 @@ public class ScheduledItemDataStore: IScheduledItemDataStore
     public async Task<Domain.Models.ScheduledItem> SaveAsync(Domain.Models.ScheduledItem scheduledItem)
     {
         var dbScheduledItem = _mapper.Map<Models.ScheduledItem>(scheduledItem);
-        _broadcastingContext.Entry(dbScheduledItem).State = scheduledItem.Id == 0 ? EntityState.Added : EntityState.Modified;
+        _broadcastingContext.Entry(dbScheduledItem).State =
+            dbScheduledItem.Id == 0 ? EntityState.Added : EntityState.Modified;
 
         var result = await _broadcastingContext.SaveChangesAsync() != 0;
         if (result)
