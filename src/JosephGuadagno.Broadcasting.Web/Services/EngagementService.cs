@@ -7,44 +7,65 @@ using Microsoft.ApplicationInsights;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
+/// <summary>
+/// Calls out to the Engagement Api
+/// </summary>
 public class EngagementService: ServiceBase, IEngagementService
 {
     private readonly HttpClient _httpClient;
     private readonly TelemetryClient _telemetryClient;
-    private readonly ISettings _settings;
     private readonly ILogger<EngagementService> _logger;
+    private readonly string _engagementBaseUrl;
 
+    /// <summary>
+    /// Initializes the service
+    /// </summary>
+    /// <param name="httpClient">The HttpClient to use</param>
+    /// <param name="settings">Application <see cref="Settings"/> to use</param>
+    /// <param name="telemetryClient">The telemetry client</param>
+    /// <param name="logger">The logger</param>
     public EngagementService(HttpClient httpClient, ISettings settings, TelemetryClient telemetryClient,
         ILogger<EngagementService> logger)
     {
         _httpClient = HttpClient = httpClient;
-        _settings = settings;
         _telemetryClient = telemetryClient;
         _logger = logger;
+
+        _engagementBaseUrl = settings.ApiRootUri + "/engagements";
     }
     
-    // GetAll
+    /// <summary>
+    /// Gets all of the engagements
+    /// </summary>
+    /// <returns>A List&lt;<see cref="Engagement"/>&gt;s</returns>
     public async Task<List<Engagement>?> GetEngagementsAsync()
     {
-        var url = $"{_settings.ApiRootUri}/engagements/";
-        return await ExecuteGetAsync<List<Engagement>>(url);
+        return await ExecuteGetAsync<List<Engagement>>(_engagementBaseUrl);
     }
     
-    // Get (id)
+    /// <summary>
+    /// Gets an engagement
+    /// </summary>
+    /// <param name="engagementId">The identifier of the engagement to get</param>
+    /// <returns>An <see cref="Engagement"/></returns>
     public async Task<Engagement?> GetEngagementAsync(int engagementId)
     {
-        var url = $"{_settings.ApiRootUri}/engagements/{engagementId}";
+        var url = $"{_engagementBaseUrl}/{engagementId}";
         return await ExecuteGetAsync<Engagement>(url);
     }
     
-    // TODO: Save (Engagement)
+    /// <summary>
+    /// Saves an engagement
+    /// </summary>
+    /// <param name="engagement">The engagement to save.</param>
+    /// <returns>The engagement</returns>
+    /// <exception cref="HttpRequestException"></exception>
     public async Task<Engagement?> SaveEngagementAsync(Engagement engagement)
     {
-        var url = $"{_settings.ApiRootUri}/engagements/";
         var jsonRequest = JsonSerializer.Serialize(engagement);
         var jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync(url, jsonContent);
+        var response = await _httpClient.PostAsync(_engagementBaseUrl, jsonContent);
 
         if (response.StatusCode != HttpStatusCode.Created)
             throw new HttpRequestException(
@@ -59,25 +80,38 @@ public class EngagementService: ServiceBase, IEngagementService
         return savedEngagement;
     }
     
-    // Delete (id)
+    /// <summary>
+    /// Deletes an engagement
+    /// </summary>
+    /// <param name="engagementId">The identifier of the engagement to delete</param>
+    /// <returns>True if successful, otherwise false.</returns>
     public async Task<bool> DeleteEngagementAsync(int engagementId)
     {
-        var url = $"{_settings.ApiRootUri}/engagements/{engagementId}";
+        var url = $"{_engagementBaseUrl}{engagementId}";
         var response = await _httpClient.DeleteAsync(url);
         return response.StatusCode == HttpStatusCode.NoContent;
     }
     
-    // Get Talks (EngagementId)
+    /// <summary>
+    /// Gets all the talks for a given engagement
+    /// </summary>
+    /// <param name="engagementId">The identifier of the engagement to get the talks of</param>
+    /// <returns>A List&lt;<see cref="Talk"/>&gt;s</returns>
     public async Task<List<Talk>?> GetEngagementTalksAsync(int engagementId)
     {
-        var url = $"{_settings.ApiRootUri}/engagements/{engagementId}/talks";
+        var url = $"{_engagementBaseUrl}/{engagementId}/talks";
         return await ExecuteGetAsync<List<Talk>>(url);
     }
     
-    // TODO: Save Talk (Engagement)
+    /// <summary>
+    /// Saves a talk for an engagement
+    /// </summary>
+    /// <param name="talk">The <see cref="Talk"/> to save</param>
+    /// <returns>The talk</returns>
+    /// <exception cref="HttpRequestException"></exception>
     public async Task<Talk?> SaveEngagementTalkAsync(Talk? talk)
     {
-        var url = $"{_settings.ApiRootUri}/engagements/talks";
+        var url = $"{_engagementBaseUrl}/talks";
         var jsonRequest = JsonSerializer.Serialize(talk);
         var jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
@@ -96,17 +130,27 @@ public class EngagementService: ServiceBase, IEngagementService
         return talk;
     }
     
-    // Get Talk (EngagementId, TalkId)
+    /// <summary>
+    /// Gets a talk for an engagement
+    /// </summary>
+    /// <param name="engagementId">The identifier of the engagement</param>
+    /// <param name="talkId">The identifier of the talk</param>
+    /// <returns>A <see cref="Talk"/></returns>
     public async Task<Talk?> GetEngagementTalkAsync(int engagementId, int talkId)
     {
-        var url = $"{_settings.ApiRootUri}/engagements/{engagementId}/talks/{talkId}";
+        var url = $"{_engagementBaseUrl}/{engagementId}/talks/{talkId}";
         return await ExecuteGetAsync<Talk>(url);
     }
     
-    // Delete Talk (EngagementId, TalkId)
+    /// <summary>
+    /// Delete a talk from an engagement
+    /// </summary>
+    /// <param name="engagementId">The identifier of the engagement</param>
+    /// <param name="talkId">The identifier of the talk</param>
+    /// <returns>True if successful, otherwise false</returns>
     public async Task<bool> DeleteEngagementTalkAsync(int engagementId, int talkId)
     {
-        var url = $"{_settings.ApiRootUri}/engagements/{engagementId}/talks/{talkId}";
+        var url = $"{_engagementBaseUrl}/{engagementId}/talks/{talkId}";
         var response = await _httpClient.DeleteAsync(url);
         return response.StatusCode == HttpStatusCode.NoContent;
     }

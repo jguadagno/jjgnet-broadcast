@@ -7,44 +7,65 @@ using Microsoft.ApplicationInsights;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
+/// <summary>
+/// Calls out to the schedule Api
+/// </summary>
 public class ScheduledItemService: ServiceBase, IScheduledItemService
 {
     private readonly HttpClient _httpClient;
     private readonly TelemetryClient _telemetryClient;
-    private readonly ISettings _settings;
     private readonly ILogger<ScheduledItemService> _logger;
+    private readonly string _scheduleBaseUrl;
 
+    /// <summary>
+    /// Initializes the service
+    /// </summary>
+    /// <param name="httpClient">The HttpClient to use</param>
+    /// <param name="settings">Application <see cref="Settings"/> to use</param>
+    /// <param name="telemetryClient">The telemetry client</param>
+    /// <param name="logger">The logger</param>
     public ScheduledItemService(HttpClient httpClient, ISettings settings, TelemetryClient telemetryClient,
         ILogger<ScheduledItemService> logger)
     {
         _httpClient = HttpClient = httpClient;
-        _settings = settings;
         _telemetryClient = telemetryClient;
         _logger = logger;
+
+        _scheduleBaseUrl = settings.ApiRootUri + "/schedules";
     }
     
-    // GetAll
+    /// <summary>
+    /// Gets all of the scheduled items
+    /// </summary>
+    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
     public async Task<List<ScheduledItem>?> GetScheduledItemsAsync()
     {
-        var url = $"{_settings.ApiRootUri}/schedules/";
-        return await ExecuteGetAsync<List<ScheduledItem>>(url);
+        return await ExecuteGetAsync<List<ScheduledItem>>(_scheduleBaseUrl);
     }
     
-    // Get (ScheduledItemId)
+    /// <summary>
+    /// Gets a scheduled items
+    /// </summary>
+    /// <param name="scheduledItemId">The identifier of the <see cref="ScheduledItem"/></param>
+    /// <returns>A <see cref="ScheduledItem"/></returns>
     public async Task<ScheduledItem?> GetScheduledItemAsync(int scheduledItemId)
     {
-        var url = $"{_settings.ApiRootUri}/schedules/{scheduledItemId}";
+        var url = $"{_scheduleBaseUrl}/{scheduledItemId}";
         return await ExecuteGetAsync<ScheduledItem>(url);
     }
     
-    // Save (ScheduledItem)
+    /// <summary>
+    /// Saves a scheduled item
+    /// </summary>
+    /// <param name="scheduledItem">The <see cref="ScheduledItem"/> to save</param>
+    /// <returns>A scheduled item</returns>
+    /// <exception cref="HttpRequestException"></exception>
     public async Task<ScheduledItem?> SaveScheduledItemAsync(ScheduledItem scheduledItem)
     {
-        var url = $"{_settings.ApiRootUri}/schedules/";
         var jsonRequest = JsonSerializer.Serialize(scheduledItem);
         var jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync(url, jsonContent);
+        var response = await _httpClient.PostAsync(_scheduleBaseUrl, jsonContent);
 
         if (response.StatusCode != HttpStatusCode.Created)
             throw new HttpRequestException(
@@ -59,18 +80,25 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
         return savedScheduledItem;
     }
     
-    // Delete
+    /// <summary>
+    /// Deletes a scheduled item
+    /// </summary>
+    /// <param name="scheduledItemId">The identifier of the scheduled item to delete</param>
+    /// <returns>True if successful, otherwise false</returns>
     public async Task<bool> DeleteScheduledItemAsync(int scheduledItemId)
     {
-        var url = $"{_settings.ApiRootUri}/schedules/{scheduledItemId}";
+        var url = $"{_scheduleBaseUrl}/{scheduledItemId}";
         var response = await _httpClient.DeleteAsync(url);
         return response.StatusCode == HttpStatusCode.NoContent;
     }
     
-    // Upcoming
+    /// <summary>
+    /// Returns a list of any scheduled items that have not been sent
+    /// </summary>
+    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
     public async Task<List<ScheduledItem>?> GetUpcomingScheduledItems()
     {
-        var url = $"{_settings.ApiRootUri}/schedules/upcoming";
+        var url = $"{_scheduleBaseUrl}/upcoming";
         return await ExecuteGetAsync<List<ScheduledItem>>(url);
     }
 }
