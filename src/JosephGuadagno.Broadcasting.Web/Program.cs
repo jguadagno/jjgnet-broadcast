@@ -72,6 +72,7 @@ void ConfigureLogging(IServiceCollection services, ISettings configSettings, str
 
 void ConfigureApplication(IServiceCollection services)
 {
+    services.AddHttpClient();
     services.TryAddSingleton<IEngagementService, EngagementService>();
     services.TryAddSingleton<IScheduledItemService, ScheduledItemService>();
 }
