@@ -23,7 +23,7 @@ builder.Services.AddApplicationInsightsTelemetry(settings.AppInsightsKey);
 
 // Configure the logger
 var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
-ConfigureLogging(builder.Services, settings, fullyQualifiedLogFile, "Functions");
+ConfigureLogging(builder.Services, settings, fullyQualifiedLogFile, "Api");
 
 // Register DI services
 ConfigureApplication(builder.Services);
@@ -82,7 +82,7 @@ void ConfigureLogging(IServiceCollection services, ISettings configSettings, str
         .Enrich.WithAssemblyName()
         .Enrich.WithAssemblyVersion(true)
         .Enrich.WithExceptionDetails()
-        .Enrich.WithProperty("API", applicationName)
+        .Enrich.WithProperty("Application", applicationName)
         .Destructure.ToMaximumDepth(4)
         .Destructure.ToMaximumStringLength(100)
         .Destructure.ToMaximumCollectionCount(10)

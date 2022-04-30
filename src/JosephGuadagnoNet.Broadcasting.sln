@@ -13,6 +13,7 @@ ProjectSection(SolutionItems) = preProject
 	..\.github\workflows\publish-to-azure-function.yml = ..\.github\workflows\publish-to-azure-function.yml
 	..\scripts\database-create.sql = ..\scripts\database-create.sql
 	..\scripts\table-create.sql = ..\scripts\table-create.sql
+	..\.gitignore = ..\.gitignore
 EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Functions", "JosephGuadagno.Broadcasting.Functions\JosephGuadagno.Broadcasting.Functions.csproj", "{3982BC47-81CD-4D61-82D6-17749CB36032}"
@@ -32,6 +33,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Functions.Tests", "JosephGuadagno.Broadcasting.Functions.Tests\JosephGuadagno.Broadcasting.Functions.Tests.csproj", "{D34B771F-E95B-4F72-BB25-64EBE122DADA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Api", "JosephGuadagno.Broadcasting.Api\JosephGuadagno.Broadcasting.Api.csproj", "{B96A2B19-0F69-44F5-A026-8C9236678FF0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Web", "JosephGuadagno.Broadcasting.Web\JosephGuadagno.Broadcasting.Web.csproj", "{F13E8DC6-BB76-4D6E-9B38-0680FEA50AEE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -87,5 +90,9 @@ Global
 		{B96A2B19-0F69-44F5-A026-8C9236678FF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B96A2B19-0F69-44F5-A026-8C9236678FF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B96A2B19-0F69-44F5-A026-8C9236678FF0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F13E8DC6-BB76-4D6E-9B38-0680FEA50AEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F13E8DC6-BB76-4D6E-9B38-0680FEA50AEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F13E8DC6-BB76-4D6E-9B38-0680FEA50AEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F13E8DC6-BB76-4D6E-9B38-0680FEA50AEE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
