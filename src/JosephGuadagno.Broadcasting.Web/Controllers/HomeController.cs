@@ -20,15 +20,6 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var engagements = await _engagementService.GetEngagementsAsync();
-        var engagement = await _engagementService.GetEngagementAsync(1);
-        var talks = await _engagementService.GetEngagementTalksAsync(1);
-        var talk = await _engagementService.GetEngagementTalkAsync(1, 2);
-
-        var scheduledItems = await _scheduledItemService.GetScheduledItemsAsync();
-        var scheduledItem = await _scheduledItemService.GetScheduledItemAsync(1);
-        var upcomingItems = await _scheduledItemService.GetUpcomingScheduledItems();
-        
         return View();
     }
 

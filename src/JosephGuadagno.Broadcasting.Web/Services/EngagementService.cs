@@ -67,7 +67,7 @@ public class EngagementService: ServiceBase, IEngagementService
 
         var response = await _httpClient.PostAsync(_engagementBaseUrl, jsonContent);
 
-        if (response.StatusCode != HttpStatusCode.Created)
+        if (response.StatusCode != HttpStatusCode.Created && response.StatusCode != HttpStatusCode.OK)
             throw new HttpRequestException(
                 $"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");
             
@@ -87,7 +87,7 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>True if successful, otherwise false.</returns>
     public async Task<bool> DeleteEngagementAsync(int engagementId)
     {
-        var url = $"{_engagementBaseUrl}{engagementId}";
+        var url = $"{_engagementBaseUrl}/{engagementId}";
         var response = await _httpClient.DeleteAsync(url);
         return response.StatusCode == HttpStatusCode.NoContent;
     }

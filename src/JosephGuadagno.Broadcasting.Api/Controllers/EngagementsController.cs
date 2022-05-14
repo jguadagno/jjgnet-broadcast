@@ -80,13 +80,13 @@ public class EngagementsController: ControllerBase
     public async Task<ActionResult<Engagement>> SaveEngagementAsync(Engagement engagement)
     {
         var savedEngagement = await _engagementManager.SaveAsync(engagement);
-        if (engagement.Id == 0)
+        if (savedEngagement != null)
         {
             return CreatedAtAction(nameof(GetEngagementAsync), new { engagementId = savedEngagement.Id },
                 savedEngagement);
         }
 
-        return Ok();
+        return Problem("Failed to save the engagement");
     }
     
     /// <summary>
