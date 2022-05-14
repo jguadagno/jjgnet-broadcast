@@ -9,7 +9,7 @@ public interface IEngagementService
     Task<Engagement?> SaveEngagementAsync(Engagement engagement);
     Task<bool> DeleteEngagementAsync(int engagementId);
     Task<List<Talk>?> GetEngagementTalksAsync(int engagementId);
-    Task<Talk?> SaveEngagementTalkAsync(Talk? talk);
+    Task<Talk?> SaveEngagementTalkAsync(Talk talk);
     Task<Talk?> GetEngagementTalkAsync(int engagementId, int talkId);
     Task<bool> DeleteEngagementTalkAsync(int engagementId, int talkId);
 }

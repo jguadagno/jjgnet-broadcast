@@ -43,7 +43,7 @@ public class EngagementDataStore: IEngagementDataStore
             return _mapper.Map<Domain.Models.Engagement>(dbEngagement);
         }
 
-        throw new ApplicationException("Filed to save engagement");
+        throw new ApplicationException("Failed to save engagement");
     }
 
     public async Task<List<Domain.Models.Engagement>> GetAllAsync()
@@ -133,12 +133,19 @@ public class EngagementDataStore: IEngagementDataStore
         return await _broadcastingContext.SaveChangesAsync() != 0;
     }
 
-    public async Task<bool> SaveTalkAsync(Domain.Models.Talk talk)
+    public async Task<Domain.Models.Talk> SaveTalkAsync(Domain.Models.Talk talk)
     {
         ArgumentNullException.ThrowIfNull(talk);
         var dbTalk = _mapper.Map<Models.Talk>(talk);
-        _broadcastingContext.Talks.Update(dbTalk);
-        return await _broadcastingContext.SaveChangesAsync() != 0;
+        _broadcastingContext.Entry(dbTalk).State = dbTalk.Id == 0 ? EntityState.Added : EntityState.Modified;
+        
+        var result = await _broadcastingContext.SaveChangesAsync() != 0;
+        if (result)
+        {
+            return _mapper.Map<Domain.Models.Talk>(dbTalk);
+        }
+
+        throw new ApplicationException("Failed to save talk");
     }
 
     public async Task<bool> RemoveTalkFromEngagementAsync(int talkId)

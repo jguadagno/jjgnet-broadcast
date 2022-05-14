@@ -132,21 +132,21 @@ public class EngagementsController: ControllerBase
     /// <response code="200">Returns if the talk was successfully updated</response>
     /// <response code="201">Returns the newly created talk</response>
     /// <response code="400">If the data provided is null or there are data violations</response>      
-    [HttpPost("{engagementId:int}/talks/{talkId:int}")]
-    [HttpPut("{engagementId:int}/talks/{talkId:int}")]
+    [HttpPost("{engagementId:int}/talks/")]
+    [HttpPut("{engagementId:int}/talks/")]
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Talk))]
     [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(Talk))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Talk>> SaveTalkAsync(Talk talk)
     {
         var savedTalk = await _engagementManager.SaveTalkAsync(talk);
-        if (talk.Id == 0)
+        if (savedTalk != null)
         {
             return CreatedAtAction(nameof(GetTalkAsync), new { engagementId = talk.EngagementId, talkId = talk.Id },
                 savedTalk);
         }
 
-        return Ok();
+        return Problem("Failed to save the talk");
     }
     
     /// <summary>

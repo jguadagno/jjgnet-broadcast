@@ -29,7 +29,6 @@ public class EngagementsController : Controller
         {
             return NotFound();
         }
-        ViewData["Title"] = $"Engagement '{engagement.Name}";
         return View(engagement);
     }
         
@@ -40,7 +39,6 @@ public class EngagementsController : Controller
         {
             return NotFound();
         }
-        ViewData["Title"] = $"Edit '{engagement.Name}";
         return View(engagement);
     }
 

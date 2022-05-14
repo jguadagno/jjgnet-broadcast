@@ -109,15 +109,15 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <param name="talk">The <see cref="Talk"/> to save</param>
     /// <returns>The talk</returns>
     /// <exception cref="HttpRequestException"></exception>
-    public async Task<Talk?> SaveEngagementTalkAsync(Talk? talk)
+    public async Task<Talk?> SaveEngagementTalkAsync(Talk talk)
     {
-        var url = $"{_engagementBaseUrl}/talks";
+        var url = $"{_engagementBaseUrl}/{talk.EngagementId}/talks";
         var jsonRequest = JsonSerializer.Serialize(talk);
         var jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
         var response = await _httpClient.PostAsync(url, jsonContent);
 
-        if (response.StatusCode != HttpStatusCode.Created)
+        if (response.StatusCode != HttpStatusCode.Created && response.StatusCode != HttpStatusCode.OK)
             throw new HttpRequestException(
                 $"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");
             
@@ -126,8 +126,8 @@ public class EngagementService: ServiceBase, IEngagementService
         {
             PropertyNameCaseInsensitive = true,
         };
-        talk = JsonSerializer.Deserialize<Talk>(content, options);
-        return talk;
+        var savedTalk = JsonSerializer.Deserialize<Talk>(content, options);
+        return savedTalk;
     }
     
     /// <summary>

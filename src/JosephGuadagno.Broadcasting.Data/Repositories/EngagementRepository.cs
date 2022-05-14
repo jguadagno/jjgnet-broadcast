@@ -55,7 +55,7 @@ public class EngagementRepository: IEngagementRepository
         return await _engagementDataStore.AddTalkToEngagementAsync(engagementId, talk);
     }
 
-    public async Task<bool> SaveTalkAsync(Talk talk)
+    public async Task<Talk> SaveTalkAsync(Talk talk)
     {
         return await _engagementDataStore.SaveTalkAsync(talk);
     }
