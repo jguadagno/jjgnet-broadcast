@@ -1,29 +1,37 @@
 @model JosephGuadagno.Broadcasting.Domain.Models.ScheduledItem
-
 @{
     ViewData["Title"] = "Edit a Scheduled Item";
+}
+@section Scripts
+{
+    <script src="/js/schedules.edit.js"></script>    
 }
 <h1>Edit a scheduled item</h1>
 <p class="lead">
     The details around the schedule.
 </p>
-
 <form asp-action="Edit">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <input type="hidden" asp-for="Id" />
     <div class="form-group">
         <label class="control-label">Table</label>
-        <input asp-for="ItemTableName" type="text" class="form-control" />
+        <select asp-for="ItemTableName" class="form-select" aria-label="Select table name">
+            <option selected>Select Table</option>
+            <option value="Engagements">Engagements</option>
+            <option value="Talks">Talks</option>
+            <option value="SyndicationFeed">Syndication Feed</option>
+            <option value="YouTube">YouTube</option>
+        </select>
         <span asp-validation-for="ItemTableName" class="text-danger"></span>
     </div>
     <div class="form-group">
         <label class="control-label">Primary Key</label>
-        <input asp-for="ItemPrimaryKey" type="text" class="form-control" />
+        <input asp-for="ItemPrimaryKey" type="text" class="form-control" readonly/>
         <span asp-validation-for="ItemPrimaryKey" class="text-danger"></span>
     </div>
     <div class="form-group">
         <label class="control-label">Secondary Key</label>
-        <input asp-for="ItemSecondaryKey" type="text" class="form-control" />
+        <input asp-for="ItemSecondaryKey" type="text" class="form-control" readonly/>
         <span asp-validation-for="ItemSecondaryKey" class="text-danger"></span>
     </div>
     <div class="form-group">
