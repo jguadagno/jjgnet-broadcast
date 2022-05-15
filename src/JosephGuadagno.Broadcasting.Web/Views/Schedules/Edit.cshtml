@@ -1,0 +1,58 @@
+@model JosephGuadagno.Broadcasting.Domain.Models.ScheduledItem
+
+@{
+    ViewData["Title"] = "Edit a Scheduled Item";
+}
+<h1>Edit a scheduled item</h1>
+<p class="lead">
+    The details around the schedule.
+</p>
+
+<form asp-action="Edit">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="Id" />
+    <div class="form-group">
+        <label class="control-label">Table</label>
+        <input asp-for="ItemTableName" type="text" class="form-control" />
+        <span asp-validation-for="ItemTableName" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label class="control-label">Primary Key</label>
+        <input asp-for="ItemPrimaryKey" type="text" class="form-control" />
+        <span asp-validation-for="ItemPrimaryKey" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label class="control-label">Secondary Key</label>
+        <input asp-for="ItemSecondaryKey" type="text" class="form-control" />
+        <span asp-validation-for="ItemSecondaryKey" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label class="control-label">Send on Date/Time</label>
+        <input asp-for="ScheduleDateTime" type="datetime-local" class="form-control" />
+        <span asp-validation-for="ScheduleDateTime" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label class="control-label">Message</label>
+        <input asp-for="Message" type="text" class="form-control" />
+        <span asp-validation-for="Message" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label class="control-label">Sent on Date/Time</label>
+        <input asp-for="MessageSentOn" type="datetime-local" class="form-control" />
+        <span asp-validation-for="MessageSentOn" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label class="control-label">Was Sent</label>
+        <input asp-for="MessageSent" type="checkbox" class="form-check-input" />
+        <span asp-validation-for="MessageSent" class="text-danger"></span>
+    </div>
+    <br />
+    <button type="submit" class="btn btn-primary">
+        <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-plus-circle" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" d="M8 3.5a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5H4a.5.5 0 0 1 0-1h3.5V4a.5.5 0 0 1 .5-.5z"/>
+            <path fill-rule="evenodd" d="M7.5 8a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1H8.5V12a.5.5 0 0 1-1 0V8z"/>
+            <path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+        </svg>
+        Save
+    </button>
+</form>

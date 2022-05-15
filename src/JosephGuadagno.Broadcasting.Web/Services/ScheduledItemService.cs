@@ -67,7 +67,7 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
 
         var response = await _httpClient.PostAsync(_scheduleBaseUrl, jsonContent);
 
-        if (response.StatusCode != HttpStatusCode.Created)
+        if (response.StatusCode != HttpStatusCode.Created && response.StatusCode != HttpStatusCode.OK)
             throw new HttpRequestException(
                 $"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");
             
@@ -96,9 +96,31 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
     /// Returns a list of any scheduled items that have not been sent
     /// </summary>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
-    public async Task<List<ScheduledItem>?> GetUpcomingScheduledItems()
+    public async Task<List<ScheduledItem>?> GetUnsentScheduledItemsAsync()
+    {
+        var url = $"{_scheduleBaseUrl}/unsent";
+        return await ExecuteGetAsync<List<ScheduledItem>>(url);
+    }
+    
+    /// <summary>
+    /// Returns a list of any scheduled items that have not been sent that should have been sent
+    /// </summary>
+    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
+    public async Task<List<ScheduledItem>?> GetScheduledItemsToSendAsync()
     {
         var url = $"{_scheduleBaseUrl}/upcoming";
         return await ExecuteGetAsync<List<ScheduledItem>>(url);
+    }
+
+    /// <summary>
+    /// Gets scheduled items for the given calendar month and year
+    /// </summary>
+    /// <param name="year">The year</param>
+    /// <param name="month">The month</param>
+    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that are for the month.  If there are no scheduled items, null will be returned</returns>
+    public async Task<List<ScheduledItem>?> GetScheduledItemsByCalendarMonthAsync(int year, int month)
+    {
+        var url = $"{_scheduleBaseUrl}/calendar/{year}/{month}";
+        return await ExecuteGetAsync<List<ScheduledItem>?>(url);
     }
 }

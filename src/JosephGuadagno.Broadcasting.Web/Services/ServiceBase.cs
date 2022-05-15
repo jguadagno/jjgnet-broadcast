@@ -10,10 +10,17 @@ public abstract class ServiceBase
     internal async Task<T?> ExecuteGetAsync<T>(string url)
     {
         var response = await HttpClient.GetAsync(url);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return default;
+        }
+
         if (response.StatusCode != HttpStatusCode.OK)
+        {
             throw new HttpRequestException(
                 $"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");
-            
+        }
+
         // Parse the Results
         var content = await response.Content.ReadAsStringAsync();
                 

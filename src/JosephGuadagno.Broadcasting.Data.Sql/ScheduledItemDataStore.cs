@@ -67,7 +67,7 @@ public class ScheduledItemDataStore: IScheduledItemDataStore
         return await _broadcastingContext.SaveChangesAsync() != 0;
     }
 
-    public async Task<List<Domain.Models.ScheduledItem>> GetUpcomingScheduledItemsAsync()
+    public async Task<List<Domain.Models.ScheduledItem>> GetScheduledItemsToSendAsync()
     {
         var dbScheduledItems = await _broadcastingContext.ScheduledItems
             .Where(si => si.MessageSent == false && si.SendOnDateTime <= DateTimeOffset.Now)
@@ -75,6 +75,24 @@ public class ScheduledItemDataStore: IScheduledItemDataStore
         return _mapper.Map<List<Domain.Models.ScheduledItem>>(dbScheduledItems);
     }
 
+    public async Task<List<Domain.Models.ScheduledItem>> GetUnsentScheduledItemsAsync()
+    {
+        var dbScheduledItems = await _broadcastingContext.ScheduledItems
+            .Where(si => si.MessageSent == false)
+            .ToListAsync();
+        return _mapper.Map<List<Domain.Models.ScheduledItem>>(dbScheduledItems);
+    }
+
+    public async Task<List<Domain.Models.ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month)
+    {
+        var startDate = new DateTime(year, month, 1, 0, 0, 0);
+        var endDate = new DateTime(year, month, DateTime.DaysInMonth(year, month), 11, 59, 59);
+        var dbScheduledItems = await _broadcastingContext.ScheduledItems
+            .Where(si => si.SendOnDateTime >= startDate && si.SendOnDateTime <= endDate)
+            .ToListAsync();
+        return _mapper.Map<List<Domain.Models.ScheduledItem>>(dbScheduledItems);
+    }
+    
     public async Task<bool> SentScheduledItemAsync(int primaryKey, DateTimeOffset sentOn)
     {
         var dbScheduledItems = await _broadcastingContext.ScheduledItems.FindAsync(primaryKey);

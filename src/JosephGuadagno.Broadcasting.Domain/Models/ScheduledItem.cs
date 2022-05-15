@@ -41,6 +41,21 @@ public class ScheduledItem
     public string ItemSecondaryKey { get; set; }
         
     /// <summary>
+    /// The message that will be sent out
+    /// </summary>
+    public string Message { get; set; }
+    
+    /// <summary>
+    /// When the message was sent by the scheduler
+    /// </summary>
+    public DateTimeOffset MessageSentOn { get; set; }
+    
+    /// <summary>
+    /// Indicates if the message was sent
+    /// </summary>
+    public bool MessageSent { get; set; }
+    
+    /// <summary>
     /// The date and time this item is scheduled to go out
     /// </summary>
     public DateTimeOffset ScheduleDateTime { get; set; }

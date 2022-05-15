@@ -51,7 +51,7 @@ public class ScheduledItems
         // Check for items that are due to be fired
         _logger.LogDebug("Checking for scheduled items that have not been fired");
         var scheduledItems =
-            await _scheduledItemManager.GetUpcomingScheduledItemsAsync();
+            await _scheduledItemManager.GetScheduledItemsToSendAsync();
 
         // If there are no scheduled items, log it, and exit
         if (scheduledItems is null || scheduledItems.Count == 0)

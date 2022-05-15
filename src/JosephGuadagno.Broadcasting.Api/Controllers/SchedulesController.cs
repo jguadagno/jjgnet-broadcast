@@ -71,13 +71,13 @@ public class SchedulesController: ControllerBase
     public async Task<ActionResult<ScheduledItem>> SaveScheduledItemAsync(ScheduledItem scheduledItem)
     {
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
-        if (scheduledItem.Id == 0)
+        if (savedScheduledItem != null)
         {
             return CreatedAtAction(nameof(GetScheduledItemAsync), new { scheduledItemId = savedScheduledItem.Id },
                 savedScheduledItem);
         }
 
-        return Ok();
+        return Problem("Failed to save the scheduled item");
     }
     
     /// <summary>
@@ -108,12 +108,52 @@ public class SchedulesController: ControllerBase
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that have not yet been sent.</returns>
     /// <response code="200">Returned if there are unscheduled items that need to be sent.</response>
     /// <response code="404">If there are not items that need to be sent</response>
+    [HttpGet("unsent")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItem>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<List<ScheduledItem>>> GetUnsentScheduledItemsAsync()
+    {
+        var items = await _scheduledItemManager.GetUnsentScheduledItemsAsync();
+        if (items is null || items.Count == 0)
+        {
+            return NotFound();
+        }
+
+        return items;
+    }
+
+    /// <summary>
+    /// Gets a list of unsent scheduled items that should have been sent already
+    /// </summary>
+    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that have not yet been sent.</returns>
+    /// <response code="200">Returned if there are unscheduled items that need to be sent.</response>
+    /// <response code="404">If there are not items that need to be sent</response>
     [HttpGet("upcoming")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItem>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<List<ScheduledItem>>> GetUpcomingScheduledItemsAsync()
+    public async Task<ActionResult<List<ScheduledItem>>> GetScheduledItemsToSendAsync()
     {
-        var items = await _scheduledItemManager.GetUpcomingScheduledItemsAsync();
+        var items = await _scheduledItemManager.GetScheduledItemsToSendAsync();
+        if (items is null || items.Count == 0)
+        {
+            return NotFound();
+        }
+
+        return items;
+    }
+    
+    /// <summary>
+    /// Gets a list of unsent scheduled items for a given calendar month
+    /// </summary>
+    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that have not yet been sent.</returns>
+    /// <response code="200">Returned if there are unscheduled items that need to be sent.</response>
+    /// <response code="404">If there are not items that need to be sent</response>
+    [HttpGet("calendar/{year:int}/{month:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItem>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<List<ScheduledItem>>> GetUpcomingScheduledItemsForCalendarMonthAsync(int year, int month)
+    {
+        var items = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month);
         if (items is null || items.Count == 0)
         {
             return NotFound();
