@@ -4,6 +4,7 @@ using System.Text.Json;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.ApplicationInsights;
+using Microsoft.Identity.Web;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
@@ -12,7 +13,6 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// </summary>
 public class EngagementService: ServiceBase, IEngagementService
 {
-    private readonly HttpClient _httpClient;
     private readonly TelemetryClient _telemetryClient;
     private readonly ILogger<EngagementService> _logger;
     private readonly string _engagementBaseUrl;
@@ -21,16 +21,19 @@ public class EngagementService: ServiceBase, IEngagementService
     /// Initializes the service
     /// </summary>
     /// <param name="httpClient">The HttpClient to use</param>
+    /// <param name="tokenAcquisition">The token acquisition client</param>
     /// <param name="settings">Application <see cref="Settings"/> to use</param>
     /// <param name="telemetryClient">The telemetry client</param>
     /// <param name="logger">The logger</param>
-    public EngagementService(HttpClient httpClient, ISettings settings, TelemetryClient telemetryClient,
+    public EngagementService(HttpClient httpClient, ITokenAcquisition tokenAcquisition, ISettings settings, TelemetryClient telemetryClient,
         ILogger<EngagementService> logger)
     {
-        _httpClient = HttpClient = httpClient;
         _telemetryClient = telemetryClient;
         _logger = logger;
 
+        HttpClient = httpClient;
+        TokenAcquisition = tokenAcquisition;
+        ApiScopeUrl = settings.ApiScopeUri;
         _engagementBaseUrl = settings.ApiRootUri + "/engagements";
     }
     
@@ -40,6 +43,7 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>A List&lt;<see cref="Engagement"/>&gt;s</returns>
     public async Task<List<Engagement>?> GetEngagementsAsync()
     {
+        await SetRequestHeader(Domain.Scopes.Engagements.List);
         return await ExecuteGetAsync<List<Engagement>>(_engagementBaseUrl);
     }
     
@@ -50,6 +54,7 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>An <see cref="Engagement"/></returns>
     public async Task<Engagement?> GetEngagementAsync(int engagementId)
     {
+        await SetRequestHeader(Domain.Scopes.Engagements.View);
         var url = $"{_engagementBaseUrl}/{engagementId}";
         return await ExecuteGetAsync<Engagement>(url);
     }
@@ -62,10 +67,11 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <exception cref="HttpRequestException"></exception>
     public async Task<Engagement?> SaveEngagementAsync(Engagement engagement)
     {
+        await SetRequestHeader(Domain.Scopes.Engagements.Modify);
         var jsonRequest = JsonSerializer.Serialize(engagement);
         var jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync(_engagementBaseUrl, jsonContent);
+        var response = await HttpClient.PostAsync(_engagementBaseUrl, jsonContent);
 
         if (response.StatusCode != HttpStatusCode.Created && response.StatusCode != HttpStatusCode.OK)
             throw new HttpRequestException(
@@ -87,8 +93,9 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>True if successful, otherwise false.</returns>
     public async Task<bool> DeleteEngagementAsync(int engagementId)
     {
+        await SetRequestHeader(Domain.Scopes.Engagements.Delete);
         var url = $"{_engagementBaseUrl}/{engagementId}";
-        var response = await _httpClient.DeleteAsync(url);
+        var response = await HttpClient.DeleteAsync(url);
         return response.StatusCode == HttpStatusCode.NoContent;
     }
     
@@ -99,6 +106,7 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>A List&lt;<see cref="Talk"/>&gt;s</returns>
     public async Task<List<Talk>?> GetEngagementTalksAsync(int engagementId)
     {
+        await SetRequestHeader(Domain.Scopes.Talks.List);
         var url = $"{_engagementBaseUrl}/{engagementId}/talks";
         return await ExecuteGetAsync<List<Talk>>(url);
     }
@@ -111,11 +119,12 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <exception cref="HttpRequestException"></exception>
     public async Task<Talk?> SaveEngagementTalkAsync(Talk talk)
     {
+        await SetRequestHeader(Domain.Scopes.Talks.Modify);
         var url = $"{_engagementBaseUrl}/{talk.EngagementId}/talks";
         var jsonRequest = JsonSerializer.Serialize(talk);
         var jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync(url, jsonContent);
+        var response = await HttpClient.PostAsync(url, jsonContent);
 
         if (response.StatusCode != HttpStatusCode.Created && response.StatusCode != HttpStatusCode.OK)
             throw new HttpRequestException(
@@ -138,6 +147,7 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>A <see cref="Talk"/></returns>
     public async Task<Talk?> GetEngagementTalkAsync(int engagementId, int talkId)
     {
+        await SetRequestHeader(Domain.Scopes.Talks.View);
         var url = $"{_engagementBaseUrl}/{engagementId}/talks/{talkId}";
         return await ExecuteGetAsync<Talk>(url);
     }
@@ -150,8 +160,10 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>True if successful, otherwise false</returns>
     public async Task<bool> DeleteEngagementTalkAsync(int engagementId, int talkId)
     {
+        await SetRequestHeader(Domain.Scopes.Engagements.Delete);
         var url = $"{_engagementBaseUrl}/{engagementId}/talks/{talkId}";
-        var response = await _httpClient.DeleteAsync(url);
+        var response = await HttpClient.DeleteAsync(url);
         return response.StatusCode == HttpStatusCode.NoContent;
     }
+
 }

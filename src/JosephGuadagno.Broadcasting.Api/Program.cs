@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Exceptions;
@@ -19,6 +20,8 @@ builder.Services.TryAddSingleton<ISettings>(settings);
 builder.Services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
     { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
 
+builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
+
 builder.Services.AddApplicationInsightsTelemetry(settings.AppInsightsKey);
 
 // Configure the logger
@@ -30,6 +33,8 @@ ConfigureApplication(builder.Services);
 
 // ASP.NET Core API stuff
 builder.Services.AddControllers();
+
+// Configure Swagger
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -53,6 +58,37 @@ builder.Services.AddSwaggerGen(c =>
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
+
+    // Enabled OAuth security in Swagger
+    var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.ToDictionary(settings.ApiScopeUrl);
+    scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement() {  
+        {  
+            new OpenApiSecurityScheme {  
+                Reference = new OpenApiReference {  
+                    Type = ReferenceType.SecurityScheme,  
+                    Id = "oauth2"  
+                },  
+                Scheme = "oauth2",  
+                Name = "oauth2",  
+                In = ParameterLocation.Header  
+            },  
+            new List <string> ()  
+        }  
+    });   
+    c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.OAuth2,
+        Flows = new OpenApiOAuthFlows
+        {
+            Implicit = new OpenApiOAuthFlow()
+            {
+                AuthorizationUrl = new Uri("https://login.microsoftonline.com/common/oauth2/v2.0/authorize"),
+                TokenUrl = new Uri("https://login.microsoftonline.com/common/common/v2.0/token"),
+                Scopes = scopes
+            }
+        }
+    });
 });
 
 var app = builder.Build();
@@ -61,11 +97,18 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.OAuthAppName("Swagger Client");
+        options.OAuthClientId(settings.SwaggerClientId);
+        options.OAuthClientSecret(settings.SwaggerClientSecret);
+        options.OAuthUseBasicAuthenticationWithAccessCodeGrant();
+    });
 }
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

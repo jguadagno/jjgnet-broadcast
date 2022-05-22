@@ -4,6 +4,7 @@ using System.Text.Json;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.ApplicationInsights;
+using Microsoft.Identity.Web;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
@@ -12,7 +13,6 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// </summary>
 public class ScheduledItemService: ServiceBase, IScheduledItemService
 {
-    private readonly HttpClient _httpClient;
     private readonly TelemetryClient _telemetryClient;
     private readonly ILogger<ScheduledItemService> _logger;
     private readonly string _scheduleBaseUrl;
@@ -21,16 +21,20 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
     /// Initializes the service
     /// </summary>
     /// <param name="httpClient">The HttpClient to use</param>
+    /// <param name="tokenAcquisition">The token acquisition client</param>
     /// <param name="settings">Application <see cref="Settings"/> to use</param>
     /// <param name="telemetryClient">The telemetry client</param>
     /// <param name="logger">The logger</param>
-    public ScheduledItemService(HttpClient httpClient, ISettings settings, TelemetryClient telemetryClient,
+    public ScheduledItemService(HttpClient httpClient, ITokenAcquisition tokenAcquisition, ISettings settings, TelemetryClient telemetryClient,
         ILogger<ScheduledItemService> logger)
     {
-        _httpClient = HttpClient = httpClient;
+        
         _telemetryClient = telemetryClient;
         _logger = logger;
 
+        HttpClient = httpClient;
+        TokenAcquisition = tokenAcquisition;
+        ApiScopeUrl = settings.ApiScopeUri;
         _scheduleBaseUrl = settings.ApiRootUri + "/schedules";
     }
     
@@ -40,6 +44,7 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
     public async Task<List<ScheduledItem>?> GetScheduledItemsAsync()
     {
+        await SetRequestHeader(Domain.Scopes.Schedules.List);
         return await ExecuteGetAsync<List<ScheduledItem>>(_scheduleBaseUrl);
     }
     
@@ -50,6 +55,7 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
     /// <returns>A <see cref="ScheduledItem"/></returns>
     public async Task<ScheduledItem?> GetScheduledItemAsync(int scheduledItemId)
     {
+        await SetRequestHeader(Domain.Scopes.Schedules.View);
         var url = $"{_scheduleBaseUrl}/{scheduledItemId}";
         return await ExecuteGetAsync<ScheduledItem>(url);
     }
@@ -62,10 +68,11 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
     /// <exception cref="HttpRequestException"></exception>
     public async Task<ScheduledItem?> SaveScheduledItemAsync(ScheduledItem scheduledItem)
     {
+        await SetRequestHeader(Domain.Scopes.Schedules.Modify);
         var jsonRequest = JsonSerializer.Serialize(scheduledItem);
         var jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync(_scheduleBaseUrl, jsonContent);
+        var response = await HttpClient.PostAsync(_scheduleBaseUrl, jsonContent);
 
         if (response.StatusCode != HttpStatusCode.Created && response.StatusCode != HttpStatusCode.OK)
             throw new HttpRequestException(
@@ -87,8 +94,9 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
     /// <returns>True if successful, otherwise false</returns>
     public async Task<bool> DeleteScheduledItemAsync(int scheduledItemId)
     {
+        await SetRequestHeader(Domain.Scopes.Schedules.Delete);
         var url = $"{_scheduleBaseUrl}/{scheduledItemId}";
-        var response = await _httpClient.DeleteAsync(url);
+        var response = await HttpClient.DeleteAsync(url);
         return response.StatusCode == HttpStatusCode.NoContent;
     }
     
@@ -98,6 +106,7 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
     public async Task<List<ScheduledItem>?> GetUnsentScheduledItemsAsync()
     {
+        await SetRequestHeader(Domain.Scopes.Schedules.UnsentScheduled);
         var url = $"{_scheduleBaseUrl}/unsent";
         return await ExecuteGetAsync<List<ScheduledItem>>(url);
     }
@@ -108,6 +117,7 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
     public async Task<List<ScheduledItem>?> GetScheduledItemsToSendAsync()
     {
+        await SetRequestHeader(Domain.Scopes.Schedules.UpcomingScheduled);
         var url = $"{_scheduleBaseUrl}/upcoming";
         return await ExecuteGetAsync<List<ScheduledItem>>(url);
     }
@@ -120,6 +130,7 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that are for the month.  If there are no scheduled items, null will be returned</returns>
     public async Task<List<ScheduledItem>?> GetScheduledItemsByCalendarMonthAsync(int year, int month)
     {
+        await SetRequestHeader(Domain.Scopes.Schedules.UpcomingScheduled);
         var url = $"{_scheduleBaseUrl}/calendar/{year}/{month}";
         return await ExecuteGetAsync<List<ScheduledItem>?>(url);
     }

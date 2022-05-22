@@ -1,11 +1,18 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text.Json;
+using Microsoft.Identity.Web;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
+/// <summary>
+/// The base class for calling Apis
+/// </summary>
 public abstract class ServiceBase
 {
     internal HttpClient HttpClient { get; init; }
+    internal string ApiScopeUrl { get; init; }
+    internal ITokenAcquisition TokenAcquisition { get; init; }
     
     internal async Task<T?> ExecuteGetAsync<T>(string url)
     {
@@ -32,5 +39,14 @@ public abstract class ServiceBase
         var results = JsonSerializer.Deserialize<T>(content, options);
 
         return results;
+    }
+    
+    internal async Task SetRequestHeader(string scope, string mediaType = "application/json")
+    {
+        string fullScopeName = ApiScopeUrl + scope;
+        string accessToken = await TokenAcquisition.GetAccessTokenForUserAsync(new[] {fullScopeName});
+            
+        HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(mediaType));
     }
 }
