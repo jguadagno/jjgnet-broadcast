@@ -23,4 +23,6 @@ public class Settings: ISettings
     /// The Azure Storage account to use
     /// </summary>
     public string StorageAccount { get; set; }
+    
+    public string JJGNetDatabaseSqlServer { get; set; }
 }

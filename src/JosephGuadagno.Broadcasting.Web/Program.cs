@@ -1,7 +1,12 @@
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.UI;
 using Serilog;
 using Serilog.Exceptions;
 
@@ -19,8 +24,31 @@ ConfigureLogging(builder.Services, settings, fullyQualifiedLogFile, "Web");
 // Register DI services
 ConfigureApplication(builder.Services);
 
+// Configure Microsoft Identity
+var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.ToDictionary(settings.ApiScopeUri);
+scopes.Add($"{settings.ApiScopeUri}user_impersonation", "Access user");
+// Token acquisition service based on MSAL.NET
+// and chosen token cache implementation
+builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApp(builder.Configuration)
+    .EnableTokenAcquisitionToCallDownstreamApi(new []{$"{settings.ApiScopeUri}user_impersonation"})
+    .AddDistributedTokenCaches();
+
+builder.Services.AddDistributedSqlServerCache(options =>
+{
+    options.ConnectionString = settings.JJGNetDatabaseSqlServer;
+    options.SchemaName = "dbo";
+    options.TableName = "Cache";
+});
+
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    var policy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+    options.Filters.Add(new AuthorizeFilter(policy));
+}).AddMicrosoftIdentityUI();
 
 var app = builder.Build();
 
@@ -37,6 +65,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
@@ -73,6 +102,6 @@ void ConfigureLogging(IServiceCollection services, ISettings configSettings, str
 void ConfigureApplication(IServiceCollection services)
 {
     services.AddHttpClient();
-    services.TryAddSingleton<IEngagementService, EngagementService>();
-    services.TryAddSingleton<IScheduledItemService, ScheduledItemService>();
+    services.TryAddScoped<IEngagementService, EngagementService>();
+    services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
 }
