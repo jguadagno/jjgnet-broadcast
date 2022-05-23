@@ -48,3 +48,19 @@ create index ScheduledItems_MessageSentOn_index
     on ScheduledItems (MessageSentOn)
 go
 
+create table Cache
+(
+    Id                         nvarchar(449)  not null
+        primary key,
+    Value                      varbinary(max) not null,
+    ExpiresAtTime              datetimeoffset not null,
+    SlidingExpirationInSeconds bigint,
+    AbsoluteExpiration         datetimeoffset
+)
+go
+
+create index Index_ExpiresAtTime
+    on Cache (ExpiresAtTime)
+go
+
+
