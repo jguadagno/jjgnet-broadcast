@@ -32,6 +32,7 @@ scopes.Add($"{settings.ApiScopeUri}user_impersonation", "Access user");
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(builder.Configuration)
     .EnableTokenAcquisitionToCallDownstreamApi(new []{$"{settings.ApiScopeUri}user_impersonation"})
+    //.EnableTokenAcquisitionToCallDownstreamApi(scopes.Select(k => k.Key))
     .AddDistributedTokenCaches();
 
 builder.Services.AddDistributedSqlServerCache(options =>

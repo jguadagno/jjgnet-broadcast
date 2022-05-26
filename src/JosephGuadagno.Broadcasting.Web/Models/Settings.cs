@@ -25,4 +25,6 @@ public class Settings: ISettings
     public string StorageAccount { get; set; }
     
     public string JJGNetDatabaseSqlServer { get; set; }
+    public string AdminConsentRedirectApi { get; set; }
+    public string RedirectUri { get; set; }
 }

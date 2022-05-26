@@ -34,6 +34,8 @@ public class EngagementService: ServiceBase, IEngagementService
         HttpClient = httpClient;
         TokenAcquisition = tokenAcquisition;
         ApiScopeUrl = settings.ApiScopeUri;
+        RedirectUrl = settings.RedirectUri;
+        AdminConsentUrl = settings.AdminConsentRedirectApi;
         _engagementBaseUrl = settings.ApiRootUri + "/engagements";
     }
     
@@ -126,6 +128,10 @@ public class EngagementService: ServiceBase, IEngagementService
 
         var response = await HttpClient.PostAsync(url, jsonContent);
 
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            HandleChallengeFromWebApi(response);
+        }
         if (response.StatusCode != HttpStatusCode.Created && response.StatusCode != HttpStatusCode.OK)
             throw new HttpRequestException(
                 $"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");

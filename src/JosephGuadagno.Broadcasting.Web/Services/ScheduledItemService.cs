@@ -35,6 +35,8 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
         HttpClient = httpClient;
         TokenAcquisition = tokenAcquisition;
         ApiScopeUrl = settings.ApiScopeUri;
+        RedirectUrl = settings.RedirectUri;
+        AdminConsentUrl = settings.AdminConsentRedirectApi;
         _scheduleBaseUrl = settings.ApiRootUri + "/schedules";
     }
     

@@ -21,4 +21,10 @@ public interface ISettings
     /// The Azure Storage account to use
     /// </summary>
     public string StorageAccount { get; set; }
+    
+    public string JJGNetDatabaseSqlServer { get; set; }
+    
+    public string AdminConsentRedirectApi { get; set; }
+    
+    public string RedirectUri { get; set; }
 }

@@ -16,7 +16,7 @@ GO
 --- Replace <REPLACE_ME> with real password
 USE master
 CREATE Login jjgnet_user
-    WITH Password='<REPLACE_ME>'
+    WITH Password='5cEZpbhz&p5i&DaA2*N68Nn4sJINd2'
 GO
 
 USE JJGNet
