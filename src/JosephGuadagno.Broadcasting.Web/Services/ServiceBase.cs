@@ -20,30 +20,26 @@ public abstract class ServiceBase
     internal async Task<T?> ExecuteGetAsync<T>(string url)
     {
         var response = await HttpClient.GetAsync(url);
-        if (response.StatusCode == HttpStatusCode.NotFound)
+        switch (response.StatusCode)
         {
-            return default;
-        }
-
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
-        {
-            HandleChallengeFromWebApi(response);
-        }
-
-        if (response.StatusCode != HttpStatusCode.OK)
-        {
-            throw new HttpRequestException(
-                $"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");
+            case HttpStatusCode.NotFound:
+                return default;
+            case HttpStatusCode.Unauthorized:
+                HandleChallengeFromWebApi(response);
+                break;
+            case HttpStatusCode.OK:
+                break;
+            default:
+                throw new HttpRequestException(
+                    $"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");    
         }
 
         // Parse the Results
         var content = await response.Content.ReadAsStringAsync();
-                
         var options = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
         };
-
         var results = JsonSerializer.Deserialize<T>(content, options);
 
         return results;
@@ -51,17 +47,16 @@ public abstract class ServiceBase
     
     internal async Task SetRequestHeader(string scope, string mediaType = "application/json")
     {
-
         try
         {
             string fullScopeName = ApiScopeUrl + scope;
             string accessToken = await TokenAcquisition.GetAccessTokenForUserAsync(new[] {fullScopeName});
             
             HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
         }
         catch (MicrosoftIdentityWebChallengeUserException e)
         {
+            // TODO: Look into re-requesting scopes MSAL does not support this yet.
             Console.WriteLine(e);
             throw;
         }

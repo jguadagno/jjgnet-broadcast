@@ -45,7 +45,8 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>A List&lt;<see cref="Engagement"/>&gt;s</returns>
     public async Task<List<Engagement>?> GetEngagementsAsync()
     {
-        await SetRequestHeader(Domain.Scopes.Engagements.List);
+        await SetRequestHeader(Domain.Scopes.Engagements.All);
+        //await SetRequestHeader(Domain.Scopes.Engagements.List);
         return await ExecuteGetAsync<List<Engagement>>(_engagementBaseUrl);
     }
     
@@ -56,7 +57,8 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>An <see cref="Engagement"/></returns>
     public async Task<Engagement?> GetEngagementAsync(int engagementId)
     {
-        await SetRequestHeader(Domain.Scopes.Engagements.View);
+        await SetRequestHeader(Domain.Scopes.Engagements.All);
+        //await SetRequestHeader(Domain.Scopes.Engagements.View);
         var url = $"{_engagementBaseUrl}/{engagementId}";
         return await ExecuteGetAsync<Engagement>(url);
     }
@@ -69,7 +71,8 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <exception cref="HttpRequestException"></exception>
     public async Task<Engagement?> SaveEngagementAsync(Engagement engagement)
     {
-        await SetRequestHeader(Domain.Scopes.Engagements.Modify);
+        await SetRequestHeader(Domain.Scopes.Engagements.All);
+        //await SetRequestHeader(Domain.Scopes.Engagements.Modify);
         var jsonRequest = JsonSerializer.Serialize(engagement);
         var jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
@@ -95,7 +98,8 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>True if successful, otherwise false.</returns>
     public async Task<bool> DeleteEngagementAsync(int engagementId)
     {
-        await SetRequestHeader(Domain.Scopes.Engagements.Delete);
+        await SetRequestHeader(Domain.Scopes.Engagements.All);
+        //await SetRequestHeader(Domain.Scopes.Engagements.Delete);
         var url = $"{_engagementBaseUrl}/{engagementId}";
         var response = await HttpClient.DeleteAsync(url);
         return response.StatusCode == HttpStatusCode.NoContent;
@@ -108,7 +112,8 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>A List&lt;<see cref="Talk"/>&gt;s</returns>
     public async Task<List<Talk>?> GetEngagementTalksAsync(int engagementId)
     {
-        await SetRequestHeader(Domain.Scopes.Talks.List);
+        await SetRequestHeader(Domain.Scopes.Talks.All);
+        //await SetRequestHeader(Domain.Scopes.Talks.List);
         var url = $"{_engagementBaseUrl}/{engagementId}/talks";
         return await ExecuteGetAsync<List<Talk>>(url);
     }
@@ -121,7 +126,8 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <exception cref="HttpRequestException"></exception>
     public async Task<Talk?> SaveEngagementTalkAsync(Talk talk)
     {
-        await SetRequestHeader(Domain.Scopes.Talks.Modify);
+        await SetRequestHeader(Domain.Scopes.Talks.All);
+        //await SetRequestHeader(Domain.Scopes.Talks.Modify);
         var url = $"{_engagementBaseUrl}/{talk.EngagementId}/talks";
         var jsonRequest = JsonSerializer.Serialize(talk);
         var jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
@@ -153,7 +159,8 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>A <see cref="Talk"/></returns>
     public async Task<Talk?> GetEngagementTalkAsync(int engagementId, int talkId)
     {
-        await SetRequestHeader(Domain.Scopes.Talks.View);
+        await SetRequestHeader(Domain.Scopes.Talks.All);
+        //await SetRequestHeader(Domain.Scopes.Talks.View);
         var url = $"{_engagementBaseUrl}/{engagementId}/talks/{talkId}";
         return await ExecuteGetAsync<Talk>(url);
     }
@@ -166,7 +173,8 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>True if successful, otherwise false</returns>
     public async Task<bool> DeleteEngagementTalkAsync(int engagementId, int talkId)
     {
-        await SetRequestHeader(Domain.Scopes.Engagements.Delete);
+        await SetRequestHeader(Domain.Scopes.Engagements.All);
+        //await SetRequestHeader(Domain.Scopes.Engagements.Delete);
         var url = $"{_engagementBaseUrl}/{engagementId}/talks/{talkId}";
         var response = await HttpClient.DeleteAsync(url);
         return response.StatusCode == HttpStatusCode.NoContent;

@@ -40,7 +40,8 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<ScheduledItem>>> GetScheduledItemsAsync()
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List);
         return await _scheduledItemManager.GetAllAsync();
     }
 
@@ -61,7 +62,8 @@ public class SchedulesController: ControllerBase
     [ActionName(nameof(GetScheduledItemAsync))]
     public async Task<ActionResult<ScheduledItem>> GetScheduledItemAsync(int scheduledItemId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View);
         return await _scheduledItemManager.GetAsync(scheduledItemId);
     }
 
@@ -82,7 +84,8 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ScheduledItem>> SaveScheduledItemAsync(ScheduledItem scheduledItem)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (savedScheduledItem != null)
         {
@@ -109,7 +112,8 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<bool>> DeleteScheduledItemAsync(int scheduledItemId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Delete);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Delete);
         var wasDeleted = await _scheduledItemManager.DeleteAsync(scheduledItemId);
         if (wasDeleted)
         {
@@ -131,7 +135,8 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<ScheduledItem>>> GetUnsentScheduledItemsAsync()
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled);
         var items = await _scheduledItemManager.GetUnsentScheduledItemsAsync();
         if (items is null || items.Count == 0)
         {
@@ -154,7 +159,8 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<ScheduledItem>>> GetScheduledItemsToSendAsync()
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend);
         var items = await _scheduledItemManager.GetScheduledItemsToSendAsync();
         if (items is null || items.Count == 0)
         {
@@ -177,7 +183,8 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<ScheduledItem>>> GetUpcomingScheduledItemsForCalendarMonthAsync(int year, int month)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled);
         var items = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month);
         if (items is null || items.Count == 0)
         {

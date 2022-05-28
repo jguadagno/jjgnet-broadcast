@@ -15,6 +15,7 @@ public static class Scopes
         public static readonly string Delete = "Engagements.Delete";
         public static readonly string Modify = "Engagements.Modify";
         public static readonly string Add = "Engagements.Add";
+        public static readonly string All = "Engagements.All";
         
         public static Dictionary<string, string> ToDictionary()
         {
@@ -24,7 +25,8 @@ public static class Scopes
                 { View, View },
                 { Delete, Delete },
                 { Modify, Modify },
-                { Add, Add }
+                { Add, Add },
+                { All, All }
             };
         }
     }
@@ -41,6 +43,7 @@ public static class Scopes
         public static readonly string UnsentScheduled = "Schedules.UnsentScheduled";
         public static readonly string ScheduledToSend = "Schedules.ScheduledToSend";
         public static readonly string UpcomingScheduled = "Schedules.UpcomingScheduled";
+        public static readonly string All = "Schedules.All";
         
         public static Dictionary<string, string> ToDictionary()
         {
@@ -53,7 +56,8 @@ public static class Scopes
                 { Add, Add },
                 { UnsentScheduled, UnsentScheduled },
                 { ScheduledToSend, ScheduledToSend},
-                { UpcomingScheduled, UpcomingScheduled}
+                { UpcomingScheduled, UpcomingScheduled},
+                { All, All}
             };
         }
     }
@@ -67,6 +71,7 @@ public static class Scopes
         public static readonly string Delete = "Talks.Delete";
         public static readonly string Modify = "Talks.Modify";
         public static readonly string Add = "Talks.Add";
+        public static readonly string All = "Talks.All";
 
         public static Dictionary<string, string> ToDictionary()
         {
@@ -76,7 +81,8 @@ public static class Scopes
                 { View, View },
                 { Delete, Delete },
                 { Modify, Modify },
-                { Add, Add }
+                { Add, Add },
+                { All, All}
             };
         }
     }
@@ -101,5 +107,15 @@ public static class Scopes
         }
 
         return allScopes;
+    }
+
+    public static Dictionary<string, string> AllAccessToDictionary(string scopeUri)
+    {
+        return new Dictionary<string, string>
+        {
+            { scopeUri + Engagements.All, Engagements.All },
+            { scopeUri + Talks.All, Talks.All },
+            { scopeUri + Schedules.All, Schedules.All }
+        };
     }
 }

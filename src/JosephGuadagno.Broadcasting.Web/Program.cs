@@ -1,6 +1,8 @@
+using JosephGuadagno.Broadcasting.Web;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -25,15 +27,17 @@ ConfigureLogging(builder.Services, settings, fullyQualifiedLogFile, "Web");
 ConfigureApplication(builder.Services);
 
 // Configure Microsoft Identity
-var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.ToDictionary(settings.ApiScopeUri);
+var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUri);
 scopes.Add($"{settings.ApiScopeUri}user_impersonation", "Access user");
 // Token acquisition service based on MSAL.NET
 // and chosen token cache implementation
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(builder.Configuration)
-    .EnableTokenAcquisitionToCallDownstreamApi(new []{$"{settings.ApiScopeUri}user_impersonation"})
-    //.EnableTokenAcquisitionToCallDownstreamApi(scopes.Select(k => k.Key))
+    //.EnableTokenAcquisitionToCallDownstreamApi(new []{$"{settings.ApiScopeUri}user_impersonation"})
+    .EnableTokenAcquisitionToCallDownstreamApi(scopes.Select(k => k.Key))
     .AddDistributedTokenCaches();
+builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme,
+    options => options.Events = new RejectSessionCookieWhenAccountNotInCacheEvents());
 
 builder.Services.AddDistributedSqlServerCache(options =>
 {
