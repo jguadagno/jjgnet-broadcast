@@ -3,8 +3,6 @@ name: Publish to Azure Function
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 env:
   AZURE_FUNCTIONAPP_NAME: jjgnet          # set this to your application's name

@@ -14,6 +14,8 @@ ProjectSection(SolutionItems) = preProject
 	..\scripts\database-create.sql = ..\scripts\database-create.sql
 	..\scripts\table-create.sql = ..\scripts\table-create.sql
 	..\.gitignore = ..\.gitignore
+	..\.github\workflows\publish-api-to-azure.yml = ..\.github\workflows\publish-api-to-azure.yml
+	..\.github\workflows\publish-web-app-to-azure.yml = ..\.github\workflows\publish-web-app-to-azure.yml
 EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Functions", "JosephGuadagno.Broadcasting.Functions\JosephGuadagno.Broadcasting.Functions.csproj", "{3982BC47-81CD-4D61-82D6-17749CB36032}"
