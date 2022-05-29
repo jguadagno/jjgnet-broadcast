@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.Azure.Documents;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
@@ -19,16 +20,11 @@ public class EngagementManager: IEngagementManager
         return await _engagementRepository.GetAsync(primaryKey);
     }
 
-    public async Task<bool> SaveAsync(Engagement entity)
+    public async Task<Engagement> SaveAsync(Engagement entity)
     {
         return await _engagementRepository.SaveAsync(entity);
     }
-
-    public async Task<bool> SaveAllAsync(List<Engagement> entities)
-    {
-        return await _engagementRepository.SaveAllAsync(entities);
-    }
-
+    
     public async Task<List<Engagement>> GetAllAsync()
     {
         return await _engagementRepository.GetAllAsync();
@@ -49,12 +45,17 @@ public class EngagementManager: IEngagementManager
         return await _engagementRepository.AddTalkToEngagementAsync(engagement, talk);
     }
 
+    public async Task<List<Talk>> GetTalksForEngagementAsync(int engagementId)
+    {
+        return await _engagementRepository.GetTalksForEngagementAsync(engagementId);
+    }
+    
     public async Task<bool> AddTalkToEngagementAsync(int engagementId, Talk talk)
     {
         return await _engagementRepository.AddTalkToEngagementAsync(engagementId, talk);
     }
 
-    public async Task<bool> SaveTalkAsync(Talk talk)
+    public async Task<Talk> SaveTalkAsync(Talk talk)
     {
         return await _engagementRepository.SaveTalkAsync(talk);
     }

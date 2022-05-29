@@ -6,10 +6,10 @@ namespace JosephGuadagno.Broadcasting.Data.Sql;
 
 public partial class BroadcastingContext : DbContext
 {
-    private readonly ISettings _settings;
-    public BroadcastingContext(ISettings settings)
+    private readonly IDatabaseSettings _databaseSettings;
+    public BroadcastingContext(IDatabaseSettings databaseSettings)
     {
-        _settings = settings;
+        _databaseSettings = databaseSettings;
     }
 
     public virtual DbSet<Engagement> Engagements { get; set; } = null!;
@@ -17,7 +17,7 @@ public partial class BroadcastingContext : DbContext
     public virtual DbSet<Talk> Talks { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
-        optionsBuilder.UseSqlServer(_settings.JJGNetDatabaseSqlServer);
+        optionsBuilder.UseSqlServer(_databaseSettings.JJGNetDatabaseSqlServer);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

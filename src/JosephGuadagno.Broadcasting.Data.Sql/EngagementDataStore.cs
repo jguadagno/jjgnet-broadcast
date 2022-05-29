@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -12,9 +13,9 @@ public class EngagementDataStore: IEngagementDataStore
     private readonly BroadcastingContext _broadcastingContext;
     private readonly Mapper _mapper;
 
-    public EngagementDataStore(ISettings settings)
+    public EngagementDataStore(IDatabaseSettings databaseSettings)
     {
-        _broadcastingContext = new BroadcastingContext(settings);
+        _broadcastingContext = new BroadcastingContext(databaseSettings);
         var mapperConfiguration = new MapperConfiguration(cfg =>
         {
             cfg.AddProfile<MappingProfiles.BroadcastingProfile>();
@@ -30,26 +31,19 @@ public class EngagementDataStore: IEngagementDataStore
         return _mapper.Map<Domain.Models.Engagement>(dbEngagement);
     }
 
-    public async Task<bool> SaveAsync(Domain.Models.Engagement engagement)
+    public async Task<Domain.Models.Engagement> SaveAsync(Domain.Models.Engagement engagement)
     {
         var dbEngagement = _mapper.Map<Models.Engagement>(engagement);
         _broadcastingContext.Entry(dbEngagement).State =
             dbEngagement.Id == 0 ? EntityState.Added : EntityState.Modified;
 
-        return await _broadcastingContext.SaveChangesAsync() != 0;
-    }
-
-    public async Task<bool> SaveAllAsync(List<Domain.Models.Engagement> engagements)
-    {
-        foreach (var engagement in engagements)
+        var result = await _broadcastingContext.SaveChangesAsync() != 0;
+        if (result)
         {
-            var wasSaved = await SaveAsync(engagement);
-            if (wasSaved == false)
-            {
-                return false;
-            }
+            return _mapper.Map<Domain.Models.Engagement>(dbEngagement);
         }
-        return true;
+
+        throw new ApplicationException("Failed to save engagement");
     }
 
     public async Task<List<Domain.Models.Engagement>> GetAllAsync()
@@ -81,6 +75,12 @@ public class EngagementDataStore: IEngagementDataStore
         _broadcastingContext.Engagements.Remove(dbEngagement);
 
         return await _broadcastingContext.SaveChangesAsync() != 0;
+    }
+
+    public async Task<List<Domain.Models.Talk>> GetTalksForEngagementAsync(int engagementId)
+    {
+        var talks = await _broadcastingContext.Talks.Where(e => e.EngagementId == engagementId).ToListAsync();
+        return _mapper.Map<List<Domain.Models.Talk>>(talks);
     }
 
     public async Task<bool> AddTalkToEngagementAsync(Domain.Models.Engagement engagement, Domain.Models.Talk talk)
@@ -133,12 +133,19 @@ public class EngagementDataStore: IEngagementDataStore
         return await _broadcastingContext.SaveChangesAsync() != 0;
     }
 
-    public async Task<bool> SaveTalkAsync(Domain.Models.Talk talk)
+    public async Task<Domain.Models.Talk> SaveTalkAsync(Domain.Models.Talk talk)
     {
         ArgumentNullException.ThrowIfNull(talk);
         var dbTalk = _mapper.Map<Models.Talk>(talk);
-        _broadcastingContext.Talks.Update(dbTalk);
-        return await _broadcastingContext.SaveChangesAsync() != 0;
+        _broadcastingContext.Entry(dbTalk).State = dbTalk.Id == 0 ? EntityState.Added : EntityState.Modified;
+        
+        var result = await _broadcastingContext.SaveChangesAsync() != 0;
+        if (result)
+        {
+            return _mapper.Map<Domain.Models.Talk>(dbTalk);
+        }
+
+        throw new ApplicationException("Failed to save talk");
     }
 
     public async Task<bool> RemoveTalkFromEngagementAsync(int talkId)

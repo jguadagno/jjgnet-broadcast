@@ -20,14 +20,9 @@ public class EngagementRepository: IEngagementRepository
         return await _engagementDataStore.GetAsync(primaryKey);
     }
 
-    public async Task<bool> SaveAsync(Engagement entity)
+    public async Task<Engagement> SaveAsync(Engagement entity)
     {
         return await _engagementDataStore.SaveAsync(entity);
-    }
-
-    public async Task<bool> SaveAllAsync(List<Engagement> entities)
-    {
-        return await _engagementDataStore.SaveAllAsync(entities);
     }
 
     public async Task<List<Engagement>> GetAllAsync()
@@ -45,6 +40,11 @@ public class EngagementRepository: IEngagementRepository
         return await _engagementDataStore.DeleteAsync(primaryKey);
     }
 
+    public async Task<List<Talk>> GetTalksForEngagementAsync(int engagementId)
+    {
+        return await _engagementDataStore.GetTalksForEngagementAsync(engagementId);
+    }
+
     public async Task<bool> AddTalkToEngagementAsync(Engagement engagement, Talk talk)
     {
         return await _engagementDataStore.AddTalkToEngagementAsync(engagement, talk);
@@ -55,7 +55,7 @@ public class EngagementRepository: IEngagementRepository
         return await _engagementDataStore.AddTalkToEngagementAsync(engagementId, talk);
     }
 
-    public async Task<bool> SaveTalkAsync(Talk talk)
+    public async Task<Talk> SaveTalkAsync(Talk talk)
     {
         return await _engagementDataStore.SaveTalkAsync(talk);
     }

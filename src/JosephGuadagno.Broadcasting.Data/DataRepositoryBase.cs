@@ -18,14 +18,9 @@ public class DataRepositoryBase<T>: IDataRepository<T> where T: class
         return await _dataStore.GetAsync(primaryKey);
     }
 
-    public virtual async Task<bool> SaveAsync(T entity)
+    public virtual async Task<T> SaveAsync(T entity)
     {
         return await _dataStore.SaveAsync(entity);
-    }
-
-    public virtual async Task<bool> SaveAllAsync(List<T> entities)
-    {
-        return await _dataStore.SaveAllAsync(entities);
     }
 
     public virtual async Task<List<T>> GetAllAsync()

@@ -20,14 +20,9 @@ public class ScheduledItemManager: IScheduledItemManager
         return await _scheduledItemRepository.GetAsync(primaryKey);
     }
 
-    public async Task<bool> SaveAsync(ScheduledItem entity)
+    public async Task<ScheduledItem> SaveAsync(ScheduledItem entity)
     {
         return await _scheduledItemRepository.SaveAsync(entity);
-    }
-
-    public async Task<bool> SaveAllAsync(List<ScheduledItem> entities)
-    {
-        return await _scheduledItemRepository.SaveAllAsync(entities);
     }
 
     public async Task<List<ScheduledItem>> GetAllAsync()
@@ -45,9 +40,19 @@ public class ScheduledItemManager: IScheduledItemManager
         return await _scheduledItemRepository.DeleteAsync(primaryKey);
     }
 
-    public async Task<List<ScheduledItem>> GetUpcomingScheduledItemsAsync()
+    public async Task<List<ScheduledItem>> GetScheduledItemsToSendAsync()
     {
-        return await _scheduledItemRepository.GetUpcomingScheduledItemsAsync();
+        return await _scheduledItemRepository.GetScheduledItemsToSendAsync();
+    }
+
+    public async Task<List<ScheduledItem>> GetUnsentScheduledItemsAsync()
+    {
+        return await _scheduledItemRepository.GetUnsentScheduledItemsAsync();
+    }
+
+    public async Task<List<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month)
+    {
+        return await _scheduledItemRepository.GetScheduledItemsByCalendarMonthAsync(year, month);
     }
 
     public async Task<bool> SentScheduledItemAsync(int primaryKey)

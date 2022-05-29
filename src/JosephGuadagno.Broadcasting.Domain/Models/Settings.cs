@@ -2,7 +2,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 
 namespace JosephGuadagno.Broadcasting.Domain.Models;
 
-public class Settings : ISettings
+public class Settings : ISettings, IDatabaseSettings
 {
     public string StorageAccount { get; set; }
     public string TwitterApiKey { get; set; }

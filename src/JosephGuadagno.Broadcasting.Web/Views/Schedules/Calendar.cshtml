@@ -1,0 +1,23 @@
+@model List<JosephGuadagno.Broadcasting.Domain.Models.ScheduledItem>?
+<!-- TODO: Add real calender -->
+
+@{
+    ViewData["Title"] = "Schedule for " + ViewData["Year"] + "/" + ViewData["Month"];
+}
+
+@if (Model is null)
+{
+    <p class="lead">There are no scheduled items for the year of @ViewData["Year"] in the month of @ViewData["Month"]</p>
+}
+else
+{
+    @foreach (var scheduledItem in Model)
+    {
+        <p>Id @scheduledItem.Id</p>
+        <p>Table: @scheduledItem.ItemTableName</p>
+        <p>PrimaryKey: @scheduledItem.ItemPrimaryKey</p>
+        <p>SecondaryKey: @scheduledItem.ItemSecondaryKey</p>
+        <p>Schedule Send On: @scheduledItem.ScheduleDateTime</p>
+        <hr />
+    }
+}

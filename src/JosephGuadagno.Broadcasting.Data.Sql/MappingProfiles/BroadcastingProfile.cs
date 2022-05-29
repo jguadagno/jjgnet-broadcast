@@ -12,7 +12,6 @@ public class BroadcastingProfile: Profile
         CreateMap<Models.ScheduledItem, Domain.Models.ScheduledItem>()
             .ForMember(destination => destination.ScheduleDateTime,
                 options => options.MapFrom(source => source.SendOnDateTime));
-
         
         // Domain to Sql
         CreateMap<Domain.Models.Engagement, Models.Engagement>();
@@ -20,12 +19,6 @@ public class BroadcastingProfile: Profile
             .ForMember(destination => destination.Engagement, options => options.Ignore());
         CreateMap<Domain.Models.ScheduledItem, Models.ScheduledItem>()
             .ForMember(destination => destination.SendOnDateTime,
-                options => options.MapFrom(source => source.ScheduleDateTime))
-            .ForMember(destination => destination.MessageSentOn,
-                options => options.MapFrom(source => source.ScheduleDateTime))
-            .ForMember(destination => destination.MessageSent, options => options.Ignore())
-            .ForMember(destination => destination.MessageSentOn, options => options.Ignore())
-            .ForMember(destination => destination.Message, options => options.Ignore());
-
+                options => options.MapFrom(source => source.ScheduleDateTime));
     }
 }
