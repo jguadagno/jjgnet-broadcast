@@ -6,6 +6,16 @@ A list of all the infrastructure required for this
 
 App Service (jjgnet) with an Application Insights services
 
+US West 2 - Type (P1v2)
+
+### API
+
+api-jjgnet-broadcast
+
+### Web
+
+web-jjgnet-broadcast
+
 ### Function
 
 
