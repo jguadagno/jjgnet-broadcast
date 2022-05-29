@@ -65,7 +65,7 @@ public class JsonFeedReader: IJsonFeedReader
         {
             sourceItems.Add(new SourceData(SourceSystems.SyndicationFeed)
             {
-                Author = jsonFeedItem.Author?.Name,
+                Author = jsonFeedItem.Authors?[0]?.Name,
                 PublicationDate = jsonFeedItem.DatePublished?.UtcDateTime ?? currentTime,
                 UpdatedOnDate = jsonFeedItem.DateModified?.UtcDateTime ?? currentTime,
                 //Text = jsonFeedItem.ContentHtml,

@@ -40,8 +40,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="JsonFeed.NET" Version="0.2.1" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
+      <PackageReference Include="JsonFeed.NET" Version="1.1.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
     </ItemGroup>
 
 </Project>
