@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "defaultProvider": "jsdelivr",
+  "defaultDestination": "wwwroot/libs",
+  "libraries": [
+    {
+      "library": "jquery@3.6.0",
+      "destination": "wwwroot/libs/jquery"
+    },
+    {
+      "library": "bootstrap@5.1.3",
+      "destination": "wwwroot/libs/bootstrap"
+    },
+    {
+      "library": "jquery-validation@1.19.4",
+      "destination": "wwwroot/libs/jquery-validation"
+    },
+    {
+      "library": "jquery-validation-unobtrusive@3.2.12",
+      "destination": "wwwroot/libs/jquery-validation-unobtrusive"
+    },
+    {
+      "library": "jquery-validation-unobtrusive-bootstrap@2.2.0",
+      "destination": "wwwroot/libs/jquery-validation-unobtrusive-bootstrap"
+    },
+    {
+      "library": "@fortawesome/fontawesome-free@6.1.1",
+      "destination": "wwwroot/libs/fontawesome-free"
+    },
+    {
+      "library": "bootstrap-icons@1.8.3",
+      "destination": "wwwroot/libs/bootstrap-icons"
+    }
+  ]
+}
