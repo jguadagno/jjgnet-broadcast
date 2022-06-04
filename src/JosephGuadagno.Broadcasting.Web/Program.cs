@@ -46,7 +46,6 @@ builder.Services.AddDistributedSqlServerCache(options =>
     options.TableName = "Cache";
 });
 
-// Add services to the container.
 builder.Services.AddControllersWithViews(options =>
 {
     var policy = new AuthorizationPolicyBuilder()

@@ -60,7 +60,7 @@ builder.Services.AddSwaggerGen(c =>
     c.IncludeXmlComments(xmlPath);
 
     // Enabled OAuth security in Swagger
-    var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.ToDictionary(settings.ApiScopeUrl);
+    var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
     scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
     c.AddSecurityRequirement(new OpenApiSecurityRequirement() {  
         {  
