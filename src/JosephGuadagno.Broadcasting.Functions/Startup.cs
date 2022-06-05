@@ -6,6 +6,7 @@ using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.Functions;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
@@ -59,6 +60,9 @@ public class Startup : FunctionsStartup
         var settings = new Domain.Models.Settings();
         config.Bind("Settings", settings);
         builder.Services.TryAddSingleton<ISettings>(settings);
+        
+        builder.Services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
+            { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
 
         var randomPostSettings = new Domain.Models.RandomPostSettings();
         config.Bind("Settings:RandomPost", randomPostSettings);
@@ -188,7 +192,7 @@ public class Startup : FunctionsStartup
             var databaseSettings = s.GetService<IDatabaseSettings>();
             if (databaseSettings is null)
             {
-                throw new ApplicationException("Failed to get a Settings object from ServiceCollection");
+                throw new ApplicationException("Failed to get a IDatabaseSettings object from ServiceCollection when registering IEngagementDataStore");
             }
             return new EngagementDataStore(databaseSettings);
         });
@@ -209,7 +213,7 @@ public class Startup : FunctionsStartup
             var databaseSettings = s.GetService<IDatabaseSettings>();
             if (databaseSettings is null)
             {
-                throw new ApplicationException("Failed to get a settings object from ServiceCollection");
+                throw new ApplicationException("Failed to get a IDatabaseSettings object from ServiceCollection when registering IScheduledItemDataStore");
             }
             return new ScheduledItemDataStore(databaseSettings);
         });
