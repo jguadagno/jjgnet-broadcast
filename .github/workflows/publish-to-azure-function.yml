@@ -3,11 +3,12 @@ name: Publish to Azure Function
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 env:
   AZURE_FUNCTIONAPP_NAME: jjgnet          # set this to your application's name
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'    # set this to the path to your web app project, defaults to the repository root
-  SOLUTION_TO_BUILD:  './src/JosephGuadagnoNet.Broadcasting.sln'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: './src/JosephGuadagno.Broadcasting.Functions'    # set this to the path to your web app project, defaults to the repository root
+  DOTNET_VERSION: '6.0.*'
 
 jobs:
   build:
@@ -15,25 +16,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
     - name: Replace host.json
       run: yes | cp -i ./src/JosephGuadagno.Broadcasting.Functions/host.prod.json ./src/JosephGuadagno.Broadcasting.Functions/host.json
-    - name: Install dependencies
-      run: dotnet restore ${{ env.SOLUTION_TO_BUILD }}
-    - name: Build
-      run: dotnet build ${{ env.SOLUTION_TO_BUILD }} --configuration Release --no-restore --output ./output
-    #- name: Test
-    #  run: dotnet test ${{ env.SOLUTION_TO_BUILD }} --no-restore --verbosity normal
-    - name: 'Run Azure Functions Action'
-      uses: Azure/functions-action@v1
-      id: fa
+    - name: Build with dotnet
+      run: dotnet build ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }} --configuration Release
+    - name: dotnet publish
+      run: dotnet publish ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }} -c Release -o ${{env.DOTNET_ROOT}}/myapp        
+    - name: Upload artifact for deployment job
+      uses: actions/upload-artifact@v3
       with:
-        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-        package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
-        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
-        scm-do-build-during-deployment: true
-        enable-oryx-build: true
+        name: .net-app
+        path: ${{env.DOTNET_ROOT}}/myapp
+
+  deploy:
+    permissions:
+      contents: none
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v3
+        with:
+          name: .net-app
+      - name: 'Deploy to Azure Function'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          package: .
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true
