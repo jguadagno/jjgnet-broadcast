@@ -155,7 +155,7 @@ void ConfigureRepositories(IServiceCollection services)
         var databaseSettings = s.GetService<IDatabaseSettings>();
         if (databaseSettings is null)
         {
-            throw new ApplicationException("Failed to get a Settings object from ServiceCollection");
+            throw new ApplicationException("Failed to get a IDatabaseSettings object from ServiceCollection when registering IEngagementDataStore.");
         }
         return new EngagementDataStore(databaseSettings);
     });
@@ -176,7 +176,7 @@ void ConfigureRepositories(IServiceCollection services)
         var databaseSettings = s.GetService<IDatabaseSettings>();
         if (databaseSettings is null)
         {
-            throw new ApplicationException("Failed to get a settings object from ServiceCollection");
+            throw new ApplicationException("Failed to get a IDatabaseSettings object from ServiceCollection when registering IScheduledItemDataStore.");
         }
         return new ScheduledItemDataStore(databaseSettings);
     });
