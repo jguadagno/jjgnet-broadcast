@@ -70,7 +70,7 @@ public class Startup : FunctionsStartup
         
         // Configure the logger
         string logPath = Path.Combine(currentDirectory, "logs\\logs.txt");
-        ConfigureLogging(builder.Services, config, logPath, "Functions");
+        ConfigureLogging(builder.Services, settings, logPath, "Functions");
         
         // Configure all the services
         ConfigureTwitter(builder);
@@ -80,7 +80,7 @@ public class Startup : FunctionsStartup
         ConfigureFunction(builder);
     }
 
-    private void ConfigureLogging(IServiceCollection services, IConfiguration config, string logPath, string applicationName)
+    private void ConfigureLogging(IServiceCollection services, ISettings settings, string logPath, string applicationName)
     {
         var logger = new LoggerConfiguration()
             .Enrich.FromLogContext()
@@ -96,11 +96,11 @@ public class Startup : FunctionsStartup
             .Destructure.ToMaximumCollectionCount(10)
             .WriteTo.Console()
             .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-            .WriteTo.AzureTableStorage(config["Values:AzureWebJobsStorage"], storageTableName:"Logging")
+            .WriteTo.AzureTableStorage(settings.StorageAccount, storageTableName:"Logging")
             .CreateLogger();
         services.AddLogging(loggingBuilder =>
         {
-            loggingBuilder.AddApplicationInsights(config["Values:APPINSIGHTS_INSTRUMENTATIONKEY"]);
+            loggingBuilder.AddApplicationInsights(settings.AppInsightsKey);
             loggingBuilder.AddSerilog(logger);
         });
     }

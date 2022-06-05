@@ -19,6 +19,7 @@
 
     },
     "Settings": {
+        "AppInsightsKey": "c2f97275-e157-434a-981b-051a4e897744",
         "StorageAccount": "UseDevelopmentStorage=true",
         "TwitterApiKey": "",
         "TwitterApiSecret": "",
