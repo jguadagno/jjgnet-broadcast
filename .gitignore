@@ -721,3 +721,4 @@ FodyWeavers.xsd
 **/.vscode
 shutdown.ps1
 startup.ps1
+**/logs/
