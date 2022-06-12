@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using JosephGuadagno.Broadcasting.Web.Exceptions;
+using Microsoft.Identity.Client;
 using Microsoft.Identity.Web;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
@@ -42,19 +43,10 @@ public abstract class ServiceBase
     
     internal async Task SetRequestHeader(string scope, string mediaType = "application/json")
     {
-        try
-        {
-            string fullScopeName = ApiScopeUrl + scope;
-            string accessToken = await TokenAcquisition.GetAccessTokenForUserAsync(new[] {fullScopeName});
-            
-            HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        }
-        catch (MicrosoftIdentityWebChallengeUserException e)
-        {
-            // TODO: Look into re-requesting scopes MSAL does not support this yet.
-            throw;
-        }
-
+        var fullScopeName = ApiScopeUrl + scope;
+        var accessToken = await TokenAcquisition.GetAccessTokenForUserAsync(new[] {fullScopeName});
+        
+        HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(mediaType));
     }
 

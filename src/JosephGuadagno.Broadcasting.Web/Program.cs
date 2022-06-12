@@ -28,12 +28,10 @@ ConfigureApplication(builder.Services);
 
 // Configure Microsoft Identity
 var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
-scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access user");
 // Token acquisition service based on MSAL.NET
 // and chosen token cache implementation
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(builder.Configuration)
-    //.EnableTokenAcquisitionToCallDownstreamApi(new []{$"{settings.ApiScopeUri}user_impersonation"})
     .EnableTokenAcquisitionToCallDownstreamApi(scopes.Select(k => k.Key))
     .AddDistributedTokenCaches();
 builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme,
@@ -55,6 +53,8 @@ builder.Services.AddControllersWithViews(options =>
 }).AddMicrosoftIdentityUI();
 
 var app = builder.Build();
+
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -108,4 +108,9 @@ void ConfigureApplication(IServiceCollection services)
     services.AddHttpClient();
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
+}
+
+void MsalLogger(LogLevel level, string message, bool containsPii)
+{
+    Console.WriteLine($"MSAL: {level} {containsPii} - {message}");
 }
