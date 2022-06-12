@@ -27,8 +27,8 @@ ConfigureLogging(builder.Services, settings, fullyQualifiedLogFile, "Web");
 ConfigureApplication(builder.Services);
 
 // Configure Microsoft Identity
-var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUri);
-scopes.Add($"{settings.ApiScopeUri}user_impersonation", "Access user");
+var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
+scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access user");
 // Token acquisition service based on MSAL.NET
 // and chosen token cache implementation
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
