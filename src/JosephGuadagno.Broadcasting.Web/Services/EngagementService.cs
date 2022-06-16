@@ -26,14 +26,10 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <param name="telemetryClient">The telemetry client</param>
     /// <param name="logger">The logger</param>
     public EngagementService(HttpClient httpClient, ITokenAcquisition tokenAcquisition, ISettings settings, TelemetryClient telemetryClient,
-        ILogger<EngagementService> logger)
+        ILogger<EngagementService> logger): base(httpClient, tokenAcquisition, settings.ApiScopeUrl)
     {
         _telemetryClient = telemetryClient;
         _logger = logger;
-
-        HttpClient = httpClient;
-        TokenAcquisition = tokenAcquisition;
-        ApiScopeUrl = settings.ApiScopeUrl;
         _engagementBaseUrl = settings.ApiRootUrl + "/engagements";
     }
     
