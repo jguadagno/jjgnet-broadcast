@@ -1,5 +1,6 @@
 using JosephGuadagno.Broadcasting.Web;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
+using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -54,8 +55,6 @@ builder.Services.AddControllersWithViews(options =>
 
 var app = builder.Build();
 
-
-
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -106,11 +105,7 @@ void ConfigureLogging(IServiceCollection services, ISettings configSettings, str
 void ConfigureApplication(IServiceCollection services)
 {
     services.AddHttpClient();
+    services.AddAutoMapper(typeof(WebMappingProfile));
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
-}
-
-void MsalLogger(LogLevel level, string message, bool containsPii)
-{
-    Console.WriteLine($"MSAL: {level} {containsPii} - {message}");
 }

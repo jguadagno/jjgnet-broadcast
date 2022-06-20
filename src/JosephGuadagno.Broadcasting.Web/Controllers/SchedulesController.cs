@@ -1,4 +1,5 @@
-using JosephGuadagno.Broadcasting.Domain.Models;
+using AutoMapper;
+using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,34 +11,38 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 public class SchedulesController : Controller
 {
     private readonly IScheduledItemService _scheduledItemService;
+    private readonly IMapper _mapper;
     private readonly ILogger<SchedulesController> _logger;
 
     /// <summary>
     /// The constructor for the schedules controller
     /// </summary>
     /// <param name="scheduledItemService">The scheduled item service</param>
+    /// <param name="mapper">The mapper service</param>
     /// <param name="logger">The logger to use</param>
-    public SchedulesController(IScheduledItemService scheduledItemService, ILogger<SchedulesController> logger)
+    public SchedulesController(IScheduledItemService scheduledItemService, IMapper mapper, ILogger<SchedulesController> logger)
     {
         _scheduledItemService = scheduledItemService;
+        _mapper = mapper;
         _logger = logger;
     }
 
     /// <summary>
     /// The list of schedules
     /// </summary>
-    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;</returns>
+    /// <returns>A List&lt;<see cref="ScheduledItemViewModel"/>&gt;</returns>
     public async Task<IActionResult> Index()
     {
         var scheduledItems = await _scheduledItemService.GetScheduledItemsAsync();
-        return View(scheduledItems);
+        var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(scheduledItems);
+        return View(scheduledItemViewModels);
     }
     
     /// <summary>
     /// Details for a specific schedule
     /// </summary>
     /// <param name="id">The id of the specific schedule</param>
-    /// <returns>A <see cref="ScheduledItem"/></returns>
+    /// <returns>A <see cref="ScheduledItemViewModel"/></returns>
     public async Task<IActionResult> Details(int id)
     {
         var scheduledItem = await _scheduledItemService.GetScheduledItemAsync(id);
@@ -45,7 +50,8 @@ public class SchedulesController : Controller
         {
             return NotFound();
         }
-        return View(scheduledItem);
+        var scheduledItemViewModel = _mapper.Map<ScheduledItemViewModel>(scheduledItem);
+        return View(scheduledItemViewModel);
     }
     
     /// <summary>
@@ -60,20 +66,22 @@ public class SchedulesController : Controller
         {
             return NotFound();
         }
-        return View(scheduledItem);
+        var scheduledItemViewModel = _mapper.Map<ScheduledItemViewModel>(scheduledItem);
+        return View(scheduledItemViewModel);
     }
 
     /// <summary>
     /// Saves the updates to a scheduled item
     /// </summary>
-    /// <param name="scheduledItem">The <see cref="ScheduledItem"/></param>
+    /// <param name="scheduledItemViewModel">The <see cref="ScheduledItemViewModel"/></param>
     /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, reloads the page.</returns>
     [HttpPost]
-    public async Task<IActionResult> Edit(ScheduledItem scheduledItem)
+    public async Task<IActionResult> Edit(ScheduledItemViewModel scheduledItemViewModel)
     {
-        var savedScheduledItem = await _scheduledItemService.SaveScheduledItemAsync(scheduledItem);
+        var scheduledItemToEdit = _mapper.Map<Domain.Models.ScheduledItem>(scheduledItemViewModel);
+        var savedScheduledItem = await _scheduledItemService.SaveScheduledItemAsync(scheduledItemToEdit);
         return savedScheduledItem == null
-            ? RedirectToAction("Edit", new { id = scheduledItem.Id })
+            ? RedirectToAction("Edit", new { id = scheduledItemViewModel.Id })
             : RedirectToAction("Details", new { id = savedScheduledItem.Id });
     }
     
@@ -97,21 +105,22 @@ public class SchedulesController : Controller
     /// <summary>
     /// Adds a new scheduled item
     /// </summary>
-    /// <returns>Returns a form to add a <see cref="ScheduledItem"/></returns>
+    /// <returns>Returns a form to add a <see cref="ScheduledItemViewModel"/></returns>
     public IActionResult Add()
     {
-        return View(new ScheduledItem());
+        return View(new ScheduledItemViewModel());
     }
         
     /// <summary>
     /// Adds a new scheduled item
     /// </summary>
-    /// <param name="scheduledItem">The <see cref="ScheduledItem"/> to be added</param>
+    /// <param name="scheduledItemViewModel">The <see cref="ScheduledItemViewModel"/> to be added</param>
     /// <returns>Upon success, redirects to the <see cref="Details"/>. Upon failure, reloads the page</returns>
     [HttpPost]
-    public async Task<RedirectToActionResult> Add(ScheduledItem scheduledItem)
+    public async Task<RedirectToActionResult> Add(ScheduledItemViewModel scheduledItemViewModel)
     {
-        var savedScheduledItem = await _scheduledItemService.SaveScheduledItemAsync(scheduledItem);
+        var scheduledItemToAdd = _mapper.Map<Domain.Models.ScheduledItem>(scheduledItemViewModel);
+        var savedScheduledItem = await _scheduledItemService.SaveScheduledItemAsync(scheduledItemToAdd);
         return savedScheduledItem == null
             ? RedirectToAction("Add")
             : RedirectToAction("Details", new { id = savedScheduledItem.Id });
@@ -144,7 +153,8 @@ public class SchedulesController : Controller
         ViewData["Year"] = queryYear;
         ViewData["Month"] = queryMonth;
         var scheduledItems = await _scheduledItemService.GetScheduledItemsByCalendarMonthAsync(queryYear, queryMonth);
-        return View(scheduledItems);
+        var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(scheduledItems);
+        return View(scheduledItemViewModels);
     }
 
     /// <summary>
@@ -155,7 +165,8 @@ public class SchedulesController : Controller
     public async Task<IActionResult> Unsent()
     {
         var scheduledItems = await _scheduledItemService.GetUnsentScheduledItemsAsync();
-        return View(scheduledItems);
+        var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(scheduledItems);
+        return View(scheduledItemViewModels);
     }
     
     /// <summary>
@@ -166,6 +177,7 @@ public class SchedulesController : Controller
     public async Task<IActionResult> Upcoming()
     {
         var scheduledItems = await _scheduledItemService.GetScheduledItemsToSendAsync();
-        return View(scheduledItems);
+        var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(scheduledItems);
+        return View(scheduledItemViewModels);
     }
 }

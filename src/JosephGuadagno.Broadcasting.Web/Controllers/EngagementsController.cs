@@ -1,4 +1,5 @@
-using JosephGuadagno.Broadcasting.Domain.Models;
+using AutoMapper;
+using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,34 +11,38 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 public class EngagementsController : Controller
 {
     private readonly IEngagementService _engagementService;
+    private readonly IMapper _mapper;
     private readonly ILogger<EngagementsController> _logger;
 
     /// <summary>
     /// The constructor for the EngagementsController.
     /// </summary>
     /// <param name="engagementService">The engagement service</param>
+    /// <param name="mapper">The mapper service</param>
     /// <param name="logger">The logger to use</param>
-    public EngagementsController(IEngagementService engagementService, ILogger<EngagementsController> logger)
+    public EngagementsController(IEngagementService engagementService, IMapper mapper, ILogger<EngagementsController> logger)
     {
         _engagementService = engagementService;
+        _mapper = mapper;
         _logger = logger;
     }
 
     /// <summary>
     /// Gets the list of engagements. 
     /// </summary>
-    /// <returns>Returns a List&lt;<see cref="Engagement"/>&gt;.</returns>
+    /// <returns>Returns a List&lt;<see cref="EngagementViewModel"/>&gt;.</returns>
     public async Task<IActionResult> Index()
     {
         var engagements = await _engagementService.GetEngagementsAsync();
-        return View(engagements);
+        var viewEngagements = _mapper.Map<List<EngagementViewModel>>(engagements);
+        return View(viewEngagements);
     }
 
     /// <summary>
     /// Returns a detail view of the engagement.
     /// </summary>
     /// <param name="id">The id of the engagement</param>
-    /// <returns>An <see cref="Engagement"/></returns>
+    /// <returns>An <see cref="EngagementViewModel"/></returns>
     public async Task<IActionResult> Details(int id)
     {
         var engagement = await _engagementService.GetEngagementAsync(id);
@@ -46,14 +51,15 @@ public class EngagementsController : Controller
             return NotFound();
         }
 
-        return View(engagement);
+        var engagementViewModel = _mapper.Map<EngagementViewModel>(engagement);
+        return View(engagementViewModel);
     }
 
     /// <summary>
     /// Edits an engagement.
     /// </summary>
     /// <param name="id">The id of the engagement</param>
-    /// <returns>An <see cref="Engagement"/></returns>
+    /// <returns>An <see cref="EngagementViewModel"/></returns>
     public async Task<IActionResult> Edit(int id)
     {
         var engagement = await _engagementService.GetEngagementAsync(id);
@@ -62,20 +68,22 @@ public class EngagementsController : Controller
             return NotFound();
         }
 
-        return View(engagement);
+        var engagementViewModel = _mapper.Map<EngagementViewModel>(engagement);
+        return View(engagementViewModel);
     }
 
     /// <summary>
     /// Applies the changes to the engagement.
     /// </summary>
-    /// <param name="engagement">The <see cref="Engagement"/> to edit.</param>
+    /// <param name="engagementViewModel">The <see cref="EngagementViewModel"/> to edit.</param>
     /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, redirects to the <see cref="Edit(int)"/> page.</returns>
     [HttpPost]
-    public async Task<IActionResult> Edit(Engagement engagement)
+    public async Task<IActionResult> Edit(EngagementViewModel engagementViewModel)
     {
-        var savedEngagement = await _engagementService.SaveEngagementAsync(engagement);
+        var engagementToEdit = _mapper.Map<Domain.Models.Engagement>(engagementViewModel);
+        var savedEngagement = await _engagementService.SaveEngagementAsync(engagementToEdit);
         return savedEngagement == null
-            ? RedirectToAction("Edit", new { id = engagement.Id })
+            ? RedirectToAction("Edit", new { id = engagementViewModel.Id })
             : RedirectToAction("Details", new { id = savedEngagement.Id });
     }
 
@@ -103,18 +111,19 @@ public class EngagementsController : Controller
     /// <returns>The add new engagement view.</returns>
     public IActionResult Add()
     {
-        return View(new Engagement());
+        return View(new EngagementViewModel());
     }
 
     /// <summary>
     /// Adds a new engagement.
     /// </summary>
-    /// <param name="engagement">The <see cref="Engagement"/></param>
+    /// <param name="engagementViewModel">The <see cref="EngagementViewModel"/></param>
     /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, redisplays the team. </returns>
     [HttpPost]
-    public async Task<RedirectToActionResult> Add(Engagement engagement)
+    public async Task<RedirectToActionResult> Add(EngagementViewModel engagementViewModel)
     {
-        var savedEngagement = await _engagementService.SaveEngagementAsync(engagement);
+        var engagementToAdd = _mapper.Map<Domain.Models.Engagement>(engagementViewModel);
+        var savedEngagement = await _engagementService.SaveEngagementAsync(engagementToAdd);
         return savedEngagement == null
             ? RedirectToAction("Add")
             : RedirectToAction("Details", new { id = savedEngagement.Id });

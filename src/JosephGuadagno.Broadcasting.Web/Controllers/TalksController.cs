@@ -1,4 +1,5 @@
-using JosephGuadagno.Broadcasting.Domain.Models;
+using AutoMapper;
+using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,16 +12,19 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 public class TalksController : Controller
 {
     private readonly IEngagementService _engagementService;
+    private readonly IMapper _mapper;
     private readonly ILogger<TalksController> _logger;
 
     /// <summary>
     /// The constructor for the talks controller.
     /// </summary>
     /// <param name="engagementService">The engagement service</param>
+    /// <param name="mapper">The mapper service</param>
     /// <param name="logger">The logger to use</param>
-    public TalksController(IEngagementService engagementService, ILogger<TalksController> logger)
+    public TalksController(IEngagementService engagementService, IMapper mapper, ILogger<TalksController> logger)
     {
         _engagementService = engagementService;
+        _mapper = mapper;
         _logger = logger;
     }
     
@@ -38,7 +42,9 @@ public class TalksController : Controller
         {
             return NotFound();
         }
-        return View(talk);
+        
+        var talkViewModel = _mapper.Map<TalkViewModel>(talk);
+        return View(talkViewModel);
     }
     
     /// <summary>
@@ -55,21 +61,23 @@ public class TalksController : Controller
         {
             return NotFound();
         }
-        return View(talk);
+        var talkViewModel = _mapper.Map<TalkViewModel>(talk);
+        return View(talkViewModel);
     }
 
     /// <summary>
     /// Edits the talk
     /// </summary>
-    /// <param name="talk">The <see cref="Talk"/> to edit</param>
+    /// <param name="talkViewModel">The <see cref="TalkViewModel"/> to edit</param>
     /// <returns>Upon success, redirected to the <see cref="Details"/>. Upon failure, the view will be reloaded</returns>
     [HttpPost]
     [Route("{talkId:int}")]
-    public async Task<IActionResult> Edit(Talk talk)
+    public async Task<IActionResult> Edit(TalkViewModel talkViewModel)
     {
-        var savedTalk = await _engagementService.SaveEngagementTalkAsync(talk);
+        var talkToEdit = _mapper.Map<Domain.Models.Talk>(talkViewModel);
+        var savedTalk = await _engagementService.SaveEngagementTalkAsync(talkToEdit);
         return savedTalk == null
-            ? RedirectToAction("Edit", new { engagementId = talk.EngagementId, talkId = talk.Id })
+            ? RedirectToAction("Edit", new { engagementId = talkViewModel.EngagementId, talkId = talkViewModel.Id })
             : RedirectToAction("Details", new { engagementId = savedTalk.EngagementId, talkId = savedTalk.Id });
     }
 
@@ -100,19 +108,20 @@ public class TalksController : Controller
     [Route("")]
     public IActionResult Add(int engagementId)
     {
-        return View(new Talk{EngagementId = engagementId});
+        return View(new TalkViewModel{EngagementId = engagementId});
     }
 
     /// <summary>
     /// Adds a new talk.
     /// </summary>
-    /// <param name="talk">The <see cref="Talk"/></param>
+    /// <param name="talkViewModel">The <see cref="TalkViewModel"/></param>
     /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, reloads the page.</returns>
     [HttpPost]
     [Route("")]
-    public async Task<RedirectToActionResult> Add(Talk talk)
+    public async Task<RedirectToActionResult> Add(TalkViewModel talkViewModel)
     {
-        var savedTalk = await _engagementService.SaveEngagementTalkAsync(talk);
+        var talkToAdd = _mapper.Map<Domain.Models.Talk>(talkViewModel);
+        var savedTalk = await _engagementService.SaveEngagementTalkAsync(talkToAdd);
         return savedTalk == null
             ? RedirectToAction("Add")
             : RedirectToAction("Details", new { engagementId = savedTalk.EngagementId, talkId = savedTalk.Id });

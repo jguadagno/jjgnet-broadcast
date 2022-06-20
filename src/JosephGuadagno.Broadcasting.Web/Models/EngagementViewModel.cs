@@ -1,0 +1,57 @@
+using System;
+using System.Collections.Generic;
+
+namespace JosephGuadagno.Broadcasting.Web.Models;
+
+/// <summary>
+/// A speaking engagement
+/// </summary>
+/// <remarks>This can be a conference or webinar or event that holds one or more <see cref="TalkViewModel"/></remarks>s
+public class EngagementViewModel
+{
+    /// <summary>
+    /// The Id of the item
+    /// </summary>
+    public int Id { get; set; }
+
+    /// <summary>
+    /// The name of the engagement
+    /// </summary>
+    public string Name { get; set; }
+        
+    /// <summary>
+    /// The Url for the engagement
+    /// </summary>
+    public string Url { get; set; }
+        
+    /// <summary>
+    /// The date and time the engagement starts
+    /// </summary>
+    public DateTime StartDateTime { get; set; }
+
+    /// <summary>
+    /// The date and time the engagement ends
+    /// </summary>
+    public DateTime EndDateTime { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the timezone offset for the engagement
+    /// </summary>
+    public TimeSpan EventTimeZoneOffset { get; set; }
+    
+    /// <summary>
+    /// The timezone for the engagement
+    /// </summary>
+    public TimeZoneInfo EventTimeZone { get; set; }
+    
+    /// <summary>
+    /// Comments for the engagement
+    /// </summary>
+    /// <remarks>Could be a discount code for the engagement</remarks>
+    public string Comments { get; set; }
+
+    /// <summary>
+    /// A list of all of the talks that are being delivered
+    /// </summary>
+    public List<TalkViewModel> Talks { get; set; }
+}
