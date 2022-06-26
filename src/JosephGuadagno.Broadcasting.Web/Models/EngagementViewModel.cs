@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.Azure.Documents.SystemFunctions;
+using NodaTime;
+using NodaTime.TimeZones;
 
 namespace JosephGuadagno.Broadcasting.Web.Models;
 
@@ -27,22 +30,17 @@ public class EngagementViewModel
     /// <summary>
     /// The date and time the engagement starts
     /// </summary>
-    public DateTime StartDateTime { get; set; }
+    public Instant StartDateTime { get; set; }
 
     /// <summary>
     /// The date and time the engagement ends
     /// </summary>
-    public DateTime EndDateTime { get; set; }
+    public Instant EndDateTime { get; set; }
     
     /// <summary>
-    /// Gets or sets the timezone offset for the engagement
+    /// The IANI of the time zone for the engagement
     /// </summary>
-    public TimeSpan EventTimeZoneOffset { get; set; }
-    
-    /// <summary>
-    /// The timezone for the engagement
-    /// </summary>
-    public TimeZoneInfo EventTimeZone { get; set; }
+    public string TimeZoneId { get; set; }
     
     /// <summary>
     /// Comments for the engagement
@@ -54,4 +52,18 @@ public class EngagementViewModel
     /// A list of all of the talks that are being delivered
     /// </summary>
     public List<TalkViewModel> Talks { get; set; }
+
+    /// <summary>
+    /// Returns a list of TimeZones
+    /// </summary>
+    public List<string> TimeZones
+    {
+        get
+        {
+            var timeZones = TzdbDateTimeZoneSource.Default.ZoneLocations;
+            return timeZones is null
+                ? new List<string>()
+                : timeZones.OrderBy(tz => tz.ZoneId).Select(tz => tz.ZoneId).ToList();
+        }
+    }
 }

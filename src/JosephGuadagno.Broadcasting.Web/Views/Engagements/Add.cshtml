@@ -21,6 +21,13 @@
         <span asp-validation-for="Url" class="text-danger"></span>
     </div>
     <div class="form-group">
+        <label class="control-label">Event Time Zone</label>
+        <select asp-for="TimeZoneId" asp-items="@(new SelectList(Model.TimeZones))" class="form-select">
+            <option>Please select a Time Zone</option>
+        </select>
+        <span asp-validation-for="TimeZoneId" class="text-danger"></span>
+    </div>
+    <div class="form-group">
         <label class="control-label">Start Date/Time</label>
         <input asp-for="StartDateTime" type="datetime-local" class="form-control" />
         <span asp-validation-for="StartDateTime" class="text-danger"></span>

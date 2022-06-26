@@ -1,4 +1,5 @@
 using System;
+using NodaTime;
 
 namespace JosephGuadagno.Broadcasting.Web.Models;
 
@@ -31,18 +32,13 @@ public class TalkViewModel
     /// <summary>
     /// The start date and time of the talk
     /// </summary>
-    public DateTime StartDateTime { get; set; }
+    public Instant StartDateTime { get; set; }
         
     /// <summary>
     /// The end date and time of the talk
     /// </summary>
-    public DateTime EndDateTime { get; set; }
+    public Instant EndDateTime { get; set; }
     
-    /// <summary>
-    /// Gets or sets the timezone of the Talk
-    /// </summary>
-    public TimeSpan TalkTimezoneOffset { get; set; }
-        
     /// <summary>
     /// The room/channel/url for the talk
     /// </summary>

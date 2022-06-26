@@ -1,4 +1,5 @@
 using AutoMapper;
+using Rocket.Surgery.Extensions.AutoMapper.NodaTime;
 
 namespace JosephGuadagno.Broadcasting.Web.Tests;
 
@@ -9,6 +10,7 @@ public class MappingTests
     {
         var configuration = new MapperConfiguration(cfg =>
         {
+            cfg.AddProfile<NodaTimeProfile>();
             cfg.AddProfile<MappingProfiles.WebMappingProfile>();
         });
 
@@ -20,7 +22,7 @@ public class MappingTests
         }
         catch (Exception ex)
         {
-            Assert.True(false);
+            Assert.True(false, ex.ToString());
         }
     }
 }

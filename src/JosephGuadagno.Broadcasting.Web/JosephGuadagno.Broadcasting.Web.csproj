@@ -62,6 +62,9 @@
         <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0" />
         <PackageReference Include="Microsoft.Identity.Web" Version="1.25.0" />
         <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.25.0" />
+        <PackageReference Include="NodaTime" Version="3.1.0" />
+        <PackageReference Include="Rocket.Surgery.Extensions.AutoMapper" Version="9.0.1" />
+        <PackageReference Include="Rocket.Surgery.Extensions.AutoMapper.NodaTime" Version="9.0.1" />
         <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
         <PackageReference Include="Serilog.Enrichers.AssemblyName" Version="1.0.9" />
         <PackageReference Include="Serilog.Enrichers.Environment" Version="2.2.0" />
