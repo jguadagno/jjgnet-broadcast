@@ -30,12 +30,12 @@ public class EngagementViewModel
     /// <summary>
     /// The date and time the engagement starts
     /// </summary>
-    public Instant StartDateTime { get; set; }
+    public DateTimeOffset StartDateTime { get; set; }
 
     /// <summary>
     /// The date and time the engagement ends
     /// </summary>
-    public Instant EndDateTime { get; set; }
+    public DateTimeOffset EndDateTime { get; set; }
     
     /// <summary>
     /// The IANI of the time zone for the engagement

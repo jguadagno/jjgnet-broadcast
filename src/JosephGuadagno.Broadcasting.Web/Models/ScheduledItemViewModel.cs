@@ -1,5 +1,4 @@
 using JosephGuadagno.Broadcasting.Domain.Models;
-using NodaTime;
 
 namespace JosephGuadagno.Broadcasting.Web.Models;
 
@@ -58,7 +57,7 @@ public class ScheduledItemViewModel
     /// <summary>
     /// The date and time this item is scheduled to go out
     /// </summary>
-    public Instant ScheduleDateTime { get; set; }
+    public DateTimeOffset ScheduleDateTime { get; set; }
 
     /// <summary>
     /// Returns a Dictionary&lt;string, string&gt; representation of the properties

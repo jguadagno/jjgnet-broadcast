@@ -48,5 +48,8 @@ public class Talk
     /// </summary>
     public string Comments { get; set; }
     
-    public int? EngagementId { get; set; }
+    /// <summary>
+    /// The identifier of the engagement
+    /// </summary>
+    public int EngagementId { get; set; }
 }

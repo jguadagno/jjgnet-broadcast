@@ -32,22 +32,22 @@ public class TalkViewModel
     /// <summary>
     /// The start date and time of the talk
     /// </summary>
-    public Instant StartDateTime { get; set; }
+    public DateTimeOffset StartDateTime { get; set; }
         
     /// <summary>
     /// The end date and time of the talk
     /// </summary>
-    public Instant EndDateTime { get; set; }
+    public DateTimeOffset EndDateTime { get; set; }
     
     /// <summary>
     /// The room/channel/url for the talk
     /// </summary>
-    public string TalkLocation { get; set; }
+    public string? TalkLocation { get; set; }
         
     /// <summary>
     /// Comments for the talk
     /// </summary>
-    public string Comments { get; set; }
+    public string? Comments { get; set; }
     
     public int? EngagementId { get; set; }
 }
