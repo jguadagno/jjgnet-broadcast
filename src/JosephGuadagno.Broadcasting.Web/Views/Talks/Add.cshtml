@@ -13,37 +13,37 @@
     <input type="hidden" asp-for="Id" />
     <input type="hidden" asp-for="EngagementId" />
     <div class="form-group">
-        <label class="control-label">Name</label>
+        <label asp-for="Name" class="control-label">Name</label>
         <input asp-for="Name" type="text" class="form-control" />
         <span asp-validation-for="Name" class="text-danger"></span>
     </div>
     <div class="form-group">
-        <label class="control-label">Url for Conference Talk</label>
+        <label asp-for="UrlForConferenceTalk" class="control-label">Url for Conference Talk</label>
         <input asp-for="UrlForConferenceTalk" type="url" class="form-control" />
         <span asp-validation-for="UrlForConferenceTalk" class="text-danger"></span>
     </div>
     <div class="form-group">
-        <label class="control-label">Url for Talk</label>
+        <label asp-for="UrlForTalk" class="control-label">Url for Talk</label>
         <input asp-for="UrlForTalk" type="url" class="form-control" />
         <span asp-validation-for="UrlForTalk" class="text-danger"></span>
     </div>
     <div class="form-group">
-        <label class="control-label">Start Date/Time</label>
+        <label asp-for="StartDateTime" class="control-label">Start Date/Time</label>
         <input asp-for="StartDateTime" type="datetime-local" class="form-control" />
         <span asp-validation-for="StartDateTime" class="text-danger"></span>
     </div>
     <div class="form-group">
-        <label class="control-label">End Date/Time</label>
+        <label asp-for="EndDateTime" class="control-label">End Date/Time</label>
         <input asp-for="EndDateTime" type="datetime-local" class="form-control" />
         <span asp-validation-for="EndDateTime" class="text-danger"></span>
     </div>
     <div class="form-group">
-        <label class="control-label">Talk Location</label>
+        <label asp-for="TalkLocation" class="control-label">Talk Location</label>
         <input asp-for="TalkLocation" type="text" class="form-control" />
         <span asp-validation-for="TalkLocation" class="text-danger"></span>
     </div>
     <div class="form-group">
-        <label class="control-label">Comments</label>
+        <label asp-for="Comments" class="control-label">Comments</label>
         <input asp-for="Comments" type="text" class="form-control" />
         <span asp-validation-for="Comments" class="text-danger"></span>
     </div>
