@@ -57,13 +57,12 @@ public class ScheduledItemViewModel
     /// <summary>
     /// The date and time this item is scheduled to go out
     /// </summary>
-    public DateTime ScheduleDateTime { get; set; }
-    
-    /// <summary>
-    /// Gets or sets the timezone offset to send the message in
-    /// </summary>
-    public TimeSpan ScheduleOffset { get; set; }
+    public DateTimeOffset ScheduleDateTime { get; set; }
 
+    /// <summary>
+    /// Returns a Dictionary&lt;string, string&gt; representation of the properties
+    /// </summary>
+    /// <returns></returns>
     public Dictionary<string, string> ToDictionary()
     {
         return new Dictionary<string, string>
@@ -72,8 +71,7 @@ public class ScheduledItemViewModel
             { "ItemTableName", ItemTableName },
             { "ItemPrimaryKey", ItemPrimaryKey },
             { "ItemSecondaryKey", ItemSecondaryKey },
-            { "ScheduledDate", ScheduleDateTime.ToString("f") },
-            { "ScheduleOffset", ScheduleOffset.ToString() }
+            { "ScheduledDate", ScheduleDateTime.ToString() }
         };
     }
 }

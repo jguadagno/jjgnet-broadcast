@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -136,8 +137,18 @@ public class EngagementDataStore: IEngagementDataStore
     public async Task<Domain.Models.Talk> SaveTalkAsync(Domain.Models.Talk talk)
     {
         ArgumentNullException.ThrowIfNull(talk);
-        var dbTalk = _mapper.Map<Models.Talk>(talk);
-        _broadcastingContext.Entry(dbTalk).State = dbTalk.Id == 0 ? EntityState.Added : EntityState.Modified;
+
+        var dbTalk = await _broadcastingContext.Talks.FirstOrDefaultAsync(t => t.Id == talk.Id) ?? new Models.Talk();
+        
+        if (talk.Id == 0)
+        {
+            dbTalk = _mapper.Map<Models.Talk>(talk);
+            _broadcastingContext.Talks.Add(dbTalk);
+        }
+        else
+        {
+            _broadcastingContext.Entry(dbTalk).CurrentValues.SetValues(talk);
+        }
         
         var result = await _broadcastingContext.SaveChangesAsync() != 0;
         if (result)

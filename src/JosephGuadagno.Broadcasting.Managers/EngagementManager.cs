@@ -1,8 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using Microsoft.Azure.Documents;
+using NodaTime;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
@@ -22,6 +23,9 @@ public class EngagementManager: IEngagementManager
 
     public async Task<Engagement> SaveAsync(Engagement entity)
     {
+        // Apply the time zone offset to the hours
+        entity.StartDateTime = UpdateDateTimeOffsetWithTimeZone(entity.TimeZoneId, entity.StartDateTime); 
+        entity.EndDateTime = UpdateDateTimeOffsetWithTimeZone(entity.TimeZoneId, entity.EndDateTime); 
         return await _engagementRepository.SaveAsync(entity);
     }
     
@@ -40,23 +44,22 @@ public class EngagementManager: IEngagementManager
         return await _engagementRepository.DeleteAsync(primaryKey);
     }
 
-    public async Task<bool> AddTalkToEngagementAsync(Engagement engagement, Talk talk)
-    {
-        return await _engagementRepository.AddTalkToEngagementAsync(engagement, talk);
-    }
-
     public async Task<List<Talk>> GetTalksForEngagementAsync(int engagementId)
     {
         return await _engagementRepository.GetTalksForEngagementAsync(engagementId);
     }
-    
-    public async Task<bool> AddTalkToEngagementAsync(int engagementId, Talk talk)
-    {
-        return await _engagementRepository.AddTalkToEngagementAsync(engagementId, talk);
-    }
 
     public async Task<Talk> SaveTalkAsync(Talk talk)
     {
+        var engagement = await _engagementRepository.GetAsync(talk.EngagementId);
+        if (engagement is null)
+        {
+            throw new ApplicationException(
+                $"Failed to save the talk. Could not find an engagement of id '{talk.EngagementId}");
+        }
+
+        talk.StartDateTime = UpdateDateTimeOffsetWithTimeZone(engagement.TimeZoneId, talk.StartDateTime);
+        talk.EndDateTime = UpdateDateTimeOffsetWithTimeZone(engagement.TimeZoneId, talk.EndDateTime);
         return await _engagementRepository.SaveTalkAsync(talk);
     }
 
@@ -72,5 +75,12 @@ public class EngagementManager: IEngagementManager
     public async Task<Talk> GetTalkAsync(int talkId)
     {
         return await _engagementRepository.GetTalkAsync(talkId);
+    }
+    
+    private DateTimeOffset UpdateDateTimeOffsetWithTimeZone(string timeZoneId, DateTimeOffset dateTimeOffset)
+    {
+        var eventTimeZone = DateTimeZoneProviders.Tzdb[timeZoneId];
+        var instant = Instant.FromDateTimeOffset(dateTimeOffset);
+        return instant.InZone(eventTimeZone).ToDateTimeOffset();
     }
 }

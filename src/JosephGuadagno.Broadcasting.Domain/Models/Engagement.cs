@@ -34,6 +34,11 @@ public class Engagement
     /// The date and time the engagement ends
     /// </summary>
     public DateTimeOffset EndDateTime { get; set; }
+    
+    /// <summary>
+    /// The IANA Time Zone Identifier for the engagement
+    /// </summary>
+    public string TimeZoneId { get; set; }
 
     /// <summary>
     /// Comments for the engagement

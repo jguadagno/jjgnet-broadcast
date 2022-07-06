@@ -1,13 +1,17 @@
-create table dbo.Engagements
+use JJGNet
+go
+
+create table Engagements
 (
     Id            int identity
         constraint Engagements_pk
-            primary key nonclustered,
-    Name          nvarchar(max)  not null,
+        primary key nonclustered,
+    Name          nvarchar(max)              not null,
     Url           nvarchar(max),
-    StartDateTime datetimeoffset not null,
-    EndDateTime   datetimeoffset not null,
-    Comments      nvarchar(max)
+    StartDateTime datetimeoffset             not null,
+    EndDateTime   datetimeoffset             not null,
+    Comments      nvarchar(max),
+    TimeZoneId    nvarchar(50) default 'America/Phoenix' not null
 )
 go
 

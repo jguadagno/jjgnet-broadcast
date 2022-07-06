@@ -9,6 +9,7 @@
             <th scope="col">Id</th>
             <th scope="col">Name</th>
             <th scope="col">Url</th>
+            <th scope="col">Time Zone</th>
             <th scope="col">Start Date</th>
             <th scope="col">End Date</th>
             <th scope="col">&nbsp;</th>
@@ -21,6 +22,7 @@
                 <td><a asp-controller="Engagements" asp-action="Details" asp-route-id="@engagement.Id">@engagement.Id</a></td>
                 <td>@engagement.Name</td>
                 <td><a href="@engagement.Url" target="_blank">@engagement.Url</a></td>
+                <td>@engagement.TimeZoneId</td>
                 <td>@engagement.StartDateTime</td>
                 <td>@engagement.EndDateTime</td>
                 <td>

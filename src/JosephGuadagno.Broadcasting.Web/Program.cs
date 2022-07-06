@@ -12,6 +12,7 @@ using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using Serilog;
 using Serilog.Exceptions;
+using Rocket.Surgery.Extensions.AutoMapper.NodaTime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -105,7 +106,7 @@ void ConfigureLogging(IServiceCollection services, ISettings configSettings, str
 void ConfigureApplication(IServiceCollection services)
 {
     services.AddHttpClient();
-    services.AddAutoMapper(typeof(WebMappingProfile));
+    services.AddAutoMapper(typeof(NodaTimeProfile), typeof(WebMappingProfile));
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
 }
