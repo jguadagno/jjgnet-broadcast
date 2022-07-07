@@ -42,6 +42,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Web.Tests", "JosephGuadagno.Broadcasting.Web.Tests\JosephGuadagno.Broadcasting.Web.Tests.csproj", "{058BC9B3-8937-476B-B124-106DBF288C71}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.Tests", "JosephGuadagno.Broadcasting.Managers.Tests\JosephGuadagno.Broadcasting.Managers.Tests.csproj", "{7AAEF798-21AC-445B-A28A-9975F1FEA230}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -104,5 +106,9 @@ Global
 		{058BC9B3-8937-476B-B124-106DBF288C71}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{058BC9B3-8937-476B-B124-106DBF288C71}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{058BC9B3-8937-476B-B124-106DBF288C71}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7AAEF798-21AC-445B-A28A-9975F1FEA230}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7AAEF798-21AC-445B-A28A-9975F1FEA230}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7AAEF798-21AC-445B-A28A-9975F1FEA230}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7AAEF798-21AC-445B-A28A-9975F1FEA230}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

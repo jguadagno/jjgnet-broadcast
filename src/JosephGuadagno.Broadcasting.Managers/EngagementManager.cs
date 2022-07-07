@@ -77,10 +77,13 @@ public class EngagementManager: IEngagementManager
         return await _engagementRepository.GetTalkAsync(talkId);
     }
     
-    private DateTimeOffset UpdateDateTimeOffsetWithTimeZone(string timeZoneId, DateTimeOffset dateTimeOffset)
+    public DateTimeOffset UpdateDateTimeOffsetWithTimeZone(string timeZoneId, DateTimeOffset dateTimeOffset)
     {
         var eventTimeZone = DateTimeZoneProviders.Tzdb[timeZoneId];
-        var instant = Instant.FromDateTimeOffset(dateTimeOffset);
-        return instant.InZone(eventTimeZone).ToDateTimeOffset();
+
+        LocalDateTime localDateTime = new LocalDateTime(dateTimeOffset.Year, dateTimeOffset.Month, dateTimeOffset.Day,
+            dateTimeOffset.Hour, dateTimeOffset.Minute);
+        var zonedDateTime = localDateTime.InZoneLeniently(eventTimeZone);
+        return zonedDateTime.ToDateTimeOffset();
     }
 }
