@@ -143,14 +143,17 @@ public class ProcessScheduledItemFired
         }
 
         string tweetText = null;
+        Engagement engagement;
         switch (tableEvent.TableName)
         {
             case SourceSystems.Engagements:
-                var engagement = await _engagementManager.GetAsync(tableEvent.PartitionKey.To<int>());
+                engagement = await _engagementManager.GetAsync(tableEvent.PartitionKey.To<int>());
                 tweetText = GetTweetForEngagement(engagement);
                 break;
             case SourceSystems.Talks:
                 var talk = await _engagementManager.GetTalkAsync(tableEvent.PartitionKey.To<int>());
+                engagement = await _engagementManager.GetAsync(talk.Id);
+                talk.Engagement = engagement;
                 tweetText = GetTweetForTalk(talk);
                 break;
         }
@@ -194,17 +197,21 @@ public class ProcessScheduledItemFired
         //  i.e: Join me tomorrow, Join me next week, "Up next in room...", "Join me today..."
         // TODO: Maybe handle timezone?
         
-        var statusText = $"Talk: {talk.Name} ({talk.UrlForTalk}) starting on {talk.StartDateTime:f} to {talk.EndDateTime:t}";
+        var statusText = $"My talk: {talk.Name} ({talk.UrlForTalk}) at {talk.Engagement.Name} is starting at {talk.StartDateTime:f}";
         if (talk.TalkLocation is not null)
         {
             statusText += $" in room {talk.TalkLocation}";
         }
-        var comments = " Comments: {engagement.Comments}";
-        statusText += comments;
-        
-        if (statusText.Length + comments.Length + 1 >= MaxTweetLength)
+
+        statusText += " Come see it!";
+        if (talk.Engagement.Comments is not null)
         {
-            var newLength = MaxTweetLength - statusText.Length - comments.Length - 1;
+            statusText += " Comments" + talk.Engagement.Comments;
+        }
+        
+        if (statusText.Length + 1 >= MaxTweetLength)
+        {
+            var newLength = MaxTweetLength - statusText.Length - 1;
             statusText = statusText.Substring(0, newLength - 4) + "...";
         }
             

@@ -50,4 +50,5 @@ public class TalkViewModel
     public string? Comments { get; set; }
     
     public int? EngagementId { get; set; }
+
 }
