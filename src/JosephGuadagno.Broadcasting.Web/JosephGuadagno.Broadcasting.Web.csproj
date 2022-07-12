@@ -61,7 +61,6 @@
         <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0" />
         <PackageReference Include="Microsoft.Identity.Web" Version="1.25.0" />
         <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.25.0" />
-        <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="2.1.175" />
         <PackageReference Include="NodaTime" Version="3.1.0" />
         <PackageReference Include="Rocket.Surgery.Extensions.AutoMapper" Version="9.0.1" />
         <PackageReference Include="Rocket.Surgery.Extensions.AutoMapper.NodaTime" Version="9.0.1" />
