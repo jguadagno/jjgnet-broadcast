@@ -52,9 +52,4 @@ public class Talk
     /// The identifier of the engagement
     /// </summary>
     public int EngagementId { get; set; }
-    
-    /// <summary>
-    /// The engagement for the talk
-    /// </summary>
-    public Engagement Engagement { get; set; }
 }

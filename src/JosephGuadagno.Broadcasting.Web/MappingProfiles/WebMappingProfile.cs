@@ -13,12 +13,10 @@ public class WebMappingProfile: Profile
     public WebMappingProfile()
     {
         CreateMap<Models.EngagementViewModel, Domain.Models.Engagement>();
-        CreateMap<Models.TalkViewModel, Domain.Models.Talk>()
-            .ForMember(destination => destination.Engagement, options => options.Ignore());
+        CreateMap<Models.TalkViewModel, Domain.Models.Talk>();
         CreateMap<Models.ScheduledItemViewModel, Domain.Models.ScheduledItem>();
 
-        CreateMap<Domain.Models.Engagement, Models.EngagementViewModel>()
-            .ForMember(destination => destination.TimeZones, options => options.Ignore());
+        CreateMap<Domain.Models.Engagement, Models.EngagementViewModel>();
         CreateMap<Domain.Models.Talk, Models.TalkViewModel>();
         CreateMap<Domain.Models.ScheduledItem, Models.ScheduledItemViewModel>();
     }

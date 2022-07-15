@@ -153,8 +153,7 @@ public class ProcessScheduledItemFired
             case SourceSystems.Talks:
                 var talk = await _engagementManager.GetTalkAsync(tableEvent.PartitionKey.To<int>());
                 engagement = await _engagementManager.GetAsync(talk.Id);
-                talk.Engagement = engagement;
-                tweetText = GetTweetForTalk(talk);
+                tweetText = GetTweetForTalk(talk, engagement);
                 break;
         }
 
@@ -186,7 +185,7 @@ public class ProcessScheduledItemFired
         return statusText;
     }
     
-    private string GetTweetForTalk(Talk talk)
+    private string GetTweetForTalk(Talk talk, Engagement engagement)
     {
         if (talk is null)
         {
@@ -196,17 +195,22 @@ public class ProcessScheduledItemFired
         // TODO: Account for custom message for talk
         //  i.e: Join me tomorrow, Join me next week, "Up next in room...", "Join me today..."
         // TODO: Maybe handle timezone?
-        
-        var statusText = $"My talk: {talk.Name} ({talk.UrlForTalk}) at {talk.Engagement.Name} is starting at {talk.StartDateTime:f}";
+
+        var statusText = $"My talk: {talk.Name} ({talk.UrlForTalk})";
+        if (engagement is not null)
+        {
+            statusText += " at " + engagement.Name;
+        }
+        statusText += $" is starting at {talk.StartDateTime:f}";
         if (talk.TalkLocation is not null)
         {
             statusText += $" in room {talk.TalkLocation}";
         }
 
         statusText += " Come see it!";
-        if (talk.Engagement.Comments is not null)
+        if (engagement?.Comments is not null)
         {
-            statusText += " Comments" + talk.Engagement.Comments;
+            statusText += " Comments" + engagement.Comments;
         }
         
         if (statusText.Length + 1 >= MaxTweetLength)
