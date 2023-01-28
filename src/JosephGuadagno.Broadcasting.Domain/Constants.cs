@@ -12,6 +12,7 @@ public static class Constants
     {
         public const string Configuration  = "Configuration";
         public const string SourceData = "SourceData";
+        public const string Logging = "Logging";
     }
 
     public static class ConfigurationFunctionNames
@@ -28,7 +29,7 @@ public static class Constants
         public const string TwitterSendTweet = "TwitterSendTweet";
         public const string TwitterProcessNewSourceData = "TwitterProcessNewSourceData";
         public const string TwitterProcessScheduledItemFired = "TwitterProcessScheduledItemFired";
-        
+        public const string MaintenanceClearOldLogs = "MaintenanceClearOldLogs";
     }
 
     public static class Topics

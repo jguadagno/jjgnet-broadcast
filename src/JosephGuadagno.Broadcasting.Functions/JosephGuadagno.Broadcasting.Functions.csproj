@@ -37,8 +37,10 @@
     </PropertyGroup>
   
     <ItemGroup>
+        <PackageReference Include="Azure.Data.Tables" Version="12.7.1" />
         <PackageReference Include="JosephGuadagno.Extensions" Version="1.2.3" />
         <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.EventGrid" Version="3.2.0" />
+        <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Tables" Version="1.0.0" />
         <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
         <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
@@ -58,6 +60,7 @@
         <PackageReference Include="Serilog.Exceptions" Version="8.2.0" />
         <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="3.1.0" />
         <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="5.0.0" />
+        <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.Sql\JosephGuadagno.Broadcasting.Data.Sql.csproj" />
