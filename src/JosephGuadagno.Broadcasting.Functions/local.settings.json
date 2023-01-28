@@ -54,7 +54,8 @@
                 "book reviews",
                 "news",
                 "arizona technology news",
-                "technology news"
+                "technology news",
+                "archive"
             ],
             "CutoffDate": "2017-01-01"
         }
