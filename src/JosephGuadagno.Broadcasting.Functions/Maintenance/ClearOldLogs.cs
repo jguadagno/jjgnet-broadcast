@@ -22,7 +22,7 @@ public class ClearOldLogs
         
     [FunctionName("maintenance_clear_old_logs")]
     public async Task RunAsync(
-        [TimerTrigger("0 23 * * 0")] TimerInfo myTimer,
+        [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer,
         [Table(Constants.Tables.Logging)] TableClient tableClient)
     {
         // 0 */2 * * * *
@@ -32,7 +32,7 @@ public class ClearOldLogs
             Constants.ConfigurationFunctionNames.MaintenanceClearOldLogs, startedAt);
 
         // Get all the log messages older than a week
-        AsyncPageable<TableEntity> queryResults = tableClient.QueryAsync<TableEntity>(filter: $"Timestamp le datetime'{DateTime.UtcNow.AddDays(-7)}'");
+        AsyncPageable<TableEntity> queryResults = tableClient.QueryAsync<TableEntity>(filter: $"Timestamp le datetime'{DateTime.UtcNow.AddDays(-7):s}'");
 
         // Delete them
         await queryResults.AsPages().ForEachAwaitAsync(async page => {
