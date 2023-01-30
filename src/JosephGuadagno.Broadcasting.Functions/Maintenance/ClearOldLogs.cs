@@ -33,7 +33,7 @@ public class ClearOldLogs
         var numberOfItemsDeleted = 0;
 
         // Get all the log messages older than a week
-        var dateTimeAsString = DateTime.UtcNow.AddHours(-12).ToString("s");
+        var dateTimeAsString = DateTime.UtcNow.AddDays(-7).ToString("s");
         var filter = $"Timestamp le datetime'{dateTimeAsString}'";
         AsyncPageable<TableEntity> queryResults = tableClient.QueryAsync<TableEntity>(filter: filter);
         
