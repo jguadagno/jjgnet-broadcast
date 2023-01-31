@@ -96,7 +96,8 @@ public class Startup : FunctionsStartup
             .Destructure.ToMaximumCollectionCount(10)
             .WriteTo.Console()
             .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-            .WriteTo.AzureTableStorage(settings.StorageAccount, storageTableName:"Logging")
+            .WriteTo.AzureTableStorage(settings.StorageAccount, storageTableName: "Logging",
+                keyGenerator: new SerilogKeyGenerator())
             .CreateLogger();
         services.AddLogging(loggingBuilder =>
         {
