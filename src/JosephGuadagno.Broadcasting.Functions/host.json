@@ -8,7 +8,7 @@
             }
         },
         "logLevel": {
-            "default": "Trace",
+            "default": "Debug",
             "System": "Information",
             "Microsoft": "Information",
             "JosephGuadagno": "Debug"
