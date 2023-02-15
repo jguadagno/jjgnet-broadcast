@@ -8,10 +8,10 @@
             }
         },
         "logLevel": {
-            "default": "Information",
-            "System": "Information",
-            "Microsoft": "Information",
-            "JosephGuadagno": "Information"
+            "default": "Error",
+            "System": "Error",
+            "Microsoft": "Error",
+            "JosephGuadagno": "Error"
         }
     }
 }
