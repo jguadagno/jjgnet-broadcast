@@ -83,6 +83,11 @@ public class Startup : FunctionsStartup
     private void ConfigureLogging(IServiceCollection services, ISettings settings, string logPath, string applicationName)
     {
         var logger = new LoggerConfiguration()
+            #if DEBUG
+            .MinimumLevel.Debug()
+            #else
+            .MinimumLevel.Warning()
+            #endif
             .Enrich.FromLogContext()
             .Enrich.WithMachineName()
             .Enrich.WithThreadId()
