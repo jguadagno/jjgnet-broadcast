@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Data.Tables;
@@ -51,7 +52,7 @@ public class ClearOldLogs
         {
             
             var response = await tableClient.DeleteEntityAsync(tableEntity.PartitionKey, tableEntity.RowKey, tableEntity.ETag);
-            if (response.Status == 200)
+            if (response.Status == (int)HttpStatusCode.NoContent)
             {
                 numberOfItemsDeleted++;    
             }
