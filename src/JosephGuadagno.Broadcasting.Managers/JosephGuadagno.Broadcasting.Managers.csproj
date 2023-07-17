@@ -40,7 +40,7 @@
       <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="NodaTime" Version="3.1.0" />
+      <PackageReference Include="NodaTime" Version="3.1.9" />
     </ItemGroup>
 
 </Project>

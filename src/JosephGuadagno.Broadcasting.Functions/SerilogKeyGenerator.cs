@@ -1,6 +1,5 @@
-using JosephGuadagno.Extensions.Types;
 using Serilog.Events;
-using Serilog.Sinks.AzureTableStorage.KeyGenerator;
+using Serilog.Sinks.AzureTableStorage;
 
 namespace JosephGuadagno.Broadcasting.Functions;
 
@@ -11,7 +10,7 @@ public class SerilogKeyGenerator: IKeyGenerator
         return logEvent.Timestamp.UtcDateTime.ToString("yyyy-MM-dd");
     }
 
-    public string GenerateRowKey(LogEvent logEvent, string suffix = null)
+    public string GenerateRowKey(LogEvent logEvent)
     {
         return logEvent.Timestamp.UtcDateTime.TimeOfDay.ToString();
     }
