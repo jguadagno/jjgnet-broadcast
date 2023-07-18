@@ -79,12 +79,12 @@ public class YouTubeReader: IYouTubeReader
                 {
                     if (playlistItem.Kind == "youtube#playlistItem")
                     {
-                        if (!playlistItem.Snippet.PublishedAt.HasValue)
+                        if (!playlistItem.Snippet.PublishedAtDateTimeOffset.HasValue)
                         {
                             continue;
                         }
 
-                        var publishedAt = playlistItem.Snippet.PublishedAt.Value;
+                        var publishedAt = playlistItem.Snippet.PublishedAtDateTimeOffset.Value;
                        
                         if (publishedAt > sinceWhen)
                         {
@@ -92,8 +92,8 @@ public class YouTubeReader: IYouTubeReader
                                 playlistItem.Snippet.ResourceId.VideoId)
                             {
                                 Author = playlistItem.Snippet.ChannelTitle,
-                                PublicationDate = publishedAt,
-                                UpdatedOnDate = publishedAt,
+                                PublicationDate = publishedAt.UtcDateTime,
+                                UpdatedOnDate = publishedAt.UtcDateTime,
                                 //Text = searchResult.Snippet.Description,
                                 Title = playlistItem.Snippet.Title,
                                 Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",
