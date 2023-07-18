@@ -2,10 +2,6 @@ namespace JosephGuadagno.Broadcasting.Web.Interfaces;
 
 public interface ISettings
 {
-    /// <summary>
-    /// The key for Application Insights
-    /// </summary>
-    public string AppInsightsKey { get; set; }
     
     /// <summary>
     /// The root Uri for the JosephGuadagno.NET broadcasting Api

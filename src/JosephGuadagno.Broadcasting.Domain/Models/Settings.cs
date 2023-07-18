@@ -4,7 +4,6 @@ namespace JosephGuadagno.Broadcasting.Domain.Models;
 
 public class Settings : ISettings, IDatabaseSettings
 {
-    public string AppInsightsKey { get; set; }
     public string StorageAccount { get; set; }
     public string TwitterApiKey { get; set; }
     public string TwitterApiSecret { get; set; }

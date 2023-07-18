@@ -2,7 +2,6 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 
 public interface ISettings
 {
-    public string AppInsightsKey { get; set; }
     public string StorageAccount { get; set; }
     public string TwitterApiKey { get; set; }
     public string TwitterApiSecret { get; set; }

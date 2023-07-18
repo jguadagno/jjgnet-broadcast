@@ -22,7 +22,7 @@ builder.Services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
 
 builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
 
-builder.Services.AddApplicationInsightsTelemetry(settings.AppInsightsKey);
+builder.Services.AddApplicationInsightsTelemetry();
 
 // Configure the logger
 var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
@@ -135,7 +135,7 @@ void ConfigureLogging(IServiceCollection services, ISettings configSettings, str
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {
-        loggingBuilder.AddApplicationInsights(configSettings.AppInsightsKey);
+        loggingBuilder.AddApplicationInsights();
         loggingBuilder.AddSerilog(logger);
     });
 }

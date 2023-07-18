@@ -5,11 +5,6 @@ namespace JosephGuadagno.Broadcasting.Web.Models;
 public class Settings : ISettings
 {
     /// <summary>
-    /// The key for Application Insights
-    /// </summary>
-    public string AppInsightsKey { get; set; }
-
-    /// <summary>
     /// The root Uri for the JosephGuadagno.NET Broadcasting Api
     /// </summary>
     public string ApiRootUrl { get; set; }

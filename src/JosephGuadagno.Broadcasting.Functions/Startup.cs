@@ -106,7 +106,7 @@ public class Startup : FunctionsStartup
             .CreateLogger();
         services.AddLogging(loggingBuilder =>
         {
-            loggingBuilder.AddApplicationInsights(settings.AppInsightsKey);
+            loggingBuilder.AddApplicationInsights();
             loggingBuilder.AddSerilog(logger);
         });
     }
