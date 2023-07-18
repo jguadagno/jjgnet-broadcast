@@ -7,13 +7,13 @@
         <Authors>Joseph Guadagno</Authors>
         <Product>JosephGuadagno.NET Broadcasting - Functions</Product>
         <Description>The Azure functions for the JosephGuadagno.NET Broadcasting application</Description>
-        <Copyright>Copyright ©2014-2022, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Copyright>Copyright ©2014-2023, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
         <Title>JosephGuadagno.NET Broadcasting - Azure Functions</Title>
     </PropertyGroup>
 
     <PropertyGroup>
         <VersionMajor>1</VersionMajor>
-        <VersionMinor>3</VersionMinor>
+        <VersionMinor>4</VersionMinor>
         <VersionBuild>0</VersionBuild>
     </PropertyGroup>
 
@@ -31,8 +31,8 @@
         <AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</AssemblyVersion>
     </PropertyGroup>
     <PropertyGroup>
-        <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
-        <FileVersion>$(VersionPrefix)</FileVersion>
+        <AssemblyVersion>1.4.0</AssemblyVersion>
+        <FileVersion>1.4.0</FileVersion>
         <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
     </PropertyGroup>
   
