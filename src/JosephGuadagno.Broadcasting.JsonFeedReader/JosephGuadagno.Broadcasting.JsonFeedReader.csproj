@@ -6,7 +6,7 @@
         <Authors>Joseph Guadagno</Authors>
         <Product>JosephGuadagno.NET Broadcasting - Json Feed Reader</Product>
         <Description>This library reads Json Feeds for the JosephGuadagno.NET Broadcasting application</Description>
-        <Copyright>Copyright ©2014-2022, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Copyright>Copyright ©2014-2023, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
         <Title>JosephGuadagno.NET Broadcasting - Json Feed Reader</Title>
     </PropertyGroup>
 
@@ -41,7 +41,7 @@
 
     <ItemGroup>
       <PackageReference Include="JsonFeed.NET" Version="1.1.0" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.4" />
     </ItemGroup>
 
 </Project>

@@ -6,7 +6,7 @@
         <Authors>Joseph Guadagno</Authors>
         <Product>JosephGuadagno.NET Broadcasting - Syndication Feed Reader</Product>
         <Description>This library reads Syndication Feeds for the JosephGuadagno.NET Broadcasting application</Description>
-        <Copyright>Copyright ©2014-2022, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Copyright>Copyright ©2014-2023, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
         <Title>JosephGuadagno.NET Broadcasting - Syndication Feed Reader</Title>
     </PropertyGroup>
 
@@ -40,8 +40,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
-      <PackageReference Include="System.ServiceModel.Syndication" Version="7.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.4" />
+      <PackageReference Include="System.ServiceModel.Syndication" Version="6.0.0" />
     </ItemGroup>
 
 </Project>
