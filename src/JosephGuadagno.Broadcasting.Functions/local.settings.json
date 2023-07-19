@@ -2,7 +2,7 @@
     "IsEncrypted": false,
     "Values": {
         "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-        "APPINSIGHTS_INSTRUMENTATIONKEY": "c2f97275-e157-434a-981b-051a4e897744",
+        "APPLICATIONINSIGHTS_CONNECTION_STRING": "InstrumentationKey=c2f97275-e157-434a-981b-051a4e897744;IngestionEndpoint=https://westus2-0.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/",
         "FUNCTIONS_WORKER_RUNTIME": "dotnet", 
         "AzureWebJobs.collectors_feed_load_all_posts.Disabled": true,
         "AzureWebJobs.collectors_feed_check_for_updates.Disabled": true,
@@ -20,7 +20,6 @@
 
     },
     "Settings": {
-        "AppInsightsKey": "c2f97275-e157-434a-981b-051a4e897744",
         "StorageAccount": "UseDevelopmentStorage=true",
         "TwitterApiKey": "",
         "TwitterApiSecret": "",
@@ -59,5 +58,8 @@
             ],
             "CutoffDate": "2019-01-01"
         }
+    },
+    "ConnectionStrings": {
+        "APPLICATIONINSIGHTS_CONNECTION_STRING":"InstrumentationKey=c2f97275-e157-434a-981b-051a4e897744;IngestionEndpoint=https://westus2-0.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/"
     }
 }

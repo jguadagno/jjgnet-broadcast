@@ -90,7 +90,7 @@ public class Startup
             .CreateLogger();
         services.AddLogging(loggingBuilder =>
         {
-            loggingBuilder.AddApplicationInsights(config["Values:APPINSIGHTS_INSTRUMENTATIONKEY"]);
+            loggingBuilder.AddApplicationInsights();
             loggingBuilder.AddSerilog(logger);
         });
     }

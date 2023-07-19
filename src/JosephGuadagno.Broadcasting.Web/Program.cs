@@ -23,7 +23,7 @@ builder.Services.AddApplicationInsightsTelemetry();
 
 // Configure the logger
 var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
-ConfigureLogging(builder.Services, settings, fullyQualifiedLogFile, "Web");
+ConfigureLogging(builder.Configuration, builder.Services, settings, fullyQualifiedLogFile, "Web");
 
 // Register DI services
 ConfigureApplication(builder.Services);
@@ -78,7 +78,7 @@ app.MapControllerRoute(
 
 app.Run();
 
-void ConfigureLogging(IServiceCollection services, ISettings configSettings, string logPath, string applicationName)
+void ConfigureLogging(IConfigurationRoot configurationRoot, IServiceCollection services, ISettings configSettings, string logPath, string applicationName)
 {
     var logger = new LoggerConfiguration()
         .Enrich.FromLogContext()
@@ -98,7 +98,10 @@ void ConfigureLogging(IServiceCollection services, ISettings configSettings, str
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {
-        loggingBuilder.AddApplicationInsights();
+        loggingBuilder.AddApplicationInsights(configureTelemetryConfiguration: (config) =>
+                config.ConnectionString =
+                    configurationRoot.GetConnectionString("APPLICATIONINSIGHTS_CONNECTION_STRING"),
+            configureApplicationInsightsLoggerOptions: (_) => { });loggingBuilder.AddApplicationInsights();
         loggingBuilder.AddSerilog(logger);
     });
 }

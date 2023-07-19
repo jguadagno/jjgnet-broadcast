@@ -70,7 +70,7 @@ public class Startup : FunctionsStartup
         
         // Configure the logger
         string logPath = Path.Combine(currentDirectory, "logs\\logs.txt");
-        ConfigureLogging(builder.Services, settings, logPath, "Functions");
+        ConfigureLogging(config, builder.Services, settings, logPath, "Functions");
         
         // Configure all the services
         ConfigureTwitter(builder);
@@ -80,7 +80,7 @@ public class Startup : FunctionsStartup
         ConfigureFunction(builder);
     }
 
-    private void ConfigureLogging(IServiceCollection services, ISettings settings, string logPath, string applicationName)
+    private void ConfigureLogging(IConfigurationRoot configurationRoot, IServiceCollection services, ISettings settings, string logPath, string applicationName)
     {
         var logger = new LoggerConfiguration()
             #if DEBUG
@@ -106,7 +106,10 @@ public class Startup : FunctionsStartup
             .CreateLogger();
         services.AddLogging(loggingBuilder =>
         {
-            loggingBuilder.AddApplicationInsights();
+            loggingBuilder.AddApplicationInsights(configureTelemetryConfiguration: (config) =>
+                    config.ConnectionString =
+                        configurationRoot.GetConnectionString("APPLICATIONINSIGHTS_CONNECTION_STRING"),
+                configureApplicationInsightsLoggerOptions: (_) => { });
             loggingBuilder.AddSerilog(logger);
         });
     }
