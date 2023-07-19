@@ -16,9 +16,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v2
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v3
+    - name: Setup .NET ${{ env.DOTNET_VERSION }} Environment
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     
@@ -27,12 +28,12 @@ jobs:
     - name: Build with dotnet
       run: dotnet build ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }} --configuration Release
     - name: dotnet publish
-      run: dotnet publish ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }} -c Release -o ${{env.DOTNET_ROOT}}/myapp        
+      run: dotnet publish ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }} -c Release -o ${{env.DOTNET_ROOT}}/jjg-functions        
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v3
       with:
-        name: .net-app
-        path: ${{env.DOTNET_ROOT}}/myapp
+        name: .net-functions
+        path: ${{env.DOTNET_ROOT}}/jjg-functions
 
   deploy:
     permissions:
@@ -43,7 +44,7 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v3
         with:
-          name: .net-app
+          name: .net-functions
       - name: 'Deploy to Azure Function'
         uses: Azure/functions-action@v1
         id: fa
