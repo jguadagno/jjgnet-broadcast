@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using LinqToTwitter;
@@ -21,6 +22,22 @@ public class SendTweet
         string tweetText,
         ILogger log)
     {
-        await _twitterContext.TweetAsync(tweetText);
+        try
+        {
+            var tweet = await _twitterContext.TweetAsync(tweetText);
+            if (tweet is null)
+            {
+                // Log the error
+                log.LogError($"Failed to send the tweet: '{tweetText}'. ", tweetText);
+            }
+            else
+            {
+                // This is good, just log success
+            }
+        }
+        catch (Exception ex)
+        {
+            log.LogError($"Failed to send the tweet: '{tweetText}'. Exception: '{ex.Message}'", ex, tweetText);
+        }
     }
 }
