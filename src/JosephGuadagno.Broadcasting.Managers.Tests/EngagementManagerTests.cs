@@ -2,7 +2,7 @@ using Moq;
 
 namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
-public class UnitTest1
+public class EngagementManagerTests
 {
     [Fact]
     public void UpdateDateTimeOffsetWithTimeZoneTest()
