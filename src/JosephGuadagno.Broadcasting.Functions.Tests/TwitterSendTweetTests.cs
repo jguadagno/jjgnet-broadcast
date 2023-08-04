@@ -28,7 +28,7 @@ public class TwitterSendTweetTests
         Assert.NotNull(tweet);
         
         // Clean up
-        if (tweet is not null && tweet.ID is not null)
+        if (tweet.ID is not null)
         {
             await _twitterContext.DeleteTweetAsync(tweet.ID);
         }
