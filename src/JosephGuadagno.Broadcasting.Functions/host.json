@@ -2,9 +2,9 @@
     "version": "2.0",
     "logging": {
         "applicationInsights": {
-            "samplingExcludedTypes": "Request;Exception",
             "samplingSettings": {
-                "isEnabled": false
+                "isEnabled": false,
+                "samplingExcludedTypes": "Request"
             }
         },
         "logLevel": {
