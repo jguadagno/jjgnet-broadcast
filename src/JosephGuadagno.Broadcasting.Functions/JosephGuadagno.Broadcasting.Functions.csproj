@@ -39,6 +39,7 @@
     <ItemGroup>
         <PackageReference Include="Azure.Data.Tables" Version="12.8.0" />
         <PackageReference Include="JosephGuadagno.Extensions" Version="1.2.3" />
+        <PackageReference Include="Microsoft.ApplicationInsights" Version="2.21.0" />
         <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.EventGrid" Version="3.3.0" />
         <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Tables" Version="1.1.0" />
         <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />

@@ -40,7 +40,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Google.Apis.YouTube.v3" Version="1.61.0.3106" />
+      <PackageReference Include="Google.Apis.YouTube.v3" Version="1.61.0.3113" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.4" />
     </ItemGroup>
 
