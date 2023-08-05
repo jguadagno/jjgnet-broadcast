@@ -108,7 +108,7 @@ public class Startup : FunctionsStartup
         {
             loggingBuilder.AddApplicationInsights(configureTelemetryConfiguration: (config) =>
                     config.ConnectionString =
-                        configurationRoot.GetConnectionString("APPLICATIONINSIGHTS_CONNECTION_STRING"),
+                        configurationRoot["APPLICATIONINSIGHTS_CONNECTION_STRING"],
                 configureApplicationInsightsLoggerOptions: (_) => { });
             loggingBuilder.AddSerilog(logger);
         });
