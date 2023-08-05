@@ -11,7 +11,8 @@
             "default": "Debug",
             "System": "Information",
             "Microsoft": "Information",
-            "JosephGuadagno": "Debug"
+            "JosephGuadagno": "Debug",
+            "Azure.Core": "Error"
         }
     }
 }

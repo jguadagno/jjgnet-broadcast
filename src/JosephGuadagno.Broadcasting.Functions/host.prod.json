@@ -11,7 +11,8 @@
             "default": "Error",
             "System": "Error",
             "Microsoft": "Error",
-            "JosephGuadagno": "Error"
+            "JosephGuadagno": "Error",
+            "Azure.Core": "Error"
         }
     }
 }
