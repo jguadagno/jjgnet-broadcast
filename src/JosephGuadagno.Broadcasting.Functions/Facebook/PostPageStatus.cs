@@ -35,6 +35,7 @@ public class PostPageStatus
 
         try
         {
+            _logger.LogTrace("Posting to Facebook Page: PageId: `{SettingsFacebookPageId}\', Token: `{SettingsFacebookPageAccessToken}\'", _settings.FacebookPageId, _settings.FacebookPageAccessToken);
             var pageId = await _facebookManager.PostMessageAndLinkToPage(_settings.FacebookPageId, facebookPostStatus.StatusText, facebookPostStatus.LinkUri, _settings.FacebookPageAccessToken);
         }
         catch (Exception e)

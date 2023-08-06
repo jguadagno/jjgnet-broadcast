@@ -3,8 +3,7 @@
     "logging": {
         "applicationInsights": {
             "samplingSettings": {
-                "isEnabled": false,
-                "samplingExcludedTypes": "Request"
+                "isEnabled": false
             }
         },
         "logLevel": {
@@ -12,6 +11,7 @@
             "System": "Error",
             "Microsoft": "Error",
             "JosephGuadagno": "Error",
+            "JosephGuadagno.Broadcasting.Functions.Facebook": "Trace",
             "Azure.Core": "Error"
         }
     }
