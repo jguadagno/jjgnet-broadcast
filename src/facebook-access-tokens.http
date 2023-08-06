@@ -32,3 +32,7 @@ GET https://graph.facebook.com/{{page-id}}/insights/page_impressions_unique?acce
 <> 2023-08-05T163044.400.js
 <> 2023-08-05T163013.400.js
 <> 2023-08-05T162639.400.js
+
+### Sample page post
+POST https://graph.facebook.com/{{page-id}}/feed
+    ?message=Test Page Post&link=https://josephguadagno.net/&access_token={{page-access-token}}

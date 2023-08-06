@@ -143,15 +143,6 @@ public class Startup : FunctionsStartup
             }
             return new TwitterContext(authorizer);
         });
-        builder.Services.TryAddSingleton(s =>
-        {
-            var settings = s.GetService<ISettings>();
-            if (settings is null)
-            {
-                throw new ApplicationException("Failed to get settings from ServiceCollection");
-            }
-            return new SourceDataRepository(settings.StorageAccount);
-        });
     }
 
     private void ConfigureJsonFeedReader(IFunctionsHostBuilder builder)
@@ -278,7 +269,8 @@ public class Startup : FunctionsStartup
         });
         builder.Services.TryAddSingleton<IUrlShortener, UrlShortener>();
         builder.Services.TryAddSingleton<IEventPublisher, EventPublisher>();
-            
+        builder.Services.TryAddSingleton<IFacebookManager, FacebookManager>();
+        
         ConfigureRepositories(builder.Services);
     }
 }

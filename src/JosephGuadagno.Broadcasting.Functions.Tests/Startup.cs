@@ -124,15 +124,7 @@ public class Startup
             }
             return new TwitterContext(authorizer);
         });
-        services.TryAddSingleton(s =>
-        {
-            var settings = s.GetService<ISettings>();
-            if (settings is null)
-            {
-                throw new ApplicationException("Failed to get the settings from the ServiceCollection");
-            }
-            return new SourceDataRepository(settings.StorageAccount);
-        });
+
     }
 
     private void ConfigureJsonFeedReader(IServiceCollection services)
@@ -225,6 +217,16 @@ public class Startup
             return new ScheduledItemRepository(scheduledItemDataStore);
         });
         services.TryAddSingleton<IScheduledItemManager, ScheduledItemManager>();
+        
+        services.TryAddSingleton(s =>
+        {
+            var settings = s.GetService<ISettings>();
+            if (settings is null)
+            {
+                throw new ApplicationException("Failed to get the settings from the ServiceCollection");
+            }
+            return new SourceDataRepository(settings.StorageAccount);
+        });
     }
 
     private void ConfigureFunction(IServiceCollection services)
@@ -249,7 +251,6 @@ public class Startup
             }
             return new SourceDataRepository(settings.StorageAccount);
         });
-            
         services.TryAddSingleton(s =>
         {
             var settings = s.GetService<ISettings>();
@@ -268,6 +269,7 @@ public class Startup
         });
         services.TryAddSingleton<IUrlShortener, UrlShortener>();
         services.TryAddSingleton<IEventPublisher, EventPublisher>();
+        services.TryAddSingleton<IFacebookManager, FacebookManager>();
             
         ConfigureRepositories(services);
     }
