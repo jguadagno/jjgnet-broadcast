@@ -1,0 +1,34 @@
+﻿### Documentation for the Facebook Graph API Tokens
+### https://developers.facebook.com/docs/pages/access-tokens/
+
+### Get a short-lived access token
+### Documentation https://developers.facebook.com/docs/graph-api/guides/explorer#get-token-dropdown
+### Get the short lived access token from the Graph API Explorer: https://developers.facebook.com/tools/explorer/
+
+### Get the long-lived access token
+GET https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&
+    client_id={{app-id}}&
+    client_secret={{app-secret}}&
+    fb_exchange_token={{short-lived-access-token}}
+
+<> 2023-08-06T102330.200.json
+<> 2023-08-06T102309.400.js
+<> 2023-08-06T094625.400.js
+
+### Get the page access token
+### Take the long-lived access token and get the page access token
+GET https://graph.facebook.com/{{page-id}}?fields=access_token&access_token={{long-lived-access-token}}
+
+<> 2023-08-06T102534.200.js
+
+
+### Get insights to page: JosephGuadagno.NET
+GET https://graph.facebook.com/{{page-id}}/insights/page_impressions_unique?access_token={{page-access-token}}
+
+<> 2023-08-06T102607.200.js
+<> 2023-08-05T163533.400.js
+<> 2023-08-05T163400.400.js
+<> 2023-08-05T163242.400.js
+<> 2023-08-05T163044.400.js
+<> 2023-08-05T163013.400.js
+<> 2023-08-05T162639.400.js
