@@ -722,3 +722,4 @@ FodyWeavers.xsd
 shutdown.ps1
 startup.ps1
 **/logs/
+*.private.env.json
