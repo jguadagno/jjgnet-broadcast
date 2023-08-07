@@ -47,6 +47,7 @@ public class FacebookManager : IFacebookManager
                 .Replace("{link}", link)
                 .Replace("{access_token}", accessToken);
         
+            _logger.LogTrace("Url: `{Url}`", url);
             var response = await _httpClient.PostAsync(url,null);
 
             if (response.IsSuccessStatusCode)
@@ -59,6 +60,7 @@ public class FacebookManager : IFacebookManager
                     if (!string.IsNullOrEmpty(postStatusResponse.Id))
                     {
                         // We should be good
+                        _logger.LogDebug("Successfully posted status. Id: '{Id}'", postStatusResponse.Id);
                         return postStatusResponse.Id;
                     }
 
