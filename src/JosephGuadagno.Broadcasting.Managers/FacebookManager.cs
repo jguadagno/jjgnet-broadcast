@@ -43,7 +43,7 @@ public class FacebookManager : IFacebookManager
         try
         {
             var url = PostToPageWithLinkUrl.Replace("{page_id}", pageId)
-                .Replace("{message}", message)
+                .Replace("{message}",  System.Web.HttpUtility.UrlEncode(message))
                 .Replace("{link}", link)
                 .Replace("{access_token}", accessToken);
         
