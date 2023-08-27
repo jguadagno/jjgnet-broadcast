@@ -1,0 +1,119 @@
+### Get info about the authenticated member
+GET https://api.linkedin.com/v2/me
+Authorization: Bearer {{my-access-token}}
+
+# Note: Can't include a URL with a Image based post.  You must have an og_image header for LinkedIn to pick it up.
+
+### Post a text only post on behalf of the authenticated member
+POST https://api.linkedin.com/v2/ugcPosts
+Authorization: Bearer {{my-access-token}}
+X-Restli-Protocol-Version: 2.0.0
+
+{
+  "author": "urn:li:person:{{my-person-id}}",
+  "lifecycleState": "PUBLISHED",
+  "specificContent": {
+    "com.linkedin.ugc.ShareContent": {
+      "shareCommentary": {
+        "text": "Please ignore this post. This is a test post. It will be deleted shortly. {{$isoTimestamp}}"
+      },
+      "shareMediaCategory": "NONE"
+    }
+  },
+  "visibility": {
+    "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+  }
+}
+
+### Post an image to LinkedIn to include in a post STEP 1
+POST https://api.linkedin.com/v2/assets?action=registerUpload
+Authorization: Bearer {{my-access-token}}
+X-Restli-Protocol-Version: 2.0.0
+
+{
+    "registerUploadRequest": {
+        "recipes": [
+            "urn:li:digitalmediaRecipe:feedshare-image"
+        ],
+        "owner": "urn:li:person:{{my-person-id}}",
+        "serviceRelationships": [
+            {
+                "relationshipType": "OWNER",
+                "identifier": "urn:li:userGeneratedContent"
+            }
+        ]
+    }
+}
+
+### Post an image to LinkedIn to include in a post STEP 2
+# Upload is not supported by this HTTP client
+curl -i --upload-file /Path/To/Image.png --header "Authorization: Bearer {{my-access-token}}" 'https://api.linkedin.com/mediaUpload/C5522AQGTYER3k3ByHQ/feedshare-uploadedImage/0?ca=vector_feedshare&cn=uploads&m=AQJbrN86Zm265gAAAWemyz2pxPSgONtBiZdchrgG872QltnfYjnMdb2j3A&app=1953784&sync=0&v=beta&ut=2H-IhpbfXrRow1'
+
+### Post an image to LinkedIn to include in a post STEP 3
+### Post an article on behalf of the authenticated member
+POST https://api.linkedin.com/v2/ugcPosts
+Authorization: Bearer {{my-access-token}}
+X-Restli-Protocol-Version: 2.0.0
+
+{
+    "author": "urn:li:person:{{my-person-id}}",
+    "lifecycleState": "PUBLISHED",
+    "specificContent": {
+        "com.linkedin.ugc.ShareContent": {
+            "shareCommentary": {
+                "text": "LinkedIn has an AI Assisted Editor for posting articles."
+            },
+            "shareMediaCategory": "IMAGE",
+            "media": [
+                {
+                    "status": "READY",
+                    "description": {
+                        "text": "LinkedIn has an AI Assisted Editor for posting articles."
+                    },
+                    "media": "urn:li:digitalmediaAsset:D5622AQHqpGB5YNqcvg",
+                    "originalUrl": "https://www.josephguadagno.net/2023/08/08/linkedin-now-has-an-ai-assisted-editor-for-post",
+                    "title": {
+                        "text": "LinkedIn has an AI Assisted Editor for Post"
+                    }
+                }
+            ]
+        }
+    },
+    "visibility": {
+        "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+    }
+}
+
+
+### Post an article on behalf of the authenticated member
+POST https://api.linkedin.com/v2/ugcPosts
+Authorization: Bearer {{my-access-token}}
+X-Restli-Protocol-Version: 2.0.0
+
+{
+    "author": "urn:li:person:{{my-person-id}}",
+    "lifecycleState": "PUBLISHED",
+    "specificContent": {
+        "com.linkedin.ugc.ShareContent": {
+            "shareCommentary": {
+                "text": "LinkedIn has an AI Assisted Editor for posting articles."
+            },
+            "shareMediaCategory": "ARTICLE",
+            "media": [
+                {
+                    "status": "READY",
+                    "description": {
+                        "text": "This is the description of the media."
+                    },
+                    "originalUrl": "https://www.josephguadagno.net/",
+                    "title": {
+                        "text": "Joseph Guadagno Website"
+                    }
+                }
+            ]
+        }
+    },
+    "visibility": {
+        "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+    }
+}

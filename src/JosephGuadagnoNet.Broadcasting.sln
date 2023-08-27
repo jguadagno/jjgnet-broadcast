@@ -20,6 +20,7 @@ ProjectSection(SolutionItems) = preProject
 	libman-restore.ps1 = libman-restore.ps1
 	..\developer-getting-started.md = ..\developer-getting-started.md
 	facebook-access-tokens.http = facebook-access-tokens.http
+	LinkedIn.http = LinkedIn.http
 EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Functions", "JosephGuadagno.Broadcasting.Functions\JosephGuadagno.Broadcasting.Functions.csproj", "{3982BC47-81CD-4D61-82D6-17749CB36032}"
@@ -45,6 +46,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Web.Tests", "JosephGuadagno.Broadcasting.Web.Tests\JosephGuadagno.Broadcasting.Web.Tests.csproj", "{058BC9B3-8937-476B-B124-106DBF288C71}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.Tests", "JosephGuadagno.Broadcasting.Managers.Tests\JosephGuadagno.Broadcasting.Managers.Tests.csproj", "{7AAEF798-21AC-445B-A28A-9975F1FEA230}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.LinkedIn", "JosephGuadagno.Broadcasting.Managers.LinkedIn\JosephGuadagno.Broadcasting.Managers.LinkedIn.csproj", "{8A822F45-945B-42EF-9344-8D37CB519804}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.LinkedIn.Tests", "JosephGuadagno.Broadcasting.Managers.LinkedIn.Tests\JosephGuadagno.Broadcasting.Managers.LinkedIn.Tests.csproj", "{E7360F64-98CB-4A31-8870-B4CB6BA06F03}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -112,5 +117,13 @@ Global
 		{7AAEF798-21AC-445B-A28A-9975F1FEA230}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7AAEF798-21AC-445B-A28A-9975F1FEA230}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7AAEF798-21AC-445B-A28A-9975F1FEA230}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A822F45-945B-42EF-9344-8D37CB519804}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A822F45-945B-42EF-9344-8D37CB519804}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A822F45-945B-42EF-9344-8D37CB519804}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A822F45-945B-42EF-9344-8D37CB519804}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7360F64-98CB-4A31-8870-B4CB6BA06F03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7360F64-98CB-4A31-8870-B4CB6BA06F03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7360F64-98CB-4A31-8870-B4CB6BA06F03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7360F64-98CB-4A31-8870-B4CB6BA06F03}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
