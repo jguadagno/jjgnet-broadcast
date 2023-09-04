@@ -36,6 +36,9 @@ web-jjgnet-broadcast
 
 * twitter-tweets-to-send
 * facebook-post-status-to-page
+* linkedin-post-text
+* linkedin-post-link
+* linkedin-post-image
 
 ### Storage - Blob
 
