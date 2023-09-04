@@ -12,6 +12,8 @@ using JosephGuadagno.Broadcasting.Functions;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Models;
 using JosephGuadagno.Broadcasting.Managers;
+using JosephGuadagno.Broadcasting.Managers.LinkedIn;
+using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Models;
@@ -77,6 +79,7 @@ public class Startup : FunctionsStartup
         ConfigureJsonFeedReader(builder);
         ConfigureSyndicationFeedReader(builder);
         ConfigureYouTubeReader(builder);
+        ConfigureLinkedInManager(builder);
         ConfigureFunction(builder);
     }
 
@@ -180,6 +183,18 @@ public class Startup : FunctionsStartup
             return settings;
         });
         builder.Services.TryAddSingleton<IYouTubeReader, YouTubeReader.YouTubeReader>();
+    }
+    
+    private void ConfigureLinkedInManager(IFunctionsHostBuilder builder)
+    {
+        builder.Services.TryAddSingleton<ILinkedInApplicationSettings>(s =>
+        {
+            var settings = new LinkedInApplicationSettings();
+            var configuration = s.GetService<IConfiguration>();
+            configuration.Bind("Settings:LinkedIn", settings);
+            return settings;
+        });
+        builder.Services.TryAddSingleton<ILinkedInManager, LinkedInManager>();
     }
         
     private void ConfigureRepositories(IServiceCollection services)

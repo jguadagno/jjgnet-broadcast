@@ -18,7 +18,11 @@
         "AzureWebJobs.publishers_scheduled_items.Disabled": true,
         "AzureWebJobs.facebook_process_scheduled_item_fired.Disabled": true,
         "AzureWebJobs.twitter_process_scheduled_item_fired.Disabled": true,
-        "AzureWebJobs.maintenance_clear_old_jobs.Disable": false
+        "AzureWebJobs.maintenance_clear_old_jobs.Disable": true,
+        "AzureWebJobs.linkedin_post_text.Disable": false,
+        "AzureWebJobs.linkedin_post_image.Disable": true,
+        "AzureWebJobs.linkedin_post_link.Disable": true
+        
     },
     "Settings": {
         "StorageAccount": "UseDevelopmentStorage=true",
@@ -58,6 +62,12 @@
                 "archive"
             ],
             "CutoffDate": "2019-01-01"
+        }, 
+        "LinkedIn": {
+            "ClientId": "",
+            "ClientSecret": "",
+            "AccessToken": "",
+            "AuthorId": ""
         }
     }
 }

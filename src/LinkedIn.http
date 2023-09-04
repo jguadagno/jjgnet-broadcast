@@ -117,3 +117,13 @@ X-Restli-Protocol-Version: 2.0.0
         "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
     }
 }
+
+### Authenication - Getting a refresh token
+POST https://www.linkedin.com/oauth/v2/accessToken
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&refresh_token={{my-access-token}}&client_id={{client-id}}&client_secret={{client-secret}}
+
+
+
+
