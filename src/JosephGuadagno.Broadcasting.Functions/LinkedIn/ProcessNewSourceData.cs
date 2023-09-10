@@ -6,6 +6,7 @@ using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
+using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Azure.EventGrid.Models;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.EventGrid;
@@ -17,10 +18,12 @@ public class ProcessNewSourceData
 {
     private readonly SourceDataRepository _sourceDataRepository;
     private readonly ILogger<ProcessNewSourceData> _logger;
+    private readonly ILinkedInApplicationSettings _linkedInApplicationSettings;
 
-    public ProcessNewSourceData(SourceDataRepository sourceDataRepository, ILogger<ProcessNewSourceData> logger)
+    public ProcessNewSourceData(SourceDataRepository sourceDataRepository, ILinkedInApplicationSettings linkedInApplicationSettings, ILogger<ProcessNewSourceData> logger)
     {
         _sourceDataRepository = sourceDataRepository;
+        _linkedInApplicationSettings = linkedInApplicationSettings;
         _logger = logger;
     }
     
@@ -107,6 +110,8 @@ public class ProcessNewSourceData
             Text = $"{statusText} {sourceData.Title} {HashTagList(sourceData.Tags)}",
             Title = sourceData.Title,
             LinkUrl = sourceData.Url,
+            AuthorId = _linkedInApplicationSettings.AuthorId,
+            AccessToken = _linkedInApplicationSettings.AccessToken
         };
 
         _logger.LogDebug("Composed LinkedIn status for '{PartitionKey}', '{RowKey}', '{@Post}'", sourceData.PartitionKey, sourceData.RowKey, post);
