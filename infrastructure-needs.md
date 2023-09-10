@@ -18,7 +18,6 @@ web-jjgnet-broadcast
 
 ### Function
 
-
 | Category   | Name                                    | Purpose                                                                 | Project                                 | Class                                 |
 |------------|-----------------------------------------|-------------------------------------------------------------------------|-----------------------------------------|---------------------------------------|
 | Collectors | `collectors_feed_check_for_updates`     | Gets new posts from xml feed                                            | `JosephGuadagno.Broadcasting.Functions` | `Collectors.CheckFeedForUpdates`      |
@@ -31,6 +30,10 @@ web-jjgnet-broadcast
 | Facebook   | `facebook_process_new_source_data`      | Generates a queue message based on a *New Source* event being triggered | `JosephGuadagno.Broadcasting`           | `Facebook.ProcessNewSourceData`       |
 | Facebook   | `facebook_post_status_to_page`          | Sends a tweet from **facebook-post-status-to-page** queue               | `JosephGuadagno.Broadcasting.Functions` | `Facebook.PostPageStatus`             |
 | Facebook   | `facebook_process_scheduled_item_fired` | Triggered when there is a scheduled item to go to Facebook              | `JosephGuadagno.Broadcasting.Functions` | `Facebook.ProcessScheduledItemsFired` |
+| LinkedIn   | `linkedin_process_new_source_data`      | Generates a queue message based on a *New Source* event being triggered | `JosephGuadagno.Broadcasting`           | `LinkedIn.ProcessNewSourceData`       |
+| LinkedIn   | `linkedin_post_text`                    | Sends a tweet from **linkedin-post-text** queue                         | `JosephGuadagno.Broadcasting.Functions` | `LinkedIn.PostText`                   |
+| LinkedIn   | `linkedin_post_link`                    | Sends a tweet from **linkedin-post-link** queue                         | `JosephGuadagno.Broadcasting.Functions` | `LinkedIn.PostLink`                   |
+| LinkedIn   | `linkedin_post_image`                   | Sends a tweet from **linkedin-post-image** queue                        | `JosephGuadagno.Broadcasting.Functions` | `LinkedIn.PostImage`                  |
 
 ### Queues
 
@@ -77,6 +80,15 @@ Topic Endpoint: `https://new-source-data.westus2-1.eventgrid.azure.net/api/event
 | Event Schema  | `Event Grid Scheme`                |             |
 | Endpoint Type | `Azure Functions`                  |             |
 | Endpoint      | `facebook-process-new-source-data` |             |
+
+##### Event Grid - LinkedIn
+
+| Name          | Value                                | Description |
+|---------------|--------------------------------------|-------------|
+| Name          | `source-data-to-linkedin`            |             |
+| Event Schema  | `Event Grid Scheme`                  |             |
+| Endpoint Type | `Azure Functions`                    |             |
+| Endpoint      | `linkedin-process-new-source-data`   |             |
 
 #### Scheduled Item Fired
 

@@ -33,6 +33,10 @@ public static class Constants
         public const string TwitterProcessNewSourceData = "TwitterProcessNewSourceData";
         public const string TwitterProcessScheduledItemFired = "TwitterProcessScheduledItemFired";
         public const string MaintenanceClearOldLogs = "MaintenanceClearOldLogs";
+        public const string LinkedInPostLink = "LinkedInPostLink";
+        public const string LinkedInPostText = "LinkedInPostText";
+        public const string LinkedInPostImage = "LinkedInPostImage";
+        public const string LinkedInProcessNewSourceData = "LinkedInProcessNewSourceData";
     }
 
     public static class Topics
