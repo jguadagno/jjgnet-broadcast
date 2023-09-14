@@ -37,6 +37,7 @@ public static class Constants
         public const string LinkedInPostText = "LinkedInPostText";
         public const string LinkedInPostImage = "LinkedInPostImage";
         public const string LinkedInProcessNewSourceData = "LinkedInProcessNewSourceData";
+        public const string LinkedInProcessScheduledItemFired = "LinkedInProcessScheduledItemFired";
     }
 
     public static class Topics

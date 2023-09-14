@@ -116,6 +116,14 @@ Topic Endpoint: `https://scheduled-item-fired.westus2-1.eventgrid.azure.net/api/
 | Endpoint Type | `Azure Functions`                       |             |
 | Endpoint      | `facebook-process-scheduled-item-fired` |             |
 
+##### Event Grid - LinkedIn
+
+| Name          | Value                                   | Description |
+|---------------|-----------------------------------------|-------------|
+| Name          | `scheduled-item-to-linkedin`            |             |
+| Event Schema  | `Event Grid Scheme`                     |             |
+| Endpoint Type | `Azure Functions`                       |             |
+| Endpoint      | `linkedin-process-scheduled-item-fired` |             |
 
 ## Database
 
