@@ -92,8 +92,8 @@ public class ProcessScheduledItemFired
 
         if (linkedInPostLink is null)
         {
-            _logger.LogDebug(
-                "Could not generate the LinkedIn post text for {TableName}, {PartitionKey}, {RowKey}",
+            _logger.LogError(
+                "Could not generate the LinkedIn post link for {TableName}, {PartitionKey}, {RowKey}, linkedInPostLink was null",
                 tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
             return;
         }
@@ -107,6 +107,7 @@ public class ProcessScheduledItemFired
     {
         if (tableEvent is null)
         {
+            _logger.LogError("The table event was null");
             return null;
         }
 
@@ -151,11 +152,23 @@ public class ProcessScheduledItemFired
         switch (tableEvent.TableName)
         {
             case SourceSystems.Engagements:
+                _logger.LogDebug("Getting the engagement for '{PartitionKey}'", tableEvent.PartitionKey);
                 var engagement = await _engagementManager.GetAsync(tableEvent.PartitionKey.To<int>());
+                if (engagement is null)
+                {
+                    _logger.LogError("Could not find the engagement for '{PartitionKey}'", tableEvent.PartitionKey);
+                    return null;
+                }
                 linkedInPostStatusForSqlTable = GetLinkedInPostLinkForEngagement(engagement);
                 break;
             case SourceSystems.Talks:
+                _logger.LogDebug("Getting the talk for '{PartitionKey}'", tableEvent.PartitionKey);
                 var talk = await _engagementManager.GetTalkAsync(tableEvent.PartitionKey.To<int>());
+                if (talk is null)
+                {
+                    _logger.LogError("Could not find the talk for '{PartitionKey}'", tableEvent.PartitionKey);
+                    return null;
+                }
                 linkedInPostStatusForSqlTable = GetLinkedInPostLinkForTalk(talk);
                 break;
                 
@@ -205,6 +218,7 @@ public class ProcessScheduledItemFired
     {
         if (talk is null)
         {
+            _logger.LogError("The talk was null");
             return null;
         }
         // TODO: Account for custom images for talk

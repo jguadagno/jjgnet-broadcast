@@ -28,7 +28,7 @@ public class SendTweet
             if (tweet is null)
             {
                 // Log the error
-                log.LogError($"Failed to send the tweet: '{tweetText}'. ", tweetText);
+                log.LogError("Failed to send the tweet: '{TweetText}'. ", tweetText);
             }
             else
             {
@@ -37,7 +37,7 @@ public class SendTweet
         }
         catch (Exception ex)
         {
-            log.LogError($"Failed to send the tweet: '{tweetText}'. Exception: '{ex.Message}'", ex, tweetText);
+            log.LogError("Failed to send the tweet: '{TweetText}'. Exception: '{ExceptionMessage}'", ex, tweetText, ex.Message);
         }
     }
 }
