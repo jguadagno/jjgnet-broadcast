@@ -74,6 +74,9 @@ public class ProcessScheduledItemFired
             return;
         }
         
+        _logger.LogDebug("Processing the event '{Id}' for '{TableName}', '{PartitionKey}', '{RowKey}'",
+            eventGridEvent.Id, tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
+        
         // Determine what type the post is for
         LinkedInPostLink linkedInPostLink;
         switch (tableEvent.TableName)
@@ -140,6 +143,7 @@ public class ProcessScheduledItemFired
     {
         if (tableEvent is null)
         {
+            _logger.LogError("The table event was null");
             return null;
         }
 
@@ -168,6 +172,7 @@ public class ProcessScheduledItemFired
         // TODO: Maybe handle timezone?
         if (engagement is null)
         {
+            _logger.LogError("The engagement was null");
             return null;
         }
         
