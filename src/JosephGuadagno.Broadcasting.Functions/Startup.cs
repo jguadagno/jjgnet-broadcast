@@ -199,10 +199,10 @@ public class Startup : FunctionsStartup
         
     private void ConfigureRepositories(IServiceCollection services)
     {
-        services.AddDbContext<BroadcastingContext>(ServiceLifetime.Scoped);
+        services.AddDbContext<BroadcastingContext>();
             
         // Engagements
-        services.TryAddSingleton<IEngagementDataStore>(s =>
+        services.TryAddScoped<IEngagementDataStore>(s =>
         {
             var databaseSettings = s.GetService<IDatabaseSettings>();
             if (databaseSettings is null)
@@ -211,7 +211,7 @@ public class Startup : FunctionsStartup
             }
             return new EngagementDataStore(databaseSettings);
         });
-        services.TryAddSingleton<IEngagementRepository>(s =>
+        services.TryAddScoped<IEngagementRepository>(s =>
         {
             var engagementDataStore = s.GetService<IEngagementDataStore>();
             if (engagementDataStore is null)
@@ -220,10 +220,10 @@ public class Startup : FunctionsStartup
             }
             return new Data.Repositories.EngagementRepository(engagementDataStore);
         });
-        services.TryAddSingleton<IEngagementManager, EngagementManager>();
+        services.TryAddScoped<IEngagementManager, EngagementManager>();
 
         // ScheduledItem
-        services.TryAddSingleton<IScheduledItemDataStore>(s =>
+        services.TryAddScoped<IScheduledItemDataStore>(s =>
         {
             var databaseSettings = s.GetService<IDatabaseSettings>();
             if (databaseSettings is null)
@@ -232,7 +232,7 @@ public class Startup : FunctionsStartup
             }
             return new ScheduledItemDataStore(databaseSettings);
         });
-        services.TryAddSingleton<IScheduledItemRepository>(s =>
+        services.TryAddScoped<IScheduledItemRepository>(s =>
         {
             var scheduledItemDataStore = s.GetService<IScheduledItemDataStore>();
             if (scheduledItemDataStore is null)
@@ -241,7 +241,7 @@ public class Startup : FunctionsStartup
             }
             return new ScheduledItemRepository(scheduledItemDataStore);
         });
-        services.TryAddSingleton<IScheduledItemManager, ScheduledItemManager>();
+        services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
     }
 
     private void ConfigureFunction(IFunctionsHostBuilder builder)
