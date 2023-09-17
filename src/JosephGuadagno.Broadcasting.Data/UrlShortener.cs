@@ -16,11 +16,6 @@ public class UrlShortener: IUrlShortener
         _logger = logger;
     }
 
-    public string GetShortenedUrl(string url, string domain)
-    {
-        return GetShortenedUrlAsync(url, domain).Result;
-    }
-
     public async Task<string> GetShortenedUrlAsync(string url, string domain)
     {
         if (string.IsNullOrEmpty(url))

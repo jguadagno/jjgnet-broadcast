@@ -19,11 +19,6 @@ public class EventPublisher: IEventPublisher
     {
         _logger = logger;
     }
-        
-    public bool PublishEvents(string topicUrl, string topicKey, string subject, IReadOnlyCollection<SourceData> sourceDataItems)
-    {
-        return PublishEventsAsync(topicUrl, topicKey, subject, sourceDataItems).Result;
-    }
 
     public async Task<bool> PublishEventsAsync(string topicUrl, string topicKey, string subject, IReadOnlyCollection<SourceData> sourceDataItems)
     {
@@ -82,12 +77,6 @@ public class EventPublisher: IEventPublisher
             _logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicUrl, e);   
             return false;
         }
-    }
-
-    public bool PublishEvents(string topicUrl, string topicKey, string subject,
-        IReadOnlyCollection<ScheduledItem> scheduledItems)
-    {
-        return PublishEventsAsync(topicUrl, topicKey, subject, scheduledItems).Result;
     }
 
     public async Task<bool> PublishEventsAsync(string topicUrl, string topicKey, string subject,
