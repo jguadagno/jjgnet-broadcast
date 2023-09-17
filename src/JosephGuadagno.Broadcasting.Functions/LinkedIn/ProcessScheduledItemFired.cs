@@ -171,7 +171,9 @@ public class ProcessScheduledItemFired
                 }
                 linkedInPostStatusForSqlTable = GetLinkedInPostLinkForTalk(talk);
                 break;
-                
+            default:
+                _logger.LogError("The table name '{TableName}' is not supported", tableEvent.TableName);
+                return null;
         }
 
         return linkedInPostStatusForSqlTable;
