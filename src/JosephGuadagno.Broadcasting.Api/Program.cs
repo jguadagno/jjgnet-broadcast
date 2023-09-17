@@ -150,10 +150,10 @@ void ConfigureApplication(IServiceCollection services)
 
 void ConfigureRepositories(IServiceCollection services)
 {
-    services.AddDbContext<BroadcastingContext>(ServiceLifetime.Scoped);
+    services.AddDbContext<BroadcastingContext>(ServiceLifetime.Transient);
             
     // Engagements
-    services.TryAddScoped<IEngagementDataStore>(s =>
+    services.TryAddTransient<IEngagementDataStore>(s =>
     {
         var databaseSettings = s.GetService<IDatabaseSettings>();
         if (databaseSettings is null)
@@ -162,7 +162,7 @@ void ConfigureRepositories(IServiceCollection services)
         }
         return new EngagementDataStore(databaseSettings);
     });
-    services.TryAddScoped<IEngagementRepository>(s =>
+    services.TryAddTransient<IEngagementRepository>(s =>
     {
         var engagementDataStore = s.GetService<IEngagementDataStore>();
         if (engagementDataStore is null)
@@ -171,10 +171,10 @@ void ConfigureRepositories(IServiceCollection services)
         }
         return new EngagementRepository(engagementDataStore);
     });
-    services.TryAddScoped<IEngagementManager, EngagementManager>();
+    services.TryAddTransient<IEngagementManager, EngagementManager>();
 
     // ScheduledItem
-    services.TryAddScoped<IScheduledItemDataStore>(s =>
+    services.TryAddTransient<IScheduledItemDataStore>(s =>
     {
         var databaseSettings = s.GetService<IDatabaseSettings>();
         if (databaseSettings is null)
@@ -183,7 +183,7 @@ void ConfigureRepositories(IServiceCollection services)
         }
         return new ScheduledItemDataStore(databaseSettings);
     });
-    services.TryAddScoped<IScheduledItemRepository>(s =>
+    services.TryAddTransient<IScheduledItemRepository>(s =>
     {
         var scheduledItemDataStore = s.GetService<IScheduledItemDataStore>();
         if (scheduledItemDataStore is null)
@@ -192,5 +192,5 @@ void ConfigureRepositories(IServiceCollection services)
         }
         return new ScheduledItemRepository(scheduledItemDataStore);
     });
-    services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
+    services.TryAddTransient<IScheduledItemManager, ScheduledItemManager>();
 }
