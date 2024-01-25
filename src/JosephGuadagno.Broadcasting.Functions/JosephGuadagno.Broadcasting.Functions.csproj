@@ -1,101 +1,95 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-        <AzureFunctionsVersion>v4</AzureFunctionsVersion>
-        <UserSecretsId>bba0c3bc-df5e-4c6c-a82c-ab974102a8a4</UserSecretsId>
-        <Company>JosephGuadagno.NET, LLC</Company>
-        <Authors>Joseph Guadagno</Authors>
-        <Product>JosephGuadagno.NET Broadcasting - Functions</Product>
-        <Description>The Azure functions for the JosephGuadagno.NET Broadcasting application</Description>
-        <Copyright>Copyright ©2014-2023, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
-        <Title>JosephGuadagno.NET Broadcasting - Azure Functions</Title>
-    </PropertyGroup>
-
-    <PropertyGroup>
-        <VersionMajor>1</VersionMajor>
-        <VersionMinor>4</VersionMinor>
-        <VersionBuild>0</VersionBuild>
-    </PropertyGroup>
-
-    <PropertyGroup>
-        <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
-    </PropertyGroup>
-    
-    <PropertyGroup>
-        <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' == '' ">local</VersionSuffix>
-        <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(GITHUB_RUN_ID)-preview</VersionSuffix>
-    </PropertyGroup>
-    
-    <PropertyGroup>
-        <AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
-        <AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</AssemblyVersion>
-    </PropertyGroup>
-    <PropertyGroup>
-        <AssemblyVersion>1.4.0</AssemblyVersion>
-        <FileVersion>1.4.0</FileVersion>
-        <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
-    </PropertyGroup>
-  
-    <ItemGroup>
-        <PackageReference Include="Azure.Data.Tables" Version="12.8.0" />
-        <PackageReference Include="JosephGuadagno.Extensions" Version="1.2.3" />
-        <PackageReference Include="Microsoft.ApplicationInsights" Version="2.21.0" />
-        <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.EventGrid" Version="3.3.0" />
-        <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Tables" Version="1.1.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="6.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="6.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.0" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
-        <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.5" />
-        <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
-        <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.1.3" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.4" />
-        <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.21.0" />
-        <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0" />
-        <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.2.0" />
-        <PackageReference Include="linqtotwitter" Version="6.15.0" />
-        <PackageReference Include="Serilog.AspNetCore" Version="6.1.0" />
-        <PackageReference Include="Serilog.Enrichers.AssemblyName" Version="1.0.9" />
-        <PackageReference Include="Serilog.Enrichers.Environment" Version="2.2.0" />
-        <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
-        <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
-        <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="4.0.0" />
-        <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="8.5.41" />
-        <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
-        <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
-        <PackageReference Include="System.Linq.Async" Version="6.0.1" />
-    </ItemGroup>
-    <ItemGroup>
-        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.Sql\JosephGuadagno.Broadcasting.Data.Sql.csproj" />
-        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj" />
-        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
-        <ProjectReference Include="..\JosephGuadagno.Broadcasting.JsonFeedReader\JosephGuadagno.Broadcasting.JsonFeedReader.csproj" />
-        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.LinkedIn\JosephGuadagno.Broadcasting.Managers.LinkedIn.csproj" />
-        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj" />
-        <ProjectReference Include="..\JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj" />
-        <ProjectReference Include="..\JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj" />
-    </ItemGroup>
-    <ItemGroup>
-        <None Update="local.settings.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-        </None>
-    </ItemGroup>
-    <ItemGroup>
-      <Content Include="host.prod.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-      <None Remove="nlog.config" />
-      <None Remove="host.json" />
-      <Content Include="host.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
-    <ItemGroup>
-      <Compile Remove="Progam.cs" />
-    </ItemGroup>
-
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <UserSecretsId>bba0c3bc-df5e-4c6c-a82c-ab974102a8a4</UserSecretsId>
+    <Company>JosephGuadagno.NET, LLC</Company>
+    <Authors>Joseph Guadagno</Authors>
+    <Product>JosephGuadagno.NET Broadcasting - Functions</Product>
+    <Description>The Azure functions for the JosephGuadagno.NET Broadcasting application</Description>
+    <Copyright>Copyright ©2014-2024, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+    <Title>JosephGuadagno.NET Broadcasting - Azure Functions</Title>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VersionMajor>1</VersionMajor>
+    <VersionMinor>5</VersionMinor>
+    <VersionBuild>0</VersionBuild>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' == '' ">local</VersionSuffix>
+    <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(GITHUB_RUN_ID)-preview</VersionSuffix>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
+    <AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</AssemblyVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyVersion>1.4.0</AssemblyVersion>
+    <FileVersion>1.4.0</FileVersion>
+    <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Azure.Data.Tables" Version="12.8.2" />
+    <PackageReference Include="JosephGuadagno.Extensions" Version="1.2.3" />
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.22.0" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.EventGrid" Version="3.3.1" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Tables" Version="1.2.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.5" />
+    <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.2.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.22.0" />
+    <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.2.0" />
+    <PackageReference Include="linqtotwitter" Version="6.15.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
+    <PackageReference Include="Serilog.Enrichers.AssemblyName" Version="1.0.9" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="2.3.0" />
+    <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
+    <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
+    <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="4.0.0" />
+    <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="9.2.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.Sql\JosephGuadagno.Broadcasting.Data.Sql.csproj" />
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj" />
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.JsonFeedReader\JosephGuadagno.Broadcasting.JsonFeedReader.csproj" />
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.LinkedIn\JosephGuadagno.Broadcasting.Managers.LinkedIn.csproj" />
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj" />
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj" />
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="host.prod.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Remove="nlog.config" />
+    <None Remove="host.json" />
+    <Content Include="host.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Progam.cs" />
+  </ItemGroup>
 </Project>
