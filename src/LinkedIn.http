@@ -118,11 +118,15 @@ X-Restli-Protocol-Version: 2.0.0
     }
 }
 
-### Authenication - Getting a refresh token
+### Authenication - Getting a new access token with refresh token
 POST https://www.linkedin.com/oauth/v2/accessToken
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=refresh_token&refresh_token={{my-access-token}}&client_id={{client-id}}&client_secret={{client-secret}}
+grant_type=refresh_token&refresh_token={{refresh-token}}&client_id={{client-id}}&client_secret={{client-secret}}
+
+
+### Authentication - Get a new access token and refresh token
+
 
 
 

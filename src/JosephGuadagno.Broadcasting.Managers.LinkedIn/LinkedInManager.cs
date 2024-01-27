@@ -254,7 +254,12 @@ public class LinkedInManager : ILinkedInManager
     private async Task<T> ExecuteGetAsync<T>(string url, string accessToken)
     {
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        _httpClient.DefaultRequestHeaders.Add ("Authorization", $"Bearer {accessToken}");
+        if (_httpClient.DefaultRequestHeaders.Authorization is not null)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = null;
+        }
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
         var response = await _httpClient.GetAsync(url);
         if (response.StatusCode != HttpStatusCode.OK)
             throw new HttpRequestException(
