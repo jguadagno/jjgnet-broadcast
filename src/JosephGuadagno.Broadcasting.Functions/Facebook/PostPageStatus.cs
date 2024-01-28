@@ -1,10 +1,8 @@
 using System;
-using System.Net.Http;
-using System.Text.Json;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
@@ -24,7 +22,7 @@ public class PostPageStatus
         _logger = logger;
     }
         
-    [FunctionName("facebook_post_status_to_page")]
+    [Function("facebook_post_status_to_page")]
     public async Task Run(
         [QueueTrigger(Constants.Queues.FacebookPostStatusToPage)]
         Domain.Models.Messages.FacebookPostStatus facebookPostStatus)

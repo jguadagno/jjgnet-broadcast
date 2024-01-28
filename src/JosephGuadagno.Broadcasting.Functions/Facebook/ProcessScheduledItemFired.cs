@@ -6,15 +6,14 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
-using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.EventGrid.Models;
-using Microsoft.Azure.WebJobs.Extensions.EventGrid;
 using Microsoft.Extensions.Logging;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Extensions.Types;
+using Microsoft.Azure.Functions.Worker;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
@@ -41,10 +40,10 @@ public class ProcessScheduledItemFired
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=facebook_process_scheduled_item_fired`
-    [FunctionName("facebook_process_scheduled_item_fired")]
-    public async Task RunAsync(
-        [EventGridTrigger] EventGridEvent eventGridEvent,
-        [Queue(Constants.Queues.FacebookPostStatusToPage)] ICollector<FacebookPostStatus> outboundMessages)
+    [Function("facebook_process_scheduled_item_fired")]
+    [QueueOutput(Constants.Queues.FacebookPostStatusToPage)] 
+    public async Task<FacebookPostStatus> RunAsync(
+        [EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.Now;
         _logger.LogDebug("Started {FunctionName} at {StartedOn:f}",
@@ -53,21 +52,21 @@ public class ProcessScheduledItemFired
         if (eventGridEvent.Data is null)
         {
             _logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
         
         var eventGridData = eventGridEvent.Data.ToString();
         if (eventGridData is null)
         {
             _logger.LogError("Failed to retrieve the value of the eventGrid for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
         
         var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
             _logger.LogError("Failed to parse the TableEvent data for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
         
         // Determine what type the post is for
@@ -88,12 +87,13 @@ public class ProcessScheduledItemFired
             _logger.LogDebug(
                 "Could not generate the Facebook post text for {TableName}, {PartitionKey}, {RowKey}",
                 tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
-            return;
+            return null;
         }
         
-        outboundMessages.Add(facebookPostStatus);
         _logger.LogDebug("Generated the Facebook post text for {TableName}, {PartitionKey}, {RowKey}",
             tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
+
+        return facebookPostStatus;
     }
     
     private async Task<FacebookPostStatus> GetFacebookPostStatusForSourceData(TableEvent tableEvent)

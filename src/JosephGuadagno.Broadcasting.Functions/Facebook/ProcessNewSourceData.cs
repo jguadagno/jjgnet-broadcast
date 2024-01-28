@@ -2,13 +2,12 @@ using System;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
-using Microsoft.Azure.EventGrid.Models;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.EventGrid;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
@@ -29,11 +28,10 @@ public class ProcessNewSourceData
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=facebook_process_new_source_data`
-    [FunctionName("facebook_process_new_source_data")]
-    public async Task RunAsync(
-        [EventGridTrigger()] EventGridEvent eventGridEvent,
-        [Queue(Constants.Queues.FacebookPostStatusToPage)] 
-        ICollector<FacebookPostStatus> outboundMessages)
+    [Function("facebook_process_new_source_data")]
+    [QueueOutput(Constants.Queues.FacebookPostStatusToPage)] 
+    public async Task<FacebookPostStatus> RunAsync(
+        [EventGridTrigger] EventGridEvent eventGridEvent)
     {
         
         var startedAt = DateTime.UtcNow;
@@ -44,21 +42,16 @@ public class ProcessNewSourceData
         if (eventGridEvent.Data is null)
         {
             _logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
 
         var eventGridData = eventGridEvent.Data.ToString();
-        if (eventGridData is null)
-        {
-            _logger.LogError("Failed to retrieve the value of the eventGrid for event '{Id}'", eventGridEvent.Id);
-            return;
-        }
-        
+
         var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
             _logger.LogError("Failed to parse the TableEvent data for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
 
         // Create the Facebook posts for it
@@ -68,19 +61,15 @@ public class ProcessNewSourceData
         if (sourceData == null)
         {
             _logger.LogWarning("Record for '{PartitionKey}', '{RowKey}' was NOT found", tableEvent.PartitionKey, tableEvent.RowKey);
-            return;
+            return null;
         }
             
         _logger.LogDebug("Composing Facebook status for '{PartitionKey}', '{RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
             
         var status = ComposeStatus(sourceData);
-        if (status != null)
-        {
-            outboundMessages.Add(status);
-        }
-            
         // Done
         _logger.LogDebug("Done composing Facebook status for '{PartitionKey}', '{RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
+        return status;
     }
         
     private FacebookPostStatus ComposeStatus(SourceData sourceData)

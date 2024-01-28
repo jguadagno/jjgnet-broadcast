@@ -8,7 +8,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using Microsoft.ApplicationInsights;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed;
@@ -43,7 +43,7 @@ public class CheckFeedForUpdates
         _telemetryClient = telemetryClient;
     }
         
-    [FunctionName("collectors_feed_check_for_updates")]
+    [Function("collectors_feed_check_for_updates")]
     public async Task RunAsync(
         [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer)
     {

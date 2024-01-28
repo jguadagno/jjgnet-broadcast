@@ -1,12 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Data.Tables;
 using JosephGuadagno.Broadcasting.Domain;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Maintenance;
@@ -21,14 +19,10 @@ public class ClearOldLogs
         _logger = logger;
     }
         
-    [FunctionName("maintenance_clear_old_logs")]
+    [Function("maintenance_clear_old_logs")]
     public async Task RunAsync(
-        #if DEBUG
-        [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer,
-        #else
-        [TimerTrigger("0 22 * * * 1")] TimerInfo myTimer,
-        #endif
-        [Table(Constants.Tables.Logging)] TableClient tableClient)
+        [TimerTrigger("%maintenance_clear_old_logs_cron_settings%")] TimerInfo myTimer,
+        [TableInput(Constants.Tables.Logging)] TableClient tableClient)
     {
         // 0 */2 * * * * - Every 2 minutes
         // 0 23 * * 0 - Run at 11pm on Sunday
@@ -65,7 +59,7 @@ public class ClearOldLogs
         }
         
         // Return
-        _logger.LogDebug("Delete {numberOfItemsDeleted} log messages, failed to delete {numberOfItemsDeletedFailed} log messages",
+        _logger.LogDebug("Delete {NumberOfItemsDeleted} log messages, failed to delete {NumberOfItemsDeletedFailed} log messages",
             numberOfItemsDeleted, numberOfItemsDeletedFailed);
     }
 }

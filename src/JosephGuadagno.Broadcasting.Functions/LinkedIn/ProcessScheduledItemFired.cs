@@ -5,10 +5,8 @@ using System;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Data.Repositories;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.EventGrid.Models;
-using Microsoft.Azure.WebJobs.Extensions.EventGrid;
 using Microsoft.Extensions.Logging;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -16,6 +14,7 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using JosephGuadagno.Extensions.Types;
+using Microsoft.Azure.Functions.Worker;
 
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
@@ -45,10 +44,10 @@ public class ProcessScheduledItemFired
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=linkedin_process_scheduled_item_fired`
-    [FunctionName("linkedin_process_scheduled_item_fired")]
-    public async Task RunAsync(
-        [EventGridTrigger] EventGridEvent eventGridEvent,
-        [Queue(Constants.Queues.LinkedInPostLink)] ICollector<LinkedInPostLink> outboundMessages)
+    [Function("linkedin_process_scheduled_item_fired")]
+    [QueueOutput(Constants.Queues.LinkedInPostLink)]
+    public async Task<LinkedInPostLink> RunAsync(
+        [EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.Now;
         _logger.LogDebug("Started {FunctionName} at {StartedOn:f}",
@@ -57,21 +56,15 @@ public class ProcessScheduledItemFired
         if (eventGridEvent.Data is null)
         {
             _logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
         
         var eventGridData = eventGridEvent.Data.ToString();
-        if (eventGridData is null)
-        {
-            _logger.LogError("Failed to retrieve the value of the eventGrid for event '{Id}'", eventGridEvent.Id);
-            return;
-        }
-        
         var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
             _logger.LogError("Failed to parse the TableEvent data for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
         
         _logger.LogDebug("Processing the event '{Id}' for '{TableName}', '{PartitionKey}', '{RowKey}'",
@@ -95,12 +88,12 @@ public class ProcessScheduledItemFired
             _logger.LogError(
                 "Could not generate the LinkedIn post link for {TableName}, {PartitionKey}, {RowKey}, linkedInPostLink was null",
                 tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
-            return;
+            return null;
         }
         
-        outboundMessages.Add(linkedInPostLink);
         _logger.LogDebug("Generated the LinkedIn post text for {TableName}, {PartitionKey}, {RowKey}",
             tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
+        return linkedInPostLink;
     }
     
     private async Task<LinkedInPostLink> GetLinkedInPostLinkForSourceData(TableEvent tableEvent)
@@ -148,7 +141,7 @@ public class ProcessScheduledItemFired
             return null;
         }
 
-        LinkedInPostLink linkedInPostStatusForSqlTable = null;
+        LinkedInPostLink linkedInPostStatusForSqlTable;
         switch (tableEvent.TableName)
         {
             case SourceSystems.Engagements:

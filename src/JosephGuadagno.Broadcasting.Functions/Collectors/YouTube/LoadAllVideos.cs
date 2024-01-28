@@ -7,8 +7,7 @@ using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube;
@@ -37,7 +36,7 @@ public class LoadAllVideos
         _telemetryClient = telemetryClient;
     }
 
-    [FunctionName("collectors_youtube_load_all_videos")]
+    [Function("collectors_youtube_load_all_videos")]
     public async Task<IActionResult> RunAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]
         Domain.Models.LoadJsonFeedItemsRequest requestModel,

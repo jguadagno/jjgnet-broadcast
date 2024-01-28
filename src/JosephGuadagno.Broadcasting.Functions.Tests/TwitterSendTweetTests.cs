@@ -43,6 +43,5 @@ public class TwitterSendTweetTests
         _logger.LogWarning("Warning Message");
         _logger.LogError("Error Message");
         _logger.LogCritical("Critical Message");
-        _logger.LogMetric("LoggerMessage", 1);
     }
 }

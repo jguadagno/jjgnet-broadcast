@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using LinqToTwitter;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
@@ -16,10 +16,9 @@ public class SendTweet
         _twitterContext = twitterContext;
     }
         
-    [FunctionName("twitter_send_tweet")]
+    [Function("twitter_send_tweet")]
     public async Task Run(
-        [QueueTrigger(Constants.Queues.TwitterTweetsToSend)]
-        string tweetText,
+        [QueueTrigger(Constants.Queues.TwitterTweetsToSend)] string tweetText,
         ILogger log)
     {
         try
@@ -37,7 +36,7 @@ public class SendTweet
         }
         catch (Exception ex)
         {
-            log.LogError("Failed to send the tweet: '{TweetText}'. Exception: '{ExceptionMessage}'", ex, tweetText, ex.Message);
+            log.LogError(ex, "Failed to send the tweet: '{TweetText}'. Exception: '{ExceptionMessage}'", tweetText, ex.Message);
         }
     }
 }

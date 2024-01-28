@@ -5,7 +5,7 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.ApplicationInsights;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Publishers;
@@ -34,7 +34,7 @@ public class ScheduledItems
         _telemetryClient = telemetryClient;
     }
     
-    [FunctionName("publishers_scheduled_items")]
+    [Function("publishers_scheduled_items")]
     public async Task RunAsync([TimerTrigger("0 */2 * * * *")] TimerInfo myTimer, ILogger log)
     {
         var startedAt = DateTime.UtcNow;

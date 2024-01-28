@@ -2,7 +2,7 @@
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
@@ -18,7 +18,7 @@ public class PostText
         _logger = logger;
     }
     
-    [FunctionName("linkedin_post_text")]
+    [Function("linkedin_post_text")]
     public async Task Run(
         [QueueTrigger(Constants.Queues.LinkedInPostText)]
         LinkedInPostText linkedInPostText)

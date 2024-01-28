@@ -8,7 +8,7 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using Microsoft.ApplicationInsights;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Publishers;
@@ -31,10 +31,10 @@ public class RandomPosts
         _telemetryClient = telemetryClient;
     }
         
-    [FunctionName("publishers_random_posts")]
-    public Task RunAsync(
-        [TimerTrigger("0 0 9,16 * * *")] TimerInfo myTimer,
-        [Queue(Constants.Queues.TwitterTweetsToSend)] ICollector<string> outboundMessages)
+    [Function("publishers_random_posts")]
+    [QueueOutput(Constants.Queues.TwitterTweetsToSend)]
+    public string Run(
+        [TimerTrigger("0 0 9,16 * * *")] TimerInfo myTimer)
     {
         // 0 */2 * * * *
         // 0 0 9,16 * * *
@@ -57,16 +57,13 @@ public class RandomPosts
         if (randomSyndicationItem == null)
         {
             _logger.LogDebug("Could not find a random post from feed since '{CutoffDate:u}'", cutoffDate);
-            return Task.CompletedTask;
+            return null;
         }
 
         // Build the tweet
         var hashtags = HashTagList(randomSyndicationItem.Categories);
         var status =
             $"ICYMI: ({randomSyndicationItem.PublishDate.Date.ToShortDateString()}): \"{randomSyndicationItem.Title.Text}.\" RTs and feedback are always appreciated! {randomSyndicationItem.Links[0].Uri} {hashtags}";
-            
-        // Post the message to the Queue
-        outboundMessages.Add(status);
             
         // Return
         _telemetryClient.TrackEvent(Constants.Metrics.RandomTweetSent, new Dictionary<string, string>
@@ -75,7 +72,7 @@ public class RandomPosts
             {"tweet", status}
         });
         _logger.LogDebug("Picked a random post {Title}", randomSyndicationItem.Title.Text);
-        return Task.CompletedTask;
+        return status;
     }
         
     private static string HashTagList(Collection<SyndicationCategory> categories)

@@ -6,8 +6,7 @@ using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.Azure.EventGrid.Models;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.EventGrid;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
@@ -28,10 +27,10 @@ public class ProcessNewSourceData
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=twitter_process_new_source_data`
-    [FunctionName("twitter_process_new_source_data")]
-    public async Task RunAsync(
-        [EventGridTrigger()] EventGridEvent eventGridEvent,
-        [Queue(Constants.Queues.TwitterTweetsToSend)] ICollector<string> outboundMessages)
+    [Function("twitter_process_new_source_data")]
+    [QueueOutput(Constants.Queues.TwitterTweetsToSend)] 
+    public async Task<string> RunAsync(
+        [EventGridTrigger()] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -41,21 +40,21 @@ public class ProcessNewSourceData
         if (eventGridEvent.Data is null)
         {
             _logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
 
         var eventGridData = eventGridEvent.Data.ToString();
         if (eventGridData is null)
         {
             _logger.LogError("Failed to retrieve the value of the eventGrid for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
         
         var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
             _logger.LogError("Failed to parse the TableEvent data for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
 
         // Create the scheduled tweets for it
@@ -67,21 +66,18 @@ public class ProcessNewSourceData
         {
             _logger.LogWarning("Record for '{PartitionKey}', '{RowKey}' was NOT found",
                 tableEvent.PartitionKey, tableEvent.RowKey);
-            return;
+            return null;
         }
 
         _logger.LogDebug("Composing tweet for '{PartitionKey}', '{RowKey}'",
             tableEvent.PartitionKey, tableEvent.RowKey);
             
         var tweet = ComposeTweet(sourceData);
-        if (!string.IsNullOrEmpty(tweet))
-        {
-            outboundMessages.Add(tweet);
-        }
-            
+           
         // Done
         _logger.LogDebug("Done composing tweet for '{PartitionKey}', '{RowKey}'",
             tableEvent.PartitionKey, tableEvent.RowKey);
+        return tweet;
     }
         
     private string ComposeTweet(SourceData item)

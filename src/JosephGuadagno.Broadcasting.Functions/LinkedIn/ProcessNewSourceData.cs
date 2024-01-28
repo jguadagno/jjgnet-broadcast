@@ -8,8 +8,7 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Azure.EventGrid.Models;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.EventGrid;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
@@ -32,13 +31,11 @@ public class ProcessNewSourceData
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=facebook_process_new_source_data`
-    [FunctionName("linkedin_process_new_source_data")]
-    public async Task RunAsync(
-        [EventGridTrigger()] EventGridEvent eventGridEvent,
-        [Queue(Constants.Queues.LinkedInPostLink)] 
-        ICollector<LinkedInPostLink> outboundMessages)
+    [Function("linkedin_process_new_source_data")]
+    [QueueOutput(Constants.Queues.LinkedInPostLink)]
+    public async Task<LinkedInPostLink> RunAsync(
+        [EventGridTrigger()] EventGridEvent eventGridEvent)
     {
-        
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             Constants.ConfigurationFunctionNames.LinkedInProcessNewSourceData, startedAt);
@@ -47,21 +44,21 @@ public class ProcessNewSourceData
         if (eventGridEvent.Data is null)
         {
             _logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
 
         var eventGridData = eventGridEvent.Data.ToString();
         if (eventGridData is null)
         {
             _logger.LogError("Failed to retrieve the value of the eventGrid for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
         
         var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
             _logger.LogError("Failed to parse the TableEvent data for event '{Id}'", eventGridEvent.Id);
-            return;
+            return null;
         }
 
         // Create the LinkedIn posts for it
@@ -71,19 +68,15 @@ public class ProcessNewSourceData
         if (sourceData == null)
         {
             _logger.LogWarning("Record for '{PartitionKey}', '{RowKey}' was NOT found", tableEvent.PartitionKey, tableEvent.RowKey);
-            return;
+            return null;
         }
             
         _logger.LogDebug("Composing LinkedIn status for '{PartitionKey}', '{RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
             
         var status = ComposeStatus(sourceData);
-        if (status != null)
-        {
-            outboundMessages.Add(status);
-        }
-            
         // Done
         _logger.LogDebug("Done composing LinkedIn status for '{PartitionKey}', '{RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
+        return status;
     }
     
     private LinkedInPostLink ComposeStatus(SourceData sourceData)

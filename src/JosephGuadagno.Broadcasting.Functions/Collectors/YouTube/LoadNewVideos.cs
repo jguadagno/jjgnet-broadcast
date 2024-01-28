@@ -8,7 +8,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using Microsoft.ApplicationInsights;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube;
@@ -43,7 +43,7 @@ public class LoadNewVideos
         _telemetryClient = telemetryClient;
     }
         
-    [FunctionName("collectors_youtube_load_new_videos")]
+    [Function("collectors_youtube_load_new_videos")]
     public async Task RunAsync(
         [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer)
     {

@@ -7,8 +7,7 @@ using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
 using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed;
@@ -37,7 +36,7 @@ public class LoadAllPosts
         _telemetryClient = telemetryClient;
     }
 
-    [FunctionName("collectors_feed_load_all_posts")]
+    [Function("collectors_feed_load_all_posts")]
     public async Task<IActionResult> RunAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]
         Domain.Models.LoadJsonFeedItemsRequest requestModel,
