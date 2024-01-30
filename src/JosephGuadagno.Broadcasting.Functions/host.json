@@ -1,18 +1,22 @@
 {
-    "version": "2.0",
-    "logging": {
-        "applicationInsights": {
-            "samplingSettings": {
-                "isEnabled": false,
-                "samplingExcludedTypes": "Request"
-            }
-        },
-        "logLevel": {
-            "default": "Debug",
-            "System": "Information",
-            "Microsoft": "Information",
-            "JosephGuadagno": "Debug",
-            "Azure.Core": "Error"
-        }
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "FUNCTIONS_EXTENSION_VERSION": "~4"
+  },
+  "version": "2.0",
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": false,
+        "samplingExcludedTypes": "Request"
+      }
+    },
+    "logLevel": {
+      "default": "Debug",
+      "System": "Information",
+      "Microsoft": "Information",
+      "JosephGuadagno": "Debug",
+      "Azure.Core": "Error"
     }
+  }
 }

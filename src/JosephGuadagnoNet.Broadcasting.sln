@@ -1,5 +1,7 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34518.117
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.Domain", "JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj", "{5B756462-15B1-43FB-BFB0-26B945FFD454}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.Data", "JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj", "{838E1AC2-C3E6-4BCA-A6A9-28888DFD2A33}"
@@ -7,21 +9,21 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.SyndicationFeedReader", "JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj", "{E5D03375-97E6-4236-BE64-785C99A65F56}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", "{CA7CFF1F-4DB2-4B9A-BB46-5D922C457D29}"
-ProjectSection(SolutionItems) = preProject
-	..\infrastructure-needs.md = ..\infrastructure-needs.md
-	..\README.md = ..\README.md
-	..\.github\workflows\publish-to-azure-function.yml = ..\.github\workflows\publish-to-azure-function.yml
-	..\scripts\database-create.sql = ..\scripts\database-create.sql
-	..\scripts\table-create.sql = ..\scripts\table-create.sql
-	..\.gitignore = ..\.gitignore
-	..\.github\workflows\publish-api-to-azure.yml = ..\.github\workflows\publish-api-to-azure.yml
-	..\.github\workflows\publish-web-app-to-azure.yml = ..\.github\workflows\publish-web-app-to-azure.yml
-	install-libman.ps1 = install-libman.ps1
-	libman-restore.ps1 = libman-restore.ps1
-	..\developer-getting-started.md = ..\developer-getting-started.md
-	facebook-access-tokens.http = facebook-access-tokens.http
-	LinkedIn.http = LinkedIn.http
-EndProjectSection
+	ProjectSection(SolutionItems) = preProject
+		..\.gitignore = ..\.gitignore
+		..\scripts\database-create.sql = ..\scripts\database-create.sql
+		..\developer-getting-started.md = ..\developer-getting-started.md
+		facebook-access-tokens.http = facebook-access-tokens.http
+		..\infrastructure-needs.md = ..\infrastructure-needs.md
+		install-libman.ps1 = install-libman.ps1
+		libman-restore.ps1 = libman-restore.ps1
+		LinkedIn.http = LinkedIn.http
+		..\.github\workflows\publish-api-to-azure.yml = ..\.github\workflows\publish-api-to-azure.yml
+		..\.github\workflows\publish-to-azure-function.yml = ..\.github\workflows\publish-to-azure-function.yml
+		..\.github\workflows\publish-web-app-to-azure.yml = ..\.github\workflows\publish-web-app-to-azure.yml
+		..\README.md = ..\README.md
+		..\scripts\table-create.sql = ..\scripts\table-create.sql
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.Functions", "JosephGuadagno.Broadcasting.Functions\JosephGuadagno.Broadcasting.Functions.csproj", "{3982BC47-81CD-4D61-82D6-17749CB36032}"
 EndProject
@@ -96,7 +98,6 @@ Global
 		{484611B0-CB3F-4CFF-8B80-A78A31775FA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{484611B0-CB3F-4CFF-8B80-A78A31775FA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{484611B0-CB3F-4CFF-8B80-A78A31775FA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{484611B0-CB3F-4CFF-8B80-A78A31775FA7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -125,5 +126,11 @@ Global
 		{E7360F64-98CB-4A31-8870-B4CB6BA06F03}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E7360F64-98CB-4A31-8870-B4CB6BA06F03}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E7360F64-98CB-4A31-8870-B4CB6BA06F03}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2AE5E501-D335-4D3F-9431-F8EFC70886E2}
 	EndGlobalSection
 EndGlobal

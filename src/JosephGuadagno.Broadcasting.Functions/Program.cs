@@ -30,11 +30,14 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Exceptions;
+using Microsoft.Azure.Functions.Worker;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults()
     .ConfigureServices((hostContext, services) =>
     {
+        services.AddApplicationInsightsTelemetryWorkerService();
+        services.ConfigureFunctionsApplicationInsights();
         var currentDirectory = hostContext.HostingEnvironment.ContentRootPath;
         
         // Setup the Configuration Source
