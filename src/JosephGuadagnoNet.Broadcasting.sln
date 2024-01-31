@@ -25,8 +25,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 		..\scripts\table-create.sql = ..\scripts\table-create.sql
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.Functions", "JosephGuadagno.Broadcasting.Functions\JosephGuadagno.Broadcasting.Functions.csproj", "{3982BC47-81CD-4D61-82D6-17749CB36032}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.JsonFeedReader", "JosephGuadagno.Broadcasting.JsonFeedReader\JosephGuadagno.Broadcasting.JsonFeedReader.csproj", "{1D657E6A-948D-4884-B6BD-76BA346F93FF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.YouTubeReader", "JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj", "{C7A60E25-3A0F-48BB-97B3-5A4BBD187F0D}"
@@ -53,6 +51,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.Managers.LinkedIn.Tests", "JosephGuadagno.Broadcasting.Managers.LinkedIn.Tests\JosephGuadagno.Broadcasting.Managers.LinkedIn.Tests.csproj", "{E7360F64-98CB-4A31-8870-B4CB6BA06F03}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Functions", "JosephGuadagno.Broadcasting.Functions\JosephGuadagno.Broadcasting.Functions.csproj", "{750071DA-73A8-4E7C-9B0D-CC66D88B73E2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,10 +71,6 @@ Global
 		{E5D03375-97E6-4236-BE64-785C99A65F56}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E5D03375-97E6-4236-BE64-785C99A65F56}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E5D03375-97E6-4236-BE64-785C99A65F56}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3982BC47-81CD-4D61-82D6-17749CB36032}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3982BC47-81CD-4D61-82D6-17749CB36032}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3982BC47-81CD-4D61-82D6-17749CB36032}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3982BC47-81CD-4D61-82D6-17749CB36032}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1D657E6A-948D-4884-B6BD-76BA346F93FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1D657E6A-948D-4884-B6BD-76BA346F93FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1D657E6A-948D-4884-B6BD-76BA346F93FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -126,6 +122,10 @@ Global
 		{E7360F64-98CB-4A31-8870-B4CB6BA06F03}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E7360F64-98CB-4A31-8870-B4CB6BA06F03}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E7360F64-98CB-4A31-8870-B4CB6BA06F03}.Release|Any CPU.Build.0 = Release|Any CPU
+		{750071DA-73A8-4E7C-9B0D-CC66D88B73E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{750071DA-73A8-4E7C-9B0D-CC66D88B73E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{750071DA-73A8-4E7C-9B0D-CC66D88B73E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{750071DA-73A8-4E7C-9B0D-CC66D88B73E2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
