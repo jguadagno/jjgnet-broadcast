@@ -1,6 +1,5 @@
 {
-   
-    "IsEncrypted": false,
+  "IsEncrypted": false,
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "APPLICATIONINSIGHTS_CONNECTION_STRING": "InstrumentationKey=c2f97275-e157-434a-981b-051a4e897744;IngestionEndpoint=https://westus2-0.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/",
@@ -26,50 +25,50 @@
     "AzureWebJobs.linkedin_process_scheduled_item_fired.Disabled": false,
     "AzureWebJobs.maintenance_clear_old_jobs.Disabled": true
   },
-    "Settings": {
-        "StorageAccount": "UseDevelopmentStorage=true",
-        "TwitterApiKey": "",
-        "TwitterApiSecret": "",
-        "TwitterAccessToken": "",
-        "TwitterAccessTokenSecret": "",
-        "BitlyToken": "",
-        "BitlyAPIRootUri": "https://api-ssl.bitly.com/v4/",
-        "BitlyShortenedDomain": "jjg.me",
-        "TopicNewSourceDataEndpoint": "",
-        "TopicNewSourceDataKey": "",
-        "TopicScheduledItemFiredDataEndpoint": "",
-        "TopicScheduledItemFiredDataKey": "",
-        "FacebookPageId": "",
-        "FacebookPageAccessToken": "",
-        "JJGNetDatabaseSqlServer": "Set in User Secrets",
-        "SyndicationFeedReader": {
-            "FeedUrl": "https://www.josephguadagno.net/feed.xml"
-        },
-        "JsonFeedReader": {
-            "FeedUrl": "http://localhost:4000/feed.json"
-        },
-        "YouTube": {
-            "ApiKey": "",
-            "ChannelId": "",
-            "PlaylistId": "",
-            "ResultSetPageSize": 10
-        },
-        "RandomPost": {
-            "ExcludedCategories": [
-                "books",
-                "book reviews",
-                "news",
-                "arizona technology news",
-                "technology news",
-                "archive"
-            ],
-            "CutoffDate": "2019-01-01"
-        }, 
-        "LinkedIn": {
-            "ClientId": "",
-            "ClientSecret": "",
-            "AccessToken": "",
-            "AuthorId": ""
-        }
+  "Settings": {
+    "StorageAccount": "UseDevelopmentStorage=true",
+    "TwitterApiKey": "",
+    "TwitterApiSecret": "",
+    "TwitterAccessToken": "",
+    "TwitterAccessTokenSecret": "",
+    "BitlyToken": "",
+    "BitlyAPIRootUri": "https://api-ssl.bitly.com/v4/",
+    "BitlyShortenedDomain": "jjg.me",
+    "TopicNewSourceDataEndpoint": "",
+    "TopicNewSourceDataKey": "",
+    "TopicScheduledItemFiredDataEndpoint": "",
+    "TopicScheduledItemFiredDataKey": "",
+    "FacebookPageId": "",
+    "FacebookPageAccessToken": "",
+    "JJGNetDatabaseSqlServer": "Set in User Secrets",
+    "SyndicationFeedReader": {
+      "FeedUrl": "https://www.josephguadagno.net/feed.xml"
+    },
+    "JsonFeedReader": {
+      "FeedUrl": "http://localhost:4000/feed.json"
+    },
+    "YouTube": {
+      "ApiKey": "",
+      "ChannelId": "",
+      "PlaylistId": "",
+      "ResultSetPageSize": 10
+    },
+    "RandomPost": {
+      "ExcludedCategories": [
+        "books",
+        "book reviews",
+        "news",
+        "arizona technology news",
+        "technology news",
+        "archive"
+      ],
+      "CutoffDate": "2019-01-01"
+    },
+    "LinkedIn": {
+      "ClientId": "",
+      "ClientSecret": "",
+      "AccessToken": "",
+      "AuthorId": ""
     }
+  }
 }
