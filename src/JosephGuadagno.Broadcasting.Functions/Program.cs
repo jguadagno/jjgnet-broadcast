@@ -32,23 +32,25 @@ using Serilog;
 using Serilog.Exceptions;
 using Microsoft.Azure.Functions.Worker;
 
+var currentDirectory = Directory.GetCurrentDirectory();
+
 var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults()
-    .ConfigureServices((hostContext, services) =>
+    .ConfigureAppConfiguration(config =>
+    {
+        // Setup the Configuration Source
+        config.SetBasePath(currentDirectory)
+            .AddJsonFile("local.settings.json", true)
+            .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
+            .AddEnvironmentVariables();
+    })
+    .ConfigureServices(services =>
     {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
-        var currentDirectory = hostContext.HostingEnvironment.ContentRootPath;
-        
-        // Setup the Configuration Source
-        var config = new ConfigurationBuilder()
-            .SetBasePath(currentDirectory)
-            .AddJsonFile("local.settings.json", true)
-            .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
-            .AddEnvironmentVariables()
-            .Build();
-        services.AddSingleton<IConfiguration>(config);
 
+        var config = services.BuildServiceProvider().GetService<IConfiguration>();
+        
         // Bind the 'Settings' section to the ISettings class
         var settings = new JosephGuadagno.Broadcasting.Domain.Models.Settings();
         config.Bind("Settings", settings);
@@ -78,7 +80,7 @@ var host = new HostBuilder()
 
 host.Run();
 
-void ConfigureLogging(IConfigurationRoot configurationRoot, IServiceCollection services, ISettings settings, string logPath, string applicationName)
+void ConfigureLogging(IConfiguration configurationRoot, IServiceCollection services, ISettings settings, string logPath, string applicationName)
 {
     var logger = new LoggerConfiguration()
         #if DEBUG
