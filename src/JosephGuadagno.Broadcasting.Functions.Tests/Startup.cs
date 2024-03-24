@@ -133,6 +133,10 @@ public class Startup
         {
             var settings = new JsonFeedReaderSettings();
             var configuration = s.GetService<IConfiguration>();
+            if (configuration is null)
+            {
+                throw new ApplicationException("Failed to get the configuration from the ServiceCollection");
+            }
             configuration.Bind("Settings:JsonFeedReader", settings);
             return settings;
         });
@@ -145,6 +149,10 @@ public class Startup
         {
             var settings = new SyndicationFeedReaderSettings();
             var configuration = s.GetService<IConfiguration>();
+            if (configuration is null)
+            {
+                throw new ApplicationException("Failed to get the configuration from the ServiceCollection");
+            }
             configuration.Bind("Settings:SyndicationFeedReader", settings);
             return settings;
         });
@@ -158,6 +166,10 @@ public class Startup
         {
             var settings = new YouTubeSettings();
             var configuration = s.GetService<IConfiguration>();
+            if (configuration is null)
+            {
+                throw new ApplicationException("Failed to get the configuration from the ServiceCollection");
+            }
             configuration.Bind("Settings:YouTube", settings);
             return settings;
         });
