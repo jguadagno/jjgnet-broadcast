@@ -59,7 +59,7 @@ var host = new HostBuilder()
         services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
             { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
 
-        var randomPostSettings = new JosephGuadagno.Broadcasting.Domain.Models.RandomPostSettings();
+        var randomPostSettings = new RandomPostSettings();
         config.Bind("Settings:RandomPost", randomPostSettings);
         services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
     
