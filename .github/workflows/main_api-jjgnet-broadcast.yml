@@ -23,16 +23,16 @@ jobs:
           include-prerelease: true
 
       - name: Build with dotnet
-        run: dotnet build --configuration Release
+        run: dotnet build ./src/JosephGuadagno.Broadcasting.Api --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+        run: dotnet publish ./src/JosephGuadagno.Broadcasting.Api -c Release -o ${{env.DOTNET_ROOT}}/api-jjgnet-broadcast
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v3
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: .api-app
+          path: ${{env.DOTNET_ROOT}}/api-jjgnet-broadcast
 
   deploy:
     runs-on: ubuntu-latest
@@ -47,7 +47,7 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v3
         with:
-          name: .net-app
+          name: .api-app
       
       - name: Login to Azure
         uses: azure/login@v1
