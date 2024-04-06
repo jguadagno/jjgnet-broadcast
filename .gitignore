@@ -723,6 +723,7 @@ shutdown.ps1
 startup.ps1
 **/logs/
 *.private.env.json
+*.config.json
 
 # Draw.IO backup files
 **/*.drawio.*.bkp
