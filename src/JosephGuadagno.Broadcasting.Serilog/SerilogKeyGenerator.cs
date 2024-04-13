@@ -1,7 +1,7 @@
 using Serilog.Events;
 using Serilog.Sinks.AzureTableStorage;
 
-namespace JosephGuadagno.Broadcasting.Functions;
+namespace JosephGuadagno.Broadcasting.Serilog;
 
 public class SerilogKeyGenerator : IKeyGenerator
 {

@@ -29,7 +29,7 @@
     <PackageReference Include="Serilog.Enrichers.AssemblyName" Version="2.0.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="2.3.0" />
     <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="4.0.0" />
-    <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="9.4.1" />
+    <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="9.5.0" />
     <PackageReference Include="xunit" Version="2.7.0" />
     <PackageReference Include="Xunit.DependencyInjection" Version="9.1.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.7">

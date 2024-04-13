@@ -53,6 +53,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Functions", "JosephGuadagno.Broadcasting.Functions\JosephGuadagno.Broadcasting.Functions.csproj", "{750071DA-73A8-4E7C-9B0D-CC66D88B73E2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Serilog", "JosephGuadagno.Broadcasting.Serilog\JosephGuadagno.Broadcasting.Serilog.csproj", "{F9682666-4498-4952-99C9-E5A7B45B7181}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -126,6 +128,10 @@ Global
 		{750071DA-73A8-4E7C-9B0D-CC66D88B73E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{750071DA-73A8-4E7C-9B0D-CC66D88B73E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{750071DA-73A8-4E7C-9B0D-CC66D88B73E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9682666-4498-4952-99C9-E5A7B45B7181}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9682666-4498-4952-99C9-E5A7B45B7181}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9682666-4498-4952-99C9-E5A7B45B7181}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9682666-4498-4952-99C9-E5A7B45B7181}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
