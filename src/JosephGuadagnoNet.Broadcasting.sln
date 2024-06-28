@@ -56,6 +56,7 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.Facebook", "JosephGuadagno.Broadcasting.Managers.Facebook\JosephGuadagno.Broadcasting.Managers.Facebook.csproj", "{7CF4258F-30C0-462C-B728-2192E8012D1C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.Facebook.Tests", "JosephGuadagno.Broadcasting.Managers.Facebook.Tests\JosephGuadagno.Broadcasting.Managers.Facebook.Tests.csproj", "{8238EB4D-941D-47DB-801D-217DEDB243DB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Serilog", "JosephGuadagno.Broadcasting.Serilog\JosephGuadagno.Broadcasting.Serilog.csproj", "{F9682666-4498-4952-99C9-E5A7B45B7181}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -138,6 +139,10 @@ Global
 		{8238EB4D-941D-47DB-801D-217DEDB243DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8238EB4D-941D-47DB-801D-217DEDB243DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8238EB4D-941D-47DB-801D-217DEDB243DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9682666-4498-4952-99C9-E5A7B45B7181}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9682666-4498-4952-99C9-E5A7B45B7181}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9682666-4498-4952-99C9-E5A7B45B7181}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9682666-4498-4952-99C9-E5A7B45B7181}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

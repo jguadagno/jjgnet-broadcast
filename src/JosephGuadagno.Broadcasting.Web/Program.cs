@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.Broadcasting.Web;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
@@ -94,7 +95,7 @@ void ConfigureLogging(IConfigurationRoot configurationRoot, IServiceCollection s
         .Destructure.ToMaximumCollectionCount(10)
         .WriteTo.Console()
         .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-        .WriteTo.AzureTableStorage(configSettings.StorageAccount, storageTableName:"Logging")
+        .WriteTo.AzureTableStorage(configSettings.StorageAccount, storageTableName:"Logging", keyGenerator: new SerilogKeyGenerator())
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {
