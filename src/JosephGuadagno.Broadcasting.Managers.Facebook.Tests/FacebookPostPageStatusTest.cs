@@ -1,24 +1,19 @@
-﻿using System;
-using System.Threading.Tasks;
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
+﻿using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using Microsoft.Extensions.Logging;
-using Xunit;
 using Xunit.Abstractions;
 
-namespace JosephGuadagno.Broadcasting.Functions.Tests;
+namespace JosephGuadagno.Broadcasting.Managers.Facebook.Tests;
 
 public class FacebookPostPageStatusTest
 {
     private readonly IFacebookManager _facebookManager;
-    private readonly ISettings _settings;
     private readonly ITestOutputHelper _testOutputHelper;    
     private readonly ILogger<FacebookPostPageStatusTest> _logger;
     
 
-    public FacebookPostPageStatusTest(IFacebookManager facebookManager, ISettings settings, ITestOutputHelper testOutputHelper, ILogger<FacebookPostPageStatusTest> logger)
+    public FacebookPostPageStatusTest(IFacebookManager facebookManager, ITestOutputHelper testOutputHelper, ILogger<FacebookPostPageStatusTest> logger)
     {
         _facebookManager = facebookManager;
-        _settings = settings;
         _testOutputHelper = testOutputHelper;
         _logger = logger;
     }
@@ -31,8 +26,7 @@ public class FacebookPostPageStatusTest
         var link = "https://josephguadagno.net";
         
         // Act
-        var pageId = await _facebookManager.PostMessageAndLinkToPage(_settings.FacebookPageId, message, link,
-            _settings.FacebookPageAccessToken);
+        var pageId = await _facebookManager.PostMessageAndLinkToPage(message, link);
 
         // Assert
         Assert.False(string.IsNullOrEmpty(pageId));
@@ -47,8 +41,7 @@ public class FacebookPostPageStatusTest
         var link = "https://josephguadagno.net/2020/09/06/dependency-injection-with-azure-functions/";
         
         // Act
-        var pageId = await _facebookManager.PostMessageAndLinkToPage(_settings.FacebookPageId, message, link,
-            _settings.FacebookPageAccessToken);
+        var pageId = await _facebookManager.PostMessageAndLinkToPage(message, link);
 
         // Assert
         Assert.False(string.IsNullOrEmpty(pageId));
@@ -56,15 +49,30 @@ public class FacebookPostPageStatusTest
     }
 
     [Fact]
-    public async Task PostMessageAndLinkToPage_WithBadParameters_ShouldThrowException()
+    public async Task PostMessageAndLinkToPage_WithMessageEmpty_ShouldThrowException()
     {
         // Arrange
-        var message = "Test Message";
+        var message = string.Empty;
         var link = "https://josephguadagno.net";
         
         // Act
         var exception = await Assert.ThrowsAsync<ApplicationException>(() =>
-            _facebookManager.PostMessageAndLinkToPage(_settings.FacebookPageId, message, link, "bad-access-token"));
+            _facebookManager.PostMessageAndLinkToPage(message, link));
+
+        // Assert
+        Assert.StartsWith("Failed to post status. ", exception.Message);
+    }
+    
+    [Fact]
+    public async Task PostMessageAndLinkToPage_WithLinkEmpty_ShouldThrowException()
+    {
+        // Arrange
+        var message = "Test Message";
+        var link = string.Empty;
+        
+        // Act
+        var exception = await Assert.ThrowsAsync<ApplicationException>(() =>
+            _facebookManager.PostMessageAndLinkToPage(message, link));
 
         // Assert
         Assert.StartsWith("Failed to post status. ", exception.Message);

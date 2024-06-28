@@ -12,6 +12,9 @@ using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Models;
 using JosephGuadagno.Broadcasting.Managers;
+using JosephGuadagno.Broadcasting.Managers.Facebook;
+using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
+using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using JosephGuadagno.Broadcasting.Serilog;
@@ -73,6 +76,7 @@ var host = new HostBuilder()
         ConfigureSyndicationFeedReader(services);
         ConfigureYouTubeReader(services);
         ConfigureLinkedInManager(services);
+        ConfigureFacebookManager(services);
         ConfigureFunction(services);
     })
 
@@ -193,6 +197,18 @@ void ConfigureLinkedInManager(IServiceCollection services)
     });
     services.TryAddSingleton<ILinkedInManager, LinkedInManager>();
 }
+
+void ConfigureFacebookManager(IServiceCollection services)
+{
+    services.TryAddSingleton<IFacebookApplicationSettings>(s =>
+    {
+        var settings = new FacebookApplicationSettings();
+        var configuration = s.GetService<IConfiguration>();
+        configuration.Bind("Settings:Facebook", settings);
+        return settings;
+    });
+    services.TryAddSingleton<IFacebookManager, FacebookManager>();
+}
     
 void ConfigureRepositories(IServiceCollection services)
 {
@@ -281,7 +297,6 @@ void ConfigureFunction(IServiceCollection services)
     });
     services.TryAddSingleton<IUrlShortener, UrlShortener>();
     services.TryAddSingleton<IEventPublisher, EventPublisher>();
-    services.TryAddSingleton<IFacebookManager, FacebookManager>();
     
     ConfigureRepositories(services);
 }
