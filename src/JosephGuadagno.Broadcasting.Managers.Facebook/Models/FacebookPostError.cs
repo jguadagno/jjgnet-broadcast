@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace JosephGuadagno.Broadcasting.Managers.Models.Facebook;
+namespace JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 
 class FacebookPostError
 {

@@ -281,7 +281,6 @@ public class Startup
         });
         services.TryAddSingleton<IUrlShortener, UrlShortener>();
         services.TryAddSingleton<IEventPublisher, EventPublisher>();
-        services.TryAddSingleton<IFacebookManager, FacebookManager>();
             
         ConfigureRepositories(services);
     }

@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -9,16 +10,12 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
 public class PostPageStatus
 {
-    private readonly ISettings _settings;
     private readonly IFacebookManager _facebookManager;
     private readonly ILogger<PostPageStatus> _logger;
 
-    private const string StatusUrl = "https://graph.facebook.com/{page_id}/feed?message={message}&link={link}&access_token={access_token}";
-
-    public PostPageStatus(IFacebookManager facebookManager, ISettings settings, ILogger<PostPageStatus> logger)
+    public PostPageStatus(IFacebookManager facebookManager, ILogger<PostPageStatus> logger)
     {
         _facebookManager = facebookManager;
-        _settings = settings;
         _logger = logger;
     }
         
@@ -33,7 +30,7 @@ public class PostPageStatus
 
         try
         {
-            var pageId = await _facebookManager.PostMessageAndLinkToPage(_settings.FacebookPageId, facebookPostStatus.StatusText, facebookPostStatus.LinkUri, _settings.FacebookPageAccessToken);
+            var pageId = await _facebookManager.PostMessageAndLinkToPage(facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
         }
         catch (Exception e)
         {

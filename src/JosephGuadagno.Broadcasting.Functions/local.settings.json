@@ -38,8 +38,6 @@
     "TopicNewSourceDataKey": "",
     "TopicScheduledItemFiredDataEndpoint": "",
     "TopicScheduledItemFiredDataKey": "",
-    "FacebookPageId": "",
-    "FacebookPageAccessToken": "",
     "JJGNetDatabaseSqlServer": "Set in User Secrets",
     "SyndicationFeedReader": {
       "FeedUrl": "https://www.josephguadagno.net/feed.xml"
@@ -63,6 +61,17 @@
         "archive"
       ],
       "CutoffDate": "2019-01-01"
+    },
+    "Facebook": {
+      "PageId": "",
+      "PageAccessToken": "",
+      "AppId": "",
+      "AppSecret": "",
+      "ClientToken": "",
+      "ShortLivedAccessToken": "",
+      "LongLivedAccessToken": "",
+      "GraphApiVersion": "v20.0",
+      "GraphApiRootUri": "https://graph.facebook.com/"
     },
     "LinkedIn": {
       "ClientId": "",

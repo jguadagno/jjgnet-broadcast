@@ -1,32 +1,37 @@
-﻿using System;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading.Tasks;
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Managers.Models.Facebook;
+﻿using System.Text.Json;
+using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
+using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 using Microsoft.Extensions.Logging;
 
-namespace JosephGuadagno.Broadcasting.Managers;
+namespace JosephGuadagno.Broadcasting.Managers.Facebook;
 
 public class FacebookManager : IFacebookManager
 {
-    private const string PostToPageWithLinkUrl = "https://graph.facebook.com/{page_id}/feed?message={message}&link={link}&access_token={access_token}";
     
     private readonly HttpClient _httpClient;
     private readonly ILogger<FacebookManager> _logger;
+    private readonly IFacebookApplicationSettings _facebookApplicationSettings;
     
-    public FacebookManager(HttpClient httpClient, ILogger<FacebookManager> logger)
+    public FacebookManager(HttpClient httpClient, IFacebookApplicationSettings facebookApplicationSettings, ILogger<FacebookManager> logger)
     {
         _httpClient = httpClient;
+        _facebookApplicationSettings = facebookApplicationSettings;
         _logger = logger;
     }
-    
-    public async Task<string> PostMessageAndLinkToPage(string pageId, string message, string link, string accessToken)
+
+    /// <summary>
+    /// Returns the Graph API Root with the version
+    /// </summary>
+    public string GraphApiRoot => _facebookApplicationSettings.GraphApiRootUrl + "/" + _facebookApplicationSettings.GraphApiVersion + "/";
+
+    /// <summary>
+    /// Posts a message with a link to a Facebook Page
+    /// </summary>
+    /// <param name="message">The message/Facebook status to post</param>
+    /// <param name="link">The link for the post</param>
+    /// <returns>The id of the newly created status</returns>
+    public async Task<string> PostMessageAndLinkToPage(string message, string link)
     {
-        if (string.IsNullOrEmpty(pageId))
-        {
-            throw new ArgumentNullException(nameof(pageId));
-        }
         if (string.IsNullOrEmpty(message))
         {
             throw new ArgumentNullException(nameof(message));
@@ -35,17 +40,15 @@ public class FacebookManager : IFacebookManager
         {
             throw new ArgumentNullException(nameof(link));
         }
-        if (string.IsNullOrEmpty(accessToken))
-        {
-            throw new ArgumentNullException(nameof(accessToken));
-        }
 
         try
         {
-            var url = PostToPageWithLinkUrl.Replace("{page_id}", pageId)
+            var postToPageWithLinkUrl = GraphApiRoot + "{page_id}/feed?message={message}&link={link}&access_token={access_token}";
+            
+            var url = postToPageWithLinkUrl.Replace("{page_id}", _facebookApplicationSettings.PageId)
                 .Replace("{message}",  System.Web.HttpUtility.UrlEncode(message))
                 .Replace("{link}", link)
-                .Replace("{access_token}", accessToken);
+                .Replace("{access_token}", _facebookApplicationSettings.PageAccessToken);
         
             _logger.LogTrace("Url: `{Url}`", url);
             var response = await _httpClient.PostAsync(url,null);
