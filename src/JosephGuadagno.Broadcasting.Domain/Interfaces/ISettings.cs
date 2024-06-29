@@ -15,4 +15,6 @@ public interface ISettings
     public string TopicNewSourceDataKey { get; set; }
     public string TopicScheduledItemFiredDataEndpoint { get; set; }
     public string TopicScheduledItemFiredDataKey { get; set; }
+    
+    public string AzureKeyVaultUrl { get; set; }
 }

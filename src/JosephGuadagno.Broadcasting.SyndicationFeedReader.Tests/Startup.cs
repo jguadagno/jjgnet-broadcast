@@ -224,6 +224,15 @@ public class Startup
             {
                 throw new ApplicationException("Failed to get the settings from the ServiceCollection");
             }
+            return new TokenRefreshRepository(settings.StorageAccount);
+        });
+        services.TryAddSingleton(s =>
+        {
+            var settings = s.GetService<ISettings>();
+            if (settings is null)
+            {
+                throw new ApplicationException("Failed to get the settings from the ServiceCollection");
+            }
             return new SourceDataRepository(settings.StorageAccount);
         });
             

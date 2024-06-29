@@ -32,7 +32,6 @@ public class Startup
         var facebookApplicationSettings = new FacebookApplicationSettings();
         config.Bind("Facebook", facebookApplicationSettings);
         services.TryAddSingleton<IFacebookApplicationSettings>(facebookApplicationSettings);
-        
         services.TryAddSingleton<IFacebookManager, FacebookManager>();
 
         services.AddHttpClient();
