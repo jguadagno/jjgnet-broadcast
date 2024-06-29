@@ -76,10 +76,10 @@ public class RefreshTokens
                 
                 // Save the token to Key Vault
                 // NOTE: Locally, you will need to set the environment variables for the Azure Key Vault
-                // TODO:  Not logging into Key Vault
                 var client = new SecretClient(new Uri(_settings.AzureKeyVaultUrl), new DefaultAzureCredential());
                 var secretName = azureKeyVaultSecretName.Replace("{token-name}", tokenType.DisplayName());
-                await client.SetSecretAsync(secretName, newToken.AccessToken);
+                
+                await UpdateSecretValueAndProperties(client, secretName, newToken.AccessToken, newToken.ExpiresOn);
                 
                 // Save the token refresh info to the database
                 tokenInfo.LastRefreshed = tokenInfo.LastChecked = DateTime.UtcNow;
@@ -104,6 +104,51 @@ public class RefreshTokens
         else
         {
             _logger.LogDebug("{DisplayName} is still valid until {Expires:f}", tokenType.DisplayName(), tokenInfo.Expires);
+        }
+    }
+    
+    /// <summary>
+    /// Updates the secret value and expiration date
+    /// </summary>
+    /// <param name="client">A SecretClient for the connection to Azure Key Vault</param>
+    /// <param name="secretName">The name of the secret to update</param>
+    /// <param name="secretValue">The value to update the secret to</param>
+    /// <param name="expiresOn">The UTC datetime that this secret expires</param>
+    /// <exception cref="ApplicationException">Thrown is any of the operations fail</exception>
+    /// <remarks>
+    /// This method will update the secret value and expiration date. It will also disable the old secret.
+    /// </remarks>
+    public async Task UpdateSecretValueAndProperties(SecretClient client, string secretName, string secretValue, DateTime expiresOn)
+    {
+        var originalSecretResponse = await client.GetSecretAsync(secretName);
+        if (originalSecretResponse is null)
+        {
+            throw new ApplicationException($"Failed to get the secret '{secretName}' from the Key Vault");
+        }
+        var originalSecret = originalSecretResponse.Value;
+        
+        // Set the old secret to disabled
+        originalSecret.Properties.Enabled = false;
+        var updatePropertiesResponse = await client.UpdateSecretPropertiesAsync(originalSecret.Properties);
+        if (updatePropertiesResponse is null)
+        {
+            throw new ApplicationException($"Failed to update the original version secret properties for '{secretName}'");
+        }
+        
+        // Update secret value (create a new version)
+        var newSecretVersionResponse = await client.SetSecretAsync(secretName, secretValue);
+        if (newSecretVersionResponse is null)
+        {
+            throw new ApplicationException($"Failed to update the secret value for '{secretName}'");
+        }
+        var newKeyVaultSecretVersion = newSecretVersionResponse.Value;
+        
+        // Update the expiration date
+        newKeyVaultSecretVersion.Properties.ExpiresOn = expiresOn;
+        updatePropertiesResponse = await client.UpdateSecretPropertiesAsync(newKeyVaultSecretVersion.Properties);
+        if (updatePropertiesResponse is null)
+        {
+            throw new ApplicationException($"Failed to update the new version secret properties for '{secretName}'");
         }
     }
 }
