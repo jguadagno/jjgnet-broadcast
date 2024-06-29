@@ -1,4 +1,6 @@
-﻿namespace JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
+﻿using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
+
+namespace JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 
 public interface IFacebookManager
 {
@@ -9,6 +11,13 @@ public interface IFacebookManager
     /// <param name="link">The link for the post</param>
     /// <returns>The id of the newly created status</returns>
     Task<string> PostMessageAndLinkToPage(string message, string link);
+    
+    /// <summary>
+    /// Refreshes the token
+    /// </summary>
+    /// <param name="tokenToRefresh">The token to refresh</param>
+    /// <returns></returns>
+    Task<TokenInfo> RefreshToken(string tokenToRefresh);
     
     /// <summary>
     /// Returns the Graph API Root with the version

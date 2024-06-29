@@ -1,4 +1,6 @@
-﻿using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
+﻿using System;
+using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
@@ -56,11 +58,11 @@ public class FacebookPostPageStatusTest
         var link = "https://josephguadagno.net";
         
         // Act
-        var exception = await Assert.ThrowsAsync<ApplicationException>(() =>
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() =>
             _facebookManager.PostMessageAndLinkToPage(message, link));
 
         // Assert
-        Assert.StartsWith("Failed to post status. ", exception.Message);
+        Assert.StartsWith("Value cannot be null.", exception.Message);
     }
     
     [Fact]
@@ -71,10 +73,10 @@ public class FacebookPostPageStatusTest
         var link = string.Empty;
         
         // Act
-        var exception = await Assert.ThrowsAsync<ApplicationException>(() =>
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() =>
             _facebookManager.PostMessageAndLinkToPage(message, link));
 
         // Assert
-        Assert.StartsWith("Failed to post status. ", exception.Message);
+        Assert.StartsWith("Value cannot be null.", exception.Message);
     }
 }

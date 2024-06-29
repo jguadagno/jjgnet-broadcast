@@ -7,7 +7,7 @@
 
 ### Get the long-lived access token
 # Need to look at the "expires_in": 5184000 for the number of seconds until this expires
-GET https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&
+GET https://graph.facebook.com/{{graph-api-version}}/oauth/access_token?grant_type=fb_exchange_token&
     client_id={{app-id}}&
     client_secret={{app-secret}}&
     fb_exchange_token={{short-lived-access-token}}

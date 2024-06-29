@@ -105,4 +105,63 @@ public class FacebookManager : IFacebookManager
             throw;
         }
     }
+
+
+    /// <summary>
+    /// Refreshes the token
+    /// </summary>
+    /// <param name="tokenToRefresh">The token to refresh</param>
+    /// <returns>Information about the <see cref="TokenInfo">token</see></returns>
+    public async Task<TokenInfo> RefreshToken(string tokenToRefresh)
+    {
+        if (string.IsNullOrEmpty(tokenToRefresh))
+        {
+            throw new ArgumentNullException(nameof(tokenToRefresh));
+        }
+
+        try
+        {
+            var refreshTokenUrl = GraphApiRoot + "oauth/access_token?grant_type=fb_exchange_token&client_id={client_id}&client_secret={client_secret}&fb_exchange_token={fb_exchange_token}&set_token_expires_in_60_days=true";
+
+            var url = refreshTokenUrl.Replace("{client_id}", _facebookApplicationSettings.AppId)
+                .Replace("{client_secret}", _facebookApplicationSettings.AppSecret)
+                .Replace("{fb_exchange_token}", tokenToRefresh);
+
+            _logger.LogTrace("Url: `{Url}`", url);
+            var response = await _httpClient.GetAsync(url);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var statusResponse = JsonSerializer.Deserialize<TokenResponse>(content);
+                if (statusResponse is not null)
+                {
+                    // Convert the response to a TokenInfo
+                    var tokenInfo = new TokenInfo
+                    {
+                        AccessToken = statusResponse.AccessToken,
+                        TokenType = statusResponse.TokenType,
+                        ExpiresOn = DateTime.UtcNow.AddSeconds(statusResponse.ExpiresIn)
+                    };
+                    return tokenInfo;
+                }
+                
+                _logger.LogError("Failed to refresh the token. Could not deserialized the response. Response: {Response}", content);
+                throw new ApplicationException(
+                    $"Failed to refresh the token. Could not deserialized the response. Response {content}");
+            }
+            
+            _logger.LogError(
+                "Failed to refresh the token. Response status code was not successful. StatusCode: '{StatusCode}', ReasonPhrase: '{ReasonPhrase}'",
+                response.StatusCode, response.ReasonPhrase);
+            throw new ApplicationException(
+                $"Failed to refresh the token. Response status code was not successful. StatusCode: '{response.StatusCode}', ReasonPhrase: '{response.ReasonPhrase}'");
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed refresh the token. Exception: {ExceptionMessage}", ex.Message);
+            throw;
+        }
+    }
 }

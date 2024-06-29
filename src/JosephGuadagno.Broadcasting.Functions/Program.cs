@@ -277,6 +277,15 @@ void ConfigureFunction(IServiceCollection services)
         {
             throw new ApplicationException("Failed to get settings from ServiceCollection");
         }
+        return new TokenRefreshRepository(settings.StorageAccount);
+    });
+    services.TryAddSingleton(s =>
+    {
+        var settings = s.GetService<ISettings>();
+        if (settings is null)
+        {
+            throw new ApplicationException("Failed to get settings from ServiceCollection");
+        }
         return new SourceDataRepository(settings.StorageAccount);
     });
     services.TryAddSingleton(s =>
