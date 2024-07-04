@@ -1,9 +1,15 @@
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
+using JosephGuadagno.Broadcasting.Data;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.Broadcasting.Web;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
+using JosephGuadagnoNet.Broadcasting.Data.KeyVault;
+using JosephGuadagnoNet.Broadcasting.Data.KeyVault.Interfaces;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
@@ -14,12 +20,19 @@ using Microsoft.Identity.Web.UI;
 using Serilog;
 using Serilog.Exceptions;
 using Rocket.Surgery.Extensions.AutoMapper.NodaTime;
+using ISettings = JosephGuadagno.Broadcasting.Web.Interfaces.ISettings;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var settings = new Settings();
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
+
+var linkedInSettings = new LinkedInSettings();
+builder.Configuration.Bind("LinkedIn", linkedInSettings);
+builder.Services.TryAddSingleton<ILinkedInSettings>(linkedInSettings);
+
+builder.Services.AddSession();
 builder.Services.AddApplicationInsightsTelemetry();
 
 // Configure the logger
@@ -72,6 +85,7 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseSession();
 
 app.MapControllerRoute(
     name: "default",
@@ -113,4 +127,21 @@ void ConfigureApplication(IServiceCollection services)
     services.AddAutoMapper(typeof(NodaTimeProfile), typeof(WebMappingProfile));
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
+    ConfigureKeyVault(services);
+}
+
+void ConfigureKeyVault(IServiceCollection services)
+{
+    services.TryAddSingleton(s =>
+    {
+        var applicationSettings = s.GetService<ISettings>();
+        if (applicationSettings is null)
+        {
+            throw new ApplicationException("Failed to get application settings from ServiceCollection");
+        }
+        
+        return new SecretClient(new Uri(applicationSettings.AzureKeyVaultUrl), new DefaultAzureCredential());
+    });
+    
+    services.TryAddScoped<IKeyVault, KeyVault>();
 }

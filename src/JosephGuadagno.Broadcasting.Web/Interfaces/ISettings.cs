@@ -22,4 +22,9 @@ public interface ISettings
     /// The database connection string
     /// </summary>
     public string JJGNetDatabaseSqlServer { get; set; }
+    
+    /// <summary>
+    /// The Azure Key Vault to use
+    /// </summary>
+    public string AzureKeyVaultUrl { get; set; }
 }

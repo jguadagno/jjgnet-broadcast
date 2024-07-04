@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Data.Sql;
@@ -24,6 +26,8 @@ using JosephGuadagno.Broadcasting.YouTubeReader;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
+using JosephGuadagnoNet.Broadcasting.Data.KeyVault;
+using JosephGuadagnoNet.Broadcasting.Data.KeyVault.Interfaces;
 using LinqToTwitter;
 using LinqToTwitter.OAuth;
 using Microsoft.Extensions.Configuration;
@@ -41,7 +45,7 @@ var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults()
     .ConfigureAppConfiguration(config =>
     {
-        // Setup the Configuration Source
+        // Set up the Configuration Source
         config.SetBasePath(currentDirectory)
             .AddJsonFile("local.settings.json", true)
             .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
@@ -71,6 +75,7 @@ var host = new HostBuilder()
         ConfigureLogging(config, services, settings, logPath, "Functions");
     
         // Configure all the services
+        ConfigureKeyVault(services);
         ConfigureTwitter(services);
         ConfigureJsonFeedReader(services);
         ConfigureSyndicationFeedReader(services);
@@ -257,6 +262,22 @@ void ConfigureRepositories(IServiceCollection services)
     services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
 }
 
+void ConfigureKeyVault(IServiceCollection services)
+{
+    services.TryAddSingleton(s =>
+    {
+        var applicationSettings = s.GetService<ISettings>();
+        if (applicationSettings is null)
+        {
+            throw new ApplicationException("Failed to get application settings from ServiceCollection");
+        }
+        
+        return new SecretClient(new Uri(applicationSettings.AzureKeyVaultUrl), new DefaultAzureCredential());
+    });
+    
+    services.TryAddScoped<IKeyVault, KeyVault>();
+}
+
 void ConfigureFunction(IServiceCollection services)
 {
     services.AddHttpClient();
@@ -270,6 +291,7 @@ void ConfigureFunction(IServiceCollection services)
         }
         return new ConfigurationRepository(settings.StorageAccount);
     });
+    
     services.TryAddSingleton(s =>
     {
         var settings = s.GetService<ISettings>();

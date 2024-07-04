@@ -2,6 +2,9 @@ using JosephGuadagno.Broadcasting.Web.Interfaces;
 
 namespace JosephGuadagno.Broadcasting.Web.Models;
 
+/// <summary>
+/// The application settings for the Web application
+/// </summary>
 public class Settings : ISettings
 {
     /// <summary>
@@ -23,4 +26,9 @@ public class Settings : ISettings
     /// The database connection string
     /// </summary>
     public string JJGNetDatabaseSqlServer { get; set; }
+    
+    /// <summary>
+    /// The Azure Key Vault to use
+    /// </summary>
+    public string AzureKeyVaultUrl { get; set; }
 }
