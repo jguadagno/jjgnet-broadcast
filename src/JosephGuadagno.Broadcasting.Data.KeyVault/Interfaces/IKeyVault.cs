@@ -1,6 +1,6 @@
 ﻿using Azure.Security.KeyVault.Secrets;
 
-namespace JosephGuadagnoNet.Broadcasting.Data.KeyVault.Interfaces;
+namespace JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 
 public interface IKeyVault
 {

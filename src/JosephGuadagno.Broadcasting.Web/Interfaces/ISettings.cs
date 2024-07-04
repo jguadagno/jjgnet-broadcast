@@ -27,4 +27,10 @@ public interface ISettings
     /// The Azure Key Vault to use
     /// </summary>
     public string AzureKeyVaultUrl { get; set; }
+    
+    /// <summary>
+    /// The static content root url
+    /// </summary>
+    /// <remarks>This will return where to get images, scripts, etc. from. Could be local or CDN.</remarks>
+    public string StaticContentRootUrl { get; set; }
 }

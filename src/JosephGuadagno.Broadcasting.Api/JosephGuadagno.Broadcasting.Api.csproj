@@ -73,4 +73,26 @@
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Serilog\JosephGuadagno.Broadcasting.Serilog.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\apple-touch-icon-114x114.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\apple-touch-icon-120x120.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\apple-touch-icon-144x144.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\apple-touch-icon-152x152.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\apple-touch-icon-57x57.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\apple-touch-icon-60x60.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\apple-touch-icon-72x72.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\apple-touch-icon-76x76.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\code.txt" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\favicon-128.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\favicon-16x16.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\favicon-196x196.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\favicon-32x32.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\favicon-96x96.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\favicon.ico" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\mstile-144x144.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\mstile-150x150.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\mstile-310x150.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\mstile-310x310.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\mstile-70x70.png" />
+  </ItemGroup>
 </Project>

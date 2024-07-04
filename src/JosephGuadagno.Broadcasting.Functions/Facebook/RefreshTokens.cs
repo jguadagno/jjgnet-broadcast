@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Facebook;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
-using JosephGuadagnoNet.Broadcasting.Data.KeyVault.Interfaces;
 using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;

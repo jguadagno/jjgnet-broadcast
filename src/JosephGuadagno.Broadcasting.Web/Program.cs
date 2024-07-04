@@ -1,6 +1,8 @@
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Data;
+using JosephGuadagno.Broadcasting.Data.KeyVault;
+using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.Broadcasting.Web;
@@ -8,8 +10,6 @@ using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
-using JosephGuadagnoNet.Broadcasting.Data.KeyVault;
-using JosephGuadagnoNet.Broadcasting.Data.KeyVault.Interfaces;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;

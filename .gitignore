@@ -718,6 +718,7 @@ FodyWeavers.xsd
 **/.idea/
 **/wwwroot/lib
 **/wwwroot/libs
+**/wwwroot/imgs
 **/.vscode
 shutdown.ps1
 startup.ps1
