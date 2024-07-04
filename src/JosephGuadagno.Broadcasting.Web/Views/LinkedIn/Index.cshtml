@@ -1,0 +1,30 @@
+﻿@model JosephGuadagno.Broadcasting.Web.Models.LinkedIn.SavedTokenInfo
+
+@{
+ViewData["Title"] = "LinkedIn Token Refresh";
+}
+
+<div class="text-center">
+    <h1 class="display-4">LinkedIn Token Refresh</h1>
+    <dl class="row">
+        <dt class="col-sm-2">
+            <label for="AccessToken">Access Token</label>
+        </dt>
+        <dd class="col-sm-10">
+            <input type="text" id="AccessToken" name="AccessToken" value="@Model.AccessToken" class="form-control" />
+        </dd>
+        <dt class="col-sm-2">
+            <label for="ExpiresIn">Expires In</label>
+        </dt>
+        <dd class="col-sm-10">
+            <input type="text" id="ExpiresIn" name="ExpiresIn" value="@Model.ExpiresOn" class="form-control" />
+        </dd>
+        <dt class="col-sm-2">
+            <label for="ExpiresIn">Secret Name</label>
+        </dt>
+        <dd class="col-sm-10">
+            <input type="text" id="Secret Name" name="Secret Name" value="@Model.KeyVaultSecretName" class="form-control" />
+        </dd>
+    </dl>
+</div>
+<a asp-controller="LinkedIn" asp-action="RefreshToken" class="btn btn-primary">Refresh Token</a>
