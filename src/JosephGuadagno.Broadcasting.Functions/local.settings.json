@@ -74,7 +74,7 @@
       "ShortLivedAccessToken": "",
       "LongLivedAccessToken": "",
       "GraphApiVersion": "v20.0",
-      "GraphApiRootUri": "https://graph.facebook.com/"
+      "GraphApiRootUrl": "https://graph.facebook.com"
     },
     "LinkedIn": {
       "ClientId": "",
