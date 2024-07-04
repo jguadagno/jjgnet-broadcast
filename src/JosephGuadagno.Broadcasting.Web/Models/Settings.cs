@@ -31,4 +31,7 @@ public class Settings : ISettings
     /// The Azure Key Vault to use
     /// </summary>
     public string AzureKeyVaultUrl { get; set; }
+
+    /// <inheritdoc />
+    public string StaticContentRootUrl { get; set; }
 }

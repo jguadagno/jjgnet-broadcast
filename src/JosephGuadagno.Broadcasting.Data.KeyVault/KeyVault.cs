@@ -1,9 +1,9 @@
 ﻿using Azure.Security.KeyVault.Secrets;
-using JosephGuadagnoNet.Broadcasting.Data.KeyVault.Interfaces;
+using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using Microsoft.ApplicationInsights;
 using Microsoft.Extensions.Logging;
 
-namespace JosephGuadagnoNet.Broadcasting.Data.KeyVault;
+namespace JosephGuadagno.Broadcasting.Data.KeyVault;
 
 public class KeyVault: IKeyVault
 {
