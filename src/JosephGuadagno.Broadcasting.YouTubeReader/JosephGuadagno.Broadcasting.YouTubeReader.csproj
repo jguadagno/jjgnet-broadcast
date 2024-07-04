@@ -10,7 +10,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <VersionMajor>1</VersionMajor>
-    <VersionMinor>5</VersionMinor>
+    <VersionMinor>6</VersionMinor>
     <VersionBuild>0</VersionBuild>
   </PropertyGroup>
   <PropertyGroup>
@@ -33,7 +33,7 @@
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.67.0.3358" />
+    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.68.0.3421" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
   </ItemGroup>
 </Project>
