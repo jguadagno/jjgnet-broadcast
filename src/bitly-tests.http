@@ -1,0 +1,26 @@
+### Shorten Url
+POST {{BitlyApiRootUri}}/shorten
+Authorization: Bearer {{BitlyToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+ "long_url": "https://www.josephguadagno.net",
+ "domain" : "{{BitlyShortedDomain}}",
+ "group_quid": ""
+}
+
+
+### Shorten Url - Test
+POST {{BitlyApiRootUri}}/shorten
+Authorization: Bearer {{BitlyToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+ "long_url": "https://www.josephguadagno.net/2010/12/16/mvp-summit-events-site-relaunched/",
+ "domain" : "{{BitlyShortedDomain}}",
+ "group_quid": ""
+}
+
+
