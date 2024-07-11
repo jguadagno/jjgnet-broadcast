@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <UserSecretsId>e7ede339-2377-4e6a-a2c4-3f4831d35b79</UserSecretsId>
+        <Company>JosephGuadagno.NET, LLC</Company>
+        <Authors>Joseph Guadagno</Authors>
+        <Product>JosephGuadagno.NET Broadcasting - Fix Source Data Short Url</Product>
+        <Description>The Api for the JosephGuadagno.NET Broadcasting application</Description>
+        <Copyright>Copyright ©2014-2024, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Title>JosephGuadagno.NET Broadcasting - Fix Source Data Short Url</Title>
+    </PropertyGroup>
+    <PropertyGroup>
+        <VersionMajor>1</VersionMajor>
+        <VersionMinor>0</VersionMinor>
+        <VersionBuild>0</VersionBuild>
+    </PropertyGroup>
+    <PropertyGroup>
+        <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
+    </PropertyGroup>
+    <PropertyGroup>
+        <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' == '' ">local</VersionSuffix>
+        <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(GITHUB_RUN_ID)-preview</VersionSuffix>
+    </PropertyGroup>
+    <PropertyGroup>
+        <AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
+        <AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</AssemblyVersion>
+    </PropertyGroup>
+    <PropertyGroup>
+        <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
+        <FileVersion>$(VersionPrefix)</FileVersion>
+        <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.6" />
+      <PackageReference Include="JosephGuadagno.Utilities.Web" Version="1.1.6" />
+      <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.2" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj" />
+    </ItemGroup>
+
+</Project>
