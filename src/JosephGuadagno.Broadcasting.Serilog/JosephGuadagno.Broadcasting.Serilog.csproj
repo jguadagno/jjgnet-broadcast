@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="9.7.1" />
+      <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="10.0.0" />
     </ItemGroup>
 
 </Project>

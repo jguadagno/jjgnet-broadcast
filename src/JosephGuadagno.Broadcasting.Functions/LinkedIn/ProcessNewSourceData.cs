@@ -2,12 +2,12 @@
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
-using Microsoft.Azure.EventGrid.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
