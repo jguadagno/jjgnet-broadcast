@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;

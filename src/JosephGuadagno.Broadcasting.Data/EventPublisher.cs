@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Azure;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using Microsoft.Azure.EventGrid;
-using Microsoft.Azure.EventGrid.Models;
+using Azure.Messaging.EventGrid;
+using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Data;
@@ -43,33 +44,25 @@ public class EventPublisher: IEventPublisher
             return false;
         }
             
-        var topicHostName = new Uri(topicUrl).Host;
-        var topicCredentials = new TopicCredentials(topicKey);
-        var client= new EventGridClient(topicCredentials);
+        var topicCredentials = new AzureKeyCredential(topicKey);
+        var client= new EventGridPublisherClient(new Uri(topicUrl), topicCredentials);
 
         var eventList = new List<EventGridEvent>();
         foreach (var sourceData in sourceDataItems)
         {
+            var data = new TableEvent
+            {
+                TableName = Constants.Tables.SourceData, 
+                PartitionKey = sourceData.PartitionKey,
+                RowKey = sourceData.RowKey
+            };
             eventList.Add(
-                new EventGridEvent
-                {
-                    Id = sourceData.RowKey,
-                    EventType= Constants.Topics.NewSourceData,
-                    Data = new TableEvent
-                    {
-                        TableName = Constants.Tables.SourceData, 
-                        PartitionKey = sourceData.PartitionKey,
-                        RowKey = sourceData.RowKey
-                    },
-                    EventTime = DateTime.UtcNow,
-                    Subject = subject,
-                    DataVersion = "1.0"
-                });
+                new EventGridEvent(subject, Constants.Topics.NewSourceData, "1.0", data));
         }
 
         try
         {
-            await client.PublishEventsAsync(topicHostName, eventList);
+            await client.SendEventsAsync(eventList);
             return true;
         }
         catch (Exception e)
@@ -101,34 +94,26 @@ public class EventPublisher: IEventPublisher
         {
             return false;
         }
-            
-        var topicHostName = new Uri(topicUrl).Host;
-        var topicCredentials = new TopicCredentials(topicKey);
-        var client= new EventGridClient(topicCredentials);
+        
+        var topicCredentials = new AzureKeyCredential(topicKey);
+        var client= new EventGridPublisherClient(new Uri(topicUrl), topicCredentials);
 
         var eventList = new List<EventGridEvent>();
         foreach (var scheduledItem in scheduledItems)
         {
+            var data = new TableEvent
+            {
+                TableName = scheduledItem.ItemTableName, 
+                PartitionKey = scheduledItem.ItemPrimaryKey,
+                RowKey = scheduledItem.ItemSecondaryKey
+            };
             eventList.Add(
-                new EventGridEvent
-                {
-                    Id = scheduledItem.Id.ToString(),
-                    EventType= Constants.Topics.ScheduledItemFired,
-                    Data = new TableEvent
-                    {
-                        TableName = scheduledItem.ItemTableName, 
-                        PartitionKey = scheduledItem.ItemPrimaryKey,
-                        RowKey = scheduledItem.ItemSecondaryKey
-                    },
-                    EventTime = DateTime.UtcNow,
-                    Subject = subject,
-                    DataVersion = "1.0"
-                });
+                new EventGridEvent(subject, Constants.Topics.ScheduledItemFired, "1.0", data));
         }
-
+        
         try
         {
-            await client.PublishEventsAsync(topicHostName, eventList);
+            await client.SendEventsAsync(eventList);
             return true;
         }
         catch (Exception e)
