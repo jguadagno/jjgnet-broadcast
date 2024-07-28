@@ -48,12 +48,6 @@ public class ProcessNewSourceData
         }
 
         var eventGridData = eventGridEvent.Data.ToString();
-        if (eventGridData is null)
-        {
-            _logger.LogError("Failed to retrieve the value of the eventGrid for event '{Id}'", eventGridEvent.Id);
-            return null;
-        }
-        
         var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
