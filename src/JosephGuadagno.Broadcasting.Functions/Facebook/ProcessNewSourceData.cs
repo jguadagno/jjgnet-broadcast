@@ -93,20 +93,19 @@ public class ProcessNewSourceData
             _ => ""
         };
 
-        var url = sourceData.ShortenedUrl ?? sourceData.Url;
         var postTitle = sourceData.Title;
         var hashTagList = HashTagList(sourceData.Tags);
         
-        if (statusText.Length + url.Length + postTitle.Length + 3 + hashTagList.Length >= maxFacebookStatusText)
+        if (statusText.Length + postTitle.Length + 3 + hashTagList.Length >= maxFacebookStatusText)
         {
-            var newLength = maxFacebookStatusText - statusText.Length - url.Length - hashTagList.Length - 1;
+            var newLength = maxFacebookStatusText - statusText.Length - hashTagList.Length - 1;
             postTitle = postTitle.Substring(0, newLength - 4) + "...";
         }
             
         var facebookPostStatus = new FacebookPostStatus
         {
             StatusText =  $"{statusText} {postTitle} {hashTagList}",
-            LinkUri = url                
+            LinkUri = sourceData.Url                
         };
 
         _logger.LogDebug(

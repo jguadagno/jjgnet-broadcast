@@ -119,20 +119,19 @@ public class ProcessScheduledItemFired
             _ => statusText
         };
         
-        var url = sourceData.ShortenedUrl ?? sourceData.Url;
         var postTitle = sourceData.Title;
         var hashTagList = HashTagList(sourceData.Tags);
         
-        if (statusText.Length + url.Length + postTitle.Length + 3 + hashTagList.Length >= MaxFacebookStatusText)
+        if (statusText.Length + postTitle.Length + 3 + hashTagList.Length >= MaxFacebookStatusText)
         {
-            var newLength = MaxFacebookStatusText - statusText.Length - url.Length - hashTagList.Length - 1;
+            var newLength = MaxFacebookStatusText - statusText.Length - hashTagList.Length - 1;
             postTitle = postTitle.Substring(0, newLength - 4) + "...";
         }
             
         var facebookPostStatus = new FacebookPostStatus
         {
             StatusText =  $"{statusText} {postTitle} {hashTagList}",
-            LinkUri = url                
+            LinkUri = sourceData.Url                
         };
 
         _logger.LogDebug(
