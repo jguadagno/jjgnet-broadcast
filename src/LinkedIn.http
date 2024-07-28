@@ -96,18 +96,18 @@ X-Restli-Protocol-Version: 2.0.0
     "specificContent": {
         "com.linkedin.ugc.ShareContent": {
             "shareCommentary": {
-                "text": "LinkedIn has an AI Assisted Editor for posting articles."
+                "text": "Working with the LinkedIn API with C# #.NET #API #csharp #LinkedIn"
             },
             "shareMediaCategory": "ARTICLE",
             "media": [
                 {
                     "status": "READY",
                     "description": {
-                        "text": "This is the description of the media."
+                        "text": "Working with the LinkedIn API with C# #.NET #API #csharp #LinkedIn"
                     },
-                    "originalUrl": "https://www.josephguadagno.net/",
+                    "originalUrl": "https://www.josephguadagno.net/2023/08/16/working-with-the-linkedin-api-with-c-sharp",
                     "title": {
-                        "text": "Joseph Guadagno Website"
+                        "text": "Working with the LinkedIn API with C#"
                     }
                 }
             ]
