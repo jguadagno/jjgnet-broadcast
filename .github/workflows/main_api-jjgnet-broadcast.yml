@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up .NET Core
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.x'
           include-prerelease: true
@@ -50,7 +50,7 @@ jobs:
           name: .api-app
       
       - name: Login to Azure
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_8BDDFE67FC8140A3A709CCB70B544670 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_92748078D9F9499F82755D8113CE31AC }}
