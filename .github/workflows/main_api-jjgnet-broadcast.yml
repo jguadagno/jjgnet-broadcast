@@ -42,6 +42,7 @@ jobs:
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
+      contents: read
 
     steps:
       - name: Download artifact from build job
@@ -55,6 +56,7 @@ jobs:
           client-id: ${{ secrets.API_CLIENT_ID }}
           tenant-id: ${{ secrets.API_TENANT_ID }}
           subscription-id: ${{ secrets.API_SUBSCRIPTION_ID }}
+          auth_type: IDENTITY
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
