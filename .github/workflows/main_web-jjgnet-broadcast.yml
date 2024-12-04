@@ -61,6 +61,6 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'web-jjgnet-broadcast'
-          slot-name: 'Production'
+          slot-name: 'production'
           package: .
           

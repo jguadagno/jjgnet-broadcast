@@ -48,6 +48,6 @@ jobs:
         id: fa
         with:
           app-name: 'jjgnet-broadcast'
-          slot-name: 'Production'
+          slot-name: 'production'
           package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
           
