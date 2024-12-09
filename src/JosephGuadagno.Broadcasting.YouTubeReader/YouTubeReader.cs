@@ -53,7 +53,7 @@ public class YouTubeReader: IYouTubeReader
         _logger = logger;
     }
 
-    public List<SourceData> Get(DateTime sinceWhen)
+    public List<SourceData> GetSinceDate(DateTime sinceWhen)
     {
         return GetAsync(sinceWhen).Result;
     }

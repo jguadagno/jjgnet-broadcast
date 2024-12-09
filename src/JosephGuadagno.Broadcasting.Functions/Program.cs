@@ -16,6 +16,8 @@ using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Models;
 using JosephGuadagno.Broadcasting.Managers;
+using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
+using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using JosephGuadagno.Broadcasting.Managers.Facebook;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
@@ -82,6 +84,7 @@ var host = new HostBuilder()
         ConfigureYouTubeReader(services);
         ConfigureLinkedInManager(services);
         ConfigureFacebookManager(services);
+        ConfigureBlueskyManager(services);
         ConfigureFunction(services);
     })
 
@@ -210,6 +213,18 @@ void ConfigureFacebookManager(IServiceCollection services)
         var settings = new FacebookApplicationSettings();
         var configuration = s.GetService<IConfiguration>();
         configuration.Bind("Settings:Facebook", settings);
+        return settings;
+    });
+    services.TryAddSingleton<IFacebookManager, FacebookManager>();
+}
+
+void ConfigureBlueskyManager(IServiceCollection services)
+{
+    services.TryAddSingleton<IBlueskySettings>(s =>
+    {
+        var settings = new BlueskySettings();
+        var configuration = s.GetService<IConfiguration>();
+        configuration.Bind("Settings:Bluesky", settings);
         return settings;
     });
     services.TryAddSingleton<IFacebookManager, FacebookManager>();

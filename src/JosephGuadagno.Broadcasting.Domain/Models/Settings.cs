@@ -18,4 +18,8 @@ public class Settings : ISettings, IDatabaseSettings
     public string TopicScheduledItemFiredDataKey { get; set; }
     public string JJGNetDatabaseSqlServer { get; set; }
     public string AzureKeyVaultUrl { get; set; }
+    public string TopicNewRandomPostEndpoint { get; set; }
+    public string TopicNewRandomPostKey { get; set; }
+    public string BlueskyUserName { get; set; }
+    public string BlueskyPassword { get; set; }
 }

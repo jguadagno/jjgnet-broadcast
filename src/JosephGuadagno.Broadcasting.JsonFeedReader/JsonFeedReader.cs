@@ -32,7 +32,7 @@ public class JsonFeedReader: IJsonFeedReader
 
     }
         
-    public List<SourceData> Get(DateTime sinceWhen)
+    public List<SourceData> GetSinceDate(DateTime sinceWhen)
     {
         return GetAsync(sinceWhen).Result;
     }
@@ -68,7 +68,6 @@ public class JsonFeedReader: IJsonFeedReader
                 Author = jsonFeedItem.Authors?[0]?.Name,
                 PublicationDate = jsonFeedItem.DatePublished?.UtcDateTime ?? currentTime,
                 UpdatedOnDate = jsonFeedItem.DateModified?.UtcDateTime ?? currentTime,
-                //Text = jsonFeedItem.ContentHtml,
                 Title =  jsonFeedItem.Title,
                 Url = jsonFeedItem.Id,
                 EndAfter = null,

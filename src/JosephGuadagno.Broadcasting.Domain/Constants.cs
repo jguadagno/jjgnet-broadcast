@@ -9,6 +9,7 @@ public static class Constants
         public const string LinkedInPostLink = "linkedin-post-link";
         public const string LinkedInPostText = "linkedin-post-text";
         public const string LinkedInPostImage = "linkedin-post-image";
+        public const string BlueskyPostToSend = "bluesky-post-to-send";
     }
 
     public static class Tables
@@ -34,18 +35,22 @@ public static class Constants
         public const string TwitterSendTweet = "TwitterSendTweet";
         public const string TwitterProcessNewSourceData = "TwitterProcessNewSourceData";
         public const string TwitterProcessScheduledItemFired = "TwitterProcessScheduledItemFired";
+        public const string TwitterProcessRandomPostFired = "TwitterProcessRandomPostFired";
         public const string MaintenanceClearOldLogs = "MaintenanceClearOldLogs";
         public const string LinkedInPostLink = "LinkedInPostLink";
         public const string LinkedInPostText = "LinkedInPostText";
         public const string LinkedInPostImage = "LinkedInPostImage";
         public const string LinkedInProcessNewSourceData = "LinkedInProcessNewSourceData";
         public const string LinkedInProcessScheduledItemFired = "LinkedInProcessScheduledItemFired";
+        public const string BlueskyPostMessage = "BlueskyPostMessage";
+        public const string BlueskyProcessRandomPostFired = "BlueskyProcessRandomPostFired";
     }
 
     public static class Topics
     {
         public const string NewSourceData = "new-source-data";
         public const string ScheduledItemFired = "scheduled-item-fired";
+        public const string NewRandomPost = "new-random-post";
     }
 
     public static class Metrics
@@ -53,6 +58,7 @@ public static class Constants
         public const string PostAddedOrUpdated = "PostAddedOrUpdated";
         public const string VideoAddedOrUpdated = "VideoAddedOrUpdated";
         public const string RandomTweetSent = "RandomTweetSent";
+        public const string RandomBlueskySent = "RandomBlueskySent";
         public const string ScheduledItemFired = "ScheduledItemFired";
     }
 }

@@ -24,6 +24,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 		..\.github\workflows\main_jjgnet-broadcast.yml = ..\.github\workflows\main_jjgnet-broadcast.yml
 		..\.github\workflows\main_web-jjgnet-broadcast.yml = ..\.github\workflows\main_web-jjgnet-broadcast.yml
 		bitly-tests.http = bitly-tests.http
+		nuget.config = nuget.config
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.JsonFeedReader", "JosephGuadagno.Broadcasting.JsonFeedReader\JosephGuadagno.Broadcasting.JsonFeedReader.csproj", "{1D657E6A-948D-4884-B6BD-76BA346F93FF}"
@@ -63,6 +64,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Data.KeyVault", "JosephGuadagno.Broadcasting.Data.KeyVault\JosephGuadagno.Broadcasting.Data.KeyVault.csproj", "{BB577939-B003-494C-9DD5-82BE645118EA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.FixSourceDataShortUrl", "JosephGuadagno.Broadcasting.FixSourceDataShortUrl\JosephGuadagno.Broadcasting.FixSourceDataShortUrl.csproj", "{AA06FE80-508E-4DC6-AC39-ED0C7E6A520D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.Bluesky", "JosephGuadagno.Broadcasting.Managers.Bluesky\JosephGuadagno.Broadcasting.Managers.Bluesky.csproj", "{BC51D4E3-5E40-4773-B0A9-3027C4AE1384}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.Bluesky.Tests", "JosephGuadagno.Broadcasting.Managers.Bluesky.Tests\JosephGuadagno.Broadcasting.Managers.Bluesky.Tests.csproj", "{D109989A-D244-4E9C-A37A-58CD57CDB59D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -157,6 +162,14 @@ Global
 		{AA06FE80-508E-4DC6-AC39-ED0C7E6A520D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AA06FE80-508E-4DC6-AC39-ED0C7E6A520D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AA06FE80-508E-4DC6-AC39-ED0C7E6A520D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC51D4E3-5E40-4773-B0A9-3027C4AE1384}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC51D4E3-5E40-4773-B0A9-3027C4AE1384}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC51D4E3-5E40-4773-B0A9-3027C4AE1384}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC51D4E3-5E40-4773-B0A9-3027C4AE1384}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D109989A-D244-4E9C-A37A-58CD57CDB59D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D109989A-D244-4E9C-A37A-58CD57CDB59D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D109989A-D244-4E9C-A37A-58CD57CDB59D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D109989A-D244-4E9C-A37A-58CD57CDB59D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
