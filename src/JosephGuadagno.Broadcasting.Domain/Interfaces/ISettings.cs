@@ -14,7 +14,12 @@ public interface ISettings
     public string TopicNewSourceDataEndpoint { get; set; }
     public string TopicNewSourceDataKey { get; set; }
     public string TopicScheduledItemFiredDataEndpoint { get; set; }
-    public string TopicScheduledItemFiredDataKey { get; set; }
+    public string TopicScheduledItemFiredDataKey { get; set; }    
+    public string TopicNewRandomPostEndpoint { get; set; }
+    public string TopicNewRandomPostKey { get; set; }
+
+    public string BlueskyUserName { get; set; }
+    public string BlueskyPassword { get; set; }
     
     public string AzureKeyVaultUrl { get; set; }
 }

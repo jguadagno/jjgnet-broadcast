@@ -32,7 +32,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
         _logger = logger;
     }
 
-    public List<SourceData> Get(DateTime sinceWhen)
+    public List<SourceData> GetSinceDate(DateTime sinceWhen)
     {
         var currentTime = DateTime.UtcNow;
 
@@ -75,7 +75,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
 
     public async Task<List<SourceData>> GetAsync(DateTime sinceWhen)
     {
-        return await Task.Run(() => Get(sinceWhen));
+        return await Task.Run(() => GetSinceDate(sinceWhen));
     }
 
     public List<SyndicationItem> GetSyndicationItems(DateTime sinceWhen, List<string> excludeCategories)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.Azure.Cosmos.Table;
 
@@ -105,5 +106,24 @@ public class SourceData : TableEntity, ISourceData
             {"Title", Title},
             {"Url", Url}
         };
+    }
+    
+    /// <summary>
+    /// Converts the Tags to a HashTag string
+    /// </summary>
+    /// <returns>A string with HashTags</returns>
+    /// <remarks>The tag of Article is excluded.</remarks>
+    public string TagsToHashTags()
+    {
+        // Articles,.NET,dotnet,SQL Server
+        if (string.IsNullOrEmpty(Tags))
+        {
+            return "#dotnet #csharp #dotnetcore";
+        }
+        
+        var hashTagsArray = Tags.Split(',');
+
+        return hashTagsArray.Where(hashTag => !hashTag.Equals("Articles", StringComparison.OrdinalIgnoreCase))
+            .Aggregate(string.Empty, (current, hashTag) => current + ("#" + hashTag.Replace(" ", "").Replace(".", "")));
     }
 }

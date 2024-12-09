@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.ServiceModel.Syndication;
+using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
@@ -14,29 +16,33 @@ namespace JosephGuadagno.Broadcasting.Functions.Publishers;
 
 public class RandomPosts
 {
-    private readonly ISyndicationFeedReader _syndicationFeedReader;
+    private readonly SourceDataRepository _sourceDataRepository;
+    private readonly IEventPublisher _eventPublisher;
+    private readonly ISettings _settings;
     private readonly ILogger<RandomPosts> _logger;
     private readonly TelemetryClient _telemetryClient;
     private readonly IRandomPostSettings _randomPostSettings;
 
-    public RandomPosts(ISyndicationFeedReader syndicationFeedReader,
+    public RandomPosts(SourceDataRepository sourceDataRepository,
         IRandomPostSettings randomPostSettings,
+        IEventPublisher eventPublisher,
+        ISettings settings,
         ILogger<RandomPosts> logger,
         TelemetryClient telemetryClient)
     {
-        _syndicationFeedReader = syndicationFeedReader;
+        _sourceDataRepository = sourceDataRepository;
         _randomPostSettings = randomPostSettings;
+        _eventPublisher = eventPublisher;
+        _settings = settings;
         _logger = logger;
         _telemetryClient = telemetryClient;
     }
-        
-    [Function("publishers_random_posts")]
-    [QueueOutput(Constants.Queues.TwitterTweetsToSend)]
-    public string Run(
-        [TimerTrigger("0 0 9,16 * * *")] TimerInfo myTimer)
+     
+    // TODO: Change this to an event and add a Twitter, and Bluesky Publisher... Maybe LinkedIn/Facebook?
+    [Function(Constants.ConfigurationFunctionNames.PublishersRandomPosts)]
+    public async Task Run(
+        [TimerTrigger("%publishers_random_post_cron_settings%")] TimerInfo myTimer)
     {
-        // 0 */2 * * * *
-        // 0 0 9,16 * * *
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             Constants.ConfigurationFunctionNames.PublishersRandomPosts, startedAt);
@@ -50,40 +56,24 @@ public class RandomPosts
         }
 
         _logger.LogDebug("Getting all items from feed from '{CutoffDate:u}'", cutoffDate);
-        var randomSyndicationItem = _syndicationFeedReader.GetRandomSyndicationItem(cutoffDate, _randomPostSettings.ExcludedCategories);
+        var randomSourceData = await _sourceDataRepository.GetRandomSourceDataAsync(cutoffDate);
 
-        // If there is nothing new, save the last checked value and exit
-        if (randomSyndicationItem == null)
+        if (randomSourceData is null)
         {
             _logger.LogDebug("Could not find a random post from feed since '{CutoffDate:u}'", cutoffDate);
-            return null;
+            return;
         }
-
-        // Build the tweet
-        var hashtags = HashTagList(randomSyndicationItem.Categories);
-        var status =
-            $"ICYMI: ({randomSyndicationItem.PublishDate.Date.ToShortDateString()}): \"{randomSyndicationItem.Title.Text}.\" RTs and feedback are always appreciated! {randomSyndicationItem.Links[0].Uri} {hashtags}";
-            
-        // Return
-        _telemetryClient.TrackEvent(Constants.Metrics.RandomTweetSent, new Dictionary<string, string>
-        {
-            {"title", randomSyndicationItem.Title.Text}, 
-            {"tweet", status}
-        });
-        _logger.LogDebug("Picked a random post {Title}", randomSyndicationItem.Title.Text);
-        return status;
-    }
         
-    private static string HashTagList(Collection<SyndicationCategory> categories)
-    {
-        if (categories is null || categories.Count == 0)
+        // Create the event message to post to the topic
+        var eventPublished = await _eventPublisher.PublishEventsAsync(_settings.TopicNewRandomPostEndpoint,
+            _settings.TopicNewRandomPostKey, Constants.ConfigurationFunctionNames.PublishersRandomPosts,
+            randomSourceData.Id);
+        if (!eventPublished)
         {
-            return "#dotnet #csharp #dotnetcore";
+            _logger.LogError("Failed to publish the events for the random posts");
+            return;
         }
-
-        var hashTagCategories = categories.Where(c => !c.Name.Contains("Articles"));
-
-        return hashTagCategories.Aggregate("",
-            (current, category) => current + $" #{category.Name.Replace(" ", "").Replace(".", "")}");
+        
+        _logger.LogInformation("Latest random post '{randomSyndicationId.Title.Text}' has been published", randomSourceData.Title);
     }
 }

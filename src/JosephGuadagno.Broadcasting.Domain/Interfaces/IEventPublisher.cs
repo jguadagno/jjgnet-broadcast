@@ -11,4 +11,7 @@ public interface IEventPublisher
 
     public Task<bool> PublishEventsAsync(string topicUrl, string topicKey, string subject,
         IReadOnlyCollection<ScheduledItem> scheduledItems );
+
+    public Task<bool> PublishEventsAsync(string topicUrl, string topicKey, string subject,
+        string randomPostId);
 }

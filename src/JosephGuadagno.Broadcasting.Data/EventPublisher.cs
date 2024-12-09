@@ -122,4 +122,44 @@ public class EventPublisher: IEventPublisher
             return false;
         }
     }
+
+    public async Task<bool> PublishEventsAsync(string topicUrl, string topicKey, string subject, string randomPostId)
+    {
+        if (string.IsNullOrEmpty(topicUrl))
+        {
+            throw new ArgumentNullException(nameof(topicUrl), "The topic url is required.");
+        }
+
+        if (string.IsNullOrEmpty(topicKey))
+        {
+            throw new ArgumentNullException(nameof(topicKey), "The topic key is required.");
+        }
+            
+        if (string.IsNullOrEmpty(subject))
+        {
+            throw new ArgumentNullException(nameof(subject), "The subject is required.");
+        }
+            
+        if (string.IsNullOrEmpty(randomPostId))
+        {
+            return false;
+        }
+        
+        var topicCredentials = new AzureKeyCredential(topicKey);
+        var client= new EventGridPublisherClient(new Uri(topicUrl), topicCredentials);
+
+        var eventList = new List<EventGridEvent>
+            { new(subject, Constants.Topics.NewRandomPost, "1.0", randomPostId) };
+
+        try
+        {
+            await client.SendEventsAsync(eventList);
+            return true;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicUrl, e);   
+            return false;
+        }
+    }
 }

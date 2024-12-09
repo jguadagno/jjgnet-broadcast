@@ -14,4 +14,8 @@ public interface ISourceData
     public string ShortenedUrl { get; set; }
     public DateTime PublicationDate { get; set; }
     public DateTime? EndAfter { get; set; }
+    /// <summary>
+    /// A comma separated list of tags or categories
+    /// </summary>
+    public string Tags { get; set; }
 }

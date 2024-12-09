@@ -8,7 +8,8 @@
     "FUNCTIONS_EXTENSION_VERSION": "~4",
     "maintenance_clear_old_logs_cron_settings": "0 */2 * * * *",
     "facebook_refresh_tokens_cron_settings": "0 */2 * * * *",
-    "AzureWebJobs.publishers_random_posts.Disabled": true,
+    "publishers_random_post_cron_settings": "0 */2 * * * *",
+    "AzureWebJobs.publishers_random_posts.Disabled": false,
     "AzureWebJobs.publishers_scheduled_items.Disabled": true,
     "AzureWebJobs.collectors_feed_load_all_posts.Disabled": true,
     "AzureWebJobs.collectors_feed_check_for_updates.Disabled": true,
@@ -17,7 +18,7 @@
     "AzureWebJobs.facebook_post_status_to_page.Disabled": true,
     "AzureWebJobs.facebook_process_new_source_data.Disabled": true,
     "AzureWebJobs.facebook_process_scheduled_item_fired.Disabled": true,
-    "AzureWebJobs.facebook_refresh_tokens.Disabled": false,
+    "AzureWebJobs.facebook_refresh_tokens.Disabled": true,
     "AzureWebJobs.twitter_send_tweet.Disabled": true,
     "AzureWebJobs.twitter_process_new_source_data.Disabled": true,
     "AzureWebJobs.twitter_process_scheduled_item_fired.Disabled": true,
@@ -40,6 +41,8 @@
     "TopicNewSourceDataKey": "",
     "TopicScheduledItemFiredDataEndpoint": "",
     "TopicScheduledItemFiredDataKey": "",
+    "TopicNewRandomPostEndpoint": "",
+    "TopicNewRandomPostKey": "",
     "JJGNetDatabaseSqlServer": "Set in User Secrets",
     "AzureKeyVaultUrl": "",
     "SyndicationFeedReader": {
@@ -81,6 +84,10 @@
       "ClientSecret": "",
       "AccessToken": "",
       "AuthorId": ""
+    },
+    "Bluesky": {
+      "BlueskyUserName": "jguadagno.com",
+      "BlueskyPassword": ""
     }
   }
 }
