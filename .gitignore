@@ -1,6 +1,5 @@
-
-# Created by https://www.toptal.com/developers/gitignore/api/windows,macos,visualstudio,visualstudiocode,rider,azurefunctions,yarn,node
-# Edit at https://www.toptal.com/developers/gitignore?templates=windows,macos,visualstudio,visualstudiocode,rider,azurefunctions,yarn,node
+# Created by https://www.toptal.com/developers/gitignore/api/node,yarn,macos,rider,windows,visualstudio,azurefunctions,visualstudiocode
+# Edit at https://www.toptal.com/developers/gitignore?templates=node,yarn,macos,rider,windows,visualstudio,azurefunctions,visualstudiocode
 
 ### AzureFunctions ###
 # Azure Functions localsettings file
@@ -277,12 +276,6 @@ fabric.properties
 .history
 .ionide
 
-# Support for Project snippet scope
-.vscode/*.code-snippets
-
-# Ignore code-workspaces
-*.code-workspace
-
 ### Windows ###
 # Windows thumbnail cache files
 Thumbs.db
@@ -521,11 +514,11 @@ publish/
 PublishScripts/
 
 # NuGet Packages
-*.nupkg
+#*.nupkg
 # NuGet Symbol Packages
 *.snupkg
 # The packages folder can be ignored because of Package Restore
-**/[Pp]ackages/*
+#**/[Pp]ackages/*
 # except build/, which is used as an MSBuild target.
 !**/[Pp]ackages/build/
 # Uncomment if necessary however generally it will be regenerated when needed
@@ -702,6 +695,7 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # VS Code files for those working on multiple tools
+*.code-workspace
 
 # Local History for Visual Studio Code
 
@@ -713,7 +707,7 @@ FodyWeavers.xsd
 ### VisualStudio Patch ###
 # Additional files built by Visual Studio
 
-# End of https://www.toptal.com/developers/gitignore/api/windows,macos,visualstudio,visualstudiocode,rider,azurefunctions,yarn,node
+# End of https://www.toptal.com/developers/gitignore/api/node,yarn,macos,rider,windows,visualstudio,azurefunctions,visualstudiocode
 
 **/.idea/
 **/wwwroot/lib
@@ -729,3 +723,5 @@ startup.ps1
 # Draw.IO backup files
 **/*.drawio.*.bkp
 **/*.drawio.*.dtmp
+
+# NOTE: Packages folder and *.nuget are commented out above because the Bluesky package is not available on NuGet yet.
