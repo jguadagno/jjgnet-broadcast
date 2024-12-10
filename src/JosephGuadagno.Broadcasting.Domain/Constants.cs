@@ -57,8 +57,10 @@ public static class Constants
     {
         public const string PostAddedOrUpdated = "PostAddedOrUpdated";
         public const string VideoAddedOrUpdated = "VideoAddedOrUpdated";
-        public const string RandomTweetSent = "RandomTweetSent";
-        public const string RandomBlueskySent = "RandomBlueskySent";
+        public const string ProcessedRandomTweet = "ProcessedRandomTweet";
+        public const string TweetSent = "TweetSent";
+        public const string ProcessedRandomBlueskyPost = "ProcessedRandomBlueskyPost";
+        public const string BlueskyPostSent = "BlueskyPostSent";
         public const string ScheduledItemFired = "ScheduledItemFired";
     }
 }

@@ -28,9 +28,11 @@ public class SendTweet(TwitterContext twitterContext, TelemetryClient telemetryC
             else
             {
                 // This is good, just log success
-                telemetryClient.TrackEvent(Constants.Metrics.RandomTweetSent, new Dictionary<string, string>
+                logger.LogDebug("Posting to Twitter: {tweetText}", tweetText);
+                telemetryClient.TrackEvent(Constants.Metrics.TweetSent, new Dictionary<string, string>
                 {
-                    {"message", tweetText} 
+                    {"message", tweetText},
+                    {"id", tweet.ID}
                 });
             }
         }

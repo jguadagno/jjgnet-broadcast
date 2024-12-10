@@ -22,9 +22,9 @@ public class SendPost(IBlueskyManager blueskyManager, TelemetryClient telemetryC
             if (response is not null)
             {
                 logger.LogDebug("Posting to bluesky: {message}", message);
-                telemetryClient.TrackEvent(Constants.Metrics.RandomBlueskySent, new Dictionary<string, string>
+                telemetryClient.TrackEvent(Constants.Metrics.BlueskyPostSent, new Dictionary<string, string>
                 {
-                    {"message", message}, 
+                    {"message", message},
                     {"cid", response.Cid.ToString()}
                 });
                 return;
