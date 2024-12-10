@@ -16,6 +16,7 @@ using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Models;
 using JosephGuadagno.Broadcasting.Managers;
+using JosephGuadagno.Broadcasting.Managers.Bluesky;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using JosephGuadagno.Broadcasting.Managers.Facebook;
@@ -227,7 +228,7 @@ void ConfigureBlueskyManager(IServiceCollection services)
         configuration.Bind("Settings:Bluesky", settings);
         return settings;
     });
-    services.TryAddSingleton<IFacebookManager, FacebookManager>();
+    services.TryAddSingleton<IBlueskyManager, BlueskyManager>();
 }
     
 void ConfigureRepositories(IServiceCollection services)
