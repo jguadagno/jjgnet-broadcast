@@ -28,7 +28,8 @@ public class ProcessNewRandomPost(SourceDataRepository sourceDataRepository, Tel
         }
 
         var eventGridData = eventGridEvent.Data.ToString();
-        var sourceData = await sourceDataRepository.GetAsync(Constants.Tables.SourceData, eventGridData);
+        var sourceId = System.Text.Json.JsonSerializer.Deserialize<string>(eventGridData);
+        var sourceData = await sourceDataRepository.GetAsync(Constants.Tables.SourceData, sourceId);
         if (sourceData is null)
         {
             logger.LogError("The source data for event '{Id}' was not found", eventGridEvent.Data);
