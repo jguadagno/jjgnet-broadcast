@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
-public class SendPost(IBlueskyManager blueskyManager, ITelemetryClient telemetryClient, ILogger<SendPost> logger)
+public class SendPost(IBlueskyManager blueskyManager, TelemetryClient telemetryClient, ILogger<SendPost> logger)
 {
     [Function(Constants.ConfigurationFunctionNames.BlueskyPostMessage)]
     public async Task Run(
