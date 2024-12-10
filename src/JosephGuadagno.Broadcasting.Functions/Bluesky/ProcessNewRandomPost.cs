@@ -29,7 +29,7 @@ public class ProcessNewRandomPost(SourceDataRepository sourceDataRepository, Tel
 
         // The Id of the SourceData Record
         var eventGridData = eventGridEvent.Data.ToString();
-        var sourceId = System.Text.Json.JsonSerializer.Deserialize<string>(eventGridData);
+        var sourceId = System.Text.Json.JsonSerializer.Deserialize<string>(eventGridData).Replace("\"", "");
         var sourceData = await sourceDataRepository.GetAsync(Constants.Tables.SourceData, sourceId);
         if (sourceData is null)
         {
