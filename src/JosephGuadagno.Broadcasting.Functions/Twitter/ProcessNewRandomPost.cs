@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Data.Repositories;
+using JosephGuadagno.Broadcasting.Domain;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Constants = JosephGuadagno.Broadcasting.Domain.Constants;
@@ -29,7 +30,7 @@ public class ProcessNewRandomPost(SourceDataRepository sourceDataRepository, Tel
 
         var eventGridData = eventGridEvent.Data.ToString();
         var sourceId = System.Text.Json.JsonSerializer.Deserialize<string>(eventGridData).Replace("\"", "");
-        var sourceData = await sourceDataRepository.GetAsync(Constants.Tables.SourceData, sourceId);
+        var sourceData = await sourceDataRepository.GetAsync(SourceSystems.SyndicationFeed, sourceId);
         if (sourceData is null)
         {
             logger.LogError("The source data for event '{Id}' was not found", eventGridEvent.Data);
