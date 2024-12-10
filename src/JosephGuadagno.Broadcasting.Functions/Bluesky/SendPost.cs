@@ -29,7 +29,7 @@ public class SendPost(IBlueskyManager blueskyManager, TelemetryClient telemetryC
                 });
                 return;
             }
-            logger.LogDebug("Failed to post to Bluesky. Response was null");
+            logger.LogError("Failed to post to Bluesky. Response was null");
         }
         catch (Exception e)
         {
