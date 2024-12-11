@@ -124,6 +124,6 @@ public class SourceData : TableEntity, ISourceData
         var hashTagsArray = Tags.Split(',');
 
         return hashTagsArray.Where(hashTag => !hashTag.Equals("Articles", StringComparison.OrdinalIgnoreCase))
-            .Aggregate(string.Empty, (current, hashTag) => current + ("#" + hashTag.Replace(" ", "").Replace(".", "")));
+            .Aggregate(string.Empty, (current, hashTag) => current + (" #" + hashTag.Replace(" ", "").Replace(".", "")));
     }
 }

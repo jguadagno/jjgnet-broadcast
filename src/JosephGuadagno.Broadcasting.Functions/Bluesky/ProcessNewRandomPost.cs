@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -15,7 +17,7 @@ public class ProcessNewRandomPost(SourceDataRepository sourceDataRepository, Tel
 {
     [Function(Constants.ConfigurationFunctionNames.BlueskyProcessRandomPostFired)]
     [QueueOutput(Constants.Queues.BlueskyPostToSend)]
-    public async Task<string> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<BlueskyPostMessage> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTime.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -39,18 +41,29 @@ public class ProcessNewRandomPost(SourceDataRepository sourceDataRepository, Tel
         }
         
         // Handle the event - eventGridData to build the post
-        var hashtags = sourceData.TagsToHashTags();
-        var status =
-            $"ICYMI: ({sourceData.PublicationDate.ToShortDateString()}): \"{sourceData.Title}.\" RPs and feedback are always appreciated! {sourceData.ShortenedUrl} {hashtags}";
-            
+        // Need to create a PostBuilder to send this based on these docs
+        // https://github.com/blowdart/idunno.Bluesky/blob/main/docs/posting.md#links-to-external-web-sites
+        var postText =
+            $"ICYMI: ({sourceData.PublicationDate.ToShortDateString()}): \"{sourceData.Title}.\" RPs and feedback are always appreciated! ";
+
+        var blueskyPostMessage = new BlueskyPostMessage
+        {
+            Text = postText,
+            Url = sourceData.ShortenedUrl
+        };
+        if (!string.IsNullOrEmpty(sourceData.Tags))
+        {
+            blueskyPostMessage.Hashtags = sourceData.Tags.Split(',').ToList();
+        }
+        
         // Return
         telemetryClient.TrackEvent(Constants.Metrics.ProcessedRandomBlueskyPost, new Dictionary<string, string>
         {
             {"title", sourceData.Title}, 
             {"url", sourceData.Url},
-            {"post", status}
+            {"post", postText}
         });
         logger.LogDebug("Picked a random post {Title}", sourceData.Title);
-        return status;
+        return blueskyPostMessage;
     }
 }
