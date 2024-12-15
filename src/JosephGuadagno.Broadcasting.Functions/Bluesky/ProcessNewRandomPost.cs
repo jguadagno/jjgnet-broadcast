@@ -49,7 +49,8 @@ public class ProcessNewRandomPost(SourceDataRepository sourceDataRepository, Tel
         var blueskyPostMessage = new BlueskyPostMessage
         {
             Text = postText,
-            Url = sourceData.ShortenedUrl
+            Url = sourceData.Url,
+            ShortenedUrl = sourceData.ShortenedUrl
         };
         if (!string.IsNullOrEmpty(sourceData.Tags))
         {

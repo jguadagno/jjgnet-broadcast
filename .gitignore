@@ -514,11 +514,11 @@ publish/
 PublishScripts/
 
 # NuGet Packages
-#*.nupkg
+*.nupkg
 # NuGet Symbol Packages
 *.snupkg
 # The packages folder can be ignored because of Package Restore
-#**/[Pp]ackages/*
+**/[Pp]ackages/*
 # except build/, which is used as an MSBuild target.
 !**/[Pp]ackages/build/
 # Uncomment if necessary however generally it will be regenerated when needed
@@ -723,5 +723,3 @@ startup.ps1
 # Draw.IO backup files
 **/*.drawio.*.bkp
 **/*.drawio.*.dtmp
-
-# NOTE: Packages folder and *.nuget are commented out above because the Bluesky package is not available on NuGet yet.

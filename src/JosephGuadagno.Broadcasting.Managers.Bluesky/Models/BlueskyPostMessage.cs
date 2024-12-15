@@ -11,6 +11,10 @@ public class BlueskyPostMessage
     /// </summary>
     public string? Url { get; set; }
     /// <summary>
+    /// The shortened url for the post
+    /// </summary>
+    public string? ShortenedUrl { get; set; }
+    /// <summary>
     /// A string list of Hashtags to use
     /// </summary>
     public List<string>? Hashtags { get; set; }

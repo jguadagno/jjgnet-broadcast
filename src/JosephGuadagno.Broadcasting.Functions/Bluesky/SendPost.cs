@@ -28,16 +28,25 @@ public class SendPost(IBlueskyManager blueskyManager, TelemetryClient telemetryC
         {
             logger.LogDebug("Bluesky Post Received '{Text}'", blueskyPostMessage.Text);
             var postBuilder = new PostBuilder(blueskyPostMessage.Text);
-            if (blueskyPostMessage.Url is not null)
+            
+            if (!string.IsNullOrWhiteSpace(blueskyPostMessage.ShortenedUrl) && !string.IsNullOrWhiteSpace(blueskyPostMessage.Url))
             {
-                postBuilder.Append(new Link(blueskyPostMessage.Url, blueskyPostMessage.Url));
+                postBuilder.Append(" " + new Link(blueskyPostMessage.ShortenedUrl, blueskyPostMessage.ShortenedUrl));
+                
+                // Embedding is not working yet
+                // Get the OpenGraph info to embed
+                // var embeddedExternalRecord = await blueskyManager.GetEmbeddedExternalRecord(blueskyPostMessage.Url);
+                // if (embeddedExternalRecord != null)
+                // {
+                //     postBuilder.EmbedRecord(embeddedExternalRecord);
+                // }
             }
 
             if (blueskyPostMessage.Hashtags is not null && blueskyPostMessage.Hashtags.Count > 0)
             {
                 foreach (var hashtag in blueskyPostMessage.Hashtags)
                 {
-                    postBuilder.Append(new HashTag(hashtag));
+                    postBuilder.Append(" " + new HashTag(hashtag));
                 }
             }
             
