@@ -31,22 +31,26 @@ public class SendPost(IBlueskyManager blueskyManager, TelemetryClient telemetryC
             
             if (!string.IsNullOrWhiteSpace(blueskyPostMessage.ShortenedUrl) && !string.IsNullOrWhiteSpace(blueskyPostMessage.Url))
             {
-                postBuilder.Append(" " + new Link(blueskyPostMessage.ShortenedUrl, blueskyPostMessage.ShortenedUrl));
+                if (!blueskyPostMessage.Text.EndsWith(' '))
+                {
+                    postBuilder.Append(" ");
+                }
+                postBuilder.Append(new Link(blueskyPostMessage.ShortenedUrl, blueskyPostMessage.ShortenedUrl));
                 
-                // Embedding is not working yet
                 // Get the OpenGraph info to embed
-                // var embeddedExternalRecord = await blueskyManager.GetEmbeddedExternalRecord(blueskyPostMessage.Url);
-                // if (embeddedExternalRecord != null)
-                // {
-                //     postBuilder.EmbedRecord(embeddedExternalRecord);
-                // }
+                var embeddedExternalRecord = await blueskyManager.GetEmbeddedExternalRecord(blueskyPostMessage.Url);
+                if (embeddedExternalRecord != null)
+                {
+                    postBuilder.EmbedRecord(embeddedExternalRecord);
+                }
             }
 
             if (blueskyPostMessage.Hashtags is not null && blueskyPostMessage.Hashtags.Count > 0)
             {
                 foreach (var hashtag in blueskyPostMessage.Hashtags)
                 {
-                    postBuilder.Append(" " + new HashTag(hashtag));
+                    postBuilder.Append(" ");
+                    postBuilder.Append(new HashTag(hashtag));
                 }
             }
             
@@ -65,7 +69,7 @@ public class SendPost(IBlueskyManager blueskyManager, TelemetryClient telemetryC
         }
         catch (Exception e)
         {
-            logger.LogError("Failed to post to Bluesky. Exception Thrown: {e.Message}", e.Message);
+            logger.LogError("Failed to post to Bluesky. Exception Thrown: {Message}", e.Message);
         }
     }
 }

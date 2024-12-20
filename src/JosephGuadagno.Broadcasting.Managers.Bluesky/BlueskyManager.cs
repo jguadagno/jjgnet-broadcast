@@ -1,6 +1,5 @@
 ﻿using idunno.AtProto;
 using idunno.AtProto.Repo;
-using idunno.AtProto.Repo.Models;
 using idunno.Bluesky;
 using idunno.Bluesky.Embed;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
@@ -33,13 +32,14 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
 
             // Post Failed
             logger.LogError(
-                $"Bluesky Post failed! Status Code: {response.StatusCode}, Error Details {response.AtErrorDetail}");
+                "Bluesky Post failed! Status Code: {ResponseStatusCode}, Error Details {ResponseErrorDetail}",
+                response.StatusCode, response.AtErrorDetail?.Message);
             return response.Result;
         }
 
         // Login Failed
-        logger.LogError(
-            $"Login failed. Status Code: {loginResult.StatusCode}, Error Details {loginResult.AtErrorDetail}");
+        logger.LogError("Login failed. Status Code: {LoginResultStatusCode}, Error Details {LoginResultAtErrorDetail}",
+            loginResult.StatusCode, loginResult.AtErrorDetail?.Message);
         return null;
     }
 
@@ -53,17 +53,18 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
             var response = await agent.DeletePost(strongReference);
             if (response.Succeeded)
             {
-                logger.LogDebug($"Bluesky Post successfully deleted! Cid: '{strongReference.Cid}'");
+                logger.LogDebug("Bluesky Post successfully deleted! Cid: \'{StrongReferenceCid}\'",
+                    strongReference.Cid);
                 return true;
             }
 
             logger.LogWarning(
-                $"Failed to delete Bluesky Post! Status Code: {loginResult.StatusCode}, Message: '{loginResult.AtErrorDetail?.Message}', Cid: {strongReference.Cid}");
+                "Failed to delete Bluesky Post! Status Code: {LoginResultStatusCode}, Message: \'{Message}\', Cid: {StrongReferenceCid}",
+                loginResult.StatusCode, loginResult.AtErrorDetail?.Message, strongReference.Cid);
             return false;
         }
 
-        logger.LogError(
-            $"Failed to delete Bluesky Post! Login Failed! Status Code: {loginResult.StatusCode}, Message: '{loginResult.AtErrorDetail?.Message}', Cid: {strongReference.Cid}");
+        logger.LogError("Failed to delete Bluesky Post! Login Failed! Status Code: {LoginResultStatusCode}, Message: '{Message}', {StrongReferenceCidId}", loginResult.StatusCode, loginResult.AtErrorDetail?.Message, strongReference.Cid);
 
         return false;
     }

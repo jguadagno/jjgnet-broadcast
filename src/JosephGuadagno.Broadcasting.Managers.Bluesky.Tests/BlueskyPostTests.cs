@@ -142,7 +142,8 @@ public class BlueskyPostTests
             "JetBrains", "Plugin", "presenting", "Rider"
         };
 
-        postBuilder.Append(" ");
+        // This line in the test will make the post highlight weird on Bluesky
+        // postBuilder.Append(" ");
         postBuilder.Append(new Link(shortenedUrl, shortenedUrl));
         
         // Get the OpenGraph info to embed
