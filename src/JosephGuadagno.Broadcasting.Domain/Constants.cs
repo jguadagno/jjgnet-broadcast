@@ -44,6 +44,7 @@ public static class Constants
         public const string LinkedInProcessScheduledItemFired = "LinkedInProcessScheduledItemFired";
         public const string BlueskyPostMessage = "BlueskyPostMessage";
         public const string BlueskyProcessRandomPostFired = "BlueskyProcessRandomPostFired";
+        public const string BlueskyProcessNewSourceDataFired = "BlueskyProcessNewSourceDataFired";
     }
 
     public static class Topics
@@ -61,6 +62,7 @@ public static class Constants
         public const string TweetSent = "TweetSent";
         public const string ProcessedRandomBlueskyPost = "ProcessedRandomBlueskyPost";
         public const string BlueskyPostSent = "BlueskyPostSent";
+        public const string ProcessedNewBlueskyPost = "ProcessedNewBlueskyPost";
         public const string ScheduledItemFired = "ScheduledItemFired";
     }
 }
