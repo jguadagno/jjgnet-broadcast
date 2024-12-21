@@ -5,6 +5,8 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
+using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.ApplicationInsights.WindowsServer;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
@@ -23,6 +25,7 @@ builder.Services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
 
 builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
 
+builder.Services.AddSingleton<ITelemetryInitializer, AzureWebAppRoleEnvironmentTelemetryInitializer>();
 builder.Services.AddApplicationInsightsTelemetry();
 
 // Configure the logger
