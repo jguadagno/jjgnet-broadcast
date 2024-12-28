@@ -3,15 +3,14 @@
   "logging": {
     "applicationInsights": {
       "samplingSettings": {
-        "isEnabled": false,
-        "samplingExcludedTypes": "Request"
+        "isEnabled": true
       }
     },
     "logLevel": {
-      "default": "Debug",
-      "System": "Information",
-      "Microsoft": "Information",
-      "JosephGuadagno": "Debug",
+      "default": "Error",
+      "System": "Error",
+      "Microsoft": "Error",
+      "JosephGuadagno": "Error",
       "Azure.Core": "Error"
     }
   }
