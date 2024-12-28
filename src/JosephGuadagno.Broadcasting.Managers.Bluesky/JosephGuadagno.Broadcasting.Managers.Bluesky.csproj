@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="idunno.Bluesky" Version="0.1.3-prerelease" />
+      <PackageReference Include="idunno.Bluesky" Version="0.2.0-prerelease" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
       <PackageReference Include="X.Web.MetaExtractor" Version="2.0.4" />
     </ItemGroup>
