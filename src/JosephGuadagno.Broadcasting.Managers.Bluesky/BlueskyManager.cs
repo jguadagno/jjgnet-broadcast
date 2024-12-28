@@ -19,8 +19,7 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
 
     public async Task<CreateRecordResponse?> Post(PostBuilder postBuilder)
     {
-        BlueskyAgent agent = new();
-
+        using BlueskyAgent agent = new();
         var loginResult = await agent.Login(blueskySettings.BlueskyUserName, blueskySettings.BlueskyPassword);
         if (loginResult.Succeeded)
         {
@@ -36,7 +35,7 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
                 response.StatusCode, response.AtErrorDetail?.Message);
             return response.Result;
         }
-
+            
         // Login Failed
         logger.LogError("Login failed. Status Code: {LoginResultStatusCode}, Error Details {LoginResultAtErrorDetail}",
             loginResult.StatusCode, loginResult.AtErrorDetail?.Message);
@@ -45,7 +44,7 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
 
     public async Task<bool> DeletePost(StrongReference strongReference)
     {
-        BlueskyAgent agent = new();
+        using BlueskyAgent agent = new();
 
         var loginResult = await agent.Login(blueskySettings.BlueskyUserName, blueskySettings.BlueskyPassword);
         if (loginResult.Succeeded)
@@ -76,7 +75,7 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
             return null;
         }
 
-        BlueskyAgent agent = new();
+        using BlueskyAgent agent = new();
 
         var loginResult = await agent.Login(blueskySettings.BlueskyUserName, blueskySettings.BlueskyPassword);
         if (!loginResult.Succeeded)
