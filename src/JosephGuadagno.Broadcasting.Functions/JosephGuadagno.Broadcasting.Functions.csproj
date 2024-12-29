@@ -40,8 +40,8 @@
     <PackageReference Include="Azure.Data.Tables" Version="12.9.1" />
     <PackageReference Include="Azure.Identity" Version="1.13.1" />
     <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.7.0" />
-    <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.6" />
-    <PackageReference Include="JosephGuadagno.Extensions" Version="1.2.4" />
+    <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.7" />
+    <PackageReference Include="JosephGuadagno.Extensions" Version="1.2.5" />
     <PackageReference Include="linqtotwitter" Version="6.15.0" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.22.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
@@ -78,7 +78,6 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
-    <PackageReference Include="System.Memory.Data" Version="9.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.KeyVault\JosephGuadagno.Broadcasting.Data.KeyVault.csproj" />
@@ -109,5 +108,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Progam.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <FunctionsPreservedDependencies Include="System.Memory.Data.dll" />
   </ItemGroup>
 </Project>
