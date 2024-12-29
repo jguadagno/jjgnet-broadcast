@@ -31,7 +31,7 @@
     <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.6" />
+    <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.7" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
   </ItemGroup>
 </Project>
