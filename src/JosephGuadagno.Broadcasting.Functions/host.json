@@ -3,15 +3,17 @@
   "logging": {
     "applicationInsights": {
       "samplingSettings": {
-        "isEnabled": true
+        "isEnabled": true,
+        "maxTelemetryItemsPerSecond" : 10,
+        "excludedTypes": "Request;Exception"
       }
     },
     "logLevel": {
-      "default": "Error",
-      "System": "Error",
-      "Microsoft": "Error",
-      "JosephGuadagno": "Error",
-      "Azure.Core": "Error"
+      "default": "Warning",
+      "System": "Warning",
+      "Microsoft": "Warning",
+      "JosephGuadagno": "Warning",
+      "Azure.Core": "Warning"
     }
   }
 }
