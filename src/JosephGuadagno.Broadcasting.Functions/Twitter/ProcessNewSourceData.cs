@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -14,11 +16,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 public class ProcessNewSourceData
 {
     private readonly SourceDataRepository _sourceDataRepository;
+    private readonly TelemetryClient _telemetryClient;
     private readonly ILogger<ProcessNewSourceData> _logger;
 
-    public ProcessNewSourceData(SourceDataRepository sourceDataRepository, ILogger<ProcessNewSourceData> logger)
+    public ProcessNewSourceData(SourceDataRepository sourceDataRepository, TelemetryClient telemetryClient, ILogger<ProcessNewSourceData> logger)
     {
         _sourceDataRepository = sourceDataRepository;
+        _telemetryClient = telemetryClient;
         _logger = logger;
     }
         
@@ -44,12 +48,7 @@ public class ProcessNewSourceData
         }
 
         var eventGridData = eventGridEvent.Data.ToString();
-        if (eventGridData is null)
-        {
-            _logger.LogError("Failed to retrieve the value of the eventGrid for event '{Id}'", eventGridEvent.Id);
-            return null;
-        }
-        
+
         var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
@@ -75,6 +74,16 @@ public class ProcessNewSourceData
         var tweet = ComposeTweet(sourceData);
            
         // Done
+        _telemetryClient.TrackEvent(Constants.Metrics.TwitterProcessedNewSourceData, new Dictionary<string, string>
+        {
+            { "post", tweet },
+            { "title", sourceData.Title },
+            { "url", sourceData.Url },
+            { "sourceSystem", sourceData.SourceSystem },
+            { "partitionKey", sourceData.PartitionKey },
+            { "rowKey", sourceData.RowKey },
+        });
+        
         _logger.LogDebug("Done composing tweet for '{PartitionKey}', '{RowKey}'",
             tableEvent.PartitionKey, tableEvent.RowKey);
         return tweet;

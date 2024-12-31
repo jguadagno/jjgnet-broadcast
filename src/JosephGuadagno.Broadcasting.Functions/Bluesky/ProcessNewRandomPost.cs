@@ -58,7 +58,7 @@ public class ProcessNewRandomPost(SourceDataRepository sourceDataRepository, Tel
         }
         
         // Return
-        telemetryClient.TrackEvent(Constants.Metrics.ProcessedRandomBlueskyPost, new Dictionary<string, string>
+        telemetryClient.TrackEvent(Constants.Metrics.BlueskyProcessedRandomPost, new Dictionary<string, string>
         {
             {"title", sourceData.Title}, 
             {"url", sourceData.Url},

@@ -2,6 +2,7 @@
 // http://localhost:7071/runtime/webhooks/EventGrid?functionName=facebook_process_scheduled_item_fired
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Extensions.Types;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
@@ -21,6 +23,7 @@ public class ProcessScheduledItemFired
 {
     private readonly SourceDataRepository _sourceDataRepository;
     private readonly IEngagementManager _engagementManager;
+    private readonly TelemetryClient _telemetryClient;
     private readonly ILogger<ProcessScheduledItemFired> _logger;
     
     const int MaxFacebookStatusText = 2000;
@@ -28,10 +31,12 @@ public class ProcessScheduledItemFired
     public ProcessScheduledItemFired(
         SourceDataRepository sourceDataRepository,
         IEngagementManager engagementManager,
+        TelemetryClient telemetryClient,
         ILogger<ProcessScheduledItemFired> logger)
     {
         _sourceDataRepository = sourceDataRepository;
         _engagementManager = engagementManager;
+        _telemetryClient = telemetryClient;
         _logger = logger;
     }
     
@@ -56,12 +61,7 @@ public class ProcessScheduledItemFired
         }
         
         var eventGridData = eventGridEvent.Data.ToString();
-        if (eventGridData is null)
-        {
-            _logger.LogError("Failed to retrieve the value of the eventGrid for event '{Id}'", eventGridEvent.Id);
-            return null;
-        }
-        
+
         var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
         if (tableEvent == null)
         {
@@ -89,6 +89,15 @@ public class ProcessScheduledItemFired
                 tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
             return null;
         }
+        
+        _telemetryClient.TrackEvent(Constants.Metrics.FacebookProcessedScheduledItemFired, new Dictionary<string, string>
+        {
+            {"tableName", tableEvent.TableName},
+            {"partitionKey", tableEvent.PartitionKey},
+            {"rowKey", tableEvent.RowKey},
+            {"statusText", facebookPostStatus.StatusText}, 
+            {"url", facebookPostStatus.LinkUri}
+        });
         
         _logger.LogDebug("Generated the Facebook post text for {TableName}, {PartitionKey}, {RowKey}",
             tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);

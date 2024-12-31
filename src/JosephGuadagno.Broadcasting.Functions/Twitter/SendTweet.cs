@@ -11,7 +11,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
 public class SendTweet(TwitterContext twitterContext, TelemetryClient telemetryClient, ILogger<SendTweet> logger)
 {
-    private readonly ILogger<SendTweet> _logger = logger;
 
     [Function("twitter_send_tweet")]
     public async Task Run(
@@ -23,13 +22,13 @@ public class SendTweet(TwitterContext twitterContext, TelemetryClient telemetryC
             if (tweet is null)
             {
                 // Log the error
-                _logger.LogError("Failed to send the tweet: '{TweetText}'. ", tweetText);
+                logger.LogError("Failed to send the tweet: '{TweetText}'. ", tweetText);
             }
             else
             {
                 // This is good, just log success
                 logger.LogDebug("Posting to Twitter: {tweetText}", tweetText);
-                telemetryClient.TrackEvent(Constants.Metrics.TweetSent, new Dictionary<string, string>
+                telemetryClient.TrackEvent(Constants.Metrics.TwitterPostSent, new Dictionary<string, string>
                 {
                     {"message", tweetText},
                     {"id", tweet.ID}
@@ -38,7 +37,7 @@ public class SendTweet(TwitterContext twitterContext, TelemetryClient telemetryC
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send the tweet: '{TweetText}'. Exception: '{ExceptionMessage}'", tweetText, ex.Message);
+            logger.LogError(ex, "Failed to send the tweet: '{TweetText}'. Exception: '{ExceptionMessage}'", tweetText, ex.Message);
         }
     }
 }

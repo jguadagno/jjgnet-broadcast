@@ -2,6 +2,7 @@
 // http://localhost:7071/runtime/webhooks/EventGrid?functionName=linkedin_process_scheduled_item_fired
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using JosephGuadagno.Extensions.Types;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.IdentityModel.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
@@ -23,6 +25,7 @@ public class ProcessScheduledItemFired
     private readonly SourceDataRepository _sourceDataRepository;
     private readonly IEngagementManager _engagementManager;
     private readonly ILinkedInApplicationSettings _linkedInApplicationSettings;
+    private readonly ITelemetryClient _telemetryClient;
     private readonly ILogger<ProcessScheduledItemFired> _logger;
     
     const int MaxLinkedInStatusText = 2000;
@@ -31,11 +34,13 @@ public class ProcessScheduledItemFired
         SourceDataRepository sourceDataRepository,
         IEngagementManager engagementManager,
         ILinkedInApplicationSettings linkedInApplicationSettings,
+        ITelemetryClient telemetryClient,
         ILogger<ProcessScheduledItemFired> logger)
     {
         _sourceDataRepository = sourceDataRepository;
         _engagementManager = engagementManager;
         _linkedInApplicationSettings = linkedInApplicationSettings;
+        _telemetryClient = telemetryClient;
         _logger = logger;
     }
     
@@ -91,6 +96,15 @@ public class ProcessScheduledItemFired
             return null;
         }
         
+        _telemetryClient.TrackEvent(Constants.Metrics.LinkedInProcessedScheduledItemFired, new Dictionary<string, string>
+        {
+            {"tableName", tableEvent.TableName},
+            {"partitionKey", tableEvent.PartitionKey},
+            {"rowKey", tableEvent.RowKey},
+            {"text", linkedInPostLink.Text}, 
+            {"url", linkedInPostLink.LinkUrl},
+            {"title", linkedInPostLink.Title}
+        });
         _logger.LogDebug("Generated the LinkedIn post text for {TableName}, {PartitionKey}, {RowKey}",
             tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
         return linkedInPostLink;

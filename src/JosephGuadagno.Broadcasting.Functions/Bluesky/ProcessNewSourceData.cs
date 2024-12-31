@@ -68,11 +68,14 @@ public class ProcessNewSourceData(SourceDataRepository sourceDataRepository, Tel
         }
         
         // Return
-        telemetryClient.TrackEvent(Constants.Metrics.ProcessedNewBlueskyPost, new Dictionary<string, string>
+        telemetryClient.TrackEvent(Constants.Metrics.BlueskyProcessedNewSourceData, new Dictionary<string, string>
         {
+            {"post", postText},
             {"title", sourceData.Title}, 
             {"url", sourceData.Url},
-            {"post", postText}
+            {"sourceSystem", sourceData.SourceSystem},
+            {"partitionKey", sourceData.PartitionKey},
+            {"rowKey", sourceData.RowKey},
         });
         logger.LogDebug("Posted to Bluesky: {Title}", sourceData.Title);
         return blueskyPostMessage;

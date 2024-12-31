@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -15,11 +17,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 public class ProcessNewSourceData
 {
     private readonly SourceDataRepository _sourceDataRepository;
+    private readonly TelemetryClient _telemetryClient;
     private readonly ILogger<ProcessNewSourceData> _logger;
 
-    public ProcessNewSourceData(SourceDataRepository sourceDataRepository, ILogger<ProcessNewSourceData> logger)
+    public ProcessNewSourceData(SourceDataRepository sourceDataRepository, TelemetryClient telemetryClient, ILogger<ProcessNewSourceData> logger)
     {
         _sourceDataRepository = sourceDataRepository;
+        _telemetryClient = telemetryClient;
         _logger = logger;
     }
         
@@ -67,7 +71,17 @@ public class ProcessNewSourceData
         _logger.LogDebug("Composing Facebook status for '{PartitionKey}', '{RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
             
         var status = ComposeStatus(sourceData);
+        
         // Done
+        _telemetryClient.TrackEvent(Constants.Metrics.FacebookProcessedNewSourceData, new Dictionary<string, string>
+        {
+            {"post", status.StatusText},
+            {"title", sourceData.Title}, 
+            {"url", sourceData.Url},
+            {"sourceSystem", sourceData.SourceSystem},
+            {"partitionKey", sourceData.PartitionKey},
+            {"rowKey", sourceData.RowKey},
+        });
         _logger.LogDebug("Done composing Facebook status for '{PartitionKey}', '{RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
         return status;
     }

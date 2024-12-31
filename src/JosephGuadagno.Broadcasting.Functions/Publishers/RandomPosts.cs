@@ -74,6 +74,15 @@ public class RandomPosts
             return;
         }
         
-        _logger.LogInformation("Latest random post '{randomSyndicationId.Title.Text}' has been published", randomSourceData.Title);
+        _telemetryClient.TrackEvent(Constants.Metrics.RandomPostFired, new Dictionary<string, string>
+        {
+            {"title", randomSourceData.Title}, 
+            {"url", randomSourceData.Url},
+            {"sourceSystem", randomSourceData.SourceSystem},
+            {"partitionKey", randomSourceData.PartitionKey},
+            {"rowKey", randomSourceData.RowKey},
+        });
+        
+        _logger.LogDebug("Latest random post '{RandomSyndicationIdTitleText}' has been published", randomSourceData.Title);
     }
 }

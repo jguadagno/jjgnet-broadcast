@@ -43,7 +43,7 @@ public class ProcessNewRandomPost(SourceDataRepository sourceDataRepository, Tel
             $"ICYMI: ({sourceData.PublicationDate.ToShortDateString()}): \"{sourceData.Title}.\" RTs and feedback are always appreciated! {sourceData.ShortenedUrl} {hashtags}";
             
         // Return
-        telemetryClient.TrackEvent(Constants.Metrics.ProcessedRandomTweet, new Dictionary<string, string>
+        telemetryClient.TrackEvent(Constants.Metrics.TwitterProcessedRandomPost, new Dictionary<string, string>
         {
             {"title", sourceData.Title}, 
             {"url", sourceData.Url},

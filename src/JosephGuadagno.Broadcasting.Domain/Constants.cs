@@ -58,11 +58,28 @@ public static class Constants
     {
         public const string PostAddedOrUpdated = "PostAddedOrUpdated";
         public const string VideoAddedOrUpdated = "VideoAddedOrUpdated";
-        public const string ProcessedRandomTweet = "ProcessedRandomTweet";
-        public const string TweetSent = "TweetSent";
-        public const string ProcessedRandomBlueskyPost = "ProcessedRandomBlueskyPost";
-        public const string BlueskyPostSent = "BlueskyPostSent";
-        public const string ProcessedNewBlueskyPost = "ProcessedNewBlueskyPost";
         public const string ScheduledItemFired = "ScheduledItemFired";
+        public const string RandomPostFired = "RandomPostFired";
+        public const string ClearOldLogs = "ClearOldLogs";
+        
+        public const string BlueskyProcessedNewSourceData = "BlueskyProcessedNewSourceData";
+        public const string BlueskyProcessedScheduledItemFired = "BlueskyProcessedScheduledItemFired";
+        public const string BlueskyProcessedRandomPost = "BlueskyProcessedRandomPost";
+        public const string BlueskyPostSent = "BlueskyPostSent";
+
+        public const string FacebookProcessedNewSourceData = "FacebookProcessedNewSourceData";
+        public const string FacebookProcessedScheduledItemFired = "FacebookProcessedScheduledItemFired";
+        public const string FacebookPostPageStatus = "FacebookPostPageStatus";
+
+        public const string LinkedInProcessedNewSourceData = "LinkedInProcessedNewSourceData";
+        public const string LinkedInProcessedScheduledItemFired = "LinkedInProcessedScheduledItemFired";
+        public const string LinkedInPostImage = "LinkedInPostImage";
+        public const string LinkedInPostLink = "LinkedInPostLink";
+        public const string LinkedInPostText = "LinkedInPostText";
+
+        public const string TwitterProcessedRandomPost = "TwitterProcessedRandomPost";
+        public const string TwitterProcessedNewSourceData = "TwitterProcessedNewSourceData";
+        public const string TwitterProcessScheduledItemFired = "TwitterProcessScheduledItemFired";
+        public const string TwitterPostSent = "TwitterPostSent";
     }
 }
