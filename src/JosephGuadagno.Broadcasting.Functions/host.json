@@ -13,7 +13,7 @@
       "System": "Warning",
       "Microsoft": "Warning",
       "JosephGuadagno": "Warning",
-      "Azure.Core": "Warning"
+      "Azure.Core": "Error"
     }
   }
 }
