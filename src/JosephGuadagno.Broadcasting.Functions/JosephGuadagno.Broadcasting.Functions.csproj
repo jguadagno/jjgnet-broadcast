@@ -109,7 +109,4 @@
   <ItemGroup>
     <Compile Remove="Progam.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <FunctionsPreservedDependencies Include="System.Memory.Data.dll" />
-  </ItemGroup>
 </Project>
