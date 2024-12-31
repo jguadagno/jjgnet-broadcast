@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -14,12 +16,14 @@ public class PostImage
 {
     private readonly ILinkedInManager _linkedInManager;
     private readonly HttpClient _httpClient;
+    private readonly TelemetryClient _telemetryClient;
     private readonly ILogger<PostImage> _logger;
     
-    public PostImage(ILinkedInManager linkedInManager, HttpClient httpClient, ILogger<PostImage> logger)
+    public PostImage(ILinkedInManager linkedInManager, HttpClient httpClient, TelemetryClient telemetryClient, ILogger<PostImage> logger)
     {
         _linkedInManager = linkedInManager;
         _httpClient = httpClient;
+        _telemetryClient = telemetryClient;
         _logger = logger;
     }
     
@@ -39,9 +43,20 @@ public class PostImage
             }
             var imageBytes = await imageResponse.Content.ReadAsByteArrayAsync();
             
-            await _linkedInManager.PostShareTextAndImage(linkedInPostImage.AccessToken, linkedInPostImage.AuthorId,
+            var linkedInShareId = await _linkedInManager.PostShareTextAndImage(linkedInPostImage.AccessToken, linkedInPostImage.AuthorId,
                 linkedInPostImage.Text, imageBytes, linkedInPostImage.Title,
                 linkedInPostImage.Description);
+
+            if (!string.IsNullOrEmpty(linkedInShareId))
+            {
+                _telemetryClient.TrackEvent(Constants.Metrics.LinkedInPostImage, new Dictionary<string, string>
+                {
+                    {"linkedInShareId", linkedInShareId},
+                    {"imageUrl", linkedInPostImage.ImageUrl},
+                    {"title", linkedInPostImage.Title}, 
+                    {"url", linkedInPostImage.ImageUrl}
+                });
+            }
         }
         catch (Exception exception)
         {

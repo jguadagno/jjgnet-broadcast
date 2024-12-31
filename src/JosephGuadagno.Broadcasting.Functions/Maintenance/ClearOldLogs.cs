@@ -1,24 +1,18 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Data.Tables;
 using JosephGuadagno.Broadcasting.Domain;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Maintenance;
 
-public class ClearOldLogs
+public class ClearOldLogs(TelemetryClient telemetryClient, ILogger<ClearOldLogs> logger)
 {
-    
-    private readonly ILogger<ClearOldLogs> _logger;
-
-    public ClearOldLogs(ILogger<ClearOldLogs> logger)
-    {
-        _logger = logger;
-    }
-        
     [Function("maintenance_clear_old_logs")]
     public async Task RunAsync(
         [TimerTrigger("%maintenance_clear_old_logs_cron_settings%")] TimerInfo myTimer,
@@ -27,7 +21,7 @@ public class ClearOldLogs
         // 0 */2 * * * * - Every 2 minutes
         // 0 23 * * 0 - Run at 11pm on Sunday
         var startedAt = DateTime.UtcNow;
-        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
+        logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             Constants.ConfigurationFunctionNames.MaintenanceClearOldLogs, startedAt);
         var numberOfItemsDeleted = 0;
         var numberOfItemsDeletedFailed = 0;
@@ -55,11 +49,16 @@ public class ClearOldLogs
                 Console.WriteLine($"Failed: Primary Key: {tableEntity.PartitionKey}, Row Key: {tableEntity.RowKey}");
                 numberOfItemsDeletedFailed++;
             }
-            
         }
         
         // Return
-        _logger.LogDebug("Delete {NumberOfItemsDeleted} log messages, failed to delete {NumberOfItemsDeletedFailed} log messages",
+        telemetryClient.TrackEvent(Constants.Metrics.ClearOldLogs, new Dictionary<string, string>
+        {
+            {"DeletedCount", numberOfItemsDeleted.ToString()},
+            {"FailedCount", numberOfItemsDeletedFailed.ToString()}
+        });
+        
+        logger.LogDebug("Delete {NumberOfItemsDeleted} log messages, failed to delete {NumberOfItemsDeletedFailed} log messages",
             numberOfItemsDeleted, numberOfItemsDeletedFailed);
     }
 }

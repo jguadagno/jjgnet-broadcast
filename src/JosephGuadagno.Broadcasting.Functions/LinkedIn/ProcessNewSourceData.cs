@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -16,13 +18,15 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 public class ProcessNewSourceData
 {
     private readonly SourceDataRepository _sourceDataRepository;
+    private readonly TelemetryClient _telemetryClient;
     private readonly ILogger<ProcessNewSourceData> _logger;
     private readonly ILinkedInApplicationSettings _linkedInApplicationSettings;
 
-    public ProcessNewSourceData(SourceDataRepository sourceDataRepository, ILinkedInApplicationSettings linkedInApplicationSettings, ILogger<ProcessNewSourceData> logger)
+    public ProcessNewSourceData(SourceDataRepository sourceDataRepository, ILinkedInApplicationSettings linkedInApplicationSettings, TelemetryClient telemetryClient, ILogger<ProcessNewSourceData> logger)
     {
         _sourceDataRepository = sourceDataRepository;
         _linkedInApplicationSettings = linkedInApplicationSettings;
+        _telemetryClient = telemetryClient;
         _logger = logger;
     }
     
@@ -68,7 +72,17 @@ public class ProcessNewSourceData
         _logger.LogDebug("Composing LinkedIn status for '{PartitionKey}', '{RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
             
         var status = ComposeStatus(sourceData);
+        
         // Done
+        _telemetryClient.TrackEvent(Constants.Metrics.LinkedInProcessedNewSourceData, new Dictionary<string, string>
+        {
+            {"post", status.Text},
+            {"title", sourceData.Title}, 
+            {"url", sourceData.Url},
+            {"sourceSystem", sourceData.SourceSystem},
+            {"partitionKey", tableEvent.PartitionKey},
+            {"rowKey", tableEvent.RowKey},
+        });
         _logger.LogDebug("Done composing LinkedIn status for '{PartitionKey}', '{RowKey}'", tableEvent.PartitionKey, tableEvent.RowKey);
         return status;
     }

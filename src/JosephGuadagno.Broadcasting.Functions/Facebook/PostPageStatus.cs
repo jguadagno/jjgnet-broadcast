@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -10,11 +12,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 public class PostPageStatus
 {
     private readonly IFacebookManager _facebookManager;
+    private readonly TelemetryClient _telemetryClient;
     private readonly ILogger<PostPageStatus> _logger;
 
-    public PostPageStatus(IFacebookManager facebookManager, ILogger<PostPageStatus> logger)
+    public PostPageStatus(IFacebookManager facebookManager, TelemetryClient telemetryClient, ILogger<PostPageStatus> logger)
     {
         _facebookManager = facebookManager;
+        _telemetryClient = telemetryClient;
         _logger = logger;
     }
         
@@ -30,6 +34,15 @@ public class PostPageStatus
         try
         {
             var pageId = await _facebookManager.PostMessageAndLinkToPage(facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
+
+            if (!string.IsNullOrEmpty(pageId))
+            {
+                _telemetryClient.TrackEvent(Constants.Metrics.FacebookPostPageStatus, new Dictionary<string, string>
+                {
+                    {"statusText", facebookPostStatus.StatusText}, 
+                    {"url", facebookPostStatus.LinkUri},
+                });
+            }
         }
         catch (Exception e)
         {
