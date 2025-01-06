@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Http;

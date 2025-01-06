@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Data.Repositories;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Facebook;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
@@ -37,7 +38,7 @@ public class RefreshTokens
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
-            Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, startedAt);
+            Constants.ConfigurationFunctionNames.FacebookTokenRefresh, startedAt);
 
         await RefreshToken(Managers.Facebook.Constants.TokenTypes.LongLived, _facebookApplicationSettings.LongLivedAccessToken);
         await RefreshToken(Managers.Facebook.Constants.TokenTypes.Page, _facebookApplicationSettings.PageAccessToken);

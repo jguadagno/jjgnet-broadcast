@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
-using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
 using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Http;
@@ -44,7 +44,7 @@ public class LoadAllPosts
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
-            Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts, startedAt);
+            Domain.Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts, startedAt);
 
         // Check for the from date
         var dateToCheckFrom = DateTime.MinValue;
@@ -78,7 +78,7 @@ public class LoadAllPosts
                 var saveWasSuccessful = await _sourceDataRepository.SaveAsync(item);
                 if (saveWasSuccessful)
                 {
-                    _telemetryClient.TrackEvent(Constants.Metrics.PostAddedOrUpdated, item.ToDictionary());
+                    _telemetryClient.TrackEvent(Domain.Constants.Metrics.PostAddedOrUpdated, item.ToDictionary());
                     savedCount++;
                 }
                 else

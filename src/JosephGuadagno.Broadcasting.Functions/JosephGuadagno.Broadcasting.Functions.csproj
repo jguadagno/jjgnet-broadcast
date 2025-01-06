@@ -88,6 +88,7 @@
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.Bluesky\JosephGuadagno.Broadcasting.Managers.Bluesky.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.Facebook\JosephGuadagno.Broadcasting.Managers.Facebook.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.LinkedIn\JosephGuadagno.Broadcasting.Managers.LinkedIn.csproj" />
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.MicrosoftGraph\JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Serilog\JosephGuadagno.Broadcasting.Serilog.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj" />

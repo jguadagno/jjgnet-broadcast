@@ -1,3 +1,5 @@
+using JosephGuadagno.Broadcasting.Data.KeyVault;
+
 namespace JosephGuadagno.Broadcasting.Web.Interfaces;
 
 public interface ISettings
@@ -26,7 +28,7 @@ public interface ISettings
     /// <summary>
     /// The Azure Key Vault to use
     /// </summary>
-    public string AzureKeyVaultUrl { get; set; }
+    public KeyVaultSettings KeyVault { get; set; }
     
     /// <summary>
     /// The static content root url

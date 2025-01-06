@@ -1,6 +1,6 @@
-﻿using Azure.Security.KeyVault.Secrets;
+﻿using Azure.Core;
+using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
-using Microsoft.ApplicationInsights;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Data.KeyVault;
@@ -9,13 +9,11 @@ public class KeyVault: IKeyVault
 {
     private readonly SecretClient _secretClient;
     private readonly ILogger<KeyVault> _logger;
-    private readonly TelemetryClient _telemetryClient;
     
-    public KeyVault(SecretClient secretClient, ILogger<KeyVault> logger, TelemetryClient telemetryClient)
+    public KeyVault(SecretClient secretClient, ILogger<KeyVault> logger)
     {
         _secretClient = secretClient;
         _logger = logger;
-        _telemetryClient = telemetryClient;
     }
     
     /// <summary>

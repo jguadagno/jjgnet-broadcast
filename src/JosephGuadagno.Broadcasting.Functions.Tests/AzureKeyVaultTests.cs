@@ -1,47 +1,40 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.Xml;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests;
 
-public class AzureKeyVaultTests
+public class AzureKeyVaultTests(
+    ISettings settings)
 {
-
-    private readonly ISettings _settings;
-    private readonly ITestOutputHelper _testOutputHelper;
-    private readonly ILogger<AzureKeyVaultTests> _logger;
-    
     private readonly string _secretName = "secret-for-unit-testing";
 
-    public AzureKeyVaultTests(ISettings settings, ITestOutputHelper testOutputHelper,
-        ILogger<AzureKeyVaultTests> logger)
-    {
-        _settings = settings;
-        _testOutputHelper = testOutputHelper;
-        _logger = logger;
-    }
-
     [Fact]
-    public void ValidateEnvironmentVariables()
+    public void ValidateApplicationSettings()
     {
         // Arrange
 
         // Act
 
         // Assert
-        Assert.NotNull(_settings.AzureKeyVaultUrl);
-        Assert.False(string.IsNullOrEmpty(_settings.AzureKeyVaultUrl));
-        Assert.NotNull(Environment.GetEnvironmentVariable("AZURE_CLIENT_ID"));
-        Assert.False(string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_CLIENT_ID")));
-        Assert.NotNull(Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET"));
-        Assert.False(string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET")));
-        Assert.NotNull(Environment.GetEnvironmentVariable("AZURE_TENANT_ID"));
-        Assert.False(string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_TENANT_ID")));
+        Assert.NotNull(settings);
+        Assert.NotNull(settings.KeyVault);
+        
+        Assert.NotNull(settings.KeyVault.KeyVaultUri);
+        Assert.False(string.IsNullOrEmpty(settings.KeyVault.KeyVaultUri));
+        
+        Assert.NotNull(settings.KeyVault.TenantId);
+        Assert.False(string.IsNullOrEmpty(settings.KeyVault.TenantId));
+        
+        Assert.NotNull(settings.KeyVault.ClientId);
+        Assert.False(string.IsNullOrEmpty(settings.KeyVault.ClientId));
+        
+        Assert.NotNull(settings.KeyVault.ClientSecret);
+        Assert.False(string.IsNullOrEmpty(settings.KeyVault.ClientSecret));
     }
 
     [Fact]
@@ -50,7 +43,10 @@ public class AzureKeyVaultTests
         // Arrange
         
         var secretValue = DateTime.Now.ToString("s");
-        var client = new SecretClient(new Uri(_settings.AzureKeyVaultUrl), new DefaultAzureCredential());
+        var client = new SecretClient(new Uri(settings.KeyVault.KeyVaultUri),
+            new ChainedTokenCredential(new ManagedIdentityCredential(),
+                new ClientSecretCredential(settings.KeyVault.TenantId, settings.KeyVault.ClientId,
+                    settings.KeyVault.ClientSecret)));
         
         // Act
         await client.SetSecretAsync(_secretName, secretValue);
@@ -66,7 +62,10 @@ public class AzureKeyVaultTests
     {
         // Arrange
         var secretValue = DateTime.Now.ToString("s");
-        var client = new SecretClient(new Uri(_settings.AzureKeyVaultUrl), new DefaultAzureCredential());
+        var client = new SecretClient(new Uri(settings.KeyVault.KeyVaultUri),
+            new ChainedTokenCredential(new ManagedIdentityCredential(),
+                new ClientSecretCredential(settings.KeyVault.TenantId, settings.KeyVault.ClientId,
+                    settings.KeyVault.ClientSecret)));
         var expiresOn = DateTime.UtcNow.AddHours(1);
         
         // Act
@@ -75,8 +74,8 @@ public class AzureKeyVaultTests
         // Assert
         Assert.True(true);
     }
-    
-    public async Task UpdateSecretValueAndProperties(SecretClient client, string secretName, string secretValue, DateTime expiresOn)
+
+    private async Task UpdateSecretValueAndProperties(SecretClient client, string secretName, string secretValue, DateTime expiresOn)
     {
         var originalSecretResponse = await client.GetSecretAsync(secretName);
         if (originalSecretResponse is null)

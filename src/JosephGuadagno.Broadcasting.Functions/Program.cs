@@ -11,6 +11,7 @@ using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
@@ -65,7 +66,7 @@ var host = new HostBuilder()
         var config = services.BuildServiceProvider().GetService<IConfiguration>();
         
         // Bind the 'Settings' section to the ISettings class
-        var settings = new JosephGuadagno.Broadcasting.Domain.Models.Settings();
+        var settings = new JosephGuadagno.Broadcasting.Functions.Models.Settings();
         config.Bind("Settings", settings);
         services.TryAddSingleton<ISettings>(settings);
     
@@ -290,8 +291,11 @@ void ConfigureKeyVault(IServiceCollection services)
         {
             throw new ApplicationException("Failed to get application settings from ServiceCollection");
         }
-        
-        return new SecretClient(new Uri(applicationSettings.AzureKeyVaultUrl), new DefaultAzureCredential());
+
+        return new SecretClient(new Uri(applicationSettings.KeyVault.KeyVaultUri),
+            new ChainedTokenCredential(new ManagedIdentityCredential(),
+                new ClientSecretCredential(applicationSettings.KeyVault.TenantId, applicationSettings.KeyVault.ClientId,
+                    applicationSettings.KeyVault.ClientSecret)));
     });
     
     services.TryAddScoped<IKeyVault, KeyVault>();
