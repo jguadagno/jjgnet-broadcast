@@ -12,30 +12,32 @@ public class MicrosoftGraphManager: IMicrosoftGraphManager
 {
     private readonly IKeyVault _keyVault;
     private readonly ILogger<MicrosoftGraphManager> _logger;
+
+    private readonly string[] _scopes =
+    [
+        "https://graph.microsoft.com/.default"
+    ];
     
-    private readonly GraphServiceClient _graphClient;
-    
-    public MicrosoftGraphManager(IKeyVault keyVault, TokenCredential tokenCredential, ILogger<MicrosoftGraphManager> logger)
+    public MicrosoftGraphManager(IKeyVault keyVault, ILogger<MicrosoftGraphManager> logger)
     {
         _keyVault = keyVault;
         _logger = logger;
-        
-        var credential = new ChainedTokenCredential(
-            new ManagedIdentityCredential(),
-            new EnvironmentCredential());
-
-        string[] scopes = ["https://graph.microsoft.com/.default"];
-
-        _graphClient = new GraphServiceClient(
-            tokenCredential, scopes);
     }
 
-    public async Task<List<User>> GetUsers()
+    private GraphServiceClient GetGraphServiceClient(Models.ClientSecretCredential credential)
+    {
+        return new GraphServiceClient(new ChainedTokenCredential(new ManagedIdentityCredential(),
+            new ClientSecretCredential(credential.TenantId, credential.ClientId,
+                credential.ClientSecret)), _scopes);
+    }
+    
+    public async Task<List<User>> GetUsers(Models.ClientSecretCredential credentials)
     {
         List<User> users = [];
         try
         {
-            var returnedUsers = await _graphClient.Users.GetAsync();
+            var graphServiceClient = GetGraphServiceClient(credentials);
+            var returnedUsers = await graphServiceClient.Users.GetAsync();
             if (returnedUsers == null)
             {
                 _logger.LogWarning("No users returned");

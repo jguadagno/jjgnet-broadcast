@@ -58,6 +58,7 @@
     },
     "KeyVault" : {
       "KeyVaultUri": "",
+      "TenantId": "",
       "ClientId": "",
       "ClientSecret": ""
     },

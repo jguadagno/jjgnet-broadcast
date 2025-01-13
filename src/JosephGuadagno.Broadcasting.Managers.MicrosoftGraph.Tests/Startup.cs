@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.Tests;
 
@@ -20,8 +21,8 @@ public class Startup
         {
             configurationBuilder
                 .AddJsonFile("appsettings.json", true)
-                .AddJsonFile("appsettings.Development.json", true)
-                .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
+                .AddJsonFile("appsettings.Development.json", false)
+                .AddUserSecrets(Assembly.GetExecutingAssembly(), false)
                 .AddEnvironmentVariables();
         });
     }
@@ -30,18 +31,28 @@ public class Startup
     {
         var config = hostBuilderContext.Configuration;
         services.AddSingleton(config);
-        
-        var azureKeyVaultUrl = config["AzureKeyVaultUrl"];
-        if (string.IsNullOrWhiteSpace(azureKeyVaultUrl))
-        {
-            throw new Exception("Azure Key Vault URL is missing");
-        }
-        
-        // Register the KeyVault client
-        services.TryAddSingleton(s => new SecretClient(new Uri(azureKeyVaultUrl), new DefaultAzureCredential()));
-        services.TryAddScoped<IKeyVault, KeyVault>();
-        
+
+        ConfigureKeyVault(services, config);
         services.TryAddSingleton<IMicrosoftGraphManager, MicrosoftGraphManager>();
         services.AddHttpClient();
+    }
+
+    void ConfigureKeyVault(IServiceCollection services, IConfiguration config)
+    {
+        var keyVaultSettings = new KeyVaultSettings
+        {
+            KeyVaultUri = null,
+            TenantId = null,
+            ClientId = null,
+            ClientSecret = null
+        };
+        config.Bind("Settings:KeyVault", keyVaultSettings);
+            
+        services.TryAddSingleton(s => new SecretClient(new Uri(keyVaultSettings.KeyVaultUri),
+            new ChainedTokenCredential(new ManagedIdentityCredential(),
+                new ClientSecretCredential(keyVaultSettings.TenantId, keyVaultSettings.ClientId,
+                    keyVaultSettings.ClientSecret))));
+    
+        services.TryAddScoped<IKeyVault, KeyVault>();
     }
 }
