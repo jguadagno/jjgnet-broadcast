@@ -703,12 +703,13 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
-
+funct
 ### VisualStudio Patch ###
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/node,yarn,macos,rider,windows,visualstudio,azurefunctions,visualstudiocode
 
+### Custom Exclusions ###
 **/.idea/
 **/wwwroot/lib
 **/wwwroot/libs
@@ -720,6 +721,10 @@ startup.ps1
 *.private.env.json
 *.config.json
 
-# Draw.IO backup files
+### Draw.IO backup files ###
 **/*.drawio.*.bkp
 **/*.drawio.*.dtmp
+
+### Custom Secrets ###
+**/*secret*.md
+**/*secret*.txt
