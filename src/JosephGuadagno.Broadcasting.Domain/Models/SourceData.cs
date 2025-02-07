@@ -8,21 +8,28 @@ namespace JosephGuadagno.Broadcasting.Domain.Models;
 
 public class SourceData : TableEntity, ISourceData
 {
-    public SourceData() {}
-        
-    public SourceData(string sourceSystem): base(sourceSystem, Guid.NewGuid().ToString())
+    public SourceData()
     {
-            
     }
-        
+
+    public SourceData(string sourceSystem) : base(sourceSystem, Guid.NewGuid().ToString())
+    {
+
+    }
+
     public SourceData(string sourceSystem, string id)
     {
         if (string.IsNullOrEmpty(sourceSystem))
         {
             throw new ArgumentNullException(nameof(sourceSystem), "The source system cannot be null or empty.");
         }
+
+        if (string.IsNullOrEmpty(id))
+        {
+            throw new ArgumentNullException(nameof(id), "The id cannot be null or empty.");
+        }
         PartitionKey = sourceSystem;
-        RowKey = string.IsNullOrEmpty(id) ? Guid.NewGuid().ToString() : id;
+        RowKey = EncodeUrlInKey(id);
     }
 
     /// <summary>
@@ -30,12 +37,12 @@ public class SourceData : TableEntity, ISourceData
     /// </summary>
     /// <remarks>This list can be found at <see cref="Domain.SourceSystems"/></remarks>
     public string SourceSystem => PartitionKey;
-        
+
     /// <summary>
     /// The Id of the item
     /// </summary>
-    public string Id => RowKey;
-        
+    public string Id => DecodeUrlInKey(RowKey);
+
     /// <summary>
     /// Indicates when the item was added
     /// </summary>
@@ -125,5 +132,19 @@ public class SourceData : TableEntity, ISourceData
 
         return hashTagsArray.Where(hashTag => !hashTag.Equals("Articles", StringComparison.OrdinalIgnoreCase))
             .Aggregate(string.Empty, (current, hashTag) => current + (" #" + hashTag.Replace(" ", "").Replace(".", "")));
+    }
+    
+    private string EncodeUrlInKey(string url)
+    {
+        var keyBytes = System.Text.Encoding.UTF8.GetBytes(url);
+        var base64 = Convert.ToBase64String(keyBytes);
+        return base64.Replace('/','_').Replace('+','-');
+    }
+    
+    private string DecodeUrlInKey(string encodedKey)
+    {
+        var base64 = encodedKey.Replace('-','+').Replace('_', '/');
+        var bytes = Convert.FromBase64String(base64);
+        return System.Text.Encoding.UTF8.GetString(bytes);
     }
 }

@@ -11,12 +11,12 @@
     "facebook_refresh_tokens_cron_settings": "0 */2 * * * *",
     "publishers_random_post_cron_settings": "0 */2 * * * *",
     "AzureWebJobs.BlueskyProcessRandomPostFired.Disabled": true,
-    "AzureWebJobs.BlueskyProcessNewSourceDataFired.Disabled": false,
+    "AzureWebJobs.BlueskyProcessNewSourceDataFired.Disabled": true,
     "AzureWebJobs.TwitterProcessRandomPostFired": true,
     "AzureWebJobs.publishers_random_posts.Disabled": true,
     "AzureWebJobs.publishers_scheduled_items.Disabled": true,
     "AzureWebJobs.BlueskyPostMessage.Disabled": true,
-    "AzureWebJobs.collectors_feed_load_all_posts.Disabled": true,
+    "AzureWebJobs.collectors_feed_load_all_posts.Disabled": false,
     "AzureWebJobs.collectors_feed_check_for_updates.Disabled": true,
     "AzureWebJobs.collectors_youtube_load_all_videos.Disabled": true,
     "AzureWebJobs.collectors_youtube_load_new_videos.Disabled": true,
@@ -51,7 +51,7 @@
     "JJGNetDatabaseSqlServer": "Set in User Secrets",
     "AzureKeyVaultUrl": "",
     "SyndicationFeedReader": {
-      "FeedUrl": "https://www.josephguadagno.net/feed.xml"
+      "FeedUrl": "http://localhost:4000/feed.xml"
     },
     "JsonFeedReader": {
       "FeedUrl": "http://localhost:4000/feed.json"
