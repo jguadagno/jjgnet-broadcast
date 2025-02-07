@@ -4,6 +4,7 @@ using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
+using JosephGuadagno.Extensions.Types;
 using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -36,11 +37,11 @@ public class LoadAllVideos
         _telemetryClient = telemetryClient;
     }
 
-    [Function("collectors_youtube_load_all_videos")]
+    [Function(Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos)]
     public async Task<IActionResult> RunAsync(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]
-        Domain.Models.LoadJsonFeedItemsRequest requestModel,
-        HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post")]
+        HttpRequest req, 
+        string checkFrom)
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -48,9 +49,14 @@ public class LoadAllVideos
 
         // Check for the from date
         var dateToCheckFrom = DateTime.MinValue;
-        if (requestModel != null)
+
+        if (!checkFrom.IsNullOrEmpty())
         {
-            dateToCheckFrom = requestModel.CheckFrom;
+            var parsed = DateTime.TryParse(checkFrom, out var dateFrom);
+            if (parsed)
+            {
+                dateToCheckFrom = dateFrom;
+            }
         }
 
         _logger.LogDebug("Getting all items from YouTube for the playlist since '{DateToCheckFrom}'", dateToCheckFrom);
@@ -64,8 +70,6 @@ public class LoadAllVideos
         }
             
         // Save the new items to SourceDataRepository
-        // TODO: Handle duplicate posts?
-        // GitHub Issue #17
         var savedCount = 0;
         foreach (var item in newItems)
         {

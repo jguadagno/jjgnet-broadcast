@@ -58,7 +58,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
             
         _logger.LogDebug("Found {PostsCount} posts", items.Count);
 
-        return items.Select(syndicationItem => new SourceData(SourceSystems.SyndicationFeed)
+        return items.Select(syndicationItem => new SourceData(SourceSystems.SyndicationFeed, syndicationItem.Id)
             {
                 Author = syndicationItem.Authors.FirstOrDefault()?.Name,
                 PublicationDate = syndicationItem.PublishDate.UtcDateTime,
@@ -107,29 +107,5 @@ public class SyndicationFeedReader: ISyndicationFeedReader
         _logger.LogDebug("Found {PostsCount} posts", items.Count);
 
         return items;
-    }
-
-    public SyndicationItem GetRandomSyndicationItem(DateTime sinceWhen, List<string> excludeCategories)
-    {
-        _logger.LogDebug(
-            "Getting a random syndication item from feed '{FeedUrl}' for posts since '{SinceWhen:u}",
-            _syndicationFeedReaderSettings, sinceWhen);
-
-        var syndicationItems = GetSyndicationItems(sinceWhen, excludeCategories);
-            
-        // Pick a Random one
-        var randomPost = syndicationItems
-            .OrderBy(_ => Guid.NewGuid())
-            .FirstOrDefault();
-
-        if (randomPost == null)
-        {
-            _logger.LogWarning(
-                "Could not get a random posts from feed '{FeedUrl}' for posts since '{SinceWhen:u}",
-                _syndicationFeedReaderSettings, sinceWhen);
-            return null;
-        }
-
-        return randomPost;
     }
 }

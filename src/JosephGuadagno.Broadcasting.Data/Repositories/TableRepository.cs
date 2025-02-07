@@ -8,8 +8,8 @@ namespace JosephGuadagno.Broadcasting.Data.Repositories;
 public class TableRepository<T> where T : TableEntity, new()
 {
     private readonly Table _table;
-        
-    public TableRepository(string connectionString, string tableName)
+
+    protected TableRepository(string connectionString, string tableName)
     {
         _table = new Table(connectionString, tableName);
     }
