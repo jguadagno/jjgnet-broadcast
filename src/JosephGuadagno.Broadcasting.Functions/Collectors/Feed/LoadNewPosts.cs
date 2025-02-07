@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed;
 
-public class CheckFeedForUpdates
+public class LoadNewPosts
 {
     private readonly ISyndicationFeedReader _syndicationFeedReader;
     private readonly ISettings _settings;
@@ -22,16 +22,16 @@ public class CheckFeedForUpdates
     private readonly SourceDataRepository _sourceDataRepository;
     private readonly IUrlShortener _urlShortener;
     private readonly IEventPublisher _eventPublisher;
-    private readonly ILogger<CheckFeedForUpdates> _logger;
+    private readonly ILogger<LoadNewPosts> _logger;
     private readonly TelemetryClient _telemetryClient;
 
-    public CheckFeedForUpdates(ISyndicationFeedReader syndicationFeedReader,
+    public LoadNewPosts(ISyndicationFeedReader syndicationFeedReader,
         ISettings settings,
         ConfigurationRepository configurationRepository,
         SourceDataRepository sourceDataRepository,
         IUrlShortener urlShortener,
         IEventPublisher eventPublisher,
-        ILogger<CheckFeedForUpdates> logger,
+        ILogger<LoadNewPosts> logger,
         TelemetryClient telemetryClient)
     {
         _syndicationFeedReader = syndicationFeedReader;
@@ -44,7 +44,7 @@ public class CheckFeedForUpdates
         _telemetryClient = telemetryClient;
     }
         
-    [Function("collectors_feed_check_for_updates")]
+    [Function(Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts)]
     public async Task RunAsync(
         [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer)
     {
@@ -73,8 +73,6 @@ public class CheckFeedForUpdates
         }
             
         // Save the new items to SourceDataRepository
-        // TODO: Handle duplicate posts?
-        // GitHub Issue #5
         var savedCount = 0;
         var eventsToPublish = new List<SourceData>();
         foreach (var item in newItems)

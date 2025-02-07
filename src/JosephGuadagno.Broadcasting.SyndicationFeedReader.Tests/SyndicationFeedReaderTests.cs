@@ -19,18 +19,14 @@ public class SyndicationFeedReaderTests
     }
         
     // TODO: Test Required
-    // Test the GetSyndicationItems
     // Test the GetSyndicationItems with no categories
-    // Test the GetRandomSyndicationItem
-    // Test the GetRandomSyndicationItem with no categories
         
     [Fact]
-    public void GetRandomSyndicationItem_ReturnsNonNullPost()
+    public void GetSyndicationItem_ReturnsNonNullPost()
     {
-        var randomPost = _syndicationFeedReader.GetRandomSyndicationItem(_randomPostSettings.CutoffDate,
-            _randomPostSettings.ExcludedCategories);
+        var randomPost = _syndicationFeedReader.GetSyndicationItems(_randomPostSettings.CutoffDate, _randomPostSettings.ExcludedCategories);
             
         Assert.NotNull(randomPost);
-
+        Assert.NotEmpty(randomPost);
     }
 }

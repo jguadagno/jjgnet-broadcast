@@ -1,9 +1,10 @@
 using System;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.Repositories;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Functions.Interfaces;
-using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
+using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
+using JosephGuadagno.Extensions.Types;
 using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,47 +15,52 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.Feed;
 
 public class LoadAllPosts
 {
-    private readonly IJsonFeedReader _jsonFeedReader;
+    private readonly ISyndicationFeedReader _syndicationFeedReader;
     private readonly ISettings _settings;
     private readonly SourceDataRepository _sourceDataRepository;
     private readonly IUrlShortener _urlShortener;
     private readonly ILogger<LoadAllPosts> _logger;
     private readonly TelemetryClient _telemetryClient;
 
-    public LoadAllPosts(IJsonFeedReader jsonFeedReader,
+    public LoadAllPosts(ISyndicationFeedReader syndicationFeedReader,
         ISettings settings, 
         SourceDataRepository sourceDataRepository,
         IUrlShortener urlShortener,
         ILogger<LoadAllPosts> logger,
         TelemetryClient telemetryClient)
     {
+        _syndicationFeedReader = syndicationFeedReader;
         _settings = settings;
         _sourceDataRepository = sourceDataRepository;
         _urlShortener = urlShortener;
-        _jsonFeedReader = jsonFeedReader;
         _logger = logger;
         _telemetryClient = telemetryClient;
     }
 
-    [Function("collectors_feed_load_all_posts")]
+    [Function(Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts)]
     public async Task<IActionResult> RunAsync(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]
-        Domain.Models.LoadJsonFeedItemsRequest requestModel,
-        HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post")]
+        HttpRequest req, 
+        string checkFrom)
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
-            Domain.Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts, startedAt);
+            Constants.ConfigurationFunctionNames.CollectorsFeedLoadAllPosts, startedAt);
 
         // Check for the from date
         var dateToCheckFrom = DateTime.MinValue;
-        if (requestModel != null)
+
+        if (!checkFrom.IsNullOrEmpty())
         {
-            dateToCheckFrom = requestModel.CheckFrom;
+            var parsed = DateTime.TryParse(checkFrom, out var dateFrom);
+            if (parsed)
+            {
+                dateToCheckFrom = dateFrom;
+            }
         }
 
         _logger.LogDebug("Getting all items from feed from '{DateToCheckFrom}'", dateToCheckFrom);
-        var newItems = await _jsonFeedReader.GetAsync(dateToCheckFrom);
+        var newItems = await _syndicationFeedReader.GetAsync(dateToCheckFrom);
             
         // If there is nothing new, save the last checked value and exit
         if (newItems == null || newItems.Count == 0)
@@ -64,8 +70,6 @@ public class LoadAllPosts
         }
             
         // Save the new items to SourceDataRepository
-        // TODO: Handle duplicate posts?
-        // GitHub Issue #4
         var savedCount = 0;
         foreach (var item in newItems)
         {
@@ -78,7 +82,7 @@ public class LoadAllPosts
                 var saveWasSuccessful = await _sourceDataRepository.SaveAsync(item);
                 if (saveWasSuccessful)
                 {
-                    _telemetryClient.TrackEvent(Domain.Constants.Metrics.PostAddedOrUpdated, item.ToDictionary());
+                    _telemetryClient.TrackEvent(Constants.Metrics.PostAddedOrUpdated, item.ToDictionary());
                     savedCount++;
                 }
                 else

@@ -38,8 +38,7 @@ public class RandomPosts
         _logger = logger;
         _telemetryClient = telemetryClient;
     }
-     
-    // TODO: Change this to an event and add a Twitter, and Bluesky Publisher... Maybe LinkedIn/Facebook?
+    
     [Function(Constants.ConfigurationFunctionNames.PublishersRandomPosts)]
     public async Task Run(
         [TimerTrigger("%publishers_random_post_cron_settings%")] TimerInfo myTimer)
@@ -57,7 +56,7 @@ public class RandomPosts
         }
 
         _logger.LogDebug("Getting all items from feed from '{CutoffDate:u}'", cutoffDate);
-        var randomSourceData = await _sourceDataRepository.GetRandomSourceDataAsync(cutoffDate);
+        var randomSourceData = await _sourceDataRepository.GetRandomSourceDataAsync(cutoffDate, _randomPostSettings.ExcludedCategories);
 
         if (randomSourceData is null)
         {

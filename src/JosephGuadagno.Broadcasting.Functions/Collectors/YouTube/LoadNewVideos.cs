@@ -44,7 +44,7 @@ public class LoadNewVideos
         _telemetryClient = telemetryClient;
     }
         
-    [Function("collectors_youtube_load_new_videos")]
+    [Function(Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos)]
     public async Task RunAsync(
         [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer)
     {
@@ -74,8 +74,6 @@ public class LoadNewVideos
         }
             
         // Save the new items to SourceDataRepository
-        // TODO: Handle duplicate videos?
-        // GitHub Issue #6
         var savedCount = 0;
         var eventsToPublish = new List<SourceData>();
         foreach (var item in newItems)
