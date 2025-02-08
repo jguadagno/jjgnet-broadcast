@@ -13,3 +13,9 @@ POST http://localhost:7071/api/CollectorsYouTubeLoadAllVideos?CheckFrom=2025-02-
 ### Run Collectors_YouTube Load All Videos - No Date
 
 POST http://localhost:7071/api/CollectorsYouTubeLoadAllVideos
+
+###
+POST https://jjgnet-broadcast.azurewebsites.net/api/CollectorsFeedLoadAllPosts
+
+###
+POST https://jjgnet-broadcast.azurewebsites.net/api/CollectorsYouTubeLoadAllVideos

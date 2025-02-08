@@ -41,7 +41,7 @@ public class SourceData : TableEntity, ISourceData
     /// <summary>
     /// The Id of the item
     /// </summary>
-    public string Id => DecodeUrlInKey(RowKey);
+    public string Id => RowKey;
 
     /// <summary>
     /// Indicates when the item was added
@@ -134,14 +134,14 @@ public class SourceData : TableEntity, ISourceData
             .Aggregate(string.Empty, (current, hashTag) => current + (" #" + hashTag.Replace(" ", "").Replace(".", "")));
     }
     
-    private string EncodeUrlInKey(string url)
+    public static string EncodeUrlInKey(string url)
     {
         var keyBytes = System.Text.Encoding.UTF8.GetBytes(url);
         var base64 = Convert.ToBase64String(keyBytes);
         return base64.Replace('/','_').Replace('+','-');
     }
     
-    private string DecodeUrlInKey(string encodedKey)
+    public static string DecodeUrlInKey(string encodedKey)
     {
         var base64 = encodedKey.Replace('-','+').Replace('_', '/');
         var bytes = Convert.FromBase64String(base64);
