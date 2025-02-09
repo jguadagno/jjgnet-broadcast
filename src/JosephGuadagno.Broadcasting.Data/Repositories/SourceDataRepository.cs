@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Extensions.Types;
 
 namespace JosephGuadagno.Broadcasting.Data.Repositories;
 
@@ -38,12 +39,17 @@ public class SourceDataRepository: TableRepository<SourceData>
         {
             foreach (var source in items)
             {
-                foreach (var excludeCategory in excludeCategories)
+                if (source.Tags.IsNullOrEmpty())
                 {
-                    if (!source.Tags.Contains(excludeCategory.ToLower().Trim()))
-                    {
-                        filteredList.Add(source);
-                    }
+                    filteredList.Add(source);
+                    continue;
+                }
+
+                var containsCategory = excludeCategories.Any(item =>
+                    source.Tags.ToLowerInvariant().Contains(item.ToLowerInvariant()));
+                if (!containsCategory)
+                {
+                    filteredList.Add(source);
                 }
             }
         }
