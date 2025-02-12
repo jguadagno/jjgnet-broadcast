@@ -58,14 +58,14 @@ public class SyndicationFeedReader: ISyndicationFeedReader
             
         _logger.LogDebug("Found {PostsCount} posts", items.Count);
 
-        return items.Select(syndicationItem => new SourceData(SourceSystems.SyndicationFeed, syndicationItem.Id)
+        return items.Select(syndicationItem => new SourceData(SourceSystems.SyndicationFeed, syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri)
             {
                 Author = syndicationItem.Authors.FirstOrDefault()?.Name,
                 PublicationDate = syndicationItem.PublishDate.UtcDateTime,
                 UpdatedOnDate = syndicationItem.LastUpdatedTime.UtcDateTime,
                 //Text = ((TextSyndicationContent) syndicationItem.Content).Text,
                 Title = syndicationItem.Title.Text,
-                Url = syndicationItem.Id,
+                Url = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri,
                 EndAfter = null,
                 AddedOn = currentTime,
                 Tags = syndicationItem.Categories is null ? null : string.Join(",", syndicationItem.Categories.Select(c => c.Name))
@@ -83,7 +83,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
         _logger.LogDebug("Checking syndication feed '{FeedUrl}' for posts since '{SinceWhen:u}'",
             _syndicationFeedReaderSettings, sinceWhen);
 
-        List<SyndicationItem> items = new List<SyndicationItem>();
+        List<SyndicationItem> items = [];
 
         try
         {
