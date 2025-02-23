@@ -1,5 +1,3 @@
-using System;
-using System.Net.Http;
 using System.Reflection;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.Repositories;
