@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.Interfaces;
 using Microsoft.Extensions.Configuration;
-using Xunit.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.Tests;
 
