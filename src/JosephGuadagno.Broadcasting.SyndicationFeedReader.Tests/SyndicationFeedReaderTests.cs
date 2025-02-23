@@ -1,7 +1,5 @@
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests;
 

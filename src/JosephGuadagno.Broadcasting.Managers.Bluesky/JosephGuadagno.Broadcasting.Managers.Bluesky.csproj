@@ -1,15 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <LangVersion>default</LangVersion>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>default</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Company>JosephGuadagno.NET, LLC</Company>
+    <Authors>Joseph Guadagno</Authors>
+    <Product>JosephGuadagno.NET Broadcasting - Bluesky Manager</Product>
+    <Description>The Bluesky Manager for the JosephGuadagno.NET Broadcasting application</Description>
+    <Copyright>Copyright ©2014-2025, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+    <Title>JosephGuadagno.NET Broadcasting - Bluesky</Title>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VersionMajor>1</VersionMajor>
+    <VersionMinor>0</VersionMinor>
+    <VersionBuild>1</VersionBuild>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' == '' ">local</VersionSuffix>
+    <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(GITHUB_RUN_ID)-preview</VersionSuffix>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
+    <AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</AssemblyVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
+    <FileVersion>$(VersionPrefix)</FileVersion>
+    <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
+  </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="idunno.Bluesky" Version="0.2.0-prerelease" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
       <PackageReference Include="X.Web.MetaExtractor" Version="2.0.4" />
     </ItemGroup>
 

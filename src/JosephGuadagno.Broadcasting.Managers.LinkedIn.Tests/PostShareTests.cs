@@ -1,6 +1,5 @@
 ﻿using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Managers.LinkedIn.Tests;
 

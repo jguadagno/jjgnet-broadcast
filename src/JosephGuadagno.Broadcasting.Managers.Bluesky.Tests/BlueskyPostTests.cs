@@ -4,7 +4,6 @@ using idunno.Bluesky;
 using idunno.Bluesky.RichText;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Managers.Bluesky.Tests;
 

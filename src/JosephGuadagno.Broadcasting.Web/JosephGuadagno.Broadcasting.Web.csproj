@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>default</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>872f5a5c-60ae-4319-9b7b-683cbd94220b</UserSecretsId>
@@ -8,14 +9,13 @@
     <Authors>Joseph Guadagno</Authors>
     <Product>JosephGuadagno.NET Broadcasting - Web</Product>
     <Description>The website for the JosephGuadagno.NET Broadcasting application</Description>
-    <Copyright>Copyright ©2014-2024, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+    <Copyright>Copyright ©2014-2025, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
     <Title>JosephGuadagno.NET Broadcasting - Web</Title>
-    <LangVersion>default</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <VersionMajor>1</VersionMajor>
     <VersionMinor>7</VersionMinor>
-    <VersionBuild>0</VersionBuild>
+    <VersionBuild>1</VersionBuild>
   </PropertyGroup>
   <PropertyGroup>
     <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
@@ -40,28 +40,28 @@
     <DocumentationFile>bin\Release\JosephGuadagno.Broadcasting.Web.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="13.0.1" />
-    <PackageReference Include="Azure.Identity" Version="1.13.1" />
+    <PackageReference Include="AutoMapper" Version="14.0.0" />
+    <PackageReference Include="Azure.Identity" Version="1.13.2" />
     <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.7.0" />
-    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.22.0" />
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.SqlServer" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.22.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.SqlServer" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.23.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.2" />
     <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0" />
-    <PackageReference Include="Microsoft.Identity.Web" Version="3.5.0" />
-    <PackageReference Include="Microsoft.Identity.Web.UI" Version="3.5.0" />
-    <PackageReference Include="NodaTime" Version="3.2.0" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="3.7.1" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="3.7.1" />
+    <PackageReference Include="NodaTime" Version="3.2.1" />
     <PackageReference Include="Rocket.Surgery.Extensions.AutoMapper.NodaTime" Version="9.0.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
     <PackageReference Include="Serilog.Enrichers.AssemblyName" Version="2.0.0" />
@@ -69,7 +69,7 @@
     <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
     <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
     <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="4.0.1-dev-00046" />
-    <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="10.0.2" />
+    <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="10.1.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
   </ItemGroup>

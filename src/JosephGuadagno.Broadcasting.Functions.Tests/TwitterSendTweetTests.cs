@@ -1,8 +1,6 @@
 using System.Threading.Tasks;
 using LinqToTwitter;
 using Microsoft.Extensions.Logging;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests;
 

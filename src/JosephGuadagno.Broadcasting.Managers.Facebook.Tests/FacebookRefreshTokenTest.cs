@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Managers.Facebook.Tests;
 

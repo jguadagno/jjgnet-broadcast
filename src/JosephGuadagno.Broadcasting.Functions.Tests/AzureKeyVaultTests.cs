@@ -4,7 +4,6 @@ using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests;
 

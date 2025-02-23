@@ -1,17 +1,43 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <LangVersion>default</LangVersion>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>default</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Company>JosephGuadagno.NET, LLC</Company>
+    <Authors>Joseph Guadagno</Authors>
+    <Product>JosephGuadagno.NET Broadcasting - KeyVault</Product>
+    <Description>The KeyVault helper library for the JosephGuadagno.NET Broadcasting application</Description>
+    <Copyright>Copyright ©2014-2025, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+    <Title>JosephGuadagno.NET Broadcasting - KeyVault</Title>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VersionMajor>1</VersionMajor>
+    <VersionMinor>1</VersionMinor>
+    <VersionBuild>1</VersionBuild>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' == '' ">local</VersionSuffix>
+    <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(GITHUB_RUN_ID)-preview</VersionSuffix>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
+    <AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</AssemblyVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
+    <FileVersion>$(VersionPrefix)</FileVersion>
+    <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
+  </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.7.0" />
-      <PackageReference Include="Microsoft.ApplicationInsights" Version="2.22.0" />
-      <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+      <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.2" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
     </ItemGroup>
 
     <ItemGroup>

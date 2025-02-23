@@ -45,19 +45,27 @@ public class Startup
         var config = hostBuilderContext.Configuration;
             
         services.AddSingleton(config);
-        
+
+        // Bind the 'Settings' section to the ISettings class
+        var settings = new Domain.Models.Settings();
+        config.Bind("Settings", settings);
+        services.TryAddSingleton<ISettings>(settings);
+
         var randomPostSettings = new RandomPostSettings();
         config.Bind("Settings:RandomPost", randomPostSettings);
         services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
-        
-        ConfigureSyndicationFeedReader(services);
-    
+            
         // Configure the logger
         services.AddLogging((loggingBuilder =>
         {
+            //loggingBuilder.ClearProviders();
             loggingBuilder.SetMinimumLevel(LogLevel.Trace);
             loggingBuilder.AddConfiguration(config);
         }));
+
+        // Configure all the services
+        ConfigureSyndicationFeedReader(services);
+        ConfigureFunction(services);
     }
     
     private void ConfigureSyndicationFeedReader(IServiceCollection services)
@@ -66,13 +74,14 @@ public class Startup
         {
             var settings = new SyndicationFeedReaderSettings();
             var configuration = s.GetService<IConfiguration>();
-            if (configuration is null)
-            {
-                throw new ApplicationException("Failed to get the configuration from the ServiceCollection");
-            }
             configuration.Bind("Settings:SyndicationFeedReader", settings);
             return settings;
         });
         services.TryAddSingleton<ISyndicationFeedReader, SyndicationFeedReader>();
+    }
+
+    private void ConfigureFunction(IServiceCollection services)
+    {
+        services.AddHttpClient();
     }
 }
