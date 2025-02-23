@@ -1,18 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>default</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Company>JosephGuadagno.NET, LLC</Company>
     <Authors>Joseph Guadagno</Authors>
     <Product>JosephGuadagno.NET Broadcasting - Data</Product>
     <Description>The repositories for the JosephGuadagno.NET Broadcasting application</Description>
-    <Copyright>Copyright ©2014-2024, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+    <Copyright>Copyright ©2014-2025, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
     <Title>JosephGuadagno.NET Broadcasting - Data</Title>
-    <LangVersion>default</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <VersionMajor>1</VersionMajor>
     <VersionMinor>6</VersionMinor>
-    <VersionBuild>0</VersionBuild>
+    <VersionBuild>1</VersionBuild>
   </PropertyGroup>
   <PropertyGroup>
     <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
