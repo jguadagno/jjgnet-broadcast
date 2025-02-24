@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Text.Json;
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
@@ -30,16 +31,28 @@ public class ProcessNewSourceData(SourceDataRepository sourceDataRepository, Tel
             return null;
         }
 
-        // The Id of the SourceData Record
+        // Process the EventGrid Event
         var eventGridData = eventGridEvent.Data.ToString();
-        var sourceId = System.Text.Json.JsonSerializer.Deserialize<string>(eventGridData).Replace("\"", "");
-        var sourceData = await sourceDataRepository.GetAsync(SourceSystems.SyndicationFeed, sourceId);
-        if (sourceData is null)
+
+        var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
+        if (tableEvent == null)
         {
-            logger.LogError("The source data for event '{Id}' was not found", eventGridEvent.Data);
+            logger.LogError("Failed to parse the TableEvent data for event '{Id}'", eventGridEvent.Id);
             return null;
         }
-        
+
+        // Create the scheduled tweets for it
+        logger.LogDebug("Looking for source with fields '{PartitionKey}' and '{RowKey}'",
+            tableEvent.PartitionKey, tableEvent.RowKey);
+        var sourceData = await sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
+
+        if (sourceData == null)
+        {
+            logger.LogWarning("Record for '{PartitionKey}', '{RowKey}' was NOT found",
+                tableEvent.PartitionKey, tableEvent.RowKey);
+            return null;
+        }
+
         // Handle the event - eventGridData to build the post
         // Need to create a PostBuilder to send this based on these docs
         // https://github.com/blowdart/idunno.Bluesky/blob/main/docs/posting.md#links-to-external-web-sites
