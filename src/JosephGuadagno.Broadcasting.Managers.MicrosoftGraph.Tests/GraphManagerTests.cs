@@ -23,9 +23,9 @@ public class GraphManagerTests
         // Arrange
         var clientCredentials = new Models.ClientSecretCredential
         {
-            TenantId = null,
-            ClientId = null,
-            ClientSecret = null
+            TenantId = string.Empty,
+            ClientId = string.Empty,
+            ClientSecret = string.Empty
         };
         _configuration.Bind("Settings:ApiCredentials", clientCredentials);
 
@@ -43,9 +43,9 @@ public class GraphManagerTests
         // Arrange
         var clientCredentials = new Models.ClientSecretCredential
         {
-            TenantId = null,
-            ClientId = null,
-            ClientSecret = null
+            TenantId = string.Empty,
+            ClientId = string.Empty,
+            ClientSecret = string.Empty
         };
         _configuration.Bind("Settings:WebCredentials", clientCredentials);
 

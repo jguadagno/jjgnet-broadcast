@@ -1,27 +1,13 @@
-using System;
-using System.Net.Http;
 using System.Reflection;
-using JosephGuadagno.Broadcasting.Data;
-using JosephGuadagno.Broadcasting.Data.Repositories;
-using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
-using JosephGuadagno.Broadcasting.JsonFeedReader.Models;
-using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
-using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
-using JosephGuadagno.Broadcasting.YouTubeReader.Models;
-using JosephGuadagno.Utilities.Web.Shortener.Models;
-using LinqToTwitter;
-using LinqToTwitter.OAuth;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using EngagementRepository = JosephGuadagno.Broadcasting.Data.Sql.EngagementDataStore;
 
 namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests;
 
@@ -33,8 +19,7 @@ public class Startup
         hostBuilder.ConfigureHostConfiguration(configurationBuilder =>
         {
             configurationBuilder
-                .AddJsonFile("appsettings.json", true)
-                .AddJsonFile("appsettings.Development.json", true)
+                .AddJsonFile("appsettings.development.json", false)
                 .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
                 .AddEnvironmentVariables();
         });
@@ -45,11 +30,6 @@ public class Startup
         var config = hostBuilderContext.Configuration;
             
         services.AddSingleton(config);
-
-        // Bind the 'Settings' section to the ISettings class
-        var settings = new Domain.Models.Settings();
-        config.Bind("Settings", settings);
-        services.TryAddSingleton<ISettings>(settings);
 
         var randomPostSettings = new RandomPostSettings();
         config.Bind("Settings:RandomPost", randomPostSettings);
@@ -74,6 +54,10 @@ public class Startup
         {
             var settings = new SyndicationFeedReaderSettings();
             var configuration = s.GetService<IConfiguration>();
+            if (configuration is null)
+            {
+                throw new NullReferenceException("Configuration is null while configuring SyndicationFeedReader.");
+            }
             configuration.Bind("Settings:SyndicationFeedReader", settings);
             return settings;
         });
