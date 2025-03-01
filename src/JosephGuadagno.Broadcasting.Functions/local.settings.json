@@ -8,6 +8,7 @@
     "FUNCTIONS_EXTENSION_VERSION": "~4",
     "WEBSITE_CLOUD_ROLENAME": "FunctionApp",
     "maintenance_clear_old_logs_cron_settings": "0 */2 * * * *",
+    "maintenance_ad_secret_refresh_cron_settings": "0 */2 * * * *",
     "facebook_refresh_tokens_cron_settings": "0 */2 * * * *",
     "publishers_random_post_cron_settings": "0 */2 * * * *",
     "AzureWebJobs.BlueskyProcessRandomPostFired.Disabled": true,
@@ -31,7 +32,8 @@
     "AzureWebJobs.linkedin_post_image.Disabled": true,
     "AzureWebJobs.linkedin_post_link.Disabled": true,
     "AzureWebJobs.linkedin_process_scheduled_item_fired.Disabled": true,
-    "AzureWebJobs.maintenance_clear_old_jobs.Disabled": true
+    "AzureWebJobs.maintenance_clear_old_jobs.Disabled": true,
+    "AzureWebJobs.MaintenanceAdClientSecretRefresh.Disabled": false
   },
   "Settings": {
     "StorageAccount": "UseDevelopmentStorage=true",
@@ -49,12 +51,17 @@
     "TopicNewRandomPostEndpoint": "",
     "TopicNewRandomPostKey": "",
     "JJGNetDatabaseSqlServer": "Set in User Secrets",
-    "AzureKeyVaultUrl": "",
     "SyndicationFeedReader": {
       "FeedUrl": "http://localhost:4000/feed.xml"
     },
     "JsonFeedReader": {
       "FeedUrl": "http://localhost:4000/feed.json"
+    },
+    "KeyVault" : {
+      "KeyVaultUri": "",
+      "TenantId": "",
+      "ClientId": "",
+      "ClientSecret": ""
     },
     "YouTube": {
       "ApiKey": "",

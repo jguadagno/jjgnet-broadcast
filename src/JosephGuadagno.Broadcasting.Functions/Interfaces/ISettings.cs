@@ -1,4 +1,6 @@
-namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Data.KeyVault;
+
+namespace JosephGuadagno.Broadcasting.Functions.Interfaces;
 
 public interface ISettings
 {
@@ -21,5 +23,8 @@ public interface ISettings
     public string BlueskyUserName { get; set; }
     public string BlueskyPassword { get; set; }
     
-    public string AzureKeyVaultUrl { get; set; }
+    /// <summary>
+    /// The Azure Key Vault to use
+    /// </summary>
+    public KeyVaultSettings KeyVault { get; set; }
 }

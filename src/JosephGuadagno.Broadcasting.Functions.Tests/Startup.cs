@@ -2,11 +2,16 @@ using System;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Data;
+using JosephGuadagno.Broadcasting.Data.KeyVault;
+using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.JsonFeedReader.Models;
 using JosephGuadagno.Broadcasting.Managers;
@@ -48,9 +53,9 @@ public class Startup
         services.AddSingleton(config);
 
         // Bind the 'Settings' section to the ISettings class
-        var settings = new Domain.Models.Settings();
+        var settings = new Models.Settings();
         config.Bind("Settings", settings);
-        services.TryAddSingleton<ISettings>(settings);
+        services.TryAddSingleton<Interfaces.ISettings>(settings);
         services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
             { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
 
@@ -63,6 +68,7 @@ public class Startup
         ConfigureLogging(services, config, logPath, "Functions_Test");
         
         // Configure all the services
+        ConfigureKeyVault(services);
         ConfigureTwitter(services);
         ConfigureJsonFeedReader(services);
         ConfigureSyndicationFeedReader(services);
@@ -157,7 +163,6 @@ public class Startup
             return settings;
         });
         services.TryAddSingleton<ISyndicationFeedReader, SyndicationFeedReader.SyndicationFeedReader>();
-
     }
 
     private void ConfigureYouTubeReader(IServiceCollection services)
@@ -239,6 +244,25 @@ public class Startup
             }
             return new SourceDataRepository(settings.StorageAccount);
         });
+    }
+
+    void ConfigureKeyVault(IServiceCollection services)
+    {
+        services.TryAddSingleton(s =>
+        {
+            var applicationSettings = s.GetService<ISettings>();
+            if (applicationSettings is null)
+            {
+                throw new ApplicationException("Failed to get application settings from ServiceCollection");
+            }
+
+            return new SecretClient(new Uri(applicationSettings.KeyVault.KeyVaultUri),
+                new ChainedTokenCredential(new ManagedIdentityCredential(),
+                    new ClientSecretCredential(applicationSettings.KeyVault.TenantId, applicationSettings.KeyVault.ClientId,
+                        applicationSettings.KeyVault.ClientSecret)));
+        });
+    
+        services.TryAddScoped<IKeyVault, KeyVault>();
     }
 
     private void ConfigureFunction(IServiceCollection services)

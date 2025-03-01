@@ -47,6 +47,9 @@
     <PackageReference Include="xunit.v3" Version="1.1.0" />
   </ItemGroup>
   <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj" />
   </ItemGroup>

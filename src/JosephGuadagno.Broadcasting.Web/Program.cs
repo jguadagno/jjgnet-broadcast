@@ -142,8 +142,11 @@ void ConfigureKeyVault(IServiceCollection services)
         {
             throw new ApplicationException("Failed to get application settings from ServiceCollection");
         }
-        
-        return new SecretClient(new Uri(applicationSettings.AzureKeyVaultUrl), new DefaultAzureCredential());
+
+        return new SecretClient(new Uri(applicationSettings.KeyVault.KeyVaultUri),
+            new ChainedTokenCredential(new ManagedIdentityCredential(),
+                new ClientSecretCredential(applicationSettings.KeyVault.TenantId, applicationSettings.KeyVault.ClientId,
+                    applicationSettings.KeyVault.ClientSecret)));
     });
     
     services.TryAddScoped<IKeyVault, KeyVault>();

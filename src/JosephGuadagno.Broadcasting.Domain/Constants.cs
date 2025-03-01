@@ -37,6 +37,7 @@ public static class Constants
         public const string TwitterProcessScheduledItemFired = "TwitterProcessScheduledItemFired";
         public const string TwitterProcessRandomPostFired = "TwitterProcessRandomPostFired";
         public const string MaintenanceClearOldLogs = "MaintenanceClearOldLogs";
+        public const string MaintenanceAdClientSecretRefresh = "MaintenanceAdClientSecretRefresh";
         public const string LinkedInPostLink = "LinkedInPostLink";
         public const string LinkedInPostText = "LinkedInPostText";
         public const string LinkedInPostImage = "LinkedInPostImage";

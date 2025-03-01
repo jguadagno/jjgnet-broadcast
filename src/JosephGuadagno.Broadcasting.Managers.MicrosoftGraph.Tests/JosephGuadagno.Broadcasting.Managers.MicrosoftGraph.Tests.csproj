@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Company>JosephGuadagno.NET, LLC</Company>
+        <Authors>Joseph Guadagno</Authors>
+        <Product>JosephGuadagno.NET Broadcasting - Microsoft Graph Manager Test Library</Product>
+        <Description>This library contains the unit/integration test for the Microsoft Graph Manager for the JosephGuadagno.NET Broadcasting application</Description>
+        <Copyright>Copyright ©2014-2024, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Title>JosephGuadagno.NET Broadcasting - Microsoft Graph Manager Tests</Title>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <UserSecretsId>33f66155-4122-4499-8603-d093670830c9</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.2" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+        <PackageReference Include="Xunit.DependencyInjection" Version="10.2.1" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector" Version="6.0.4">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.2" />
+        <PackageReference Include="xunit.v3" Version="1.1.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.MicrosoftGraph\JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="appsettings.Development.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+</Project>

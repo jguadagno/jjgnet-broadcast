@@ -48,6 +48,9 @@
     <PackageReference Include="xunit.v3" Version="1.1.0" />
   </ItemGroup>
   <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>  
+  <ItemGroup>
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Web\JosephGuadagno.Broadcasting.Web.csproj" />
   </ItemGroup>
   <ItemGroup>

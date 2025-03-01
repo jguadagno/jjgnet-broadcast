@@ -14,7 +14,7 @@ public class Startup
     {
         hostBuilder.ConfigureHostConfiguration(configurationBuilder =>
         {
-            configurationBuilder //.SetBasePath(hostBuilder.HostingEnvironment.ContentRootPath)
+            configurationBuilder
                 .AddJsonFile("appsettings.json", true)
                 .AddJsonFile("appsettings.Development.json", true)
                 .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
