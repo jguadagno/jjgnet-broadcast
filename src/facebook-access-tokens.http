@@ -32,18 +32,19 @@ GET https://graph.facebook.com/{{graph-api-version}}/oauth/access_token?grant_ty
     set_token_expires_in_60_days=true&
     fb_exchange_token={{page-access-token}}
 
+
 ### Get a Long-Lived Page Access Token
 ## Documentation https://developers.facebook.com/docs/facebook-login/guides/access-tokens/get-long-lived#long-lived-page-token
 # Need to look at the "expires_in": 5184000 for the number of seconds until this expires
 GET https://graph.facebook.com/{{graph-api-version}}/{{user-id}}/accounts?access_token={{long-lived-access-token}}
 
 ### Get the pages for a user
-## Documentation: https://developers.facebook.com/docs/graph-api/reference/user/ids_for_pages/
-GET https://graph.facebook.com/{{graph-api-version}}/{{user-id}}/ids_for_pages?access_token={{long-lived-access-token}}
+## Documentation: https://developers.facebook.com/docs/pages-api/manage-pages#get-your-pages
+GET https://graph.facebook.com/{{graph-api-version}}/{{user-id}}/accounts?access_token={{long-lived-access-token}}
 
 ### Get the page access token
 ### Take the long-lived access token and get the page access token
-GET https://graph.facebook.com/{{graph-api-version}}/{{page-id}}?fields=access_token&access_token={{long-lived-access-token}}
+GET https://graph.facebook.com/{{graph-api-version}}/{{page-id}}?fields=access_token&access_token={{page-access-token}}
 
 <> 2023-08-06T102534.200.js
 

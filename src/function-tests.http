@@ -19,3 +19,10 @@ POST https://jjgnet-broadcast.azurewebsites.net/api/CollectorsFeedLoadAllPosts
 
 ###
 POST https://jjgnet-broadcast.azurewebsites.net/api/CollectorsYouTubeLoadAllVideos
+
+###
+POST https://jjgnet-broadcast.azurewebsites.net/admin/functions/facebook_refresh_tokens
+x-functions-key: {{functions-key}}
+Content-Type: application/json
+
+{}
