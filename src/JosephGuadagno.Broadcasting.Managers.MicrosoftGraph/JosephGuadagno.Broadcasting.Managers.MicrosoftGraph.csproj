@@ -9,7 +9,7 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.Graph" Version="5.71.0" />
-      <PackageReference Include="Microsoft.Identity.Web.MicrosoftGraph" Version="3.7.1" />
+      <PackageReference Include="Microsoft.Identity.Web.MicrosoftGraph" Version="3.8.4" />
     </ItemGroup>
 
     <ItemGroup>
