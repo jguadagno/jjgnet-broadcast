@@ -6,7 +6,7 @@
         <Authors>Joseph Guadagno</Authors>
         <Product>JosephGuadagno.NET Broadcasting - Microsoft Graph Manager Test Library</Product>
         <Description>This library contains the unit/integration test for the Microsoft Graph Manager for the JosephGuadagno.NET Broadcasting application</Description>
-        <Copyright>Copyright ©2014-2024, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Copyright>Copyright ©2014-2025, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
         <Title>JosephGuadagno.NET Broadcasting - Microsoft Graph Manager Tests</Title>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
