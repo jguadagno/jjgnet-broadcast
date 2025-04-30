@@ -41,8 +41,7 @@ public class Startup
         {
             configurationBuilder //.SetBasePath(hostBuilder.HostingEnvironment.ContentRootPath)
                 .AddJsonFile("local.settings.json", true)
-                .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
-                .AddEnvironmentVariables();
+                .AddUserSecrets(Assembly.GetExecutingAssembly(), true);
         });
     }
     

@@ -3,12 +3,10 @@ using System.Threading.Tasks;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
-using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests;
 
-public class AzureKeyVaultTests(
-    ISettings settings)
+public class AzureKeyVaultTests(ISettings settings)
 {
     private readonly string _secretName = "secret-for-unit-testing";
 
@@ -40,7 +38,6 @@ public class AzureKeyVaultTests(
     public async Task WriteSecretValue_WithValidSecret_ShouldWriteSecret()
     {
         // Arrange
-        
         var secretValue = DateTime.Now.ToString("s");
         var client = new SecretClient(new Uri(settings.KeyVault.KeyVaultUri),
             new ChainedTokenCredential(new ManagedIdentityCredential(),
@@ -48,9 +45,9 @@ public class AzureKeyVaultTests(
                     settings.KeyVault.ClientSecret)));
         
         // Act
-        await client.SetSecretAsync(_secretName, secretValue);
+        await client.SetSecretAsync(_secretName, secretValue, TestContext.Current.CancellationToken);
         
-        var updatedSecret = await client.GetSecretAsync(_secretName);
+        var updatedSecret = await client.GetSecretAsync(_secretName, cancellationToken: TestContext.Current.CancellationToken);
         // Assert
         Assert.NotNull(updatedSecret);
         Assert.Equal(secretValue, updatedSecret.Value.Value);
