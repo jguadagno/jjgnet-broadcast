@@ -12,7 +12,7 @@
   <PropertyGroup>
     <VersionMajor>1</VersionMajor>
     <VersionMinor>7</VersionMinor>
-    <VersionBuild>1</VersionBuild>
+    <VersionBuild>2</VersionBuild>
   </PropertyGroup>
   <PropertyGroup>
     <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
@@ -34,7 +34,7 @@
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
-    <PackageReference Include="System.ServiceModel.Syndication" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.4" />
+    <PackageReference Include="System.ServiceModel.Syndication" Version="9.0.4" />
   </ItemGroup>
 </Project>

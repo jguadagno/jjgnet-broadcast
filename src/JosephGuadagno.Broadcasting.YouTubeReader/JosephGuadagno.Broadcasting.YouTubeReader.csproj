@@ -14,7 +14,7 @@
   <PropertyGroup>
     <VersionMajor>1</VersionMajor>
     <VersionMinor>7</VersionMinor>
-    <VersionBuild>1</VersionBuild>
+    <VersionBuild>2</VersionBuild>
   </PropertyGroup>
   <PropertyGroup>
     <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
@@ -36,7 +36,7 @@
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.69.0.3707" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
+    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.69.0.3764" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.4" />
   </ItemGroup>
 </Project>

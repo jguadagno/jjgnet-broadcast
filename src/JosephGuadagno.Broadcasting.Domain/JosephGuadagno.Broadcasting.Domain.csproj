@@ -14,7 +14,7 @@
   <PropertyGroup>
     <VersionMajor>1</VersionMajor>
     <VersionMinor>7</VersionMinor>
-    <VersionBuild>1</VersionBuild>
+    <VersionBuild>2</VersionBuild>
   </PropertyGroup>
   <PropertyGroup>
     <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
@@ -34,6 +34,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.4" />
   </ItemGroup>
 </Project>
