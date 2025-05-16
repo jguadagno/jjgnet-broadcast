@@ -1,7 +1,7 @@
 ﻿@using Microsoft.Identity.Web
 @if (User.Identity is not null && User.Identity.IsAuthenticated)
 {
-    <span class="navbar-text text-dark">Hello @User.GetDisplayName()</span><span> | </span>
+    <span class="navbar-text text-dark">Hello @User.GetDisplayName()</span><span>&nbsp;|&nbsp;</span>
     <a class="nav-link text-dark" asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignOut">Sign out</a>
 }
 else
