@@ -78,6 +78,7 @@
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Serilog\JosephGuadagno.Broadcasting.Serilog.csproj" />
+    <ProjectReference Include="..\JosephGuadagnoNet.Broadcasting.ServiceDefaults\JosephGuadagnoNet.Broadcasting.ServiceDefaults.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Remove=".gitignore" />

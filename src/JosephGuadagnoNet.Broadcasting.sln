@@ -11,22 +11,22 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", "{CA7CFF1F-4DB2-4B9A-BB46-5D922C457D29}"
 	ProjectSection(SolutionItems) = preProject
 		..\.gitignore = ..\.gitignore
+		..\az-info-secrets.md = ..\az-info-secrets.md
+		bitly-tests.http = bitly-tests.http
 		..\scripts\database-create.sql = ..\scripts\database-create.sql
 		..\developer-getting-started.md = ..\developer-getting-started.md
 		facebook-access-tokens.http = facebook-access-tokens.http
+		function-tests.http = function-tests.http
 		..\infrastructure-needs.md = ..\infrastructure-needs.md
 		install-libman.ps1 = install-libman.ps1
 		libman-restore.ps1 = libman-restore.ps1
 		LinkedIn.http = LinkedIn.http
-		..\README.md = ..\README.md
-		..\scripts\table-create.sql = ..\scripts\table-create.sql
 		..\.github\workflows\main_api-jjgnet-broadcast.yml = ..\.github\workflows\main_api-jjgnet-broadcast.yml
 		..\.github\workflows\main_jjgnet-broadcast.yml = ..\.github\workflows\main_jjgnet-broadcast.yml
 		..\.github\workflows\main_web-jjgnet-broadcast.yml = ..\.github\workflows\main_web-jjgnet-broadcast.yml
-		bitly-tests.http = bitly-tests.http
 		nuget.config = nuget.config
-		..\az-info-secrets.md = ..\az-info-secrets.md
-		function-tests.http = function-tests.http
+		..\README.md = ..\README.md
+		..\scripts\table-create.sql = ..\scripts\table-create.sql
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.JsonFeedReader", "JosephGuadagno.Broadcasting.JsonFeedReader\JosephGuadagno.Broadcasting.JsonFeedReader.csproj", "{1D657E6A-948D-4884-B6BD-76BA346F93FF}"
@@ -74,6 +74,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.MicrosoftGraph", "JosephGuadagno.Broadcasting.Managers.MicrosoftGraph\JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.csproj", "{7994038E-AF0E-4F5D-BE14-215B4EB6C022}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.Tests", "JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.Tests\JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.Tests.csproj", "{400691B1-487E-49F8-9663-483495DBAF75}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagnoNet.Broadcasting.AppHost", "JosephGuadagnoNet.Broadcasting.AppHost\JosephGuadagnoNet.Broadcasting.AppHost.csproj", "{EBB78BF7-15AE-4B93-92AE-03E83254409B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagnoNet.Broadcasting.ServiceDefaults", "JosephGuadagnoNet.Broadcasting.ServiceDefaults\JosephGuadagnoNet.Broadcasting.ServiceDefaults.csproj", "{61B4A889-E116-EC9D-3F51-DA99651740B7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -184,6 +188,14 @@ Global
 		{400691B1-487E-49F8-9663-483495DBAF75}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{400691B1-487E-49F8-9663-483495DBAF75}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{400691B1-487E-49F8-9663-483495DBAF75}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBB78BF7-15AE-4B93-92AE-03E83254409B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBB78BF7-15AE-4B93-92AE-03E83254409B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBB78BF7-15AE-4B93-92AE-03E83254409B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBB78BF7-15AE-4B93-92AE-03E83254409B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61B4A889-E116-EC9D-3F51-DA99651740B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61B4A889-E116-EC9D-3F51-DA99651740B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61B4A889-E116-EC9D-3F51-DA99651740B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61B4A889-E116-EC9D-3F51-DA99651740B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

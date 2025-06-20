@@ -26,6 +26,8 @@ using ISettings = JosephGuadagno.Broadcasting.Web.Interfaces.ISettings;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 var settings = new Settings();
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
@@ -72,6 +74,8 @@ builder.Services.AddControllersWithViews(options =>
 }).AddMicrosoftIdentityUI();
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
