@@ -24,7 +24,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 		..\.github\workflows\main_api-jjgnet-broadcast.yml = ..\.github\workflows\main_api-jjgnet-broadcast.yml
 		..\.github\workflows\main_jjgnet-broadcast.yml = ..\.github\workflows\main_jjgnet-broadcast.yml
 		..\.github\workflows\main_web-jjgnet-broadcast.yml = ..\.github\workflows\main_web-jjgnet-broadcast.yml
-		nuget.config = nuget.config
 		..\README.md = ..\README.md
 		..\scripts\table-create.sql = ..\scripts\table-create.sql
 	EndProjectSection
