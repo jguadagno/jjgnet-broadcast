@@ -24,7 +24,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 		..\.github\workflows\main_jjgnet-broadcast.yml = ..\.github\workflows\main_jjgnet-broadcast.yml
 		..\.github\workflows\main_web-jjgnet-broadcast.yml = ..\.github\workflows\main_web-jjgnet-broadcast.yml
 		bitly-tests.http = bitly-tests.http
-		nuget.config = nuget.config
 		..\az-info-secrets.md = ..\az-info-secrets.md
 		function-tests.http = function-tests.http
 	EndProjectSection
