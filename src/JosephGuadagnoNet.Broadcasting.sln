@@ -70,10 +70,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.Bluesky.Tests", "JosephGuadagno.Broadcasting.Managers.Bluesky.Tests\JosephGuadagno.Broadcasting.Managers.Bluesky.Tests.csproj", "{D109989A-D244-4E9C-A37A-58CD57CDB59D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.MicrosoftGraph", "JosephGuadagno.Broadcasting.Managers.MicrosoftGraph\JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.csproj", "{7994038E-AF0E-4F5D-BE14-215B4EB6C022}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.Tests", "JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.Tests\JosephGuadagno.Broadcasting.Managers.MicrosoftGraph.Tests.csproj", "{400691B1-487E-49F8-9663-483495DBAF75}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagnoNet.Broadcasting.AppHost", "JosephGuadagnoNet.Broadcasting.AppHost\JosephGuadagnoNet.Broadcasting.AppHost.csproj", "{EBB78BF7-15AE-4B93-92AE-03E83254409B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagnoNet.Broadcasting.ServiceDefaults", "JosephGuadagnoNet.Broadcasting.ServiceDefaults\JosephGuadagnoNet.Broadcasting.ServiceDefaults.csproj", "{61B4A889-E116-EC9D-3F51-DA99651740B7}"
@@ -179,14 +175,6 @@ Global
 		{D109989A-D244-4E9C-A37A-58CD57CDB59D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D109989A-D244-4E9C-A37A-58CD57CDB59D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D109989A-D244-4E9C-A37A-58CD57CDB59D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7994038E-AF0E-4F5D-BE14-215B4EB6C022}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7994038E-AF0E-4F5D-BE14-215B4EB6C022}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7994038E-AF0E-4F5D-BE14-215B4EB6C022}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7994038E-AF0E-4F5D-BE14-215B4EB6C022}.Release|Any CPU.Build.0 = Release|Any CPU
-		{400691B1-487E-49F8-9663-483495DBAF75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{400691B1-487E-49F8-9663-483495DBAF75}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{400691B1-487E-49F8-9663-483495DBAF75}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{400691B1-487E-49F8-9663-483495DBAF75}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EBB78BF7-15AE-4B93-92AE-03E83254409B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EBB78BF7-15AE-4B93-92AE-03E83254409B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EBB78BF7-15AE-4B93-92AE-03E83254409B}.Release|Any CPU.ActiveCfg = Release|Any CPU
