@@ -41,6 +41,33 @@ you'll need to generate a `facebook.private.env.json` file that looks like this
 
 The `page-access-token` is the secret that is needed for the *JosephGuadagno.Broadcasting.Functions* project `FacebookPageAccessToken` secret..
 
+#### Certificate Generation
+
+Run the following command in a local termimal
+
+```Powershell
+New-SelfSignedCertificate -KeyFriendlyName "JosephGuadagno-Broadcasting" -DnsName "josephguadagno-broadcasting.net" -CertStoreLocation "Cert:\CurrentUser\My"
+```
+
+This will generate a local certificate.  This certificate needs to be exported and registered in the Web api application registration.
+
+* Open *Certificate Manager*
+* Locate the certificate in the `Personal\Certificates` folder
+* Open the certificate
+* Click *Details*
+* Click *Copy to File...*
+* Click *Next*
+* Select *No*
+* Select *DER encoded binary*
+* Click *Next*
+* Select a file name and location
+* Click *Next*
+* Click *Finish*
+
+
+
+
+
 ### Database
 
 Run the following scripts in the database
