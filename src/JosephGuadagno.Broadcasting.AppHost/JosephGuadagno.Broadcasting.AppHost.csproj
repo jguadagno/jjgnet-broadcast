@@ -8,6 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>cb178ec4-bab3-41eb-a59d-707a534db029</UserSecretsId>
+    <RootNamespace>JosephGuadagnoNet.Broadcasting.AppHost</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
