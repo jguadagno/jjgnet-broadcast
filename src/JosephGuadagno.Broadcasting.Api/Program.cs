@@ -17,6 +17,10 @@ using Settings = JosephGuadagno.Broadcasting.Api.Models.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+builder.Services.AddHttpLogging(
+    options => { options.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.All; });
+
 var settings = new Settings();
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
@@ -97,9 +101,12 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+app.MapDefaultEndpoints();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseHttpLogging();
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
