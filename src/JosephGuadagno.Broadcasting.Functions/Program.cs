@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-using System.Net.Http;
 using System.Reflection;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
