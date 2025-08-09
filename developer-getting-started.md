@@ -43,7 +43,7 @@ The `page-access-token` is the secret that is needed for the *JosephGuadagno.Bro
 
 #### Certificate Generation
 
-Run the following command in a local termimal
+Run the following command in a local terminal
 
 ```Powershell
 New-SelfSignedCertificate -KeyFriendlyName "JosephGuadagno-Broadcasting" -DnsName "josephguadagno-broadcasting.net" -CertStoreLocation "Cert:\CurrentUser\My"
