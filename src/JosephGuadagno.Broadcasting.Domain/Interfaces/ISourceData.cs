@@ -1,5 +1,3 @@
-using System;
-
 namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 
 public interface ISourceData

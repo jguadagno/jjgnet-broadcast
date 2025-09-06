@@ -1,5 +1,3 @@
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
-
 namespace JosephGuadagno.Broadcasting.Domain.Models;
 
 public class TableEvent

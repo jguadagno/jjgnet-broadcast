@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace JosephGuadagno.Broadcasting.Domain.Models;
+﻿namespace JosephGuadagno.Broadcasting.Domain.Models;
 
 public class TokenRefreshInfo: TokenRefreshBase
 {

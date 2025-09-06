@@ -1,5 +1,3 @@
-using System;
-
 namespace JosephGuadagno.Broadcasting.Domain.Models;
 
 public class CollectorConfiguration: ConfigurationBase

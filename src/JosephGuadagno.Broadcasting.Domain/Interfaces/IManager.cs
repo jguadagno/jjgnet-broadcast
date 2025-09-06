@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 
 public interface IManager<T> where T : class

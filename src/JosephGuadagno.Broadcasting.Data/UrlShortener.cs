@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Utilities.Web.Shortener;
 using Microsoft.Extensions.Logging;

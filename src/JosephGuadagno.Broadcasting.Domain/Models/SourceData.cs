@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.Azure.Cosmos.Table;
 

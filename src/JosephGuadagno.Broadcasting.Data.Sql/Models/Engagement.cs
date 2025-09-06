@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-#nullable disable
+﻿#nullable disable
 
 namespace JosephGuadagno.Broadcasting.Data.Sql.Models;
 

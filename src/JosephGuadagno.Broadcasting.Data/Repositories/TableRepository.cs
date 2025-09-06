@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using JosephGuadagno.AzureHelpers.Cosmos;
+﻿using JosephGuadagno.AzureHelpers.Cosmos;
 using Microsoft.Azure.Cosmos.Table;
 
 namespace JosephGuadagno.Broadcasting.Data.Repositories;

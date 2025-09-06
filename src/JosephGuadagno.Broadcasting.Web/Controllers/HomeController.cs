@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using JosephGuadagno.Broadcasting.Web.Models;
 

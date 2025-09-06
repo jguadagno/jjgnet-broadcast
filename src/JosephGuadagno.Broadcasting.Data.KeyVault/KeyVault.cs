@@ -1,5 +1,4 @@
-﻿using Azure.Core;
-using Azure.Security.KeyVault.Secrets;
+﻿using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using Microsoft.Extensions.Logging;
 

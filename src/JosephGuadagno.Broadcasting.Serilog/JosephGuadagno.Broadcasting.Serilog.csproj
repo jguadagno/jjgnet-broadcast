@@ -33,6 +33,6 @@
     <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="10.1.0" />
+    <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="10.2.0" />
   </ItemGroup>
 </Project>

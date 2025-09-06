@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using idunno.Bluesky;
+﻿using idunno.Bluesky;
 using idunno.Bluesky.RichText;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
