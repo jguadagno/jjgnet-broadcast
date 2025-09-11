@@ -40,8 +40,12 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<ScheduledItem>>> GetScheduledItemsAsync()
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List);
+        #endif
+        
         return await _scheduledItemManager.GetAllAsync();
     }
 
@@ -62,8 +66,12 @@ public class SchedulesController: ControllerBase
     [ActionName(nameof(GetScheduledItemAsync))]
     public async Task<ActionResult<ScheduledItem>> GetScheduledItemAsync(int scheduledItemId)
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View);
+        #endif
+        
         return await _scheduledItemManager.GetAsync(scheduledItemId);
     }
 
@@ -84,8 +92,12 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ScheduledItem>> SaveScheduledItemAsync(ScheduledItem scheduledItem)
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
+        #endif
+        
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (savedScheduledItem != null)
         {
@@ -112,8 +124,12 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<bool>> DeleteScheduledItemAsync(int scheduledItemId)
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Delete);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Delete);
+        #endif
+        
         var wasDeleted = await _scheduledItemManager.DeleteAsync(scheduledItemId);
         if (wasDeleted)
         {
@@ -135,8 +151,12 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<ScheduledItem>>> GetUnsentScheduledItemsAsync()
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled);
+        #endif       
+        
         var items = await _scheduledItemManager.GetUnsentScheduledItemsAsync();
         if (items is null || items.Count == 0)
         {
@@ -159,8 +179,12 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<ScheduledItem>>> GetScheduledItemsToSendAsync()
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend);
+        #endif      
+        
         var items = await _scheduledItemManager.GetScheduledItemsToSendAsync();
         if (items is null || items.Count == 0)
         {
@@ -183,8 +207,12 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<ScheduledItem>>> GetUpcomingScheduledItemsForCalendarMonthAsync(int year, int month)
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled);
+        #endif
+        
         var items = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month);
         if (items is null || items.Count == 0)
         {

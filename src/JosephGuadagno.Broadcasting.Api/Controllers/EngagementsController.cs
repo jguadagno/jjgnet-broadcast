@@ -42,8 +42,11 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Engagement>>> GetEngagementsAsync()
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List);
+        #endif
         return await _engagementManager.GetAllAsync();
     }
 
@@ -64,13 +67,12 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<Engagement>> GetEngagementAsync(int engagementId)
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.View);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.View);
+        #endif        
         var engagement = await _engagementManager.GetAsync(engagementId);
-        if (engagement is null)
-        {
-            return new NotFoundResult();
-        }
 
         return engagement;
     }
@@ -91,8 +93,11 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<Engagement>> SaveEngagementAsync(Engagement engagement)
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify);
+        #endif       
         var savedEngagement = await _engagementManager.SaveAsync(engagement);
         if (savedEngagement != null)
         {
@@ -119,8 +124,11 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<bool>> DeleteEngagementAsync(int engagementId)
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Delete);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Delete);
+        #endif        
         var wasDeleted = await _engagementManager.DeleteAsync(engagementId);
         if (wasDeleted)
         {
@@ -141,8 +149,12 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<Talk>>> GetTalksForEngagementAsync(int engagementId)
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List);
+        #endif
+        
         return await _engagementManager.GetTalksForEngagementAsync(engagementId);
     }
     
@@ -163,8 +175,12 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<Talk>> SaveTalkAsync(Talk talk)
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify);
+        #endif       
+        
         var savedTalk = await _engagementManager.SaveTalkAsync(talk);
         if (savedTalk != null)
         {
@@ -193,8 +209,12 @@ public class EngagementsController: ControllerBase
     [ActionName(nameof(GetTalkAsync))]
     public async Task<Talk> GetTalkAsync(int engagementId, int talkId)
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.View);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.View);
+        #endif        
+        
         return await _engagementManager.GetTalkAsync(talkId);
     }
     
@@ -215,8 +235,11 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<bool>> DeleteTalkAsync(int engagementId, int talkId)
     {
+        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Delete);
+        #else
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Delete);
+        #endif
         var wasDeleted =  await _engagementManager.RemoveTalkFromEngagementAsync(talkId);
         
         if (wasDeleted)
