@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace JosephGuadagno.Broadcasting.Domain.Models;
 
 /// <summary>
@@ -17,6 +19,7 @@ public class ScheduledItem
     /// <remarks>
     /// This could be SourceData, Engagements, or more
     /// </remarks>
+    [Required]
     public string ItemTableName { get; set; }
         
     /// <summary>
@@ -26,6 +29,7 @@ public class ScheduledItem
     /// For <see cref="SourceData"/> it is the PartitionKey.
     /// For <see cref="Engagement"/> it is the Id field/>
     /// </remarks>
+    [Required]
     public string ItemPrimaryKey { get; set; }
         
     /// <summary>
@@ -40,6 +44,7 @@ public class ScheduledItem
     /// <summary>
     /// The message that will be sent out
     /// </summary>
+    [Required]
     public string Message { get; set; }
     
     /// <summary>
@@ -55,6 +60,7 @@ public class ScheduledItem
     /// <summary>
     /// The date and time this item is scheduled to go out
     /// </summary>
+    [Required]
     public DateTimeOffset ScheduleDateTime { get; set; }
 
     public Dictionary<string, string> ToDictionary()

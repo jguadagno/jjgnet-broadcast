@@ -43,7 +43,7 @@ public class EngagementsController: ControllerBase
     public async Task<ActionResult<List<Engagement>>> GetEngagementsAsync()
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List);
+        // HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List);
         return await _engagementManager.GetAllAsync();
     }
 
@@ -65,13 +65,9 @@ public class EngagementsController: ControllerBase
     public async Task<ActionResult<Engagement>> GetEngagementAsync(int engagementId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.View);
-        var engagement = await _engagementManager.GetAsync(engagementId);
-        if (engagement is null)
-        {
-            return new NotFoundResult();
-        }
+        // HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.View);
 
+        var engagement = await _engagementManager.GetAsync(engagementId);
         return engagement;
     }
 
@@ -81,7 +77,7 @@ public class EngagementsController: ControllerBase
     /// <param name="engagement">The engagement to save</param>
     /// <returns>The engagement with the Url to view its details</returns>
     /// <response code="200">Returns if the engagement was updated</response>
-    /// <response code="201">Returns the newly created talk</response>
+    /// <response code="201">Returns the newly created engagement</response>
     /// <response code="400">If the talk is null or there are data violations</response>     
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>       
     [HttpPost, HttpPut]
@@ -93,6 +89,12 @@ public class EngagementsController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify);
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);    
+        }
+        
         var savedEngagement = await _engagementManager.SaveAsync(engagement);
         if (savedEngagement != null)
         {
@@ -121,6 +123,7 @@ public class EngagementsController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Delete);
+        
         var wasDeleted = await _engagementManager.DeleteAsync(engagementId);
         if (wasDeleted)
         {
@@ -143,6 +146,7 @@ public class EngagementsController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List);
+        
         return await _engagementManager.GetTalksForEngagementAsync(engagementId);
     }
     
@@ -165,6 +169,12 @@ public class EngagementsController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify);
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         var savedTalk = await _engagementManager.SaveTalkAsync(talk);
         if (savedTalk != null)
         {
@@ -195,6 +205,7 @@ public class EngagementsController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.View);
+        
         return await _engagementManager.GetTalkAsync(talkId);
     }
     
@@ -217,6 +228,7 @@ public class EngagementsController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Delete);
+        
         var wasDeleted =  await _engagementManager.RemoveTalkFromEngagementAsync(talkId);
         
         if (wasDeleted)

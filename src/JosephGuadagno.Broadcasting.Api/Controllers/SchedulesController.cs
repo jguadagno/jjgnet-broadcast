@@ -42,6 +42,7 @@ public class SchedulesController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List);
+        
         return await _scheduledItemManager.GetAllAsync();
     }
 
@@ -64,6 +65,7 @@ public class SchedulesController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View);
+        
         return await _scheduledItemManager.GetAsync(scheduledItemId);
     }
 
@@ -86,6 +88,12 @@ public class SchedulesController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (savedScheduledItem != null)
         {
@@ -114,6 +122,7 @@ public class SchedulesController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Delete);
+        
         var wasDeleted = await _scheduledItemManager.DeleteAsync(scheduledItemId);
         if (wasDeleted)
         {
@@ -137,8 +146,9 @@ public class SchedulesController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled);
+        
         var items = await _scheduledItemManager.GetUnsentScheduledItemsAsync();
-        if (items is null || items.Count == 0)
+        if (items.Count == 0)
         {
             return NotFound();
         }
@@ -161,8 +171,9 @@ public class SchedulesController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend);
+        
         var items = await _scheduledItemManager.GetScheduledItemsToSendAsync();
-        if (items is null || items.Count == 0)
+        if (items.Count == 0)
         {
             return NotFound();
         }
@@ -185,8 +196,9 @@ public class SchedulesController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled);
+        
         var items = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month);
-        if (items is null || items.Count == 0)
+        if (items.Count == 0)
         {
             return NotFound();
         }

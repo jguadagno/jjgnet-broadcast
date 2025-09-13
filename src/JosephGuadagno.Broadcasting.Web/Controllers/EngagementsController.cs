@@ -111,14 +111,15 @@ public class EngagementsController : Controller
     /// <returns>The add new engagement view.</returns>
     public IActionResult Add()
     {
-        return View(new EngagementViewModel());
+        return View(new EngagementViewModel
+            { StartDateTime = DateTime.UtcNow, EndDateTime = DateTime.UtcNow.AddHours(1) });
     }
 
     /// <summary>
     /// Adds a new engagement.
     /// </summary>
     /// <param name="engagementViewModel">The <see cref="EngagementViewModel"/></param>
-    /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, redisplays the team. </returns>
+    /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, redirects to the <see cref="Edit(int)"/> page.</returns>
     [HttpPost]
     public async Task<RedirectToActionResult> Add(EngagementViewModel engagementViewModel)
     {

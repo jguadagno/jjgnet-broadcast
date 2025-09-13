@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace JosephGuadagno.Broadcasting.Web.Models;
 
 /// <summary>
@@ -14,26 +16,33 @@ public class TalkViewModel
     /// <summary>
     /// The name of the talk
     /// </summary>
+    [Required]
     public string Name { get; set; }
         
     /// <summary>
     /// A Url for the talk on the conference website
     /// </summary>
+    [Required]
+    [Url]
     public string UrlForConferenceTalk { get; set; }
         
     /// <summary>
     /// The Url for the talk on the talk deliverers website
     /// </summary>
+    [Required]
+    [Url]
     public string UrlForTalk { get; set; }
         
     /// <summary>
     /// The start date and time of the talk
     /// </summary>
+    [Required]
     public DateTimeOffset StartDateTime { get; set; }
         
     /// <summary>
     /// The end date and time of the talk
     /// </summary>
+    [Required]
     public DateTimeOffset EndDateTime { get; set; }
     
     /// <summary>
@@ -46,6 +55,9 @@ public class TalkViewModel
     /// </summary>
     public string? Comments { get; set; }
     
+    /// <summary>
+    /// The identifier for the <see cref="EngagementViewModel"/> that the talk is for.
+    /// </summary>
     public int? EngagementId { get; set; }
 
 }

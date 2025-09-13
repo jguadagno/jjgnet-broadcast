@@ -29,6 +29,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 		bitly-tests.http = bitly-tests.http
 		..\az-info-secrets.md = ..\az-info-secrets.md
 		function-tests.http = function-tests.http
+		..\scripts\data-create.sql = ..\scripts\data-create.sql
+		..\scripts\truncate-data.sql = ..\scripts\truncate-data.sql
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.JsonFeedReader", "JosephGuadagno.Broadcasting.JsonFeedReader\JosephGuadagno.Broadcasting.JsonFeedReader.csproj", "{1D657E6A-948D-4884-B6BD-76BA346F93FF}"
