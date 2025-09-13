@@ -1,0 +1,11 @@
+TRUNCATE TABLE ScheduledItems
+DBCC CHECKIDENT ('ScheduledItems', RESEED, 0);
+GO
+
+TRUNCATE TABLE Talks
+DBCC CHECKIDENT ('Talks', RESEED, 0);
+GO
+
+DELETE FROM JJGNet.dbo.Engagements
+DBCC CHECKIDENT ('Engagements', RESEED, 0);
+GO
