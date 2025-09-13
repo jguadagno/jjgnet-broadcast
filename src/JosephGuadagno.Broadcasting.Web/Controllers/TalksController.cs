@@ -108,7 +108,10 @@ public class TalksController : Controller
     [Route("")]
     public IActionResult Add(int engagementId)
     {
-        return View(new TalkViewModel{EngagementId = engagementId});
+        return View(new TalkViewModel
+        {
+            EngagementId = engagementId, StartDateTime = DateTime.UtcNow, EndDateTime = DateTime.UtcNow.AddHours(1)
+        });
     }
 
     /// <summary>

@@ -40,11 +40,8 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<ScheduledItem>>> GetScheduledItemsAsync()
     {
-        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        #else
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List);
-        #endif
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List);
         
         return await _scheduledItemManager.GetAllAsync();
     }
@@ -66,11 +63,8 @@ public class SchedulesController: ControllerBase
     [ActionName(nameof(GetScheduledItemAsync))]
     public async Task<ActionResult<ScheduledItem>> GetScheduledItemAsync(int scheduledItemId)
     {
-        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        #else
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View);
-        #endif
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View);
         
         return await _scheduledItemManager.GetAsync(scheduledItemId);
     }
@@ -92,11 +86,13 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ScheduledItem>> SaveScheduledItemAsync(ScheduledItem scheduledItem)
     {
-        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        #else
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
-        #endif
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
         
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (savedScheduledItem != null)
@@ -124,11 +120,8 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<bool>> DeleteScheduledItemAsync(int scheduledItemId)
     {
-        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        #else
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Delete);
-        #endif
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Delete);
         
         var wasDeleted = await _scheduledItemManager.DeleteAsync(scheduledItemId);
         if (wasDeleted)
@@ -151,14 +144,11 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<ScheduledItem>>> GetUnsentScheduledItemsAsync()
     {
-        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        #else
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled);
-        #endif       
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled);
         
         var items = await _scheduledItemManager.GetUnsentScheduledItemsAsync();
-        if (items is null || items.Count == 0)
+        if (items.Count == 0)
         {
             return NotFound();
         }
@@ -179,14 +169,11 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<ScheduledItem>>> GetScheduledItemsToSendAsync()
     {
-        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        #else
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend);
-        #endif      
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend);
         
         var items = await _scheduledItemManager.GetScheduledItemsToSendAsync();
-        if (items is null || items.Count == 0)
+        if (items.Count == 0)
         {
             return NotFound();
         }
@@ -207,14 +194,11 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<ScheduledItem>>> GetUpcomingScheduledItemsForCalendarMonthAsync(int year, int month)
     {
-        #if DEBUG
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        #else
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled);
-        #endif
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled);
         
         var items = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month);
-        if (items is null || items.Count == 0)
+        if (items.Count == 0)
         {
             return NotFound();
         }
