@@ -176,4 +176,58 @@ public class SyndicationFeedReaderTests
         Assert.Empty(randomPost);
     }
     
+    // ### GetRandomSyndicationItem Tests ###
+    // GetRandomSyndicationItem(DateTime sinceWhen, List<string> excludeCategories)
+    
+    [Fact]
+    public void GetRandomSyndicationItem_WithAllExcludedCategories_ReturnsNonNullItem()
+    {
+        // Arrange
+        
+        // Act
+        var randomItem = _syndicationFeedReader.GetRandomSyndicationItem(_randomPostSettings.CutoffDate, _randomPostSettings.ExcludedCategories);
+
+        // Assert
+        Assert.NotNull(randomItem);
+        Assert.NotNull(randomItem.Title);
+    }
+    
+    [Fact]
+    public void GetRandomSyndicationItem_WithNoExcludedCategories_ReturnsNonNullItem()
+    {
+        // Arrange
+        
+        // Act
+        var randomItem = _syndicationFeedReader.GetRandomSyndicationItem(_randomPostSettings.CutoffDate, []);
+
+        // Assert
+        Assert.NotNull(randomItem);
+        Assert.NotNull(randomItem.Title);
+    }
+    
+    [Fact]
+    public void GetRandomSyndicationItem_WithFuture_ReturnsNull()
+    {
+        // Arrange
+        
+        // Act
+        var randomItem = _syndicationFeedReader.GetRandomSyndicationItem(DateTime.UtcNow.AddDays(1), []);
+
+        // Assert
+        Assert.Null(randomItem);
+    }
+    
+    [Fact]
+    public void GetRandomSyndicationItem_WithNullExcludedCategories_ReturnsNonNullItem()
+    {
+        // Arrange
+        
+        // Act
+        var randomItem = _syndicationFeedReader.GetRandomSyndicationItem(_randomPostSettings.CutoffDate, null);
+
+        // Assert
+        Assert.NotNull(randomItem);
+        Assert.NotNull(randomItem.Title);
+    }
+    
 }
