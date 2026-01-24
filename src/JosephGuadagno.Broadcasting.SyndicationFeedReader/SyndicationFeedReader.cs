@@ -124,8 +124,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
             return null;
         }
 
-        var random = new Random();
-        var randomIndex = random.Next(items.Count);
+        var randomIndex = Random.Shared.Next(items.Count);
         var randomItem = items[randomIndex];
 
         _logger.LogDebug("Selected random item '{ItemTitle}'", randomItem.Title?.Text ?? "Untitled");
