@@ -108,4 +108,28 @@ public class SyndicationFeedReader: ISyndicationFeedReader
 
         return items;
     }
+
+    public SyndicationItem GetRandomSyndicationItem(DateTime sinceWhen, List<string> excludeCategories = null)
+    {
+        _logger.LogDebug("Getting random syndication item from feed '{FeedUrl}' since '{SinceWhen:u}'",
+            _syndicationFeedReaderSettings.FeedUrl, sinceWhen);
+
+        excludeCategories ??= [];
+
+        var items = GetSyndicationItems(sinceWhen, excludeCategories);
+
+        if (items.Count == 0)
+        {
+            _logger.LogDebug("No items found to select randomly");
+            return null;
+        }
+
+        var random = new Random();
+        var randomIndex = random.Next(items.Count);
+        var randomItem = items[randomIndex];
+
+        _logger.LogDebug("Selected random item '{ItemTitle}'", randomItem.Title?.Text ?? "Untitled");
+
+        return randomItem;
+    }
 }

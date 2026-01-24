@@ -19,7 +19,7 @@ public class Startup
         hostBuilder.ConfigureHostConfiguration(configurationBuilder =>
         {
             configurationBuilder
-                .AddJsonFile("appsettings.development.json", false)
+                .AddJsonFile("appsettings.Development.json", false)
                 .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
                 .AddEnvironmentVariables();
         });
