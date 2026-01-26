@@ -9,11 +9,11 @@ var sql = builder.AddSqlServer("SqlServer")
 
 var path = builder.AppHostDirectory;
 var sqlText = string.Concat(
-    File.ReadAllText(Path.Combine(path, @"..\..\scripts\database-create.sql")), 
+    File.ReadAllText(Path.Combine(path, @"../../scripts/database/database-create.sql")),
     " ",
-    File.ReadAllText(Path.Combine(path, @"..\..\scripts\table-create.sql")),
+    File.ReadAllText(Path.Combine(path, @"../../scripts/database/table-create.sql")),
     " ",
-    File.ReadAllText(Path.Combine(path, @"..\..\scripts\data-create.sql")));
+    File.ReadAllText(Path.Combine(path, @"../../scripts/database/data-create.sql")));
 
 var db = sql.AddDatabase("JJGNet")
     .WithCreationScript(sqlText);
