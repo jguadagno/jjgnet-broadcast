@@ -141,5 +141,8 @@
     <_ContentIncludedByDefault Remove="wwwroot\lib\jquery\dist\jquery.min.js" />
     <_ContentIncludedByDefault Remove="wwwroot\lib\jquery\dist\jquery.min.map" />
     <_ContentIncludedByDefault Remove="wwwroot\lib\jquery\LICENSE.txt" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\foolproof-validation\mvcfoolproof.core.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\foolproof-validation\mvcfoolproof.jquery.validation.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\foolproof-validation\mvcfoolproof.unobtrusive.js" />
   </ItemGroup>
 </Project>

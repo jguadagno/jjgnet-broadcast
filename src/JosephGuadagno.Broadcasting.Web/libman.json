@@ -4,15 +4,15 @@
   "defaultDestination": "wwwroot/libs",
   "libraries": [
     {
-      "library": "jquery@3.7.0",
+      "library": "jquery@3.7.1",
       "destination": "wwwroot/libs/jquery"
     },
     {
-      "library": "bootstrap@5.3.6",
+      "library": "bootstrap@5.3.8",
       "destination": "wwwroot/libs/bootstrap"
     },
     {
-      "library": "jquery-validation@1.19.5",
+      "library": "jquery-validation@1.21.0",
       "destination": "wwwroot/libs/jquery-validation"
     },
     {
@@ -24,11 +24,11 @@
       "destination": "wwwroot/libs/jquery-validation-unobtrusive-bootstrap"
     },
     {
-      "library": "@fortawesome/fontawesome-free@6.4.2",
+      "library": "@fortawesome/fontawesome-free@7.1.0",
       "destination": "wwwroot/libs/fontawesome-free"
     },
     {
-      "library": "bootstrap-icons@1.10.4",
+      "library": "bootstrap-icons@1.13.1",
       "destination": "wwwroot/libs/bootstrap-icons"
     }
   ]
