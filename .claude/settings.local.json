@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(dotnet tool:*)",
+      "Bash(dotnet add package:*)",
+      "Bash(dotnet aspnet-codegenerator identity:*)",
+      "Bash(mkdir:*)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet build)",
+      "Bash(dotnet test)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet run:*)",
+      "Bash(taskkill:*)",
+      "Bash(wmic:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(dotnet build:*)",
+      "mcp__jetbrains__search_in_files_by_text",
+      "mcp__jetbrains__get_file_text_by_path",
+      "mcp__jetbrains__replace_text_in_file",
+      "mcp__jetbrains__execute_terminal_command",
+      "Bash(sed:*)",
+      "mcp__jetbrains__find_files_by_name_keyword",
+      "mcp__jetbrains__list_directory_tree",
+      "mcp__jetbrains__create_new_file",
+      "mcp__jetbrains__get_file_problems",
+      "mcp__jetbrains__find_files_by_glob"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

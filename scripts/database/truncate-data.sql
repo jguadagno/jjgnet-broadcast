@@ -6,6 +6,6 @@ TRUNCATE TABLE Talks
 DBCC CHECKIDENT ('Talks', RESEED, 0);
 GO
 
-DELETE FROM JJGNet.dbo.Engagements
+TRUNCATE TABLE JJGNet.dbo.Engagements
 DBCC CHECKIDENT ('Engagements', RESEED, 0);
 GO

@@ -5,10 +5,11 @@ As well as how to setup the project for development.
 
 ## Required Software
 
-* Microsoft SQL Server 2019 or later
+* Docker Desktop
+  * Microsoft SQL Server
+  * Azurite
 * Microsoft Azure Storage Explorer (`winget install Microsoft.AzureStorageExplorer`)
 * NPM (`winget install NPM.NodeJS`)
-* Azurite (`npm install -g azurite`)
 * Microsoft LibMan (`dotnet tool install -g Microsoft.Web.LibraryManager.Cli`)
 * ngrok (`choco install ngrok`)
 
@@ -64,16 +65,13 @@ This will generate a local certificate.  This certificate needs to be exported a
 * Click *Next*
 * Click *Finish*
 
-
-
-
-
 ### Database
 
-Run the following scripts in the database
+Run the following scripts in the database. This is no longer needed, as the database is now created with Aspire
 
-* [database-create.sql](./scripts/database-create.sql)
-* [table-create.sql](./scripts/table-create.sql)
+* [database-create.sql](./scripts/database/database-create.sql)
+* [table-create.sql](./scripts/database/table-create.sql)
+* [data-create.sql](./scripts/database/data-create.sql)
 
 ### Azure Storage
 

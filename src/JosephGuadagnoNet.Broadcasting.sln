@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34518.117
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -11,9 +11,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", "{CA7CFF1F-4DB2-4B9A-BB46-5D922C457D29}"
 	ProjectSection(SolutionItems) = preProject
 		..\.gitignore = ..\.gitignore
-		..\az-info-secrets.md = ..\az-info-secrets.md
 		bitly-tests.http = bitly-tests.http
-		..\scripts\database-create.sql = ..\scripts\database-create.sql
 		..\developer-getting-started.md = ..\developer-getting-started.md
 		facebook-access-tokens.http = facebook-access-tokens.http
 		function-tests.http = function-tests.http
@@ -25,12 +23,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 		..\.github\workflows\main_jjgnet-broadcast.yml = ..\.github\workflows\main_jjgnet-broadcast.yml
 		..\.github\workflows\main_web-jjgnet-broadcast.yml = ..\.github\workflows\main_web-jjgnet-broadcast.yml
 		..\README.md = ..\README.md
-		..\scripts\table-create.sql = ..\scripts\table-create.sql
-		bitly-tests.http = bitly-tests.http
-		..\az-info-secrets.md = ..\az-info-secrets.md
-		function-tests.http = function-tests.http
-		..\scripts\data-create.sql = ..\scripts\data-create.sql
-		..\scripts\truncate-data.sql = ..\scripts\truncate-data.sql
+		..\CONTRIBUTING.md = ..\CONTRIBUTING.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.JsonFeedReader", "JosephGuadagno.Broadcasting.JsonFeedReader\JosephGuadagno.Broadcasting.JsonFeedReader.csproj", "{1D657E6A-948D-4884-B6BD-76BA346F93FF}"
@@ -78,6 +71,63 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.AppHost", "JosephGuadagno.Broadcasting.AppHost\JosephGuadagno.Broadcasting.AppHost.csproj", "{EBB78BF7-15AE-4B93-92AE-03E83254409B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.ServiceDefaults", "JosephGuadagno.Broadcasting.ServiceDefaults\JosephGuadagno.Broadcasting.ServiceDefaults.csproj", "{61B4A889-E116-EC9D-3F51-DA99651740B7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AI", "AI", "{95E9F7C6-7B96-4866-9549-388C20DE9FF2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".claude", ".claude", "{58861C77-F413-43E8-B303-673A07F37137}"
+	ProjectSection(SolutionItems) = preProject
+		..\.claude\settings.local.json = ..\.claude\settings.local.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "commands", "commands", "{A6D26BD8-A601-46B6-8734-57E976BB9C4C}"
+	ProjectSection(SolutionItems) = preProject
+		..\.claude\commands\db-change.md = ..\.claude\commands\db-change.md
+		..\.claude\commands\docs.md = ..\.claude\commands\docs.md
+		..\.claude\commands\feature.md = ..\.claude\commands\feature.md
+		..\.claude\commands\test.md = ..\.claude\commands\test.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "skills", "skills", "{CCF598BD-E1BD-477F-82B3-7C7938628B5B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dotnet-feature", "dotnet-feature", "{326362D1-7AE6-4861-A597-30D063875F14}"
+	ProjectSection(SolutionItems) = preProject
+		..\.claude\skills\dotnet-feature\SKILL.md = ..\.claude\skills\dotnet-feature\SKILL.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "qa-engineer", "qa-engineer", "{3F05D65B-6C57-4FD0-B0CB-1D7C1EF7CDD6}"
+	ProjectSection(SolutionItems) = preProject
+		..\.claude\skills\qa-engineer\SKILL.md = ..\.claude\skills\qa-engineer\SKILL.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql-schema", "sql-schema", "{E510B2B8-C117-4D4C-A740-954BE2C1D154}"
+	ProjectSection(SolutionItems) = preProject
+		..\.claude\skills\sql-schema\SKILL.md = ..\.claude\skills\sql-schema\SKILL.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{290FCE16-7698-49BD-B80F-9818BD6A96BE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "agents", "agents", "{558DF30B-539E-4C11-B1DD-3A07C5E0CD69}"
+	ProjectSection(SolutionItems) = preProject
+		..\.github\agents\agents.md = ..\.github\agents\agents.md
+		..\.github\agents\api-agent.md = ..\.github\agents\api-agent.md
+		..\.github\agents\dev-deploy-agent.md = ..\.github\agents\dev-deploy-agent.md
+		..\.github\agents\docs-agent.md = ..\.github\agents\docs-agent.md
+		..\.github\agents\lint-agent.md = ..\.github\agents\lint-agent.md
+		..\.github\agents\test-agent.md = ..\.github\agents\test-agent.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".junie", ".junie", "{CEDA8D57-0981-429E-B025-FBA84122462D}"
+	ProjectSection(SolutionItems) = preProject
+		..\.junie\guidelines.md = ..\.junie\guidelines.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{DEF4C9D9-8FF0-497B-A76D-EE256EADD7D1}"
+	ProjectSection(SolutionItems) = preProject
+		..\scripts\database\data-create.sql = ..\scripts\database\data-create.sql
+		..\scripts\database\database-create.sql = ..\scripts\database\database-create.sql
+		..\scripts\database\table-create.sql = ..\scripts\database\table-create.sql
+		..\scripts\database\truncate-data.sql = ..\scripts\database\truncate-data.sql
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -194,5 +244,16 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2AE5E501-D335-4D3F-9431-F8EFC70886E2}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{58861C77-F413-43E8-B303-673A07F37137} = {95E9F7C6-7B96-4866-9549-388C20DE9FF2}
+		{A6D26BD8-A601-46B6-8734-57E976BB9C4C} = {58861C77-F413-43E8-B303-673A07F37137}
+		{CCF598BD-E1BD-477F-82B3-7C7938628B5B} = {58861C77-F413-43E8-B303-673A07F37137}
+		{326362D1-7AE6-4861-A597-30D063875F14} = {CCF598BD-E1BD-477F-82B3-7C7938628B5B}
+		{3F05D65B-6C57-4FD0-B0CB-1D7C1EF7CDD6} = {CCF598BD-E1BD-477F-82B3-7C7938628B5B}
+		{E510B2B8-C117-4D4C-A740-954BE2C1D154} = {CCF598BD-E1BD-477F-82B3-7C7938628B5B}
+		{290FCE16-7698-49BD-B80F-9818BD6A96BE} = {95E9F7C6-7B96-4866-9549-388C20DE9FF2}
+		{558DF30B-539E-4C11-B1DD-3A07C5E0CD69} = {290FCE16-7698-49BD-B80F-9818BD6A96BE}
+		{CEDA8D57-0981-429E-B025-FBA84122462D} = {95E9F7C6-7B96-4866-9549-388C20DE9FF2}
 	EndGlobalSection
 EndGlobal
