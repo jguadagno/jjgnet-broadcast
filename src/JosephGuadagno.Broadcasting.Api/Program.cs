@@ -10,6 +10,7 @@ using Microsoft.ApplicationInsights.WindowsServer;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
+using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Exceptions;
 using ISettings = JosephGuadagno.Broadcasting.Api.Interfaces.ISettings;
@@ -56,10 +57,12 @@ builder.Services.AddControllers();
 // Configure OpenAPI
 // Learn more about configuring OpenAPI at https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/overview
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddOpenApi(options =>
 {
-    c.SwaggerDoc("v1",
-        new OpenApiInfo
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        // Set document metadata
+        document.Info = new OpenApiInfo
         {
             Title = "JosephGuadagno.NET Broadcasting API", 
             Version = "v1",
@@ -71,43 +74,63 @@ builder.Services.AddSwaggerGen(c =>
                 Email = "jguadagno@hotmail.com",
                 Url = new Uri("https://www.josephguadagno.net"),
             }
-        });
-                
-    // Set the comments path for the Swagger JSON and UI.
-    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    c.IncludeXmlComments(xmlPath);
-
-    // Enabled OAuth security in Swagger
-    var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
-    scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement() {
-        {  
-            new OpenApiSecurityScheme {  
-                Reference = new OpenApiReference {  
-                    Type = ReferenceType.SecurityScheme,  
-                    Id = "oauth2"  
-                },  
-                Scheme = "oauth2",  
-                Name = "oauth2",  
-                In = ParameterLocation.Header  
-            },  
-            new List <string> ()  
-        }  
-    });   
-    c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
-    {
-        Type = SecuritySchemeType.OAuth2,
-        Flows = new OpenApiOAuthFlows
+        };
+        
+        // Configure OAuth2 security
+        var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
+        scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
+        
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes["oauth2"] = new OpenApiSecurityScheme
         {
-            Implicit = new OpenApiOAuthFlow()
+            Type = SecuritySchemeType.OAuth2,
+            Flows = new OpenApiOAuthFlows
             {
-                AuthorizationUrl = new Uri("https://login.microsoftonline.com/common/oauth2/v2.0/authorize"),
-                TokenUrl = new Uri("https://login.microsoftonline.com/common/common/v2.0/token"),
-                Scopes = scopes
+                Implicit = new OpenApiOAuthFlow()
+                {
+                    AuthorizationUrl = new Uri("https://login.microsoftonline.com/common/oauth2/v2.0/authorize"),
+                    TokenUrl = new Uri("https://login.microsoftonline.com/common/common/v2.0/token"),
+                    Scopes = scopes
+                }
+            }
+        };
+        
+        // Add security requirement to all operations
+        if (document.Paths != null && document.Paths.Count > 0)
+        {
+            var securityRequirement = new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "oauth2"
+                        },
+                        Scheme = "oauth2",
+                        Name = "oauth2",
+                        In = ParameterLocation.Header
+                    },
+                    new List<string>()
+                }
+            };
+            
+            foreach (var path in document.Paths.Values)
+            {
+                foreach (var operation in path.Operations.Values)
+                {
+                    operation.Security ??= new List<OpenApiSecurityRequirement>();
+                    operation.Security.Add(securityRequirement);
+                }
             }
         }
+        
+        return Task.CompletedTask;
     });
+    
+    // Add XML documentation
+    options.AddDocumentTransformer<JosephGuadagno.Broadcasting.Api.XmlDocumentTransformer>();
 });
 
 var app = builder.Build();
@@ -118,13 +141,26 @@ app.MapDefaultEndpoints();
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpLogging();
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
+    app.MapOpenApi();
+    app.MapScalarApiReference(options =>
     {
-        options.OAuthAppName("Swagger Client");
-        options.OAuthClientId(settings.SwaggerClientId);
-        options.OAuthClientSecret(settings.SwaggerClientSecret);
-        options.OAuthUseBasicAuthenticationWithAccessCodeGrant();
+        options.WithTitle("JosephGuadagno.NET Broadcasting API")
+            .WithTheme(ScalarTheme.Purple)
+            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+        
+        // Configure OAuth2 for Scalar with all scopes
+        var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
+        scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
+        
+        options.Authentication = new ScalarAuthenticationOptions
+        {
+            PreferredSecurityScheme = "oauth2",
+            OAuth2 = new()
+            {
+                ClientId = settings.SwaggerClientId,
+                Scopes = scopes.Keys.ToArray()
+            }
+        };
     });
 }
 
