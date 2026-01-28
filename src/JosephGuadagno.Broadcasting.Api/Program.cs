@@ -1,4 +1,3 @@
-using System.Reflection;
 using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -9,7 +8,6 @@ using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.WindowsServer;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
-using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Exceptions;
@@ -31,6 +29,9 @@ builder.Services.TryAddSingleton<ISettings>(settings);
 builder.Services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
     { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
 builder.Services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
+var azureAdSettings = new AzureAdSettings();
+builder.Configuration.Bind("AzureAd", azureAdSettings);
+builder.Services.TryAddSingleton<IAzureAdSettings>(azureAdSettings);
 
 builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
 
@@ -56,80 +57,9 @@ builder.Services.AddControllers();
 
 // Configure OpenAPI
 // Learn more about configuring OpenAPI at https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/overview
-builder.Services.AddEndpointsApiExplorer();
+// With help from https://hals.app/blog/dotnet-openapi-scalar-oauth2/
 builder.Services.AddOpenApi(options =>
 {
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
-        // Set document metadata
-        document.Info = new OpenApiInfo
-        {
-            Title = "JosephGuadagno.NET Broadcasting API", 
-            Version = "v1",
-            Description = "The API for the JosephGuadagno.NET Broadcasting Application",
-            TermsOfService = new Uri("https://example.com/terms"),
-            Contact = new OpenApiContact
-            {
-                Name = "Joseph Guadagno",
-                Email = "jguadagno@hotmail.com",
-                Url = new Uri("https://www.josephguadagno.net"),
-            }
-        };
-        
-        // Configure OAuth2 security
-        var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
-        scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
-        
-        document.Components ??= new OpenApiComponents();
-        document.Components.SecuritySchemes["oauth2"] = new OpenApiSecurityScheme
-        {
-            Type = SecuritySchemeType.OAuth2,
-            Flows = new OpenApiOAuthFlows
-            {
-                Implicit = new OpenApiOAuthFlow()
-                {
-                    AuthorizationUrl = new Uri("https://login.microsoftonline.com/common/oauth2/v2.0/authorize"),
-                    TokenUrl = new Uri("https://login.microsoftonline.com/common/common/v2.0/token"),
-                    Scopes = scopes
-                }
-            }
-        };
-        
-        // Add security requirement to all operations
-        if (document.Paths != null && document.Paths.Count > 0)
-        {
-            var securityRequirement = new OpenApiSecurityRequirement
-            {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "oauth2"
-                        },
-                        Scheme = "oauth2",
-                        Name = "oauth2",
-                        In = ParameterLocation.Header
-                    },
-                    new List<string>()
-                }
-            };
-            
-            foreach (var path in document.Paths.Values)
-            {
-                foreach (var operation in path.Operations.Values)
-                {
-                    operation.Security ??= new List<OpenApiSecurityRequirement>();
-                    operation.Security.Add(securityRequirement);
-                }
-            }
-        }
-        
-        return Task.CompletedTask;
-    });
-    
-    // Add XML documentation
     options.AddDocumentTransformer<JosephGuadagno.Broadcasting.Api.XmlDocumentTransformer>();
 });
 
@@ -142,25 +72,23 @@ if (app.Environment.IsDevelopment())
 {
     app.UseHttpLogging();
     app.MapOpenApi();
-    app.MapScalarApiReference(options =>
+    app.MapScalarApiReference("/scalar", options =>
     {
-        options.WithTitle("JosephGuadagno.NET Broadcasting API")
-            .WithTheme(ScalarTheme.Purple)
-            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
-        
-        // Configure OAuth2 for Scalar with all scopes
+        // Configure OAuth2 security
         var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
         scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
-        
-        options.Authentication = new ScalarAuthenticationOptions
-        {
-            PreferredSecurityScheme = "oauth2",
-            OAuth2 = new()
-            {
-                ClientId = settings.SwaggerClientId,
-                Scopes = scopes.Keys.ToArray()
-            }
-        };
+
+        options
+            .AddPreferredSecuritySchemes("OAuth2") // This is the schemaKey from above
+            .AddImplicitFlow(
+                "OAuth2", // Again: schemaKey
+                flow =>
+                {
+                    flow.ClientId = settings.ScalarClientId;
+                    // Same scopes as defined in the OpenApi transformer!
+                    flow.SelectedScopes = scopes.Keys.ToArray();
+                }
+            );
     });
 }
 

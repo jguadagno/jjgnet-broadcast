@@ -1,60 +1,67 @@
-using System.Reflection;
-using System.Xml.Linq;
+using JosephGuadagno.Broadcasting.Api.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+
 using Microsoft.AspNetCore.OpenApi;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace JosephGuadagno.Broadcasting.Api;
 
 /// <summary>
 /// Transforms OpenAPI document to include XML documentation comments.
 /// </summary>
-public sealed class XmlDocumentTransformer : IOpenApiDocumentTransformer
+public sealed class XmlDocumentTransformer(ISettings settings, IAzureAdSettings azureAdSettings) : IOpenApiDocumentTransformer
 {
     public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
-        var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-
-        if (!File.Exists(xmlPath))
+        // Set document metadata
+        document.Info = new OpenApiInfo()
         {
-            return Task.CompletedTask;
-        }
-
-        try
-        {
-            var xmlDoc = XDocument.Load(xmlPath);
-            var members = xmlDoc.Descendants("member")
-                .Where(m => m.Attribute("name") != null)
-                .GroupBy(m => m.Attribute("name")!.Value)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.First().Element("summary")?.Value.Trim() ?? string.Empty
-                );
-
-            foreach (var path in document.Paths)
+            Title = "JosephGuadagno.NET Broadcasting API",
+            Version = "v2",
+            Description = "The API for the JosephGuadagno.NET Broadcasting Application",
+            TermsOfService = new Uri("https://example.com/terms"),
+            Contact = new OpenApiContact
             {
-                foreach (var operation in path.Value.Operations)
-                {
-                    // Try to find the controller method documentation
-                    var operationId = operation.Value.OperationId;
-                    if (!string.IsNullOrEmpty(operationId))
-                    {
-                        // Look for matching XML documentation with exact match or method prefix
-                        var methodKey = members.Keys.FirstOrDefault(k => 
-                            k.EndsWith($".{operationId}") || k.Contains($".{operationId}("));
-                        if (methodKey != null && members.TryGetValue(methodKey, out var summary))
-                        {
-                            operation.Value.Summary = summary;
-                        }
-                    }
-                }
+                Name = "Joseph Guadagno",
+                Email = "jguadagno@hotmail.com",
+                Url = new Uri("https://www.josephguadagno.net"),
             }
-        }
-        catch (Exception)
+        };
+
+        var authority = $"{azureAdSettings.Instance}/{azureAdSettings.TenantId}";
+        var audience = settings.ApiScopeUrl;
+        var schemaKey = "OAuth2"; // This name is used as a key and could be anything as long as you are consistent.
+
+        var scopes = Domain.Scopes.AllAccessToDictionary(audience);
+        scopes.Add($"{audience}user_impersonation", "Access application on user behalf");
+
+        var securitySchemes = new Dictionary<string, IOpenApiSecurityScheme>
         {
-            // If XML documentation cannot be loaded or parsed, continue without it
-            // This prevents the application from failing to start due to malformed XML
-        }
+            [schemaKey] = new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.OAuth2,
+                Scheme = "OAuth2",
+                Flows = new OpenApiOAuthFlows
+                {
+                    Implicit = new OpenApiOAuthFlow
+                    {
+                        AuthorizationUrl = new Uri($"{authority}/oauth2/v2.0/authorize"),
+                        TokenUrl = new Uri($"{authority}/oauth2/v2.0/token"),
+                        RefreshUrl = new Uri($"{authority}/oauth2/v2.0/token"),
+                        Scopes = scopes,
+                    },
+                },
+            },
+        };
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes = securitySchemes;
+
+        var securityRequirement = new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference(schemaKey, document)] = [..scopes.Keys],
+        };
+
+        document.Security = [securityRequirement];
 
         return Task.CompletedTask;
     }
