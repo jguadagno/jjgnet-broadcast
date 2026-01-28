@@ -127,7 +127,7 @@ builder.Services.AddOpenApi(options =>
     });
     
     // Add XML documentation
-    options.AddDocumentTransformer<XmlDocumentTransformer>();
+    options.AddDocumentTransformer<JosephGuadagno.Broadcasting.Api.XmlDocumentTransformer>();
 });
 
 var app = builder.Build();
@@ -152,7 +152,6 @@ if (app.Environment.IsDevelopment())
             OAuth2 = new()
             {
                 ClientId = settings.SwaggerClientId,
-                ClientSecret = settings.SwaggerClientSecret,
                 Scopes = new[] { $"{settings.ApiScopeUrl}user_impersonation" }
             }
         };
