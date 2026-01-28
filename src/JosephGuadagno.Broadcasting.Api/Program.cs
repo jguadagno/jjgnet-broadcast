@@ -96,30 +96,33 @@ builder.Services.AddOpenApi(options =>
         };
         
         // Add security requirement to all operations
-        var securityRequirement = new OpenApiSecurityRequirement
+        if (document.Paths != null && document.Paths.Count > 0)
         {
+            var securityRequirement = new OpenApiSecurityRequirement
             {
-                new OpenApiSecurityScheme
                 {
-                    Reference = new OpenApiReference
+                    new OpenApiSecurityScheme
                     {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "oauth2"
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "oauth2"
+                        },
+                        Scheme = "oauth2",
+                        Name = "oauth2",
+                        In = ParameterLocation.Header
                     },
-                    Scheme = "oauth2",
-                    Name = "oauth2",
-                    In = ParameterLocation.Header
-                },
-                new List<string>()
-            }
-        };
-        
-        foreach (var path in document.Paths.Values)
-        {
-            foreach (var operation in path.Operations.Values)
+                    new List<string>()
+                }
+            };
+            
+            foreach (var path in document.Paths.Values)
             {
-                operation.Security ??= new List<OpenApiSecurityRequirement>();
-                operation.Security.Add(securityRequirement);
+                foreach (var operation in path.Operations.Values)
+                {
+                    operation.Security ??= new List<OpenApiSecurityRequirement>();
+                    operation.Security.Add(securityRequirement);
+                }
             }
         }
         
@@ -145,14 +148,17 @@ if (app.Environment.IsDevelopment())
             .WithTheme(ScalarTheme.Purple)
             .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
         
-        // Configure OAuth2 for Scalar
+        // Configure OAuth2 for Scalar with all scopes
+        var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
+        scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
+        
         options.Authentication = new ScalarAuthenticationOptions
         {
             PreferredSecurityScheme = "oauth2",
             OAuth2 = new()
             {
                 ClientId = settings.SwaggerClientId,
-                Scopes = new[] { $"{settings.ApiScopeUrl}user_impersonation" }
+                Scopes = scopes.Keys.ToArray()
             }
         };
     });

@@ -20,29 +20,40 @@ public sealed class XmlDocumentTransformer : IOpenApiDocumentTransformer
             return Task.CompletedTask;
         }
 
-        var xmlDoc = XDocument.Load(xmlPath);
-        var members = xmlDoc.Descendants("member")
-            .ToDictionary(
-                m => m.Attribute("name")?.Value ?? string.Empty,
-                m => m.Element("summary")?.Value.Trim() ?? string.Empty
-            );
-
-        foreach (var path in document.Paths)
+        try
         {
-            foreach (var operation in path.Value.Operations)
+            var xmlDoc = XDocument.Load(xmlPath);
+            var members = xmlDoc.Descendants("member")
+                .Where(m => m.Attribute("name") != null)
+                .GroupBy(m => m.Attribute("name")!.Value)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.First().Element("summary")?.Value.Trim() ?? string.Empty
+                );
+
+            foreach (var path in document.Paths)
             {
-                // Try to find the controller method documentation
-                var operationId = operation.Value.OperationId;
-                if (!string.IsNullOrEmpty(operationId))
+                foreach (var operation in path.Value.Operations)
                 {
-                    // Look for matching XML documentation
-                    var methodKey = members.Keys.FirstOrDefault(k => k.Contains(operationId));
-                    if (methodKey != null && members.TryGetValue(methodKey, out var summary))
+                    // Try to find the controller method documentation
+                    var operationId = operation.Value.OperationId;
+                    if (!string.IsNullOrEmpty(operationId))
                     {
-                        operation.Value.Summary = summary;
+                        // Look for matching XML documentation with exact match or method prefix
+                        var methodKey = members.Keys.FirstOrDefault(k => 
+                            k.EndsWith($".{operationId}") || k.Contains($".{operationId}("));
+                        if (methodKey != null && members.TryGetValue(methodKey, out var summary))
+                        {
+                            operation.Value.Summary = summary;
+                        }
                     }
                 }
             }
+        }
+        catch (Exception)
+        {
+            // If XML documentation cannot be loaded or parsed, continue without it
+            // This prevents the application from failing to start due to malformed XML
         }
 
         return Task.CompletedTask;
