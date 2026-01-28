@@ -34,9 +34,9 @@
   </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="idunno.Bluesky" Version="0.2.0-prerelease" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
-      <PackageReference Include="X.Web.MetaExtractor" Version="2.0.4" />
+      <PackageReference Include="idunno.Bluesky" Version="1.4.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
+      <PackageReference Include="X.Web.MetaExtractor" Version="2.1.1" />
     </ItemGroup>
 
 </Project>

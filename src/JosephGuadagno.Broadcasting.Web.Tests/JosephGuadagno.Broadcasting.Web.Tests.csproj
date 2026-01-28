@@ -13,9 +13,9 @@
     <Title>JosephGuadagno.NET Broadcasting - Web Tests</Title>
   </PropertyGroup>
   <PropertyGroup>
-    <VersionMajor>1</VersionMajor>
-    <VersionMinor>7</VersionMinor>
-    <VersionBuild>2</VersionBuild>
+    <VersionMajor>2</VersionMajor>
+    <VersionMinor>0</VersionMinor>
+    <VersionBuild>0</VersionBuild>
   </PropertyGroup>
   <PropertyGroup>
     <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
@@ -34,11 +34,11 @@
     <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="14.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="NodaTime" Version="3.2.2" />
+    <PackageReference Include="AutoMapper" Version="16.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="NodaTime" Version="3.3.0" />
     <PackageReference Include="Rocket.Surgery.Extensions.AutoMapper.NodaTime" Version="9.0.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4">
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -46,7 +46,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="xunit.v3" Version="3.0.1" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

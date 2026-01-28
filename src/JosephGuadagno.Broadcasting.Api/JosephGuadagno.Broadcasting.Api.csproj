@@ -12,10 +12,14 @@
     <Copyright>Copyright ©2014-2025, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
     <Title>JosephGuadagno.NET Broadcasting - Api</Title>
   </PropertyGroup>
+    <PropertyGroup>
+        <OpenApiGenerateDocuments>true</OpenApiGenerateDocuments>
+        <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)</OpenApiDocumentsDirectory>
+    </PropertyGroup>
   <PropertyGroup>
-    <VersionMajor>1</VersionMajor>
-    <VersionMinor>7</VersionMinor>
-    <VersionBuild>2</VersionBuild>
+    <VersionMajor>2</VersionMajor>
+    <VersionMinor>0</VersionMinor>
+    <VersionBuild>0</VersionBuild>
   </PropertyGroup>
   <PropertyGroup>
     <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
@@ -42,29 +46,34 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.12" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.23.0" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Identity.Web" Version="3.14.0" />
-    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="4.3.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0" />
     <PackageReference Include="Serilog.Enrichers.AssemblyName" Version="2.0.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
     <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
     <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
-    <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="4.0.1-dev-00046" />
+    <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="5.0.0" />
     <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="10.2.0" />
   </ItemGroup>
   <ItemGroup>

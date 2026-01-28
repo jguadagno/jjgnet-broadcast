@@ -10,9 +10,9 @@
     <LangVersion>default</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
-    <VersionMajor>1</VersionMajor>
-    <VersionMinor>7</VersionMinor>
-    <VersionBuild>2</VersionBuild>
+    <VersionMajor>2</VersionMajor>
+    <VersionMinor>0</VersionMinor>
+    <VersionBuild>0</VersionBuild>
   </PropertyGroup>
   <PropertyGroup>
     <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
@@ -35,6 +35,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="JsonFeed.NET" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
   </ItemGroup>
 </Project>

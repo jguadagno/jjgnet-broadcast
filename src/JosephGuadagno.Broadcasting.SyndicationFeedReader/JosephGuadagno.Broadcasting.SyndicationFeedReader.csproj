@@ -10,9 +10,9 @@
     <Title>JosephGuadagno.NET Broadcasting - Syndication Feed Reader</Title>
   </PropertyGroup>
   <PropertyGroup>
-    <VersionMajor>1</VersionMajor>
-    <VersionMinor>7</VersionMinor>
-    <VersionBuild>2</VersionBuild>
+    <VersionMajor>2</VersionMajor>
+    <VersionMinor>0</VersionMinor>
+    <VersionBuild>0</VersionBuild>
   </PropertyGroup>
   <PropertyGroup>
     <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
@@ -34,7 +34,7 @@
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
-    <PackageReference Include="System.ServiceModel.Syndication" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
+    <PackageReference Include="System.ServiceModel.Syndication" Version="10.0.2" />
   </ItemGroup>
 </Project>

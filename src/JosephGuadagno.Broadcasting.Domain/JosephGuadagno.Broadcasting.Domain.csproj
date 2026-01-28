@@ -12,9 +12,9 @@
     <Title>JosephGuadagno.NET Broadcasting - Data</Title>
   </PropertyGroup>
   <PropertyGroup>
-    <VersionMajor>1</VersionMajor>
-    <VersionMinor>7</VersionMinor>
-    <VersionBuild>2</VersionBuild>
+    <VersionMajor>2</VersionMajor>
+    <VersionMinor>0</VersionMinor>
+    <VersionBuild>0</VersionBuild>
   </PropertyGroup>
   <PropertyGroup>
     <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
@@ -33,7 +33,7 @@
     <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
+    <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
   </ItemGroup>
 </Project>

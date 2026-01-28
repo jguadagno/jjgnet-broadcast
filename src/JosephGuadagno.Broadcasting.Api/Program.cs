@@ -21,11 +21,15 @@ builder.AddServiceDefaults();
 builder.Services.AddHttpLogging(
     options => { options.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.All; });
 
-var settings = new Settings();
+var settings = new Settings
+{
+    AutoMapper = null!
+};
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
 builder.Services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
     { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
+builder.Services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
 
 builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
 
@@ -39,11 +43,18 @@ ConfigureLogging(builder.Configuration, builder.Services, settings, fullyQualifi
 // Register DI services
 ConfigureApplication(builder.Services);
 
+// Add in AutoMapper
+builder.Services.AddAutoMapper(config =>
+{
+    config.LicenseKey = settings.AutoMapper.LicenseKey;
+    config.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
+}, typeof(Program));
+
 // ASP.NET Core API stuff
 builder.Services.AddControllers();
 
-// Configure Swagger
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Configure OpenAPI
+// Learn more about configuring OpenAPI at https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/overview
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -70,7 +81,7 @@ builder.Services.AddSwaggerGen(c =>
     // Enabled OAuth security in Swagger
     var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
     scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement() {  
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement() {
         {  
             new OpenApiSecurityScheme {  
                 Reference = new OpenApiReference {  
@@ -107,7 +118,7 @@ app.MapDefaultEndpoints();
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpLogging();
-    app.UseSwagger();
+    app.MapOpenApi();
     app.UseSwaggerUI(options =>
     {
         options.OAuthAppName("Swagger Client");
@@ -162,47 +173,15 @@ void ConfigureApplication(IServiceCollection services)
 
 void ConfigureRepositories(IServiceCollection services)
 {
-    services.AddDbContext<BroadcastingContext>(ServiceLifetime.Transient);
-            
+    services.AddDbContext<BroadcastingContext>();
+
     // Engagements
-    services.TryAddTransient<IEngagementDataStore>(s =>
-    {
-        var databaseSettings = s.GetService<IDatabaseSettings>();
-        if (databaseSettings is null)
-        {
-            throw new ApplicationException("Failed to get a IDatabaseSettings object from ServiceCollection when registering IEngagementDataStore.");
-        }
-        return new EngagementDataStore(databaseSettings);
-    });
-    services.TryAddTransient<IEngagementRepository>(s =>
-    {
-        var engagementDataStore = s.GetService<IEngagementDataStore>();
-        if (engagementDataStore is null)
-        {
-            throw new ApplicationException("Failed to get an EngagementDataStore from ServiceCollection");
-        }
-        return new EngagementRepository(engagementDataStore);
-    });
-    services.TryAddTransient<IEngagementManager, EngagementManager>();
+    services.TryAddScoped<IEngagementDataStore, EngagementDataStore>();
+    services.TryAddScoped<IEngagementRepository, EngagementRepository>();
+    services.TryAddScoped<IEngagementManager, EngagementManager>();
 
     // ScheduledItem
-    services.TryAddTransient<IScheduledItemDataStore>(s =>
-    {
-        var databaseSettings = s.GetService<IDatabaseSettings>();
-        if (databaseSettings is null)
-        {
-            throw new ApplicationException("Failed to get a IDatabaseSettings object from ServiceCollection when registering IScheduledItemDataStore.");
-        }
-        return new ScheduledItemDataStore(databaseSettings);
-    });
-    services.TryAddTransient<IScheduledItemRepository>(s =>
-    {
-        var scheduledItemDataStore = s.GetService<IScheduledItemDataStore>();
-        if (scheduledItemDataStore is null)
-        {
-            throw new ApplicationException("Failed to get a ScheduledItemDataStore object from ServiceCollection");
-        }
-        return new ScheduledItemRepository(scheduledItemDataStore);
-    });
-    services.TryAddTransient<IScheduledItemManager, ScheduledItemManager>();
+    services.TryAddScoped<IScheduledItemDataStore, ScheduledItemDataStore>();
+    services.TryAddScoped<IScheduledItemRepository, ScheduledItemRepository>();
+    services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
 }

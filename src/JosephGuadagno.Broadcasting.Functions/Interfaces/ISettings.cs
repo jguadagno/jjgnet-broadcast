@@ -1,4 +1,5 @@
 using JosephGuadagno.Broadcasting.Data.KeyVault;
+using JosephGuadagno.Broadcasting.Domain.Models;
 
 namespace JosephGuadagno.Broadcasting.Functions.Interfaces;
 
@@ -27,4 +28,8 @@ public interface ISettings
     /// The Azure Key Vault to use
     /// </summary>
     public KeyVaultSettings KeyVault { get; set; }
+    /// <summary>
+    /// The AutoMapper settings.
+    /// </summary>
+    public AutoMapperSettings AutoMapper { get; init; }
 }
