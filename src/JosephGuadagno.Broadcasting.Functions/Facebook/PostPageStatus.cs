@@ -19,7 +19,7 @@ public class PostPageStatus
         _logger = logger;
     }
         
-    [Function("facebook_post_status_to_page")]
+    [Function(Constants.ConfigurationFunctionNames.FacebookPostPageStatus)]
     public async Task Run(
         [QueueTrigger(Constants.Queues.FacebookPostStatusToPage)]
         Domain.Models.Messages.FacebookPostStatus facebookPostStatus)

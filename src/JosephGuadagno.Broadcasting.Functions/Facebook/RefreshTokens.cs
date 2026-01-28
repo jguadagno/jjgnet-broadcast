@@ -29,7 +29,7 @@ public class RefreshTokens
         _telemetryClient = telemetryClient;
     }
 
-    [Function("facebook_refresh_tokens")]
+    [Function(Constants.ConfigurationFunctionNames.FacebookTokenRefresh)]
     public async Task Run([TimerTrigger("%facebook_refresh_tokens_cron_settings%")] TimerInfo myTimer)
     {
         var startedAt = DateTime.UtcNow;

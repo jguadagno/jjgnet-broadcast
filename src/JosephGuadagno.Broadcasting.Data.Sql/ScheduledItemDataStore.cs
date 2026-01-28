@@ -8,9 +8,9 @@ public class ScheduledItemDataStore: IScheduledItemDataStore
 {
 
     private readonly BroadcastingContext _broadcastingContext;
-    private readonly Mapper _mapper;
+    private readonly IMapper _mapper;
 
-    public ScheduledItemDataStore(IDatabaseSettings databaseSettings, Mapper mapper)
+    public ScheduledItemDataStore(IDatabaseSettings databaseSettings, IMapper mapper)
     {
         _broadcastingContext = new BroadcastingContext(databaseSettings);
         _mapper = mapper;

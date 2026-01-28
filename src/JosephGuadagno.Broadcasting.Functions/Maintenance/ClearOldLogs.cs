@@ -10,7 +10,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Maintenance;
 
 public class ClearOldLogs(TelemetryClient telemetryClient, ILogger<ClearOldLogs> logger)
 {
-    [Function("maintenance_clear_old_logs")]
+    [Function(Constants.ConfigurationFunctionNames.MaintenanceClearOldLogs)]
     public async Task RunAsync(
         [TimerTrigger("%maintenance_clear_old_logs_cron_settings%")] TimerInfo myTimer,
         [TableInput(Constants.Tables.Logging)] TableClient tableClient)

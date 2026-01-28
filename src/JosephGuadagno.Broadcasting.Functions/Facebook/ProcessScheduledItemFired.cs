@@ -41,7 +41,7 @@ public class ProcessScheduledItemFired
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=facebook_process_scheduled_item_fired`
-    [Function("facebook_process_scheduled_item_fired")]
+    [Function(Constants.ConfigurationFunctionNames.FacebookProcessScheduledItemFired)]
     [QueueOutput(Constants.Queues.FacebookPostStatusToPage)] 
     public async Task<FacebookPostStatus> RunAsync(
         [EventGridTrigger] EventGridEvent eventGridEvent)

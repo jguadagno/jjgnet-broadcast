@@ -40,7 +40,7 @@ public class ProcessScheduledItemFired
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=twitter_process_scheduled_item_fired`
-    [Function("twitter_process_scheduled_item_fired")]
+    [Function(Constants.ConfigurationFunctionNames.TwitterProcessScheduledItemFired)]
     [QueueOutput(Constants.Queues.TwitterTweetsToSend)]
     public async Task<string> RunAsync(
         [EventGridTrigger] EventGridEvent eventGridEvent)

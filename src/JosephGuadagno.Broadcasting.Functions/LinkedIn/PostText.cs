@@ -20,7 +20,7 @@ public class PostText
         _logger = logger;
     }
     
-    [Function("linkedin_post_text")]
+    [Function(Constants.ConfigurationFunctionNames.LinkedInPostText)]
     public async Task Run(
         [QueueTrigger(Constants.Queues.LinkedInPostText)]
         LinkedInPostText linkedInPostText)

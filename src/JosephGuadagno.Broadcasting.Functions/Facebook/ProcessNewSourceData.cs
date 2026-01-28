@@ -28,7 +28,7 @@ public class ProcessNewSourceData
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=facebook_process_new_source_data`
-    [Function("facebook_process_new_source_data")]
+    [Function(Constants.ConfigurationFunctionNames.FacebookProcessNewSourceData)]
     [QueueOutput(Constants.Queues.FacebookPostStatusToPage)] 
     public async Task<FacebookPostStatus> RunAsync(
         [EventGridTrigger] EventGridEvent eventGridEvent)

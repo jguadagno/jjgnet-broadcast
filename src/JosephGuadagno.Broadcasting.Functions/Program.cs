@@ -1,4 +1,13 @@
 using System.Reflection;
+
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Builder;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Data;
@@ -31,99 +40,65 @@ using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
 using LinqToTwitter.OAuth;
-using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.ApplicationInsights.WindowsServer;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+
 using Serilog;
 using Serilog.Exceptions;
-using Microsoft.Azure.Functions.Worker;
 
 var currentDirectory = Directory.GetCurrentDirectory();
 
-var host = new HostBuilder()
-    .ConfigureFunctionsWorkerDefaults()
-    .ConfigureAppConfiguration(config =>
-    {
-        // Set up the Configuration Source
-        config.SetBasePath(currentDirectory)
-            .AddJsonFile("local.settings.json", true)
-            .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
-            .AddEnvironmentVariables();
-    })
-    .ConfigureServices(services =>
-    {
-        services.AddSingleton<ITelemetryInitializer, AzureWebAppRoleEnvironmentTelemetryInitializer>();
-        services.AddApplicationInsightsTelemetryWorkerService();
-        services.ConfigureFunctionsApplicationInsights();
+var builder = FunctionsApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
+builder.ConfigureFunctionsWebApplication();
 
-        var config = services.BuildServiceProvider().GetService<IConfiguration>();
-        
-        // Bind the 'Settings' section to the ISettings class
-        var settings = new JosephGuadagno.Broadcasting.Functions.Models.Settings
-        {
-            StorageAccount = null!,
-            TwitterApiKey = null!,
-            TwitterApiSecret = null!,
-            TwitterAccessToken = null!,
-            TwitterAccessTokenSecret = null!,
-            BitlyToken = null!,
-            BitlyAPIRootUri = null!,
-            BitlyShortenedDomain = null!,
-            TopicNewSourceDataEndpoint = null!,
-            TopicNewSourceDataKey = null!,
-            TopicScheduledItemFiredDataEndpoint = null!,
-            TopicScheduledItemFiredDataKey = null!,
-            JJGNetDatabaseSqlServer = null!,
-            TopicNewRandomPostEndpoint = null!,
-            TopicNewRandomPostKey = null!,
-            BlueskyUserName = null!,
-            BlueskyPassword = null!,
-            KeyVault = null!,
-            AutoMapper = null!
-        };
-        config.Bind("Settings", settings);
-        services.TryAddSingleton<ISettings>(settings);
+// Configure Settings
+builder.Configuration.SetBasePath(currentDirectory);
+builder.Configuration.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddUserSecrets(Assembly.GetExecutingAssembly(), true, true);
+builder.Configuration.AddEnvironmentVariables();
+
+var settings = new JosephGuadagno.Broadcasting.Functions.Models.Settings
+{
+    AutoMapper = null!
+};
+builder.Configuration.Bind("Settings", settings);
+builder.Services.TryAddSingleton<ISettings>(settings);
+builder.Services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
+    { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
+builder.Services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
+
+var randomPostSettings = new RandomPostSettings();
+builder.Configuration.Bind("Settings:RandomPost", randomPostSettings);
+builder.Services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
+
+// Configure the logger
+string loggerFile = Path.Combine(currentDirectory, $"logs{Path.DirectorySeparatorChar}logs.txt");
+ConfigureLogging(builder.Configuration, builder.Services, settings, loggerFile, "Functions");
+
+builder.Services
+    .AddApplicationInsightsTelemetryWorkerService()
+    .ConfigureFunctionsApplicationInsights();
+
+// Add in AutoMapper
+builder.Services.AddAutoMapper(mapperConfig =>
+{
+    mapperConfig.LicenseKey = settings.AutoMapper.LicenseKey;
+    mapperConfig.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
+}, typeof(Program));
     
-        services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
-            { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
-        services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
-
-        var randomPostSettings = new RandomPostSettings();
-        config.Bind("Settings:RandomPost", randomPostSettings);
-        services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
+// Configure all the services
+ConfigureKeyVault(builder.Services);
+ConfigureTwitter(builder.Services);
+ConfigureJsonFeedReader(builder.Services);
+ConfigureSyndicationFeedReader(builder.Services);
+ConfigureYouTubeReader(builder.Services);
+ConfigureLinkedInManager(builder.Services);
+ConfigureFacebookManager(builder.Services);
+ConfigureBlueskyManager(builder.Services);
+ConfigureFunction(builder.Services);
     
-        // Configure the logger
-        string logPath = Path.Combine(currentDirectory, "logs\\logs.txt");
-        ConfigureLogging(config, services, settings, logPath, "Functions");
+builder.Build().Run();
 
-        // Add in AutoMapper
-        services.AddAutoMapper(mapperConfig =>
-        {
-            mapperConfig.LicenseKey = settings.AutoMapper.LicenseKey;
-            mapperConfig.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
-        }, typeof(Program));
-    
-        // Configure all the services
-        ConfigureKeyVault(services);
-        ConfigureTwitter(services);
-        ConfigureJsonFeedReader(services);
-        ConfigureSyndicationFeedReader(services);
-        ConfigureYouTubeReader(services);
-        ConfigureLinkedInManager(services);
-        ConfigureFacebookManager(services);
-        ConfigureBlueskyManager(services);
-        ConfigureFunction(services);
-    })
-
-    .Build();
-
-host.Run();
-
-void ConfigureLogging(IConfiguration configurationRoot, IServiceCollection services, ISettings settings, string logPath, string applicationName)
+void ConfigureLogging(IConfiguration configurationRoot, IServiceCollection services, ISettings appSettings, string logPath, string applicationName)
 {
     var logger = new LoggerConfiguration()
         #if DEBUG
@@ -144,7 +119,7 @@ void ConfigureLogging(IConfiguration configurationRoot, IServiceCollection servi
         .Destructure.ToMaximumCollectionCount(10)
         .WriteTo.Console()
         .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-        .WriteTo.AzureTableStorage(settings.StorageAccount, storageTableName: "Logging",
+        .WriteTo.AzureTableStorage(appSettings.StorageAccount, storageTableName: "Logging",
             keyGenerator: new SerilogKeyGenerator())
         .CreateLogger();
     services.AddLogging(loggingBuilder =>

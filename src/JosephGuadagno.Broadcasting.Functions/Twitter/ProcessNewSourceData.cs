@@ -27,7 +27,7 @@ public class ProcessNewSourceData
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=twitter_process_new_source_data`
-    [Function("twitter_process_new_source_data")]
+    [Function(Constants.ConfigurationFunctionNames.TwitterProcessNewSourceData)]
     [QueueOutput(Constants.Queues.TwitterTweetsToSend)] 
     public async Task<string> RunAsync(
         [EventGridTrigger()] EventGridEvent eventGridEvent)

@@ -33,7 +33,7 @@ public class ScheduledItems
         _telemetryClient = telemetryClient;
     }
     
-    [Function("publishers_scheduled_items")]
+    [Function(Constants.ConfigurationFunctionNames.PublishersScheduledItems)]
     public async Task RunAsync([TimerTrigger("0 */2 * * * *")] TimerInfo myTimer, ILogger log)
     {
         var startedAt = DateTime.UtcNow;

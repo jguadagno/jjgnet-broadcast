@@ -9,7 +9,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 public class SendTweet(TwitterContext twitterContext, TelemetryClient telemetryClient, ILogger<SendTweet> logger)
 {
 
-    [Function("twitter_send_tweet")]
+    [Function(Constants.ConfigurationFunctionNames.TwitterSendTweet)]
     public async Task Run(
         [QueueTrigger(Constants.Queues.TwitterTweetsToSend)] string tweetText)
     {

@@ -8,7 +8,7 @@
     <Authors>Joseph Guadagno</Authors>
     <Product>JosephGuadagno.NET Broadcasting - Facebook Manager Test Library</Product>
     <Description>This library contains the unit/integration test for the Facebook Manager for the JosephGuadagno.NET Broadcasting application</Description>
-    <Copyright>Copyright ©2014-2025, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+    <Copyright>Copyright ©2014-2026, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
     <Title>JosephGuadagno.NET Broadcasting - Facebook Manager Tests</Title>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>

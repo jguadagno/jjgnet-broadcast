@@ -31,7 +31,7 @@ public class ProcessNewSourceData
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=facebook_process_new_source_data`
-    [Function("linkedin_process_new_source_data")]
+    [Function(Constants.ConfigurationFunctionNames.LinkedInProcessNewSourceData)]
     [QueueOutput(Constants.Queues.LinkedInPostLink)]
     public async Task<LinkedInPostLink> RunAsync(
         [EventGridTrigger()] EventGridEvent eventGridEvent)

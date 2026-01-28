@@ -7,9 +7,9 @@ namespace JosephGuadagno.Broadcasting.Data.Sql;
 public class EngagementDataStore: IEngagementDataStore
 {
     private readonly BroadcastingContext _broadcastingContext;
-    private readonly Mapper _mapper;
+    private readonly IMapper _mapper;
 
-    public EngagementDataStore(IDatabaseSettings databaseSettings, Mapper mapper)
+    public EngagementDataStore(IDatabaseSettings databaseSettings, IMapper mapper)
     {
         _broadcastingContext = new BroadcastingContext(databaseSettings);
         _mapper = mapper;

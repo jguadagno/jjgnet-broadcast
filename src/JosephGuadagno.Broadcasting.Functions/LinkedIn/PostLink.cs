@@ -20,7 +20,7 @@ public class PostLink
         _logger = logger;
     }
     
-    [Function("linkedin_post_link")]
+    [Function(Constants.ConfigurationFunctionNames.LinkedInPostLink)]
     public async Task Run(
         [QueueTrigger(Constants.Queues.LinkedInPostLink)]
         LinkedInPostLink linkedInPostLink)

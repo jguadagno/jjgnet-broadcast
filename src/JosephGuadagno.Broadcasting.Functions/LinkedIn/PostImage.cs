@@ -23,7 +23,7 @@ public class PostImage
         _logger = logger;
     }
     
-    [Function("linkedin_post_image")]
+    [Function(Constants.ConfigurationFunctionNames.LinkedInPostImage)]
     public async Task Run(
         [QueueTrigger(Constants.Queues.LinkedInPostImage)]
         LinkedInPostImage linkedInPostImage)

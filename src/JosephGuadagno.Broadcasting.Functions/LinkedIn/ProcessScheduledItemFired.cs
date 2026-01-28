@@ -45,7 +45,7 @@ public class ProcessScheduledItemFired
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=linkedin_process_scheduled_item_fired`
-    [Function("linkedin_process_scheduled_item_fired")]
+    [Function(Constants.ConfigurationFunctionNames.LinkedInProcessScheduledItemFired)]
     [QueueOutput(Constants.Queues.LinkedInPostLink)]
     public async Task<LinkedInPostLink> RunAsync(
         [EventGridTrigger] EventGridEvent eventGridEvent)
