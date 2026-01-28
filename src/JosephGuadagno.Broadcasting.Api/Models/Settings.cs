@@ -5,13 +5,12 @@ using ISettings = JosephGuadagno.Broadcasting.Api.Interfaces.ISettings;
 
 namespace JosephGuadagno.Broadcasting.Api.Models;
 
-public class Settings: ISettings, IDatabaseSettings
+public class Settings: ISettings
 {
     public string StorageAccount { get; set; }
-    public string JJGNetDatabaseSqlServer { get; set; }
     public string ApiScopeUrl { get; set; }
-    public string SwaggerClientId { get; set; }
-    public string SwaggerClientSecret { get; set; }
+    public string ScalarClientId { get; set; }
+    public string JJGNetDatabaseSqlServer { get; set; }
 
     /// <summary>
     /// The AutoMapper settings.
