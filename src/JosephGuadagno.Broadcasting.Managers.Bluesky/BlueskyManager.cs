@@ -12,12 +12,12 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
     : IBlueskyManager
 {
 
-    public async Task<CreateRecordResponse?> PostText(string postText)
+    public async Task<CreateRecordResult?> PostText(string postText)
     {
         return await Post(new PostBuilder(postText));
     }
 
-    public async Task<CreateRecordResponse?> Post(PostBuilder postBuilder)
+    public async Task<CreateRecordResult?> Post(PostBuilder postBuilder)
     {
         using BlueskyAgent agent = new();
         var loginResult = await agent.Login(blueskySettings.BlueskyUserName, blueskySettings.BlueskyPassword);
@@ -86,10 +86,10 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
         Uri page = new(externalUrl);
 
         Extractor metadataExtractor = new();
-        var pageMetadata = await metadataExtractor.ExtractAsync(page);
+        var pageMetadata = await metadataExtractor.Extract(page, CancellationToken.None);
 
         string title = pageMetadata.Title;
-        string pageUri = pageMetadata.Url;
+        string? pageUri = pageMetadata.Source?.Url.ToString();
         string description = pageMetadata.Description;
 
         if (!string.IsNullOrEmpty(pageUri) && !string.IsNullOrEmpty(title))
@@ -98,7 +98,7 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
             Blob? thumbnailBlob = null;
 
             // Now see if there's a thumbnail
-            string? thumbnailUri = pageMetadata.MetaTags.Where(o => o.Key == "og:image").Select(o => o.Value)
+            string? thumbnailUri = pageMetadata.Metadata.Where(o => o.Key == "og:image").Select(o => o.Value)
                 .FirstOrDefault();
             if (!string.IsNullOrEmpty(thumbnailUri))
             {
@@ -134,7 +134,7 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
             }
         }
 
-        // If we made it here something failed.
+        // If we made it here, something failed.
         return null;
     }
 }

@@ -100,6 +100,9 @@
     "Bluesky": {
       "BlueskyUserName": "jguadagno.com",
       "BlueskyPassword": ""
+    },
+    "AutoMapper": {
+      "LicenseKey": "Set in Users Secrets/Azure App Service Settings"
     }
   }
 }

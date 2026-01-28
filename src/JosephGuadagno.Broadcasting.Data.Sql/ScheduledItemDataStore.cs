@@ -10,14 +10,10 @@ public class ScheduledItemDataStore: IScheduledItemDataStore
     private readonly BroadcastingContext _broadcastingContext;
     private readonly Mapper _mapper;
 
-    public ScheduledItemDataStore(IDatabaseSettings databaseSettings)
+    public ScheduledItemDataStore(IDatabaseSettings databaseSettings, Mapper mapper)
     {
         _broadcastingContext = new BroadcastingContext(databaseSettings);
-        var mappingConfiguration = new MapperConfiguration(cfg =>
-        {
-            cfg.AddProfile<MappingProfiles.BroadcastingProfile>();
-        });
-        _mapper = new Mapper(mappingConfiguration);
+        _mapper = mapper;
     }
         
     public async Task<Domain.Models.ScheduledItem> GetAsync(int primaryKey)

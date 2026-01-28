@@ -2,6 +2,7 @@ using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.Broadcasting.Web;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
@@ -26,13 +27,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-var settings = new Settings();
+var settings = new Settings()
+{
+    AutoMapper = null!
+};
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
 
 var linkedInSettings = new LinkedInSettings();
 builder.Configuration.Bind("LinkedIn", linkedInSettings);
 builder.Services.TryAddSingleton<ILinkedInSettings>(linkedInSettings);
+builder.Services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
 
 builder.Services.AddSession();
 builder.Services.AddSingleton<ITelemetryInitializer, AzureWebAppRoleEnvironmentTelemetryInitializer>();
@@ -44,6 +49,14 @@ ConfigureLogging(builder.Configuration, builder.Services, settings, fullyQualifi
 
 // Register DI services
 ConfigureApplication(builder.Services);
+
+// Add in AutoMapper
+builder.Services.AddAutoMapper(config =>
+{
+    config.LicenseKey = settings.AutoMapper.LicenseKey;
+    config.AddProfile<WebMappingProfile>();
+    config.AddProfile<NodaTimeProfile>();
+}, typeof(Program));
 
 // Configure Microsoft Identity
 var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
@@ -129,7 +142,6 @@ void ConfigureLogging(IConfigurationRoot configurationRoot, IServiceCollection s
 void ConfigureApplication(IServiceCollection services)
 {
     services.AddHttpClient();
-    services.AddAutoMapper(typeof(NodaTimeProfile), typeof(WebMappingProfile));
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
     ConfigureKeyVault(services);

@@ -1,4 +1,8 @@
 using AutoMapper;
+
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 using Rocket.Surgery.Extensions.AutoMapper.NodaTime;
 
 namespace JosephGuadagno.Broadcasting.Web.Tests;
@@ -12,7 +16,7 @@ public class MappingTests
         {
             cfg.AddProfile<NodaTimeProfile>();
             cfg.AddProfile<MappingProfiles.WebMappingProfile>();
-        });
+        }, new NullLoggerFactory());
 
         try
         {

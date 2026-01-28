@@ -8,7 +8,7 @@ namespace JosephGuadagno.Broadcasting.Web.MappingProfiles;
 public class WebMappingProfile: Profile
 {
     /// <summary>
-    /// The constructors which does the mapping.
+    /// The constructors that do the mapping.
     /// </summary>
     public WebMappingProfile()
     {

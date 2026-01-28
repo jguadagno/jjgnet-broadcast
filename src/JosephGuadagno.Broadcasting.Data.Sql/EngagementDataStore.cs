@@ -9,14 +9,10 @@ public class EngagementDataStore: IEngagementDataStore
     private readonly BroadcastingContext _broadcastingContext;
     private readonly Mapper _mapper;
 
-    public EngagementDataStore(IDatabaseSettings databaseSettings)
+    public EngagementDataStore(IDatabaseSettings databaseSettings, Mapper mapper)
     {
         _broadcastingContext = new BroadcastingContext(databaseSettings);
-        var mapperConfiguration = new MapperConfiguration(cfg =>
-        {
-            cfg.AddProfile<MappingProfiles.BroadcastingProfile>();
-        });
-        _mapper = new Mapper(mapperConfiguration);
+        _mapper = mapper;
     }
         
     public async Task<Domain.Models.Engagement> GetAsync(int primaryKey)

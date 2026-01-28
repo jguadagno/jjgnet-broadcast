@@ -1,4 +1,5 @@
 using JosephGuadagno.Broadcasting.Data.KeyVault;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 
 namespace JosephGuadagno.Broadcasting.Web.Models;
@@ -27,7 +28,7 @@ public class Settings : ISettings
     /// The database connection string
     /// </summary>
     public string JJGNetDatabaseSqlServer { get; set; }
-    
+
     /// <summary>
     /// The Azure Key Vault to use
     /// </summary>
@@ -35,4 +36,9 @@ public class Settings : ISettings
 
     /// <inheritdoc />
     public string StaticContentRootUrl { get; set; }
+
+    /// <summary>
+    /// The AutoMapper settings.
+    /// </summary>
+    public AutoMapperSettings AutoMapper { get; set; }
 }

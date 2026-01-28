@@ -13,12 +13,14 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="13.1.0" />
+    <PackageReference Include="Aspire.Hosting.Azure.Functions" Version="13.1.0" />
     <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.1.0" />
     <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Api\JosephGuadagno.Broadcasting.Api.csproj" />
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Functions\JosephGuadagno.Broadcasting.Functions.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Web\JosephGuadagno.Broadcasting.Web.csproj" />
   </ItemGroup>
 

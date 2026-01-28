@@ -29,7 +29,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Exceptions;
-using EngagementRepository = JosephGuadagno.Broadcasting.Data.Sql.EngagementDataStore;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests;
 
@@ -52,11 +51,15 @@ public class Startup
         services.AddSingleton(config);
 
         // Bind the 'Settings' section to the ISettings class
-        var settings = new Models.Settings();
+        var settings = new Models.Settings
+        {
+            AutoMapper = null!
+        };
         config.Bind("Settings", settings);
-        services.TryAddSingleton<Interfaces.ISettings>(settings);
+        services.TryAddSingleton<ISettings>(settings);
         services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
             { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
+        services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
 
         var randomPostSettings = new RandomPostSettings();
         config.Bind("Settings:RandomPost", randomPostSettings);
@@ -67,6 +70,13 @@ public class Startup
         ConfigureLogging(services, config, logPath, "Functions_Test");
         
         // Configure all the services
+        // Add in AutoMapper
+        services.AddAutoMapper(mapperConfig =>
+        {
+            mapperConfig.LicenseKey = settings.AutoMapper.LicenseKey;
+            mapperConfig.AddProfile<Data.Sql.MappingProfiles.BroadcastingProfile>();
+        }, typeof(Program));
+
         ConfigureKeyVault(services);
         ConfigureTwitter(services);
         ConfigureJsonFeedReader(services);
@@ -182,67 +192,17 @@ public class Startup
 
     private void ConfigureRepositories(IServiceCollection services)
     {
-        services.TryAddSingleton(s =>
-        {
-            var databaseSettings = s.GetService<IDatabaseSettings>();
-            if (databaseSettings is null)
-            {
-                throw new ApplicationException("Failed to get a settings object from ServiceCollection");
-            }
-            return new BroadcastingContext(databaseSettings);
-        });
-            
+        services.AddDbContext<BroadcastingContext>();
+
         // Engagements
-        services.TryAddSingleton(s =>
-        {
-            var databaseSettings = s.GetService<IDatabaseSettings>();
-            if (databaseSettings is null)
-            {
-                throw new ApplicationException("Failed to get a settings object from ServiceCollection");
-            }
-            return new EngagementDataStore(databaseSettings);
-        });
-        services.TryAddSingleton(s =>
-        {
-            var engagementDataStore = s.GetService<EngagementRepository>();
-            if (engagementDataStore is null)
-            {
-                throw new ApplicationException("Failed to get a Engagement Repository object from ServiceCollection");
-            }
-            return new Data.Repositories.EngagementRepository(engagementDataStore);
-        });
-        services.TryAddSingleton<IEngagementManager, EngagementManager>();
+        services.TryAddScoped<IEngagementDataStore, EngagementDataStore>();
+        services.TryAddScoped<IEngagementRepository, EngagementRepository>();
+        services.TryAddScoped<IEngagementManager, EngagementManager>();
 
         // ScheduledItem
-        services.TryAddSingleton(s =>
-        {
-            var databaseSettings = s.GetService<IDatabaseSettings>();
-            if (databaseSettings is null)
-            {
-                throw new ApplicationException("Failed to get a settings object from ServiceCollection");
-            }
-            return new ScheduledItemDataStore(databaseSettings);
-        });
-        services.TryAddSingleton(s =>
-        {
-            var scheduledItemDataStore = s.GetService<ScheduledItemDataStore>();
-            if (scheduledItemDataStore is null)
-            {
-                throw new ApplicationException("Failed to get a Scheduled Item Data Store object from ServiceCollection");
-            }
-            return new ScheduledItemRepository(scheduledItemDataStore);
-        });
-        services.TryAddSingleton<IScheduledItemManager, ScheduledItemManager>();
-        
-        services.TryAddSingleton(s =>
-        {
-            var settings = s.GetService<ISettings>();
-            if (settings is null)
-            {
-                throw new ApplicationException("Failed to get the settings from the ServiceCollection");
-            }
-            return new SourceDataRepository(settings.StorageAccount);
-        });
+        services.TryAddScoped<IScheduledItemDataStore, ScheduledItemDataStore>();
+        services.TryAddScoped<IScheduledItemRepository, ScheduledItemRepository>();
+        services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
     }
 
     void ConfigureKeyVault(IServiceCollection services)

@@ -63,12 +63,34 @@ var host = new HostBuilder()
         var config = services.BuildServiceProvider().GetService<IConfiguration>();
         
         // Bind the 'Settings' section to the ISettings class
-        var settings = new JosephGuadagno.Broadcasting.Functions.Models.Settings();
+        var settings = new JosephGuadagno.Broadcasting.Functions.Models.Settings
+        {
+            StorageAccount = null!,
+            TwitterApiKey = null!,
+            TwitterApiSecret = null!,
+            TwitterAccessToken = null!,
+            TwitterAccessTokenSecret = null!,
+            BitlyToken = null!,
+            BitlyAPIRootUri = null!,
+            BitlyShortenedDomain = null!,
+            TopicNewSourceDataEndpoint = null!,
+            TopicNewSourceDataKey = null!,
+            TopicScheduledItemFiredDataEndpoint = null!,
+            TopicScheduledItemFiredDataKey = null!,
+            JJGNetDatabaseSqlServer = null!,
+            TopicNewRandomPostEndpoint = null!,
+            TopicNewRandomPostKey = null!,
+            BlueskyUserName = null!,
+            BlueskyPassword = null!,
+            KeyVault = null!,
+            AutoMapper = null!
+        };
         config.Bind("Settings", settings);
         services.TryAddSingleton<ISettings>(settings);
     
         services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
             { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
+        services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
 
         var randomPostSettings = new RandomPostSettings();
         config.Bind("Settings:RandomPost", randomPostSettings);
@@ -77,6 +99,13 @@ var host = new HostBuilder()
         // Configure the logger
         string logPath = Path.Combine(currentDirectory, "logs\\logs.txt");
         ConfigureLogging(config, services, settings, logPath, "Functions");
+
+        // Add in AutoMapper
+        services.AddAutoMapper(mapperConfig =>
+        {
+            mapperConfig.LicenseKey = settings.AutoMapper.LicenseKey;
+            mapperConfig.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
+        }, typeof(Program));
     
         // Configure all the services
         ConfigureKeyVault(services);
@@ -237,45 +266,13 @@ void ConfigureRepositories(IServiceCollection services)
     services.AddDbContext<BroadcastingContext>();
         
     // Engagements
-    services.TryAddScoped<IEngagementDataStore>(s =>
-    {
-        var databaseSettings = s.GetService<IDatabaseSettings>();
-        if (databaseSettings is null)
-        {
-            throw new ApplicationException("Failed to get a IDatabaseSettings object from ServiceCollection when registering IEngagementDataStore");
-        }
-        return new EngagementDataStore(databaseSettings);
-    });
-    services.TryAddScoped<IEngagementRepository>(s =>
-    {
-        var engagementDataStore = s.GetService<IEngagementDataStore>();
-        if (engagementDataStore is null)
-        {
-            throw new ApplicationException("Failed to get an EngagementDataStore from ServiceCollection");
-        }
-        return new EngagementRepository(engagementDataStore);
-    });
+    services.TryAddScoped<IEngagementDataStore, EngagementDataStore>();
+    services.TryAddScoped<IEngagementRepository, EngagementRepository>();
     services.TryAddScoped<IEngagementManager, EngagementManager>();
 
     // ScheduledItem
-    services.TryAddScoped<IScheduledItemDataStore>(s =>
-    {
-        var databaseSettings = s.GetService<IDatabaseSettings>();
-        if (databaseSettings is null)
-        {
-            throw new ApplicationException("Failed to get a IDatabaseSettings object from ServiceCollection when registering IScheduledItemDataStore");
-        }
-        return new ScheduledItemDataStore(databaseSettings);
-    });
-    services.TryAddScoped<IScheduledItemRepository>(s =>
-    {
-        var scheduledItemDataStore = s.GetService<IScheduledItemDataStore>();
-        if (scheduledItemDataStore is null)
-        {
-            throw new ApplicationException("Failed to get a ScheduledItemDataStore object from ServiceCollection");
-        }
-        return new ScheduledItemRepository(scheduledItemDataStore);
-    });
+    services.TryAddScoped<IScheduledItemDataStore, ScheduledItemDataStore>();
+    services.TryAddScoped<IScheduledItemRepository, ScheduledItemRepository>();
     services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
 }
 
