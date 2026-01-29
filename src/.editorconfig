@@ -14,8 +14,8 @@ dotnet_diagnostic.CS1591.severity = none
 #### Core EditorConfig Options ####
 
 # Indentation and spacing
-indent_size = 4
-tab_width = 4
+indent_size = 2
+tab_width = 2
 
 # New line preferences
 insert_final_newline = false
