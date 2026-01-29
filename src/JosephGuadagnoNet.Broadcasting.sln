@@ -105,6 +105,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql-schema", "sql-schema", 
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{290FCE16-7698-49BD-B80F-9818BD6A96BE}"
+	ProjectSection(SolutionItems) = preProject
+		..\.github\copilot-instructions.md = ..\.github\copilot-instructions.md
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "agents", "agents", "{558DF30B-539E-4C11-B1DD-3A07C5E0CD69}"
 	ProjectSection(SolutionItems) = preProject

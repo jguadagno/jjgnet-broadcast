@@ -55,7 +55,9 @@ builder.AddAzureFunctionsProject<JosephGuadagno_Broadcasting_Functions>("Functio
     .WithEnvironment("Settings__JJGNetDatabaseSqlServer", db)
     .WithEnvironment("Settings__StorageAccount", tableStorage);
 
-builder.AddProject<Projects.JosephGuadagno_Broadcasting_Web>("josephguadagno-broadcasting-web")
+builder.AddProject<JosephGuadagno_Broadcasting_Web>("josephguadagno-broadcasting-web")
+    .WithEnvironment("Settings__JJGNetDatabaseSqlServer", db)
+    .WithEnvironment("Settings__StorageAccount", tableStorage)
     .WithReference(api)
     .WaitFor(api);
 
