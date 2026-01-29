@@ -13,8 +13,8 @@
 <form asp-action="Edit">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <input type="hidden" asp-for="Id" />
-    <div class="form-group">
-        <label asp-for="ItemTableName" class="control-label">Table</label>
+    <div class="mb-3">
+        <label asp-for="ItemTableName" class="form-label">Table</label>
         <select asp-for="ItemTableName" class="form-select" aria-label="Select table name">
             <option selected>Select Table</option>
             <option value="Engagements">Engagements</option>
@@ -24,37 +24,36 @@
         </select>
         <span asp-validation-for="ItemTableName" class="text-danger"></span>
     </div>
-    <div class="form-group">
-        <label asp-for="ItemPrimaryKey" class="control-label">Primary Key</label>
+    <div class="mb-3">
+        <label asp-for="ItemPrimaryKey" class="form-label">Primary Key</label>
         <input asp-for="ItemPrimaryKey" type="text" class="form-control" readonly/>
         <span asp-validation-for="ItemPrimaryKey" class="text-danger"></span>
     </div>
-    <div class="form-group">
-        <label asp-for="ItemSecondaryKey" class="control-label">Secondary Key</label>
+    <div class="mb-3">
+        <label asp-for="ItemSecondaryKey" class="form-label">Secondary Key</label>
         <input asp-for="ItemSecondaryKey" type="text" class="form-control" readonly/>
         <span asp-validation-for="ItemSecondaryKey" class="text-danger"></span>
     </div>
-    <div class="form-group">
-        <label asp-for="ScheduleDateTime" class="control-label">Send on Date/Time</label>
+    <div class="mb-3">
+        <label asp-for="ScheduleDateTime" class="form-label">Send on Date/Time</label>
         <input asp-for="ScheduleDateTime" type="datetime-local" class="form-control" />
         <span asp-validation-for="ScheduleDateTime" class="text-danger"></span>
     </div>
-    <div class="form-group">
-        <label asp-for="Message" class="control-label">Message</label>
+    <div class="mb-3">
+        <label asp-for="Message" class="form-label">Message</label>
         <input asp-for="Message" type="text" class="form-control" />
         <span asp-validation-for="Message" class="text-danger"></span>
     </div>
-    <div class="form-group">
-        <label asp-for="MessageSentOn" class="control-label">Sent on Date/Time</label>
+    <div class="mb-3">
+        <label asp-for="MessageSentOn" class="form-label">Sent on Date/Time</label>
         <input asp-for="MessageSentOn" type="datetime-local" class="form-control" />
         <span asp-validation-for="MessageSentOn" class="text-danger"></span>
     </div>
-    <div class="form-group">
-        <label asp-for="MessageSent" class="control-label">Was Sent</label>
-        <input asp-for="MessageSent" type="checkbox" class="form-check-input" />
-        <span asp-validation-for="MessageSent" class="text-danger"></span>
+    <div class="form-check form-switch mb-3">
+        <input class="form-check-input" asp-for="MessageSent"/>
+        <label class="form-check-label" asp-for="MessageSent">Was Sent</label>
     </div>
-    <br />
+
     <button type="submit" class="btn btn-primary">
         <i class="bi bi-floppy me-2"></i>Save
     </button>
