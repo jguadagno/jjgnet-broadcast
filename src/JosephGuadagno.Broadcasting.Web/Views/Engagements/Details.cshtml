@@ -20,38 +20,40 @@
     <dt class="col-sm-3">Comments</dt>
     <dd class="col-sm-9">@Model.Comments</dd>
 </dl>
-@if (@Model.Talks is not null && @Model.Talks.Count > 0)
+@if (Model.Talks is not null && Model.Talks.Count > 0)
 {
     <h3>Talks</h3>
-    <div>
-        @foreach (var talk in @Model.Talks)
-        {
-            <dl class="row">
-                <dt class="col-sm-3">Id / Name</dt>
-                <dd class="col-sm-9">@talk.Id / @talk.Name</dd>
-                <dt class="col-sm-3">Url for conference talk</dt>
-                <dd class="col-sm-9"><a href="@talk.UrlForConferenceTalk" target="_blank">@talk.UrlForConferenceTalk</a></dd>
-                <dt class="col-sm-3">Url for talk</dt>
-                <dd class="col-sm-9"><a href="@talk.UrlForTalk" target="_blank">@talk.UrlForTalk</a></dd>
-                <dt class="col-sm-3">Start Date/Time</dt>
-                <dd class="col-sm-9"> @talk.StartDateTime</dd>
-                <dt class="col-sm-3">End Date/Time</dt>
-                <dd class="col-sm-9"> @talk.EndDateTime</dd>
-                <dt class="col-sm-3">Talk Location</dt>
-                <dd class="col-sm-9">@talk.TalkLocation</dd>
-                <dt class="col-sm-3">Comments</dt>
-                <dd class="col-sm-9">@talk.Comments</dd>
-            </dl>
-        }
-    </div>
+    @foreach (var talk in Model.Talks)
+    {
+        <div class="card mb-3">
+            <div class="card-header">@talk.Name</div>
+            <div class="card-body">
+                <p>Starts at @talk.StartDateTime to @talk.EndDateTime</p>
+                @if (!string.IsNullOrEmpty(talk.TalkLocation))
+                {
+                    <p>Location: @talk.TalkLocation</p>
+                }
+                @if (!string.IsNullOrEmpty(talk.Comments))
+                {
+                    <p>Comments: @talk.Comments</p>
+                }
+                <a asp-controller="Talks" asp-action="Details" asp-route-talkId="@talk.Id" class="btn btn-outline-secondary"><i class="bi bi-eye me-2"></i>View</a>
+                <a asp-controller="Talks" asp-action="Edit" asp-route-talkId="@talk.Id" class="btn btn-outline-secondary"><i class="bi bi-pencil me-2">Edit</i></a>
+                <a href="@talk.UrlForConferenceTalk" target="_blank" class="btn btn-outline-secondary">Conference Url</a>
+                <a href="@talk.UrlForTalk" target="_blank" class="btn btn-outline-secondary">Talk Url</a>
+            </div>
+        </div>
+    }
 }
-<br />
-<a asp-action="Edit" asp-controller="Engagements" asp-route-id="@Model.Id" class="btn btn-primary">
-    <i class="bi bi-pencil me-2"></i>Edit
-</a>
-<a asp-action="Delete" asp-controller="Engagements" asp-route-id="@Model.Id" class="btn btn-danger">
-    <i class="bi bi-trash me-2"></i>Delete
-</a> 
-<a asp-action="Add" asp-controller="Talks" asp-route-engagementId="@Model.Id" class="btn btn-secondary">
-    <i class="bi bi-easel me-2"></i>Add New Talk
-</a> 
+
+<div class="mt-3">
+    <a asp-action="Edit" asp-controller="Engagements" asp-route-id="@Model.Id" class="btn btn-primary">
+        <i class="bi bi-pencil me-2"></i>Edit
+    </a>
+    <a asp-action="Delete" asp-controller="Engagements" asp-route-id="@Model.Id" class="btn btn-danger">
+        <i class="bi bi-trash me-2"></i>Delete
+    </a>
+    <a asp-action="Add" asp-controller="Talks" asp-route-engagementId="@Model.Id" class="btn btn-secondary">
+        <i class="bi bi-easel me-2"></i>Add New Talk
+    </a>
+</div>
