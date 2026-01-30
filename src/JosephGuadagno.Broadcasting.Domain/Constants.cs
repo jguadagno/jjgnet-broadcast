@@ -46,6 +46,7 @@ public static class Constants
         public const string BlueskyPostMessage = "BlueskyPostMessage";
         public const string BlueskyProcessRandomPostFired = "BlueskyProcessRandomPostFired";
         public const string BlueskyProcessNewSourceDataFired = "BlueskyProcessNewSourceDataFired";
+        public const string BlueskyProcessScheduledItemFired = "BlueskyProcessScheduledItemFired";
     }
 
     public static class Topics
