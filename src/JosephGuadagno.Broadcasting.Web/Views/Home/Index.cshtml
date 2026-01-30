@@ -2,7 +2,34 @@
     ViewData["Title"] = "Home";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="hero">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-xs-12 col-sm-12 col-md-6">
+                <h1 class="display-4 fw-bold">JJGNET Broadcasting</h1>
+                <p class="lead">Automate the broadcasting of blog posts, conferences, and streams.</p>
+
+            </div>
+            <div class="col-6 d-none d-xs-none d-sm-none d-md-block">
+                <img src="~/imgs/jjgnet-broadcast-hero.png" alt="JJGNET Broadcasting" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <p>
+        This site automates the broadcasting of blog posts, conferences, and streams. The goal behind the project is to provide a way to *broadcast* out information from one or more sources (collectors) and send them to other sources (publishers).
+        This is not a data synchronization framework, but a replacement for services like Hoot Suite, IFTTT, etc.
+        Currently, the function can monitor an RSS Feed and a YouTube playlist for new content.
+        Once new content is found, it will send information about Twitter and Facebook.
+        In other words, once I create a new blog post, this project will tweet about it and post it to my Facebook wall.
+    </p>
+    <h2>Plans</h2>
+    <p>
+        The next thing I want to add is the ability to store my upcoming speaking engagements, whether they be at a conference or the stream. This site will have a way to '<em>schedule</em>' notifications/social broadcasting of the events.
+    </p>
+    <p>
+        Say I am speaking a conference in one month, I will be able to announce '<em>Hey, I'm speaking at ..., Details at:...</em>', I could schedule broadcast in 2 weeks, '<em>Sign up for my talk at ...</em>', then 30 minutes before the talk '<em>I'm up next in room ..., come watch</em>', then after the talk '<em>Hey, the content for my talk is available at ...</em>'
+    </p>
 </div>
