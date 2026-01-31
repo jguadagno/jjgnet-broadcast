@@ -23,7 +23,7 @@ public class SpeakingEngagementsReader: ISpeakerEngagementsReader
 
         if (settings == null)
         {
-            throw new ArgumentNullException(nameof(settings), "The SyndicationFeedReaderSettings cannot be null");
+            throw new ArgumentNullException(nameof(settings), "The SpeakerEngagementsReaderSettings cannot be null");
         }
 
         if (string.IsNullOrEmpty(settings.SpeakerEngagementsFile))
@@ -69,7 +69,9 @@ public class SpeakingEngagementsReader: ISpeakerEngagementsReader
                     StartDateTime = speakingEngagement.EventStart,
                     EndDateTime = speakingEngagement.EventEnd,
                     TimeZoneId = speakingEngagement.Timezone,
-                    Comments =  speakingEngagement.Comments
+                    Comments =  speakingEngagement.Comments,
+                    CreatedOn = speakingEngagement.CreatedOrUpdatedOn,
+                    LastUpdatedOn = speakingEngagement.CreatedOrUpdatedOn
                 };
                 if (speakingEngagement.Presentations.Count != 0)
                 {
@@ -98,7 +100,7 @@ public class SpeakingEngagementsReader: ISpeakerEngagementsReader
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Failed to load all the speaking engagements from '{Url}'",_settings);
+            _logger.LogError(exception, "Failed to load all the speaking engagements from '{Url}'", _settings.SpeakerEngagementsFile);
             return engagements;
         }
     }
