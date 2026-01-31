@@ -10,7 +10,7 @@ public class Engagement
 {
         
     /// <summary>
-    /// The Id of the item
+    /// The identifier of the item
     /// </summary>
     [Required]
     public int Id { get; set; }
@@ -53,7 +53,11 @@ public class Engagement
     public string? Comments { get; set; }
 
     /// <summary>
-    /// A list of all of the talks that are being delivered
+    /// A list of all the talks that are being delivered
     /// </summary>
     public List<Talk>? Talks { get; set; }
+
+    public DateTime CreatedOn { get; set; }
+
+    public DateTime LastUpdatedOn { get; set; }
 }

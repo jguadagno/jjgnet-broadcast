@@ -24,6 +24,8 @@ public static class Constants
     {
         public const string CollectorsFeedLoadNewPosts = "CollectorsFeedLoadNewPosts";
         public const string CollectorsFeedLoadAllPosts = "CollectorsFeedLoadAllPosts";
+        public const string CollectorsSpeakingEngagementsNew = "CollectorsSpeakingEngagementsNew";
+        public const string CollectorsSpeakingEngagementsLoadAll = "CollectorsSpeakingEngagementsAll";
         public const string CollectorsYouTubeLoadNewVideos = "CollectorsYouTubeLoadNewVideos";
         public const string CollectorsYouTubeLoadAllVideos = "CollectorsYouTubeLoadAllVideos";
         public const string PublishersRandomPosts = "PublishersRandomPosts";
@@ -37,7 +39,6 @@ public static class Constants
         public const string TwitterProcessScheduledItemFired = "TwitterProcessScheduledItemFired";
         public const string TwitterProcessRandomPostFired = "TwitterProcessRandomPostFired";
         public const string MaintenanceClearOldLogs = "MaintenanceClearOldLogs";
-        public const string MaintenanceAdClientSecretRefresh = "MaintenanceAdClientSecretRefresh";
         public const string LinkedInPostLink = "LinkedInPostLink";
         public const string LinkedInPostText = "LinkedInPostText";
         public const string LinkedInPostImage = "LinkedInPostImage";
@@ -54,12 +55,14 @@ public static class Constants
         public const string NewSourceData = "new-source-data";
         public const string ScheduledItemFired = "scheduled-item-fired";
         public const string NewRandomPost = "new-random-post";
+        public const string NewSpeakingEngagement = "new-speaking-engagement";
     }
 
     public static class Metrics
     {
         public const string PostAddedOrUpdated = "PostAddedOrUpdated";
         public const string VideoAddedOrUpdated = "VideoAddedOrUpdated";
+        public const string SpeakingEngagementAddedOrUpdated = "SpeakingEngagementAddedOrUpdated";
         public const string ScheduledItemFired = "ScheduledItemFired";
         public const string RandomPostFired = "RandomPostFired";
         public const string ClearOldLogs = "ClearOldLogs";

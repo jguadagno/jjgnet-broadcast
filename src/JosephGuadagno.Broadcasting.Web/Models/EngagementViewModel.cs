@@ -52,6 +52,9 @@ public class EngagementViewModel
     /// <remarks>Could be a discount code for the engagement</remarks>
     public string? Comments { get; set; }
 
+    public DateTime CreatedOn { get; set; }
+    public DateTime LastUpdatedOn { get; set; }
+
     /// <summary>
     /// A list of all of the talks that are being delivered
     /// </summary>

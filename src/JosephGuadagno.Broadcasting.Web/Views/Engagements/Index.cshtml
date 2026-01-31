@@ -10,6 +10,7 @@
             <th scope="col" class="col-2">Time Zone</th>
             <th scope="col" class="col-2">Start Date</th>
             <th scope="col" class="col-2">End Date</th>
+            <th scope="col" class="col-1">Updated</th>
             <th scope="col" class="col-3">&nbsp;</th>
         </tr>
         </thead>
@@ -23,6 +24,7 @@
                 <td>@engagement.TimeZoneId</td>
                 <td>@engagement.StartDateTime</td>
                 <td>@engagement.EndDateTime</td>
+                <td>@engagement.LastUpdatedOn.ToString("MM/dd/yyyy")</td>
                 <td class="text-end">
                     <a asp-action="Details" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-outline-secondary">
                         <i class="bi bi-eye"></i>

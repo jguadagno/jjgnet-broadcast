@@ -26,6 +26,12 @@ public partial class BroadcastingContext : DbContext
             entity.HasKey(e => e.Id)
                 .HasName("Engagements_pk")
                 .IsClustered(false);
+
+            entity.Property(e => e.CreatedOn)
+                .HasDefaultValueSql("(getdate())");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<ScheduledItem>(entity =>

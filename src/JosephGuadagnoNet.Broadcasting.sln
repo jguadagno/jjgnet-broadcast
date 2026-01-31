@@ -133,6 +133,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{DE
 		..\scripts\database\truncate-data.sql = ..\scripts\database\truncate-data.sql
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.SpeakingEngagementsReader", "JosephGuadagno.Broadcasting.SpeakingEngagementsReader\JosephGuadagno.Broadcasting.SpeakingEngagementsReader.csproj", "{FC2D8648-E911-466D-8A62-FDAEB4ABC6A8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Tests", "JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Tests\JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Tests.csproj", "{CC305789-58E4-4DD4-8F0C-7847601B453A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -242,6 +246,14 @@ Global
 		{61B4A889-E116-EC9D-3F51-DA99651740B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61B4A889-E116-EC9D-3F51-DA99651740B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61B4A889-E116-EC9D-3F51-DA99651740B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC2D8648-E911-466D-8A62-FDAEB4ABC6A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC2D8648-E911-466D-8A62-FDAEB4ABC6A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC2D8648-E911-466D-8A62-FDAEB4ABC6A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC2D8648-E911-466D-8A62-FDAEB4ABC6A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC305789-58E4-4DD4-8F0C-7847601B453A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC305789-58E4-4DD4-8F0C-7847601B453A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC305789-58E4-4DD4-8F0C-7847601B453A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC305789-58E4-4DD4-8F0C-7847601B453A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

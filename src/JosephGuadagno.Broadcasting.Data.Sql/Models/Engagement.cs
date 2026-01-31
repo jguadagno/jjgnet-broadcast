@@ -16,6 +16,8 @@ public partial class Engagement
     public DateTimeOffset EndDateTime { get; set; }
     public string TimeZoneId { get; set; }
     public string Comments { get; set; }
+    public DateTime CreatedOn { get; set; }
+    public DateTime LastUpdatedOn { get; set; }
 
     public virtual ICollection<Talk> Talks { get; set; }
 }
