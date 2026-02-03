@@ -32,6 +32,9 @@ using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using JosephGuadagno.Broadcasting.Serilog;
+using JosephGuadagno.Broadcasting.SpeakingEngagementsReader;
+using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
+using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader;
@@ -70,6 +73,13 @@ var randomPostSettings = new RandomPostSettings();
 builder.Configuration.Bind("Settings:RandomPost", randomPostSettings);
 builder.Services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
 
+var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings
+{
+    SpeakingEngagementsFile = null
+};
+builder.Configuration.Bind("Settings:SpeakingEngagementsReader", speakerEngagementsSettings);
+builder.Services.TryAddSingleton<ISpeakingEngagementsReaderSettings>(speakerEngagementsSettings);
+
 // Configure the logger
 string loggerFile = Path.Combine(currentDirectory, $"logs{Path.DirectorySeparatorChar}logs.txt");
 ConfigureLogging(builder.Configuration, builder.Services, settings, loggerFile, "Functions");
@@ -86,6 +96,7 @@ builder.Services.AddAutoMapper(mapperConfig =>
 }, typeof(Program));
     
 // Configure all the services
+// TODO: Refactor configuration setup to use dependency injection for settings
 ConfigureKeyVault(builder.Services);
 ConfigureTwitter(builder.Services);
 ConfigureJsonFeedReader(builder.Services);
@@ -95,7 +106,9 @@ ConfigureLinkedInManager(builder.Services);
 ConfigureFacebookManager(builder.Services);
 ConfigureBlueskyManager(builder.Services);
 ConfigureFunction(builder.Services);
-    
+
+builder.Services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader>();
+
 builder.Build().Run();
 
 void ConfigureLogging(IConfiguration configurationRoot, IServiceCollection services, ISettings appSettings, string logPath, string applicationName)
@@ -131,6 +144,8 @@ void ConfigureLogging(IConfiguration configurationRoot, IServiceCollection servi
         loggingBuilder.AddSerilog(logger);
     });
 }
+
+
 
 void ConfigureTwitter(IServiceCollection services)
 {

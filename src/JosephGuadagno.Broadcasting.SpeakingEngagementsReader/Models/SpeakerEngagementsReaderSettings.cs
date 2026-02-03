@@ -3,12 +3,12 @@ using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
 namespace JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Models;
 
 /// <summary>
-/// The settings for the Speaker Engagements Reader
+/// The settings for the Speaking Engagements Reader
 /// </summary>
-public class SpeakerEngagementsReaderSettings: ISpeakerEngagementsReaderSettings
+public class SpeakingEngagementsReaderSettings: ISpeakingEngagementsReaderSettings
 {
     /// <summary>
-    /// The fully qualified url to the file containing speaker engagements
+    /// The fully qualified url to the file containing speaking engagements
     /// </summary>
-    public required string SpeakerEngagementsFile { get; set; }
+    public required string SpeakingEngagementsFile { get; set; }
 }

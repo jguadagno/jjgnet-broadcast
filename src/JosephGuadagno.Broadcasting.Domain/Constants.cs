@@ -24,8 +24,8 @@ public static class Constants
     {
         public const string CollectorsFeedLoadNewPosts = "CollectorsFeedLoadNewPosts";
         public const string CollectorsFeedLoadAllPosts = "CollectorsFeedLoadAllPosts";
-        public const string CollectorsSpeakingEngagementsNew = "CollectorsSpeakingEngagementsNew";
-        public const string CollectorsSpeakingEngagementsLoadAll = "CollectorsSpeakingEngagementsAll";
+        public const string CollectorsSpeakingEngagementsLoadNew = "CollectorsSpeakingEngagementsLoadNew";
+        public const string CollectorsSpeakingEngagementsLoadAll = "CollectorsSpeakingEngagementsLoadAll";
         public const string CollectorsYouTubeLoadNewVideos = "CollectorsYouTubeLoadNewVideos";
         public const string CollectorsYouTubeLoadAllVideos = "CollectorsYouTubeLoadAllVideos";
         public const string PublishersRandomPosts = "PublishersRandomPosts";

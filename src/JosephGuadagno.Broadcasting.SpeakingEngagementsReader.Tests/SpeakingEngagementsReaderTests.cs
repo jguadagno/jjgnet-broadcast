@@ -10,14 +10,14 @@ namespace JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Tests;
 
 public class SpeakingEngagementsReaderTests
 {
-    private readonly Mock<ISpeakerEngagementsReaderSettings> _mockSettings;
+    private readonly Mock<ISpeakingEngagementsReaderSettings> _mockSettings;
     private readonly Mock<ILogger<SpeakingEngagementsReader>> _mockLogger;
     private readonly Mock<HttpMessageHandler> _mockHttpMessageHandler;
     private readonly HttpClient _httpClient;
 
     public SpeakingEngagementsReaderTests()
     {
-        _mockSettings = new Mock<ISpeakerEngagementsReaderSettings>();
+        _mockSettings = new Mock<ISpeakingEngagementsReaderSettings>();
         _mockLogger = new Mock<ILogger<SpeakingEngagementsReader>>();
         _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
         _httpClient = new HttpClient(_mockHttpMessageHandler.Object);
@@ -29,18 +29,18 @@ public class SpeakingEngagementsReaderTests
         // Arrange, Act & Assert
         var ex = Assert.Throws<ArgumentNullException>(() => new SpeakingEngagementsReader(_httpClient, null, _mockLogger.Object));
         Assert.Equal("settings", ex.ParamName);
-        Assert.Contains("The SpeakerEngagementsReaderSettings cannot be null", ex.Message);
+        Assert.Contains("The SpeakingEngagementsReaderSettings cannot be null", ex.Message);
     }
 
     [Fact]
     public void Constructor_WithEmptySpeakerEngagementsFile_ThrowsApplicationException()
     {
         // Arrange
-        _mockSettings.Setup(s => s.SpeakerEngagementsFile).Returns(string.Empty);
+        _mockSettings.Setup(s => s.SpeakingEngagementsFile).Returns(string.Empty);
 
         // Act & Assert
         var ex = Assert.Throws<ApplicationException>(() => new SpeakingEngagementsReader(_httpClient, _mockSettings.Object, _mockLogger.Object));
-        Assert.Equal("The SpeakerEngagementsFile of the SpeakerEngagementsReaderSettings is required", ex.Message);
+        Assert.Equal("The SpeakingEngagementsFile of the SpeakingEngagementsReaderSettings is required", ex.Message);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class SpeakingEngagementsReaderTests
             }
         };
 
-        _mockSettings.Setup(s => s.SpeakerEngagementsFile).Returns("https://example.com/data.json");
+        _mockSettings.Setup(s => s.SpeakingEngagementsFile).Returns("https://example.com/data.json");
         
         SetupMockHttpMessageHandler(HttpStatusCode.OK, sourceEngagements);
 
@@ -102,7 +102,7 @@ public class SpeakingEngagementsReaderTests
     }
 
     [Fact]
-    public async Task GetSinceDate_FiltersEngagementsCorrecty()
+    public async Task GetSinceDate_FiltersEngagementsCorrectly()
     {
         // Arrange
         var sinceDate = new DateTime(2023, 1, 1);
@@ -120,13 +120,13 @@ public class SpeakingEngagementsReaderTests
             }
         };
 
-        _mockSettings.Setup(s => s.SpeakerEngagementsFile).Returns("https://example.com/data.json");
+        _mockSettings.Setup(s => s.SpeakingEngagementsFile).Returns("https://example.com/data.json");
         SetupMockHttpMessageHandler(HttpStatusCode.OK, sourceEngagements);
 
         var reader = new SpeakingEngagementsReader(_httpClient, _mockSettings.Object, _mockLogger.Object);
 
         // Act
-        var result = await reader.GetSinceDate(sinceDate);
+        var result = await reader.GetAll(sinceDate);
 
         // Assert
         Assert.NotNull(result);
@@ -147,7 +147,7 @@ public class SpeakingEngagementsReaderTests
             }
         };
 
-        _mockSettings.Setup(s => s.SpeakerEngagementsFile).Returns("https://example.com/data.json");
+        _mockSettings.Setup(s => s.SpeakingEngagementsFile).Returns("https://example.com/data.json");
         SetupMockHttpMessageHandler(HttpStatusCode.OK, sourceEngagements);
 
         var reader = new SpeakingEngagementsReader(_httpClient, _mockSettings.Object, _mockLogger.Object);
@@ -195,7 +195,7 @@ public class SpeakingEngagementsReaderTests
             }
         };
 
-        _mockSettings.Setup(s => s.SpeakerEngagementsFile).Returns("https://example.com/data.json");
+        _mockSettings.Setup(s => s.SpeakingEngagementsFile).Returns("https://example.com/data.json");
         SetupMockHttpMessageHandler(HttpStatusCode.OK, sourceEngagements);
 
         var reader = new SpeakingEngagementsReader(_httpClient, _mockSettings.Object, _mockLogger.Object);
@@ -221,7 +221,7 @@ public class SpeakingEngagementsReaderTests
     public async Task LoadAllSpeakingEngagements_OnException_LogsErrorAndReturnsEmptyList()
     {
         // Arrange
-        _mockSettings.Setup(s => s.SpeakerEngagementsFile).Returns("https://example.com/data.json");
+        _mockSettings.Setup(s => s.SpeakingEngagementsFile).Returns("https://example.com/data.json");
         
         _mockHttpMessageHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(

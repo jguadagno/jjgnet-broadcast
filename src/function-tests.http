@@ -26,3 +26,6 @@ x-functions-key: {{functions-key}}
 Content-Type: application/json
 
 {}
+
+### CollectorsSpeakingEngagementsLoadAll - No Params
+POST http://localhost:62052/api/CollectorsSpeakingEngagementsLoadAll

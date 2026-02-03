@@ -42,7 +42,7 @@ public class LoadNewVideos
         
     [Function(Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos)]
     public async Task RunAsync(
-        [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer)
+        [TimerTrigger("%collectors_youtube_load_new_videos_cron_settings%")] TimerInfo myTimer)
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",

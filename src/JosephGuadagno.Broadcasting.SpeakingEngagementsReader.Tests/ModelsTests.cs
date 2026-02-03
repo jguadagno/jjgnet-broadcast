@@ -6,13 +6,13 @@ public class ModelsTests
     public void SpeakerEngagementsReaderSettings_Properties_Work()
     {
         // Arrange & Act
-        var settings = new Models.SpeakerEngagementsReaderSettings
+        var settings = new Models.SpeakingEngagementsReaderSettings
         {
-            SpeakerEngagementsFile = "https://example.com"
+            SpeakingEngagementsFile = "https://example.com"
         };
 
         // Assert
-        Assert.Equal("https://example.com", settings.SpeakerEngagementsFile);
+        Assert.Equal("https://example.com", settings.SpeakingEngagementsFile);
     }
 
     [Fact]

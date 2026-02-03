@@ -12,23 +12,23 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.SpeakingEngagementsReader;
 
-public class SpeakingEngagementsReader: ISpeakerEngagementsReader
+public class SpeakingEngagementsReader: ISpeakingEngagementsReader
 {
     private readonly HttpClient _httpClient;
-    private readonly ISpeakerEngagementsReaderSettings _settings;
+    private readonly ISpeakingEngagementsReaderSettings _settings;
     private readonly ILogger<SpeakingEngagementsReader> _logger;
 
-    public SpeakingEngagementsReader(HttpClient httpClient, ISpeakerEngagementsReaderSettings settings, ILogger<SpeakingEngagementsReader> logger)
+    public SpeakingEngagementsReader(HttpClient httpClient, ISpeakingEngagementsReaderSettings settings, ILogger<SpeakingEngagementsReader> logger)
     {
 
         if (settings == null)
         {
-            throw new ArgumentNullException(nameof(settings), "The SpeakerEngagementsReaderSettings cannot be null");
+            throw new ArgumentNullException(nameof(settings), "The SpeakingEngagementsReaderSettings cannot be null");
         }
 
-        if (string.IsNullOrEmpty(settings.SpeakerEngagementsFile))
+        if (string.IsNullOrEmpty(settings.SpeakingEngagementsFile))
         {
-            throw new ApplicationException("The SpeakerEngagementsFile of the SpeakerEngagementsReaderSettings is required");
+            throw new ApplicationException("The SpeakingEngagementsFile of the SpeakingEngagementsReaderSettings is required");
         }
 
         _httpClient = httpClient;
@@ -36,7 +36,7 @@ public class SpeakingEngagementsReader: ISpeakerEngagementsReader
         _logger = logger;
     }
 
-    public async Task<List<Engagement>> GetSinceDate(DateTime sinceWhen)
+    public async Task<List<Engagement>> GetAll(DateTime sinceWhen)
     {
         var speakingEngagements = await LoadAllSpeakingEngagements();
         return speakingEngagements.Where(e => e.LastUpdatedOn >= sinceWhen).ToList();
@@ -51,13 +51,13 @@ public class SpeakingEngagementsReader: ISpeakerEngagementsReader
     {
         var engagements = new List<Engagement>();
 
-        _logger.LogDebug("Reading all the speaking engagements from '{Url}'", _settings.SpeakerEngagementsFile);
+        _logger.LogDebug("Reading all the speaking engagements from '{Url}'", _settings.SpeakingEngagementsFile);
 
         try
         {
             // Load the data
             List<Models.Engagement> speakingEngagements =
-                await _httpClient.GetFromJsonAsync<List<Models.Engagement>>(_settings.SpeakerEngagementsFile);
+                await _httpClient.GetFromJsonAsync<List<Models.Engagement>>(_settings.SpeakingEngagementsFile);
 
             // Transform the data
             foreach (var speakingEngagement in speakingEngagements)
@@ -95,12 +95,12 @@ public class SpeakingEngagementsReader: ISpeakerEngagementsReader
             }
 
             // Return the new collection
-            _logger.LogDebug("Read {Count} all the speaking engagements from '{Url}'", engagements.Count, _settings.SpeakerEngagementsFile);
+            _logger.LogDebug("Read {Count} all the speaking engagements from '{Url}'", engagements.Count, _settings.SpeakingEngagementsFile);
             return engagements;
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Failed to load all the speaking engagements from '{Url}'", _settings.SpeakerEngagementsFile);
+            _logger.LogError(exception, "Failed to load all the speaking engagements from '{Url}'", _settings.SpeakingEngagementsFile);
             return engagements;
         }
     }

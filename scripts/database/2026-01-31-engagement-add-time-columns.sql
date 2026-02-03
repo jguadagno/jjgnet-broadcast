@@ -1,3 +1,3 @@
 ALTER TABLE dbo.Engagements
-    ADD CreatedOn datetime2 default getutcdate() NOT NULL,
-        LastUpdatedOn datetime2 default getutcdate() NOT NULL;
+    ADD CreatedOn datetimeoffset default getutcdate() NOT NULL,
+        LastUpdatedOn datetimeoffset default getutcdate() NOT NULL;

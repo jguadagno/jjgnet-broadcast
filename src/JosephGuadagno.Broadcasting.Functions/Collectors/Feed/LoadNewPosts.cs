@@ -42,7 +42,7 @@ public class LoadNewPosts
         
     [Function(Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts)]
     public async Task RunAsync(
-        [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer)
+        [TimerTrigger("%collectors_feed_load_new_posts_cron_settings%")] TimerInfo myTimer)
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",

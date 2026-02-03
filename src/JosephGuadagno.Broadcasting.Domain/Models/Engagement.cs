@@ -57,7 +57,13 @@ public class Engagement
     /// </summary>
     public List<Talk>? Talks { get; set; }
 
-    public DateTime CreatedOn { get; set; }
+    /// <summary>
+    /// The date and time the item was created
+    /// </summary>
+    public DateTimeOffset CreatedOn { get; set; }
 
-    public DateTime LastUpdatedOn { get; set; }
+    /// <summary>
+    /// The date and time the item was last updated
+    /// </summary>
+    public DateTimeOffset LastUpdatedOn { get; set; }
 }
