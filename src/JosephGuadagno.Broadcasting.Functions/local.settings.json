@@ -8,92 +8,76 @@
     "FUNCTIONS_EXTENSION_VERSION": "~4",
     "WEBSITE_CLOUD_ROLENAME": "FunctionApp",
     "maintenance_clear_old_logs_cron_settings": "0 */2 * * * *",
+    "maintenance_ad_secret_refresh_cron_settings": "0 */2 * * * *",
     "facebook_refresh_tokens_cron_settings": "0 */2 * * * *",
     "publishers_random_post_cron_settings": "0 */2 * * * *",
-    "publishers_scheduled_items_cron_settings": "0 */2 * * * *",
-    "collectors_feed_load_new_posts_cron_settings": "0 */2 * * * *",
-    "collectors_youtube_load_new_videos_cron_settings": "0 */2 * * * *",
-    "collectors_speaking_engagements_load_new_speaking_engagements_cron_settings": "0 */2 * * * *",
     "AzureWebJobs.CollectorsFeedLoadNewPosts.Disabled": true,
     "AzureWebJobs.CollectorsFeedLoadAllPosts.Disabled": true,
-    "AzureWebJobs.CollectorsSpeakingEngagementsLoadNew.Disabled": true,
-    "AzureWebJobs.CollectorsSpeakingEngagementsLoadAll.Disabled": true,
     "AzureWebJobs.CollectorsYouTubeLoadNewVideos.Disabled": true,
     "AzureWebJobs.CollectorsYouTubeLoadAllVideos.Disabled": true,
     "AzureWebJobs.PublishersRandomPosts.Disabled": true,
     "AzureWebJobs.PublishersScheduledItems.Disabled": true,
-    "AzureWebJobs.BlueskyPostMessage.Disabled": true,
-    "AzureWebJobs.BlueskyProcessNewSyndicationDataFired.Disabled": true,
-    "AzureWebJobs.BlueskyProcessNewYouTubeDataFired.Disabled": true,
-    "AzureWebJobs.BlueskyProcessRandomPostFired.Disabled": true,
-    "AzureWebJobs.BlueskyProcessScheduledItemFired.Disabled": true,
-    "AzureWebJobs.FacebookPostPageStatus.Disabled": false,
-    "AzureWebJobs.FacebookProcessNewSyndicationDataFired.Disabled": true,
-    "AzureWebJobs.FacebookProcessNewYouTubeDataFired.Disabled": true,
+    "AzureWebJobs.FacebookPostPageStatus.Disabled": true,
+    "AzureWebJobs.FacebookProcessNewSourceData.Disabled": true,
     "AzureWebJobs.FacebookProcessScheduledItemFired.Disabled": true,
     "AzureWebJobs.FacebookTokenRefresh.Disabled": true,
+    "AzureWebJobs.TwitterSendTweet.Disabled": true,
+    "AzureWebJobs.TwitterProcessNewSourceData.Disabled": true,
+    "AzureWebJobs.TwitterProcessScheduledItemFired.Disabled": true,
+    "AzureWebJobs.TwitterProcessRandomPostFired.Disabled": true,
+    "AzureWebJobs.MaintenanceClearOldLogs.Disabled": true,
+    "AzureWebJobs.MaintenanceAdClientSecretRefresh.Disabled": true,
     "AzureWebJobs.LinkedInPostLink.Disabled": true,
     "AzureWebJobs.LinkedInPostText.Disabled": true,
     "AzureWebJobs.LinkedInPostImage.Disabled": true,
-    "AzureWebJobs.LinkedInProcessNewSyndicationDataFired.Disabled": true,
-    "AzureWebJobs.LinkedInProcessNewYouTubeDataFired.Disabled": true,
+    "AzureWebJobs.LinkedInProcessNewSourceData.Disabled": true,
     "AzureWebJobs.LinkedInProcessScheduledItemFired.Disabled": true,
-    "AzureWebJobs.TwitterSendTweet.Disabled": true,
-    "AzureWebJobs.TwitterProcessNewSyndicationDataFired.Disabled": true,
-    "AzureWebJobs.TwitterProcessNewYouTubeDataFired.Disabled": true,
-    "AzureWebJobs.TwitterProcessRandomPostFired.Disabled": true,
-    "AzureWebJobs.TwitterProcessScheduledItemFired.Disabled": true,
-    "AzureWebJobs.MaintenanceClearOldLogs.Disabled": true
+    "AzureWebJobs.BlueskyPostMessage.Disabled": true,
+    "AzureWebJobs.BlueskyProcessRandomPostFired.Disabled": true,
+    "AzureWebJobs.BlueskyProcessNewSourceDataFired.Disabled": true
   },
   "Settings": {
+    "BitlyToken": "",
+    "BitlyAPIRootUri": "https://api-ssl.bitly.com/v4/",
+    "BitlyShortenedDomain": "jjg.me",
     "StorageAccount": "UseDevelopmentStorage=true",
     "TwitterApiKey": "",
     "TwitterApiSecret": "",
     "TwitterAccessToken": "",
     "TwitterAccessTokenSecret": "",
-    "BitlyToken": "",
-    "BitlyAPIRootUri": "https://api-ssl.bitly.com/v4/",
-    "BitlyShortenedDomain": "jjg.me",
-    "EventGridTopics": {
-      "TopicEndpointSettings": [
-        {
-          "TopicName": "new-random-post",
-          "Endpoint": "",
-          "Key": ""
-        },
-        {
-          "TopicName": "new-speaking-engagement",
-          "Endpoint": "",
-          "Key": ""
-        },
-        {
-          "TopicName": "new-syndication-feed-item",
-          "Endpoint": "",
-          "Key": ""
-        },
-        {
-          "TopicName": "new-youtube-item",
-          "Endpoint": "",
-          "Key": ""
-        },
-        {
-          "TopicName": "scheduled-item-fired",
-          "Endpoint": "",
-          "Key": ""
-        }
-      ]
+    "AutoMapper": {
+      "LicenseKey": "Set in Users Secrets/Azure App Service Settings"
     },
-    "SyndicationFeedReader": {
-      "FeedUrl": "http://localhost:4000/feed.xml"
+    "Bluesky": {
+      "BlueskyUserName": "jguadagno.com",
+      "BlueskyPassword": ""
     },
-    "SpeakingEngagementsReader": {
-      "SpeakingEngagementsFile": "http://localhost:4000/_data/engagements.json"
+    "Facebook": {
+
+      "AppId": "",
+      "AppSecret": "",
+      "ClientToken": "",
+      "LongLivedAccessToken": "",
+      "PageId": "",
+      "PageAccessToken": "",
+      "ShortLivedAccessToken": "",
+      "GraphApiVersion": "v20.0",
+      "GraphApiRootUrl": "https://graph.facebook.com"
     },
-    "YouTube": {
-      "ApiKey": "",
-      "ChannelId": "",
-      "PlaylistId": "",
-      "ResultSetPageSize": 10
+    "JsonFeedReader": {
+      "FeedUrl": "http://localhost:4000/feed.json"
+    },
+    "KeyVault" : {
+      "KeyVaultUri": "",
+      "TenantId": "",
+      "ClientId": "",
+      "ClientSecret": ""
+    },
+    "LinkedIn": {
+      "ClientId": "",
+      "ClientSecret": "",
+      "AccessToken": "",
+      "AuthorId": ""
     },
     "RandomPost": {
       "ExcludedCategories": [
@@ -106,45 +90,14 @@
       ],
       "CutoffDate": "2019-01-01"
     },
-    "Facebook": {
-      "PageId": "",
-      "PageAccessToken": "",
-      "AppId": "",
-      "AppSecret": "",
-      "ClientToken": "",
-      "ShortLivedAccessToken": "",
-      "LongLivedAccessToken": "",
-      "GraphApiVersion": "v20.0",
-      "GraphApiRootUrl": "https://graph.facebook.com"
+    "SyndicationFeedReader": {
+      "FeedUrl": "http://localhost:4000/feed.xml"
     },
-    "LinkedIn": {
-      "ClientId": "",
-      "ClientSecret": "",
-      "AccessToken": "",
-      "AuthorId": ""
-    },
-    "Bluesky": {
-      "BlueskyUserName": "jguadagno.com",
-      "BlueskyPassword": ""
-    },
-    "AutoMapper": {
-      "LicenseKey": "Set in Users Secrets/Azure App Service Settings"
+    "YouTube": {
+      "ApiKey": "",
+      "ChannelId": "",
+      "PlaylistId": "",
+      "ResultSetPageSize": 10
     }
-  },
-  "AzureAd": {
-    "ClientCredentials": [
-      {
-        "SourceType": "StoreWithDistinguishedName",
-        "CertificateStorePath": "CurrentUser/My",
-        "CertificateDistinguishedName": ""
-      }
-    ]
-  },
-  "KeyVault": {
-    "vaultUri": "Set in User Secrets",
-    "tenantId": "Set in User Secrets",
-    "clientId": "Set in User Secrets",
-    "ClientCertificate": "Set in User Secrets",
-    "ClientCertificateStoreLocation": "CurrentUser"
   }
 }
