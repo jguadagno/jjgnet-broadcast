@@ -19,9 +19,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 		install-libman.ps1 = install-libman.ps1
 		libman-restore.ps1 = libman-restore.ps1
 		LinkedIn.http = LinkedIn.http
-		..\.github\workflows\main_api-jjgnet-broadcast.yml = ..\.github\workflows\main_api-jjgnet-broadcast.yml
-		..\.github\workflows\main_jjgnet-broadcast.yml = ..\.github\workflows\main_jjgnet-broadcast.yml
-		..\.github\workflows\main_web-jjgnet-broadcast.yml = ..\.github\workflows\main_web-jjgnet-broadcast.yml
 		..\README.md = ..\README.md
 		..\CONTRIBUTING.md = ..\CONTRIBUTING.md
 		.editorconfig = .editorconfig
@@ -135,6 +132,13 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.SpeakingEngagementsReader", "JosephGuadagno.Broadcasting.SpeakingEngagementsReader\JosephGuadagno.Broadcasting.SpeakingEngagementsReader.csproj", "{FC2D8648-E911-466D-8A62-FDAEB4ABC6A8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Tests", "JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Tests\JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Tests.csproj", "{CC305789-58E4-4DD4-8F0C-7847601B453A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Workflows", "Workflows", "{34D40313-BD4C-4946-BF87-3F66F46A7E5D}"
+	ProjectSection(SolutionItems) = preProject
+		..\.github\workflows\main_api-jjgnet-broadcast.yml = ..\.github\workflows\main_api-jjgnet-broadcast.yml
+		..\.github\workflows\main_jjgnet-broadcast.yml = ..\.github\workflows\main_jjgnet-broadcast.yml
+		..\.github\workflows\main_web-jjgnet-broadcast.yml = ..\.github\workflows\main_web-jjgnet-broadcast.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
