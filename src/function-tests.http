@@ -1,31 +1,31 @@
-### Run Collectors_Feed Load All Posts
+### Collectors - Syndication Feed
 
-POST http://localhost:7071/api/CollectorsFeedLoadAllPosts?CheckFrom=2025-02-05
-
-### Run Collectors_Feed Load All Posts - No Date
-
-POST http://localhost:7071/api/CollectorsFeedLoadAllPosts
-
-### Run Collectors_YouTube Load All Videos
-
-POST http://localhost:7071/api/CollectorsYouTubeLoadAllVideos?CheckFrom=2025-02-05
-
-### Run Collectors_YouTube Load All Videos - No Date
-
-POST http://localhost:7071/api/CollectorsYouTubeLoadAllVideos
+# @name Run Collectors_Feed Load All Posts
+POST http://{{host}}/api/CollectorsFeedLoadAllPosts?CheckFrom=2026-01-01
 
 ###
-POST https://jjgnet-broadcast.azurewebsites.net/api/CollectorsFeedLoadAllPosts
+# @name Run Collectors_Feed Load All Posts - No Date
+POST http://{{host}}/api/CollectorsFeedLoadAllPosts
 
 ###
-POST https://jjgnet-broadcast.azurewebsites.net/api/CollectorsYouTubeLoadAllVideos
+# @name Run Collectors_SpeakingEngagements Load All Videos
+POST http://{{host}}/api/CollectorsSpeakingEngagementsLoadAll?CheckFrom=2026-02-02
 
 ###
-POST https://jjgnet-broadcast.azurewebsites.net/admin/functions/facebook_refresh_tokens
+# @name Run Collectors_SpeakingEngagements Load All Videos - No Date
+POST http://{{host}}/api/CollectorsSpeakingEngagementsLoadAll
+
+###
+# @name Run Collectors_YouTube Load All Videos
+POST http://{{host}}/api/CollectorsYouTubeLoadAllVideos?CheckFrom=2025-06-12
+
+###
+# @name Run Collectors_YouTube Load All Videos - No Date
+POST http://{{host}}/api/CollectorsYouTubeLoadAllVideos
+
+###
+POST https://jjgnet-broadcast.azurewebsites.net/admin/functions/FacebookTokenRefresh
 x-functions-key: {{functions-key}}
 Content-Type: application/json
 
 {}
-
-### CollectorsSpeakingEngagementsLoadAll - No Params
-POST http://localhost:62052/api/CollectorsSpeakingEngagementsLoadAll

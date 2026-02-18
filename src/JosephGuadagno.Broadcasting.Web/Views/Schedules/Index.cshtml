@@ -20,12 +20,8 @@
             <tr>
 
                 <td>@scheduledItem.ItemTableName</td>
-                <td>@scheduledItem.ItemPrimaryKey@if (!string.IsNullOrEmpty(scheduledItem.ItemSecondaryKey))
-                                                 {
-                                                     var scheduledItemKey = $"/{scheduledItem.ItemSecondaryKey}";
-                                                     @scheduledItemKey
-                                                 }</td>
-                <td>@scheduledItem.ScheduleDateTime</td>
+                <td>@scheduledItem.ItemPrimaryKey</td>
+                <td>@scheduledItem.SendOnDateTime</td>
                 <td>@if (scheduledItem.MessageSent)
                     {
                         <i class="bi bi-check-circle text-success"></i>

@@ -106,7 +106,6 @@ public class FacebookManager : IFacebookManager
         }
     }
 
-
     /// <summary>
     /// Refreshes the token
     /// </summary>

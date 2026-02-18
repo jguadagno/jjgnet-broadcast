@@ -1,4 +1,4 @@
-﻿using JosephGuadagno.Broadcasting.Domain;
+﻿using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.ApplicationInsights;
@@ -7,29 +7,18 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
-public class PostText
+public class PostText(ILinkedInManager linkedInManager, TelemetryClient telemetryClient, ILogger<PostText> logger)
 {
-    private readonly ILinkedInManager _linkedInManager;
-    private readonly TelemetryClient _telemetryClient;
-    private readonly ILogger<PostText> _logger;
-    
-    public PostText(ILinkedInManager linkedInManager, TelemetryClient telemetryClient, ILogger<PostText> logger)
-    {
-        _linkedInManager = linkedInManager;
-        _telemetryClient = telemetryClient;
-        _logger = logger;
-    }
-    
-    [Function(Constants.ConfigurationFunctionNames.LinkedInPostText)]
+    [Function(ConfigurationFunctionNames.LinkedInPostText)]
     public async Task Run(
-        [QueueTrigger(Constants.Queues.LinkedInPostText)]
+        [QueueTrigger(Queues.LinkedInPostText)]
         LinkedInPostText linkedInPostText)
     {
-        var linkedInShareId = await _linkedInManager.PostShareText(linkedInPostText.AccessToken, linkedInPostText.AuthorId, linkedInPostText.Text);
+        var linkedInShareId = await linkedInManager.PostShareText(linkedInPostText.AccessToken, linkedInPostText.AuthorId, linkedInPostText.Text);
         
         if (!string.IsNullOrEmpty(linkedInShareId))
         {
-            _telemetryClient.TrackEvent(Constants.Metrics.LinkedInPostText, new Dictionary<string, string>
+            telemetryClient.TrackEvent(Metrics.LinkedInPostText, new Dictionary<string, string>
             {
                 {"linkedInShareId", linkedInShareId},
                 {"text", linkedInPostText.Text}

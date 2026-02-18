@@ -1,7 +1,7 @@
 using System.Net;
 using Azure;
 using Azure.Data.Tables;
-using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -10,16 +10,16 @@ namespace JosephGuadagno.Broadcasting.Functions.Maintenance;
 
 public class ClearOldLogs(TelemetryClient telemetryClient, ILogger<ClearOldLogs> logger)
 {
-    [Function(Constants.ConfigurationFunctionNames.MaintenanceClearOldLogs)]
+    [Function(ConfigurationFunctionNames.MaintenanceClearOldLogs)]
     public async Task RunAsync(
         [TimerTrigger("%maintenance_clear_old_logs_cron_settings%")] TimerInfo myTimer,
-        [TableInput(Constants.Tables.Logging)] TableClient tableClient)
+        [TableInput(Tables.Logging)] TableClient tableClient)
     {
         // 0 */2 * * * * - Every 2 minutes
         // 0 23 * * 0 - Run at 11pm on Sunday
         var startedAt = DateTime.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
-            Constants.ConfigurationFunctionNames.MaintenanceClearOldLogs, startedAt);
+            ConfigurationFunctionNames.MaintenanceClearOldLogs, startedAt);
         var numberOfItemsDeleted = 0;
         var numberOfItemsDeletedFailed = 0;
 
@@ -49,7 +49,7 @@ public class ClearOldLogs(TelemetryClient telemetryClient, ILogger<ClearOldLogs>
         }
         
         // Return
-        telemetryClient.TrackEvent(Constants.Metrics.ClearOldLogs, new Dictionary<string, string>
+        telemetryClient.TrackEvent(Metrics.ClearOldLogs, new Dictionary<string, string>
         {
             {"DeletedCount", numberOfItemsDeleted.ToString()},
             {"FailedCount", numberOfItemsDeletedFailed.ToString()}

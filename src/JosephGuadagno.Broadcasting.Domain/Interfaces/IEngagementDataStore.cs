@@ -10,5 +10,6 @@ public interface IEngagementDataStore : IDataStore<Engagement>
     public Task<Talk> SaveTalkAsync(Talk talk);
     public Task<bool> RemoveTalkFromEngagementAsync(int talkId);
     public Task<bool> RemoveTalkFromEngagementAsync(Talk talk);
-    public Task<Talk> GetTalkAsync(int talkId);
+    public Task<Talk?> GetTalkAsync(int talkId);
+    public Task<Engagement?> GetByNameAndUrlAndYearAsync(string name, string url, int year);
 }

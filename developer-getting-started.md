@@ -79,16 +79,6 @@ Run the following scripts in the database. This is no longer needed, as the data
 
 Create the following tables
 
-##### Configuration
-
-Columns
-
-* PartitionKey
-* RowKey
-* Timestamp
-* LastCheckedFeed
-* LastItemAddedOrUpdated
-
 ##### Logging
 
 * PartitionKey
@@ -123,26 +113,16 @@ Columns
 * MS_TriggerDetails
 * MS_OperationContext
 
-##### SourceData
-
-* PartitionKey
-* RowKey
-* Timestamp
-* AddedOn
-* Author
-* PublicationDate
-* ShortenedUrl
-* Title
-* UpdatedOnDate
-* Url
-* Tags
-
 #### Queues
 
 Create the following queues
 
 * `facebook-post-status-to-page`
 * `twitter-tweets-to-send`
+* `linkedin-post-link`
+* `linkedin-post-text`
+* `linkedin-post-image`
+* `bluesky-post-to-send`
 
 #### Blobs
 

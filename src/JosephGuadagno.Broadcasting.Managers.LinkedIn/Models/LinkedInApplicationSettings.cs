@@ -2,8 +2,8 @@
 
 public class LinkedInApplicationSettings : ILinkedInApplicationSettings
 {
-    public string? ClientId { get; set; }
-    public string? ClientSecret { get; set; }
-    public string? AccessToken { get; set; }
-    public string? AuthorId { get; set; }
+    public required string ClientId { get; set; }
+    public required string ClientSecret { get; set; }
+    public required string AccessToken { get; set; }
+    public required string AuthorId { get; set; }
 }

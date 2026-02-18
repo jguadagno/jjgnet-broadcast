@@ -13,7 +13,7 @@ public interface ISpeakingEngagementsReader
     /// </summary>
     /// <param name="sinceWhen">A date to filter engagements since</param>
     /// <returns>A list of engagements</returns>
-    public Task<List<Engagement>> GetAll(DateTime sinceWhen);
+    public Task<List<Engagement>> GetAll(DateTimeOffset sinceWhen);
 
     /// <summary>
     /// Gets all engagements

@@ -22,16 +22,6 @@ public interface ISettings
     public string StorageAccount { get; set; }
 
     /// <summary>
-    /// The database connection string
-    /// </summary>
-    public string JJGNetDatabaseSqlServer { get; set; }
-
-    /// <summary>
-    /// The Azure Key Vault to use
-    /// </summary>
-    public KeyVaultSettings KeyVault { get; set; }
-
-    /// <summary>
     /// The static content root url
     /// </summary>
     /// <remarks>This will return where to get images, scripts, etc. from. Could be local or CDN.</remarks>

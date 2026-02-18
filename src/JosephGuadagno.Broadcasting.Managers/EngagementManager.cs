@@ -23,6 +23,19 @@ public class EngagementManager: IEngagementManager
 
     public async Task<Engagement> SaveAsync(Engagement entity)
     {
+
+        if (entity.Id == 0)
+        {
+            // We need to see if there is an existing record since there is no "id" from the SpeakingEngagementsReaders
+            // We will assume that if the following fields match, we will update the record.
+            //  - Name, Url, StartDateTime (Year)
+            var existingEngagement = await _engagementRepository.GetByNameAndUrlAndYearAsync(entity.Name, entity.Url, entity.StartDateTime.Year);
+            if (existingEngagement != null)
+            {
+                entity.Id = existingEngagement.Id;
+            }
+        }
+
         // Apply the time zone offset to the hours
         entity.StartDateTime = UpdateDateTimeOffsetWithTimeZone(entity.TimeZoneId, entity.StartDateTime); 
         entity.EndDateTime = UpdateDateTimeOffsetWithTimeZone(entity.TimeZoneId, entity.EndDateTime); 
@@ -85,5 +98,10 @@ public class EngagementManager: IEngagementManager
             dateTimeOffset.Hour, dateTimeOffset.Minute);
         var zonedDateTime = localDateTime.InZoneLeniently(eventTimeZone);
         return zonedDateTime.ToDateTimeOffset();
+    }
+
+    public async Task<Engagement?> GetByNameAndUrlAndYearAsync(string name, string url, int year)
+    {
+        return await _engagementRepository.GetByNameAndUrlAndYearAsync(name, url, year);
     }
 }

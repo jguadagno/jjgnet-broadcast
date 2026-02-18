@@ -26,18 +26,13 @@
     </div>
     <div class="mb-3">
         <label asp-for="ItemPrimaryKey" class="form-label">Primary Key</label>
-        <input asp-for="ItemPrimaryKey" type="text" class="form-control" readonly/>
+        <input asp-for="ItemPrimaryKey" type="number" class="form-control" readonly/>
         <span asp-validation-for="ItemPrimaryKey" class="text-danger"></span>
     </div>
     <div class="mb-3">
-        <label asp-for="ItemSecondaryKey" class="form-label">Secondary Key</label>
-        <input asp-for="ItemSecondaryKey" type="text" class="form-control" readonly/>
-        <span asp-validation-for="ItemSecondaryKey" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="ScheduleDateTime" class="form-label">Send on Date/Time</label>
-        <input asp-for="ScheduleDateTime" type="datetime-local" class="form-control" />
-        <span asp-validation-for="ScheduleDateTime" class="text-danger"></span>
+        <label asp-for="SendOnDateTime" class="form-label">Send on Date/Time</label>
+        <input asp-for="SendOnDateTime" type="datetime-local" class="form-control" />
+        <span asp-validation-for="SendOnDateTime" class="text-danger"></span>
     </div>
     <div class="mb-3">
         <label asp-for="Message" class="form-label">Message</label>

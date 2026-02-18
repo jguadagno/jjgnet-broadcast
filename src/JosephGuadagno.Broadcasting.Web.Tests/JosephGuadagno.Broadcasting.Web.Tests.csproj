@@ -34,6 +34,7 @@
     <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.1.1" />
     <PackageReference Include="AutoMapper" Version="16.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageReference Include="NodaTime" Version="3.3.0" />

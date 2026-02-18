@@ -1,6 +1,5 @@
 ﻿using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
-using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -50,15 +49,15 @@ public class YouTubeReader: IYouTubeReader
         _logger = logger;
     }
 
-    public List<SourceData> GetSinceDate(DateTime sinceWhen)
+    public List<YouTubeSource> GetSinceDate(DateTimeOffset sinceWhen)
     {
         return GetAsync(sinceWhen).Result;
     }
 
-    public async Task<List<SourceData>> GetAsync(DateTime sinceWhen)
+    public async Task<List<YouTubeSource>> GetAsync(DateTimeOffset sinceWhen)
     {
         var currentTime = DateTime.Now;
-        var videoItems = new List<SourceData>();
+        var videoItems = new List<YouTubeSource>();
             
         var playlistItemsRequest = _youTubeService.PlaylistItems.List("snippet");
         playlistItemsRequest.PlaylistId = _youTubeSettings.PlaylistId;
@@ -83,24 +82,24 @@ public class YouTubeReader: IYouTubeReader
 
                         var publishedAt = playlistItem.Snippet.PublishedAtDateTimeOffset.Value;
                        
+
                         if (publishedAt > sinceWhen)
                         {
-                            videoItems.Add(new SourceData(SourceSystems.YouTube,
-                                playlistItem.Snippet.ResourceId.VideoId)
+                            videoItems.Add(new YouTubeSource()
                             {
+                                VideoId = playlistItem.Snippet.ResourceId.VideoId,
                                 Author = playlistItem.Snippet.ChannelTitle,
                                 PublicationDate = publishedAt.UtcDateTime,
-                                UpdatedOnDate = publishedAt.UtcDateTime,
+                                LastUpdatedOn = publishedAt.UtcDateTime,
                                 //Text = searchResult.Snippet.Description,
                                 Title = playlistItem.Snippet.Title,
                                 Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",
-                                EndAfter = null,
                                 AddedOn = currentTime
                             });
                         }
                         else
                         {
-                            // Need to break out of the for when the publishDate is less than sinceWhen
+                            // Need to break out of the for loop when the publishDate is less than sinceWhen
                             // This assumes the API returns items from oldest to newest
                             playlistItems.NextPageToken = null;
                             break;

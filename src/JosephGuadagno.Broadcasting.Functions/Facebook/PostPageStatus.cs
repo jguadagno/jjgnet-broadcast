@@ -1,4 +1,4 @@
-using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
@@ -19,14 +19,14 @@ public class PostPageStatus
         _logger = logger;
     }
         
-    [Function(Constants.ConfigurationFunctionNames.FacebookPostPageStatus)]
+    [Function(ConfigurationFunctionNames.FacebookPostPageStatus)]
     public async Task Run(
-        [QueueTrigger(Constants.Queues.FacebookPostStatusToPage)]
+        [QueueTrigger(Queues.FacebookPostStatusToPage)]
         Domain.Models.Messages.FacebookPostStatus facebookPostStatus)
     {
         var startedAt = DateTime.UtcNow;
         _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
-            Constants.ConfigurationFunctionNames.FacebookPostPageStatus, startedAt);
+            ConfigurationFunctionNames.FacebookPostPageStatus, startedAt);
 
         try
         {
@@ -34,7 +34,7 @@ public class PostPageStatus
 
             if (!string.IsNullOrEmpty(pageId))
             {
-                _telemetryClient.TrackEvent(Constants.Metrics.FacebookPostPageStatus, new Dictionary<string, string>
+                _telemetryClient.TrackEvent(Metrics.FacebookPostPageStatus, new Dictionary<string, string>
                 {
                     {"statusText", facebookPostStatus.StatusText}, 
                     {"url", facebookPostStatus.LinkUri},
@@ -44,6 +44,7 @@ public class PostPageStatus
         catch (Exception e)
         {
             _logger.LogError(e, "Failed to post status. Exception: {ExceptionMessage}", e.Message);
+            throw;
         }
     }
 }

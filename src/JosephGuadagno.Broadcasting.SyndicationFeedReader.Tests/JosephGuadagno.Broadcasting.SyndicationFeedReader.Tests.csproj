@@ -67,7 +67,6 @@
   <ItemGroup>
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.Sql\JosephGuadagno.Broadcasting.Data.Sql.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj" />
-    <ProjectReference Include="..\JosephGuadagno.Broadcasting.JsonFeedReader\JosephGuadagno.Broadcasting.JsonFeedReader.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj" />

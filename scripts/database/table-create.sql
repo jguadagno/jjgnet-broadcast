@@ -1,7 +1,7 @@
 use JJGNet
 go
 
-create table Engagements
+create table dbo.Engagements
 (
     Id            int identity
         constraint Engagements_pk
@@ -11,7 +11,9 @@ create table Engagements
     StartDateTime datetimeoffset             not null,
     EndDateTime   datetimeoffset             not null,
     Comments      nvarchar(max),
-    TimeZoneId    nvarchar(50) default 'America/Phoenix' not null
+    TimeZoneId    nvarchar(50) default 'America/Phoenix' not null,
+    CreatedOn datetimeoffset default getutcdate() NOT NULL,
+    LastUpdatedOn datetimeoffset default getutcdate() NOT NULL
 )
 go
 
@@ -39,12 +41,11 @@ create table dbo.ScheduledItems
         constraint ScheduledItems_pk
             primary key nonclustered,
     ItemTableName    varchar(255)   not null,
-    ItemPrimaryKey   varchar(255)   not null,
+    ItemPrimaryKey   int   not null,
     Message          nvarchar(max),
     SendOnDateTime   datetimeoffset not null,
     MessageSent      bit default 0  not null,
-    MessageSentOn    datetimeoffset,
-    ItemSecondaryKey varchar(255)
+    MessageSentOn    datetimeoffset
 )
 go
 
@@ -52,7 +53,7 @@ create index ScheduledItems_MessageSentOn_index
     on ScheduledItems (MessageSentOn)
 go
 
-create table Cache
+create table dbo.Cache
 (
     Id                         nvarchar(449)  not null
         primary key,
@@ -67,4 +68,71 @@ create index Index_ExpiresAtTime
     on Cache (ExpiresAtTime)
 go
 
+-- Create the Feed Checks table
+create table dbo.FeedChecks
+(
+    Id                     int identity
+        constraint FeedChecks_pk_Id
+            primary key,
+    Name                   nvarchar(255)                       not null
+        constraint FeedChecks_Unique_Name
+            unique,
+    LastCheckedFeed        datetimeoffset default getutcdate() not null,
+    LastItemAddedOrUpdated datetimeoffset default GETUTCDATE() not null,
+    LastUpdatedOn          datetimeoffset default getutcdate() not null
+)
+go
 
+-- Create the TokenRefresh table
+create table dbo.TokenRefreshes
+(
+    Id            int identity
+        constraint TokenRefresh_pk_Id
+            primary key,
+    Name          nvarchar(255)                       not null
+        constraint ToeknRefresh_Unique_Name
+            unique,
+    Expires       datetimeoffset default getutcdate() not null,
+    LastChecked   datetimeoffset default GETUTCDATE() not null,
+    LastRefreshed datetimeoffset default GETUTCDATE() not null,
+    LastUpdatedOn datetimeoffset default getutcdate() not null
+)
+go
+
+-- Create the SyndicationFeedSource table
+create table dbo.SyndicationFeedSources
+(
+    Id                int identity
+        constraint SyndicationFeedSource_pk_Id
+            primary key,
+    FeedIdentifier    nvarchar(max)                       not null,
+    Author            nvarchar(255)                       not null,
+    Title             nvarchar(512)                       not null,
+    ShortenedUrl      nvarchar(255),
+    Tags              nvarchar(max),
+    Url               nvarchar(max)                       not null,
+    PublicationDate   datetimeoffset default getutcdate() not null,
+    AddedOn           datetimeoffset default getutcdate() not null,
+    ItemLastUpdatedOn datetimeoffset default getutcdate(),
+    LastUpdatedOn     datetimeoffset default getutcdate() not null
+)
+GO
+
+-- Create the YouTubeSource table
+create table dbo.YouTubeSources
+(
+    Id                int identity
+        constraint YouTubeSource_pk_Id
+            primary key,
+    VideoId           nvarchar(20)                        not null,
+    Author            nvarchar(255)                       not null,
+    Title             nvarchar(512)                       not null,
+    ShortenedUrl      nvarchar(255),
+    Tags              nvarchar(max),
+    Url               nvarchar(max)                       not null,
+    PublicationDate   datetimeoffset default getutcdate() not null,
+    AddedOn           datetimeoffset default getutcdate() not null,
+    ItemLastUpdatedOn datetimeoffset default getutcdate(),
+    LastUpdatedOn     datetimeoffset default getutcdate() not null
+)
+go

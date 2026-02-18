@@ -3,6 +3,7 @@ using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
+
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
 
 /// <summary>
@@ -13,19 +14,16 @@ public class TalksController : Controller
 {
     private readonly IEngagementService _engagementService;
     private readonly IMapper _mapper;
-    private readonly ILogger<TalksController> _logger;
 
     /// <summary>
-    /// The constructor for the talks controller.
+    /// The constructor for the talk's controller.
     /// </summary>
     /// <param name="engagementService">The engagement service</param>
     /// <param name="mapper">The mapper service</param>
-    /// <param name="logger">The logger to use</param>
-    public TalksController(IEngagementService engagementService, IMapper mapper, ILogger<TalksController> logger)
+    public TalksController(IEngagementService engagementService, IMapper mapper)
     {
         _engagementService = engagementService;
         _mapper = mapper;
-        _logger = logger;
     }
     
     /// <summary>

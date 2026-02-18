@@ -1,129 +1,112 @@
-// Default URL for triggering event grid function in the local environment.
-// http://localhost:7071/runtime/webhooks/EventGrid?functionName=facebook_process_scheduled_item_fired
-
 using System.Text.Json;
 using Azure.Messaging.EventGrid;
-using JosephGuadagno.Broadcasting.Data.Repositories;
-using Microsoft.Extensions.Logging;
 using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Extensions.Types;
+using JosephGuadagno.Broadcasting.Domain.Models.Events;
+
 using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
-public class ProcessScheduledItemFired
+public class ProcessScheduledItemFired(
+    IScheduledItemManager scheduledItemManager,
+    ISyndicationFeedSourceManager syndicationFeedSourceManager,
+    IYouTubeSourceManager youTubeSourceManager,
+    IEngagementManager engagementManager,
+    TelemetryClient telemetryClient,
+    ILogger<ProcessScheduledItemFired> logger)
 {
-    private readonly SourceDataRepository _sourceDataRepository;
-    private readonly IEngagementManager _engagementManager;
-    private readonly TelemetryClient _telemetryClient;
-    private readonly ILogger<ProcessScheduledItemFired> _logger;
-    
     const int MaxTweetLength = 240;
-    
-    public ProcessScheduledItemFired(
-        SourceDataRepository sourceDataRepository,
-        IEngagementManager engagementManager,
-        TelemetryClient telemetryClient,
-        ILogger<ProcessScheduledItemFired> logger)
-    {
-        _sourceDataRepository = sourceDataRepository;
-        _engagementManager = engagementManager;
-        _telemetryClient = telemetryClient;
-        _logger = logger;
-    }
-    
+
     // Debug Locally: https://docs.microsoft.com/en-us/azure/azure-functions/functions-debug-event-grid-trigger-local
     // Sample Code: https://github.com/Azure-Samples/event-grid-dotnet-publish-consume-events
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=twitter_process_scheduled_item_fired`
-    [Function(Constants.ConfigurationFunctionNames.TwitterProcessScheduledItemFired)]
-    [QueueOutput(Constants.Queues.TwitterTweetsToSend)]
-    public async Task<string> RunAsync(
-        [EventGridTrigger] EventGridEvent eventGridEvent)
+    [Function(ConfigurationFunctionNames.TwitterProcessScheduledItemFired)]
+    [QueueOutput(Queues.TwitterTweetsToSend)]
+    public async Task<string?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTime.UtcNow;
-        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
-            Constants.ConfigurationFunctionNames.TwitterProcessScheduledItemFired, startedAt);
+        logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
+            ConfigurationFunctionNames.TwitterProcessScheduledItemFired, startedAt);
         
         // Get the Source Data identifier for the event
         if (eventGridEvent.Data is null)
         {
-            _logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
+            logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
             return null;
         }
 
-        var eventGridData = eventGridEvent.Data.ToString();
+        try
+        {
+            var eventGridData = eventGridEvent.Data.ToString();
+            var scheduledItemFiredEvent = JsonSerializer.Deserialize<ScheduledItemFiredEvent>(eventGridData);
+            if (scheduledItemFiredEvent is null)
+            {
+                logger.LogError("Failed to parse the TableEvent data for event '{Id}'", eventGridEvent.Id);
+                return null;
+            }
+            var scheduledItem = await scheduledItemManager.GetAsync(scheduledItemFiredEvent.Id);
 
-        var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
-        if (tableEvent == null)
-        {
-            _logger.LogError("Failed to parse the TableEvent data for event '{Id}'", eventGridEvent.Id);
-            return null;
-        }
-        
-        // Determine what type the post is for
-        string tweetText;
-        switch (tableEvent.TableName)
-        {
-            case SourceSystems.SyndicationFeed:
-            case SourceSystems.YouTube:
-                tweetText = await GetTweetForSourceData(tableEvent);
-                break;
-            default:
-                tweetText = await GetTweetForSqlTable(tableEvent);
-                break;
-        }
+            logger.LogDebug("Processing the event '{Id}' for '{TableName}', '{PartitionKey}'",
+                eventGridEvent.Id, scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
-        if (tweetText is null)
-        {
-            _logger.LogDebug(
-                "Could not generate the tweet for {TableName}, {PartitionKey}, {RowKey}",
-                tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
-            return null;
+            // Determine what type the post is for
+            string tweetText;
+            switch (scheduledItem.ItemTableName)
+            {
+                case SourceSystems.Engagements:
+                    tweetText = await GetPostForEngagement(scheduledItem.ItemPrimaryKey);
+                    break;
+                case SourceSystems.Talks:
+                    tweetText = await GetPostForTalk(scheduledItem.ItemPrimaryKey);
+                    break;
+                case SourceSystems.SyndicationFeedSources:
+                    tweetText = await GetPostForSyndicationSource(scheduledItem.ItemPrimaryKey);
+                    break;
+                case SourceSystems.YouTubeSources:
+                    tweetText = await GetPostForYouTubeSource(scheduledItem.ItemPrimaryKey);
+                    break;
+                default:
+                    logger.LogError("The table name '{TableName}' is not supported", scheduledItem.ItemTableName);
+                    return null;
+            }
+
+            telemetryClient.TrackEvent(Metrics.TwitterProcessScheduledItemFired,
+                new Dictionary<string, string>
+                {
+                    { "tableName", scheduledItem.ItemTableName },
+                    { "primaryKey", scheduledItem.ItemPrimaryKey.ToString() },
+                    { "text", tweetText }
+                });
+            logger.LogDebug("Generated the tweet for {TableName}, {PrimaryKey}",
+                scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
+            return tweetText;
         }
-        
-        _telemetryClient.TrackEvent(Constants.Metrics.TwitterProcessScheduledItemFired, new Dictionary<string, string>
+        catch (Exception e)
         {
-            {"tableName", tableEvent.TableName},
-            {"partitionKey", tableEvent.PartitionKey},
-            {"rowKey", tableEvent.RowKey},
-            {"text", tweetText}
-        });
-        _logger.LogDebug("Generated the tweet for {TableName}, {PartitionKey}, {RowKey}",
-            tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
-        return tweetText;
+            logger.LogError(e, "Failed to process the new scheduled item. Exception: {ExceptionMessage}", e.Message);
+            throw;
+        }
+        finally
+        {
+            var endedAt = DateTime.UtcNow;
+            logger.LogDebug("{FunctionName} ended at: {EndedAt:f}",
+                ConfigurationFunctionNames.TwitterProcessScheduledItemFired, endedAt);
+        }
     }
     
-    private async Task<string> GetTweetForSourceData(TableEvent tableEvent)
+    private async Task<string> GetPostForSyndicationSource(int primaryKey)
     {
-        if (tableEvent is null)
-        {
-            return null;
-        }
-
-        var statusText = "ICYMI: ";
-        var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
-        if (sourceData is null)
-        {
-            _logger.LogWarning("Record for '{PartitionKey}', '{RowKey}' was not found",
-                tableEvent.TableName, tableEvent.PartitionKey);
-            return null;
-        }
-
-        statusText = sourceData.SourceSystem switch
-        {
-            SourceSystems.SyndicationFeed => "Blog Post: ",
-            SourceSystems.YouTube => "Video: ",
-            _ => statusText
-        };
-        
-        var url = sourceData.ShortenedUrl ?? sourceData.Url;
-        var postTitle = sourceData.Title;
-        var hashTagList = HashTagList(sourceData.Tags);
+        var syndicationFeedSource = await syndicationFeedSourceManager.GetAsync(primaryKey);
+        var statusText = "Blog Post: ";
+        var url = syndicationFeedSource.ShortenedUrl ?? syndicationFeedSource.Url;
+        var postTitle = syndicationFeedSource.Title;
+        var hashTagList = HashTagLists.BuildHashTagList(syndicationFeedSource.Tags);
         
         if (statusText.Length + url.Length + postTitle.Length + 3 + hashTagList.Length >= MaxTweetLength)
         {
@@ -133,84 +116,72 @@ public class ProcessScheduledItemFired
         
         var tweet = $"{statusText} {postTitle} {url} {hashTagList}";
         
-        _logger.LogDebug("Composed tweet '{Tweet}'", tweet);
-        return statusText;
+        logger.LogDebug("Composed tweet '{Tweet}'", tweet);
+        return tweet;
     }
-    
-    private async Task<string> GetTweetForSqlTable(TableEvent tableEvent)
+
+    private async Task<string> GetPostForYouTubeSource(int primaryKey)
     {
-        if (tableEvent is null)
-        {
-            return null;
-        }
+        var youTubeSource = await youTubeSourceManager.GetAsync(primaryKey);
 
-        string tweetText = null;
-        Engagement engagement;
-        switch (tableEvent.TableName)
+        var statusText = "Video: ";
+        var url = youTubeSource.ShortenedUrl ?? youTubeSource.Url;
+        var postTitle = youTubeSource.Title;
+        var hashTagList = HashTagLists.BuildHashTagList(youTubeSource.Tags);
+        
+        if (statusText.Length + url.Length + postTitle.Length + 3 + hashTagList.Length >= MaxTweetLength)
         {
-            case SourceSystems.Engagements:
-                engagement = await _engagementManager.GetAsync(tableEvent.PartitionKey.To<int>());
-                tweetText = GetTweetForEngagement(engagement);
-                break;
-            case SourceSystems.Talks:
-                var talk = await _engagementManager.GetTalkAsync(tableEvent.PartitionKey.To<int>());
-                engagement = await _engagementManager.GetAsync(talk.Id);
-                tweetText = GetTweetForTalk(talk, engagement);
-                break;
+            var newLength = MaxTweetLength - statusText.Length - url.Length - hashTagList.Length - 1;
+            postTitle = string.Concat(postTitle.AsSpan(0, newLength - 4), "...");
         }
-
-        return tweetText;
+        
+        var tweet = $"{statusText} {postTitle} {url} {hashTagList}";
+        
+        logger.LogDebug("Composed tweet '{Tweet}'", tweet);
+        return tweet;
     }
 
-    private string GetTweetForEngagement(Engagement engagement)
+    private async Task<string> GetPostForEngagement(int primaryKey)
     {
         // TODO: Account for custom images for engagement
         // TODO: Account for custom message for engagement
         //  i.e: Join me tomorrow, Join me next week
         // TODO: Maybe handle timezone?
-        if (engagement is null)
-        {
-            return null;
-        }
+
+        var engagement = await engagementManager.GetAsync(primaryKey);
         
         var statusText = $"I'm speaking at {engagement.Name} ({engagement.Url}) starting on {engagement.StartDateTime:f}";
+        var commentsLength = engagement.Comments?.Length ?? 0;
         var comments = engagement.Comments;
         statusText += " " + comments;
         
-        if (statusText.Length + comments.Length + 1 >= MaxTweetLength)
+        if (statusText.Length + comments?.Length + 1 >= MaxTweetLength)
         {
-            var newLength = MaxTweetLength - statusText.Length - comments.Length - 1;
+            var newLength = MaxTweetLength - statusText.Length - commentsLength - 1;
             statusText = statusText.Substring(0, newLength - 4) + "...";
         }
         
-        _logger.LogDebug("Composed tweet '{StatusText}'", statusText);
+        logger.LogDebug("Composed tweet '{StatusText}'", statusText);
         return statusText;
     }
     
-    private string GetTweetForTalk(Talk talk, Engagement engagement)
+    private async Task<string> GetPostForTalk(int primaryKey)
     {
-        if (talk is null)
-        {
-            return null;
-        }
+
         // TODO: Account for custom images for talk
         // TODO: Account for custom message for talk
         //  i.e: Join me tomorrow, Join me next week, "Up next in room...", "Join me today..."
         // TODO: Maybe handle timezone?
 
-        var statusText = $"My talk: {talk.Name} ({talk.UrlForTalk})";
-        if (engagement is not null)
-        {
-            statusText += " at " + engagement.Name;
-        }
-        statusText += $" is starting at {talk.StartDateTime:f}";
-        if (talk.TalkLocation is not null)
-        {
-            statusText += $" in room {talk.TalkLocation}";
-        }
+        var talk = await engagementManager.GetTalkAsync(primaryKey);
+        var engagement = await engagementManager.GetAsync(talk.Id);
 
+        var statusText = $"My talk: {talk.Name} ({talk.UrlForTalk})";
+        statusText += " at " + engagement.Name;
+        statusText += $" is starting at {talk.StartDateTime:f}";
+        statusText += $" in room {talk.TalkLocation}";
         statusText += " Come see it!";
-        if (engagement?.Comments is not null)
+        if (engagement.Comments is not null)
         {
             statusText += " Comments" + engagement.Comments;
         }
@@ -221,21 +192,7 @@ public class ProcessScheduledItemFired
             statusText = statusText.Substring(0, newLength - 4) + "...";
         }
             
-        _logger.LogDebug("Composed tweet '{StatusText}'", statusText);
+        logger.LogDebug("Composed tweet '{StatusText}'", statusText);
         return statusText;
-    }
-    
-    private string HashTagList(string tags)
-    {
-        if (string.IsNullOrEmpty(tags))
-        {
-            return "#dotnet #csharp #dotnetcore";
-        }
-
-        var tagList = tags.Split(',');
-        var hashTagCategories = tagList.Where(tag => !tag.Contains("Article"));
-
-        return hashTagCategories.Aggregate("",
-            (current, tag) => current + $" #{tag.Replace(" ", "").Replace(".", "")}");
     }
 }

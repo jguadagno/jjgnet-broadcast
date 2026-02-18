@@ -1,0 +1,175 @@
+{
+  "dashboardEnabled": true,
+  "dashboardPort": 60100,
+  "topics": [
+    {
+      "name": "new-random-post",
+      "port": 60101,
+      "disabled": true,
+      "key": "TheLocal+DevelopmentKey=",
+      "subscribers": {
+        "http": [
+          {
+            "name": "BlueskyProcessRandomPostFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=BlueskyProcessRandomPostFired",
+            "disableValidation": true
+          },
+          {
+            "name": "TwitterProcessRandomPostFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=TwitterProcessRandomPostFired",
+            "disableValidation": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "new-speaking-engagement",
+      "port": true,
+      "disabled": true,
+      "key": "TheLocal+DevelopmentKey=",
+      "subscribers": {
+        "http": [
+          {
+            "name": "BlueskyProcessSpeakingEngagementDataFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=BlueskyProcessSpeakingEngagementDataFired",
+            "disableValidation": true
+          },
+          {
+            "name": "FacebookProcessNewSpeakingEngagementDataFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=FacebookProcessSpeakingEngagementDataFired",
+            "disableValidation": true
+          },
+          {
+            "name": "LinkedInProcessSpeakingEngagementDataFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=LinkedInProcessSpeakingEngagementDataFired",
+            "disableValidation": true
+          },
+          {
+            "name": "TwitterProcessSpeakingEngagementDataFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=TwitterProcessSpeakingEngagementDataFired",
+            "disableValidation": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "new-syndication-feed-item",
+      "port": 60103,
+      "disabled": true,
+      "key": "TheLocal+DevelopmentKey=",
+      "subscribers": {
+        "http": [
+          {
+            "name": "BlueskyProcessNewSyndicationDataFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=BlueskyProcessNewSyndicationDataFired",
+            "disableValidation": true
+          },
+          {
+            "name": "FacebookProcessNewSyndicationDataFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=FacebookProcessNewSyndicationDataFired",
+            "disableValidation": true
+          },
+          {
+            "name": "LinkedInProcessNewSyndicationDataFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=LinkedInProcessNewSyndicationDataFired",
+            "disableValidation": true
+          },
+          {
+            "name": "TwitterProcessNewSyndicationDataFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=TwitterProcessNewSyndicationDataFired",
+            "disableValidation": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "new-youtube-item",
+      "port": 60104,
+      "disabled": false,
+      "key": "TheLocal+DevelopmentKey=",
+      "subscribers": {
+        "http": [
+          {
+            "name": "BlueskyProcessNewYouTubeDataFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=BlueskyProcessNewYouTubeDataFired",
+            "disableValidation": true
+          },
+          {
+            "name": "FacebookProcessNewYouTubeDataFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=FacebookProcessNewYouTubeDataFired",
+            "disableValidation": true
+          },
+          {
+            "name": "LinkedInProcessNewYouTubeDataFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=LinkedInProcessNewYouTubeDataFired",
+            "disableValidation": true
+          },
+          {
+            "name": "TwitterProcessNewYouTubeDataFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=TwitterProcessNewYouTubeDataFired",
+            "disableValidation": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "scheduled-item-fired",
+      "port": 60105,
+      "disabled": true,
+      "key": "TheLocal+DevelopmentKey=",
+      "subscribers": {
+        "http": [
+          {
+            "name": "BlueskyProcessScheduledItemFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=BlueskyProcessScheduledItemFired",
+            "disableValidation": true
+          },
+          {
+            "name": "FacebookProcessScheduledItemFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=FacebookProcessScheduledItemFired",
+            "disableValidation": true
+          },
+          {
+            "name": "LinkedInProcessScheduledItemFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=LinkedInProcessScheduledItemFired",
+            "disableValidation": true
+          },
+          {
+            "name": "TwitterProcessScheduledItemFired",
+            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=TwitterProcessScheduledItemFired",
+            "disableValidation": true
+          }
+        ]
+      }
+    }
+  ],
+  "Serilog": {
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "System": "Warning"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console"
+      },
+      {
+        "Name": "File",
+        "Args": {
+          "path": "log_.txt",
+          "rollingInterval": "Day",
+          "retainedFileCountLimit": 7
+        }
+      },
+      {
+        "Name": "Seq",
+        "Args": {
+          "serverUrl": "http://localhost:5341",
+          "apiKey": null
+        }
+      }
+    ]
+  }
+}

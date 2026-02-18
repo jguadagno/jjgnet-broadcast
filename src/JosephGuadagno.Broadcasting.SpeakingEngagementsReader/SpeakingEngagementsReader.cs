@@ -36,10 +36,10 @@ public class SpeakingEngagementsReader: ISpeakingEngagementsReader
         _logger = logger;
     }
 
-    public async Task<List<Engagement>> GetAll(DateTime sinceWhen)
+    public async Task<List<Engagement>> GetAll(DateTimeOffset sinceWhen)
     {
         var speakingEngagements = await LoadAllSpeakingEngagements();
-        return speakingEngagements.Where(e => e.LastUpdatedOn >= sinceWhen).ToList();
+        return speakingEngagements.Where(e => e.LastUpdatedOn > sinceWhen).ToList();
     }
 
     public async Task<List<Engagement>> GetAll()

@@ -30,7 +30,7 @@ var db = sql.AddDatabase("JJGNet")
     .WithCreationScript(sqlText);
 
 var api = builder.AddProject<JosephGuadagno_Broadcasting_Api>("josephguadagno-broadcasting-api")
-    .WithEnvironment("Settings__JJGNetDatabaseSqlServer", db)
+    .WithEnvironment("ConnectionStrings__JJGNetDatabaseSqlServer", db)
     .WithEnvironment("Settings__StorageAccount", tableStorage)
     .WaitFor(blobStorage)
     .WaitFor(queueStorage)
@@ -52,11 +52,11 @@ builder.AddAzureFunctionsProject<JosephGuadagno_Broadcasting_Functions>("Functio
     .WaitFor(tableStorage)
     .WaitFor(blobStorage)
     .WaitFor(queueStorage)
-    .WithEnvironment("Settings__JJGNetDatabaseSqlServer", db)
+    .WithEnvironment("ConnectionStrings__JJGNetDatabaseSqlServer", db)
     .WithEnvironment("Settings__StorageAccount", tableStorage);
 
 builder.AddProject<JosephGuadagno_Broadcasting_Web>("josephguadagno-broadcasting-web")
-    .WithEnvironment("Settings__JJGNetDatabaseSqlServer", db)
+    .WithEnvironment("ConnectionStrings__JJGNetDatabaseSqlServer", db)
     .WithEnvironment("Settings__StorageAccount", tableStorage)
     .WithReference(api)
     .WaitFor(api);

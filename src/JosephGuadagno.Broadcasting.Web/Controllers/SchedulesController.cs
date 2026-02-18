@@ -15,7 +15,7 @@ public class SchedulesController : Controller
     private readonly ILogger<SchedulesController> _logger;
 
     /// <summary>
-    /// The constructor for the schedules controller
+    /// The constructor for the schedules' controller
     /// </summary>
     /// <param name="scheduledItemService">The scheduled item service</param>
     /// <param name="mapper">The mapper service</param>
@@ -108,7 +108,7 @@ public class SchedulesController : Controller
     /// <returns>Returns a form to add a <see cref="ScheduledItemViewModel"/></returns>
     public IActionResult Add()
     {
-        return View(new ScheduledItemViewModel{ScheduleDateTime = DateTime.UtcNow});
+        return View(new ScheduledItemViewModel{SendOnDateTime = DateTime.UtcNow});
     }
         
     /// <summary>

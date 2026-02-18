@@ -1,4 +1,4 @@
-using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using LinqToTwitter;
 using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
@@ -9,9 +9,9 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 public class SendTweet(TwitterContext twitterContext, TelemetryClient telemetryClient, ILogger<SendTweet> logger)
 {
 
-    [Function(Constants.ConfigurationFunctionNames.TwitterSendTweet)]
+    [Function(ConfigurationFunctionNames.TwitterSendTweet)]
     public async Task Run(
-        [QueueTrigger(Constants.Queues.TwitterTweetsToSend)] string tweetText)
+        [QueueTrigger(Queues.TwitterTweetsToSend)] string tweetText)
     {
         try
         {
@@ -25,7 +25,7 @@ public class SendTweet(TwitterContext twitterContext, TelemetryClient telemetryC
             {
                 // This is good, just log success
                 logger.LogDebug("Posting to Twitter: {tweetText}", tweetText);
-                telemetryClient.TrackEvent(Constants.Metrics.TwitterPostSent, new Dictionary<string, string>
+                telemetryClient.TrackEvent(Metrics.TwitterPostSent, new Dictionary<string, string>
                 {
                     {"message", tweetText},
                     {"id", tweet.ID}

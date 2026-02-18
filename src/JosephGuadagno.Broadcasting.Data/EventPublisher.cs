@@ -1,59 +1,50 @@
 using Azure;
-using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Azure.Messaging.EventGrid;
+
+using JosephGuadagno.Broadcasting.Domain.Models.Events;
+
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Data;
 
-public class EventPublisher: IEventPublisher
+public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILogger<EventPublisher> logger)
+    : IEventPublisher
 {
-
-    private readonly ILogger<EventPublisher> _logger;
-        
-    public EventPublisher(ILogger<EventPublisher> logger)
+    public async Task<bool> PublishSyndicationFeedEventsAsync(string subject,
+        IReadOnlyCollection<SyndicationFeedSource> syndicationFeedSourceDataItems)
     {
-        _logger = logger;
-    }
 
-    public async Task<bool> PublishEventsAsync(string topicUrl, string topicKey, string subject, IReadOnlyCollection<SourceData> sourceDataItems)
-    {
-            
-        if (string.IsNullOrEmpty(topicUrl))
-        {
-            throw new ArgumentNullException(nameof(topicUrl), "The topic url is required.");
-        }
-
-        if (string.IsNullOrEmpty(topicKey))
-        {
-            throw new ArgumentNullException(nameof(topicKey), "The topic key is required.");
-        }
-            
         if (string.IsNullOrEmpty(subject))
         {
             throw new ArgumentNullException(nameof(subject), "The subject is required.");
         }
-            
-        if (sourceDataItems == null || sourceDataItems.Count == 0)
+
+        if (syndicationFeedSourceDataItems.Count == 0)
         {
             return false;
         }
-            
-        var topicCredentials = new AzureKeyCredential(topicKey);
-        var client= new EventGridPublisherClient(new Uri(topicUrl), topicCredentials);
+
+        var topicSettings = GetTopicEndpointSettings(Topics.NewSyndicationFeedItem);
+        if (topicSettings == null)
+        {
+            throw new InvalidOperationException($"The topic endpoint settings for topic '{Topics.NewSyndicationFeedItem}' was not found.");
+        }
+
+        var topicCredentials = new AzureKeyCredential(topicSettings.Key);
+        var client= new EventGridPublisherClient(new Uri(topicSettings.Endpoint), topicCredentials);
 
         var eventList = new List<EventGridEvent>();
-        foreach (var sourceData in sourceDataItems)
+        foreach (var syndicationFeedDataItem in syndicationFeedSourceDataItems)
         {
-            var data = new TableEvent
+            var data = new NewSyndicationFeedItemEvent
             {
-                TableName = Constants.Tables.SourceData, 
-                PartitionKey = sourceData.PartitionKey,
-                RowKey = sourceData.RowKey
+                Id = syndicationFeedDataItem.Id
             };
             eventList.Add(
-                new EventGridEvent(subject, Constants.Topics.NewSourceData, "1.0", data));
+                new EventGridEvent(subject, Topics.NewSyndicationFeedItem, "1.1", data));
         }
 
         try
@@ -63,48 +54,87 @@ public class EventPublisher: IEventPublisher
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicUrl, e);   
+            logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicSettings.Endpoint, e);
             return false;
         }
     }
 
-    public async Task<bool> PublishEventsAsync(string topicUrl, string topicKey, string subject,
-        IReadOnlyCollection<ScheduledItem> scheduledItems)
+    public async Task<bool> PublishYouTubeEventsAsync(string subject, IReadOnlyCollection<YouTubeSource> youTubeSourceDataItems)
     {
-        if (string.IsNullOrEmpty(topicUrl))
+
+        if (string.IsNullOrEmpty(subject))
         {
-            throw new ArgumentNullException(nameof(topicUrl), "The topic url is required.");
+            throw new ArgumentNullException(nameof(subject), "The subject is required.");
         }
 
-        if (string.IsNullOrEmpty(topicKey))
+        if (youTubeSourceDataItems.Count == 0)
         {
-            throw new ArgumentNullException(nameof(topicKey), "The topic key is required.");
+            return false;
         }
-            
+
+        var topicSettings = GetTopicEndpointSettings(Topics.NewYouTubeItem);
+        if (topicSettings == null)
+        {
+            throw new InvalidOperationException($"The topic endpoint settings for topic '{Topics.NewYouTubeItem}' was not found.");
+        }
+
+        var topicCredentials = new AzureKeyCredential(topicSettings.Key);
+        var client= new EventGridPublisherClient(new Uri(topicSettings.Endpoint), topicCredentials);
+
+        var eventList = new List<EventGridEvent>();
+        foreach (var youTubeSourceDataItem in youTubeSourceDataItems)
+        {
+            var data = new NewYouTubeItemEvent
+            {
+                Id = youTubeSourceDataItem.Id
+            };
+            eventList.Add(
+                new EventGridEvent(subject, Topics.NewYouTubeItem, "1.1", data));
+        }
+
+        try
+        {
+            await client.SendEventsAsync(eventList);
+            return true;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicSettings.Endpoint, e);
+            return false;
+        }
+    }
+
+    public async Task<bool> PublishScheduledItemFiredEventsAsync(string subject,
+        IReadOnlyCollection<ScheduledItem> scheduledItems)
+    {
         if (string.IsNullOrEmpty(subject))
         {
             throw new ArgumentNullException(nameof(subject), "The subject is required.");
         }
             
-        if (scheduledItems == null || scheduledItems.Count == 0)
+        if (scheduledItems.Count == 0)
         {
             return false;
         }
         
-        var topicCredentials = new AzureKeyCredential(topicKey);
-        var client= new EventGridPublisherClient(new Uri(topicUrl), topicCredentials);
+        var topicSettings = GetTopicEndpointSettings(Topics.ScheduledItemFired);
+        if (topicSettings == null)
+        {
+            throw new InvalidOperationException($"The topic endpoint settings for topic '{Topics.ScheduledItemFired}' was not found.");
+        }
+
+        var topicCredentials = new AzureKeyCredential(topicSettings.Key);
+        var client= new EventGridPublisherClient(new Uri(topicSettings.Endpoint), topicCredentials);
 
         var eventList = new List<EventGridEvent>();
         foreach (var scheduledItem in scheduledItems)
         {
-            var data = new TableEvent
+            var data = new ScheduledItemFiredEvent
             {
-                TableName = scheduledItem.ItemTableName, 
-                PartitionKey = scheduledItem.ItemPrimaryKey,
-                RowKey = scheduledItem.ItemSecondaryKey
+                Id = scheduledItem.Id
             };
             eventList.Add(
-                new EventGridEvent(subject, Constants.Topics.ScheduledItemFired, "1.0", data));
+                new EventGridEvent(subject, Topics.ScheduledItemFired, "1.1", data));
         }
         
         try
@@ -114,38 +144,36 @@ public class EventPublisher: IEventPublisher
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicUrl, e);   
+            logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicSettings.Endpoint, e);
             return false;
         }
     }
 
-    public async Task<bool> PublishEventsAsync(string topicUrl, string topicKey, string subject, string randomPostId)
+    public async Task<bool> PublishRandomPostsEventsAsync(string subject, int randomPostId)
     {
-        if (string.IsNullOrEmpty(topicUrl))
-        {
-            throw new ArgumentNullException(nameof(topicUrl), "The topic url is required.");
-        }
-
-        if (string.IsNullOrEmpty(topicKey))
-        {
-            throw new ArgumentNullException(nameof(topicKey), "The topic key is required.");
-        }
-            
         if (string.IsNullOrEmpty(subject))
         {
             throw new ArgumentNullException(nameof(subject), "The subject is required.");
         }
             
-        if (string.IsNullOrEmpty(randomPostId))
+        if (randomPostId <= 0)
         {
             return false;
         }
         
-        var topicCredentials = new AzureKeyCredential(topicKey);
-        var client= new EventGridPublisherClient(new Uri(topicUrl), topicCredentials);
+        var topicSettings = GetTopicEndpointSettings(Topics.NewRandomPost);
+        if (topicSettings == null)
+        {
+            throw new InvalidOperationException($"The topic endpoint settings for topic '{Topics.NewRandomPost}' was not found.");
+        }
+
+        var topicCredentials = new AzureKeyCredential(topicSettings.Key);
+        var client= new EventGridPublisherClient(new Uri(topicSettings.Endpoint), topicCredentials);
+
+        var data = new RandomPostEvent{ Id = randomPostId};
 
         var eventList = new List<EventGridEvent>
-            { new(subject, Constants.Topics.NewRandomPost, "1.0", randomPostId) };
+            { new(subject, Topics.NewRandomPost, "1.0", data) };
 
         try
         {
@@ -154,8 +182,13 @@ public class EventPublisher: IEventPublisher
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicUrl, e);   
+            logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicSettings.Endpoint, e);
             return false;
         }
+    }
+
+    private ITopicEndpointSettings? GetTopicEndpointSettings(string topicName)
+    {
+        return eventPublisherSettings.TopicEndpointSettings.FirstOrDefault(t => t.TopicName == topicName);
     }
 }

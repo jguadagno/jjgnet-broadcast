@@ -1,5 +1,3 @@
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -15,6 +13,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
@@ -71,7 +70,7 @@ builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefa
 
 builder.Services.AddDistributedSqlServerCache(options =>
 {
-    options.ConnectionString = settings.JJGNetDatabaseSqlServer;
+    options.ConnectionString = builder.Configuration.GetConnectionString("JJGNetDatabaseSqlServer");
     options.SchemaName = "dbo";
     options.TableName = "Cache";
 });
@@ -149,19 +148,9 @@ void ConfigureApplication(IServiceCollection services)
 
 void ConfigureKeyVault(IServiceCollection services)
 {
-    services.TryAddSingleton(s =>
+    services.AddAzureClients(clientBuilder =>
     {
-        var applicationSettings = s.GetService<ISettings>();
-        if (applicationSettings is null)
-        {
-            throw new ApplicationException("Failed to get application settings from ServiceCollection");
-        }
-
-        return new SecretClient(new Uri(applicationSettings.KeyVault.KeyVaultUri),
-            new ChainedTokenCredential(new ManagedIdentityCredential(),
-                new ClientSecretCredential(applicationSettings.KeyVault.TenantId, applicationSettings.KeyVault.ClientId,
-                    applicationSettings.KeyVault.ClientSecret)));
+        clientBuilder.AddSecretClient(builder.Configuration.GetSection("KeyVault"));
     });
-    
     services.TryAddScoped<IKeyVault, KeyVault>();
 }

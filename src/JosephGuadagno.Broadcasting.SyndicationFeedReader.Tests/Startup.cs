@@ -31,7 +31,10 @@ public class Startup
             
         services.AddSingleton(config);
 
-        var randomPostSettings = new RandomPostSettings();
+        var randomPostSettings = new RandomPostSettings
+        {
+            ExcludedCategories = []
+        };
         config.Bind("Settings:RandomPost", randomPostSettings);
         services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
             
@@ -56,7 +59,7 @@ public class Startup
             var configuration = s.GetService<IConfiguration>();
             if (configuration is null)
             {
-                throw new NullReferenceException("Configuration is null while configuring SyndicationFeedReader.");
+                throw new NullReferenceException("FeedCheck is null while configuring SyndicationFeedReader.");
             }
             configuration.Bind("Settings:SyndicationFeedReader", settings);
             return settings;

@@ -52,11 +52,11 @@ public class EngagementViewModel
     /// <remarks>Could be a discount code for the engagement</remarks>
     public string? Comments { get; set; }
 
-    public DateTime CreatedOn { get; set; }
-    public DateTime LastUpdatedOn { get; set; }
+    public DateTimeOffset CreatedOn { get; set; }
+    public DateTimeOffset LastUpdatedOn { get; set; }
 
     /// <summary>
-    /// A list of all of the talks that are being delivered
+    /// A list of all the talks that are being delivered
     /// </summary>
     public List<TalkViewModel>? Talks { get; set; }
 

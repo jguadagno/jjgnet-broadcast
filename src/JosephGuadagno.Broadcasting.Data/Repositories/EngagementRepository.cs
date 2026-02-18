@@ -62,4 +62,10 @@ public class EngagementRepository: IEngagementRepository
     {
         return await _engagementDataStore.GetTalkAsync(talkId);
     }
+
+    public async Task<Engagement?> GetByNameAndUrlAndYearAsync(string entityName, string entityUrl, int year)
+    {
+        return await _engagementDataStore.GetByNameAndUrlAndYearAsync(entityName, entityUrl, year);
+    }
+
 }

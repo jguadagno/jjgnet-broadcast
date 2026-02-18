@@ -1,52 +1,62 @@
-﻿using Azure.Messaging.EventGrid;
-using JosephGuadagno.Broadcasting.Data.Repositories;
-using JosephGuadagno.Broadcasting.Domain;
+﻿using System.Text.Json;
+using Azure.Messaging.EventGrid;
+using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models.Events;
+
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using Constants = JosephGuadagno.Broadcasting.Domain.Constants;
-using Microsoft.ApplicationInsights;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
-public class ProcessNewRandomPost(SourceDataRepository sourceDataRepository, TelemetryClient telemetryClient, ILogger<ProcessNewRandomPost> logger)
+public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedSourceManager, TelemetryClient telemetryClient, ILogger<ProcessNewRandomPost> logger)
 {
-    [Function(Constants.ConfigurationFunctionNames.TwitterProcessRandomPostFired)]
-    [QueueOutput(Constants.Queues.TwitterTweetsToSend)]
-    public async Task<string> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    [Function(ConfigurationFunctionNames.TwitterProcessRandomPostFired)]
+    [QueueOutput(Queues.TwitterTweetsToSend)]
+    public async Task<string?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTime.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
-            Constants.ConfigurationFunctionNames.TwitterProcessNewSourceData, startedAt);
-        
-        // Get the Source Data identifier for the event
+            ConfigurationFunctionNames.TwitterProcessRandomPostFired, startedAt);
+
+        // Check to make sure the eventGridEvent.Data is not null
         if (eventGridEvent.Data is null)
         {
             logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
-            return null;
+            throw new ArgumentNullException(nameof(eventGridEvent.Data), "EventGrid event data cannot be null");
         }
 
-        var eventGridData = eventGridEvent.Data.ToString();
-        var sourceId = System.Text.Json.JsonSerializer.Deserialize<string>(eventGridData).Replace("\"", "");
-        var sourceData = await sourceDataRepository.GetAsync(SourceSystems.SyndicationFeed, sourceId);
-        if (sourceData is null)
+        try
         {
-            logger.LogError("The source data for event '{Id}' was not found", eventGridEvent.Data);
-            return null;
+            var eventGridData = eventGridEvent.Data.ToString();
+            var source = JsonSerializer.Deserialize<RandomPostEvent>(eventGridData);
+            if (source is null)
+            {
+                logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
+                return null;
+            }
+            var syndicationFeedSource = await syndicationFeedSourceManager.GetAsync(source.Id);
+
+            // Handle the event - eventGridData to build the tweet
+            var hashtags = HashTagLists.BuildHashTagList(syndicationFeedSource.Tags);
+            var status =
+                $"ICYMI: ({syndicationFeedSource.PublicationDate.Date.ToShortDateString()}): \"{syndicationFeedSource.Title}.\" RTs and feedback are always appreciated! {syndicationFeedSource.ShortenedUrl} {hashtags}";
+
+            // Return
+            telemetryClient.TrackEvent(Metrics.TwitterProcessedRandomPost, new Dictionary<string, string>
+            {
+                {"title", syndicationFeedSource.Title},
+                {"url", syndicationFeedSource.Url},
+                {"tweet", status}
+            });
+            logger.LogDebug("Picked a random post {Title}", syndicationFeedSource.Title);
+            return status;
         }
-        
-        // Handle the event - eventGridData to build the tweet
-        var hashtags = sourceData.TagsToHashTags();
-        var status =
-            $"ICYMI: ({sourceData.PublicationDate.ToShortDateString()}): \"{sourceData.Title}.\" RTs and feedback are always appreciated! {sourceData.ShortenedUrl} {hashtags}";
-            
-        // Return
-        telemetryClient.TrackEvent(Constants.Metrics.TwitterProcessedRandomPost, new Dictionary<string, string>
+        catch (Exception e)
         {
-            {"title", sourceData.Title}, 
-            {"url", sourceData.Url},
-            {"tweet", status}
-        });
-        logger.LogDebug("Picked a random post {Title}", sourceData.Title);
-        return status;
+            logger.LogError(e, "Failed to process the new random post. Exception: {ExceptionMessage}", e.Message);
+            throw;
+        }
     }
 }

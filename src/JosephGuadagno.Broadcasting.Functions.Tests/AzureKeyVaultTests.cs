@@ -1,53 +1,23 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
-using JosephGuadagno.Broadcasting.Functions.Interfaces;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests;
 
-public class AzureKeyVaultTests(ISettings settings)
+public class AzureKeyVaultTests(SecretClient secretClient)
 {
-    private readonly string _secretName = "secret-for-unit-testing";
-
-    [Fact]
-    public void ValidateApplicationSettings()
-    {
-        // Arrange
-
-        // Act
-
-        // Assert
-        Assert.NotNull(settings);
-        Assert.NotNull(settings.KeyVault);
-        
-        Assert.NotNull(settings.KeyVault.KeyVaultUri);
-        Assert.False(string.IsNullOrEmpty(settings.KeyVault.KeyVaultUri));
-        
-        Assert.NotNull(settings.KeyVault.TenantId);
-        Assert.False(string.IsNullOrEmpty(settings.KeyVault.TenantId));
-        
-        Assert.NotNull(settings.KeyVault.ClientId);
-        Assert.False(string.IsNullOrEmpty(settings.KeyVault.ClientId));
-        
-        Assert.NotNull(settings.KeyVault.ClientSecret);
-        Assert.False(string.IsNullOrEmpty(settings.KeyVault.ClientSecret));
-    }
+    private const string SecretName = "secret-for-unit-testing";
 
     [Fact]
     public async Task WriteSecretValue_WithValidSecret_ShouldWriteSecret()
     {
         // Arrange
         var secretValue = DateTime.Now.ToString("s");
-        var client = new SecretClient(new Uri(settings.KeyVault.KeyVaultUri),
-            new ChainedTokenCredential(new ManagedIdentityCredential(),
-                new ClientSecretCredential(settings.KeyVault.TenantId, settings.KeyVault.ClientId,
-                    settings.KeyVault.ClientSecret)));
-        
+
         // Act
-        await client.SetSecretAsync(_secretName, secretValue, TestContext.Current.CancellationToken);
+        await secretClient.SetSecretAsync(SecretName, secretValue, TestContext.Current.CancellationToken);
         
-        var updatedSecret = await client.GetSecretAsync(_secretName, cancellationToken: TestContext.Current.CancellationToken);
+        var updatedSecret = await secretClient.GetSecretAsync(SecretName, cancellationToken: TestContext.Current.CancellationToken);
         // Assert
         Assert.NotNull(updatedSecret);
         Assert.Equal(secretValue, updatedSecret.Value.Value);
@@ -58,14 +28,10 @@ public class AzureKeyVaultTests(ISettings settings)
     {
         // Arrange
         var secretValue = DateTime.Now.ToString("s");
-        var client = new SecretClient(new Uri(settings.KeyVault.KeyVaultUri),
-            new ChainedTokenCredential(new ManagedIdentityCredential(),
-                new ClientSecretCredential(settings.KeyVault.TenantId, settings.KeyVault.ClientId,
-                    settings.KeyVault.ClientSecret)));
         var expiresOn = DateTime.UtcNow.AddHours(1);
         
         // Act
-        await UpdateSecretValueAndProperties(client, _secretName, secretValue, expiresOn);
+        await UpdateSecretValueAndProperties(secretClient, SecretName, secretValue, expiresOn);
         
         // Assert
         Assert.True(true);
