@@ -37,23 +37,32 @@
     "AzureWebJobs.BlueskyProcessNewSourceDataFired.Disabled": true
   },
   "Settings": {
+    "BitlyToken": "",
+    "BitlyAPIRootUri": "https://api-ssl.bitly.com/v4/",
+    "BitlyShortenedDomain": "jjg.me",
     "StorageAccount": "UseDevelopmentStorage=true",
     "TwitterApiKey": "",
     "TwitterApiSecret": "",
     "TwitterAccessToken": "",
     "TwitterAccessTokenSecret": "",
-    "BitlyToken": "",
-    "BitlyAPIRootUri": "https://api-ssl.bitly.com/v4/",
-    "BitlyShortenedDomain": "jjg.me",
-    "TopicNewSourceDataEndpoint": "",
-    "TopicNewSourceDataKey": "",
-    "TopicScheduledItemFiredDataEndpoint": "",
-    "TopicScheduledItemFiredDataKey": "",
-    "TopicNewRandomPostEndpoint": "",
-    "TopicNewRandomPostKey": "",
-    "JJGNetDatabaseSqlServer": "Set in User Secrets",
-    "SyndicationFeedReader": {
-      "FeedUrl": "http://localhost:4000/feed.xml"
+    "AutoMapper": {
+      "LicenseKey": "Set in Users Secrets/Azure App Service Settings"
+    },
+    "Bluesky": {
+      "BlueskyUserName": "jguadagno.com",
+      "BlueskyPassword": ""
+    },
+    "Facebook": {
+
+      "AppId": "",
+      "AppSecret": "",
+      "ClientToken": "",
+      "LongLivedAccessToken": "",
+      "PageId": "",
+      "PageAccessToken": "",
+      "ShortLivedAccessToken": "",
+      "GraphApiVersion": "v20.0",
+      "GraphApiRootUrl": "https://graph.facebook.com"
     },
     "JsonFeedReader": {
       "FeedUrl": "http://localhost:4000/feed.json"
@@ -64,11 +73,11 @@
       "ClientId": "",
       "ClientSecret": ""
     },
-    "YouTube": {
-      "ApiKey": "",
-      "ChannelId": "",
-      "PlaylistId": "",
-      "ResultSetPageSize": 10
+    "LinkedIn": {
+      "ClientId": "",
+      "ClientSecret": "",
+      "AccessToken": "",
+      "AuthorId": ""
     },
     "RandomPost": {
       "ExcludedCategories": [
@@ -81,29 +90,14 @@
       ],
       "CutoffDate": "2019-01-01"
     },
-    "Facebook": {
-      "PageId": "",
-      "PageAccessToken": "",
-      "AppId": "",
-      "AppSecret": "",
-      "ClientToken": "",
-      "ShortLivedAccessToken": "",
-      "LongLivedAccessToken": "",
-      "GraphApiVersion": "v20.0",
-      "GraphApiRootUrl": "https://graph.facebook.com"
+    "SyndicationFeedReader": {
+      "FeedUrl": "http://localhost:4000/feed.xml"
     },
-    "LinkedIn": {
-      "ClientId": "",
-      "ClientSecret": "",
-      "AccessToken": "",
-      "AuthorId": ""
-    },
-    "Bluesky": {
-      "BlueskyUserName": "jguadagno.com",
-      "BlueskyPassword": ""
-    },
-    "AutoMapper": {
-      "LicenseKey": "Set in Users Secrets/Azure App Service Settings"
+    "YouTube": {
+      "ApiKey": "",
+      "ChannelId": "",
+      "PlaylistId": "",
+      "ResultSetPageSize": 10
     }
   }
 }

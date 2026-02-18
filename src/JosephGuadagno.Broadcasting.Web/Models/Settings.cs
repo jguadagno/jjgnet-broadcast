@@ -24,16 +24,6 @@ public class Settings : ISettings
     /// </summary>
     public string StorageAccount { get; set; }
 
-    /// <summary>
-    /// The database connection string
-    /// </summary>
-    public string JJGNetDatabaseSqlServer { get; set; }
-
-    /// <summary>
-    /// The Azure Key Vault to use
-    /// </summary>
-    public KeyVaultSettings KeyVault { get; set; }
-
     /// <inheritdoc />
     public string StaticContentRootUrl { get; set; }
 

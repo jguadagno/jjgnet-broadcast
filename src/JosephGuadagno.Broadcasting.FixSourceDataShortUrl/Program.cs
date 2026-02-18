@@ -1,75 +1,87 @@
 ﻿using JosephGuadagno.Broadcasting.Data.Repositories;
+using JosephGuadagno.Broadcasting.Data.Sql;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.FixSourceDataShortUrl;
+using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.FixSourceDataShortUrl.Models;
 using JosephGuadagno.Utilities.Web.Shortener;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Serilog;
 
 Console.WriteLine("Starting Application");
+
+var hostBuilder = Host.CreateApplicationBuilder(args);
+
 IConfiguration config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", true)
     .AddUserSecrets<Program>()
     .Build();
 
-var settings = new Settings();
+var settings = new Settings
+{
+    AutoMapper = null!
+};
 config.Bind("Settings", settings);
 
-var bitly = new Bitly(new HttpClient(), new BitlyConfiguration()
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(config)
+    .CreateLogger();
+
+var services = hostBuilder.Services;
+
+// Add IConfiguration to DI
+services.AddSingleton(config);
+
+// Register Serilog as the logging provider
+services.AddLogging(builder =>
 {
-    ApiRootUri = settings.BitlyApiRootUri,
-    Token = settings.BitlyToken
+    builder.AddSerilog(Log.Logger);
 });
 
-var sourceDataRepository = new SourceDataRepository(settings.StorageAccount);
-
-Console.WriteLine("Getting items from the SyndicationFeed table");
-var syndicationItems = await sourceDataRepository.GetAllAsync("SyndicationFeed");
-if (!syndicationItems.Any())
+services.AddSingleton(settings);
+services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
+services.AddSingleton<IBitlyConfiguration>(new BitlyConfiguration
 {
-    Console.WriteLine("There were no syndication items found");
-}
+    ApiRootUri = settings.BitlyApiRootUri, Token = settings.BitlyToken
+});
+services.AddSingleton<Bitly>();
+services.AddDbContext<BroadcastingContext>(options => options.UseSqlServer("name=ConnectionStrings:JJGNetDatabaseSqlServer"));
+services.AddSingleton<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
+services.AddSingleton<IYouTubeSourceRepository, YouTubeSourceRepository>();
+services.AddSingleton<IYouTubeSourceManager, YouTubeSourceManager>();
+services.AddSingleton<ISyndicationFeedSourceDataStore, SyndicationFeedSourceDataStore>();
+services.AddSingleton<ISyndicationFeedSourceRepository, SyndicationFeedSourceRepository>();
+services.AddSingleton<ISyndicationFeedSourceManager, SyndicationFeedSourceManager>();
 
-foreach (var sourceData in syndicationItems)
+// Add in AutoMapper
+services.AddAutoMapper(mapperConfig =>
 {
-    if (sourceData.ShortenedUrl.Contains("jjg.me"))
-    {
-        // we can skip this record
-        continue;
-    }
+    mapperConfig.LicenseKey = settings.AutoMapper.LicenseKey;
+    mapperConfig.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
+}, typeof(Program));
 
-    var shortenedUrl = await bitly.Shorten(sourceData.Url, settings.BitlyShortenedDomain);
-    if (shortenedUrl is null || string.IsNullOrEmpty(shortenedUrl.Link))
-    {
-        Console.WriteLine($"Could not update url: {sourceData.Url}");
-        continue;
-    }
+services.AddHttpClient();
 
-    sourceData.ShortenedUrl = shortenedUrl.Link;
-    sourceData.UpdatedOnDate = DateTime.UtcNow;
-    var updated = await sourceDataRepository.SaveAsync(sourceData);
-    Console.WriteLine(updated ? $"Updated {sourceData.Url}" : $"Failed to update {sourceData.Url}");
-}
+// Register your main application class
+services.AddSingleton<App>();
 
-Console.WriteLine("Getting items from the YouTube table");
-var youtubeItems = await sourceDataRepository.GetAllAsync("YouTube");
-foreach (var sourceData in youtubeItems)
-{
-    if (sourceData.ShortenedUrl.Contains("jjg.me"))
-    {
-        // we can skip this record
-        continue;
-    }
+// Build the provider
+//var provider = services.BuildServiceProvider();
 
-    var shortenedUrl = await bitly.Shorten(sourceData.Url, settings.BitlyShortenedDomain);
-    if (shortenedUrl is null || string.IsNullOrEmpty(shortenedUrl.Link))
-    {
-        Console.WriteLine($"Could not update url: {sourceData.Url}");
-        continue;
-    }
+// Run the app
+//var app = provider.GetRequiredService<App>();
+//await app.Run();
 
-    sourceData.ShortenedUrl = shortenedUrl.Link;
-    sourceData.UpdatedOnDate = DateTime.UtcNow;
-    var updated = await sourceDataRepository.SaveAsync(sourceData);
-    Console.WriteLine(updated ? $"Updated {sourceData.Url}" : $"Failed to update {sourceData.Url}");
-}
+using IHost host = hostBuilder.Build();
+var app = host.Services.GetRequiredService<App>();
+await app.Run();
 
-Console.WriteLine("Done.");
+Log.Logger.Information("Done");
+Log.Logger.Information("Ending console app...");
+Log.CloseAndFlush();
+Console.WriteLine("Done");

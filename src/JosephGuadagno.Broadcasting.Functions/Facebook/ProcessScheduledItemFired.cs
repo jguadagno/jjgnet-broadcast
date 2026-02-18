@@ -1,131 +1,115 @@
-// Default URL for triggering event grid function in the local environment.
-// http://localhost:7071/runtime/webhooks/EventGrid?functionName=facebook_process_scheduled_item_fired
-
 using System.Text.Json;
 using Azure.Messaging.EventGrid;
-using JosephGuadagno.Broadcasting.Data.Repositories;
-using Microsoft.Extensions.Logging;
 using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
-using JosephGuadagno.Extensions.Types;
 using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
-public class ProcessScheduledItemFired
+public class ProcessScheduledItemFired(
+    IScheduledItemManager scheduledItemManager,
+    IEngagementManager engagementManager,
+    ISyndicationFeedSourceManager syndicationFeedSourceManager,
+    IYouTubeSourceManager youTubeSourceManager,
+    TelemetryClient telemetryClient,
+    ILogger<ProcessScheduledItemFired> logger)
 {
-    private readonly SourceDataRepository _sourceDataRepository;
-    private readonly IEngagementManager _engagementManager;
-    private readonly TelemetryClient _telemetryClient;
-    private readonly ILogger<ProcessScheduledItemFired> _logger;
-    
     const int MaxFacebookStatusText = 2000;
-    
-    public ProcessScheduledItemFired(
-        SourceDataRepository sourceDataRepository,
-        IEngagementManager engagementManager,
-        TelemetryClient telemetryClient,
-        ILogger<ProcessScheduledItemFired> logger)
-    {
-        _sourceDataRepository = sourceDataRepository;
-        _engagementManager = engagementManager;
-        _telemetryClient = telemetryClient;
-        _logger = logger;
-    }
     
     // Debug Locally: https://docs.microsoft.com/en-us/azure/azure-functions/functions-debug-event-grid-trigger-local
     // Sample Code: https://github.com/Azure-Samples/event-grid-dotnet-publish-consume-events
     // When debugging locally start ngrok
     // Create a new EventGrid endpoint in Azure similar to
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=facebook_process_scheduled_item_fired`
-    [Function(Constants.ConfigurationFunctionNames.FacebookProcessScheduledItemFired)]
-    [QueueOutput(Constants.Queues.FacebookPostStatusToPage)] 
-    public async Task<FacebookPostStatus> RunAsync(
-        [EventGridTrigger] EventGridEvent eventGridEvent)
+    [Function(ConfigurationFunctionNames.FacebookProcessScheduledItemFired)]
+    [QueueOutput(Queues.FacebookPostStatusToPage)] 
+    public async Task<FacebookPostStatus?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.Now;
-        _logger.LogDebug("Started {FunctionName} at {StartedOn:f}",
-            Constants.ConfigurationFunctionNames.FacebookProcessScheduledItemFired, startedOn);
+        logger.LogDebug("Started {FunctionName} at {StartedOn:f}",
+            ConfigurationFunctionNames.FacebookProcessScheduledItemFired, startedOn);
         
         if (eventGridEvent.Data is null)
         {
-            _logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
+            logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
             return null;
         }
-        
-        var eventGridData = eventGridEvent.Data.ToString();
+        try
+        {
+            var eventGridData = eventGridEvent.Data.ToString();
+            var scheduledItemFiredEvent = JsonSerializer.Deserialize<ScheduledItemFiredEvent>(eventGridData);
+            if (scheduledItemFiredEvent is null)
+            {
+                logger.LogError("Failed to parse the TableEvent data for event '{Id}'", eventGridEvent.Id);
+                return null;
+            }
+            var scheduledItem = await scheduledItemManager.GetAsync(scheduledItemFiredEvent.Id);
 
-        var tableEvent = JsonSerializer.Deserialize<TableEvent>(eventGridData);
-        if (tableEvent == null)
-        {
-            _logger.LogError("Failed to parse the TableEvent data for event '{Id}'", eventGridEvent.Id);
-            return null;
-        }
-        
-        // Determine what type the post is for
-        FacebookPostStatus facebookPostStatus;
-        switch (tableEvent.TableName)
-        {
-            case SourceSystems.SyndicationFeed:
-            case SourceSystems.YouTube:
-                facebookPostStatus = await GetFacebookPostStatusForSourceData(tableEvent);
-                break;
-            default:
-                facebookPostStatus = await GetFacebookPostStatusForSqlTable(tableEvent);
-                break;
-        }
+            logger.LogDebug("Processing the event '{Id}' for '{TableName}', '{PartitionKey}'",
+                eventGridEvent.Id, scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
-        if (facebookPostStatus is null)
-        {
-            _logger.LogDebug(
-                "Could not generate the Facebook post text for {TableName}, {PartitionKey}, {RowKey}",
-                tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
-            return null;
-        }
-        
-        _telemetryClient.TrackEvent(Constants.Metrics.FacebookProcessedScheduledItemFired, new Dictionary<string, string>
-        {
-            {"tableName", tableEvent.TableName},
-            {"partitionKey", tableEvent.PartitionKey},
-            {"rowKey", tableEvent.RowKey},
-            {"statusText", facebookPostStatus.StatusText}, 
-            {"url", facebookPostStatus.LinkUri}
-        });
-        
-        _logger.LogDebug("Generated the Facebook post text for {TableName}, {PartitionKey}, {RowKey}",
-            tableEvent.TableName, tableEvent.PartitionKey, tableEvent.RowKey);
+            // Determine what type the post is for
+            FacebookPostStatus facebookPostStatus;
+            // The scheduled post should always have a message.  We just need to craft the Title and Urls
 
-        return facebookPostStatus;
+            switch (scheduledItem.ItemTableName)
+            {
+                case SourceSystems.Engagements:
+                    facebookPostStatus = await GetFacebookPostStatusForEngagement(scheduledItem.ItemPrimaryKey);
+                    break;
+                case SourceSystems.Talks:
+                    facebookPostStatus = await GetFacebookPostStatusForTalk(scheduledItem.ItemPrimaryKey);
+                    break;
+                case SourceSystems.SyndicationFeedSources:
+                    facebookPostStatus = await GetFacebookPostStatusForSyndicationSource(scheduledItem.ItemPrimaryKey);
+                    break;
+                case SourceSystems.YouTubeSources:
+                    facebookPostStatus = await GetFacebookPostStatusForYouTubeSource(scheduledItem.ItemPrimaryKey);
+                    break;
+                default:
+                    logger.LogError("The table name '{TableName}' is not supported", scheduledItem.ItemTableName);
+                    return null;
+            }
+
+            telemetryClient.TrackEvent(Metrics.FacebookProcessedScheduledItemFired,
+                new Dictionary<string, string>
+                {
+                    { "tableName", scheduledItem.ItemTableName },
+                    { "id", scheduledItem.ItemPrimaryKey.ToString() },
+                    { "text", facebookPostStatus.StatusText },
+                    { "url", facebookPostStatus.LinkUri }
+                });
+            logger.LogDebug("Generated the Facebook status for {TableName}, {PrimaryKey}",
+                scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
+            return facebookPostStatus;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to process the new scheduled item. Exception: {ExceptionMessage}", e.Message);
+            throw;
+        }
+        finally
+        {
+            var endedOn = DateTimeOffset.Now;
+            logger.LogDebug("Ended {FunctionName} at {EndedOn:f} with duration {Duration:c}",
+                ConfigurationFunctionNames.FacebookProcessScheduledItemFired, endedOn, endedOn - startedOn);
+        }
     }
     
-    private async Task<FacebookPostStatus> GetFacebookPostStatusForSourceData(TableEvent tableEvent)
+    private async Task<FacebookPostStatus> GetFacebookPostStatusForSyndicationSource(int primaryKey)
     {
-        if (tableEvent is null)
-        {
-            return null;
-        }
 
-        var statusText = "ICYMI: ";
-        var sourceData = await _sourceDataRepository.GetAsync(tableEvent.PartitionKey, tableEvent.RowKey);
-        if (sourceData is null)
-        {
-            _logger.LogWarning("Record for '{PartitionKey}', '{RowKey}' was not found",
-                tableEvent.TableName, tableEvent.PartitionKey);
-            return null;
-        }
+        var syndicationFeedSource = await syndicationFeedSourceManager.GetAsync(primaryKey);
 
-        statusText = sourceData.SourceSystem switch
-        {
-            SourceSystems.SyndicationFeed => "Blog Post: ",
-            SourceSystems.YouTube => "Video: ",
-            _ => statusText
-        };
-        
-        var postTitle = sourceData.Title;
-        var hashTagList = HashTagList(sourceData.Tags);
+        var statusText = "ICYMI: Blog Post: ";
+
+        var postTitle = syndicationFeedSource.Title;
+        var hashTagList = HashTagLists.BuildHashTagList(syndicationFeedSource.Tags);
         
         if (statusText.Length + postTitle.Length + 3 + hashTagList.Length >= MaxFacebookStatusText)
         {
@@ -136,57 +120,59 @@ public class ProcessScheduledItemFired
         var facebookPostStatus = new FacebookPostStatus
         {
             StatusText =  $"{statusText} {postTitle} {hashTagList}",
-            LinkUri = sourceData.Url                
+            LinkUri = syndicationFeedSource.Url
         };
 
-        _logger.LogDebug(
+        logger.LogDebug(
             "Composed Facebook Status: StatusText={StatusText}, LinkUrl={LinkUri}",
             facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
         return facebookPostStatus;
     }
-    
-    private async Task<FacebookPostStatus> GetFacebookPostStatusForSqlTable(TableEvent tableEvent)
+
+    private async Task<FacebookPostStatus> GetFacebookPostStatusForYouTubeSource(int primaryKey)
     {
-        if (tableEvent is null)
+
+        var youTubeSource = await youTubeSourceManager.GetAsync(primaryKey);
+
+        var statusText = "ICYMI: Video: ";
+
+        var postTitle = youTubeSource.Title;
+        var hashTagList = HashTagLists.BuildHashTagList(youTubeSource.Tags);
+
+        if (statusText.Length + postTitle.Length + 3 + hashTagList.Length >= MaxFacebookStatusText)
         {
-            return null;
+            var newLength = MaxFacebookStatusText - statusText.Length - hashTagList.Length - 1;
+            postTitle = postTitle.Substring(0, newLength - 4) + "...";
         }
 
-        FacebookPostStatus facebookPostStatus = null;
-        switch (tableEvent.TableName)
+        var facebookPostStatus = new FacebookPostStatus
         {
-            case SourceSystems.Engagements:
-                var engagement = await _engagementManager.GetAsync(tableEvent.PartitionKey.To<int>());
-                facebookPostStatus = GetFacebookPostStatusForEngagement(engagement);
-                break;
-            case SourceSystems.Talks:
-                var talk = await _engagementManager.GetTalkAsync(tableEvent.PartitionKey.To<int>());
-                facebookPostStatus = GetFacebookPostStatusForTalk(talk);
-                break;
-                
-        }
+            StatusText =  $"{statusText} {postTitle} {hashTagList}",
+            LinkUri = youTubeSource.Url
+        };
 
+        logger.LogDebug(
+            "Composed Facebook Status: StatusText={StatusText}, LinkUrl={LinkUri}",
+            facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
         return facebookPostStatus;
     }
-
-    private FacebookPostStatus GetFacebookPostStatusForEngagement(Engagement engagement)
+    private async Task<FacebookPostStatus> GetFacebookPostStatusForEngagement(int primaryKey)
     {
         // TODO: Account for custom images for engagement
         // TODO: Account for custom message for engagement
         //  i.e: Join me tomorrow, Join me next week
         // TODO: Maybe handle timezone?
-        if (engagement is null)
-        {
-            return null;
-        }
+
+        var engagement = await engagementManager.GetAsync(primaryKey);
         
         var statusText = $"I'm speaking at {engagement.Name} ({engagement.Url}) starting on {engagement.StartDateTime:f}\n";
+        var commentsLength = engagement.Comments?.Length ?? 0;
         var comments = engagement.Comments;
         statusText += comments;
         
-        if (statusText.Length + comments.Length + 1 >= MaxFacebookStatusText)
+        if (statusText.Length + commentsLength + 1 >= MaxFacebookStatusText)
         {
-            var newLength = MaxFacebookStatusText - statusText.Length - comments.Length - 1;
+            var newLength = MaxFacebookStatusText - statusText.Length - commentsLength - 1;
             statusText = statusText.Substring(0, newLength - 4) + "...";
         }
             
@@ -196,34 +182,32 @@ public class ProcessScheduledItemFired
             LinkUri = engagement.Url                
         };
 
-        _logger.LogDebug(
+        logger.LogDebug(
             "Composed Facebook Status: StatusText={StatusText}, LinkUrl={LinkUri}",
             facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
         return facebookPostStatus;
     }
     
-    private FacebookPostStatus GetFacebookPostStatusForTalk(Talk talk)
+    private async Task<FacebookPostStatus> GetFacebookPostStatusForTalk(int primaryKey)
     {
-        if (talk is null)
-        {
-            return null;
-        }
+
         // TODO: Account for custom images for talk
         // TODO: Account for custom message for talk
         //  i.e: Join me tomorrow, Join me next week, "Up next in room...", "Join me today..."
         // TODO: Maybe handle timezone?
+
+        var talk = await engagementManager.GetTalkAsync(primaryKey);
         
         var statusText = $"Talk: {talk.Name} ({talk.UrlForTalk}) starting on {talk.StartDateTime:f} to {talk.EndDateTime:t}";
-        if (talk.TalkLocation is not null)
-        {
-            statusText += $" in room {talk.TalkLocation}";
-        }
+        statusText += $" in room {talk.TalkLocation}";
+
+        var commentsLength = talk.Comments.Length;
         var comments = " Comments: {engagement.Comments}";
         statusText += comments;
         
-        if (statusText.Length + comments.Length + 1 >= MaxFacebookStatusText)
+        if (statusText.Length + commentsLength + 1 >= MaxFacebookStatusText)
         {
-            var newLength = MaxFacebookStatusText - statusText.Length - comments.Length - 1;
+            var newLength = MaxFacebookStatusText - statusText.Length - commentsLength - 1;
             statusText = statusText.Substring(0, newLength - 4) + "...";
         }
             
@@ -233,23 +217,9 @@ public class ProcessScheduledItemFired
             LinkUri = talk.UrlForConferenceTalk                
         };
 
-        _logger.LogDebug(
+        logger.LogDebug(
             "Composed Facebook Status: StatusText={StatusText}, LinkUrl={LinkUri}",
             facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
         return facebookPostStatus;
-    }
-    
-    private string HashTagList(string tags)
-    {
-        if (string.IsNullOrEmpty(tags))
-        {
-            return "#dotnet #csharp #dotnetcore";
-        }
-
-        var tagList = tags.Split(',');
-        var hashTagCategories = tagList.Where(tag => !tag.Contains("Article"));
-
-        return hashTagCategories.Aggregate("",
-            (current, tag) => current + $" #{tag.Replace(" ", "").Replace(".", "")}");
     }
 }

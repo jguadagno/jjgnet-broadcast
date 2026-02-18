@@ -1,15 +1,4 @@
 using System.Reflection;
-
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Builder;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
@@ -18,10 +7,6 @@ using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
-using JosephGuadagno.Broadcasting.JsonFeedReader;
-using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
-using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
-using JosephGuadagno.Broadcasting.JsonFeedReader.Models;
 using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Managers.Bluesky;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
@@ -32,7 +17,11 @@ using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using JosephGuadagno.Broadcasting.Serilog;
+using JosephGuadagno.Broadcasting.SpeakingEngagementsReader;
+using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
+using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader;
+using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
@@ -40,7 +29,14 @@ using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
 using LinqToTwitter.OAuth;
-
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Builder;
+using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Exceptions;
 
@@ -62,13 +58,32 @@ var settings = new JosephGuadagno.Broadcasting.Functions.Models.Settings
 };
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
-builder.Services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
-    { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
 builder.Services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
 
-var randomPostSettings = new RandomPostSettings();
+var randomPostSettings = new RandomPostSettings
+{
+    ExcludedCategories = []
+};
 builder.Configuration.Bind("Settings:RandomPost", randomPostSettings);
 builder.Services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
+
+var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings
+{
+    SpeakingEngagementsFile = null
+};
+builder.Configuration.Bind("Settings:SpeakingEngagementsReader", speakerEngagementsSettings);
+builder.Services.TryAddSingleton<ISpeakingEngagementsReaderSettings>(speakerEngagementsSettings);
+
+var eventPublisherSettings = new EventPublisherSettings { TopicEndpointSettings = [] };
+var endpoints = builder.Configuration.GetSection("Settings:EventGridTopics:TopicEndpointSettings").Get<List<TopicEndpointSettings>>();
+if (endpoints != null)
+{
+    foreach (var endpoint in endpoints)
+    {
+        eventPublisherSettings.TopicEndpointSettings.Add(endpoint);
+    }
+}
+builder.Services.TryAddSingleton<IEventPublisherSettings>(eventPublisherSettings);
 
 // Configure the logger
 string loggerFile = Path.Combine(currentDirectory, $"logs{Path.DirectorySeparatorChar}logs.txt");
@@ -86,16 +101,18 @@ builder.Services.AddAutoMapper(mapperConfig =>
 }, typeof(Program));
     
 // Configure all the services
+// TODO: Refactor configuration setup to use dependency injection for settings
 ConfigureKeyVault(builder.Services);
-ConfigureTwitter(builder.Services);
-ConfigureJsonFeedReader(builder.Services);
-ConfigureSyndicationFeedReader(builder.Services);
-ConfigureYouTubeReader(builder.Services);
-ConfigureLinkedInManager(builder.Services);
-ConfigureFacebookManager(builder.Services);
-ConfigureBlueskyManager(builder.Services);
-ConfigureFunction(builder.Services);
-    
+ConfigureFunction(builder.Services, settings);
+ConfigureTwitter(builder.Services, settings);
+ConfigureSyndicationFeedReader(builder.Services, builder.Configuration);
+ConfigureYouTubeReader(builder.Services, builder.Configuration);
+ConfigureLinkedInManager(builder.Services, builder.Configuration);
+ConfigureFacebookManager(builder.Services, builder.Configuration);
+ConfigureBlueskyManager(builder.Services, builder.Configuration);
+
+builder.Services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader>();
+
 builder.Build().Run();
 
 void ConfigureLogging(IConfiguration configurationRoot, IServiceCollection services, ISettings appSettings, string logPath, string applicationName)
@@ -132,25 +149,77 @@ void ConfigureLogging(IConfiguration configurationRoot, IServiceCollection servi
     });
 }
 
-void ConfigureTwitter(IServiceCollection services)
+void ConfigureKeyVault(IServiceCollection services)
 {
-    services.TryAddSingleton<IAuthorizer>(s =>
+    services.AddAzureClients(clientBuilder =>
     {
-        var settings = s.GetService<ISettings>();
-        if (settings is null)
-        {
-            throw new ApplicationException("Failed to get settings from ServiceCollection");
-        }
-        return new SingleUserAuthorizer
-        {
-            CredentialStore = new InMemoryCredentialStore
+        clientBuilder.AddSecretClient(builder.Configuration.GetSection("KeyVault"));
+    });
+    services.TryAddScoped<IKeyVault, KeyVault>();
+}
+
+void ConfigureFunction(IServiceCollection services, ISettings appSettings)
+{
+    services.AddHttpClient();
+
+    services.TryAddSingleton(s =>
+    {
+        var httpClient = s.GetService(typeof(HttpClient)) as HttpClient;
+
+        return new JosephGuadagno.Utilities.Web.Shortener.Bitly(httpClient,
+            new BitlyConfiguration
             {
-                ConsumerKey = settings.TwitterApiKey,
-                ConsumerSecret = settings.TwitterApiSecret,
-                OAuthToken = settings.TwitterAccessToken,
-                OAuthTokenSecret = settings.TwitterAccessTokenSecret
-            }
-        };
+                ApiRootUri = appSettings.BitlyAPIRootUri,
+                Token = appSettings.BitlyToken
+            });
+    });
+    services.TryAddSingleton<IUrlShortener, UrlShortener>();
+    services.TryAddSingleton<IEventPublisher, EventPublisher>();
+
+    builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer");
+    builder.EnrichSqlServerDbContext<BroadcastingContext>(
+        configureSettings: sqlServerSettings =>
+        {
+            sqlServerSettings.DisableRetry = false;
+            sqlServerSettings.CommandTimeout = 30; // seconds
+        });
+
+    services.TryAddScoped<IEngagementDataStore, EngagementDataStore>();
+    services.TryAddScoped<IEngagementRepository, EngagementRepository>();
+    services.TryAddScoped<IEngagementManager, EngagementManager>();
+
+    services.TryAddScoped<IScheduledItemDataStore, ScheduledItemDataStore>();
+    services.TryAddScoped<IScheduledItemRepository, ScheduledItemRepository>();
+    services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
+
+    services.TryAddScoped<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
+    services.TryAddScoped<IYouTubeSourceRepository, YouTubeSourceRepository>();
+    services.TryAddScoped<IYouTubeSourceManager, YouTubeSourceManager>();
+
+    services.TryAddScoped<ISyndicationFeedSourceDataStore, SyndicationFeedSourceDataStore>();
+    services.TryAddScoped<ISyndicationFeedSourceRepository, SyndicationFeedSourceRepository>();
+    services.TryAddScoped<ISyndicationFeedSourceManager, SyndicationFeedSourceManager>();
+
+    services.TryAddScoped<IFeedCheckDataStore, FeedCheckDataStore>();
+    services.TryAddScoped<IFeedCheckRepository, FeedCheckRepository>();
+    services.TryAddScoped<IFeedCheckManager, FeedCheckManager>();
+
+    services.TryAddScoped<ITokenRefreshDataStore, TokenRefreshDataStore>();
+    services.TryAddScoped<ITokenRefreshRepository, TokenRefreshRepository>();
+    services.TryAddScoped<ITokenRefreshManager, TokenRefreshManager>();
+}
+
+void ConfigureTwitter(IServiceCollection services, ISettings appSettings)
+{
+    services.TryAddSingleton<IAuthorizer>(_ => new SingleUserAuthorizer
+    {
+        CredentialStore = new InMemoryCredentialStore
+        {
+            ConsumerKey = appSettings.TwitterApiKey,
+            ConsumerSecret = appSettings.TwitterApiSecret,
+            OAuthToken = appSettings.TwitterAccessToken,
+            OAuthTokenSecret = appSettings.TwitterAccessTokenSecret
+        }
     });
     services.TryAddSingleton(s =>
     {
@@ -163,163 +232,63 @@ void ConfigureTwitter(IServiceCollection services)
     });
 }
 
-void ConfigureJsonFeedReader(IServiceCollection services)
+void ConfigureSyndicationFeedReader(IServiceCollection services, IConfiguration config)
 {
-    services.TryAddSingleton<IJsonFeedReaderSettings>(s =>
+    services.TryAddSingleton<ISyndicationFeedReaderSettings>(_ =>
     {
-        var settings = new JsonFeedReaderSettings();
-        var configuration = s.GetService<IConfiguration>();
-        configuration.Bind("Settings:JsonFeedReader", settings);
-        return settings;
-    });
-    services.TryAddSingleton<IJsonFeedReader, JsonFeedReader>();
-}
-
-void ConfigureSyndicationFeedReader(IServiceCollection services)
-{
-    services.TryAddSingleton<ISyndicationFeedReaderSettings>(s =>
-    {
-        var settings = new SyndicationFeedReaderSettings();
-        var configuration = s.GetService<IConfiguration>();
-        configuration.Bind("Settings:SyndicationFeedReader", settings);
-        return settings;
+        var syndicationFeedReaderSettings = new SyndicationFeedReaderSettings();
+        config.Bind("Settings:SyndicationFeedReader", syndicationFeedReaderSettings);
+        return syndicationFeedReaderSettings;
     });
     services.TryAddSingleton<ISyndicationFeedReader, SyndicationFeedReader>();
-
 }
 
-void ConfigureYouTubeReader(IServiceCollection services)
+void ConfigureYouTubeReader(IServiceCollection services, IConfiguration config)
 {
-    services.TryAddSingleton<IYouTubeSettings>(s =>
+    services.TryAddSingleton<IYouTubeSettings>(_ =>
     {
-        var settings = new YouTubeSettings();
-        var configuration = s.GetService<IConfiguration>();
-        configuration.Bind("Settings:YouTube", settings);
-        return settings;
+        var youTubeSettings = new YouTubeSettings();
+        config.Bind("Settings:YouTube", youTubeSettings);
+        return youTubeSettings;
     });
     services.TryAddSingleton<IYouTubeReader, YouTubeReader>();
 }
 
-void ConfigureLinkedInManager(IServiceCollection services)
+void ConfigureLinkedInManager(IServiceCollection services, IConfiguration config)
 {
-    services.TryAddSingleton<ILinkedInApplicationSettings>(s =>
+    services.TryAddSingleton<ILinkedInApplicationSettings>(_ =>
     {
-        var settings = new LinkedInApplicationSettings();
-        var configuration = s.GetService<IConfiguration>();
-        configuration.Bind("Settings:LinkedIn", settings);
-        return settings;
+        var linkedInApplicationSettings = new LinkedInApplicationSettings
+        {
+            ClientId = null!,
+            ClientSecret = null!,
+            AccessToken = null!,
+            AuthorId = null!
+        };
+        config.Bind("Settings:LinkedIn", linkedInApplicationSettings);
+        return linkedInApplicationSettings;
     });
     services.TryAddSingleton<ILinkedInManager, LinkedInManager>();
 }
 
-void ConfigureFacebookManager(IServiceCollection services)
+void ConfigureFacebookManager(IServiceCollection services, IConfiguration config)
 {
-    services.TryAddSingleton<IFacebookApplicationSettings>(s =>
+    services.TryAddSingleton<IFacebookApplicationSettings>(_ =>
     {
-        var settings = new FacebookApplicationSettings();
-        var configuration = s.GetService<IConfiguration>();
-        configuration.Bind("Settings:Facebook", settings);
-        return settings;
+        var facebookApplicationSettings = new FacebookApplicationSettings();
+        config.Bind("Settings:Facebook", facebookApplicationSettings);
+        return facebookApplicationSettings;
     });
     services.TryAddSingleton<IFacebookManager, FacebookManager>();
 }
 
-void ConfigureBlueskyManager(IServiceCollection services)
+void ConfigureBlueskyManager(IServiceCollection services, IConfiguration config)
 {
-    services.TryAddSingleton<IBlueskySettings>(s =>
+    services.TryAddSingleton<IBlueskySettings>(_ =>
     {
-        var settings = new BlueskySettings();
-        var configuration = s.GetService<IConfiguration>();
-        configuration.Bind("Settings:Bluesky", settings);
-        return settings;
+        var blueskySettings = new BlueskySettings();
+        config.Bind("Settings:Bluesky", blueskySettings);
+        return blueskySettings;
     });
     services.TryAddSingleton<IBlueskyManager, BlueskyManager>();
-}
-    
-void ConfigureRepositories(IServiceCollection services)
-{
-    services.AddDbContext<BroadcastingContext>();
-        
-    // Engagements
-    services.TryAddScoped<IEngagementDataStore, EngagementDataStore>();
-    services.TryAddScoped<IEngagementRepository, EngagementRepository>();
-    services.TryAddScoped<IEngagementManager, EngagementManager>();
-
-    // ScheduledItem
-    services.TryAddScoped<IScheduledItemDataStore, ScheduledItemDataStore>();
-    services.TryAddScoped<IScheduledItemRepository, ScheduledItemRepository>();
-    services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
-}
-
-void ConfigureKeyVault(IServiceCollection services)
-{
-    services.TryAddSingleton(s =>
-    {
-        var applicationSettings = s.GetService<ISettings>();
-        if (applicationSettings is null)
-        {
-            throw new ApplicationException("Failed to get application settings from ServiceCollection");
-        }
-
-        return new SecretClient(new Uri(applicationSettings.KeyVault.KeyVaultUri),
-            new ChainedTokenCredential(new ManagedIdentityCredential(),
-                new ClientSecretCredential(applicationSettings.KeyVault.TenantId, applicationSettings.KeyVault.ClientId,
-                    applicationSettings.KeyVault.ClientSecret)));
-    });
-    
-    services.TryAddScoped<IKeyVault, KeyVault>();
-}
-
-void ConfigureFunction(IServiceCollection services)
-{
-    services.AddHttpClient();
-        
-    services.TryAddSingleton(s =>
-    {
-        var settings = s.GetService<ISettings>();
-        if (settings is null)
-        {
-            throw new ApplicationException("Failed to get settings from ServiceCollection");
-        }
-        return new ConfigurationRepository(settings.StorageAccount);
-    });
-    
-    services.TryAddSingleton(s =>
-    {
-        var settings = s.GetService<ISettings>();
-        if (settings is null)
-        {
-            throw new ApplicationException("Failed to get settings from ServiceCollection");
-        }
-        return new TokenRefreshRepository(settings.StorageAccount);
-    });
-    services.TryAddSingleton(s =>
-    {
-        var settings = s.GetService<ISettings>();
-        if (settings is null)
-        {
-            throw new ApplicationException("Failed to get settings from ServiceCollection");
-        }
-        return new SourceDataRepository(settings.StorageAccount);
-    });
-    services.TryAddSingleton(s =>
-    {
-        var settings = s.GetService<ISettings>();
-        if (settings is null)
-        {
-            throw new ApplicationException("Failed to get settings from ServiceCollection");
-        }
-        var httpClient = s.GetService(typeof(HttpClient)) as HttpClient;
-            
-        return new JosephGuadagno.Utilities.Web.Shortener.Bitly(httpClient,
-            new BitlyConfiguration
-            {
-                ApiRootUri = settings.BitlyAPIRootUri,
-                Token = settings.BitlyToken
-            });
-    });
-    services.TryAddSingleton<IUrlShortener, UrlShortener>();
-    services.TryAddSingleton<IEventPublisher, EventPublisher>();
-    
-    ConfigureRepositories(services);
 }

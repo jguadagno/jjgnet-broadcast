@@ -31,16 +31,8 @@ public class ScheduledItemViewModel
     /// For <see cref="EngagementViewModel"/> it is the Id field/>
     /// </remarks>
     [Required]
-    public string ItemPrimaryKey { get; set; }
+    public int ItemPrimaryKey { get; set; }
         
-    /// <summary>
-    /// The secondary key for the record
-    /// </summary>
-    /// <remarks>
-    /// For <see cref="SourceData"/> it is the RowKey.
-    /// For <see cref="EngagementViewModel"/> it is not applicable.
-    /// </remarks>
-    public string ItemSecondaryKey { get; set; }
         
     /// <summary>
     /// The message that will be sent out
@@ -62,7 +54,7 @@ public class ScheduledItemViewModel
     /// The date and time this item is scheduled to go out
     /// </summary>
     [Required]
-    public DateTimeOffset ScheduleDateTime { get; set; }
+    public DateTimeOffset SendOnDateTime { get; set; }
 
     /// <summary>
     /// Returns a Dictionary&lt;string, string&gt; representation of the properties
@@ -74,9 +66,8 @@ public class ScheduledItemViewModel
         {
             { "Id", Id.ToString() },
             { "ItemTableName", ItemTableName },
-            { "ItemPrimaryKey", ItemPrimaryKey },
-            { "ItemSecondaryKey", ItemSecondaryKey },
-            { "ScheduledDate", ScheduleDateTime.ToString() }
+            { "ItemPrimaryKey", ItemPrimaryKey.ToString() },
+            { "ScheduledDate", SendOnDateTime.ToString() }
         };
     }
 }

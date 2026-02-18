@@ -1,6 +1,6 @@
 ﻿using idunno.Bluesky;
 using idunno.Bluesky.RichText;
-using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.ApplicationInsights;
@@ -11,16 +11,11 @@ namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
 public class SendPost(IBlueskyManager blueskyManager, TelemetryClient telemetryClient, ILogger<SendPost> logger)
 {
-    [Function(Constants.ConfigurationFunctionNames.BlueskyPostMessage)]
+    [Function(ConfigurationFunctionNames.BlueskyPostMessage)]
     public async Task Run(
-        [QueueTrigger(Constants.Queues.BlueskyPostToSend)]
+        [QueueTrigger(Queues.BlueskyPostToSend)]
         BlueskyPostMessage blueskyPostMessage)
     {
-        if (blueskyPostMessage is null)
-        {
-            logger.LogInformation("BlueskyPostMessage is null");
-            return;
-        }
         try
         {
             logger.LogDebug("Bluesky Post Received '{Text}'", blueskyPostMessage.Text);
@@ -55,7 +50,7 @@ public class SendPost(IBlueskyManager blueskyManager, TelemetryClient telemetryC
             if (response is not null)
             {
                 logger.LogDebug("Posting to bluesky: {Text}", postBuilder.Text);
-                telemetryClient.TrackEvent(Constants.Metrics.BlueskyPostSent, new Dictionary<string, string>
+                telemetryClient.TrackEvent(Metrics.BlueskyPostSent, new Dictionary<string, string>
                 {
                     {"message", postBuilder.Text},
                     {"cid", response.Cid.ToString()}

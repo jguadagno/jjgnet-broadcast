@@ -19,15 +19,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 		install-libman.ps1 = install-libman.ps1
 		libman-restore.ps1 = libman-restore.ps1
 		LinkedIn.http = LinkedIn.http
-		..\.github\workflows\main_api-jjgnet-broadcast.yml = ..\.github\workflows\main_api-jjgnet-broadcast.yml
-		..\.github\workflows\main_jjgnet-broadcast.yml = ..\.github\workflows\main_jjgnet-broadcast.yml
-		..\.github\workflows\main_web-jjgnet-broadcast.yml = ..\.github\workflows\main_web-jjgnet-broadcast.yml
 		..\README.md = ..\README.md
 		..\CONTRIBUTING.md = ..\CONTRIBUTING.md
 		.editorconfig = .editorconfig
 	EndProjectSection
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.JsonFeedReader", "JosephGuadagno.Broadcasting.JsonFeedReader\JosephGuadagno.Broadcasting.JsonFeedReader.csproj", "{1D657E6A-948D-4884-B6BD-76BA346F93FF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.YouTubeReader", "JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj", "{C7A60E25-3A0F-48BB-97B3-5A4BBD187F0D}"
 EndProject
@@ -131,6 +126,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{DE
 		..\scripts\database\database-create.sql = ..\scripts\database\database-create.sql
 		..\scripts\database\table-create.sql = ..\scripts\database\table-create.sql
 		..\scripts\database\truncate-data.sql = ..\scripts\database\truncate-data.sql
+		..\scripts\database\reset-feed-check-data-tests-scripts.sql = ..\scripts\database\reset-feed-check-data-tests-scripts.sql
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.SpeakingEngagementsReader", "JosephGuadagno.Broadcasting.SpeakingEngagementsReader\JosephGuadagno.Broadcasting.SpeakingEngagementsReader.csproj", "{FC2D8648-E911-466D-8A62-FDAEB4ABC6A8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Tests", "JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Tests\JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Tests.csproj", "{CC305789-58E4-4DD4-8F0C-7847601B453A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Workflows", "Workflows", "{34D40313-BD4C-4946-BF87-3F66F46A7E5D}"
+	ProjectSection(SolutionItems) = preProject
+		..\.github\workflows\main_api-jjgnet-broadcast.yml = ..\.github\workflows\main_api-jjgnet-broadcast.yml
+		..\.github\workflows\main_jjgnet-broadcast.yml = ..\.github\workflows\main_jjgnet-broadcast.yml
+		..\.github\workflows\main_web-jjgnet-broadcast.yml = ..\.github\workflows\main_web-jjgnet-broadcast.yml
 	EndProjectSection
 EndProject
 Global
@@ -151,10 +158,6 @@ Global
 		{E5D03375-97E6-4236-BE64-785C99A65F56}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E5D03375-97E6-4236-BE64-785C99A65F56}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E5D03375-97E6-4236-BE64-785C99A65F56}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1D657E6A-948D-4884-B6BD-76BA346F93FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1D657E6A-948D-4884-B6BD-76BA346F93FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1D657E6A-948D-4884-B6BD-76BA346F93FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1D657E6A-948D-4884-B6BD-76BA346F93FF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C7A60E25-3A0F-48BB-97B3-5A4BBD187F0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C7A60E25-3A0F-48BB-97B3-5A4BBD187F0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C7A60E25-3A0F-48BB-97B3-5A4BBD187F0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -242,6 +245,14 @@ Global
 		{61B4A889-E116-EC9D-3F51-DA99651740B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61B4A889-E116-EC9D-3F51-DA99651740B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61B4A889-E116-EC9D-3F51-DA99651740B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC2D8648-E911-466D-8A62-FDAEB4ABC6A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC2D8648-E911-466D-8A62-FDAEB4ABC6A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC2D8648-E911-466D-8A62-FDAEB4ABC6A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC2D8648-E911-466D-8A62-FDAEB4ABC6A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC305789-58E4-4DD4-8F0C-7847601B453A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC305789-58E4-4DD4-8F0C-7847601B453A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC305789-58E4-4DD4-8F0C-7847601B453A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC305789-58E4-4DD4-8F0C-7847601B453A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

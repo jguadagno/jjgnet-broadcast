@@ -1,128 +1,115 @@
-using JosephGuadagno.Broadcasting.Data.Repositories;
-using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using Microsoft.ApplicationInsights;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube;
 
-public class LoadNewVideos
+public class LoadNewVideos(
+    IYouTubeReader youTubeReader,
+    ISettings settings,
+    IFeedCheckManager feedCheckManager,
+    IYouTubeSourceManager youTubeSourceManager,
+    IUrlShortener urlShortener,
+    IEventPublisher eventPublisher,
+    ILogger<LoadNewVideos> logger,
+    TelemetryClient telemetryClient)
 {
-    private readonly IYouTubeReader _youTubeReader;
-    private readonly ISettings _settings;
-    private readonly ConfigurationRepository _configurationRepository;
-    private readonly SourceDataRepository _sourceDataRepository;
-    private readonly IUrlShortener _urlShortener;
-    private readonly IEventPublisher _eventPublisher;
-    private readonly ILogger<LoadNewVideos> _logger;
-    private readonly TelemetryClient _telemetryClient;
 
-    public LoadNewVideos(IYouTubeReader youTubeReader,
-        ISettings settings, 
-        ConfigurationRepository configurationRepository,
-        SourceDataRepository sourceDataRepository,
-        IUrlShortener urlShortener,
-        IEventPublisher eventPublisher,
-        ILogger<LoadNewVideos> logger,
-        TelemetryClient telemetryClient)
-    {
-        _youTubeReader = youTubeReader;
-        _settings = settings;
-        _configurationRepository = configurationRepository;
-        _sourceDataRepository = sourceDataRepository;
-        _urlShortener = urlShortener;
-        _eventPublisher = eventPublisher;
-        _logger = logger;
-        _telemetryClient = telemetryClient;
-    }
-        
-    [Function(Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos)]
-    public async Task RunAsync(
-        [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer)
+    [Function(ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos)]
+    public async Task<IActionResult> RunAsync(
+        [TimerTrigger("%collectors_youtube_load_new_videos_cron_settings%")] TimerInfo myTimer)
     {
         var startedAt = DateTime.UtcNow;
-        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
-            Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos, startedAt);
+        logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
+            ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos, startedAt);
 
-        var configuration = await _configurationRepository.GetAsync(
-                                Constants.Tables.Configuration,
-                                Constants.ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos) ??
-                            new CollectorConfiguration(Constants.ConfigurationFunctionNames
-                                    .CollectorsYouTubeLoadNewVideos)
-                                {LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTime.MinValue};
-            
-        // Check for new items
-        _logger.LogDebug("Checking playlist for videos since '{LastItemAddedOrUpdated}'",
-            configuration.LastItemAddedOrUpdated);
-        var newItems = await _youTubeReader.GetAsync(configuration.LastItemAddedOrUpdated);
-            
-        // If there is nothing new, save the last checked value and exit
-        if (newItems == null || newItems.Count == 0)
+        try
         {
-            configuration.LastCheckedFeed = startedAt;
-            await _configurationRepository.SaveAsync(configuration);
-            _logger.LogDebug("No new videos found in the playlist");
-            return;
-        }
-            
-        // Save the new items to SourceDataRepository
-        var savedCount = 0;
-        var eventsToPublish = new List<SourceData>();
-        foreach (var item in newItems)
-        {
-            // shorten the url
-            item.ShortenedUrl = await _urlShortener.GetShortenedUrlAsync(item.Url, _settings.BitlyShortenedDomain);
+            var feedCheck = await feedCheckManager.GetByNameAsync(
+                                ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos
+                            ) ??
+                            new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTime.MinValue };
 
-            // attempt to save the item
-            try
+            // Check for new items
+            logger.LogDebug("Checking playlist for videos since '{LastItemAddedOrUpdated}'",
+                feedCheck.LastItemAddedOrUpdated);
+            var newItems = await youTubeReader.GetAsync(feedCheck.LastItemAddedOrUpdated);
+
+            // If there is nothing new, save the last checked value and exit
+            if (newItems.Count == 0)
             {
-                var wasSaved = await _sourceDataRepository.SaveAsync(item);
-                if (wasSaved)
+                feedCheck.LastCheckedFeed = startedAt;
+                await feedCheckManager.SaveAsync(feedCheck);
+                logger.LogDebug("No new videos found in the playlist");
+                return new OkObjectResult("0 videos were found");
+            }
+
+            // Save the new items to SourceDataRepository
+            var savedCount = 0;
+            var eventsToPublish = new List<YouTubeSource>();
+            foreach (var item in newItems)
+            {
+                // shorten the url
+                item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settings.BitlyShortenedDomain);
+
+                // attempt to save the item
+                try
                 {
-                    eventsToPublish.Add(item);
-                    _telemetryClient.TrackEvent(Constants.Metrics.VideoAddedOrUpdated, item.ToDictionary());
+                    var savedItem = await youTubeSourceManager.SaveAsync(item);
+
+                    eventsToPublish.Add(savedItem);
+                    telemetryClient.TrackEvent(Metrics.VideoAddedOrUpdated,
+                        new Dictionary<string, string>
+                        {
+                            { "Id", savedItem.Id.ToString() }, { "VideoId", savedItem.VideoId },
+                            { "Url", savedItem.Url }, { "Title", savedItem.Title }
+                        });
                     savedCount++;
+
                 }
-                else
+                catch (Exception e)
                 {
-                    _logger.LogError("Failed to save the video with the id of: '{Id}' Url:'{Url}'",
-                        item.Id, item.Url);
+                    logger.LogError(e,
+                        "Failed to save the video with the VideoId of: '{VideoId}' Url:'{Url}'. Exception: {ExceptionMessage}",
+                        item.VideoId, item.Url, e);
+                    return new BadRequestObjectResult($"Failed to save the video with the id of: '{item.VideoId}' Url:'{item.Url}'");
                 }
-
             }
-            catch (Exception e)
+
+            // Publish the events
+            var eventsPublished = await eventPublisher.PublishYouTubeEventsAsync(
+                ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos,
+                eventsToPublish);
+            if (!eventsPublished)
             {
-                _logger.LogError(e,
-                    "Failed to save the video with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
-                    item.Id, item.Url, e);
+                logger.LogError("Failed to publish the events for the new or updated videos");
             }
+
+            // Save the last checked value
+            feedCheck.LastCheckedFeed = startedAt;
+            feedCheck.LastUpdatedOn = DateTime.UtcNow;
+            var latestAdded = newItems.Max(item => item.PublicationDate);
+            var latestUpdated = newItems.Max(item => item.LastUpdatedOn);
+            feedCheck.LastItemAddedOrUpdated = latestUpdated > latestAdded
+                ? latestUpdated
+                : latestAdded;
+
+            await feedCheckManager.SaveAsync(feedCheck);
+
+            // Return
+            logger.LogInformation("Loaded {SavedCount} of {TotalVideoCount} video(s)", savedCount, newItems.Count);
+            return new OkObjectResult($"Loaded {savedCount} of {newItems.Count} video(s)");
         }
-
-        // Publish the events
-
-        var eventsPublished = await _eventPublisher.PublishEventsAsync(_settings.TopicNewSourceDataEndpoint,
-            _settings.TopicNewSourceDataKey,
-            Constants.ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
-        if (!eventsPublished)
+        catch (Exception exception)
         {
-            _logger.LogError("Failed to publish the events for the new or updated videos");
+            logger.LogError(exception, "An error occurred while loading new YouTube videos");
+            return new BadRequestObjectResult($"An error occurred while loading new YouTube videos: {exception.Message}");
         }
-            
-        // Save the last checked value
-        configuration.LastCheckedFeed = startedAt;
-        var latestAdded = newItems.Max(item => item.PublicationDate);
-        var latestUpdated = newItems.Max(item => item.UpdatedOnDate);
-        configuration.LastItemAddedOrUpdated = latestUpdated > latestAdded
-            ? latestUpdated.Value.ToUniversalTime()
-            : latestAdded.ToUniversalTime();
-
-        await _configurationRepository.SaveAsync(configuration);
-            
-        // Return
-        _logger.LogInformation("Loaded {SavedCount} of {TotalVideoCount} video(s)", savedCount, newItems.Count);
     }
 }

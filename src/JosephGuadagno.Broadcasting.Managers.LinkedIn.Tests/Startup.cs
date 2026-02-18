@@ -28,7 +28,13 @@ public class Startup
         var config = hostBuilderContext.Configuration;
         services.AddSingleton(config);
         
-        var linkedInApplicationSettings = new LinkedInApplicationSettings();
+        var linkedInApplicationSettings = new LinkedInApplicationSettings
+        {
+            ClientId = null!,
+            ClientSecret = null!,
+            AccessToken = null!,
+            AuthorId = null!
+        };
         config.Bind("LinkedIn", linkedInApplicationSettings);
         services.TryAddSingleton<ILinkedInApplicationSettings>(linkedInApplicationSettings);
         

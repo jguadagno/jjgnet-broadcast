@@ -8,6 +8,8 @@
 <form asp-action="Edit">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="CreatedOn" />
+    <input type="hidden" asp-for="LastUpdatedOn" />
     <div class="mb-3">
         <label asp-for="Name" class="form-label">Name</label>
         <input asp-for="Name" type="text" class="form-control" />

@@ -19,6 +19,10 @@
     <dd class="col-sm-9">@Model.EndDateTime</dd>
     <dt class="col-sm-3">Comments</dt>
     <dd class="col-sm-9">@Model.Comments</dd>
+    <dt class="col-sm-3">Created On</dt>
+    <dd class="col-sm-9">@Model.CreatedOn</dd>
+    <dt class="col-sm-3">Last Updated On</dt>
+    <dd class="col-sm-9">@Model.LastUpdatedOn</dd>
 </dl>
 @if (Model.Talks is not null && Model.Talks.Count > 0)
 {
@@ -37,10 +41,10 @@
                 {
                     <p>Comments: @talk.Comments</p>
                 }
-                <a asp-controller="Talks" asp-action="Details" asp-route-talkId="@talk.Id" class="btn btn-outline-secondary"><i class="bi bi-eye me-2"></i>View</a>
-                <a asp-controller="Talks" asp-action="Edit" asp-route-talkId="@talk.Id" class="btn btn-outline-secondary"><i class="bi bi-pencil me-2">Edit</i></a>
-                <a href="@talk.UrlForConferenceTalk" target="_blank" class="btn btn-outline-secondary">Conference Url</a>
-                <a href="@talk.UrlForTalk" target="_blank" class="btn btn-outline-secondary">Talk Url</a>
+                <a asp-controller="Talks" asp-action="Details" asp-route-talkId="@talk.Id" asp-route-engagementId="@Model.Id" class="btn btn-outline-secondary"><i class="bi bi-eye me-2"></i>View</a>
+                <a asp-controller="Talks" asp-action="Edit" asp-route-talkId="@talk.Id" asp-route-engagementId="@Model.Id" class="btn btn-outline-secondary"><i class="bi bi-pencil me-2"></i>Edit</a>
+                <a href="@talk.UrlForConferenceTalk" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right me-2"></i>Conference Url</a>
+                <a href="@talk.UrlForTalk" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right me-2"></i>Talk Url</a>
             </div>
         </div>
     }

@@ -1,104 +1,133 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <LangVersion>default</LangVersion>
-    <Nullable>enable</Nullable>
-    <Company>JosephGuadagno.NET, LLC</Company>
-    <Authors>Joseph Guadagno</Authors>
-    <Product>JosephGuadagno.NET Broadcasting - Functions Test Library</Product>
-    <Description>This library contains the unit/integration test for the Azure Functions for the JosephGuadagno.NET Broadcasting application</Description>
-    <Copyright>Copyright ©2014-2026, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
-    <Title>JosephGuadagno.NET Broadcasting - Functions Tests</Title>
-    <UserSecretsId>bba0c3bc-df5e-4c6c-a82c-ab974102a8a4</UserSecretsId>
-    <IsTestProject>true</IsTestProject>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
-  <PropertyGroup>
-    <VersionMajor>2</VersionMajor>
-    <VersionMinor>0</VersionMinor>
-    <VersionBuild>0</VersionBuild>
-  </PropertyGroup>
-  <PropertyGroup>
-    <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
-  </PropertyGroup>
-  <PropertyGroup>
-    <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' == '' ">local</VersionSuffix>
-    <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(GITHUB_RUN_ID)-preview</VersionSuffix>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
-    <AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</AssemblyVersion>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
-    <FileVersion>$(VersionPrefix)</FileVersion>
-    <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Azure.Data.Tables" Version="12.11.0" />
-    <PackageReference Include="Azure.Identity" Version="1.17.1" />
-    <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.8.0" />
-    <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.8" />
-    <PackageReference Include="JosephGuadagno.Extensions" Version="1.2.5" />
-    <PackageReference Include="linqtotwitter" Version="6.15.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.23.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
-    <PackageReference Include="Serilog.Enrichers.AssemblyName" Version="2.0.0" />
-    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
-    <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
-    <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
-    <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="5.0.0" />
-    <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="10.2.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
-    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageReference Include="System.Linq.Async" Version="7.0.0" />
-    <PackageReference Include="Xunit.DependencyInjection" Version="11.1.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="coverlet.collector" Version="6.0.4">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="xunit.v3" Version="3.2.2" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.Sql\JosephGuadagno.Broadcasting.Data.Sql.csproj" />
-    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj" />
-    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Functions\JosephGuadagno.Broadcasting.Functions.csproj" />
-    <ProjectReference Include="..\JosephGuadagno.Broadcasting.JsonFeedReader\JosephGuadagno.Broadcasting.JsonFeedReader.csproj" />
-    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.Facebook\JosephGuadagno.Broadcasting.Managers.Facebook.csproj" />
-    <ProjectReference Include="..\JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj" />
-    <ProjectReference Include="..\JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj" />
-    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Using Include="Xunit" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="local.settings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-    </None>
-    <None Update="local.settings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-    </None>
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>default</LangVersion>
+        <Nullable>enable</Nullable>
+        <Company>JosephGuadagno.NET, LLC</Company>
+        <Authors>Joseph Guadagno</Authors>
+        <Product>JosephGuadagno.NET Broadcasting - Functions Test Library</Product>
+        <Description>This library contains the unit/integration test for the Azure Functions for the JosephGuadagno.NET Broadcasting application</Description>
+        <Copyright>Copyright ©2014-2026, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
+        <Title>JosephGuadagno.NET Broadcasting - Functions Tests</Title>
+        <UserSecretsId>bba0c3bc-df5e-4c6c-a82c-ab974102a8a4</UserSecretsId>
+        <IsTestProject>true</IsTestProject>
+        <IsPackable>false</IsPackable>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+    <PropertyGroup>
+        <VersionMajor>2</VersionMajor>
+        <VersionMinor>0</VersionMinor>
+        <VersionBuild>0</VersionBuild>
+    </PropertyGroup>
+    <PropertyGroup>
+        <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionBuild)</VersionPrefix>
+    </PropertyGroup>
+    <PropertyGroup>
+        <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' == '' ">local</VersionSuffix>
+        <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(GITHUB_RUN_ID)-preview</VersionSuffix>
+    </PropertyGroup>
+    <PropertyGroup>
+        <AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
+        <AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</AssemblyVersion>
+    </PropertyGroup>
+    <PropertyGroup>
+        <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
+        <FileVersion>$(VersionPrefix)</FileVersion>
+        <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.1.1" />
+        <PackageReference Include="Azure.Data.Tables" Version="12.11.0"/>
+        <PackageReference Include="Azure.Identity" Version="1.17.1"/>
+        <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.8.0"/>
+        <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.8"/>
+        <PackageReference Include="JosephGuadagno.Extensions" Version="1.2.5"/>
+        <PackageReference Include="linqtotwitter" Version="6.15.0"/>
+        <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0"/>
+        <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.23.0"/>
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.50.0"/>
+        <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.51.0"/>
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.EventGrid" Version="3.4.2"/>
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0"/>
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.0"/>
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage" Version="6.8.0"/>
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Blobs" Version="6.8.0"/>
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues" Version="5.5.3"/>
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Tables" Version="1.5.0"/>
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1"/>
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.7"/>
+        <PackageReference Include="Microsoft.Extensions.Azure" Version="1.13.1" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.23.0"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.2"/>
+        <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0"/>
+        <PackageReference Include="Serilog.AspNetCore" Version="10.0.0"/>
+        <PackageReference Include="Serilog.Enrichers.AssemblyName" Version="2.0.0"/>
+        <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1"/>
+        <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0"/>
+        <PackageReference Include="Serilog.Exceptions" Version="8.4.0"/>
+        <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="5.0.0"/>
+        <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="10.2.0"/>
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1"/>
+        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0"/>
+        <PackageReference Include="System.Linq.Async" Version="7.0.0"/>
+        <PackageReference Include="Xunit.DependencyInjection" Version="11.1.1"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector" Version="6.0.4">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="xunit.v3" Version="3.2.2"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.KeyVault\JosephGuadagno.Broadcasting.Data.KeyVault.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.Sql\JosephGuadagno.Broadcasting.Data.Sql.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.Bluesky\JosephGuadagno.Broadcasting.Managers.Bluesky.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.Facebook\JosephGuadagno.Broadcasting.Managers.Facebook.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.LinkedIn\JosephGuadagno.Broadcasting.Managers.LinkedIn.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Serilog\JosephGuadagno.Broadcasting.Serilog.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.ServiceDefaults\JosephGuadagno.Broadcasting.ServiceDefaults.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.SpeakingEngagementsReader\JosephGuadagno.Broadcasting.SpeakingEngagementsReader.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.Sql\JosephGuadagno.Broadcasting.Data.Sql.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data\JosephGuadagno.Broadcasting.Data.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Functions\JosephGuadagno.Broadcasting.Functions.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.Facebook\JosephGuadagno.Broadcasting.Managers.Facebook.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj"/>
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj"/>
+    </ItemGroup>
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+    <ItemGroup>
+        <None Update="local.settings.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+        </None>
+        <None Update="local.settings.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+        </None>
+    </ItemGroup>
 </Project>

@@ -26,8 +26,6 @@ var settings = new Settings
 };
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
-builder.Services.TryAddSingleton<IDatabaseSettings>(new DatabaseSettings
-    { JJGNetDatabaseSqlServer = settings.JJGNetDatabaseSqlServer });
 builder.Services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
 var azureAdSettings = new AzureAdSettings();
 builder.Configuration.Bind("AzureAd", azureAdSettings);
@@ -137,7 +135,13 @@ void ConfigureApplication(IServiceCollection services)
 
 void ConfigureRepositories(IServiceCollection services)
 {
-    services.AddDbContext<BroadcastingContext>();
+    builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer");
+    builder.EnrichSqlServerDbContext<BroadcastingContext>(
+        configureSettings: sqlServerSettings =>
+        {
+            sqlServerSettings.DisableRetry = false;
+            sqlServerSettings.CommandTimeout = 30; // seconds
+        });
 
     // Engagements
     services.TryAddScoped<IEngagementDataStore, EngagementDataStore>();

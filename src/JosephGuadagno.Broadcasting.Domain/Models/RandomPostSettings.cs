@@ -4,6 +4,6 @@ namespace JosephGuadagno.Broadcasting.Domain.Models;
 
 public class RandomPostSettings: IRandomPostSettings
 {
-    public List<string> ExcludedCategories { get; set; }
-    public DateTime CutoffDate { get; set; }
+    public required List<string> ExcludedCategories { get; set; }
+    public DateTimeOffset CutoffDate { get; set; }
 }
