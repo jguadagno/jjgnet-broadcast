@@ -37,67 +37,107 @@
     "AzureWebJobs.BlueskyProcessNewSourceDataFired.Disabled": true
   },
   "Settings": {
-    "BitlyToken": "",
-    "BitlyAPIRootUri": "https://api-ssl.bitly.com/v4/",
-    "BitlyShortenedDomain": "jjg.me",
-    "StorageAccount": "UseDevelopmentStorage=true",
-    "TwitterApiKey": "",
-    "TwitterApiSecret": "",
-    "TwitterAccessToken": "",
-    "TwitterAccessTokenSecret": "",
-    "AutoMapper": {
-      "LicenseKey": "Set in Users Secrets/Azure App Service Settings"
-    },
-    "Bluesky": {
-      "BlueskyUserName": "jguadagno.com",
-      "BlueskyPassword": ""
-    },
-    "Facebook": {
-
-      "AppId": "",
-      "AppSecret": "",
-      "ClientToken": "",
-      "LongLivedAccessToken": "",
-      "PageId": "",
-      "PageAccessToken": "",
-      "ShortLivedAccessToken": "",
-      "GraphApiVersion": "v20.0",
-      "GraphApiRootUrl": "https://graph.facebook.com"
-    },
-    "JsonFeedReader": {
-      "FeedUrl": "http://localhost:4000/feed.json"
-    },
-    "KeyVault" : {
-      "KeyVaultUri": "",
-      "TenantId": "",
-      "ClientId": "",
-      "ClientSecret": ""
-    },
-    "LinkedIn": {
-      "ClientId": "",
-      "ClientSecret": "",
-      "AccessToken": "",
-      "AuthorId": ""
-    },
-    "RandomPost": {
-      "ExcludedCategories": [
-        "books",
-        "book reviews",
-        "news",
-        "arizona technology news",
-        "technology news",
-        "archive"
-      ],
-      "CutoffDate": "2019-01-01"
-    },
-    "SyndicationFeedReader": {
-      "FeedUrl": "http://localhost:4000/feed.xml"
-    },
-    "YouTube": {
-      "ApiKey": "",
-      "ChannelId": "",
-      "PlaylistId": "",
-      "ResultSetPageSize": 10
-    }
+    "LoggingStorageAccount": "UseDevelopmentStorage=true",
+    "ShortenedDomainToUse": "jjg.me"
+  },
+  "AutoMapper": {
+    "LicenseKey": "Set in Users Secrets/Azure App Service Settings"
+  },
+  "AzureAd": {
+    "ClientCredentials":
+      [
+        {
+          "CertificateDistinguishedName": "Set in Users Secrets/Azure App Service Settings",
+          "CertificateStorePath": "Set in Users Secrets/Azure App Service Settings",
+          "SourceType": "Set in Users Secrets/Azure App Service Settings"
+        }
+      ]
+  },
+  "Bitly": {
+    "ApiRootUri": "https://api-ssl.bitly.com/v4/",
+    "Token": ""
+  },
+  "Bluesky": {
+    "BlueskyUserName": "jguadagno.com",
+    "BlueskyPassword": ""
+  },
+  "EventGridTopics": {
+    "TopicEndpointSettings": [
+      {
+        "TopicName": "new-random-post",
+        "Endpoint": "https://localhost:60101/api/events",
+        "Key": "Set in Users Secrets/Azure App Service Settings"
+      },
+      {
+        "TopicName": "new-speaking-engagement",
+        "Endpoint": "https://localhost:60102/api/events",
+        "Key": "Set in Users Secrets/Azure App Service Settings"
+      },
+      {
+        "TopicName": "new-syndication-feed-item",
+        "Endpoint": "https://localhost:60103/api/events",
+        "Key": "Set in Users Secrets/Azure App Service Settings"
+      },
+      {
+        "TopicName": "new-youtube-item",
+        "Endpoint": "https://localhost:60104/api/events",
+        "Key": "Set in Users Secrets/Azure App Service Settings"
+      },
+      {
+        "TopicName": "scheduled-item-fired",
+        "Endpoint": "https://localhost:60105/api/events",
+        "Key": "Set in Users Secrets/Azure App Service Settings"
+      }
+    ]
+  },
+  "Facebook": {
+    "AppId": "",
+    "AppSecret": "",
+    "ClientToken": "",
+    "LongLivedAccessToken": "",
+    "PageId": "",
+    "PageAccessToken": "",
+    "ShortLivedAccessToken": "",
+    "GraphApiVersion": "v20.0",
+    "GraphApiRootUrl": "https://graph.facebook.com"
+  },
+  "KeyVault" : {
+    "clientCertificate": "Set in Users Secrets/Azure App Service Settings",
+    "clientCertificateStoreLocation": "Set in Users Secrets/Azure App Service Settings",
+    "clientId": "Set in Users Secrets/Azure App Service Settings",
+    "tenantId": "Set in Users Secrets/Azure App Service Settings",
+    "vaultUri": "Set in Users Secrets/Azure App Service Settings"
+  },
+  "LinkedIn": {
+    "ClientId": "",
+    "ClientSecret": "",
+    "AccessToken": "",
+    "AuthorId": ""
+  },
+  "RandomPost": {
+    "ExcludedCategories": [
+      "books",
+      "book reviews",
+      "news",
+      "arizona technology news",
+      "technology news",
+      "archive"
+    ],
+    "CutoffDate": "2019-01-01"
+  },
+  "SyndicationFeedReader": {
+    "FeedUrl": "http://localhost:4000/feed.xml"
+  },
+  "Twitter": {
+    "OAuthToken": "",
+    "OAuthTokenSecret": "",
+    "ConsumerKey": "",
+    "ConsumerSecret": ""
+  },
+  "YouTube": {
+    "ApiKey": "",
+    "ChannelId": "",
+    "PlaylistId": "",
+    "ResultSetPageSize": 10
   }
 }

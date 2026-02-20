@@ -18,12 +18,13 @@ public class Settings : ISettings
     public required string ApiScopeUrl { get; set; }
 
     /// <summary>
+    /// The storage account connection string used for logging.
+    /// </summary>
+    public required string LoggingStorageAccount { get; set; }
+
+    /// <summary>
     /// The root URL for serving static content in the Web application.
     /// </summary>
     public required string StaticContentRootUrl { get; set; }
 
-    /// <summary>
-    /// The Azure Storage account to use
-    /// </summary>
-    public required string StorageAccount { get; set; }
 }

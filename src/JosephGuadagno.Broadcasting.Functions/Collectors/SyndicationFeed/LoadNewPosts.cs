@@ -56,7 +56,7 @@ public class LoadNewPosts(
             foreach (var item in newItems)
             {
                 // shorten the url
-                item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settings.BitlyShortenedDomain);
+                item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settings.ShortenedDomainToUse);
 
                 // attempt to save the item
                 try

@@ -32,7 +32,7 @@ var settings = new Settings
     ApiRootUrl = null!,
     ApiScopeUrl = null!,
     StaticContentRootUrl = null!,
-    StorageAccount = null!
+    LoggingStorageAccount = null!
 };
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
@@ -132,7 +132,7 @@ void ConfigureLogging(IConfigurationRoot configurationRoot, IServiceCollection s
         .Destructure.ToMaximumCollectionCount(10)
         .WriteTo.Console()
         .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-        .WriteTo.AzureTableStorage(configSettings.StorageAccount, storageTableName:"Logging", keyGenerator: new SerilogKeyGenerator())
+        .WriteTo.AzureTableStorage(configSettings.LoggingStorageAccount, storageTableName:"Logging", keyGenerator: new SerilogKeyGenerator())
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {
