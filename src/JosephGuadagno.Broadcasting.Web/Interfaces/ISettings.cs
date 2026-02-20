@@ -1,13 +1,9 @@
-using JosephGuadagno.Broadcasting.Data.KeyVault;
-using JosephGuadagno.Broadcasting.Domain.Models;
-
 namespace JosephGuadagno.Broadcasting.Web.Interfaces;
 
 public interface ISettings
 {
-
     /// <summary>
-    /// The root Uri for the JosephGuadagno.NET broadcasting Api
+    /// The root Uri for the JosephGuadagno.NET Broadcasting Api
     /// </summary>
     public string ApiRootUrl { get; set; }
 
@@ -17,18 +13,12 @@ public interface ISettings
     public string ApiScopeUrl { get; set; }
 
     /// <summary>
-    /// The Azure Storage account to use
+    /// The root URL for serving static content in the Web application.
     /// </summary>
-    public string StorageAccount { get; set; }
-
-    /// <summary>
-    /// The static content root url
-    /// </summary>
-    /// <remarks>This will return where to get images, scripts, etc. from. Could be local or CDN.</remarks>
     public string StaticContentRootUrl { get; set; }
 
     /// <summary>
-    /// The AutoMapper settings.
+    /// The Azure Storage account to use
     /// </summary>
-    public AutoMapperSettings AutoMapper { get; set; }
+    public string StorageAccount { get; set; }
 }
