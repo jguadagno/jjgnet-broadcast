@@ -7,13 +7,19 @@ namespace JosephGuadagno.Broadcasting.Api.Models;
 
 public class Settings: ISettings
 {
-    public string StorageAccount { get; set; }
-    public string ApiScopeUrl { get; set; }
-    public string ScalarClientId { get; set; }
-    public string JJGNetDatabaseSqlServer { get; set; }
+    /// <summary>
+    /// The URL of the API scope used for authentication and authorization purposes.
+    /// </summary>
+    public required string ApiScopeUrl { get; set; }
 
     /// <summary>
-    /// The AutoMapper settings.
+    /// The Client Id for the Azure AD Scalar App.
     /// </summary>
-    public required AutoMapperSettings AutoMapper { get; init; }
+    public required string ScalarClientId { get; set; }
+
+    /// <summary>
+    /// The storage account connection string.
+    /// </summary>
+    /// <remarks>This is used for the Azure Table Storage.</remarks>
+    public required string StorageAccount { get; set; }
 }
