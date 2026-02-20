@@ -18,8 +18,7 @@ public class Settings: ISettings
     public required string ScalarClientId { get; set; }
 
     /// <summary>
-    /// The storage account connection string.
+    /// The storage account connection string used for logging.
     /// </summary>
-    /// <remarks>This is used for the Azure Table Storage.</remarks>
-    public required string StorageAccount { get; set; }
+    public required string LoggingStorageAccount { get; set; }
 }
