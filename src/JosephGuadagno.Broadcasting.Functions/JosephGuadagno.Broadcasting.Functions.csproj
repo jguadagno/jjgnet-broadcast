@@ -101,18 +101,16 @@
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj" />
   </ItemGroup>
+    <!-- Exclude local.settings.json in release build -->
+    <ItemGroup>
+        <Compile Remove="local.settings.json" Condition="'$(Configuration)'=='Release'" />
+    </ItemGroup>
   <ItemGroup>
     <None Update="local.settings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)' !='Release'">PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
   </ItemGroup>
-    <!-- Exclude local.settings.json in release build -->
-    <ItemGroup Condition="'$(Configuration)' == 'Release'">
-        <Content Remove="local.settings.json">
-
-        </Content>
-    </ItemGroup>
   <ItemGroup>
     <None Remove="nlog.config" />
     <None Remove="host.json" />

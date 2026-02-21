@@ -48,8 +48,10 @@ builder.ConfigureFunctionsWebApplication();
 
 // Configure Settings
 builder.Configuration.SetBasePath(currentDirectory);
-builder.Configuration.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
-builder.Configuration.AddUserSecrets(Assembly.GetExecutingAssembly(), true, true);
+#if DEBUG
+    builder.Configuration.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
+    builder.Configuration.AddUserSecrets(Assembly.GetExecutingAssembly(), true, true);
+#endif
 builder.Configuration.AddEnvironmentVariables();
 
 var settings =
