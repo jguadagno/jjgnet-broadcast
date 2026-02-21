@@ -1,6 +1,7 @@
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.Broadcasting.Web;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
@@ -26,9 +27,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-var settings = new Settings()
+var settings = new Settings
 {
-    AutoMapper = null!
+    ApiRootUrl = null!,
+    ApiScopeUrl = null!,
+    StaticContentRootUrl = null!,
+    LoggingStorageAccount = null!
 };
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
@@ -36,7 +40,9 @@ builder.Services.TryAddSingleton<ISettings>(settings);
 var linkedInSettings = new LinkedInSettings();
 builder.Configuration.Bind("LinkedIn", linkedInSettings);
 builder.Services.TryAddSingleton<ILinkedInSettings>(linkedInSettings);
-builder.Services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
+var autoMapperSettings = new AutoMapperSettings();
+builder.Configuration.Bind("AutoMapper", autoMapperSettings);
+builder.Services.AddSingleton<IAutoMapperSettings>(autoMapperSettings);
 
 builder.Services.AddSession();
 builder.Services.AddSingleton<ITelemetryInitializer, AzureWebAppRoleEnvironmentTelemetryInitializer>();
@@ -52,7 +58,7 @@ ConfigureApplication(builder.Services);
 // Add in AutoMapper
 builder.Services.AddAutoMapper(config =>
 {
-    config.LicenseKey = settings.AutoMapper.LicenseKey;
+    config.LicenseKey = autoMapperSettings.LicenseKey;
     config.AddProfile<WebMappingProfile>();
     config.AddProfile<NodaTimeProfile>();
 }, typeof(Program));
@@ -126,7 +132,7 @@ void ConfigureLogging(IConfigurationRoot configurationRoot, IServiceCollection s
         .Destructure.ToMaximumCollectionCount(10)
         .WriteTo.Console()
         .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-        .WriteTo.AzureTableStorage(configSettings.StorageAccount, storageTableName:"Logging", keyGenerator: new SerilogKeyGenerator())
+        .WriteTo.AzureTableStorage(configSettings.LoggingStorageAccount, storageTableName:"Logging", keyGenerator: new SerilogKeyGenerator())
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {

@@ -1,18 +1,19 @@
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Models;
-
 namespace JosephGuadagno.Broadcasting.Api.Interfaces;
 
 public interface ISettings
 {
-    public string StorageAccount { get; set; }
+    /// <summary>
+    /// The URL of the API scope used for authentication and authorization purposes.
+    /// </summary>
     public string ApiScopeUrl { get; set; }
-    public string ScalarClientId { get; set; }
-
-    public string JJGNetDatabaseSqlServer { get; set; }
 
     /// <summary>
-    /// The AutoMapper settings.
+    /// The Client Id for the Azure AD Scalar App.
     /// </summary>
-    public AutoMapperSettings AutoMapper { get; init; }
+    public string ScalarClientId { get; set; }
+
+    /// <summary>
+    /// The storage account connection string used for logging.
+    /// </summary>
+    public string LoggingStorageAccount { get; set; }
 }

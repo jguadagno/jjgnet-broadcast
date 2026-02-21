@@ -11,8 +11,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
@@ -45,7 +43,6 @@ using Microsoft.Extensions.Azure;
 
 using Serilog;
 using Serilog.Exceptions;
-using ZstdSharp.Unsafe;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests;
 
@@ -71,21 +68,24 @@ public class Startup
         var config = hostBuilderContext.Configuration;
         services.AddSingleton(config);
 
-        var settings = new JosephGuadagno.Broadcasting.Functions.Models.Settings { AutoMapper = null! };
+        var settings =
+            new JosephGuadagno.Broadcasting.Functions.Models.Settings
+            {
+                LoggingStorageAccount = null!, ShortenedDomainToUse = null!
+            };
         config.Bind("Settings", settings);
         services.TryAddSingleton<ISettings>(settings);
-        services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
 
         var randomPostSettings = new RandomPostSettings { ExcludedCategories = [] };
-        config.Bind("Settings:RandomPost", randomPostSettings);
+        config.Bind("RandomPost", randomPostSettings);
         services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
 
         var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings { SpeakingEngagementsFile = null };
-        config.Bind("Settings:SpeakingEngagementsReader", speakerEngagementsSettings);
+        config.Bind("SpeakingEngagementsReader", speakerEngagementsSettings);
         services.TryAddSingleton<ISpeakingEngagementsReaderSettings>(speakerEngagementsSettings);
 
         var eventPublisherSettings = new EventPublisherSettings { TopicEndpointSettings = [] };
-        var endpoints = config.GetSection("Settings:EventGridTopics:TopicEndpointSettings").Get<List<TopicEndpointSettings>>();
+        var endpoints = config.GetSection("EventGridTopics:TopicEndpointSettings").Get<List<TopicEndpointSettings>>();
         if (endpoints != null)
         {
             foreach (var endpoint in endpoints)
@@ -104,24 +104,24 @@ public class Startup
             .ConfigureFunctionsApplicationInsights();
 
         // Add in AutoMapper
+        var autoMapperSettings = new AutoMapperSettings();
+        config.Bind("AutoMapper", autoMapperSettings);
         services.AddAutoMapper(mapperConfig =>
         {
-            mapperConfig.LicenseKey = settings.AutoMapper.LicenseKey;
-            mapperConfig.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
+            mapperConfig.LicenseKey = autoMapperSettings.LicenseKey;
+            mapperConfig.AddProfile<Data.Sql.MappingProfiles.BroadcastingProfile>();
         }, typeof(Program));
 
         // Configure all the services
-        // TODO: Refactor configuration setup to use dependency injection for settings
         ConfigureKeyVault(services, config);
-        ConfigureFunction(services, settings);
-        ConfigureTwitter(services, settings);
+        ConfigureFunction(services);
+        ConfigureBitly(services, config);
+        ConfigureTwitter(services, config);
         ConfigureSyndicationFeedReader(services, config);
         ConfigureYouTubeReader(services, config);
         ConfigureLinkedInManager(services, config);
         ConfigureFacebookManager(services, config);
         ConfigureBlueskyManager(services, config);
-
-        services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader.SpeakingEngagementsReader>();
 
     }
 
@@ -147,7 +147,7 @@ public class Startup
             .Destructure.ToMaximumCollectionCount(10)
             .WriteTo.Console()
             .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-            .WriteTo.AzureTableStorage(appSettings.StorageAccount, storageTableName: "Logging",
+            .WriteTo.AzureTableStorage(appSettings.LoggingStorageAccount, storageTableName: "Logging",
                 keyGenerator: new SerilogKeyGenerator())
             .CreateLogger();
         services.AddLogging(loggingBuilder =>
@@ -169,18 +169,10 @@ public class Startup
         services.TryAddScoped<IKeyVault, KeyVault>();
     }
 
-    private void ConfigureFunction(IServiceCollection services, ISettings appSettings)
+    private void ConfigureFunction(IServiceCollection services)
     {
         services.AddHttpClient();
 
-        services.TryAddSingleton(s =>
-        {
-            var httpClient = s.GetService(typeof(HttpClient)) as HttpClient;
-
-            return new Utilities.Web.Shortener.Bitly(httpClient,
-                new BitlyConfiguration { ApiRootUri = appSettings.BitlyAPIRootUri, Token = appSettings.BitlyToken });
-        });
-        services.TryAddSingleton<IUrlShortener, UrlShortener>();
         services.TryAddSingleton<IEventPublisher, EventPublisher>();
 
         services.AddDbContext<BroadcastingContext>(options => options.UseSqlServer("name=ConnectionStrings:JJGNetDatabaseSqlServer"));
@@ -208,19 +200,38 @@ public class Startup
         services.AddSingleton<ITokenRefreshDataStore, TokenRefreshDataStore>();
         services.AddSingleton<ITokenRefreshRepository, TokenRefreshRepository>();
         services.AddSingleton<ITokenRefreshManager, TokenRefreshManager>();
+
+        services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader.SpeakingEngagementsReader>();
     }
 
-    private void ConfigureTwitter(IServiceCollection services, ISettings appSettings)
+    void ConfigureBitly(IServiceCollection services, IConfiguration config)
     {
-        services.TryAddSingleton<IAuthorizer>(_ => new SingleUserAuthorizer
+        var bitlySettings = new BitlyConfiguration();
+        config.Bind("Bitly", bitlySettings);
+        services.TryAddSingleton<IBitlyConfiguration>(bitlySettings);
+        services.TryAddSingleton(s =>
         {
-            CredentialStore = new InMemoryCredentialStore
+            var httpClient = s.GetService(typeof(HttpClient)) as HttpClient;
+            return new Utilities.Web.Shortener.Bitly(httpClient, bitlySettings);
+        });
+        services.TryAddSingleton<IUrlShortener, UrlShortener>();
+    }
+
+    void ConfigureTwitter(IServiceCollection services, IConfiguration config)
+    {
+        var twitterSettings = new InMemoryCredentialStore();
+        config.Bind("Twitter", twitterSettings);
+        services.TryAddSingleton<InMemoryCredentialStore>(twitterSettings);
+
+        services.TryAddSingleton<IAuthorizer>(s =>
+        {
+            var credentialStore = s.GetService<InMemoryCredentialStore>();
+            if (credentialStore is null)
             {
-                ConsumerKey = appSettings.TwitterApiKey,
-                ConsumerSecret = appSettings.TwitterApiSecret,
-                OAuthToken = appSettings.TwitterAccessToken,
-                OAuthTokenSecret = appSettings.TwitterAccessTokenSecret
+                throw new ApplicationException("Failed to get credential store from ServiceCollection");
             }
+
+            return new SingleUserAuthorizer { CredentialStore = credentialStore };
         });
         services.TryAddSingleton(s =>
         {
@@ -229,7 +240,6 @@ public class Startup
             {
                 throw new ApplicationException("Failed to get authorizer from ServiceCollection");
             }
-
             return new TwitterContext(authorizer);
         });
     }
@@ -239,7 +249,7 @@ public class Startup
         services.TryAddSingleton<ISyndicationFeedReaderSettings>(_ =>
         {
             var syndicationFeedReaderSettings = new SyndicationFeedReaderSettings();
-            config.Bind("Settings:SyndicationFeedReader", syndicationFeedReaderSettings);
+            config.Bind("SyndicationFeedReader", syndicationFeedReaderSettings);
             return syndicationFeedReaderSettings;
         });
         services.TryAddSingleton<ISyndicationFeedReader, SyndicationFeedReader.SyndicationFeedReader>();
@@ -250,7 +260,7 @@ public class Startup
         services.TryAddSingleton<IYouTubeSettings>(_ =>
         {
             var youTubeSettings = new YouTubeSettings();
-            config.Bind("Settings:YouTube", youTubeSettings);
+            config.Bind("YouTube", youTubeSettings);
             return youTubeSettings;
         });
         services.TryAddSingleton<IYouTubeReader, YouTubeReader.YouTubeReader>();
@@ -264,7 +274,7 @@ public class Startup
             {
                 ClientId = null!, ClientSecret = null!, AccessToken = null!, AuthorId = null!
             };
-            config.Bind("Settings:LinkedIn", linkedInApplicationSettings);
+            config.Bind("LinkedIn", linkedInApplicationSettings);
             return linkedInApplicationSettings;
         });
         services.TryAddSingleton<ILinkedInManager, LinkedInManager>();
@@ -275,7 +285,7 @@ public class Startup
         services.TryAddSingleton<IFacebookApplicationSettings>(_ =>
         {
             var facebookApplicationSettings = new FacebookApplicationSettings();
-            config.Bind("Settings:Facebook", facebookApplicationSettings);
+            config.Bind("Facebook", facebookApplicationSettings);
             return facebookApplicationSettings;
         });
         services.TryAddSingleton<IFacebookManager, FacebookManager>();
@@ -286,7 +296,7 @@ public class Startup
         services.TryAddSingleton<IBlueskySettings>(_ =>
         {
             var blueskySettings = new BlueskySettings();
-            config.Bind("Settings:Bluesky", blueskySettings);
+            config.Bind("Bluesky", blueskySettings);
             return blueskySettings;
         });
         services.TryAddSingleton<IBlueskyManager, BlueskyManager>();

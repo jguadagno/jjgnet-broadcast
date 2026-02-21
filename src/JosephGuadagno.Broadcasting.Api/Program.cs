@@ -22,11 +22,15 @@ builder.Services.AddHttpLogging(
 
 var settings = new Settings
 {
-    AutoMapper = null!
+    ApiScopeUrl = null!,
+    LoggingStorageAccount = null!,
+    ScalarClientId = null!
 };
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
-builder.Services.AddSingleton<IAutoMapperSettings>(settings.AutoMapper);
+var autoMapperSettings = new AutoMapperSettings();
+builder.Configuration.Bind("AutoMapper", autoMapperSettings);
+builder.Services.AddSingleton<IAutoMapperSettings>(autoMapperSettings);
 var azureAdSettings = new AzureAdSettings();
 builder.Configuration.Bind("AzureAd", azureAdSettings);
 builder.Services.TryAddSingleton<IAzureAdSettings>(azureAdSettings);
@@ -46,7 +50,7 @@ ConfigureApplication(builder.Services);
 // Add in AutoMapper
 builder.Services.AddAutoMapper(config =>
 {
-    config.LicenseKey = settings.AutoMapper.LicenseKey;
+    config.LicenseKey = autoMapperSettings.LicenseKey;
     config.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
 }, typeof(Program));
 
@@ -116,7 +120,7 @@ void ConfigureLogging(IConfigurationRoot configurationRoot, IServiceCollection s
         .Destructure.ToMaximumCollectionCount(10)
         .WriteTo.Console()
         .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-        .WriteTo.AzureTableStorage(configSettings.StorageAccount, storageTableName:"Logging", keyGenerator:new SerilogKeyGenerator())
+        .WriteTo.AzureTableStorage(configSettings.LoggingStorageAccount, storageTableName:"Logging", keyGenerator:new SerilogKeyGenerator())
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {
