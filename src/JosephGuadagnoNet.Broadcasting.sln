@@ -26,6 +26,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.YouTubeReader", "JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj", "{C7A60E25-3A0F-48BB-97B3-5A4BBD187F0D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.YouTubeReader.Tests", "JosephGuadagno.Broadcasting.YouTubeReader.Tests\JosephGuadagno.Broadcasting.YouTubeReader.Tests.csproj", "{8F9E3C2D-4A5B-6F7C-8D9E-0A1B2C3D4E5F}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests", "JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests\JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests.csproj", "{55F131EB-35B1-4F78-95BB-3D44BD43D33A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.Data.Sql", "JosephGuadagno.Broadcasting.Data.Sql\JosephGuadagno.Broadcasting.Data.Sql.csproj", "{D4B7D4FC-2CB1-460D-ADFF-73DF5CD6C7C5}"
@@ -162,6 +164,10 @@ Global
 		{C7A60E25-3A0F-48BB-97B3-5A4BBD187F0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C7A60E25-3A0F-48BB-97B3-5A4BBD187F0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C7A60E25-3A0F-48BB-97B3-5A4BBD187F0D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F9E3C2D-4A5B-6F7C-8D9E-0A1B2C3D4E5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F9E3C2D-4A5B-6F7C-8D9E-0A1B2C3D4E5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F9E3C2D-4A5B-6F7C-8D9E-0A1B2C3D4E5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F9E3C2D-4A5B-6F7C-8D9E-0A1B2C3D4E5F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{55F131EB-35B1-4F78-95BB-3D44BD43D33A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{55F131EB-35B1-4F78-95BB-3D44BD43D33A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{55F131EB-35B1-4F78-95BB-3D44BD43D33A}.Release|Any CPU.ActiveCfg = Release|Any CPU
