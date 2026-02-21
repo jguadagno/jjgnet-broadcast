@@ -1,3 +1,5 @@
+using System.Net.Http;
+using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Managers.Bluesky;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -12,13 +14,13 @@ public class BlueskyManagerUnitTests
 {
     private readonly Mock<ILogger<BlueskyManager>> _mockLogger;
     private readonly Mock<IBlueskySettings> _mockBlueskySettings;
-    private readonly System.Net.Http.HttpClient _httpClient;
+    private readonly HttpClient _httpClient;
 
     public BlueskyManagerUnitTests()
     {
         _mockLogger = new Mock<ILogger<BlueskyManager>>();
         _mockBlueskySettings = new Mock<IBlueskySettings>();
-        _httpClient = new System.Net.Http.HttpClient();
+        _httpClient = new HttpClient();
 
         // Setup default settings
         _mockBlueskySettings.Setup(s => s.BlueskyUserName).Returns("testuser");
@@ -28,7 +30,7 @@ public class BlueskyManagerUnitTests
     #region GetEmbeddedExternalRecord Tests
 
     [Fact]
-    public async System.Threading.Tasks.Task GetEmbeddedExternalRecord_WithEmptyUrl_ReturnsNull()
+    public async Task GetEmbeddedExternalRecord_WithEmptyUrl_ReturnsNull()
     {
         // Arrange
         var sut = new BlueskyManager(_httpClient, _mockBlueskySettings.Object, _mockLogger.Object);
@@ -41,7 +43,7 @@ public class BlueskyManagerUnitTests
     }
 
     [Fact]
-    public async System.Threading.Tasks.Task GetEmbeddedExternalRecord_WithNullUrl_ReturnsNull()
+    public async Task GetEmbeddedExternalRecord_WithNullUrl_ReturnsNull()
     {
         // Arrange
         var sut = new BlueskyManager(_httpClient, _mockBlueskySettings.Object, _mockLogger.Object);

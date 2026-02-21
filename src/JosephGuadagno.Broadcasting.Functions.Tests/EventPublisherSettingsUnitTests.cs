@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
@@ -12,7 +13,7 @@ public class EventPublisherSettingsUnitTests
     public void EventPublisherSettings_WithValidData_ShouldInitializeCorrectly()
     {
         // Arrange
-        var topicSettings = new System.Collections.Generic.List<ITopicEndpointSettings>
+        var topicSettings = new List<ITopicEndpointSettings>
         {
             new TopicEndpointSettings
             {
@@ -52,7 +53,7 @@ public class EventPublisherSettingsUnitTests
         // Arrange & Act
         var settings = new EventPublisherSettings
         {
-            TopicEndpointSettings = new System.Collections.Generic.List<ITopicEndpointSettings>()
+            TopicEndpointSettings = new List<ITopicEndpointSettings>()
         };
 
         // Assert
