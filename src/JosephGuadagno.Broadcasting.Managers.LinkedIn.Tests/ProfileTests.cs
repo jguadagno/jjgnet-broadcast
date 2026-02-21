@@ -3,13 +3,14 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Managers.LinkedIn.Tests;
 
+[Trait("Category", "Integration")]
 public class ProfileTests(
     ILinkedInManager linkedInManager,
     ILinkedInApplicationSettings linkedInApplicationSettings,
     ITestOutputHelper testOutputHelper)
 {
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task GetMyLinkedInUserProfile_WithValidAccessToken_ReturnsAValidUserProfile()
     {
         // Arrange
@@ -29,7 +30,7 @@ public class ProfileTests(
         Assert.Equal("Guadagno", myProfile.LastName);
     }
     
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task GetMyLinkedInUserProfile_WithEmptyAccessToken_ThrowsArgumentNullException()
     {
         // Arrange
@@ -41,7 +42,7 @@ public class ProfileTests(
         Assert.Equal("Value cannot be null. (Parameter 'accessToken')", exception.Message);
     }
     
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task GetMyLinkedInUserProfile_WithInvalidAccessToken_ThrowsArgumentNullException()
     {
         // Arrange

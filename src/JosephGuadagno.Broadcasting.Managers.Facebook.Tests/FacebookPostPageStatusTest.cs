@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Managers.Facebook.Tests;
 
+[Trait("Category", "Integration")]
 public class FacebookPostPageStatusTest
 {
     private readonly IFacebookManager _facebookManager;
@@ -19,7 +20,7 @@ public class FacebookPostPageStatusTest
         _logger = logger;
     }
     
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostMessageAndLinkToPage_WithValidParameters_ShouldPostStatus()
     {
         // Arrange
@@ -33,7 +34,7 @@ public class FacebookPostPageStatusTest
         Assert.False(string.IsNullOrEmpty(pageId));
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostMessageLinkToPage_WithLongText_ShouldPostStatus()
     {
         // Arrange
@@ -49,7 +50,7 @@ public class FacebookPostPageStatusTest
         
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostMessageAndLinkToPage_WithMessageEmpty_ShouldThrowException()
     {
         // Arrange
@@ -64,7 +65,7 @@ public class FacebookPostPageStatusTest
         Assert.StartsWith("Value cannot be null.", exception.Message);
     }
     
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostMessageAndLinkToPage_WithLinkEmpty_ShouldThrowException()
     {
         // Arrange
