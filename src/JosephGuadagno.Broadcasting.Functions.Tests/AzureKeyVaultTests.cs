@@ -4,11 +4,12 @@ using Azure.Security.KeyVault.Secrets;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests;
 
+[Trait("Category", "Integration")]
 public class AzureKeyVaultTests(SecretClient secretClient)
 {
     private const string SecretName = "secret-for-unit-testing";
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task WriteSecretValue_WithValidSecret_ShouldWriteSecret()
     {
         // Arrange
@@ -23,7 +24,7 @@ public class AzureKeyVaultTests(SecretClient secretClient)
         Assert.Equal(secretValue, updatedSecret.Value.Value);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task UpdateSecretValueAndProperties_WithValidSecret_ShouldUpdateSecret()
     {
         // Arrange

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Managers.Facebook.Tests;
 
+[Trait("Category", "Integration")]
 public class FacebookRefreshTokenTest
 {
     private readonly IFacebookManager _facebookManager;
@@ -21,7 +22,7 @@ public class FacebookRefreshTokenTest
         _logger = logger;
     }
     
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task RefreshToken_WithValidParameters_ShouldReturnTokenInfo()
     {
         // Arrange
@@ -44,7 +45,7 @@ public class FacebookRefreshTokenTest
         Assert.True(tokenInfo.ExpiresOn > DateTime.UtcNow);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task RefreshToken_WithTokenEmpty_ShouldThrowException()
     {
         // Arrange

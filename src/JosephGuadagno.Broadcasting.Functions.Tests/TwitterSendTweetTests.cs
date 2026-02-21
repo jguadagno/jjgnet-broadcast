@@ -3,11 +3,12 @@ using LinqToTwitter;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests;
 
+[Trait("Category", "Integration")]
 public class TwitterSendTweetTests(
     TwitterContext twitterContext)
 {
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task DoesSendTweet_ShouldSendTweet()
     {
         var tweet = await twitterContext.TweetAsync("Test Tweet, Ignore", cancelToken: TestContext.Current.CancellationToken);

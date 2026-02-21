@@ -4,6 +4,7 @@ using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 
 namespace JosephGuadagno.Broadcasting.Managers.LinkedIn.Tests;
 
+[Trait("Category", "Integration")]
 public class PostShareTests(
     ILinkedInManager linkedInManager,
     ILinkedInApplicationSettings linkedInApplicationSettings,
@@ -11,7 +12,7 @@ public class PostShareTests(
 {
 
     // PostShareText Tests
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareText_WithValidParameter_ReturnsId()
     {
         // Arrange
@@ -38,7 +39,7 @@ public class PostShareTests(
 
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareText_WithEmptyAccessToken_ThrowsArgumentNullException()
     {
         // Arrange
@@ -62,7 +63,7 @@ public class PostShareTests(
         Assert.Equal("Value cannot be null. (Parameter 'postText')", exception.Message);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareText_WithEmptyPostText_ThrowsArgumentNullException()
     {
         // Arrange
@@ -88,7 +89,7 @@ public class PostShareTests(
 
     // PostShareTextAndLink Tests
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndLink_WithValidLink_ReturnId()
     {
         // Arrange
@@ -114,7 +115,7 @@ public class PostShareTests(
         Assert.StartsWith("urn:li:share:", id);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndLink_WithValidLinkAndTitle_ReturnId()
     {
         // Arrange
@@ -140,7 +141,7 @@ public class PostShareTests(
         Assert.StartsWith("urn:li:share:", id);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndLink_WithValidLinkAndDescription_ReturnId()
     {
         // Arrange
@@ -166,7 +167,7 @@ public class PostShareTests(
         Assert.StartsWith("urn:li:share:", id);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndLink_WithValidLinkTitleAndDescription_ReturnId()
     {
         // Arrange
@@ -192,7 +193,7 @@ public class PostShareTests(
         Assert.StartsWith("urn:li:share:", id);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndLink_WithEmptyAccessToken_ThrowsArgumentNullException()
     {
         // Arrange
@@ -210,7 +211,7 @@ public class PostShareTests(
         Assert.Equal("Value cannot be null. (Parameter 'accessToken')", exception.Message);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndLink_WithEmptyPostText_ThrowsArgumentNullException()
     {
         // Arrange
@@ -234,7 +235,7 @@ public class PostShareTests(
         Assert.Equal("Value cannot be null. (Parameter 'postText')", exception.Message);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndLink_WithEmptyLink_ThrowsArgumentNullException()
     {
         // Arrange
@@ -260,7 +261,7 @@ public class PostShareTests(
 
     // PostShareTextAndImage Tests
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndImage_WithEmptyAccessToken_ThrowsArgumentNullException()
     {
         // Arrange
@@ -278,7 +279,7 @@ public class PostShareTests(
         Assert.Equal("Value cannot be null. (Parameter 'accessToken')", exception.Message);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndImage_WithEmptyPostText_ThrowsArgumentNullException()
     {
         // Arrange
@@ -302,7 +303,7 @@ public class PostShareTests(
         Assert.Equal("Value cannot be null. (Parameter 'postText')", exception.Message);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndImage_WithEmptyImage_ThrowsArgumentNullException()
     {
         // Arrange
@@ -326,7 +327,7 @@ public class PostShareTests(
         Assert.Equal("Value cannot be null. (Parameter 'image')", exception.Message);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndImage_WithValidPostTextAndImage_ReturnsId()
     {
         // Arrange
@@ -354,7 +355,7 @@ public class PostShareTests(
         Assert.StartsWith("urn:li:share:", id);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndImage_WithValidPostTextImageAndTitle_ReturnsId()
     {
         // Arrange
@@ -382,7 +383,7 @@ public class PostShareTests(
         Assert.StartsWith("urn:li:share:", id);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndImage_WithValidPostTextImageAndDescription_ReturnsId()
     {
         // Arrange
@@ -410,7 +411,7 @@ public class PostShareTests(
         Assert.StartsWith("urn:li:share:", id);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires external services")]
     public async Task PostShareTextAndImage_WithValidPostTextImageTitleAndDescription_ReturnsId()
     {
         // Arrange
