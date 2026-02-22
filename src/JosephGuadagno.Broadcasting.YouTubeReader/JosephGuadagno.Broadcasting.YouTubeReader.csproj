@@ -36,7 +36,7 @@
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.73.0.4029" />
+    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.73.0.4053" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
   </ItemGroup>
 </Project>
