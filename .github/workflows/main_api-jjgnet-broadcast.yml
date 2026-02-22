@@ -29,7 +29,7 @@ jobs:
         run: dotnet publish ./src/JosephGuadagno.Broadcasting.Api -c Release -o ${{env.DOTNET_ROOT}}/api-jjgnet-broadcast
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: .api-app
           path: ${{env.DOTNET_ROOT}}/api-jjgnet-broadcast
