@@ -43,7 +43,7 @@
         <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.8"/>
         <PackageReference Include="JosephGuadagno.Extensions" Version="1.2.5"/>
         <PackageReference Include="linqtotwitter" Version="6.15.0"/>
-        <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0"/>
+        <PackageReference Include="Microsoft.ApplicationInsights" Version="3.0.0"/>
         <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.23.0"/>
         <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.50.0"/>
         <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.51.0"/>
