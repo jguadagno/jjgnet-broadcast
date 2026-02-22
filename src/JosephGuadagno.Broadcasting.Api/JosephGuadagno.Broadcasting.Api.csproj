@@ -43,7 +43,7 @@
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.1.1" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.23.0" />
     <PackageReference Include="Microsoft.Identity.Web" Version="4.3.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.12.24" />
