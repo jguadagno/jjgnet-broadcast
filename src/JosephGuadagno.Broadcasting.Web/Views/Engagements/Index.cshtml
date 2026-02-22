@@ -22,9 +22,9 @@
                     <a href="@engagement.Url" title="@engagement.Url" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a>
                 </td>
                 <td>@engagement.TimeZoneId</td>
-                <td>@engagement.StartDateTime</td>
-                <td>@engagement.EndDateTime</td>
-                <td>@engagement.LastUpdatedOn.ToString("MM/dd/yyyy")</td>
+                <td><local-time value="@engagement.StartDateTime" /></td>
+                <td><local-time value="@engagement.EndDateTime" /></td>
+                <td><local-time value="@engagement.LastUpdatedOn" date-only="true" /></td>
                 <td class="text-end">
                     <a asp-action="Details" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-outline-secondary">
                         <i class="bi bi-eye"></i>

@@ -12,11 +12,11 @@
     <dt class="col-sm-3">Primary Key</dt>
     <dt class="col-sm-9">@Model.ItemPrimaryKey</dt>
     <dt class="col-sm-3">Scheduled on</dt>
-    <dt class="col-sm-9">@Model.SendOnDateTime</dt>
+    <dt class="col-sm-9"><local-time value="@Model.SendOnDateTime" /></dt>
     <dt class="col-sm-3">Message</dt>
     <dt class="col-sm-9">@Model.Message</dt>
     <dt class="col-sm-3">Sent on</dt>
-    <dt class="col-sm-9">@Model.MessageSentOn</dt>
+    <dt class="col-sm-9"><local-time value="@Model.MessageSentOn" /></dt>
     <dt class="col-sm-3">Was sent</dt>
     <dt class="col-sm-9">@if (Model.MessageSent)
                          {

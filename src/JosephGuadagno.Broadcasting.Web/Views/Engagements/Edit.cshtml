@@ -68,8 +68,8 @@
         {
             <tr>
                 <td>@talk.Name</td>
-                <td>@talk.StartDateTime</td>
-                <td>@talk.EndDateTime</td>
+                <td><local-time value="@talk.StartDateTime" /></td>
+                <td><local-time value="@talk.EndDateTime" /></td>
                 <td class="text-end">
                     <a asp-action="Details" asp-controller="Talks" asp-route-engagementId="@Model.Id" asp-route-talkId="@talk.Id" class="btn btn-outline-secondary">
                         <i class="bi bi-eye"></i>

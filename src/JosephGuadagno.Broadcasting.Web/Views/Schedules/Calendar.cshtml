@@ -16,7 +16,7 @@ else
         <p>Id @scheduledItem.Id</p>
         <p>Table: @scheduledItem.ItemTableName</p>
         <p>PrimaryKey: @scheduledItem.ItemPrimaryKey</p>
-        <p>Schedule Send On: @scheduledItem.SendOnDateTime</p>
+        <p>Schedule Send On: <local-time value="@scheduledItem.SendOnDateTime" /></p>
         <hr />
     }
 }

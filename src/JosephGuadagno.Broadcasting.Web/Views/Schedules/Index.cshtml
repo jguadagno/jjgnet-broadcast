@@ -21,7 +21,7 @@
 
                 <td>@scheduledItem.ItemTableName</td>
                 <td>@scheduledItem.ItemPrimaryKey</td>
-                <td>@scheduledItem.SendOnDateTime</td>
+                <td><local-time value="@scheduledItem.SendOnDateTime" /></td>
                 <td>@if (scheduledItem.MessageSent)
                     {
                         <i class="bi bi-check-circle text-success"></i>

@@ -28,7 +28,7 @@ else
                     <td><a asp-controller="Schedules" asp-action="Details" asp-route-id="@scheduledItem.Id">@scheduledItem.Id</a></td>
                     <td>@scheduledItem.ItemTableName</td>
                     <td>@scheduledItem.ItemPrimaryKey</td>
-                    <td>@scheduledItem.SendOnDateTime</td>
+                    <td><local-time value="@scheduledItem.SendOnDateTime" /></td>
                     <td>
                         @if (scheduledItem.MessageSent)
                         {
