@@ -24,7 +24,9 @@ POST http://{{host}}/api/CollectorsYouTubeLoadAllVideos?CheckFrom=2025-06-12
 POST http://{{host}}/api/CollectorsYouTubeLoadAllVideos
 
 ###
+# @name Refresh Facebook Token
 POST https://jjgnet-broadcast.azurewebsites.net/admin/functions/FacebookTokenRefresh
+
 x-functions-key: {{functions-key}}
 Content-Type: application/json
 
