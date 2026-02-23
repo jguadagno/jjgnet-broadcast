@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +15,6 @@ public class ProcessScheduledItemFired(
     IEngagementManager engagementManager,
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
     IYouTubeSourceManager youTubeSourceManager,
-    TelemetryClient telemetryClient,
     ILogger<ProcessScheduledItemFired> logger)
 {
     const int MaxFacebookStatusText = 2000;
@@ -76,14 +74,14 @@ public class ProcessScheduledItemFired(
                     return null;
             }
 
-            telemetryClient.TrackEvent(Metrics.FacebookProcessedScheduledItemFired,
-                new Dictionary<string, string>
-                {
-                    { "tableName", scheduledItem.ItemTableName },
-                    { "id", scheduledItem.ItemPrimaryKey.ToString() },
-                    { "text", facebookPostStatus.StatusText },
-                    { "url", facebookPostStatus.LinkUri }
-                });
+            var properties = new Dictionary<string, string>
+            {
+                { "tableName", scheduledItem.ItemTableName },
+                { "id", scheduledItem.ItemPrimaryKey.ToString() },
+                { "text", facebookPostStatus.StatusText },
+                { "url", facebookPostStatus.LinkUri }
+            };
+            logger.LogCustomEvent(Metrics.FacebookProcessedScheduledItemFired, properties);
             logger.LogDebug("Generated the Facebook status for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
             return facebookPostStatus;

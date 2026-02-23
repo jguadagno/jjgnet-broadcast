@@ -1,9 +1,9 @@
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
 
-using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -14,8 +14,7 @@ public class LoadNewSpeakingEngagements(
     ISpeakingEngagementsReader speakerEngagementsReader,
     IEngagementManager engagementManager,
     IFeedCheckManager feedCheckManager,
-    ILogger<LoadNewSpeakingEngagements> logger,
-    TelemetryClient telemetryClient)
+    ILogger<LoadNewSpeakingEngagements> logger)
 {
     [Function(ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew)]
     public async Task<IActionResult> RunAsync(
@@ -66,7 +65,7 @@ public class LoadNewSpeakingEngagements(
                         { "StartDateTime", engagement.StartDateTime.ToString("o") },
                         { "EndDateTime", engagement.EndDateTime.ToString("o") }
                     };
-                    telemetryClient.TrackEvent(Metrics.SpeakingEngagementAddedOrUpdated, properties);
+                    logger.LogCustomEvent(Metrics.SpeakingEngagementAddedOrUpdated, properties);
                     savedCount++;
                 }
                 catch (Exception e)

@@ -1,12 +1,12 @@
 using System.Text.Json;
 using Azure.Messaging.EventGrid;
 
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -14,7 +14,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
 public class ProcessNewSyndicationDataFired(
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
-    TelemetryClient telemetryClient,
     ILogger<ProcessNewSyndicationDataFired> logger)
 {
     // Debug Locally: https://docs.microsoft.com/en-us/azure/azure-functions/functions-debug-event-grid-trigger-local
@@ -53,13 +52,14 @@ public class ProcessNewSyndicationDataFired(
         var status = ComposeStatus(syndicationFeedSource);
         
         // Done
-        telemetryClient.TrackEvent(Metrics.FacebookProcessedNewSyndicationData, new Dictionary<string, string>
+        var properties = new Dictionary<string, string>
         {
             {"post", status.StatusText},
             {"title", syndicationFeedSource.Title},
             {"url", syndicationFeedSource.Url},
             {"id", syndicationFeedSource.Id.ToString()}
-        });
+        };
+        logger.LogCustomEvent(Metrics.FacebookProcessedNewSyndicationData, properties);
         logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", syndicationFeedSource.Id, syndicationFeedSource.Title);
         return status;
     }

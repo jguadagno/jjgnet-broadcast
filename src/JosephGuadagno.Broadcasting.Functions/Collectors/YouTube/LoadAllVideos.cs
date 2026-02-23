@@ -1,10 +1,10 @@
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using JosephGuadagno.Extensions.Types;
-using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
@@ -18,8 +18,7 @@ public class LoadAllVideos(
     IYouTubeSourceManager youTubeSourceManager,
     IFeedCheckManager feedCheckManager,
     IUrlShortener urlShortener,
-    ILogger<LoadAllVideos> logger,
-    TelemetryClient telemetryClient)
+    ILogger<LoadAllVideos> logger)
 {
 
     [Function(ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos)]
@@ -68,12 +67,12 @@ public class LoadAllVideos(
                 {
                     var savedItem = await youTubeSourceManager.SaveAsync(item);
 
-                    telemetryClient.TrackEvent(Metrics.VideoAddedOrUpdated,
-                        new Dictionary<string, string>
-                        {
-                            { "Id", savedItem.Id.ToString() }, { "VideoId", savedItem.VideoId },
-                            { "Url", savedItem.Url }, { "Title", savedItem.Title }
-                        });
+                    var properties = new Dictionary<string, string>
+                    {
+                        { "Id", savedItem.Id.ToString() }, { "VideoId", savedItem.VideoId },
+                        { "Url", savedItem.Url }, { "Title", savedItem.Title }
+                    };
+                    logger.LogCustomEvent(Metrics.VideoAddedOrUpdated, properties);
                     savedCount++;
                 }
                 catch (Exception e)

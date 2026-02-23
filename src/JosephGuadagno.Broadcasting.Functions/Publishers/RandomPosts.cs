@@ -1,6 +1,6 @@
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -10,8 +10,7 @@ public class RandomPosts(
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
     IRandomPostSettings randomPostSettings,
     IEventPublisher eventPublisher,
-    ILogger<RandomPosts> logger,
-    TelemetryClient telemetryClient)
+    ILogger<RandomPosts> logger)
 {
 
     [Function(ConfigurationFunctionNames.PublishersRandomPosts)]
@@ -48,7 +47,7 @@ public class RandomPosts(
             return;
         }
         
-        telemetryClient.TrackEvent(Metrics.RandomPostFired, new Dictionary<string, string>
+        logger.LogCustomEvent(Metrics.RandomPostFired, new Dictionary<string, string>
         {
             {"title", syndicationFeedSource.Title},
             {"url", syndicationFeedSource.Url},

@@ -3,7 +3,8 @@ using System.Text;
 using System.Text.Json;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
-using Microsoft.ApplicationInsights;
+using JosephGuadagno.Broadcasting.Web.Models;
+
 using Microsoft.Identity.Web;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
@@ -13,8 +14,6 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// </summary>
 public class EngagementService: ServiceBase, IEngagementService
 {
-    private readonly TelemetryClient _telemetryClient;
-    private readonly ILogger<EngagementService> _logger;
     private readonly string _engagementBaseUrl;
 
     /// <summary>
@@ -23,13 +22,9 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <param name="httpClient">The HttpClient to use</param>
     /// <param name="tokenAcquisition">The token acquisition client</param>
     /// <param name="settings">Application <see cref="Settings"/> to use</param>
-    /// <param name="telemetryClient">The telemetry client</param>
-    /// <param name="logger">The logger</param>
-    public EngagementService(HttpClient httpClient, ITokenAcquisition tokenAcquisition, ISettings settings, TelemetryClient telemetryClient,
-        ILogger<EngagementService> logger): base(httpClient, tokenAcquisition, settings.ApiScopeUrl)
+    public EngagementService(HttpClient httpClient, ITokenAcquisition tokenAcquisition, ISettings settings
+        ): base(httpClient, tokenAcquisition, settings.ApiScopeUrl)
     {
-        _telemetryClient = telemetryClient;
-        _logger = logger;
         _engagementBaseUrl = settings.ApiRootUrl + "/engagements";
     }
     

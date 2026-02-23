@@ -1,4 +1,7 @@
 ﻿using System.Diagnostics;
+
+using JosephGuadagno.Broadcasting.Domain;
+
 using Microsoft.AspNetCore.Mvc;
 using JosephGuadagno.Broadcasting.Web.Models;
 
@@ -7,18 +10,8 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// The controller for the home page.
 /// </summary>
-public class HomeController : Controller
+public class HomeController(ILogger<HomeController> logger) : Controller
 {
-    private readonly ILogger<HomeController> _logger;
-
-    /// <summary>
-    /// The constructor for the home controller.
-    /// </summary>
-    /// <param name="logger">The logger to use.</param>
-    public HomeController(ILogger<HomeController> logger)
-    {
-        _logger = logger;
-    }
 
     /// <summary>
     /// Returns the home page

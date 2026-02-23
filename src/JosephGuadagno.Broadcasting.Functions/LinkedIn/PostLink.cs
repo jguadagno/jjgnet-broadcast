@@ -1,13 +1,13 @@
-﻿using JosephGuadagno.Broadcasting.Domain.Constants;
+﻿using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
-public class PostLink(ILinkedInManager linkedInManager, TelemetryClient telemetryClient)
+public class PostLink(ILinkedInManager linkedInManager, ILogger<PostLink> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInPostLink)]
     public async Task Run(
@@ -19,14 +19,14 @@ public class PostLink(ILinkedInManager linkedInManager, TelemetryClient telemetr
         
         if (!string.IsNullOrEmpty(linkedInShareId))
         {
-            telemetryClient.TrackEvent(Metrics.LinkedInPostLink, new Dictionary<string, string>
+            var properties = new Dictionary<string, string>
             {
                 {"linkedInShareId", linkedInShareId},
-                
                 {"title", linkedInPostLink.Title},
                 {"text", linkedInPostLink.Text}, 
                 {"url", linkedInPostLink.LinkUrl}
-            });
+            };
+            logger.LogCustomEvent(Metrics.LinkedInPostLink, properties);
         }
     }
 }

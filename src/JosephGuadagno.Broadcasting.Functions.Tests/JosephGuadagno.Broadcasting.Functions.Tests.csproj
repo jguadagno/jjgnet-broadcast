@@ -43,9 +43,6 @@
         <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.8"/>
         <PackageReference Include="JosephGuadagno.Extensions" Version="1.2.5"/>
         <PackageReference Include="linqtotwitter" Version="6.15.0"/>
-        <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0"/>
-        <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.23.0"/>
-        <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.50.0"/>
         <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.51.0"/>
         <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.EventGrid" Version="3.6.0" />
         <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0"/>
@@ -68,7 +65,6 @@
         <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.3" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.3" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
-        <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.23.0"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="10.0.3" />
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.3" />
         <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0"/>
@@ -77,7 +73,6 @@
         <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1"/>
         <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0"/>
         <PackageReference Include="Serilog.Exceptions" Version="8.4.0"/>
-        <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="5.0.0"/>
         <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="10.2.0"/>
         <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1"/>
         <PackageReference Include="Serilog.Sinks.File" Version="7.0.0"/>

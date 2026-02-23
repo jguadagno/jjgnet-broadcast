@@ -2,17 +2,17 @@
 
 using Azure.Messaging.EventGrid;
 
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
-public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedSourceManager, TelemetryClient telemetryClient, ILogger<ProcessNewRandomPost> logger)
+public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedSourceManager, ILogger<ProcessNewRandomPost> logger)
 {
     [Function(ConfigurationFunctionNames.BlueskyProcessRandomPostFired)]
     [QueueOutput(Queues.BlueskyPostToSend)]
@@ -58,12 +58,13 @@ public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedS
             }
 
             // Return
-            telemetryClient.TrackEvent(Metrics.BlueskyProcessedRandomPost, new Dictionary<string, string>
+            var properties = new Dictionary<string, string>
             {
                 {"title", sourceData.Title},
                 {"url", sourceData.Url},
                 {"post", postText}
-            });
+            };
+            logger.LogCustomEvent(Metrics.BlueskyProcessedRandomPost, properties);
             logger.LogDebug("Picked a random post {Title}", sourceData.Title);
             return blueskyPostMessage;
         }

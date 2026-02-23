@@ -1,8 +1,8 @@
 ﻿using System.Net;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -11,7 +11,6 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 public class PostImage(
     ILinkedInManager linkedInManager,
     HttpClient httpClient,
-    TelemetryClient telemetryClient,
     ILogger<PostImage> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInPostImage)]
@@ -36,13 +35,14 @@ public class PostImage(
 
             if (!string.IsNullOrEmpty(linkedInShareId))
             {
-                telemetryClient.TrackEvent(Metrics.LinkedInPostImage, new Dictionary<string, string>
+                var properties = new Dictionary<string, string>
                 {
                     {"linkedInShareId", linkedInShareId},
                     {"imageUrl", linkedInPostImage.ImageUrl},
                     {"title", linkedInPostImage.Title}, 
                     {"url", linkedInPostImage.ImageUrl}
-                });
+                };
+                logger.LogCustomEvent(Metrics.LinkedInPostImage, properties);
             }
         }
         catch (Exception exception)

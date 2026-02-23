@@ -3,7 +3,8 @@ using System.Text;
 using System.Text.Json;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
-using Microsoft.ApplicationInsights;
+using JosephGuadagno.Broadcasting.Web.Models;
+
 using Microsoft.Identity.Web;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
@@ -13,8 +14,6 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// </summary>
 public class ScheduledItemService: ServiceBase, IScheduledItemService
 {
-    private readonly TelemetryClient _telemetryClient;
-    private readonly ILogger<ScheduledItemService> _logger;
     private readonly string _scheduleBaseUrl;
 
     /// <summary>
@@ -23,13 +22,8 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
     /// <param name="httpClient">The HttpClient to use</param>
     /// <param name="tokenAcquisition">The token acquisition client</param>
     /// <param name="settings">Application <see cref="Settings"/> to use</param>
-    /// <param name="telemetryClient">The telemetry client</param>
-    /// <param name="logger">The logger</param>
-    public ScheduledItemService(HttpClient httpClient, ITokenAcquisition tokenAcquisition, ISettings settings, TelemetryClient telemetryClient,
-        ILogger<ScheduledItemService> logger): base(httpClient, tokenAcquisition, settings.ApiScopeUrl)
+    public ScheduledItemService(HttpClient httpClient, ITokenAcquisition tokenAcquisition, ISettings settings): base(httpClient, tokenAcquisition, settings.ApiScopeUrl)
     {
-        _telemetryClient = telemetryClient;
-        _logger = logger;
         _scheduleBaseUrl = settings.ApiRootUrl + "/schedules";
     }
     

@@ -1,3 +1,5 @@
+using Azure.Monitor.OpenTelemetry.AspNetCore;
+using Azure.Monitor.OpenTelemetry.Exporter;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -8,8 +10,6 @@ using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
-using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.ApplicationInsights.WindowsServer;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +18,9 @@ using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+
+using OpenTelemetry.Logs;
+
 using Serilog;
 using Serilog.Exceptions;
 using Rocket.Surgery.Extensions.AutoMapper.NodaTime;
@@ -45,12 +48,10 @@ builder.Configuration.Bind("AutoMapper", autoMapperSettings);
 builder.Services.AddSingleton<IAutoMapperSettings>(autoMapperSettings);
 
 builder.Services.AddSession();
-builder.Services.AddSingleton<ITelemetryInitializer, AzureWebAppRoleEnvironmentTelemetryInitializer>();
-builder.Services.AddApplicationInsightsTelemetry();
 
 // Configure the logger
 var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
-ConfigureLogging(builder.Configuration, builder.Services, settings, fullyQualifiedLogFile, "Web");
+ConfigureTelemetryAndLogging(builder.Services, settings.LoggingStorageAccount, fullyQualifiedLogFile, "Web");
 
 // Register DI services
 ConfigureApplication(builder.Services);
@@ -116,8 +117,9 @@ app.MapControllerRoute(
 
 app.Run();
 
-void ConfigureLogging(IConfigurationRoot configurationRoot, IServiceCollection services, ISettings configSettings, string logPath, string applicationName)
+void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorageAccount, string logPath, string applicationName)
 {
+    services.AddOpenTelemetry().UseAzureMonitor();
     var logger = new LoggerConfiguration()
         .Enrich.FromLogContext()
         .Enrich.WithMachineName()
@@ -132,14 +134,15 @@ void ConfigureLogging(IConfigurationRoot configurationRoot, IServiceCollection s
         .Destructure.ToMaximumCollectionCount(10)
         .WriteTo.Console()
         .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-        .WriteTo.AzureTableStorage(configSettings.LoggingStorageAccount, storageTableName:"Logging", keyGenerator: new SerilogKeyGenerator())
+        .WriteTo.AzureTableStorage(logStorageAccount, storageTableName:"Logging", keyGenerator: new SerilogKeyGenerator())
+        //.WriteTo.OpenTelemetry()
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {
-        loggingBuilder.AddApplicationInsights(configureTelemetryConfiguration: (config) =>
-                config.ConnectionString =
-                    configurationRoot["APPLICATIONINSIGHTS_CONNECTION_STRING"],
-            configureApplicationInsightsLoggerOptions: (_) => { });loggingBuilder.AddApplicationInsights();
+        loggingBuilder.AddOpenTelemetry(options =>
+        {
+            options.AddConsoleExporter();
+        });
         loggingBuilder.AddSerilog(logger);
     });
 }

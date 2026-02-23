@@ -1,4 +1,6 @@
 using AutoMapper;
+
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -12,19 +14,16 @@ public class EngagementsController : Controller
 {
     private readonly IEngagementService _engagementService;
     private readonly IMapper _mapper;
-    private readonly ILogger<EngagementsController> _logger;
 
     /// <summary>
     /// The constructor for the EngagementsController.
     /// </summary>
     /// <param name="engagementService">The engagement service</param>
     /// <param name="mapper">The mapper service</param>
-    /// <param name="logger">The logger to use</param>
-    public EngagementsController(IEngagementService engagementService, IMapper mapper, ILogger<EngagementsController> logger)
+    public EngagementsController(IEngagementService engagementService, IMapper mapper)
     {
         _engagementService = engagementService;
         _mapper = mapper;
-        _logger = logger;
     }
 
     /// <summary>

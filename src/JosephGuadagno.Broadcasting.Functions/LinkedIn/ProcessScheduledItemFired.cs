@@ -3,13 +3,11 @@ using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
@@ -19,7 +17,6 @@ public class ProcessScheduledItemFired(
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
     IYouTubeSourceManager youTubeSourceManager,
     ILinkedInApplicationSettings linkedInApplicationSettings,
-    ITelemetryClient telemetryClient,
     ILogger<ProcessScheduledItemFired> logger)
 {
 
@@ -84,15 +81,15 @@ public class ProcessScheduledItemFired(
             linkedInPost.AuthorId = linkedInApplicationSettings.AuthorId;
             linkedInPost.AccessToken = linkedInApplicationSettings.AccessToken;
 
-            telemetryClient.TrackEvent(Metrics.LinkedInProcessedScheduledItemFired,
-                new Dictionary<string, string>
-                {
-                    { "tableName", scheduledItem.ItemTableName },
-                    { "id", scheduledItem.ItemPrimaryKey.ToString() },
-                    { "text", linkedInPost.Text },
-                    { "url", linkedInPost.LinkUrl },
-                    { "title", linkedInPost.Title }
-                });
+            var properties = new Dictionary<string, string>
+            {
+                { "tableName", scheduledItem.ItemTableName },
+                { "id", scheduledItem.ItemPrimaryKey.ToString() },
+                { "text", linkedInPost.Text },
+                { "url", linkedInPost.LinkUrl },
+                { "title", linkedInPost.Title }
+            };
+            logger.LogCustomEvent(Metrics.LinkedInProcessedScheduledItemFired, properties);
             logger.LogDebug("Generated the LinkedIn post text for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
             return linkedInPost;

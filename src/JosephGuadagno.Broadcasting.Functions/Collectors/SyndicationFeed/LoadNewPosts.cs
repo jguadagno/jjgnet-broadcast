@@ -1,10 +1,10 @@
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 
-using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -18,8 +18,7 @@ public class LoadNewPosts(
     IFeedCheckManager feedCheckManager,
     IUrlShortener urlShortener,
     IEventPublisher eventPublisher,
-    ILogger<LoadNewPosts> logger,
-    TelemetryClient telemetryClient)
+    ILogger<LoadNewPosts> logger)
 {
 
     [Function(ConfigurationFunctionNames.CollectorsFeedLoadNewPosts)]
@@ -63,11 +62,12 @@ public class LoadNewPosts(
                 {
                     var savedItem = await syndicationFeedSourceManager.SaveAsync(item);
                     eventsToPublish.Add(savedItem);
-                    telemetryClient.TrackEvent(Metrics.PostAddedOrUpdated,
-                        new Dictionary<string, string>
+
+                    var properties = new Dictionary<string, string>
                         {
                             { "Id", savedItem.Id.ToString() }, { "Url", savedItem.Url }, { "Title", savedItem.Title }
-                        });
+                        };
+                    logger.LogCustomEvent(Metrics.PostAddedOrUpdated, properties);
                     savedCount++;
                 }
                 catch (Exception e)

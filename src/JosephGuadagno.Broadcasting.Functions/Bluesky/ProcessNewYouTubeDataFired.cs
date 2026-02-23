@@ -1,11 +1,11 @@
 ﻿using System.Text.Json;
 using Azure.Messaging.EventGrid;
 
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -13,7 +13,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
 public class ProcessNewYouTubeDataFired(
     IYouTubeSourceManager youtubeSourceManager,
-    TelemetryClient telemetryClient,
     ILogger<ProcessNewYouTubeDataFired> logger)
 {
     [Function(ConfigurationFunctionNames.BlueskyProcessNewYouTubeDataFired)]
@@ -67,13 +66,14 @@ public class ProcessNewYouTubeDataFired(
             }
 
             // Return
-            telemetryClient.TrackEvent(Metrics.BlueskyProcessedNewYouTubeData, new Dictionary<string, string>
+            var properties = new Dictionary<string, string>
             {
                 {"post", postText},
                 {"title", youTubeSource.Title},
                 {"url", youTubeSource.Url},
                 {"id", youTubeSource.Id.ToString()}
-            });
+            };
+            logger.LogCustomEvent(Metrics.BlueskyProcessedNewYouTubeData, properties);
             logger.LogDebug("Posted to Bluesky: {Title}", youTubeSource.Title);
             return blueskyPostMessage;
         }
