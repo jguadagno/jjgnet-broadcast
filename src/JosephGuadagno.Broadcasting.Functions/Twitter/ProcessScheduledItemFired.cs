@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +15,6 @@ public class ProcessScheduledItemFired(
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
     IYouTubeSourceManager youTubeSourceManager,
     IEngagementManager engagementManager,
-    TelemetryClient telemetryClient,
     ILogger<ProcessScheduledItemFired> logger)
 {
     const int MaxTweetLength = 240;
@@ -76,13 +74,13 @@ public class ProcessScheduledItemFired(
                     return null;
             }
 
-            telemetryClient.TrackEvent(Metrics.TwitterProcessScheduledItemFired,
-                new Dictionary<string, string>
-                {
-                    { "tableName", scheduledItem.ItemTableName },
-                    { "primaryKey", scheduledItem.ItemPrimaryKey.ToString() },
-                    { "text", tweetText }
-                });
+            var properties = new Dictionary<string, string>
+            {
+                { "tableName", scheduledItem.ItemTableName },
+                { "primaryKey", scheduledItem.ItemPrimaryKey.ToString() },
+                { "text", tweetText }
+            };
+            logger.LogCustomEvent(Metrics.TwitterProcessScheduledItemFired, properties);
             logger.LogDebug("Generated the tweet for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
             return tweetText;

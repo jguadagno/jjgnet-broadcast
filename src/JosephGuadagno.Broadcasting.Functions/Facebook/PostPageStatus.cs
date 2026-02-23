@@ -1,49 +1,39 @@
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
-public class PostPageStatus
+public class PostPageStatus(IFacebookManager facebookManager, ILogger<PostPageStatus> logger)
 {
-    private readonly IFacebookManager _facebookManager;
-    private readonly TelemetryClient _telemetryClient;
-    private readonly ILogger<PostPageStatus> _logger;
-
-    public PostPageStatus(IFacebookManager facebookManager, TelemetryClient telemetryClient, ILogger<PostPageStatus> logger)
-    {
-        _facebookManager = facebookManager;
-        _telemetryClient = telemetryClient;
-        _logger = logger;
-    }
-        
     [Function(ConfigurationFunctionNames.FacebookPostPageStatus)]
     public async Task Run(
         [QueueTrigger(Queues.FacebookPostStatusToPage)]
         Domain.Models.Messages.FacebookPostStatus facebookPostStatus)
     {
         var startedAt = DateTime.UtcNow;
-        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
+        logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.FacebookPostPageStatus, startedAt);
 
         try
         {
-            var pageId = await _facebookManager.PostMessageAndLinkToPage(facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
+            var pageId = await facebookManager.PostMessageAndLinkToPage(facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
 
             if (!string.IsNullOrEmpty(pageId))
             {
-                _telemetryClient.TrackEvent(Metrics.FacebookPostPageStatus, new Dictionary<string, string>
+                var properties = new Dictionary<string, string>
                 {
                     {"statusText", facebookPostStatus.StatusText}, 
                     {"url", facebookPostStatus.LinkUri},
-                });
+                };
+                logger.LogCustomEvent(Metrics.FacebookPostPageStatus, properties);
             }
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Failed to post status. Exception: {ExceptionMessage}", e.Message);
+            logger.LogError(e, "Failed to post status. Exception: {ExceptionMessage}", e.Message);
             throw;
         }
     }

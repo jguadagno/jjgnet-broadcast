@@ -1,16 +1,16 @@
 ﻿using System.Text.Json;
 using Azure.Messaging.EventGrid;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
-public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedSourceManager, TelemetryClient telemetryClient, ILogger<ProcessNewRandomPost> logger)
+public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedSourceManager, ILogger<ProcessNewRandomPost> logger)
 {
     [Function(ConfigurationFunctionNames.TwitterProcessRandomPostFired)]
     [QueueOutput(Queues.TwitterTweetsToSend)]
@@ -44,12 +44,13 @@ public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedS
                 $"ICYMI: ({syndicationFeedSource.PublicationDate.Date.ToShortDateString()}): \"{syndicationFeedSource.Title}.\" RTs and feedback are always appreciated! {syndicationFeedSource.ShortenedUrl} {hashtags}";
 
             // Return
-            telemetryClient.TrackEvent(Metrics.TwitterProcessedRandomPost, new Dictionary<string, string>
+            var properties = new Dictionary<string, string>
             {
                 {"title", syndicationFeedSource.Title},
                 {"url", syndicationFeedSource.Url},
                 {"tweet", status}
-            });
+            };
+            logger.LogCustomEvent(Metrics.TwitterProcessedRandomPost, properties);
             logger.LogDebug("Picked a random post {Title}", syndicationFeedSource.Title);
             return status;
         }

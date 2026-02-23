@@ -1,12 +1,12 @@
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using LinqToTwitter;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
-public class SendTweet(TwitterContext twitterContext, TelemetryClient telemetryClient, ILogger<SendTweet> logger)
+public class SendTweet(TwitterContext twitterContext, ILogger<SendTweet> logger)
 {
 
     [Function(ConfigurationFunctionNames.TwitterSendTweet)]
@@ -24,12 +24,14 @@ public class SendTweet(TwitterContext twitterContext, TelemetryClient telemetryC
             else
             {
                 // This is good, just log success
-                logger.LogDebug("Posting to Twitter: {tweetText}", tweetText);
-                telemetryClient.TrackEvent(Metrics.TwitterPostSent, new Dictionary<string, string>
+                logger.LogDebug("Posting to Twitter: {TweetText}", tweetText);
+
+                var properties = new Dictionary<string, string>
                 {
                     {"message", tweetText},
-                    {"id", tweet.ID}
-                });
+                    {"id", tweet.ID?? string.Empty}
+                };
+                logger.LogCustomEvent(Metrics.TwitterPostSent, properties);
             }
         }
         catch (Exception ex)

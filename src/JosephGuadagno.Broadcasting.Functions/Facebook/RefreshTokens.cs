@@ -4,7 +4,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -15,16 +14,14 @@ public class RefreshTokens(
     IFacebookApplicationSettings facebookApplicationSettings,
     ITokenRefreshManager tokenRefreshManager,
     IKeyVault keyVault,
-    ILoggerFactory loggerFactory,
-    TelemetryClient telemetryClient)
+    ILogger<RefreshTokens> logger)
 {
-    private readonly ILogger<RefreshTokens> _logger = loggerFactory.CreateLogger<RefreshTokens>();
 
     [Function(ConfigurationFunctionNames.FacebookTokenRefresh)]
     public async Task Run([TimerTrigger("%facebook_refresh_tokens_cron_settings%")] TimerInfo myTimer)
     {
         var startedAt = DateTime.UtcNow;
-        _logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
+        logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.FacebookTokenRefresh, startedAt);
 
         await RefreshToken(Managers.Facebook.Constants.TokenTypes.LongLived, facebookApplicationSettings.LongLivedAccessToken);
@@ -35,13 +32,13 @@ public class RefreshTokens(
     {
         if (string.IsNullOrWhiteSpace(token))
         {
-            _logger.LogError("Token is null or empty. Cannot refresh the token");
+            logger.LogError("Token is null or empty. Cannot refresh the token");
             return;
         }
         
         const string azureKeyVaultSecretName = "jjg-net-facebook-{token-name}-access-token";
         
-        // Check the Long Lived Token - Refresh it if needed
+        // Check the Long-Lived Token - Refresh it if needed
         var tokenInfo = await tokenRefreshManager.GetByNameAsync(tokenType.DisplayName()) ??
                                 new TokenRefresh
                                 {
@@ -54,7 +51,7 @@ public class RefreshTokens(
         if (tokenInfo.Expires < DateTime.UtcNow || tokenInfo.Expires.AddDays(-5) < DateTime.UtcNow)
         {
             // Refresh the token
-            _logger.LogDebug("{DisplayName} is expired or will expire soon. Refreshing the token", tokenType.DisplayName());
+            logger.LogDebug("{DisplayName} is expired or will expire soon. Refreshing the token", tokenType.DisplayName());
             try
             {
                 var newToken = await facebookManager.RefreshToken(token);
@@ -71,23 +68,24 @@ public class RefreshTokens(
                 await tokenRefreshManager.SaveAsync(tokenInfo);
                 
                 // Update logs and telemetry
-                _logger.LogInformation("{DisplayName} refreshed successfully. Expires on {Expires:f}",
+                logger.LogInformation("{DisplayName} refreshed successfully. Expires on {Expires:f}",
                     tokenType.DisplayName(), tokenInfo.Expires);
                 var eventName = "{DisplayName}TokenRefreshed".Replace("{DisplayName}", tokenType.DisplayName());
-                telemetryClient.TrackEvent(eventName, new Dictionary<string, string>
+                var properties = new Dictionary<string, string>
                 {
                     {"Expires", tokenInfo.Expires.ToString("O")},
                     {"TokenType", tokenType.DisplayName()}
-                });
+                };
+                logger.LogCustomEvent(eventName, properties);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Error refreshing the {DisplayName} Token", tokenType.DisplayName());
+                logger.LogError(e, "Error refreshing the {DisplayName} Token", tokenType.DisplayName());
             }
         }
         else
         {
-            _logger.LogDebug("{DisplayName} is still valid until {Expires:f}", tokenType.DisplayName(), tokenInfo.Expires);
+            logger.LogDebug("{DisplayName} is still valid until {Expires:f}", tokenType.DisplayName(), tokenInfo.Expires);
         }
     }
 }

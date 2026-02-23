@@ -1,4 +1,7 @@
 using System.Reflection;
+
+using Azure.Monitor.OpenTelemetry.Exporter;
+
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
@@ -29,14 +32,17 @@ using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
 using LinqToTwitter;
 using LinqToTwitter.OAuth;
-using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
+using Microsoft.Azure.Functions.Worker.OpenTelemetry;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+
+using OpenTelemetry.Logs;
+
 using Serilog;
 using Serilog.Exceptions;
 
@@ -87,13 +93,9 @@ if (endpoints != null)
 }
 builder.Services.TryAddSingleton<IEventPublisherSettings>(eventPublisherSettings);
 
-// Configure the logger
+// Configure the telemetry and logging
 string loggerFile = Path.Combine(currentDirectory, $"logs{Path.DirectorySeparatorChar}logs.txt");
-ConfigureLogging(builder.Configuration, builder.Services, settings, loggerFile, "Functions");
-
-builder.Services
-    .AddApplicationInsightsTelemetryWorkerService()
-    .ConfigureFunctionsApplicationInsights();
+ConfigureTelemetryAndLogging(builder.Services, settings.LoggingStorageAccount, loggerFile, "Functions");
 
 // Add in AutoMapper
 var autoMapperSettings = new AutoMapperSettings();
@@ -119,8 +121,12 @@ builder.Services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader
 
 builder.Build().Run();
 
-void ConfigureLogging(IConfiguration configurationRoot, IServiceCollection services, ISettings appSettings, string logPath, string applicationName)
+void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorageAccount, string logPath, string applicationName)
 {
+
+    services.AddOpenTelemetry()
+        .UseFunctionsWorkerDefaults()
+        .UseAzureMonitorExporter();
 
     var logger = new LoggerConfiguration()
         #if DEBUG
@@ -141,15 +147,16 @@ void ConfigureLogging(IConfiguration configurationRoot, IServiceCollection servi
         .Destructure.ToMaximumCollectionCount(10)
         .WriteTo.Console()
         .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-        .WriteTo.AzureTableStorage(appSettings.LoggingStorageAccount, storageTableName: "Logging",
+        .WriteTo.AzureTableStorage(logStorageAccount, storageTableName: "Logging",
             keyGenerator: new SerilogKeyGenerator())
+        .WriteTo.OpenTelemetry()
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {
-        loggingBuilder.AddApplicationInsights(configureTelemetryConfiguration: (config) =>
-                config.ConnectionString =
-                    configurationRoot["APPLICATIONINSIGHTS_CONNECTION_STRING"],
-            configureApplicationInsightsLoggerOptions: (_) => { });
+        loggingBuilder.AddOpenTelemetry(options =>
+        {
+            options.AddConsoleExporter();
+        });
         loggingBuilder.AddSerilog(logger);
     });
 }
@@ -219,7 +226,7 @@ void ConfigureTwitter(IServiceCollection services, IConfiguration config)
 {
     var twitterSettings = new InMemoryCredentialStore();
     config.Bind("Twitter", twitterSettings);
-    services.TryAddSingleton<InMemoryCredentialStore>(twitterSettings);
+    services.TryAddSingleton(twitterSettings);
 
     services.TryAddSingleton<IAuthorizer>(s =>
     {

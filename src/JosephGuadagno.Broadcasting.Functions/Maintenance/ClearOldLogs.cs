@@ -1,14 +1,14 @@
 using System.Net;
 using Azure;
 using Azure.Data.Tables;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Maintenance;
 
-public class ClearOldLogs(TelemetryClient telemetryClient, ILogger<ClearOldLogs> logger)
+public class ClearOldLogs(ILogger<ClearOldLogs> logger)
 {
     [Function(ConfigurationFunctionNames.MaintenanceClearOldLogs)]
     public async Task RunAsync(
@@ -49,7 +49,7 @@ public class ClearOldLogs(TelemetryClient telemetryClient, ILogger<ClearOldLogs>
         }
         
         // Return
-        telemetryClient.TrackEvent(Metrics.ClearOldLogs, new Dictionary<string, string>
+        logger.LogCustomEvent(Metrics.ClearOldLogs, new Dictionary<string, string>
         {
             {"DeletedCount", numberOfItemsDeleted.ToString()},
             {"FailedCount", numberOfItemsDeletedFailed.ToString()}

@@ -1,15 +1,16 @@
 ﻿using idunno.Bluesky;
 using idunno.Bluesky.RichText;
+
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
-public class SendPost(IBlueskyManager blueskyManager, TelemetryClient telemetryClient, ILogger<SendPost> logger)
+public class SendPost(IBlueskyManager blueskyManager,ILogger<SendPost> logger)
 {
     [Function(ConfigurationFunctionNames.BlueskyPostMessage)]
     public async Task Run(
@@ -50,11 +51,12 @@ public class SendPost(IBlueskyManager blueskyManager, TelemetryClient telemetryC
             if (response is not null)
             {
                 logger.LogDebug("Posting to bluesky: {Text}", postBuilder.Text);
-                telemetryClient.TrackEvent(Metrics.BlueskyPostSent, new Dictionary<string, string>
+                var properties = new Dictionary<string, string>
                 {
-                    {"message", postBuilder.Text},
+                    {"message", postBuilder.Text?? string.Empty},
                     {"cid", response.Cid.ToString()}
-                });
+                };
+                logger.LogCustomEvent(Metrics.BlueskyPostSent, properties);
                 return;
             }
             logger.LogError("Failed to post to Bluesky. Response was null");

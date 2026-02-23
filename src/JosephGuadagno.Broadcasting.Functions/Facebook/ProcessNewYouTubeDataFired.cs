@@ -1,12 +1,12 @@
 using System.Text.Json;
 using Azure.Messaging.EventGrid;
 
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -14,7 +14,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
 public class ProcessNewYouTubeDataFired(
     IYouTubeSourceManager youtubeSourceManager,
-    TelemetryClient telemetryClient,
     ILogger<ProcessNewYouTubeDataFired> logger)
 {
     // Debug Locally: https://docs.microsoft.com/en-us/azure/azure-functions/functions-debug-event-grid-trigger-local
@@ -54,13 +53,14 @@ public class ProcessNewYouTubeDataFired(
         var status = ComposeStatus(youTubeSource);
         
         // Done
-        telemetryClient.TrackEvent(Metrics.FacebookProcessedNewYouTubeData, new Dictionary<string, string>
+        var properties = new Dictionary<string, string>
         {
             {"post", status.StatusText},
             {"title", youTubeSource.Title},
             {"url", youTubeSource.Url},
             {"id", youTubeSource.Id.ToString()}
-        });
+        };
+        logger.LogCustomEvent(Metrics.FacebookProcessedNewYouTubeData, properties);
         logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", youTubeSource.Id, youTubeSource.Title);
         return status;
     }

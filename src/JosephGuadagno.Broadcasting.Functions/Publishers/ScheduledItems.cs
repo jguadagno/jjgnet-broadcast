@@ -1,8 +1,8 @@
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -12,8 +12,7 @@ public class ScheduledItems(
     IScheduledItemManager scheduledItemManager,
     IEventPublisher eventPublisher,
     IFeedCheckManager feedCheckManager,
-    ILogger<ScheduledItems> logger,
-    TelemetryClient telemetryClient)
+    ILogger<ScheduledItems> logger)
 {
     [Function(ConfigurationFunctionNames.PublishersScheduledItems)]
     public async Task RunAsync([TimerTrigger("%publishers_scheduled_items_cron_settings%")] TimerInfo myTimer, ILogger log)
@@ -56,7 +55,7 @@ public class ScheduledItems(
                 var wasSent = await scheduledItemManager.SentScheduledItemAsync(scheduledItem.Id);
                 if (wasSent)
                 {
-                    telemetryClient.TrackEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
+                    logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
                 }
                 else
                 {

@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 
-using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +15,6 @@ public class ProcessScheduledItemFired(
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
     IYouTubeSourceManager youTubeSourceManager,
     IEngagementManager engagementManager,
-    TelemetryClient telemetryClient,
     ILogger<ProcessScheduledItemFired> logger)
 {
     const int MaxPostLength = 300;
@@ -77,13 +75,14 @@ public class ProcessScheduledItemFired(
                     return null;
             }
 
-            telemetryClient.TrackEvent(Metrics.BlueskyProcessedScheduledItemFired,
-                new Dictionary<string, string>
-                {
-                    { "tableName", scheduledItem.ItemTableName },
-                    { "id", scheduledItem.ItemPrimaryKey.ToString() },
-                    { "text", blueSkyPostText }
-                });
+
+            var properties = new Dictionary<string, string>
+            {
+                { "tableName", scheduledItem.ItemTableName },
+                { "id", scheduledItem.ItemPrimaryKey.ToString() },
+                { "text", blueSkyPostText }
+            };
+            logger.LogCustomEvent(Metrics.BlueskyProcessedScheduledItemFired, properties);
             logger.LogDebug("Generated the BlueSky post text for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
             return blueSkyPostText;
