@@ -49,6 +49,13 @@ public class YouTubeReader: IYouTubeReader
         _logger = logger;
     }
 
+    internal YouTubeReader(IYouTubeSettings youTubeSettings, ILogger<YouTubeReader> logger, YouTubeService youTubeService)
+    {
+        _youTubeSettings = youTubeSettings;
+        _logger = logger;
+        _youTubeService = youTubeService;
+    }
+
     public List<YouTubeSource> GetSinceDate(DateTimeOffset sinceWhen)
     {
         return GetAsync(sinceWhen).Result;
