@@ -1,17 +1,17 @@
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 
-namespace JosephGuadagno.Broadcasting.Functions.Tests;
+namespace JosephGuadagno.Broadcasting.Functions.IntegrationTests;
 
 [Trait("Category", "Integration")]
 public class EventTopicSettingsTest(IEventPublisherSettings eventPublisherSettings)
 {
-    [Fact(Skip = "Integration test - requires external services")]
+    [Fact]
     public void ShouldHaveTopicSettings()
     {
         Assert.NotEmpty(eventPublisherSettings.TopicEndpointSettings);
     }
 
-    [Fact(Skip = "Integration test - requires external services")]
+    [Fact]
     public void ShouldHaveMoreThanOneTopic()
     {
         Assert.True(eventPublisherSettings.TopicEndpointSettings.Count > 1);
