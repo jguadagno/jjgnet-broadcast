@@ -103,6 +103,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         };
         _context.SyndicationFeedSources.AddRange(sources);
         _context.SaveChanges();
+        _context.ChangeTracker.Clear();
     }
 
     [Fact]
@@ -196,5 +197,154 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         var result = await _dataStore.GetRandomSyndicationDataAsync(cutoffDate, new List<string>());
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetAsync_ReturnsRecord_WhenIdExists()
+    {
+        SeedData();
+        var result = await _dataStore.GetAsync(1);
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Id);
+    }
+
+    [Fact]
+    public async Task GetAsync_ReturnsNull_WhenIdDoesNotExist()
+    {
+        SeedData();
+        var result = await _dataStore.GetAsync(999);
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ReturnsAllRecords()
+    {
+        SeedData();
+        var result = await _dataStore.GetAllAsync();
+        Assert.NotNull(result);
+        Assert.Equal(5, result.Count);
+    }
+
+    [Fact]
+    public async Task GetByUrlAsync_ReturnsRecord_WhenUrlExists()
+    {
+        SeedData();
+        var result = await _dataStore.GetByUrlAsync("url1");
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Id);
+    }
+
+    [Fact]
+    public async Task GetByUrlAsync_ReturnsNull_WhenUrlDoesNotExist()
+    {
+        SeedData();
+        var result = await _dataStore.GetByUrlAsync("non-existing-url");
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task SaveAsync_AddsNewRecord_WhenIdIsZero()
+    {
+        var newSource = new JosephGuadagno.Broadcasting.Domain.Models.SyndicationFeedSource
+        {
+            FeedIdentifier = "newpost",
+            Title = "New Post",
+            Author = "Author",
+            Url = "newurl",
+            Tags = "tag",
+            PublicationDate = DateTimeOffset.UtcNow
+        };
+
+        var result = await _dataStore.SaveAsync(newSource);
+
+        Assert.NotNull(result);
+        Assert.True(result.Id > 0);
+        var dbRecord = await _context.SyndicationFeedSources.FindAsync(result.Id);
+        Assert.NotNull(dbRecord);
+        Assert.Equal("New Post", dbRecord.Title);
+    }
+
+    [Fact]
+    public async Task SaveAsync_UpdatesRecord_WhenIdIsNotZero()
+    {
+        SeedData();
+        var existing = await _dataStore.GetAsync(1);
+        _context.ChangeTracker.Clear();
+        existing.Title = "Updated Title";
+
+        var result = await _dataStore.SaveAsync(existing);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Id);
+        Assert.Equal("Updated Title", result.Title);
+        var dbRecord = await _context.SyndicationFeedSources.FindAsync(1);
+        Assert.Equal("Updated Title", dbRecord.Title);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WithId_ReturnsTrue_WhenIdExists()
+    {
+        SeedData();
+        var result = await _dataStore.DeleteAsync(1);
+        Assert.True(result);
+        var dbRecord = await _context.SyndicationFeedSources.FindAsync(1);
+        Assert.Null(dbRecord);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WithId_ReturnsTrue_WhenIdDoesNotExist()
+    {
+        SeedData();
+        var result = await _dataStore.DeleteAsync(999);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WithEntity_ReturnsTrue_WhenEntityExists()
+    {
+        SeedData();
+        var existing = await _dataStore.GetAsync(1);
+        var result = await _dataStore.DeleteAsync(existing);
+        Assert.True(result);
+        var dbRecord = await _context.SyndicationFeedSources.FindAsync(1);
+        Assert.Null(dbRecord);
+    }
+
+    [Fact]
+    public async Task SaveAsync_ThrowsApplicationException_WhenSaveReturnsZero()
+    {
+        var options = new DbContextOptionsBuilder<BroadcastingContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        await using var failingContext = new FailingSaveBroadcastingContext(options);
+
+        var config = new MapperConfiguration(cfg =>
+        {
+            cfg.AddProfile<MappingProfiles.BroadcastingProfile>();
+        }, new LoggerFactory());
+        var mapper = config.CreateMapper();
+
+        var store = new SyndicationFeedSourceDataStore(failingContext, mapper);
+        var entity = new JosephGuadagno.Broadcasting.Domain.Models.SyndicationFeedSource
+        {
+            FeedIdentifier = "fail",
+            Title = "Should Fail",
+            Author = "Author",
+            Url = "fail-url",
+            Tags = "x",
+            PublicationDate = DateTimeOffset.UtcNow
+        };
+
+        await Assert.ThrowsAsync<ApplicationException>(() => store.SaveAsync(entity));
+    }
+}
+
+internal sealed class FailingSaveBroadcastingContext : BroadcastingContext
+{
+    public FailingSaveBroadcastingContext(DbContextOptions<BroadcastingContext> options) : base(options) { }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(0);
     }
 }
