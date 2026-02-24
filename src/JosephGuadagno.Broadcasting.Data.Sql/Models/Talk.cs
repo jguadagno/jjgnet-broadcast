@@ -1,9 +1,11 @@
 ﻿#nullable disable
 
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql.Models;
 
+[ExcludeFromCodeCoverage]
 public partial class Talk
 {
     public int Id { get; set; }
