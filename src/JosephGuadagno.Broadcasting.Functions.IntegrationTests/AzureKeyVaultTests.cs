@@ -2,14 +2,14 @@
 using System.Threading.Tasks;
 using Azure.Security.KeyVault.Secrets;
 
-namespace JosephGuadagno.Broadcasting.Functions.Tests;
+namespace JosephGuadagno.Broadcasting.Functions.IntegrationTests;
 
 [Trait("Category", "Integration")]
 public class AzureKeyVaultTests(SecretClient secretClient)
 {
     private const string SecretName = "secret-for-unit-testing";
 
-    [Fact(Skip = "Integration test - requires external services")]
+    [Fact]
     public async Task WriteSecretValue_WithValidSecret_ShouldWriteSecret()
     {
         // Arrange
@@ -24,7 +24,7 @@ public class AzureKeyVaultTests(SecretClient secretClient)
         Assert.Equal(secretValue, updatedSecret.Value.Value);
     }
 
-    [Fact(Skip = "Integration test - requires external services")]
+    [Fact]
     public async Task UpdateSecretValueAndProperties_WithValidSecret_ShouldUpdateSecret()
     {
         // Arrange

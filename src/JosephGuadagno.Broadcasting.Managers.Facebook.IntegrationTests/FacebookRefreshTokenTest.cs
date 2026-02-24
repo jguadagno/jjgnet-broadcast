@@ -1,9 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
-using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
+﻿using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace JosephGuadagno.Broadcasting.Managers.Facebook.Tests;
+namespace JosephGuadagno.Broadcasting.Managers.Facebook.IntegrationTests;
 
 [Trait("Category", "Integration")]
 public class FacebookRefreshTokenTest
@@ -22,7 +20,7 @@ public class FacebookRefreshTokenTest
         _logger = logger;
     }
     
-    [Fact(Skip = "Integration test - requires external services")]
+    [Fact]
     public async Task RefreshToken_WithValidParameters_ShouldReturnTokenInfo()
     {
         // Arrange
@@ -45,7 +43,7 @@ public class FacebookRefreshTokenTest
         Assert.True(tokenInfo.ExpiresOn > DateTime.UtcNow);
     }
 
-    [Fact(Skip = "Integration test - requires external services")]
+    [Fact]
     public async Task RefreshToken_WithTokenEmpty_ShouldThrowException()
     {
         // Arrange

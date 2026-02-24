@@ -5,7 +5,7 @@ using idunno.Bluesky.RichText;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace JosephGuadagno.Broadcasting.Managers.Bluesky.Tests;
+namespace JosephGuadagno.Broadcasting.Managers.Bluesky.IntegrationTests;
 
 [Trait("Category", "Integration")]
 public class BlueskyPostTests
@@ -21,7 +21,7 @@ public class BlueskyPostTests
         _logger = logger;
     }
     
-    [Fact(Skip = "Integration test - requires external services")]
+    [Fact]
     public async Task SendBlueskyPostText_Success()
     {
         // Arrange
@@ -38,7 +38,7 @@ public class BlueskyPostTests
         await _blueskyManager.DeletePost(response.StrongReference);
     }
     
-    [Fact(Skip = "Integration test - requires external services")]
+    [Fact]
     public async Task SendBlueskyPostText_ICYMI_Success()
     {
         // Arrange
@@ -57,7 +57,7 @@ public class BlueskyPostTests
         await _blueskyManager.DeletePost(response.StrongReference);
     }
     
-    [Fact(Skip = "Integration test - requires external services")]
+    [Fact]
     public async Task SendBlueskyPostWithLinksAndHashTags_Success()
     {
         // Arrange
@@ -90,7 +90,7 @@ public class BlueskyPostTests
         await _blueskyManager.DeletePost(response.StrongReference);
     }
     
-    [Fact(Skip = "Integration test - requires external services")]
+    [Fact]
     public async Task SendBlueskyPostWithLinksAndHashTagsAndEmbedded_Success()
     {
         // Arrange
@@ -129,7 +129,7 @@ public class BlueskyPostTests
         await _blueskyManager.DeletePost(response.StrongReference);
     }
     
-    [Fact(Skip = "Integration test - requires external services")]
+    [Fact]
     public async Task SendBlueskyPostWithLinksAndLimitedHashTagsAndEmbedded_Success()
     {
         // Arrange

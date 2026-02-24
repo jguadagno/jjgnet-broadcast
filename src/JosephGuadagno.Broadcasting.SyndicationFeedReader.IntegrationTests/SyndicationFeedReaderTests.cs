@@ -1,0 +1,168 @@
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
+using JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
+using Microsoft.Extensions.Logging;
+
+namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.IntegrationTests;
+
+[Trait("Category", "Integration")]
+public class SyndicationFeedReaderTests
+{
+    private readonly ISyndicationFeedReader _syndicationFeedReader;
+    private readonly IRandomPostSettings _randomPostSettings;
+    private readonly ITestOutputHelper _testOutputHelper;
+        
+    public SyndicationFeedReaderTests(ISyndicationFeedReader syndicationFeedReader, IRandomPostSettings randomPostSettings, ITestOutputHelper testOutputHelper)
+    {
+        _syndicationFeedReader = syndicationFeedReader;
+        _randomPostSettings = randomPostSettings;
+        _testOutputHelper = testOutputHelper;
+    }
+
+    // ### GetSinceDate Tests ###
+    // GetSinceDate(DateTime sinceWhen)
+
+    [Fact]
+    public void GetSinceDate_WithValidParameters_ShouldReturnPosts()
+    {
+        // Arrange
+        var sinceWhen = _randomPostSettings.CutoffDate;
+        
+        // Act
+        var posts = _syndicationFeedReader.GetSinceDate(sinceWhen);
+        
+        // Assert
+        Assert.NotNull(posts);
+        Assert.NotEmpty(posts);
+    }
+    
+    [Fact]
+    public void GetSinceDate_WithFutureSinceWhenDate_ShouldReturnNoPosts()
+    {
+        // Arrange
+        var sinceWhen = DateTime.UtcNow.AddDays(1);
+        
+        // Act
+        var posts = _syndicationFeedReader.GetSinceDate(sinceWhen);
+        
+        // Assert
+        Assert.NotNull(posts);
+        Assert.Empty(posts);
+    }
+    
+    [Fact]
+    public void GetSinceDate_WithBadFeedUrl_ShouldThrowException()
+    {
+        // Arrange
+        var syndicationFeedReader = new SyndicationFeedReader(
+            new SyndicationFeedReaderSettings() { FeedUrl = "https://www.josephguadagno.net/fee.xml" },
+            new LoggerFactory().CreateLogger<SyndicationFeedReader>());
+        var sinceWhen = DateTime.UtcNow.AddDays(1);
+        
+        // Act
+        Assert.Throws<HttpRequestException>(() =>
+        {
+            syndicationFeedReader.GetSinceDate(sinceWhen);
+        });
+        
+        // Assert
+
+    }
+    
+    // ### GetSyndicationItems Tests ###
+    // GetSyndicationItems(DateTime sinceWhen, List<string> excludeCategories)
+    // Test the GetSyndicationItems with no categories
+    [Fact]
+    public void GetSyndicationItem_WithAllExcludedCategories_ReturnsNonNullPost()
+    {
+        // Arrange
+        
+        // Act
+        var randomPost = _syndicationFeedReader.GetSyndicationItems(_randomPostSettings.CutoffDate, _randomPostSettings.ExcludedCategories);
+
+        // Assert
+        Assert.NotNull(randomPost);
+        Assert.NotEmpty(randomPost);
+    }
+
+    [Fact]
+    public void GetSyndicationItem_WithNoExcludedCategories_ReturnsNonNullPost()
+    {
+        // Arrange
+        
+        // Act
+        var randomPost = _syndicationFeedReader.GetSyndicationItems(_randomPostSettings.CutoffDate, []);
+
+        // Assert
+        Assert.NotNull(randomPost);
+        Assert.NotEmpty(randomPost);
+    }
+    
+    [Fact]
+    public void GetSyndicationItem_WithFuture_ReturnsNoPosts()
+    {
+        // Arrange
+        
+        // Act
+        var randomPost = _syndicationFeedReader.GetSyndicationItems(DateTime.UtcNow.AddDays(1), []);
+
+        // Assert
+        Assert.NotNull(randomPost);
+        Assert.Empty(randomPost);
+    }
+    
+    // ### GetRandomSyndicationItem Tests ###
+    // GetRandomSyndicationItem(DateTime sinceWhen, List<string> excludeCategories)
+    
+    [Fact]
+    public void GetRandomSyndicationItem_WithAllExcludedCategories_ReturnsNonNullItem()
+    {
+        // Arrange
+        
+        // Act
+        var randomItem = _syndicationFeedReader.GetRandomSyndicationItem(_randomPostSettings.CutoffDate, _randomPostSettings.ExcludedCategories);
+
+        // Assert
+        Assert.NotNull(randomItem);
+        Assert.NotNull(randomItem.Title);
+    }
+    
+    [Fact]
+    public void GetRandomSyndicationItem_WithNoExcludedCategories_ReturnsNonNullItem()
+    {
+        // Arrange
+        
+        // Act
+        var randomItem = _syndicationFeedReader.GetRandomSyndicationItem(_randomPostSettings.CutoffDate, []);
+
+        // Assert
+        Assert.NotNull(randomItem);
+        Assert.NotNull(randomItem.Title);
+    }
+    
+    [Fact]
+    public void GetRandomSyndicationItem_WithFuture_ReturnsNull()
+    {
+        // Arrange
+        
+        // Act
+        var randomItem = _syndicationFeedReader.GetRandomSyndicationItem(DateTime.UtcNow.AddDays(1), []);
+
+        // Assert
+        Assert.Null(randomItem);
+    }
+    
+    [Fact]
+    public void GetRandomSyndicationItem_WithNullExcludedCategories_ReturnsNonNullItem()
+    {
+        // Arrange
+        
+        // Act
+        var randomItem = _syndicationFeedReader.GetRandomSyndicationItem(_randomPostSettings.CutoffDate, null);
+
+        // Assert
+        Assert.NotNull(randomItem);
+        Assert.NotNull(randomItem.Title);
+    }
+    
+}

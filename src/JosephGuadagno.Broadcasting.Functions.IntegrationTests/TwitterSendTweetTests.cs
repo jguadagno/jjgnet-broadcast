@@ -1,14 +1,14 @@
 using System.Threading.Tasks;
 using LinqToTwitter;
 
-namespace JosephGuadagno.Broadcasting.Functions.Tests;
+namespace JosephGuadagno.Broadcasting.Functions.IntegrationTests;
 
 [Trait("Category", "Integration")]
 public class TwitterSendTweetTests(
     TwitterContext twitterContext)
 {
 
-    [Fact(Skip = "Integration test - requires external services")]
+    [Fact]
     public async Task DoesSendTweet_ShouldSendTweet()
     {
         var tweet = await twitterContext.TweetAsync("Test Tweet, Ignore", cancelToken: TestContext.Current.CancellationToken);

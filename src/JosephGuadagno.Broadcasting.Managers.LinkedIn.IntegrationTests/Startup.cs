@@ -1,0 +1,43 @@
+﻿using System.Reflection;
+using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+
+namespace JosephGuadagno.Broadcasting.Managers.LinkedIn.IntegrationTests;
+
+public class Startup
+{
+    public void ConfigureHost(IHostBuilder hostBuilder)
+    {
+        hostBuilder.ConfigureHostConfiguration(configurationBuilder =>
+        {
+            configurationBuilder
+                .AddJsonFile("appsettings.json", true)
+                .AddJsonFile("appsettings.Development.json", true)
+                .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
+                .AddEnvironmentVariables();
+        });
+    }
+
+    public void ConfigureServices(IServiceCollection services, HostBuilderContext hostBuilderContext)
+    {
+        var config = hostBuilderContext.Configuration;
+        services.AddSingleton(config);
+        
+        var linkedInApplicationSettings = new LinkedInApplicationSettings
+        {
+            ClientId = null!,
+            ClientSecret = null!,
+            AccessToken = null!,
+            AuthorId = null!
+        };
+        config.Bind("LinkedIn", linkedInApplicationSettings);
+        services.TryAddSingleton<ILinkedInApplicationSettings>(linkedInApplicationSettings);
+        
+        services.TryAddSingleton<ILinkedInManager, LinkedInManager>();
+
+        services.AddHttpClient();
+    }
+}
