@@ -9,17 +9,22 @@ public class TableRepository<T> where T : TableEntity, new()
 
     protected TableRepository(string connectionString, string tableName)
     {
-        _table = new Table(connectionString, tableName);
+        _table = GetTable(connectionString, tableName);
+    }
+
+    protected virtual Table GetTable(string connectionString, string tableName)
+    {
+        return new Table(connectionString, tableName);
     }
 
     public virtual async Task<T> GetAsync(string partitionKey, string rowKey)
     {
-        return await _table.GetTableEntityAsync<T>(partitionKey, rowKey);
+        return await GetTableEntityAsync<T>(partitionKey, rowKey);
     }
         
     public virtual async Task<bool> SaveAsync(T entity)
     {
-        var tableResult = await _table.InsertOrReplaceEntityAsync(entity);
+        var tableResult = await InsertOrReplaceEntityAsync(entity);
         return tableResult.WasSuccessful;
     }
 
@@ -44,6 +49,21 @@ public class TableRepository<T> where T : TableEntity, new()
     }
 
     public virtual async Task<List<T>> GetAllAsync(string partitionKey)
+    {
+        return await GetPartitionAsync<T>(partitionKey);
+    }
+
+    protected virtual async Task<T> GetTableEntityAsync<T>(string partitionKey, string rowKey) where T : TableEntity, new()
+    {
+        return await _table.GetTableEntityAsync<T>(partitionKey, rowKey);
+    }
+
+    protected virtual async Task<TableOperationResult> InsertOrReplaceEntityAsync(T entity)
+    {
+        return await _table.InsertOrReplaceEntityAsync(entity);
+    }
+
+    protected virtual async Task<List<T>> GetPartitionAsync<T>(string partitionKey) where T : TableEntity, new()
     {
         return await _table.GetPartitionAsync<T>(partitionKey);
     }

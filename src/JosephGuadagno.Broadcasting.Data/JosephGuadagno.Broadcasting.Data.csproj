@@ -52,4 +52,9 @@
   <ItemGroup>
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>JosephGuadagno.Broadcasting.Data.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>

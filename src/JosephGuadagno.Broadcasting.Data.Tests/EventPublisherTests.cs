@@ -1,3 +1,4 @@
+using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -11,13 +12,28 @@ public class EventPublisherTests
 {
     private readonly Mock<IEventPublisherSettings> _settingsMock;
     private readonly Mock<ILogger<EventPublisher>> _loggerMock;
-    private readonly EventPublisher _publisher;
+    private readonly TestableEventPublisher _publisher;
 
     public EventPublisherTests()
     {
         _settingsMock = new Mock<IEventPublisherSettings>();
         _loggerMock = new Mock<ILogger<EventPublisher>>();
-        _publisher = new EventPublisher(_settingsMock.Object, _loggerMock.Object);
+        _publisher = new TestableEventPublisher(_settingsMock.Object, _loggerMock.Object);
+    }
+
+    private class TestableEventPublisher : EventPublisher
+    {
+        public Mock<EventGridPublisherClient> ClientMock { get; } = new();
+
+        public TestableEventPublisher(IEventPublisherSettings settings, ILogger<EventPublisher> logger)
+            : base(settings, logger)
+        {
+        }
+
+        protected override EventGridPublisherClient GetEventGridPublisherClient(ITopicEndpointSettings topicSettings)
+        {
+            return ClientMock.Object;
+        }
     }
 
     private static ITopicEndpointSettings CreateTopicSettings(string topicName) =>
@@ -75,6 +91,41 @@ public class EventPublisherTests
             _publisher.PublishSyndicationFeedEventsAsync("subject", items));
     }
 
+    [Fact]
+    public async Task PublishSyndicationFeedEventsAsync_Success_ReturnsTrue()
+    {
+        // Arrange
+        var topicSettings = CreateTopicSettings(Topics.NewSyndicationFeedItem);
+        _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
+        var items = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow } };
+        _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Mock.Of<Azure.Response>());
+
+        // Act
+        var result = await _publisher.PublishSyndicationFeedEventsAsync("subject", items);
+
+        // Assert
+        Assert.True(result);
+        _publisher.ClientMock.Verify(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishSyndicationFeedEventsAsync_Exception_ReturnsFalse()
+    {
+        // Arrange
+        var topicSettings = CreateTopicSettings(Topics.NewSyndicationFeedItem);
+        _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
+        var items = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow } };
+        _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Failed"));
+
+        // Act
+        var result = await _publisher.PublishSyndicationFeedEventsAsync("subject", items);
+
+        // Assert
+        Assert.False(result);
+    }
+
     #endregion
 
     #region PublishYouTubeEventsAsync
@@ -124,6 +175,41 @@ public class EventPublisherTests
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _publisher.PublishYouTubeEventsAsync("subject", items));
+    }
+
+    [Fact]
+    public async Task PublishYouTubeEventsAsync_Success_ReturnsTrue()
+    {
+        // Arrange
+        var topicSettings = CreateTopicSettings(Topics.NewYouTubeItem);
+        _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
+        var items = new List<YouTubeSource> { new YouTubeSource { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow } };
+        _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Mock.Of<Azure.Response>());
+
+        // Act
+        var result = await _publisher.PublishYouTubeEventsAsync("subject", items);
+
+        // Assert
+        Assert.True(result);
+        _publisher.ClientMock.Verify(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishYouTubeEventsAsync_Exception_ReturnsFalse()
+    {
+        // Arrange
+        var topicSettings = CreateTopicSettings(Topics.NewYouTubeItem);
+        _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
+        var items = new List<YouTubeSource> { new YouTubeSource { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow } };
+        _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Failed"));
+
+        // Act
+        var result = await _publisher.PublishYouTubeEventsAsync("subject", items);
+
+        // Assert
+        Assert.False(result);
     }
 
     #endregion
@@ -177,6 +263,41 @@ public class EventPublisherTests
             _publisher.PublishScheduledItemFiredEventsAsync("subject", items));
     }
 
+    [Fact]
+    public async Task PublishScheduledItemFiredEventsAsync_Success_ReturnsTrue()
+    {
+        // Arrange
+        var topicSettings = CreateTopicSettings(Topics.ScheduledItemFired);
+        _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
+        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemTableName = "t", ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
+        _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Mock.Of<Azure.Response>());
+
+        // Act
+        var result = await _publisher.PublishScheduledItemFiredEventsAsync("subject", items);
+
+        // Assert
+        Assert.True(result);
+        _publisher.ClientMock.Verify(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishScheduledItemFiredEventsAsync_Exception_ReturnsFalse()
+    {
+        // Arrange
+        var topicSettings = CreateTopicSettings(Topics.ScheduledItemFired);
+        _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
+        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemTableName = "t", ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
+        _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Failed"));
+
+        // Act
+        var result = await _publisher.PublishScheduledItemFiredEventsAsync("subject", items);
+
+        // Assert
+        Assert.False(result);
+    }
+
     #endregion
 
     #region PublishRandomPostsEventsAsync
@@ -226,6 +347,39 @@ public class EventPublisherTests
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _publisher.PublishRandomPostsEventsAsync("subject", 1));
+    }
+
+    [Fact]
+    public async Task PublishRandomPostsEventsAsync_Success_ReturnsTrue()
+    {
+        // Arrange
+        var topicSettings = CreateTopicSettings(Topics.NewRandomPost);
+        _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
+        _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Mock.Of<Azure.Response>());
+
+        // Act
+        var result = await _publisher.PublishRandomPostsEventsAsync("subject", 1);
+
+        // Assert
+        Assert.True(result);
+        _publisher.ClientMock.Verify(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishRandomPostsEventsAsync_Exception_ReturnsFalse()
+    {
+        // Arrange
+        var topicSettings = CreateTopicSettings(Topics.NewRandomPost);
+        _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
+        _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Failed"));
+
+        // Act
+        var result = await _publisher.PublishRandomPostsEventsAsync("subject", 1);
+
+        // Assert
+        Assert.False(result);
     }
 
     #endregion

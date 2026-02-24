@@ -68,6 +68,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.Facebook\JosephGuadagno.Broadcasting.Managers.Facebook.csproj" />
   </ItemGroup>
 
