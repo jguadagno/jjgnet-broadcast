@@ -33,8 +33,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
             throw new InvalidOperationException($"The topic endpoint settings for topic '{Topics.NewSyndicationFeedItem}' was not found.");
         }
 
-        var topicCredentials = new AzureKeyCredential(topicSettings.Key);
-        var client= new EventGridPublisherClient(new Uri(topicSettings.Endpoint), topicCredentials);
+        var client = GetEventGridPublisherClient(topicSettings);
 
         var eventList = new List<EventGridEvent>();
         foreach (var syndicationFeedDataItem in syndicationFeedSourceDataItems)
@@ -78,8 +77,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
             throw new InvalidOperationException($"The topic endpoint settings for topic '{Topics.NewYouTubeItem}' was not found.");
         }
 
-        var topicCredentials = new AzureKeyCredential(topicSettings.Key);
-        var client= new EventGridPublisherClient(new Uri(topicSettings.Endpoint), topicCredentials);
+        var client = GetEventGridPublisherClient(topicSettings);
 
         var eventList = new List<EventGridEvent>();
         foreach (var youTubeSourceDataItem in youTubeSourceDataItems)
@@ -123,8 +121,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
             throw new InvalidOperationException($"The topic endpoint settings for topic '{Topics.ScheduledItemFired}' was not found.");
         }
 
-        var topicCredentials = new AzureKeyCredential(topicSettings.Key);
-        var client= new EventGridPublisherClient(new Uri(topicSettings.Endpoint), topicCredentials);
+        var client = GetEventGridPublisherClient(topicSettings);
 
         var eventList = new List<EventGridEvent>();
         foreach (var scheduledItem in scheduledItems)
@@ -167,8 +164,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
             throw new InvalidOperationException($"The topic endpoint settings for topic '{Topics.NewRandomPost}' was not found.");
         }
 
-        var topicCredentials = new AzureKeyCredential(topicSettings.Key);
-        var client= new EventGridPublisherClient(new Uri(topicSettings.Endpoint), topicCredentials);
+        var client = GetEventGridPublisherClient(topicSettings);
 
         var data = new RandomPostEvent{ Id = randomPostId};
 
@@ -190,5 +186,11 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
     private ITopicEndpointSettings? GetTopicEndpointSettings(string topicName)
     {
         return eventPublisherSettings.TopicEndpointSettings.FirstOrDefault(t => t.TopicName == topicName);
+    }
+
+    protected virtual EventGridPublisherClient GetEventGridPublisherClient(ITopicEndpointSettings topicSettings)
+    {
+        var topicCredentials = new AzureKeyCredential(topicSettings.Key);
+        return new EventGridPublisherClient(new Uri(topicSettings.Endpoint), topicCredentials);
     }
 }
