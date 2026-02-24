@@ -1,7 +1,10 @@
 #nullable disable
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace JosephGuadagno.Broadcasting.Data.Sql.Models;
 
+[ExcludeFromCodeCoverage]
 public partial class TokenRefresh
 {
     public int Id { get; set; }

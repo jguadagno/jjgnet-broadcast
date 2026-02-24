@@ -1,7 +1,10 @@
 #nullable disable
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace JosephGuadagno.Broadcasting.Data.Sql.Models;
 
+[ExcludeFromCodeCoverage]
 public class YouTubeSource
 {
     public int Id { get; set; }

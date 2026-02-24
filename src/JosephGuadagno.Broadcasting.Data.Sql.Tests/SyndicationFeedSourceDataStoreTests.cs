@@ -18,6 +18,8 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
+        _context = new BroadcastingContext(options);
+
         var config = new MapperConfiguration(cfg =>
         {
             cfg.AddProfile<MappingProfiles.BroadcastingProfile>();
@@ -113,8 +115,8 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
 
         Assert.NotNull(result);
         Assert.True(result.PublicationDate >= cutoffDate || result.ItemLastUpdatedOn >= cutoffDate);
-        // Should be Id 1 or 3 (3 has ItemLastUpdatedOn in 2025)
-        Assert.Contains(result.Id, new[] { 1, 3 });
+        // Should be Id 1, 3 (ItemLastUpdatedOn in 2025), or 5 (PublicationDate = 2025-01-01)
+        Assert.Contains(result.Id, new[] { 1, 3, 5 });
     }
 
     [Fact]
