@@ -9,7 +9,7 @@ public class AzureKeyVaultTests(SecretClient secretClient)
 {
     private const string SecretName = "secret-for-unit-testing";
 
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task WriteSecretValue_WithValidSecret_ShouldWriteSecret()
     {
         // Arrange
@@ -24,7 +24,7 @@ public class AzureKeyVaultTests(SecretClient secretClient)
         Assert.Equal(secretValue, updatedSecret.Value.Value);
     }
 
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task UpdateSecretValueAndProperties_WithValidSecret_ShouldUpdateSecret()
     {
         // Arrange

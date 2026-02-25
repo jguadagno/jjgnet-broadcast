@@ -21,7 +21,7 @@ public class BlueskyPostTests
         _logger = logger;
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task SendBlueskyPostText_Success()
     {
         // Arrange
@@ -38,7 +38,7 @@ public class BlueskyPostTests
         await _blueskyManager.DeletePost(response.StrongReference);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task SendBlueskyPostText_ICYMI_Success()
     {
         // Arrange
@@ -57,7 +57,7 @@ public class BlueskyPostTests
         await _blueskyManager.DeletePost(response.StrongReference);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task SendBlueskyPostWithLinksAndHashTags_Success()
     {
         // Arrange
@@ -90,7 +90,7 @@ public class BlueskyPostTests
         await _blueskyManager.DeletePost(response.StrongReference);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task SendBlueskyPostWithLinksAndHashTagsAndEmbedded_Success()
     {
         // Arrange
@@ -129,7 +129,7 @@ public class BlueskyPostTests
         await _blueskyManager.DeletePost(response.StrongReference);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task SendBlueskyPostWithLinksAndLimitedHashTagsAndEmbedded_Success()
     {
         // Arrange

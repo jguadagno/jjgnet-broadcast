@@ -20,7 +20,7 @@ public class FacebookRefreshTokenTest
         _logger = logger;
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task RefreshToken_WithValidParameters_ShouldReturnTokenInfo()
     {
         // Arrange
@@ -43,7 +43,7 @@ public class FacebookRefreshTokenTest
         Assert.True(tokenInfo.ExpiresOn > DateTime.UtcNow);
     }
 
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task RefreshToken_WithTokenEmpty_ShouldThrowException()
     {
         // Arrange

@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <UserSecretsId>b2c3d4e5-f6a7-8901-bcde-f12345678901</UserSecretsId>
+      <UserSecretsId>c909c691-7d9e-46a1-96bc-eec49300ca0a</UserSecretsId>
     <Company>JosephGuadagno.NET, LLC</Company>
     <Authors>Joseph Guadagno</Authors>
     <Product>JosephGuadagno.NET Broadcasting - LinkedIn Integration Tests</Product>

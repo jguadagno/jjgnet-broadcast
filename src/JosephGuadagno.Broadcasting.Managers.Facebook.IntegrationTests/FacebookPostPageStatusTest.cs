@@ -18,7 +18,7 @@ public class FacebookPostPageStatusTest
         _logger = logger;
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task PostMessageAndLinkToPage_WithValidParameters_ShouldPostStatus()
     {
         // Arrange
@@ -32,7 +32,7 @@ public class FacebookPostPageStatusTest
         Assert.False(string.IsNullOrEmpty(pageId));
     }
 
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task PostMessageLinkToPage_WithLongText_ShouldPostStatus()
     {
         // Arrange
@@ -48,7 +48,7 @@ public class FacebookPostPageStatusTest
         
     }
 
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task PostMessageAndLinkToPage_WithMessageEmpty_ShouldThrowException()
     {
         // Arrange
@@ -63,7 +63,7 @@ public class FacebookPostPageStatusTest
         Assert.StartsWith("Value cannot be null.", exception.Message);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task PostMessageAndLinkToPage_WithLinkEmpty_ShouldThrowException()
     {
         // Arrange
