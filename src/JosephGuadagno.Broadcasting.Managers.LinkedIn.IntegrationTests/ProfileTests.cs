@@ -9,7 +9,7 @@ public class ProfileTests(
     ITestOutputHelper testOutputHelper)
 {
 
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task GetMyLinkedInUserProfile_WithValidAccessToken_ReturnsAValidUserProfile()
     {
         // Arrange
@@ -29,7 +29,7 @@ public class ProfileTests(
         Assert.Equal("Guadagno", myProfile.LastName);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task GetMyLinkedInUserProfile_WithEmptyAccessToken_ThrowsArgumentNullException()
     {
         // Arrange
@@ -41,7 +41,7 @@ public class ProfileTests(
         Assert.Equal("Value cannot be null. (Parameter 'accessToken')", exception.Message);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task GetMyLinkedInUserProfile_WithInvalidAccessToken_ThrowsArgumentNullException()
     {
         // Arrange

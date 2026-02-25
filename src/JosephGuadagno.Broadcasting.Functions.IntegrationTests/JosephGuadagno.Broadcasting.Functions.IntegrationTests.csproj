@@ -9,7 +9,7 @@
         <Description>This library contains the integration tests for the Azure Functions for the JosephGuadagno.NET Broadcasting application</Description>
         <Copyright>Copyright ©2014-2026, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
         <Title>JosephGuadagno.NET Broadcasting - Functions Integration Tests</Title>
-        <UserSecretsId>e5f6a7b8-c9d0-1234-efab-234567890004</UserSecretsId>
+        <UserSecretsId>bba0c3bc-df5e-4c6c-a82c-ab974102a8a4</UserSecretsId>
         <IsTestProject>true</IsTestProject>
         <IsPackable>false</IsPackable>
         <OutputType>Exe</OutputType>

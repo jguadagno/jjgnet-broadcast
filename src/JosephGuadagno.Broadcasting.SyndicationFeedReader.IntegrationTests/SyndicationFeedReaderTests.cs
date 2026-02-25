@@ -22,7 +22,7 @@ public class SyndicationFeedReaderTests
     // ### GetSinceDate Tests ###
     // GetSinceDate(DateTime sinceWhen)
 
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public void GetSinceDate_WithValidParameters_ShouldReturnPosts()
     {
         // Arrange
@@ -36,7 +36,7 @@ public class SyndicationFeedReaderTests
         Assert.NotEmpty(posts);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public void GetSinceDate_WithFutureSinceWhenDate_ShouldReturnNoPosts()
     {
         // Arrange
@@ -50,7 +50,7 @@ public class SyndicationFeedReaderTests
         Assert.Empty(posts);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public void GetSinceDate_WithBadFeedUrl_ShouldThrowException()
     {
         // Arrange
@@ -72,7 +72,7 @@ public class SyndicationFeedReaderTests
     // ### GetSyndicationItems Tests ###
     // GetSyndicationItems(DateTime sinceWhen, List<string> excludeCategories)
     // Test the GetSyndicationItems with no categories
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public void GetSyndicationItem_WithAllExcludedCategories_ReturnsNonNullPost()
     {
         // Arrange
@@ -85,7 +85,7 @@ public class SyndicationFeedReaderTests
         Assert.NotEmpty(randomPost);
     }
 
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public void GetSyndicationItem_WithNoExcludedCategories_ReturnsNonNullPost()
     {
         // Arrange
@@ -98,7 +98,7 @@ public class SyndicationFeedReaderTests
         Assert.NotEmpty(randomPost);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public void GetSyndicationItem_WithFuture_ReturnsNoPosts()
     {
         // Arrange
@@ -114,7 +114,7 @@ public class SyndicationFeedReaderTests
     // ### GetRandomSyndicationItem Tests ###
     // GetRandomSyndicationItem(DateTime sinceWhen, List<string> excludeCategories)
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public void GetRandomSyndicationItem_WithAllExcludedCategories_ReturnsNonNullItem()
     {
         // Arrange
@@ -127,7 +127,7 @@ public class SyndicationFeedReaderTests
         Assert.NotNull(randomItem.Title);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public void GetRandomSyndicationItem_WithNoExcludedCategories_ReturnsNonNullItem()
     {
         // Arrange
@@ -140,7 +140,7 @@ public class SyndicationFeedReaderTests
         Assert.NotNull(randomItem.Title);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public void GetRandomSyndicationItem_WithFuture_ReturnsNull()
     {
         // Arrange
@@ -152,7 +152,7 @@ public class SyndicationFeedReaderTests
         Assert.Null(randomItem);
     }
     
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public void GetRandomSyndicationItem_WithNullExcludedCategories_ReturnsNonNullItem()
     {
         // Arrange

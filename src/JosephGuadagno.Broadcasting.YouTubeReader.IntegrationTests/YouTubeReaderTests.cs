@@ -12,7 +12,7 @@ public class YouTubeReaderTests
         return new Mock<ILogger<YouTubeReader>>();
     }
 
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public void GetAsync_WhenCalled_ReturnsVideosSinceDate()
     {
         // This test requires a real YouTube API key and should be run as an integration test
@@ -35,7 +35,7 @@ public class YouTubeReaderTests
         Assert.NotNull(result);
     }
 
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public void GetSinceDate_WhenCalled_ReturnsVideosSinceDate()
     {
         // This test requires a real YouTube API key and should be run as an integration test

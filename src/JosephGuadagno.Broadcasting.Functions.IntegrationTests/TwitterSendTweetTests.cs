@@ -8,7 +8,7 @@ public class TwitterSendTweetTests(
     TwitterContext twitterContext)
 {
 
-    [Fact]
+    [Fact(Skip = "Manually run only")]
     public async Task DoesSendTweet_ShouldSendTweet()
     {
         var tweet = await twitterContext.TweetAsync("Test Tweet, Ignore", cancelToken: TestContext.Current.CancellationToken);
