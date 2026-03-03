@@ -36,7 +36,7 @@
         <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.1.1" />
+        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.1.2" />
         <PackageReference Include="Azure.Data.Tables" Version="12.11.0"/>
         <PackageReference Include="Azure.Identity" Version="1.17.1"/>
         <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.8.0"/>
