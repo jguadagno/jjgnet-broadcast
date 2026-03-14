@@ -13,10 +13,16 @@ namespace JosephGuadagno.Broadcasting.Data;
 public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILogger<EventPublisher> logger)
     : IEventPublisher
 {
+    private const int MaxRetryAttempts = 3;
+
+    /// <summary>
+    /// Initial delay between retry attempts. Exposed as protected so tests can override via subclass.
+    /// </summary>
+    protected TimeSpan InitialRetryDelay { get; init; } = TimeSpan.FromSeconds(1);
+
     public async Task<bool> PublishSyndicationFeedEventsAsync(string subject,
         IReadOnlyCollection<SyndicationFeedSource> syndicationFeedSourceDataItems)
     {
-
         if (string.IsNullOrEmpty(subject))
         {
             throw new ArgumentNullException(nameof(subject), "The subject is required.");
@@ -46,21 +52,11 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
                 new EventGridEvent(subject, Topics.NewSyndicationFeedItem, "1.1", data));
         }
 
-        try
-        {
-            await client.SendEventsAsync(eventList);
-            return true;
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicSettings.Endpoint, e);
-            return false;
-        }
+        return await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewSyndicationFeedItem);
     }
 
     public async Task<bool> PublishYouTubeEventsAsync(string subject, IReadOnlyCollection<YouTubeSource> youTubeSourceDataItems)
     {
-
         if (string.IsNullOrEmpty(subject))
         {
             throw new ArgumentNullException(nameof(subject), "The subject is required.");
@@ -90,16 +86,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
                 new EventGridEvent(subject, Topics.NewYouTubeItem, "1.1", data));
         }
 
-        try
-        {
-            await client.SendEventsAsync(eventList);
-            return true;
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicSettings.Endpoint, e);
-            return false;
-        }
+        return await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewYouTubeItem);
     }
 
     public async Task<bool> PublishScheduledItemFiredEventsAsync(string subject,
@@ -133,17 +120,8 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
             eventList.Add(
                 new EventGridEvent(subject, Topics.ScheduledItemFired, "1.1", data));
         }
-        
-        try
-        {
-            await client.SendEventsAsync(eventList);
-            return true;
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicSettings.Endpoint, e);
-            return false;
-        }
+
+        return await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.ScheduledItemFired);
     }
 
     public async Task<bool> PublishRandomPostsEventsAsync(string subject, int randomPostId)
@@ -167,20 +145,46 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
         var client = GetEventGridPublisherClient(topicSettings);
 
         var data = new RandomPostEvent{ Id = randomPostId};
-
         var eventList = new List<EventGridEvent>
             { new(subject, Topics.NewRandomPost, "1.0", data) };
 
-        try
+        return await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewRandomPost);
+    }
+
+    private async Task<bool> SendWithRetryAsync(
+        EventGridPublisherClient client,
+        IEnumerable<EventGridEvent> events,
+        string topicUrl,
+        string eventType,
+        CancellationToken cancellationToken = default)
+    {
+        var delay = InitialRetryDelay;
+
+        for (var attempt = 1; attempt <= MaxRetryAttempts; attempt++)
         {
-            await client.SendEventsAsync(eventList);
-            return true;
+            try
+            {
+                await client.SendEventsAsync(events, cancellationToken);
+                return true;
+            }
+            catch (Exception ex) when (attempt < MaxRetryAttempts)
+            {
+                logger.LogWarning(ex,
+                    "Event Grid publish attempt {Attempt}/{MaxRetries} failed for event type '{EventType}' to '{TopicUrl}'. Retrying in {DelaySeconds}s.",
+                    attempt, MaxRetryAttempts, eventType, topicUrl, delay.TotalSeconds);
+                await Task.Delay(delay, cancellationToken);
+                delay *= 2;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,
+                    "Event Grid publish failed after {MaxRetries} attempts for event type '{EventType}' to '{TopicUrl}'.",
+                    MaxRetryAttempts, eventType, topicUrl);
+                return false;
+            }
         }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to publish the event to TopicUrl: '{TopicUrl}'. Exception: '{Exception}'", topicSettings.Endpoint, e);
-            return false;
-        }
+
+        return false;
     }
 
     private ITopicEndpointSettings? GetTopicEndpointSettings(string topicName)
