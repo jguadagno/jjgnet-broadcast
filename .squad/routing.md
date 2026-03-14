@@ -10,6 +10,13 @@
 - Route based on work type and agent expertise
 - Update this file as team capabilities evolve
 
+## PR Policy
+
+- **All work must be delivered via a pull request** — no direct commits to `main`
+- **One PR per issue** — each PR must be tied to exactly one issue; do not bundle multiple issues into a single PR
+- Branch naming: use the issue number, e.g. `issue-271` or `feature/271-twitter-manager`
+- PR title should reference the issue, e.g. `feat(#271): create TwitterManager abstraction`
+
 ## Work Type → Agent
 
 | Work Type | Primary | Secondary |
