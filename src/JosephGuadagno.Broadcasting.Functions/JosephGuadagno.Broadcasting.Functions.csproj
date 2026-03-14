@@ -100,6 +100,7 @@
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.SpeakingEngagementsReader\JosephGuadagno.Broadcasting.SpeakingEngagementsReader.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj" />
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers.Twitter\JosephGuadagno.Broadcasting.Managers.Twitter.csproj" />
   </ItemGroup>
     <!-- Exclude local.settings.json in release build -->
     <ItemGroup>

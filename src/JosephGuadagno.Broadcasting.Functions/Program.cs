@@ -14,6 +14,7 @@ using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Managers.Bluesky;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
+using JosephGuadagno.Broadcasting.Managers.Twitter;
 using JosephGuadagno.Broadcasting.Managers.Facebook;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
@@ -247,6 +248,7 @@ void ConfigureTwitter(IServiceCollection services, IConfiguration config)
         }
         return new TwitterContext(authorizer);
     });
+    services.TryAddSingleton<ITwitterManager, TwitterManager>();
 }
 
 void ConfigureSyndicationFeedReader(IServiceCollection services, IConfiguration config)
