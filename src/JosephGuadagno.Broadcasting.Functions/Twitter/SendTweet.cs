@@ -1,12 +1,12 @@
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
-using LinqToTwitter;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
-public class SendTweet(TwitterContext twitterContext, ILogger<SendTweet> logger)
+public class SendTweet(ITwitterManager twitterManager, ILogger<SendTweet> logger)
 {
 
     [Function(ConfigurationFunctionNames.TwitterSendTweet)]
@@ -15,8 +15,8 @@ public class SendTweet(TwitterContext twitterContext, ILogger<SendTweet> logger)
     {
         try
         {
-            var tweet = await twitterContext.TweetAsync(tweetText);
-            if (tweet is null)
+            var tweetId = await twitterManager.SendTweetAsync(tweetText);
+            if (tweetId is null)
             {
                 // Log the error
                 logger.LogError("Failed to send the tweet: '{TweetText}'. ", tweetText);
@@ -29,7 +29,7 @@ public class SendTweet(TwitterContext twitterContext, ILogger<SendTweet> logger)
                 var properties = new Dictionary<string, string>
                 {
                     {"message", tweetText},
-                    {"id", tweet.ID?? string.Empty}
+                    {"id", tweetId}
                 };
                 logger.LogCustomEvent(Metrics.TwitterPostSent, properties);
             }
