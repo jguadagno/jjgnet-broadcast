@@ -59,6 +59,14 @@ public class LoadAllVideos(
             var savedCount = 0;
             foreach (var item in newItems)
             {
+                // Skip if item already exists
+                var existingItem = await youTubeSourceManager.GetByVideoIdAsync(item.VideoId);
+                if (existingItem != null)
+                {
+                    logger.LogWarning("Skipping duplicate YouTube video with VideoId: '{VideoId}'", item.VideoId);
+                    continue;
+                }
+
                 // shorten the url
                 item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settings.ShortenedDomainToUse);
 

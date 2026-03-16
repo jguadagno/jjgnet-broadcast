@@ -42,6 +42,11 @@ public class SyndicationFeedSourceRepository : ISyndicationFeedSourceRepository
         return await _syndicationFeedSourceDataStore.GetByUrlAsync(url);
     }
 
+    public async Task<SyndicationFeedSource?> GetByFeedIdentifierAsync(string feedIdentifier)
+    {
+        return await _syndicationFeedSourceDataStore.GetByFeedIdentifierAsync(feedIdentifier);
+    }
+
     public async Task<SyndicationFeedSource?> GetRandomSyndicationDataAsync(DateTimeOffset cutoffDate, List<string> excludedCategories)
     {
         return await _syndicationFeedSourceDataStore.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories);

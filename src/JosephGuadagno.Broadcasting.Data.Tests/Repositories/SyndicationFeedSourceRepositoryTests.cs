@@ -134,4 +134,33 @@ public class SyndicationFeedSourceRepositoryTests
         Assert.Equal(source, result);
         _dataStoreMock.Verify(d => d.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories), Times.Once);
     }
+
+    [Fact]
+    public async Task GetByFeedIdentifierAsync_DelegatesToDataStore()
+    {
+        // Arrange
+        var source = CreateSource();
+        _dataStoreMock.Setup(d => d.GetByFeedIdentifierAsync("feed1")).ReturnsAsync(source);
+
+        // Act
+        var result = await _repository.GetByFeedIdentifierAsync("feed1");
+
+        // Assert
+        Assert.Equal(source, result);
+        _dataStoreMock.Verify(d => d.GetByFeedIdentifierAsync("feed1"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetByFeedIdentifierAsync_ReturnsNull_WhenNotFound()
+    {
+        // Arrange
+        _dataStoreMock.Setup(d => d.GetByFeedIdentifierAsync("missing")).ReturnsAsync((SyndicationFeedSource?)null);
+
+        // Act
+        var result = await _repository.GetByFeedIdentifierAsync("missing");
+
+        // Assert
+        Assert.Null(result);
+        _dataStoreMock.Verify(d => d.GetByFeedIdentifierAsync("missing"), Times.Once);
+    }
 }

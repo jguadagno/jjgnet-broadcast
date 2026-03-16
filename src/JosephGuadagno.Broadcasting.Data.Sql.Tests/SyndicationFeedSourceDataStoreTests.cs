@@ -311,6 +311,24 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task GetByFeedIdentifierAsync_ReturnsRecord_WhenFeedIdentifierExists()
+    {
+        SeedData();
+        var result = await _dataStore.GetByFeedIdentifierAsync("post2");
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Id);
+        Assert.Equal("post2", result.FeedIdentifier);
+    }
+
+    [Fact]
+    public async Task GetByFeedIdentifierAsync_ReturnsNull_WhenFeedIdentifierDoesNotExist()
+    {
+        SeedData();
+        var result = await _dataStore.GetByFeedIdentifierAsync("non-existent-feed-identifier");
+        Assert.Null(result);
+    }
+
+    [Fact]
     public async Task SaveAsync_ThrowsApplicationException_WhenSaveReturnsZero()
     {
         var options = new DbContextOptionsBuilder<BroadcastingContext>()

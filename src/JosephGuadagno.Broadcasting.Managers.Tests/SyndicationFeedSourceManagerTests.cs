@@ -120,4 +120,33 @@ public class SyndicationFeedSourceManagerTests
         Assert.Equal(source, result);
         _repository.Verify(r => r.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories), Times.Once);
     }
+
+    [Fact]
+    public async Task GetByFeedIdentifierAsync_ShouldCallRepository()
+    {
+        // Arrange
+        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "test-feed-id" };
+        _repository.Setup(r => r.GetByFeedIdentifierAsync("test-feed-id")).ReturnsAsync(source);
+
+        // Act
+        var result = await _syndicationFeedSourceManager.GetByFeedIdentifierAsync("test-feed-id");
+
+        // Assert
+        Assert.Equal(source, result);
+        _repository.Verify(r => r.GetByFeedIdentifierAsync("test-feed-id"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetByFeedIdentifierAsync_ReturnsNull_WhenNotFound()
+    {
+        // Arrange
+        _repository.Setup(r => r.GetByFeedIdentifierAsync("missing")).ReturnsAsync((SyndicationFeedSource?)null);
+
+        // Act
+        var result = await _syndicationFeedSourceManager.GetByFeedIdentifierAsync("missing");
+
+        // Assert
+        Assert.Null(result);
+        _repository.Verify(r => r.GetByFeedIdentifierAsync("missing"), Times.Once);
+    }
 }

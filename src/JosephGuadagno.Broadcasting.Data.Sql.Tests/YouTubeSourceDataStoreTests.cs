@@ -213,4 +213,30 @@ public class YouTubeSourceDataStoreTests : IDisposable
         // Assert
         Assert.Null(result);
     }
+
+    [Fact]
+    public async Task GetByVideoIdAsync_ReturnsRecord_WhenVideoIdExists()
+    {
+        // Arrange
+        var source = CreateYouTubeSource("testvid42", "https://youtube.com/watch?v=testvid42");
+        _context.YouTubeSources.Add(source);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetByVideoIdAsync("testvid42");
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("testvid42", result.VideoId);
+    }
+
+    [Fact]
+    public async Task GetByVideoIdAsync_ReturnsNull_WhenVideoIdDoesNotExist()
+    {
+        // Act
+        var result = await _dataStore.GetByVideoIdAsync("nonexistent-video-id");
+
+        // Assert
+        Assert.Null(result);
+    }
 }
