@@ -3,6 +3,7 @@ using idunno.Bluesky.RichText;
 
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Managers.Bluesky.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.Azure.Functions.Worker;
@@ -61,9 +62,16 @@ public class SendPost(IBlueskyManager blueskyManager,ILogger<SendPost> logger)
             }
             logger.LogError("Failed to post to Bluesky. Response was null");
         }
+        catch (BlueskyPostException ex)
+        {
+            logger.LogError(ex, "Bluesky API error posting message. Code: {ApiErrorCode}, Message: {ApiErrorMessage}",
+                ex.ApiErrorCode, ex.ApiErrorMessage);
+            throw;
+        }
         catch (Exception e)
         {
-            logger.LogError("Failed to post to Bluesky. Exception Thrown: {Message}", e.Message);
+            logger.LogError(e, "Failed to post to Bluesky. Exception Thrown: {Message}", e.Message);
+            throw;
         }
     }
 }
