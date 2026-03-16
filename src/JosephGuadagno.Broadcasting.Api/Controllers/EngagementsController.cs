@@ -92,12 +92,14 @@ public class EngagementsController: ControllerBase
 
         if (!ModelState.IsValid)
         {
+            _logger.LogWarning("SaveEngagementAsync called with invalid model state");
             return BadRequest(ModelState);    
         }
         
         var savedEngagement = await _engagementManager.SaveAsync(engagement);
         if (savedEngagement != null)
         {
+            _logger.LogInformation("Engagement saved with Id {EngagementId}", savedEngagement.Id);
             return CreatedAtAction(nameof(GetEngagementAsync), new { engagementId = savedEngagement.Id },
                 savedEngagement);
         }
@@ -127,8 +129,10 @@ public class EngagementsController: ControllerBase
         var wasDeleted = await _engagementManager.DeleteAsync(engagementId);
         if (wasDeleted)
         {
+            _logger.LogInformation("Engagement {EngagementId} deleted successfully", engagementId);
             return new NoContentResult();
         }
+        _logger.LogWarning("Engagement {EngagementId} not found for deletion", engagementId);
         return new NotFoundResult();
     }
     
@@ -172,12 +176,14 @@ public class EngagementsController: ControllerBase
 
         if (!ModelState.IsValid)
         {
+            _logger.LogWarning("SaveTalkAsync called with invalid model state");
             return BadRequest(ModelState);
         }
         
         var savedTalk = await _engagementManager.SaveTalkAsync(talk);
         if (savedTalk != null)
         {
+            _logger.LogInformation("Talk saved with Id {TalkId} for Engagement {EngagementId}", savedTalk.Id, talk.EngagementId);
             return CreatedAtAction(nameof(GetTalkAsync), new { engagementId = talk.EngagementId, talkId = talk.Id },
                 savedTalk);
         }
@@ -233,8 +239,10 @@ public class EngagementsController: ControllerBase
         
         if (wasDeleted)
         {
+            _logger.LogInformation("Talk {TalkId} deleted from Engagement {EngagementId}", talkId, engagementId);
             return new NoContentResult();
         }
+        _logger.LogWarning("Talk {TalkId} not found for deletion in Engagement {EngagementId}", talkId, engagementId);
         return new NotFoundResult();
     }
 }

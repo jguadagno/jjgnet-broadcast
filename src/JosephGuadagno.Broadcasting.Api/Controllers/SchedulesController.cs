@@ -91,12 +91,14 @@ public class SchedulesController: ControllerBase
 
         if (!ModelState.IsValid)
         {
+            _logger.LogWarning("SaveScheduledItemAsync called with invalid model state");
             return BadRequest(ModelState);
         }
         
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (savedScheduledItem != null)
         {
+            _logger.LogInformation("ScheduledItem saved with Id {ScheduledItemId}", savedScheduledItem.Id);
             return CreatedAtAction(nameof(GetScheduledItemAsync), new { scheduledItemId = savedScheduledItem.Id },
                 savedScheduledItem);
         }
@@ -126,8 +128,10 @@ public class SchedulesController: ControllerBase
         var wasDeleted = await _scheduledItemManager.DeleteAsync(scheduledItemId);
         if (wasDeleted)
         {
+            _logger.LogInformation("ScheduledItem {ScheduledItemId} deleted successfully", scheduledItemId);
             return new NoContentResult();
         }
+        _logger.LogWarning("ScheduledItem {ScheduledItemId} not found for deletion", scheduledItemId);
         return new NotFoundResult();
     }
     
