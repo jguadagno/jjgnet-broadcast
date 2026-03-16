@@ -6,12 +6,12 @@ namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
 public class EngagementManagerTests
 {
-    private readonly Mock<IEngagementRepository> _repository;
+    private readonly Mock<IEngagementDataStore> _repository;
     private readonly EngagementManager _engagementManager;
 
     public EngagementManagerTests()
     {
-        _repository = new Mock<IEngagementRepository>();
+        _repository = new Mock<IEngagementDataStore>();
         _engagementManager = new EngagementManager(_repository.Object);
     }
 
