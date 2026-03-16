@@ -6,12 +6,12 @@ namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
 public class YouTubeSourceManagerTests
 {
-    private readonly Mock<IYouTubeSourceRepository> _repository;
+    private readonly Mock<IYouTubeSourceDataStore> _repository;
     private readonly YouTubeSourceManager _youTubeSourceManager;
 
     public YouTubeSourceManagerTests()
     {
-        _repository = new Mock<IYouTubeSourceRepository>();
+        _repository = new Mock<IYouTubeSourceDataStore>();
         _youTubeSourceManager = new YouTubeSourceManager(_repository.Object);
     }
 

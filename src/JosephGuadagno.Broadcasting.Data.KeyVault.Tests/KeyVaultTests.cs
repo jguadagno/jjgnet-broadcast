@@ -54,7 +54,7 @@ public class KeyVaultTests
     {
         // Arrange
         _mockSecretClient
-            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<SecretContentType?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Response<KeyVaultSecret>)null!);
 
         // Act & Assert
@@ -71,7 +71,7 @@ public class KeyVaultTests
         var response = CreateResponse(keyVaultSecret);
 
         _mockSecretClient
-            .Setup(c => c.GetSecretAsync(secretName, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<SecretContentType?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
         // Act
@@ -82,7 +82,7 @@ public class KeyVaultTests
         Assert.Equal(secretName, result.Name);
         Assert.Equal(secretValue, result.Value);
         _mockSecretClient.Verify(
-            c => c.GetSecretAsync(secretName, It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            c => c.GetSecretAsync(It.Is<string>(s => s == secretName), It.IsAny<string>(), It.IsAny<SecretContentType?>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -95,7 +95,7 @@ public class KeyVaultTests
     {
         // Arrange
         _mockSecretClient
-            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<SecretContentType?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Response<KeyVaultSecret>)null!);
 
         // Act & Assert
@@ -111,7 +111,7 @@ public class KeyVaultTests
         var getSecretResponse = CreateResponse(keyVaultSecret);
 
         _mockSecretClient
-            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<SecretContentType?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(getSecretResponse);
         _mockSecretClient
             .Setup(c => c.UpdateSecretPropertiesAsync(It.IsAny<SecretProperties>(), It.IsAny<CancellationToken>()))
@@ -131,7 +131,7 @@ public class KeyVaultTests
         var updatePropertiesResponse = CreateResponse(keyVaultSecret.Properties);
 
         _mockSecretClient
-            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<SecretContentType?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(getSecretResponse);
         _mockSecretClient
             .Setup(c => c.UpdateSecretPropertiesAsync(It.IsAny<SecretProperties>(), It.IsAny<CancellationToken>()))
@@ -157,7 +157,7 @@ public class KeyVaultTests
         var updatePropertiesResponse = CreateResponse(originalSecret.Properties);
 
         _mockSecretClient
-            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<SecretContentType?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(getSecretResponse);
         _mockSecretClient
             .SetupSequence(c => c.UpdateSecretPropertiesAsync(It.IsAny<SecretProperties>(), It.IsAny<CancellationToken>()))
@@ -186,13 +186,13 @@ public class KeyVaultTests
         var updatePropertiesResponse = CreateResponse(originalSecret.Properties);
 
         _mockSecretClient
-            .Setup(c => c.GetSecretAsync(secretName, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<SecretContentType?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(getSecretResponse);
         _mockSecretClient
             .Setup(c => c.UpdateSecretPropertiesAsync(It.IsAny<SecretProperties>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(updatePropertiesResponse);
         _mockSecretClient
-            .Setup(c => c.SetSecretAsync(secretName, newValue, It.IsAny<CancellationToken>()))
+            .Setup(c => c.SetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(setSecretResponse);
 
         // Act
@@ -202,13 +202,13 @@ public class KeyVaultTests
         Assert.False(originalSecret.Properties.Enabled);
         Assert.Equal(expiresOn, newSecret.Properties.ExpiresOn);
         _mockSecretClient.Verify(
-            c => c.GetSecretAsync(secretName, It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            c => c.GetSecretAsync(It.Is<string>(s => s == secretName), It.IsAny<string>(), It.IsAny<SecretContentType?>(), It.IsAny<CancellationToken>()),
             Times.Once);
         _mockSecretClient.Verify(
             c => c.UpdateSecretPropertiesAsync(It.IsAny<SecretProperties>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2));
         _mockSecretClient.Verify(
-            c => c.SetSecretAsync(secretName, newValue, It.IsAny<CancellationToken>()),
+            c => c.SetSecretAsync(It.Is<string>(s => s == secretName), It.Is<string>(s => s == newValue), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 

@@ -6,12 +6,12 @@ namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
 public class ScheduledItemManagerTests
 {
-    private readonly Mock<IScheduledItemRepository> _repository;
+    private readonly Mock<IScheduledItemDataStore> _repository;
     private readonly ScheduledItemManager _scheduledItemManager;
 
     public ScheduledItemManagerTests()
     {
-        _repository = new Mock<IScheduledItemRepository>();
+        _repository = new Mock<IScheduledItemDataStore>();
         _scheduledItemManager = new ScheduledItemManager(_repository.Object);
     }
 
