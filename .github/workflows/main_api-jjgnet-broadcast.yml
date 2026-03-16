@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Set up .NET Core
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.x'
           include-prerelease: true
@@ -32,7 +32,7 @@ jobs:
         run: dotnet publish ./src/JosephGuadagno.Broadcasting.Api -c Release -o ${{env.DOTNET_ROOT}}/api-jjgnet-broadcast
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: .api-app
           path: ${{env.DOTNET_ROOT}}/api-jjgnet-broadcast
@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: .api-app
       
