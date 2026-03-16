@@ -87,4 +87,22 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
         dbScheduledItems.MessageSent = true;
         return await broadcastingContext.SaveChangesAsync() != 0;
     }
+
+    public async Task<IEnumerable<Domain.Models.ScheduledItem>> GetOrphanedScheduledItemsAsync()
+    {
+        const string sql = """
+            SELECT s.*
+            FROM dbo.ScheduledItems s
+            WHERE
+                (s.ItemTableName = 'Engagements'          AND NOT EXISTS (SELECT 1 FROM dbo.Engagements           e WHERE e.Id = s.ItemPrimaryKey))
+                OR (s.ItemTableName = 'Talks'             AND NOT EXISTS (SELECT 1 FROM dbo.Talks                 t WHERE t.Id = s.ItemPrimaryKey))
+                OR (s.ItemTableName = 'SyndicationFeedSources' AND NOT EXISTS (SELECT 1 FROM dbo.SyndicationFeedSources sf WHERE sf.Id = s.ItemPrimaryKey))
+                OR (s.ItemTableName = 'YouTubeSources'    AND NOT EXISTS (SELECT 1 FROM dbo.YouTubeSources        yt WHERE yt.Id = s.ItemPrimaryKey))
+            """;
+
+        var dbScheduledItems = await broadcastingContext.ScheduledItems
+            .FromSqlRaw(sql)
+            .ToListAsync();
+        return mapper.Map<IEnumerable<Domain.Models.ScheduledItem>>(dbScheduledItems);
+    }
 }

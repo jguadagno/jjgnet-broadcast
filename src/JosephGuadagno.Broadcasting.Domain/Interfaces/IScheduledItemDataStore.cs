@@ -8,4 +8,5 @@ public interface IScheduledItemDataStore : IDataRepository<ScheduledItem>
     public Task<List<ScheduledItem>> GetUnsentScheduledItemsAsync();
     public Task<List<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month);
     public Task<bool> SentScheduledItemAsync(int primaryKey, DateTimeOffset sentOn);
+    Task<IEnumerable<Domain.Models.ScheduledItem>> GetOrphanedScheduledItemsAsync();
 }

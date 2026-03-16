@@ -5,8 +5,8 @@ $(function(){
        switch (selectedTable) {
            case "Engagements":
            case "Talks":
-           case "SyndicationFeed":
-           case "YouTube":
+           case "SyndicationFeedSources":
+           case "YouTubeSources":
            default:
                primaryKey.prop("readonly", false);
                break;

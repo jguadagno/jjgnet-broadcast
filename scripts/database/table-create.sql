@@ -40,6 +40,8 @@ create table dbo.ScheduledItems
     Id               int identity
         constraint ScheduledItems_pk
             primary key nonclustered,
+    -- Valid values: 'Engagements', 'Talks', 'SyndicationFeedSources', 'YouTubeSources'
+    -- CHECK constraint CK_ScheduledItems_ItemTableName is added via migration 2026-03-16-scheduleditem-integrity.sql
     ItemTableName    varchar(255)   not null,
     ItemPrimaryKey   int   not null,
     Message          nvarchar(max),
