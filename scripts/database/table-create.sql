@@ -5,7 +5,7 @@ create table dbo.Engagements
 (
     Id            int identity
         constraint Engagements_pk
-        primary key nonclustered,
+        primary key clustered,
     Name          nvarchar(max)              not null,
     Url           nvarchar(max),
     StartDateTime datetimeoffset             not null,
@@ -21,7 +21,7 @@ create table dbo.Talks
 (
     Id                   int identity
         constraint Talks_pk
-            primary key nonclustered,
+            primary key clustered,
     EngagementId         int
         constraint Talks_Engagements_Id
             references Engagements,
@@ -39,7 +39,7 @@ create table dbo.ScheduledItems
 (
     Id               int identity
         constraint ScheduledItems_pk
-            primary key nonclustered,
+            primary key clustered,
     -- Valid values: 'Engagements', 'Talks', 'SyndicationFeedSources', 'YouTubeSources'
     -- CHECK constraint CK_ScheduledItems_ItemTableName is added via migration 2026-03-16-scheduleditem-integrity.sql
     ItemTableName    varchar(255)   not null,
@@ -53,6 +53,15 @@ go
 
 create index ScheduledItems_MessageSentOn_index
     on ScheduledItems (MessageSentOn)
+go
+
+create nonclustered index IX_ScheduledItems_Pending
+    on ScheduledItems (MessageSent asc, SendOnDateTime asc)
+    include (ItemTableName, ItemPrimaryKey, Message)
+go
+
+create nonclustered index IX_Talks_EngagementId
+    on Talks (EngagementId)
 go
 
 create table dbo.Cache
