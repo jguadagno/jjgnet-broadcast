@@ -103,4 +103,33 @@ public class YouTubeSourceManagerTests
         Assert.Equal(source, result);
         _repository.Verify(r => r.GetByUrlAsync("http://test.com"), Times.Once);
     }
+
+    [Fact]
+    public async Task GetByVideoIdAsync_ShouldCallRepository()
+    {
+        // Arrange
+        var source = new YouTubeSource { Id = 1, VideoId = "testvideoid" };
+        _repository.Setup(r => r.GetByVideoIdAsync("testvideoid")).ReturnsAsync(source);
+
+        // Act
+        var result = await _youTubeSourceManager.GetByVideoIdAsync("testvideoid");
+
+        // Assert
+        Assert.Equal(source, result);
+        _repository.Verify(r => r.GetByVideoIdAsync("testvideoid"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetByVideoIdAsync_ReturnsNull_WhenNotFound()
+    {
+        // Arrange
+        _repository.Setup(r => r.GetByVideoIdAsync("missing")).ReturnsAsync((YouTubeSource?)null);
+
+        // Act
+        var result = await _youTubeSourceManager.GetByVideoIdAsync("missing");
+
+        // Assert
+        Assert.Null(result);
+        _repository.Verify(r => r.GetByVideoIdAsync("missing"), Times.Once);
+    }
 }

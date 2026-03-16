@@ -41,4 +41,9 @@ public class YouTubeSourceRepository : IYouTubeSourceRepository
     {
         return await _youTubeSourceDataStore.GetByUrlAsync(url);
     }
+
+    public async Task<YouTubeSource?> GetByVideoIdAsync(string videoId)
+    {
+        return await _youTubeSourceDataStore.GetByVideoIdAsync(videoId);
+    }
 }

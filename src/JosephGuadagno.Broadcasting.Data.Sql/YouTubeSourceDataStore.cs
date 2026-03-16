@@ -57,4 +57,11 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
             .FirstOrDefaultAsync(y => y.Url == url);
         return dbYouTubeSource is null ? null : mapper.Map<Domain.Models.YouTubeSource>(dbYouTubeSource);
     }
+
+    public async Task<Domain.Models.YouTubeSource?> GetByVideoIdAsync(string videoId)
+    {
+        var dbYouTubeSource = await broadcastingContext.YouTubeSources.AsNoTracking()
+            .FirstOrDefaultAsync(y => y.VideoId == videoId);
+        return dbYouTubeSource is null ? null : mapper.Map<Domain.Models.YouTubeSource>(dbYouTubeSource);
+    }
 }

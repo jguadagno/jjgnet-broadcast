@@ -51,6 +51,13 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
         return await broadcastingContext.SaveChangesAsync() != 0;
     }
 
+    public async Task<Domain.Models.SyndicationFeedSource?> GetByFeedIdentifierAsync(string feedIdentifier)
+    {
+        var dbSyndicationFeedSource = await broadcastingContext.SyndicationFeedSources.AsNoTracking()
+            .FirstOrDefaultAsync(s => s.FeedIdentifier == feedIdentifier);
+        return dbSyndicationFeedSource is null ? null : mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
+    }
+
     public async Task<Domain.Models.SyndicationFeedSource?> GetByUrlAsync(string url)
     {
         var dbSyndicationFeedSource = await broadcastingContext.SyndicationFeedSources.AsNoTracking()

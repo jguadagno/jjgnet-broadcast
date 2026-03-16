@@ -117,4 +117,33 @@ public class YouTubeSourceRepositoryTests
         Assert.Equal(source, result);
         _dataStoreMock.Verify(d => d.GetByUrlAsync("https://youtube.com/watch?v=vid0001"), Times.Once);
     }
+
+    [Fact]
+    public async Task GetByVideoIdAsync_DelegatesToDataStore()
+    {
+        // Arrange
+        var source = CreateSource();
+        _dataStoreMock.Setup(d => d.GetByVideoIdAsync("vid0001")).ReturnsAsync(source);
+
+        // Act
+        var result = await _repository.GetByVideoIdAsync("vid0001");
+
+        // Assert
+        Assert.Equal(source, result);
+        _dataStoreMock.Verify(d => d.GetByVideoIdAsync("vid0001"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetByVideoIdAsync_ReturnsNull_WhenNotFound()
+    {
+        // Arrange
+        _dataStoreMock.Setup(d => d.GetByVideoIdAsync("missing")).ReturnsAsync((YouTubeSource?)null);
+
+        // Act
+        var result = await _repository.GetByVideoIdAsync("missing");
+
+        // Assert
+        Assert.Null(result);
+        _dataStoreMock.Verify(d => d.GetByVideoIdAsync("missing"), Times.Once);
+    }
 }
