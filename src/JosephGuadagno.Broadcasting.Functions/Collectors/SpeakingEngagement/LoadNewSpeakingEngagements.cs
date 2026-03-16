@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
+using Polly;
+using Polly.Retry;
+
 namespace JosephGuadagno.Broadcasting.Functions.Collectors.SpeakingEngagement;
 
 public class LoadNewSpeakingEngagements(
@@ -16,6 +19,15 @@ public class LoadNewSpeakingEngagements(
     IFeedCheckManager feedCheckManager,
     ILogger<LoadNewSpeakingEngagements> logger)
 {
+    private static readonly ResiliencePipeline SavePipeline = new ResiliencePipelineBuilder()
+        .AddRetry(new RetryStrategyOptions
+        {
+            MaxRetryAttempts = 3,
+            Delay = TimeSpan.FromSeconds(2),
+            BackoffType = DelayBackoffType.Exponential
+        })
+        .Build();
+
     [Function(ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew)]
     public async Task<IActionResult> RunAsync(
         [TimerTrigger("%collectors_speaking_engagements_load_new_speaking_engagements_cron_settings%")] TimerInfo myTimer)
@@ -56,7 +68,8 @@ public class LoadNewSpeakingEngagements(
                 try
                 {
                     // TODO: Add a check to see if the item already exists, if so, update it.
-                    var engagement = await engagementManager.SaveAsync(item);
+                    var engagement = await SavePipeline.ExecuteAsync(
+                        async ct => await engagementManager.SaveAsync(item));
                     var properties = new Dictionary<string, string>
                     {
                         { "Id", engagement.Id.ToString() },
@@ -73,7 +86,7 @@ public class LoadNewSpeakingEngagements(
                     logger.LogError(e,
                         "Failed to save the engagement with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
                         item.Id, item.Url, e);
-                    return new BadRequestObjectResult($"Failed to save the engagement with the id of: '{item.Id}' Url:'{item.Url}'");
+                    continue;
                 }
             }
 
