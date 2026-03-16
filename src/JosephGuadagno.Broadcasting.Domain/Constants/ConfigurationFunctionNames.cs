@@ -32,6 +32,8 @@ public static class ConfigurationFunctionNames
     public const string LinkedInProcessScheduledItemFired = "LinkedInProcessScheduledItemFired";
     public const string BlueskyPostMessage = "BlueskyPostMessage";
     public const string BlueskyProcessRandomPostFired = "BlueskyProcessRandomPostFired";
+    public const string FacebookProcessRandomPostFired = "FacebookProcessRandomPostFired";
+    public const string LinkedInProcessRandomPostFired = "LinkedInProcessRandomPostFired";
     public const string BlueskyProcessNewSyndicationDataFired = "BlueskyProcessNewSyndicationDataFired";
     public const string BlueskyProcessNewYouTubeDataFired = "BlueskyProcessNewYouTubeDataFired";
     public const string BlueskyProcessScheduledItemFired = "BlueskyProcessScheduledItemFired";

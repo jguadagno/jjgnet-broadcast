@@ -16,11 +16,13 @@ public static class Metrics
     public const string BlueskyPostSent = "BlueskyPostSent";
 
     public const string FacebookProcessedNewSyndicationData = "FacebookProcessedNewSyndicationData";
+    public const string FacebookProcessedRandomPost = "FacebookProcessedRandomPost";
     public const string FacebookProcessedNewYouTubeData = "FacebookProcessedNewYouTubeData";
     public const string FacebookProcessedScheduledItemFired = "FacebookProcessedScheduledItemFired";
     public const string FacebookPostPageStatus = "FacebookPostPageStatus";
 
     public const string LinkedInProcessedNewSyndicationData = "LinkedInProcessedNewSyndicationData";
+    public const string LinkedInProcessedRandomPost = "LinkedInProcessedRandomPost";
     public const string LinkedInProcessedNewYouTubeData = "LinkedInProcessedNewYouTubeData";
     public const string LinkedInProcessedScheduledItemFired = "LinkedInProcessedScheduledItemFired";
     public const string LinkedInPostImage = "LinkedInPostImage";
