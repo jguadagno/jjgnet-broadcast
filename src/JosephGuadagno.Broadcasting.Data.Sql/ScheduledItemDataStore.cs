@@ -1,4 +1,5 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -90,19 +91,20 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
 
     public async Task<IEnumerable<Domain.Models.ScheduledItem>> GetOrphanedScheduledItemsAsync()
     {
-        const string sql = """
-            SELECT s.*
-            FROM dbo.ScheduledItems s
-            WHERE
-                (s.ItemTableName = 'Engagements'          AND NOT EXISTS (SELECT 1 FROM dbo.Engagements           e WHERE e.Id = s.ItemPrimaryKey))
-                OR (s.ItemTableName = 'Talks'             AND NOT EXISTS (SELECT 1 FROM dbo.Talks                 t WHERE t.Id = s.ItemPrimaryKey))
-                OR (s.ItemTableName = 'SyndicationFeedSources' AND NOT EXISTS (SELECT 1 FROM dbo.SyndicationFeedSources sf WHERE sf.Id = s.ItemPrimaryKey))
-                OR (s.ItemTableName = 'YouTubeSources'    AND NOT EXISTS (SELECT 1 FROM dbo.YouTubeSources        yt WHERE yt.Id = s.ItemPrimaryKey))
-            """;
+        var engagementIds = await broadcastingContext.Engagements.Select(e => e.Id).ToListAsync();
+        var talkIds = await broadcastingContext.Talks.Select(t => t.Id).ToListAsync();
+        var syndicationFeedSourceIds = await broadcastingContext.SyndicationFeedSources.Select(s => s.Id).ToListAsync();
+        var youTubeSourceIds = await broadcastingContext.YouTubeSources.Select(y => y.Id).ToListAsync();
 
         var dbScheduledItems = await broadcastingContext.ScheduledItems
-            .FromSqlRaw(sql)
+            .Where(s =>
+                (s.ItemTableName == ScheduledItemType.Engagements.ToString() && !engagementIds.Contains(s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.Talks.ToString() && !talkIds.Contains(s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.SyndicationFeedSources.ToString() && !syndicationFeedSourceIds.Contains(s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.YouTubeSources.ToString() && !youTubeSourceIds.Contains(s.ItemPrimaryKey))
+            )
             .ToListAsync();
+
         return mapper.Map<IEnumerable<Domain.Models.ScheduledItem>>(dbScheduledItems);
     }
 }
