@@ -1,4 +1,5 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -86,5 +87,24 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
         dbScheduledItems.MessageSentOn = sentOn;
         dbScheduledItems.MessageSent = true;
         return await broadcastingContext.SaveChangesAsync() != 0;
+    }
+
+    public async Task<IEnumerable<Domain.Models.ScheduledItem>> GetOrphanedScheduledItemsAsync()
+    {
+        var engagementIds = await broadcastingContext.Engagements.Select(e => e.Id).ToListAsync();
+        var talkIds = await broadcastingContext.Talks.Select(t => t.Id).ToListAsync();
+        var syndicationFeedSourceIds = await broadcastingContext.SyndicationFeedSources.Select(s => s.Id).ToListAsync();
+        var youTubeSourceIds = await broadcastingContext.YouTubeSources.Select(y => y.Id).ToListAsync();
+
+        var dbScheduledItems = await broadcastingContext.ScheduledItems
+            .Where(s =>
+                (s.ItemTableName == ScheduledItemType.Engagements.ToString() && !engagementIds.Contains(s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.Talks.ToString() && !talkIds.Contains(s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.SyndicationFeedSources.ToString() && !syndicationFeedSourceIds.Contains(s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.YouTubeSources.ToString() && !youTubeSourceIds.Contains(s.ItemPrimaryKey))
+            )
+            .ToListAsync();
+
+        return mapper.Map<IEnumerable<Domain.Models.ScheduledItem>>(dbScheduledItems);
     }
 }

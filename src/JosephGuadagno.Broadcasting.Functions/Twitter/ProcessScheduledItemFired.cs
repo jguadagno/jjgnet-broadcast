@@ -2,6 +2,7 @@ using System.Text.Json;
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 
@@ -55,18 +56,18 @@ public class ProcessScheduledItemFired(
 
             // Determine what type the post is for
             string tweetText;
-            switch (scheduledItem.ItemTableName)
+            switch (scheduledItem.ItemType)
             {
-                case SourceSystems.Engagements:
+                case ScheduledItemType.Engagements:
                     tweetText = await GetPostForEngagement(scheduledItem.ItemPrimaryKey);
                     break;
-                case SourceSystems.Talks:
+                case ScheduledItemType.Talks:
                     tweetText = await GetPostForTalk(scheduledItem.ItemPrimaryKey);
                     break;
-                case SourceSystems.SyndicationFeedSources:
+                case ScheduledItemType.SyndicationFeedSources:
                     tweetText = await GetPostForSyndicationSource(scheduledItem.ItemPrimaryKey);
                     break;
-                case SourceSystems.YouTubeSources:
+                case ScheduledItemType.YouTubeSources:
                     tweetText = await GetPostForYouTubeSource(scheduledItem.ItemPrimaryKey);
                     break;
                 default:

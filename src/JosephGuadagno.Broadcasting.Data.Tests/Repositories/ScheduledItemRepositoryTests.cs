@@ -1,4 +1,5 @@
 using JosephGuadagno.Broadcasting.Data.Repositories;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Moq;
@@ -17,7 +18,7 @@ public class ScheduledItemRepositoryTests
     }
 
     private static ScheduledItem CreateItem(int id = 1) =>
-        new ScheduledItem { Id = id, ItemTableName = "SourceData", ItemPrimaryKey = id, Message = "Test message", SendOnDateTime = DateTimeOffset.UtcNow };
+        new ScheduledItem { Id = id, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = id, Message = "Test message", SendOnDateTime = DateTimeOffset.UtcNow };
 
     [Fact]
     public async Task GetAsync_WithPrimaryKey_DelegatesToDataStore()
