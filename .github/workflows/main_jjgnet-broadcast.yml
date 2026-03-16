@@ -23,10 +23,10 @@ jobs:
 
     steps:
       - name: 'Checkout GitHub Action'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup DotNet ${{ env.DOTNET_VERSION }} Environment
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -36,10 +36,9 @@ jobs:
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           dotnet build ./src/JosephGuadagno.Broadcasting.Functions --configuration Release --output ./output
           popd
-      
+
       - name: Test
-        shell: bash
-        run: dotnet test src/ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"
+        run: dotnet test src/ --no-build --verbosity normal --configuration Release --filter "JosephGuadagno.Broadcasting.Functions.Tests"
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -56,4 +55,3 @@ jobs:
           app-name: 'jjgnet-broadcast'
           slot-name: 'production'
           package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
-          
