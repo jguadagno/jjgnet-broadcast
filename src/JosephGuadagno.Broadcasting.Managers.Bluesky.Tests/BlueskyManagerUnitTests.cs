@@ -1,6 +1,8 @@
 using System.Net.Http;
 using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Bluesky;
+using JosephGuadagno.Broadcasting.Managers.Bluesky.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -53,6 +55,18 @@ public class BlueskyManagerUnitTests
 
         // Assert
         Assert.Null(result);
+    }
+
+    #endregion
+
+    #region Exception Inheritance Tests
+
+    [Fact]
+    public void BlueskyPostException_IsA_BroadcastingException()
+    {
+        var exception = new BlueskyPostException("test message");
+
+        Assert.IsAssignableFrom<BroadcastingException>(exception);
     }
 
     #endregion

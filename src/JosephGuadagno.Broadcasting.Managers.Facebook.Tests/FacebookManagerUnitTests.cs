@@ -1,7 +1,9 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook;
+using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -87,7 +89,7 @@ public class FacebookManagerUnitTests
         var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<ApplicationException>(
+        var exception = await Assert.ThrowsAsync<FacebookPostException>(
             () => sut.PostMessageAndLinkToPage("Test Message", "https://example.com"));
         Assert.Equal($"Failed to post status. Reason {errorMessage}", exception.Message);
     }
@@ -100,7 +102,7 @@ public class FacebookManagerUnitTests
         var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<ApplicationException>(
+        var exception = await Assert.ThrowsAsync<FacebookPostException>(
             () => sut.PostMessageAndLinkToPage("Test Message", "https://example.com"));
         Assert.Contains("Failed to post status. Could not deserialized the response.", exception.Message);
     }
@@ -113,7 +115,7 @@ public class FacebookManagerUnitTests
         var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<ApplicationException>(
+        var exception = await Assert.ThrowsAsync<FacebookPostException>(
             () => sut.PostMessageAndLinkToPage("Test Message", "https://example.com"));
         Assert.Contains("Failed to post status. Response status code was not successful.", exception.Message);
     }
@@ -127,7 +129,7 @@ public class FacebookManagerUnitTests
         var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<ApplicationException>(
+        var exception = await Assert.ThrowsAsync<FacebookPostException>(
             () => sut.PostMessageAndLinkToPage("Test Message", "https://example.com"));
         Assert.Contains("Failed to post status. Could not determine the reason.", exception.Message);
     }
@@ -176,7 +178,7 @@ public class FacebookManagerUnitTests
         var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<ApplicationException>(
+        var exception = await Assert.ThrowsAsync<FacebookPostException>(
             () => sut.RefreshToken("old_token"));
         Assert.Contains("Failed to refresh the token. Could not deserialized the response.", exception.Message);
     }
@@ -189,7 +191,7 @@ public class FacebookManagerUnitTests
         var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<ApplicationException>(
+        var exception = await Assert.ThrowsAsync<FacebookPostException>(
             () => sut.RefreshToken("old_token"));
         Assert.Contains("Failed to refresh the token. Response status code was not successful.", exception.Message);
     }
@@ -208,6 +210,28 @@ public class FacebookManagerUnitTests
         // Assert
         Assert.Equal("https://graph.facebook.com/v21.0/", result);
     }
+
+    #region Exception Inheritance Tests
+
+    [Fact]
+    public void FacebookPostException_IsA_BroadcastingException()
+    {
+        var exception = new FacebookPostException("test message");
+
+        Assert.IsAssignableFrom<BroadcastingException>(exception);
+    }
+
+    [Fact]
+    public void BroadcastingException_PreservesApiErrorCode_AndApiErrorMessage()
+    {
+        var exception = new FacebookPostException("test message", apiErrorCode: 190, apiErrorMessage: "Invalid OAuth access token");
+
+        Assert.Equal(190, exception.ApiErrorCode);
+        Assert.Equal("Invalid OAuth access token", exception.ApiErrorMessage);
+        Assert.Equal("test message", exception.Message);
+    }
+
+    #endregion
 
     private void SetupHttpMessageHandler(System.Net.HttpStatusCode statusCode, string content)
     {

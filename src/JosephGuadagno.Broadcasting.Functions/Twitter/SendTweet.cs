@@ -1,6 +1,7 @@
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Managers.Twitter.Exceptions;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -34,9 +35,16 @@ public class SendTweet(ITwitterManager twitterManager, ILogger<SendTweet> logger
                 logger.LogCustomEvent(Metrics.TwitterPostSent, properties);
             }
         }
+        catch (TwitterPostException ex)
+        {
+            logger.LogError(ex, "Twitter API error sending tweet: '{TweetText}'. Code: {ApiErrorCode}, Message: {ApiErrorMessage}",
+                tweetText, ex.ApiErrorCode, ex.ApiErrorMessage);
+            throw;
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to send the tweet: '{TweetText}'. Exception: '{ExceptionMessage}'", tweetText, ex.Message);
+            throw;
         }
     }
 }

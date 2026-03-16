@@ -1,5 +1,6 @@
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -30,6 +31,12 @@ public class PostPageStatus(IFacebookManager facebookManager, ILogger<PostPageSt
                 };
                 logger.LogCustomEvent(Metrics.FacebookPostPageStatus, properties);
             }
+        }
+        catch (FacebookPostException ex)
+        {
+            logger.LogError(ex, "Facebook API error posting status. Code: {ApiErrorCode}, Message: {ApiErrorMessage}",
+                ex.ApiErrorCode, ex.ApiErrorMessage);
+            throw;
         }
         catch (Exception e)
         {

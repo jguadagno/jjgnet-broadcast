@@ -2,6 +2,7 @@
 using idunno.AtProto.Repo;
 using idunno.Bluesky;
 using idunno.Bluesky.Embed;
+using JosephGuadagno.Broadcasting.Managers.Bluesky.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using Microsoft.Extensions.Logging;
 using X.Web.MetaExtractor;
@@ -33,13 +34,19 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
             logger.LogError(
                 "Bluesky Post failed! Status Code: {ResponseStatusCode}, Error Details {ResponseErrorDetail}",
                 response.StatusCode, response.AtErrorDetail?.Message);
-            return response.Result;
+            throw new BlueskyPostException(
+                $"Bluesky post failed.",
+                (int?)response.StatusCode,
+                response.AtErrorDetail?.Message);
         }
-            
+
         // Login Failed
         logger.LogError("Login failed. Status Code: {LoginResultStatusCode}, Error Details {LoginResultAtErrorDetail}",
             loginResult.StatusCode, loginResult.AtErrorDetail?.Message);
-        return null;
+        throw new BlueskyPostException(
+            "Bluesky login failed.",
+            (int?)loginResult.StatusCode,
+            loginResult.AtErrorDetail?.Message);
     }
 
     public async Task<bool> DeletePost(StrongReference strongReference)

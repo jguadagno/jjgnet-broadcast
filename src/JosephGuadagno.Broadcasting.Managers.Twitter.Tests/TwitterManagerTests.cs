@@ -1,4 +1,6 @@
 using FluentAssertions;
+using JosephGuadagno.Broadcasting.Domain.Exceptions;
+using JosephGuadagno.Broadcasting.Managers.Twitter.Exceptions;
 using LinqToTwitter;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -33,29 +35,39 @@ public class TwitterManagerTests
     }
 
     [Fact]
-    public async Task SendTweetAsync_WhenTweetReturnsNull_ReturnsNull()
+    public async Task SendTweetAsync_WhenTweetReturnsNull_ThrowsTwitterPostException()
     {
         // Arrange
         var sut = CreateSut(_mockLogger.Object, tweetResult: null);
 
         // Act
-        var result = await sut.SendTweetAsync("Hello world!");
+        var act = () => sut.SendTweetAsync("Hello world!");
 
         // Assert
-        result.Should().BeNull();
+        await act.Should().ThrowAsync<TwitterPostException>()
+            .WithMessage("*Hello world!*");
     }
 
     [Fact]
-    public async Task SendTweetAsync_WhenExceptionThrown_ReturnsNull()
+    public async Task SendTweetAsync_WhenExceptionThrown_ThrowsTwitterPostException()
     {
         // Arrange
         var sut = CreateSut(_mockLogger.Object, tweetResult: null, exception: new InvalidOperationException("Twitter API error"));
 
         // Act
-        var result = await sut.SendTweetAsync("Hello world!");
+        var act = () => sut.SendTweetAsync("Hello world!");
 
         // Assert
-        result.Should().BeNull();
+        await act.Should().ThrowAsync<TwitterPostException>()
+            .WithMessage("*Hello world!*");
+    }
+
+    [Fact]
+    public void TwitterPostException_IsA_BroadcastingException()
+    {
+        var exception = new TwitterPostException("test message");
+
+        exception.Should().BeAssignableTo<BroadcastingException>();
     }
 
     private sealed class TestableTwitterManager(ILogger<TwitterManager> logger, Tweet? tweetResult, Exception? exception = null)

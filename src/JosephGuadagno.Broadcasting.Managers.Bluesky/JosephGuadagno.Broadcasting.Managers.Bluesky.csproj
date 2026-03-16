@@ -39,4 +39,8 @@
       <PackageReference Include="X.Web.MetaExtractor" Version="2.1.1" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
+    </ItemGroup>
+
 </Project>
