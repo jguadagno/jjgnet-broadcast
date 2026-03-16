@@ -2,6 +2,7 @@
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
@@ -58,18 +59,18 @@ public class ProcessScheduledItemFired(
             LinkedInPostLink linkedInPost;
             // The scheduled post should always have a message.  We just need to craft the Title and Urls
 
-            switch (scheduledItem.ItemTableName)
+            switch (scheduledItem.ItemType)
             {
-                case SourceSystems.Engagements:
+                case ScheduledItemType.Engagements:
                     linkedInPost = await GetPostForEngagement(scheduledItem.ItemPrimaryKey);
                     break;
-                case SourceSystems.Talks:
+                case ScheduledItemType.Talks:
                     linkedInPost = await GetPostForTalk(scheduledItem.ItemPrimaryKey);
                     break;
-                case SourceSystems.SyndicationFeedSources:
+                case ScheduledItemType.SyndicationFeedSources:
                     linkedInPost = await GetPostForSyndicationSource(scheduledItem.ItemPrimaryKey);
                     break;
-                case SourceSystems.YouTubeSources:
+                case ScheduledItemType.YouTubeSources:
                     linkedInPost = await GetPostForYouTubeSource(scheduledItem.ItemPrimaryKey);
                     break;
                 default:

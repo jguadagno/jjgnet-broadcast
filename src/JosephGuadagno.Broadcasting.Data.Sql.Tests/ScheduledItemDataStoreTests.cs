@@ -99,7 +99,7 @@ public class ScheduledItemDataStoreTests : IDisposable
         var domainItem = new Domain.Models.ScheduledItem
         {
             Id = 0,
-            ItemTableName = "TestTable",
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
             ItemPrimaryKey = 10,
             Message = "New Message",
             SendOnDateTime = sendOn
@@ -126,7 +126,7 @@ public class ScheduledItemDataStoreTests : IDisposable
         var domainItem = new Domain.Models.ScheduledItem
         {
             Id = item.Id,
-            ItemTableName = item.ItemTableName,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
             ItemPrimaryKey = item.ItemPrimaryKey,
             Message = "Updated Message",
             SendOnDateTime = item.SendOnDateTime

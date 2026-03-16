@@ -1,4 +1,5 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 
 namespace JosephGuadagno.Broadcasting.Web.MappingProfiles;
 
@@ -14,11 +15,17 @@ public class WebMappingProfile: Profile
     {
         CreateMap<Models.EngagementViewModel, Domain.Models.Engagement>();
         CreateMap<Models.TalkViewModel, Domain.Models.Talk>();
-        CreateMap<Models.ScheduledItemViewModel, Domain.Models.ScheduledItem>();
+        CreateMap<Models.ScheduledItemViewModel, Domain.Models.ScheduledItem>()
+            .ForMember(
+                destination => destination.ItemType,
+                options => options.MapFrom(source => Enum.Parse<ScheduledItemType>(source.ItemTableName)));
 
         CreateMap<Domain.Models.Engagement, Models.EngagementViewModel>()
             .ForMember(destination => destination.TimeZones, options => options.Ignore());
         CreateMap<Domain.Models.Talk, Models.TalkViewModel>();
-        CreateMap<Domain.Models.ScheduledItem, Models.ScheduledItemViewModel>();
+        CreateMap<Domain.Models.ScheduledItem, Models.ScheduledItemViewModel>()
+            .ForMember(
+                destination => destination.ItemTableName,
+                options => options.MapFrom(source => source.ItemType.ToString()));
     }
 }

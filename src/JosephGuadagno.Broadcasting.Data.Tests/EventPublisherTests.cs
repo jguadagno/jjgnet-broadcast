@@ -1,6 +1,7 @@
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.Extensions.Logging;
@@ -220,7 +221,7 @@ public class EventPublisherTests
     public async Task PublishScheduledItemFiredEventsAsync_NullSubject_ThrowsArgumentNullException()
     {
         // Arrange
-        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemTableName = "SourceData", ItemPrimaryKey = 1, Message = "Msg", SendOnDateTime = DateTimeOffset.UtcNow } };
+        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 1, Message = "Msg", SendOnDateTime = DateTimeOffset.UtcNow } };
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
@@ -231,7 +232,7 @@ public class EventPublisherTests
     public async Task PublishScheduledItemFiredEventsAsync_EmptySubject_ThrowsArgumentNullException()
     {
         // Arrange
-        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemTableName = "SourceData", ItemPrimaryKey = 1, Message = "Msg", SendOnDateTime = DateTimeOffset.UtcNow } };
+        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 1, Message = "Msg", SendOnDateTime = DateTimeOffset.UtcNow } };
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
@@ -256,7 +257,7 @@ public class EventPublisherTests
     {
         // Arrange
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings>());
-        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemTableName = "SourceData", ItemPrimaryKey = 1, Message = "Msg", SendOnDateTime = DateTimeOffset.UtcNow } };
+        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 1, Message = "Msg", SendOnDateTime = DateTimeOffset.UtcNow } };
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -269,7 +270,7 @@ public class EventPublisherTests
         // Arrange
         var topicSettings = CreateTopicSettings(Topics.ScheduledItemFired);
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
-        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemTableName = "t", ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
+        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
         _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Mock.Of<Azure.Response>());
 
@@ -287,7 +288,7 @@ public class EventPublisherTests
         // Arrange
         var topicSettings = CreateTopicSettings(Topics.ScheduledItemFired);
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
-        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemTableName = "t", ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
+        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
         _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Failed"));
 

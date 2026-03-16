@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 
 namespace JosephGuadagno.Broadcasting.Domain.Models;
 
@@ -12,15 +13,18 @@ public class ScheduledItem
     /// The identifier of the row
     /// </summary>
     public int Id { get; set; }
-        
+
     /// <summary>
-    /// The table name where the item is stored
+    /// The type of item that is scheduled to be sent out.
     /// </summary>
-    /// <remarks>
-    /// This could be SourceData, Engagements, or more
-    /// </remarks>
     [Required]
-    public string ItemTableName { get; set; }
+    public ScheduledItemType ItemType { get; set; }
+
+    /// <summary>
+    /// The table name where the item is stored.
+    /// Derived from <see cref="ItemType"/> for backward compatibility.
+    /// </summary>
+    public string ItemTableName => ItemType.ToString();
         
     /// <summary>
     /// The primary key for this record.

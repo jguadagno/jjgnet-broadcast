@@ -1,4 +1,5 @@
 using JosephGuadagno.Broadcasting.Data;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Moq;
@@ -20,7 +21,7 @@ public class DataRepositoryBaseTests
     public async Task GetAsync_WithPrimaryKey_CallsDataStore()
     {
         // Arrange
-        var expected = new ScheduledItem { Id = 1, ItemTableName = "SourceData", ItemPrimaryKey = 42, Message = "Test", SendOnDateTime = DateTimeOffset.UtcNow };
+        var expected = new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 42, Message = "Test", SendOnDateTime = DateTimeOffset.UtcNow };
         _dataStoreMock.Setup(d => d.GetAsync(1)).ReturnsAsync(expected);
 
         // Act
@@ -35,7 +36,7 @@ public class DataRepositoryBaseTests
     public async Task SaveAsync_WithEntity_CallsDataStore()
     {
         // Arrange
-        var entity = new ScheduledItem { Id = 1, ItemTableName = "SourceData", ItemPrimaryKey = 42, Message = "Test", SendOnDateTime = DateTimeOffset.UtcNow };
+        var entity = new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 42, Message = "Test", SendOnDateTime = DateTimeOffset.UtcNow };
         _dataStoreMock.Setup(d => d.SaveAsync(entity)).ReturnsAsync(entity);
 
         // Act
@@ -52,8 +53,8 @@ public class DataRepositoryBaseTests
         // Arrange
         var items = new List<ScheduledItem>
         {
-            new ScheduledItem { Id = 1, ItemTableName = "SourceData", ItemPrimaryKey = 1, Message = "Msg1", SendOnDateTime = DateTimeOffset.UtcNow },
-            new ScheduledItem { Id = 2, ItemTableName = "SourceData", ItemPrimaryKey = 2, Message = "Msg2", SendOnDateTime = DateTimeOffset.UtcNow }
+            new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 1, Message = "Msg1", SendOnDateTime = DateTimeOffset.UtcNow },
+            new ScheduledItem { Id = 2, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 2, Message = "Msg2", SendOnDateTime = DateTimeOffset.UtcNow }
         };
         _dataStoreMock.Setup(d => d.GetAllAsync()).ReturnsAsync(items);
 
@@ -69,7 +70,7 @@ public class DataRepositoryBaseTests
     public async Task DeleteAsync_WithEntity_CallsDataStore()
     {
         // Arrange
-        var entity = new ScheduledItem { Id = 1, ItemTableName = "SourceData", ItemPrimaryKey = 1, Message = "Msg", SendOnDateTime = DateTimeOffset.UtcNow };
+        var entity = new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 1, Message = "Msg", SendOnDateTime = DateTimeOffset.UtcNow };
         _dataStoreMock.Setup(d => d.DeleteAsync(entity)).ReturnsAsync(true);
 
         // Act

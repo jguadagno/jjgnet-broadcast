@@ -57,7 +57,7 @@ public class SchedulesControllerTests
     private static ScheduledItem BuildScheduledItem(int id = 1) => new()
     {
         Id = id,
-        ItemTableName = "SourceData",
+        ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
         ItemPrimaryKey = id * 10,
         Message = $"Check out item {id}!",
         SendOnDateTime = DateTimeOffset.UtcNow.AddDays(id),
@@ -173,7 +173,7 @@ public class SchedulesControllerTests
         var item = new ScheduledItem
         {
             Id = 0,
-            ItemTableName = "SourceData",
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
             ItemPrimaryKey = 100,
             Message = "New scheduled post",
             SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1)
