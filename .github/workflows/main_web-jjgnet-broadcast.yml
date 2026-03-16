@@ -26,7 +26,7 @@ jobs:
         run: dotnet build ./src/JosephGuadagno.Broadcasting.Web --configuration Release
 
       - name: Test
-        run: dotnet test src/ --no-build --verbosity normal --configuration Release --filter JosephGuadagno.Broadcasting.Web.Tests
+        run: dotnet test ./src/JosephGuadagno.Broadcasting.Web.Tests --no-build --verbosity normal --configuration Release
 
       - name: dotnet publish
         run: dotnet publish ./src/JosephGuadagno.Broadcasting.Web -c Release -o ${{env.DOTNET_ROOT}}/web-jjgnet-broadcast
