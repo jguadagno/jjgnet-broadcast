@@ -113,6 +113,7 @@ public partial class BroadcastingContext : DbContext
                 .HasName("SyndicationFeedSource_pk_Id");
 
             entity.Property(e => e.FeedIdentifier)
+                .HasMaxLength(450)
                 .IsRequired();
 
             entity.Property(e => e.Author)

@@ -44,4 +44,9 @@ public class YouTubeSourceManager : IYouTubeSourceManager
     {
         return await _youTubeSourceRepository.GetByUrlAsync(url);
     }
+
+    public async Task<YouTubeSource?> GetByVideoIdAsync(string videoId)
+    {
+        return await _youTubeSourceRepository.GetByVideoIdAsync(videoId);
+    }
 }
