@@ -9,50 +9,50 @@ namespace JosephGuadagno.Broadcasting.Managers;
 
 public class SyndicationFeedSourceManager : ISyndicationFeedSourceManager
 {
-    private readonly ISyndicationFeedSourceRepository _syndicationFeedSourceRepository;
+    private readonly ISyndicationFeedSourceDataStore _syndicationFeedSourceDataStore;
 
-    public SyndicationFeedSourceManager(ISyndicationFeedSourceRepository syndicationFeedSourceRepository)
+    public SyndicationFeedSourceManager(ISyndicationFeedSourceDataStore syndicationFeedSourceDataStore)
     {
-        _syndicationFeedSourceRepository = syndicationFeedSourceRepository;
+        _syndicationFeedSourceDataStore = syndicationFeedSourceDataStore;
     }
 
     public async Task<SyndicationFeedSource> GetAsync(int primaryKey)
     {
-        return await _syndicationFeedSourceRepository.GetAsync(primaryKey);
+        return await _syndicationFeedSourceDataStore.GetAsync(primaryKey);
     }
 
     public async Task<SyndicationFeedSource> SaveAsync(SyndicationFeedSource entity)
     {
-        return await _syndicationFeedSourceRepository.SaveAsync(entity);
+        return await _syndicationFeedSourceDataStore.SaveAsync(entity);
     }
 
     public async Task<List<SyndicationFeedSource>> GetAllAsync()
     {
-        return await _syndicationFeedSourceRepository.GetAllAsync();
+        return await _syndicationFeedSourceDataStore.GetAllAsync();
     }
 
     public async Task<bool> DeleteAsync(SyndicationFeedSource entity)
     {
-        return await _syndicationFeedSourceRepository.DeleteAsync(entity);
+        return await _syndicationFeedSourceDataStore.DeleteAsync(entity);
     }
 
     public async Task<bool> DeleteAsync(int primaryKey)
     {
-        return await _syndicationFeedSourceRepository.DeleteAsync(primaryKey);
+        return await _syndicationFeedSourceDataStore.DeleteAsync(primaryKey);
     }
 
     public async Task<SyndicationFeedSource?> GetByUrlAsync(string url)
     {
-        return await _syndicationFeedSourceRepository.GetByUrlAsync(url);
+        return await _syndicationFeedSourceDataStore.GetByUrlAsync(url);
     }
 
     public async Task<SyndicationFeedSource?> GetByFeedIdentifierAsync(string feedIdentifier)
     {
-        return await _syndicationFeedSourceRepository.GetByFeedIdentifierAsync(feedIdentifier);
+        return await _syndicationFeedSourceDataStore.GetByFeedIdentifierAsync(feedIdentifier);
     }
 
     public async Task<SyndicationFeedSource?> GetRandomSyndicationDataAsync(DateTimeOffset cutoffDate, List<string> excludedCategories)
     {
-        return await _syndicationFeedSourceRepository.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories);
+        return await _syndicationFeedSourceDataStore.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories);
     }
 }
