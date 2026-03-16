@@ -26,7 +26,7 @@ jobs:
         run: dotnet build ./src/JosephGuadagno.Broadcasting.Api --configuration Release
 
       - name: Test
-        run: dotnet test src/ --no-build --verbosity normal --configuration Release --filter "JosephGuadagno.Broadcasting.Api.Tests"
+        run: dotnet test src/ --no-build --verbosity normal --configuration Release --filter JosephGuadagno.Broadcasting.Api.Tests
 
       - name: dotnet publish
         run: dotnet publish ./src/JosephGuadagno.Broadcasting.Api -c Release -o ${{env.DOTNET_ROOT}}/api-jjgnet-broadcast
