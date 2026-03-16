@@ -29,6 +29,7 @@ public class EventPublisherTests
         public TestableEventPublisher(IEventPublisherSettings settings, ILogger<EventPublisher> logger)
             : base(settings, logger)
         {
+            InitialRetryDelay = TimeSpan.Zero;
         }
 
         protected override EventGridPublisherClient GetEventGridPublisherClient(ITopicEndpointSettings topicSettings)
@@ -125,6 +126,44 @@ public class EventPublisherTests
 
         // Assert
         Assert.False(result);
+        _publisher.ClientMock.Verify(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
+    }
+
+    [Fact]
+    public async Task PublishSyndicationFeedEventsAsync_WhenFirstAttemptFails_RetriesAndSucceeds()
+    {
+        // Arrange
+        var topicSettings = CreateTopicSettings(Topics.NewSyndicationFeedItem);
+        _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
+        var items = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow } };
+        _publisher.ClientMock.SetupSequence(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Transient failure"))
+            .ReturnsAsync(Mock.Of<Azure.Response>());
+
+        // Act
+        var result = await _publisher.PublishSyndicationFeedEventsAsync("subject", items);
+
+        // Assert
+        Assert.True(result);
+        _publisher.ClientMock.Verify(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task PublishSyndicationFeedEventsAsync_WhenAllAttemptsFailWithException_ReturnsFalse()
+    {
+        // Arrange
+        var topicSettings = CreateTopicSettings(Topics.NewSyndicationFeedItem);
+        _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
+        var items = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow } };
+        _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Persistent failure"));
+
+        // Act
+        var result = await _publisher.PublishSyndicationFeedEventsAsync("subject", items);
+
+        // Assert
+        Assert.False(result);
+        _publisher.ClientMock.Verify(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
     }
 
     #endregion
@@ -211,6 +250,44 @@ public class EventPublisherTests
 
         // Assert
         Assert.False(result);
+        _publisher.ClientMock.Verify(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
+    }
+
+    [Fact]
+    public async Task PublishYouTubeEventsAsync_WhenFirstAttemptFails_RetriesAndSucceeds()
+    {
+        // Arrange
+        var topicSettings = CreateTopicSettings(Topics.NewYouTubeItem);
+        _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
+        var items = new List<YouTubeSource> { new YouTubeSource { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow } };
+        _publisher.ClientMock.SetupSequence(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Transient failure"))
+            .ReturnsAsync(Mock.Of<Azure.Response>());
+
+        // Act
+        var result = await _publisher.PublishYouTubeEventsAsync("subject", items);
+
+        // Assert
+        Assert.True(result);
+        _publisher.ClientMock.Verify(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task PublishYouTubeEventsAsync_WhenAllAttemptsFailWithException_ReturnsFalse()
+    {
+        // Arrange
+        var topicSettings = CreateTopicSettings(Topics.NewYouTubeItem);
+        _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
+        var items = new List<YouTubeSource> { new YouTubeSource { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow } };
+        _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Persistent failure"));
+
+        // Act
+        var result = await _publisher.PublishYouTubeEventsAsync("subject", items);
+
+        // Assert
+        Assert.False(result);
+        _publisher.ClientMock.Verify(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
     }
 
     #endregion
@@ -297,6 +374,7 @@ public class EventPublisherTests
 
         // Assert
         Assert.False(result);
+        _publisher.ClientMock.Verify(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
     }
 
     #endregion
@@ -381,6 +459,7 @@ public class EventPublisherTests
 
         // Assert
         Assert.False(result);
+        _publisher.ClientMock.Verify(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
     }
 
     #endregion
