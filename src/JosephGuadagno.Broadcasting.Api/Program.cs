@@ -1,6 +1,7 @@
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Azure.Monitor.OpenTelemetry.Exporter;
 
+using JosephGuadagno.Broadcasting.Api.Infrastructure;
 using JosephGuadagno.Broadcasting.Api.Interfaces;
 using JosephGuadagno.Broadcasting.Api.Models;
 using JosephGuadagno.Broadcasting.Data.Repositories;
@@ -55,6 +56,8 @@ builder.Services.AddAutoMapper(config =>
 ConfigureApplication(builder.Services);
 
 // ASP.NET Core API stuff
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddControllers();
 
 // Configure OpenAPI
@@ -94,6 +97,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();
