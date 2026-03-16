@@ -38,7 +38,7 @@ public class ScheduledItemDataStoreTests : IDisposable
         DateTimeOffset? sendOn = null,
         bool messageSent = false) => new ScheduledItem
     {
-        ItemTableName = "TestTable",
+        ItemTableName = "Engagements",
         ItemPrimaryKey = 1,
         Message = message,
         SendOnDateTime = sendOn ?? DateTimeOffset.UtcNow.AddHours(1),
@@ -191,9 +191,9 @@ public class ScheduledItemDataStoreTests : IDisposable
         var past = DateTimeOffset.Now.AddHours(-1);
         var future = DateTimeOffset.Now.AddHours(1);
         _context.ScheduledItems.AddRange(
-            new ScheduledItem { ItemTableName = "T", ItemPrimaryKey = 1, Message = "Past Unsent", SendOnDateTime = past, MessageSent = false },
-            new ScheduledItem { ItemTableName = "T", ItemPrimaryKey = 2, Message = "Past Sent", SendOnDateTime = past, MessageSent = true },
-            new ScheduledItem { ItemTableName = "T", ItemPrimaryKey = 3, Message = "Future Unsent", SendOnDateTime = future, MessageSent = false }
+            new ScheduledItem { ItemTableName = "Engagements", ItemPrimaryKey = 1, Message = "Past Unsent", SendOnDateTime = past, MessageSent = false },
+            new ScheduledItem { ItemTableName = "Engagements", ItemPrimaryKey = 2, Message = "Past Sent", SendOnDateTime = past, MessageSent = true },
+            new ScheduledItem { ItemTableName = "Engagements", ItemPrimaryKey = 3, Message = "Future Unsent", SendOnDateTime = future, MessageSent = false }
         );
         await _context.SaveChangesAsync();
 
@@ -213,9 +213,9 @@ public class ScheduledItemDataStoreTests : IDisposable
         var past = DateTimeOffset.Now.AddHours(-1);
         var future = DateTimeOffset.Now.AddHours(1);
         _context.ScheduledItems.AddRange(
-            new ScheduledItem { ItemTableName = "T", ItemPrimaryKey = 1, Message = "Past Unsent", SendOnDateTime = past, MessageSent = false },
-            new ScheduledItem { ItemTableName = "T", ItemPrimaryKey = 2, Message = "Past Sent", SendOnDateTime = past, MessageSent = true },
-            new ScheduledItem { ItemTableName = "T", ItemPrimaryKey = 3, Message = "Future Unsent", SendOnDateTime = future, MessageSent = false }
+            new ScheduledItem { ItemTableName = "Engagements", ItemPrimaryKey = 1, Message = "Past Unsent", SendOnDateTime = past, MessageSent = false },
+            new ScheduledItem { ItemTableName = "Engagements", ItemPrimaryKey = 2, Message = "Past Sent", SendOnDateTime = past, MessageSent = true },
+            new ScheduledItem { ItemTableName = "Engagements", ItemPrimaryKey = 3, Message = "Future Unsent", SendOnDateTime = future, MessageSent = false }
         );
         await _context.SaveChangesAsync();
 
@@ -233,9 +233,9 @@ public class ScheduledItemDataStoreTests : IDisposable
     {
         // Arrange
         _context.ScheduledItems.AddRange(
-            new ScheduledItem { ItemTableName = "T", ItemPrimaryKey = 1, Message = "June Item", SendOnDateTime = new DateTimeOffset(2025, 6, 15, 10, 0, 0, TimeSpan.Zero), MessageSent = false },
-            new ScheduledItem { ItemTableName = "T", ItemPrimaryKey = 2, Message = "July Item", SendOnDateTime = new DateTimeOffset(2025, 7, 5, 10, 0, 0, TimeSpan.Zero), MessageSent = false },
-            new ScheduledItem { ItemTableName = "T", ItemPrimaryKey = 3, Message = "June Item 2", SendOnDateTime = new DateTimeOffset(2025, 6, 20, 10, 0, 0, TimeSpan.Zero), MessageSent = false }
+            new ScheduledItem { ItemTableName = "Engagements", ItemPrimaryKey = 1, Message = "June Item", SendOnDateTime = new DateTimeOffset(2025, 6, 15, 10, 0, 0, TimeSpan.Zero), MessageSent = false },
+            new ScheduledItem { ItemTableName = "Engagements", ItemPrimaryKey = 2, Message = "July Item", SendOnDateTime = new DateTimeOffset(2025, 7, 5, 10, 0, 0, TimeSpan.Zero), MessageSent = false },
+            new ScheduledItem { ItemTableName = "Engagements", ItemPrimaryKey = 3, Message = "June Item 2", SendOnDateTime = new DateTimeOffset(2025, 6, 20, 10, 0, 0, TimeSpan.Zero), MessageSent = false }
         );
         await _context.SaveChangesAsync();
 
