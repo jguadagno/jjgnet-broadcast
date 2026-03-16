@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JosephGuadagno.Broadcasting.Managers.LinkedIn.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Extensions.Logging;
 
@@ -60,7 +61,7 @@ public class LinkedInManager : ILinkedInManager
     /// <param name="postText">The text of the share</param>
     /// <returns>A string with the LinkedIn share id</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    /// <exception cref="HttpRequestException"></exception>
+    /// <exception cref="LinkedInPostException"></exception>
     public async Task<string> PostShareText(string accessToken, string authorId, string postText)
     {
         if (string.IsNullOrEmpty(accessToken))
@@ -98,7 +99,7 @@ public class LinkedInManager : ILinkedInManager
         {
             return linkedInResponse.Id;
         }
-        throw new HttpRequestException($"Failed to post status update to LinkedIn: LinkedIn Status Code: '{linkedInResponse.ServiceErrorCode}', LinkedIn Message: '{linkedInResponse.Message}'");
+        throw new LinkedInPostException($"Failed to post status update to LinkedIn: LinkedIn Status Code: '{linkedInResponse.ServiceErrorCode}', LinkedIn Message: '{linkedInResponse.Message}'");
     }
     
     /// <summary>
@@ -112,7 +113,7 @@ public class LinkedInManager : ILinkedInManager
     /// <param name="linkDescription">Optional, description of the link</param>
     /// <returns>A string with the LinkedIn share id</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    /// <exception cref="HttpRequestException"></exception>
+    /// <exception cref="LinkedInPostException"></exception>
     public async Task<string> PostShareTextAndLink(string accessToken, string authorId, string postText, string link, string? linkTitle = null, string? linkDescription = null)
     {
         if (string.IsNullOrEmpty(accessToken))
@@ -164,7 +165,7 @@ public class LinkedInManager : ILinkedInManager
         {
             return linkedInResponse.Id;
         }
-        throw new HttpRequestException(BuildLinkedInResponseErrorMessage(linkedInResponse));
+        throw new LinkedInPostException(BuildLinkedInResponseErrorMessage(linkedInResponse));
 
     }
     
@@ -179,8 +180,7 @@ public class LinkedInManager : ILinkedInManager
     /// <param name="imageDescription">Optional, description of the image</param>
     /// <returns>A string with the LinkedIn share id</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    /// <exception cref="ApplicationException"></exception>
-    /// <exception cref="HttpRequestException"></exception>
+    /// <exception cref="LinkedInPostException"></exception>
     public async Task<string> PostShareTextAndImage(string accessToken, string authorId, string postText, byte[] image, string? imageTitle = null, string? imageDescription = null)
     {
         if (string.IsNullOrEmpty(accessToken))
@@ -209,7 +209,7 @@ public class LinkedInManager : ILinkedInManager
 
         if (!wasFileUploadSuccessful)
         {
-            throw new ApplicationException("Failed to upload image to LinkedIn");
+            throw new LinkedInPostException("Failed to upload image to LinkedIn");
         }
         
         // Send the image via PostShare
@@ -247,7 +247,7 @@ public class LinkedInManager : ILinkedInManager
         {
             return linkedInResponse.Id;
         }
-        throw new HttpRequestException(BuildLinkedInResponseErrorMessage(linkedInResponse));
+        throw new LinkedInPostException(BuildLinkedInResponseErrorMessage(linkedInResponse));
     }
 
     private async Task<T> ExecuteGetAsync<T>(string url, string accessToken)
@@ -261,7 +261,7 @@ public class LinkedInManager : ILinkedInManager
 
         var response = await _httpClient.GetAsync(url);
         if (response.StatusCode != HttpStatusCode.OK)
-            throw new HttpRequestException(
+            throw new LinkedInPostException(
                 $"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");
             
         // Parse the Results
@@ -276,7 +276,7 @@ public class LinkedInManager : ILinkedInManager
 
         if (results == null)
         {
-            throw new HttpRequestException(
+            throw new LinkedInPostException(
                 $"Unable to deserialize the response from the HttpResponseMessage: {content}.");
         }
 
@@ -314,8 +314,7 @@ public class LinkedInManager : ILinkedInManager
         
         if (linkedInResponse == null)
         {
-            // TODO: Custom Exception
-            throw new HttpRequestException(
+            throw new LinkedInPostException(
                 $"Unable to deserialize the response from the HttpResponseMessage: {content}.");
         }
 
@@ -366,8 +365,7 @@ public class LinkedInManager : ILinkedInManager
 
         if (uploadResponse == null)
         {
-            // TODO: Custom Exception
-            throw new ApplicationException("Could not deserialize the response from LinkedIn");
+            throw new LinkedInPostException("Could not deserialize the response from LinkedIn");
         }
         return uploadResponse;
     }
@@ -397,7 +395,7 @@ public class LinkedInManager : ILinkedInManager
         
         if (response.StatusCode != HttpStatusCode.Created)
         {
-            throw new HttpRequestException(
+            throw new LinkedInPostException(
                 $"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");
         }
 

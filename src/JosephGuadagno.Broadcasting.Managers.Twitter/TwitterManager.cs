@@ -1,4 +1,5 @@
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Managers.Twitter.Exceptions;
 using LinqToTwitter;
 using Microsoft.Extensions.Logging;
 
@@ -15,16 +16,20 @@ public class TwitterManager(TwitterContext twitterContext, ILogger<TwitterManage
             if (tweet is null)
             {
                 logger.LogError("Failed to send the tweet: '{TweetText}'.", tweetText);
-                return null;
+                throw new TwitterPostException($"Failed to send tweet: '{tweetText}'.");
             }
 
             logger.LogDebug("Tweet sent successfully. Id: '{TweetId}'", tweet.ID);
             return tweet.ID;
         }
+        catch (TwitterPostException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to send the tweet: '{TweetText}'. Exception: '{ExceptionMessage}'", tweetText, ex.Message);
-            return null;
+            throw new TwitterPostException($"Failed to send tweet: '{tweetText}'.", ex);
         }
     }
 

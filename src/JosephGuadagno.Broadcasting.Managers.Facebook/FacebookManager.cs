@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 using Microsoft.Extensions.Logging;
@@ -75,19 +76,18 @@ public class FacebookManager : IFacebookManager
                             postStatusResponse.Error.Message,
                             postStatusResponse.Error.Type, postStatusResponse.Error.Code,
                             postStatusResponse.Error.SubCode, postStatusResponse.Error.FacebookTraceId);
-                        // TODO: Turn into a custom exception (FacebookPostException)
-                        throw new ApplicationException(
+                        throw new FacebookPostException(
                             $"Failed to post status. Reason {postStatusResponse.Error.Message}");
                     }
                     
                     // If we made it here, there was an error but the response did not have the FacebookPostError populated
                     _logger.LogError("Failed to post status. Could not determine the reason. Response: {Response}", content);
-                    throw new ApplicationException(
+                    throw new FacebookPostException(
                         $"Failed to post status. Could not determine the reason. Response {content}");
                 }
                 
                 _logger.LogError("Failed to post status. Could not deserialized the response. Response: {Response}", content);
-                throw new ApplicationException(
+                throw new FacebookPostException(
                     $"Failed to post status. Could not deserialized the response. Response {content}");
                 
             }
@@ -95,7 +95,7 @@ public class FacebookManager : IFacebookManager
             _logger.LogError(
                 "Failed to post status. Response status code was not successful. StatusCode: '{StatusCode}', ReasonPhrase: '{ReasonPhrase}'",
                 response.StatusCode, response.ReasonPhrase);
-            throw new ApplicationException(
+            throw new FacebookPostException(
                 $"Failed to post status. Response status code was not successful. StatusCode: '{response.StatusCode}', ReasonPhrase: '{response.ReasonPhrase}'");
 
         }
@@ -146,14 +146,14 @@ public class FacebookManager : IFacebookManager
                 }
                 
                 _logger.LogError("Failed to refresh the token. Could not deserialized the response. Response: {Response}", content);
-                throw new ApplicationException(
+                throw new FacebookPostException(
                     $"Failed to refresh the token. Could not deserialized the response. Response {content}");
             }
             
             _logger.LogError(
                 "Failed to refresh the token. Response status code was not successful. StatusCode: '{StatusCode}', ReasonPhrase: '{ReasonPhrase}'",
                 response.StatusCode, response.ReasonPhrase);
-            throw new ApplicationException(
+            throw new FacebookPostException(
                 $"Failed to refresh the token. Response status code was not successful. StatusCode: '{response.StatusCode}', ReasonPhrase: '{response.ReasonPhrase}'");
 
         }
