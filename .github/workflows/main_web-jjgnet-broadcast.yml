@@ -25,6 +25,9 @@ jobs:
       - name: Build with dotnet
         run: dotnet build ./src/JosephGuadagno.Broadcasting.Web --configuration Release
 
+      - name: Test
+        run: dotnet test src/ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"
+
       - name: dotnet publish
         run: dotnet publish ./src/JosephGuadagno.Broadcasting.Web -c Release -o ${{env.DOTNET_ROOT}}/web-jjgnet-broadcast
 

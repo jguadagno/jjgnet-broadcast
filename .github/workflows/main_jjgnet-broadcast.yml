@@ -37,6 +37,10 @@ jobs:
           dotnet build ./src/JosephGuadagno.Broadcasting.Functions --configuration Release --output ./output
           popd
       
+      - name: Test
+        shell: bash
+        run: dotnet test src/ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
