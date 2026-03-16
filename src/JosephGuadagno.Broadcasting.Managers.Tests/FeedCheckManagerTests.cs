@@ -6,12 +6,12 @@ namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
 public class FeedCheckManagerTests
 {
-    private readonly Mock<IFeedCheckRepository> _repository;
+    private readonly Mock<IFeedCheckDataStore> _repository;
     private readonly FeedCheckManager _feedCheckManager;
 
     public FeedCheckManagerTests()
     {
-        _repository = new Mock<IFeedCheckRepository>();
+        _repository = new Mock<IFeedCheckDataStore>();
         _feedCheckManager = new FeedCheckManager(_repository.Object);
     }
 
