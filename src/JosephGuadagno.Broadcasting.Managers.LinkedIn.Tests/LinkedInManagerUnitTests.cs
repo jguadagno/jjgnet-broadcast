@@ -1,5 +1,7 @@
 using System.Net;
+using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn;
+using JosephGuadagno.Broadcasting.Managers.LinkedIn.Exceptions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
@@ -182,4 +184,62 @@ public class LinkedInManagerUnitTests
     }
 
     #endregion
+
+    #region Exception Scenario Tests
+
+    [Fact]
+    public async Task PostShareText_OnApiFailure_ThrowsLinkedInPostException()
+    {
+        // Arrange
+        var errorJson = "{\"message\": \"Unauthorized\", \"serviceErrorCode\": 401, \"status\": 401}";
+        SetupHttpMessageHandler(HttpStatusCode.OK, errorJson);
+        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<LinkedInPostException>(
+            () => sut.PostShareText("validToken", "authorId123", "Hello LinkedIn!"));
+
+        Assert.Contains("LinkedIn", exception.Message);
+    }
+
+    [Fact]
+    public async Task PostShareTextAndLink_OnApiFailure_ThrowsLinkedInPostException()
+    {
+        // Arrange
+        var errorJson = "{\"message\": \"Forbidden\", \"serviceErrorCode\": 403, \"status\": 403}";
+        SetupHttpMessageHandler(HttpStatusCode.OK, errorJson);
+        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<LinkedInPostException>(
+            () => sut.PostShareTextAndLink("validToken", "authorId123", "Hello LinkedIn!", "https://example.com"));
+
+        Assert.Contains("LinkedIn", exception.Message);
+    }
+
+    [Fact]
+    public void LinkedInPostException_IsA_BroadcastingException()
+    {
+        var exception = new LinkedInPostException("test message");
+
+        Assert.IsAssignableFrom<BroadcastingException>(exception);
+    }
+
+    #endregion
+
+    private void SetupHttpMessageHandler(HttpStatusCode statusCode, string content)
+    {
+        _mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<System.Threading.CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = statusCode,
+                Content = new StringContent(content, System.Text.Encoding.UTF8, "application/json")
+            });
+    }
 }
