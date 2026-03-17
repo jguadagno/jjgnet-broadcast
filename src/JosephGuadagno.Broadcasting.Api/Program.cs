@@ -161,4 +161,7 @@ void ConfigureRepositories(IServiceCollection services)
     // ScheduledItem
     services.TryAddScoped<IScheduledItemDataStore, ScheduledItemDataStore>();
     services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
+
+    // MessageTemplate
+    services.TryAddScoped<IMessageTemplateDataStore, MessageTemplateDataStore>();
 }

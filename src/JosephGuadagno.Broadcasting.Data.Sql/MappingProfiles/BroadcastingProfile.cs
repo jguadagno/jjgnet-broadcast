@@ -15,6 +15,7 @@ public class BroadcastingProfile: Profile
                 destination => destination.ItemType,
                 options => options.MapFrom(source => Enum.Parse<ScheduledItemType>(source.ItemTableName)));
         CreateMap<Models.FeedCheck, Domain.Models.FeedCheck>().ReverseMap();
+        CreateMap<Models.MessageTemplate, Domain.Models.MessageTemplate>().ReverseMap();
         CreateMap<Models.SyndicationFeedSource, Domain.Models.SyndicationFeedSource>().ReverseMap();
         CreateMap<Models.YouTubeSource, Domain.Models.YouTubeSource>().ReverseMap();
         CreateMap<Models.TokenRefresh, Domain.Models.TokenRefresh>().ReverseMap();

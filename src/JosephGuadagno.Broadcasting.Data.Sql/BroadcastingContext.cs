@@ -17,6 +17,7 @@ public partial class BroadcastingContext : DbContext
     public virtual DbSet<TokenRefresh> TokenRefreshes { get; set; } = null!;
     public virtual DbSet<SyndicationFeedSource> SyndicationFeedSources { get; set; } = null!;
     public virtual DbSet<YouTubeSource> YouTubeSources { get; set; } = null!;
+    public virtual DbSet<MessageTemplate> MessageTemplates { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -180,6 +181,26 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.LastUpdatedOn)
                 .HasDefaultValueSql("(getutcdate())");
+        });
+
+        modelBuilder.Entity<MessageTemplate>(entity =>
+        {
+            entity.HasKey(e => new { e.Platform, e.MessageType })
+                .HasName("PK_MessageTemplates");
+
+            entity.Property(e => e.Platform)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.MessageType)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Template)
+                .IsRequired();
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(500);
         });
 
         OnModelCreatingPartial(modelBuilder);
