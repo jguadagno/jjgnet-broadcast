@@ -1,7 +1,46 @@
+@model JosephGuadagno.Broadcasting.Web.Models.ScheduledItemViewModel
+
 @{
-    ViewData["Title"] = "Delete Schedule Failed";
+    ViewData["Title"] = "Delete Schedule";
 }
-<div class="alert alert-danger" role="alert">
-    <h4 class="alert-heading">Error!</h4>
-    <i class="bi bi-exclamation-circle-fill text-danger"></i>Failed to delete the schedule!
+
+<h1>Delete Schedule</h1>
+<div class="alert alert-warning" role="alert">
+    <h4 class="alert-heading">Are you sure?</h4>
+    <p>You are about to permanently delete the following scheduled item. This action cannot be undone.</p>
 </div>
+
+@if (Model != null)
+{
+    <dl class="row">
+        <dt class="col-sm-3">Id</dt>
+        <dd class="col-sm-9">@Model.Id</dd>
+        <dt class="col-sm-3">Table</dt>
+        <dd class="col-sm-9">@Model.ItemTableName</dd>
+        <dt class="col-sm-3">Primary Key</dt>
+        <dd class="col-sm-9">@Model.ItemPrimaryKey</dd>
+        <dt class="col-sm-3">Scheduled On</dt>
+        <dd class="col-sm-9"><local-time value="@Model.SendOnDateTime" /></dd>
+        <dt class="col-sm-3">Message</dt>
+        <dd class="col-sm-9">@Model.Message</dd>
+    </dl>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-circle-fill text-danger"></i>
+            Failed to delete the scheduled item. Please try again.
+        </div>
+    }
+
+    <form asp-action="Delete" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash me-2"></i>Confirm Delete
+        </button>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+            <i class="bi bi-x me-2"></i>Cancel
+        </a>
+    </form>
+}

@@ -87,21 +87,43 @@ public class EngagementsController : Controller
     }
 
     /// <summary>
-    /// Deletes an engagement.
+    /// Shows the delete confirmation page for an engagement.
     /// </summary>
     /// <param name="id">The identity of an engagement</param>
-    /// <returns>Upon success, redirects to the <see cref="Index"/></returns>
+    /// <returns>The delete confirmation view.</returns>
     [HttpGet]
     public async Task<IActionResult> Delete(int id)
     {
-        var result = await _engagementService.DeleteEngagementAsync(id);
+        var engagement = await _engagementService.GetEngagementAsync(id);
+        if (engagement == null)
+        {
+            return NotFound();
+        }
 
+        var engagementViewModel = _mapper.Map<EngagementViewModel>(engagement);
+        return View(engagementViewModel);
+    }
+
+    /// <summary>
+    /// Deletes an engagement after confirmation.
+    /// </summary>
+    /// <param name="id">The identity of an engagement</param>
+    /// <returns>Upon success, redirects to the <see cref="Index"/>. Upon failure, reloads the view.</returns>
+    [HttpPost]
+    [ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        var result = await _engagementService.DeleteEngagementAsync(id);
         if (result)
         {
             return RedirectToAction("Index");
         }
 
-        return View();
+        var engagement = await _engagementService.GetEngagementAsync(id);
+        var engagementViewModel = engagement != null ? _mapper.Map<EngagementViewModel>(engagement) : null;
+        ModelState.AddModelError(string.Empty, "Failed to delete the engagement.");
+        return View(engagementViewModel);
     }
 
     /// <summary>

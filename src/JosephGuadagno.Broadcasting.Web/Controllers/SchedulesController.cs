@@ -86,20 +86,43 @@ public class SchedulesController : Controller
     }
     
     /// <summary>
-    /// Deletes the scheduled item
+    /// Shows the delete confirmation page for a scheduled item.
     /// </summary>
     /// <param name="id">The id of the scheduled item</param>
-    /// <returns>Upon success, redirects to the <see cref="Index"/>. Upon failure, returns the error.</returns>
+    /// <returns>The delete confirmation view.</returns>
     [HttpGet]
     public async Task<IActionResult> Delete(int id)
     {
-        var result = await _scheduledItemService.DeleteScheduledItemAsync(id);
+        var scheduledItem = await _scheduledItemService.GetScheduledItemAsync(id);
+        if (scheduledItem == null)
+        {
+            return NotFound();
+        }
 
+        var scheduledItemViewModel = _mapper.Map<ScheduledItemViewModel>(scheduledItem);
+        return View(scheduledItemViewModel);
+    }
+
+    /// <summary>
+    /// Deletes the scheduled item after confirmation.
+    /// </summary>
+    /// <param name="id">The id of the scheduled item</param>
+    /// <returns>Upon success, redirects to the <see cref="Index"/>. Upon failure, reloads the view.</returns>
+    [HttpPost]
+    [ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        var result = await _scheduledItemService.DeleteScheduledItemAsync(id);
         if (result)
         {
             return RedirectToAction("Index");
         }
-        return View();
+
+        var scheduledItem = await _scheduledItemService.GetScheduledItemAsync(id);
+        var scheduledItemViewModel = scheduledItem != null ? _mapper.Map<ScheduledItemViewModel>(scheduledItem) : null;
+        ModelState.AddModelError(string.Empty, "Failed to delete the scheduled item.");
+        return View(scheduledItemViewModel);
     }
     
     /// <summary>

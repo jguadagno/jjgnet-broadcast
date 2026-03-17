@@ -139,13 +139,30 @@ public class EngagementsControllerTests
     }
 
     [Fact]
-    public async Task Delete_WhenDeleteSucceeds_ShouldRedirectToIndex()
+    public async Task Delete_Get_ShouldReturnConfirmationView()
+    {
+        // Arrange
+        var engagement = new Engagement { Id = 1 };
+        var viewModel = new EngagementViewModel { Id = 1 };
+        _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(engagement);
+        _mapper.Setup(m => m.Map<EngagementViewModel>(It.IsAny<object>())).Returns(viewModel);
+
+        // Act
+        var result = await _controller.Delete(1);
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        Assert.Equal(viewModel, viewResult.Model);
+    }
+
+    [Fact]
+    public async Task DeleteConfirmed_WhenDeleteSucceeds_ShouldRedirectToIndex()
     {
         // Arrange
         _engagementService.Setup(s => s.DeleteEngagementAsync(1)).ReturnsAsync(true);
 
         // Act
-        var result = await _controller.Delete(1);
+        var result = await _controller.DeleteConfirmed(1);
 
         // Assert
         var redirectResult = Assert.IsType<RedirectToActionResult>(result);
@@ -154,13 +171,17 @@ public class EngagementsControllerTests
     }
 
     [Fact]
-    public async Task Delete_WhenDeleteFails_ShouldReturnView()
+    public async Task DeleteConfirmed_WhenDeleteFails_ShouldReturnView()
     {
         // Arrange
+        var engagement = new Engagement { Id = 1 };
+        var viewModel = new EngagementViewModel { Id = 1 };
         _engagementService.Setup(s => s.DeleteEngagementAsync(1)).ReturnsAsync(false);
+        _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(engagement);
+        _mapper.Setup(m => m.Map<EngagementViewModel>(It.IsAny<object>())).Returns(viewModel);
 
         // Act
-        var result = await _controller.Delete(1);
+        var result = await _controller.DeleteConfirmed(1);
 
         // Assert
         Assert.IsType<ViewResult>(result);
