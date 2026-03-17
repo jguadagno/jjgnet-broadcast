@@ -47,7 +47,9 @@ create table dbo.ScheduledItems
     Message          nvarchar(max),
     SendOnDateTime   datetimeoffset not null,
     MessageSent      bit default 0  not null,
-    MessageSentOn    datetimeoffset
+    MessageSentOn    datetimeoffset,
+    MessageTemplate  nvarchar(max),
+    ImageUrl         nvarchar(2048)
 )
 go
 
