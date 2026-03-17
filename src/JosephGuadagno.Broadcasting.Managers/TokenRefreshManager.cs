@@ -8,40 +8,40 @@ namespace JosephGuadagno.Broadcasting.Managers;
 
 public class TokenRefreshManager : ITokenRefreshManager
 {
-    private readonly ITokenRefreshRepository _tokenRefreshRepository;
+    private readonly ITokenRefreshDataStore _tokenRefreshDataStore;
 
-    public TokenRefreshManager(ITokenRefreshRepository tokenRefreshRepository)
+    public TokenRefreshManager(ITokenRefreshDataStore tokenRefreshDataStore)
     {
-        _tokenRefreshRepository = tokenRefreshRepository;
+        _tokenRefreshDataStore = tokenRefreshDataStore;
     }
 
     public async Task<TokenRefresh> GetAsync(int primaryKey)
     {
-        return await _tokenRefreshRepository.GetAsync(primaryKey);
+        return await _tokenRefreshDataStore.GetAsync(primaryKey);
     }
 
     public async Task<TokenRefresh> SaveAsync(TokenRefresh entity)
     {
-        return await _tokenRefreshRepository.SaveAsync(entity);
+        return await _tokenRefreshDataStore.SaveAsync(entity);
     }
 
     public async Task<List<TokenRefresh>> GetAllAsync()
     {
-        return await _tokenRefreshRepository.GetAllAsync();
+        return await _tokenRefreshDataStore.GetAllAsync();
     }
 
     public async Task<bool> DeleteAsync(TokenRefresh entity)
     {
-        return await _tokenRefreshRepository.DeleteAsync(entity);
+        return await _tokenRefreshDataStore.DeleteAsync(entity);
     }
 
     public async Task<bool> DeleteAsync(int primaryKey)
     {
-        return await _tokenRefreshRepository.DeleteAsync(primaryKey);
+        return await _tokenRefreshDataStore.DeleteAsync(primaryKey);
     }
 
     public async Task<TokenRefresh?> GetByNameAsync(string name)
     {
-        return await _tokenRefreshRepository.GetByNameAsync(name);
+        return await _tokenRefreshDataStore.GetByNameAsync(name);
     }
 }
