@@ -8,40 +8,40 @@ namespace JosephGuadagno.Broadcasting.Managers;
 
 public class FeedCheckManager : IFeedCheckManager
 {
-    private readonly IFeedCheckRepository _feedCheckRepository;
+    private readonly IFeedCheckDataStore _feedCheckDataStore;
 
-    public FeedCheckManager(IFeedCheckRepository feedCheckRepository)
+    public FeedCheckManager(IFeedCheckDataStore feedCheckDataStore)
     {
-        _feedCheckRepository = feedCheckRepository;
+        _feedCheckDataStore = feedCheckDataStore;
     }
 
     public async Task<FeedCheck> GetAsync(int primaryKey)
     {
-        return await _feedCheckRepository.GetAsync(primaryKey);
+        return await _feedCheckDataStore.GetAsync(primaryKey);
     }
 
     public async Task<FeedCheck> SaveAsync(FeedCheck entity)
     {
-        return await _feedCheckRepository.SaveAsync(entity);
+        return await _feedCheckDataStore.SaveAsync(entity);
     }
 
     public async Task<List<FeedCheck>> GetAllAsync()
     {
-        return await _feedCheckRepository.GetAllAsync();
+        return await _feedCheckDataStore.GetAllAsync();
     }
 
     public async Task<bool> DeleteAsync(FeedCheck entity)
     {
-        return await _feedCheckRepository.DeleteAsync(entity);
+        return await _feedCheckDataStore.DeleteAsync(entity);
     }
 
     public async Task<bool> DeleteAsync(int primaryKey)
     {
-        return await _feedCheckRepository.DeleteAsync(primaryKey);
+        return await _feedCheckDataStore.DeleteAsync(primaryKey);
     }
 
     public async Task<FeedCheck?> GetByNameAsync(string name)
     {
-        return await _feedCheckRepository.GetByNameAsync(name);
+        return await _feedCheckDataStore.GetByNameAsync(name);
     }
 }

@@ -6,12 +6,12 @@ namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
 public class SyndicationFeedSourceManagerTests
 {
-    private readonly Mock<ISyndicationFeedSourceRepository> _repository;
+    private readonly Mock<ISyndicationFeedSourceDataStore> _repository;
     private readonly SyndicationFeedSourceManager _syndicationFeedSourceManager;
 
     public SyndicationFeedSourceManagerTests()
     {
-        _repository = new Mock<ISyndicationFeedSourceRepository>();
+        _repository = new Mock<ISyndicationFeedSourceDataStore>();
         _syndicationFeedSourceManager = new SyndicationFeedSourceManager(_repository.Object);
     }
 
