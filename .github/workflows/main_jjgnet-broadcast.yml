@@ -7,14 +7,18 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
   DOTNET_VERSION: '10.0.x' # set this to the dotnet version to use
+  WORKING_DIRECTORY: './src/JosephGuadagno.Broadcasting.Functions'
 
 jobs:
-  build-and-deploy:
+  build-and-test:
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -22,23 +26,56 @@ jobs:
       contents: read
 
     steps:
-      - name: 'Checkout GitHub Action'
-        uses: actions/checkout@v6
+      # Check out the repository code
+      - uses: actions/checkout@v4
 
-      - name: Setup DotNet ${{ env.DOTNET_VERSION }} Environment
-        uses: actions/setup-dotnet@v5
+      # Set up the .NET SDK
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: 'Resolve Project Dependencies Using Dotnet'
-        shell: bash
-        run: |
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          dotnet build ./src/JosephGuadagno.Broadcasting.Functions --configuration Release --output ./output
-          popd
+      # Restore NuGet packages
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: ${{ env.WORKING_DIRECTORY }}
 
-      - name: Test
-        run: dotnet test ./src/JosephGuadagno.Broadcasting.Functions.Tests --no-build --verbosity normal --configuration Release
+      # Build in Release mode
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+      # Run unit tests
+      - name: Run tests
+        run: dotnet test --configuration Release --no-build --verbosity normal
+        working-directory: ./src/JosephGuadagno.Broadcasting.Functions.Tests
+
+      # Publish the function app for deployment
+      - name: Publish
+        run: dotnet publish --configuration Release --output ./publish
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+      # Upload the published output as an artifact for the deploy job
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: function-app
+          path: ${{ env.WORKING_DIRECTORY }}/publish
+
+  deploy-to-function-app:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read
+
+    steps:
+      # Download the build artifact from the previous job
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: function-app
+          path: ./publish
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -48,10 +85,10 @@ jobs:
           subscription-id: ${{ secrets.FUNCTIONAPP_SUBSCRIPTION_ID }}
           auth_type: IDENTITY
 
-      - name: 'Run Azure Functions Action'
+      - name: 'Deploy Azure Functions '
         uses: Azure/functions-action@v1
         id: fa
         with:
           app-name: 'jjgnet-broadcast'
           slot-name: 'production'
-          package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+          package: ./publish
