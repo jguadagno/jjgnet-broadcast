@@ -4,9 +4,13 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+
+using Polly;
+using Polly.Retry;
 
 namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube;
 
@@ -19,6 +23,14 @@ public class LoadNewVideos(
     IEventPublisher eventPublisher,
     ILogger<LoadNewVideos> logger)
 {
+    private static readonly ResiliencePipeline SavePipeline = new ResiliencePipelineBuilder()
+        .AddRetry(new RetryStrategyOptions
+        {
+            MaxRetryAttempts = 3,
+            Delay = TimeSpan.FromSeconds(2),
+            BackoffType = DelayBackoffType.Exponential
+        })
+        .Build();
 
     [Function(ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos)]
     public async Task<IActionResult> RunAsync(
@@ -68,7 +80,8 @@ public class LoadNewVideos(
                 // attempt to save the item
                 try
                 {
-                    var savedItem = await youTubeSourceManager.SaveAsync(item);
+                    var savedItem = await SavePipeline.ExecuteAsync(
+                        async ct => await youTubeSourceManager.SaveAsync(item));
 
                     eventsToPublish.Add(savedItem);
                     var properties = new Dictionary<string, string>
@@ -78,14 +91,13 @@ public class LoadNewVideos(
                     };
                     logger.LogCustomEvent(Metrics.VideoAddedOrUpdated, properties);
                     savedCount++;
-
                 }
                 catch (Exception e)
                 {
                     logger.LogError(e,
                         "Failed to save the video with the VideoId of: '{VideoId}' Url:'{Url}'. Exception: {ExceptionMessage}",
                         item.VideoId, item.Url, e);
-                    return new BadRequestObjectResult($"Failed to save the video with the id of: '{item.VideoId}' Url:'{item.Url}'");
+                    continue;
                 }
             }
 

@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
+using Polly;
+using Polly.Retry;
+
 namespace JosephGuadagno.Broadcasting.Functions.Collectors.SyndicationFeed;
 
 public class LoadNewPosts(
@@ -20,6 +23,14 @@ public class LoadNewPosts(
     IEventPublisher eventPublisher,
     ILogger<LoadNewPosts> logger)
 {
+    private static readonly ResiliencePipeline SavePipeline = new ResiliencePipelineBuilder()
+        .AddRetry(new RetryStrategyOptions
+        {
+            MaxRetryAttempts = 3,
+            Delay = TimeSpan.FromSeconds(2),
+            BackoffType = DelayBackoffType.Exponential
+        })
+        .Build();
 
     [Function(ConfigurationFunctionNames.CollectorsFeedLoadNewPosts)]
     public async Task<IActionResult> RunAsync(
@@ -68,7 +79,8 @@ public class LoadNewPosts(
                 // attempt to save the item
                 try
                 {
-                    var savedItem = await syndicationFeedSourceManager.SaveAsync(item);
+                    var savedItem = await SavePipeline.ExecuteAsync(
+                        async ct => await syndicationFeedSourceManager.SaveAsync(item));
                     eventsToPublish.Add(savedItem);
 
                     var properties = new Dictionary<string, string>
@@ -83,7 +95,7 @@ public class LoadNewPosts(
                     logger.LogError(e,
                         "Failed to save the blog post with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
                         item.Id, item.Url, e);
-                    return new BadRequestObjectResult($"Failed to save the blog post with the id of: '{item.Id}' Url:'{item.Url}'");
+                    continue;
                 }
             }
 
