@@ -46,6 +46,9 @@ public partial class BroadcastingContext : DbContext
             entity.Property(e => e.ItemTableName)
                 .HasMaxLength(255)
                 .IsUnicode(false);
+
+            entity.Property(e => e.ImageUrl)
+                .HasMaxLength(2048);
         });
 
         modelBuilder.Entity<Talk>(entity =>

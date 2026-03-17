@@ -37,6 +37,17 @@ public class ScheduledItem
     /// </summary>
     [Required]
     public string Message { get; set; }
+
+    /// <summary>
+    /// An optional Scriban template string used to render the broadcast message at send time.
+    /// When present, overrides the static <see cref="Message"/> value.
+    /// </summary>
+    public string? MessageTemplate { get; set; }
+
+    /// <summary>
+    /// An optional URL of an image to attach or embed in the broadcast post.
+    /// </summary>
+    public string? ImageUrl { get; set; }
     
     /// <summary>
     /// When the message was sent by the scheduler
