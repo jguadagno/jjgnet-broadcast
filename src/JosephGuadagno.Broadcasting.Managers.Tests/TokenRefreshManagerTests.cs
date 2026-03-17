@@ -6,12 +6,12 @@ namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
 public class TokenRefreshManagerTests
 {
-    private readonly Mock<ITokenRefreshRepository> _repository;
+    private readonly Mock<ITokenRefreshDataStore> _repository;
     private readonly TokenRefreshManager _tokenRefreshManager;
 
     public TokenRefreshManagerTests()
     {
-        _repository = new Mock<ITokenRefreshRepository>();
+        _repository = new Mock<ITokenRefreshDataStore>();
         _tokenRefreshManager = new TokenRefreshManager(_repository.Object);
     }
 
