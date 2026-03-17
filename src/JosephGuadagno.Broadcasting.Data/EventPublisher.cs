@@ -89,6 +89,42 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
         return await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewYouTubeItem);
     }
 
+
+    public async Task<bool> PublishSpeakingEngagementEventsAsync(string subject,
+        IReadOnlyCollection<Engagement> engagements)
+    {
+        if (string.IsNullOrEmpty(subject))
+        {
+            throw new ArgumentNullException(nameof(subject), "The subject is required.");
+        }
+
+        if (engagements.Count == 0)
+        {
+            return false;
+        }
+
+        var topicSettings = GetTopicEndpointSettings(Topics.NewSpeakingEngagement);
+        if (topicSettings == null)
+        {
+            throw new InvalidOperationException($"The topic endpoint settings for topic '{Topics.NewSpeakingEngagement}' was not found.");
+        }
+
+        var client = GetEventGridPublisherClient(topicSettings);
+
+        var eventList = new List<EventGridEvent>();
+        foreach (var engagement in engagements)
+        {
+            var data = new NewSpeakingEngagementEvent
+            {
+                Id = engagement.Id
+            };
+            eventList.Add(
+                new EventGridEvent(subject, Topics.NewSpeakingEngagement, "1.1", data));
+        }
+
+        return await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewSpeakingEngagement);
+    }
+
     public async Task<bool> PublishScheduledItemFiredEventsAsync(string subject,
         IReadOnlyCollection<ScheduledItem> scheduledItems)
     {
