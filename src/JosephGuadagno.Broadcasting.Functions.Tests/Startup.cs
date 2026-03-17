@@ -15,7 +15,6 @@ using Microsoft.Extensions.Logging;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
-using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -181,27 +180,21 @@ public class Startup
         services.AddDbContext<BroadcastingContext>(options => options.UseSqlServer("name=ConnectionStrings:JJGNetDatabaseSqlServer"));
 
         services.TryAddScoped<IEngagementDataStore, EngagementDataStore>();
-        services.TryAddScoped<IEngagementRepository, EngagementRepository>();
         services.TryAddScoped<IEngagementManager, EngagementManager>();
 
         services.TryAddScoped<IScheduledItemDataStore, ScheduledItemDataStore>();
-        services.TryAddScoped<IScheduledItemRepository, ScheduledItemRepository>();
         services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
 
         services.AddSingleton<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
-        services.AddSingleton<IYouTubeSourceRepository, YouTubeSourceRepository>();
         services.AddSingleton<IYouTubeSourceManager, YouTubeSourceManager>();
 
         services.AddSingleton<ISyndicationFeedSourceDataStore, SyndicationFeedSourceDataStore>();
-        services.AddSingleton<ISyndicationFeedSourceRepository, SyndicationFeedSourceRepository>();
         services.AddSingleton<ISyndicationFeedSourceManager, SyndicationFeedSourceManager>();
 
         services.AddSingleton<IFeedCheckDataStore, FeedCheckDataStore>();
-        services.AddSingleton<IFeedCheckRepository, FeedCheckRepository>();
         services.AddSingleton<IFeedCheckManager, FeedCheckManager>();
 
         services.AddSingleton<ITokenRefreshDataStore, TokenRefreshDataStore>();
-        services.AddSingleton<ITokenRefreshRepository, TokenRefreshRepository>();
         services.AddSingleton<ITokenRefreshManager, TokenRefreshManager>();
 
         services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader.SpeakingEngagementsReader>();

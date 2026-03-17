@@ -4,7 +4,6 @@ using Azure.Monitor.OpenTelemetry.Exporter;
 using JosephGuadagno.Broadcasting.Api.Infrastructure;
 using JosephGuadagno.Broadcasting.Api.Interfaces;
 using JosephGuadagno.Broadcasting.Api.Models;
-using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -157,11 +156,9 @@ void ConfigureRepositories(IServiceCollection services)
 
     // Engagements
     services.TryAddScoped<IEngagementDataStore, EngagementDataStore>();
-    services.TryAddScoped<IEngagementRepository, EngagementRepository>();
     services.TryAddScoped<IEngagementManager, EngagementManager>();
 
     // ScheduledItem
     services.TryAddScoped<IScheduledItemDataStore, ScheduledItemDataStore>();
-    services.TryAddScoped<IScheduledItemRepository, ScheduledItemRepository>();
     services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
 }

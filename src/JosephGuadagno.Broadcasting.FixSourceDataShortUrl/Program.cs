@@ -1,5 +1,4 @@
-﻿using JosephGuadagno.Broadcasting.Data.Repositories;
-using JosephGuadagno.Broadcasting.Data.Sql;
+﻿using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.FixSourceDataShortUrl;
 using JosephGuadagno.Broadcasting.Managers;
@@ -52,10 +51,8 @@ services.AddSingleton<IBitlyConfiguration>(new BitlyConfiguration
 services.AddSingleton<Bitly>();
 services.AddDbContext<BroadcastingContext>(options => options.UseSqlServer("name=ConnectionStrings:JJGNetDatabaseSqlServer"));
 services.AddSingleton<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
-services.AddSingleton<IYouTubeSourceRepository, YouTubeSourceRepository>();
 services.AddSingleton<IYouTubeSourceManager, YouTubeSourceManager>();
 services.AddSingleton<ISyndicationFeedSourceDataStore, SyndicationFeedSourceDataStore>();
-services.AddSingleton<ISyndicationFeedSourceRepository, SyndicationFeedSourceRepository>();
 services.AddSingleton<ISyndicationFeedSourceManager, SyndicationFeedSourceManager>();
 
 // Add in AutoMapper
