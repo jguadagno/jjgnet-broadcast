@@ -57,6 +57,7 @@ jobs:
         with:
           name: function-app
           path: ${{ env.WORKING_DIRECTORY }}/publish
+          include-hidden-files: 'true'
 
   deploy-to-function-app:
     runs-on: ubuntu-latest
