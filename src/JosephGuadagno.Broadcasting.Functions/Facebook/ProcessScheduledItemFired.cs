@@ -4,10 +4,13 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Scriban;
+using Scriban.Runtime;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
@@ -16,6 +19,7 @@ public class ProcessScheduledItemFired(
     IEngagementManager engagementManager,
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
     IYouTubeSourceManager youTubeSourceManager,
+    IMessageTemplateDataStore messageTemplateDataStore,
     ILogger<ProcessScheduledItemFired> logger)
 {
     const int MaxFacebookStatusText = 2000;
@@ -74,6 +78,21 @@ public class ProcessScheduledItemFired(
                     logger.LogError("The table name '{TableName}' is not supported", scheduledItem.ItemTableName);
                     return null;
             }
+
+            // Attempt Scriban template override of StatusText; LinkUri is always sourced from the item above
+            var messageTemplate = await messageTemplateDataStore.GetAsync("Facebook", "RandomPost");
+            if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
+            {
+                var rendered = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);
+                if (rendered is not null)
+                    facebookPostStatus.StatusText = rendered;
+            }
+
+            // ImageUrl is available on the scheduled item but not supported in the FacebookPostStatus queue payload
+            if (!string.IsNullOrEmpty(scheduledItem.ImageUrl))
+                logger.LogInformation(
+                    "ImageUrl '{ImageUrl}' is available for scheduled item {Id} but is not supported in the Facebook queue payload",
+                    scheduledItem.ImageUrl, scheduledItem.Id);
 
             var properties = new Dictionary<string, string>
             {
@@ -220,5 +239,55 @@ public class ProcessScheduledItemFired(
             "Composed Facebook Status: StatusText={StatusText}, LinkUrl={LinkUri}",
             facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
         return facebookPostStatus;
+    }
+
+    private async Task<string?> TryRenderTemplateAsync(ScheduledItem scheduledItem, string templateContent)
+    {
+        try
+        {
+            string title = "", url = "", description = "", tags = "";
+            switch (scheduledItem.ItemType)
+            {
+                case ScheduledItemType.SyndicationFeedSources:
+                    var feed = await syndicationFeedSourceManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                    title = feed.Title;
+                    url = feed.ShortenedUrl ?? feed.Url;
+                    tags = feed.Tags ?? "";
+                    break;
+                case ScheduledItemType.YouTubeSources:
+                    var yt = await youTubeSourceManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                    title = yt.Title;
+                    url = yt.ShortenedUrl ?? yt.Url;
+                    tags = yt.Tags ?? "";
+                    break;
+                case ScheduledItemType.Engagements:
+                    var engagement = await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                    title = engagement.Name;
+                    url = engagement.Url;
+                    description = engagement.Comments ?? "";
+                    break;
+                case ScheduledItemType.Talks:
+                    var talk = await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey);
+                    title = talk.Name;
+                    url = talk.UrlForTalk;
+                    description = talk.Comments;
+                    break;
+                default:
+                    return null;
+            }
+
+            var template = Template.Parse(templateContent);
+            var scriptObject = new ScriptObject();
+            scriptObject.Import(new { title, url, description, tags, image_url = scheduledItem.ImageUrl });
+            var context = new TemplateContext();
+            context.PushGlobal(scriptObject);
+            var rendered = await template.RenderAsync(context);
+            return string.IsNullOrWhiteSpace(rendered) ? null : rendered.Trim();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Scriban template rendering failed for Facebook scheduled item {Id}", scheduledItem.Id);
+            return null;
+        }
     }
 }

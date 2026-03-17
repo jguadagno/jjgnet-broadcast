@@ -4,10 +4,12 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Scriban;
+using Scriban.Runtime;
 
 namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
@@ -16,6 +18,7 @@ public class ProcessScheduledItemFired(
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
     IYouTubeSourceManager youTubeSourceManager,
     IEngagementManager engagementManager,
+    IMessageTemplateDataStore messageTemplateDataStore,
     ILogger<ProcessScheduledItemFired> logger)
 {
     const int MaxPostLength = 300;
@@ -53,29 +56,41 @@ public class ProcessScheduledItemFired(
             logger.LogDebug("Processing the event '{Id}' for '{TableName}', '{PartitionKey}'",
                 eventGridEvent.Id, scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
-            // Determine what type the post is for
-            string blueSkyPostText;
-            // The scheduled post should always have a message.  We just need to craft the Title and Urls
+            // Attempt Scriban template rendering; fall back to per-type message construction if unavailable
+            string? blueSkyPostText = null;
+            var messageTemplate = await messageTemplateDataStore.GetAsync("Bluesky", "RandomPost");
+            if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
+                blueSkyPostText = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);
 
-            switch (scheduledItem.ItemType)
+            if (blueSkyPostText is null)
             {
-                case ScheduledItemType.Engagements:
-                    blueSkyPostText = await GetPostForEngagement(scheduledItem.ItemPrimaryKey);
-                    break;
-                case ScheduledItemType.Talks:
-                    blueSkyPostText = await GetPostForTalk(scheduledItem.ItemPrimaryKey);
-                    break;
-                case ScheduledItemType.SyndicationFeedSources:
-                    blueSkyPostText = await GetPostForSyndicationSource(scheduledItem.ItemPrimaryKey);
-                    break;
-                case ScheduledItemType.YouTubeSources:
-                    blueSkyPostText = await GetPostForYouTubeSource(scheduledItem.ItemPrimaryKey);
-                    break;
-                default:
-                    logger.LogError("The table name '{TableName}' is not supported", scheduledItem.ItemTableName);
-                    return null;
+                // Fallback: per-type message construction
+                // The scheduled post should always have a message.  We just need to craft the Title and Urls
+                switch (scheduledItem.ItemType)
+                {
+                    case ScheduledItemType.Engagements:
+                        blueSkyPostText = await GetPostForEngagement(scheduledItem.ItemPrimaryKey);
+                        break;
+                    case ScheduledItemType.Talks:
+                        blueSkyPostText = await GetPostForTalk(scheduledItem.ItemPrimaryKey);
+                        break;
+                    case ScheduledItemType.SyndicationFeedSources:
+                        blueSkyPostText = await GetPostForSyndicationSource(scheduledItem.ItemPrimaryKey);
+                        break;
+                    case ScheduledItemType.YouTubeSources:
+                        blueSkyPostText = await GetPostForYouTubeSource(scheduledItem.ItemPrimaryKey);
+                        break;
+                    default:
+                        logger.LogError("The table name '{TableName}' is not supported", scheduledItem.ItemTableName);
+                        return null;
+                }
             }
 
+            // ImageUrl is available on the scheduled item but not supported in the Bluesky queue payload (plain string)
+            if (!string.IsNullOrEmpty(scheduledItem.ImageUrl))
+                logger.LogInformation(
+                    "ImageUrl '{ImageUrl}' is available for scheduled item {Id} but is not supported in the Bluesky queue payload",
+                    scheduledItem.ImageUrl, scheduledItem.Id);
 
             var properties = new Dictionary<string, string>
             {
@@ -201,5 +216,55 @@ public class ProcessScheduledItemFired(
 
         logger.LogDebug("Composed Bluesky Posts '{StatusText}'", statusText);
         return statusText;
+    }
+
+    private async Task<string?> TryRenderTemplateAsync(ScheduledItem scheduledItem, string templateContent)
+    {
+        try
+        {
+            string title = "", url = "", description = "", tags = "";
+            switch (scheduledItem.ItemType)
+            {
+                case ScheduledItemType.SyndicationFeedSources:
+                    var feed = await syndicationFeedSourceManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                    title = feed.Title;
+                    url = feed.ShortenedUrl ?? feed.Url;
+                    tags = feed.Tags ?? "";
+                    break;
+                case ScheduledItemType.YouTubeSources:
+                    var yt = await youTubeSourceManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                    title = yt.Title;
+                    url = yt.ShortenedUrl ?? yt.Url;
+                    tags = yt.Tags ?? "";
+                    break;
+                case ScheduledItemType.Engagements:
+                    var engagement = await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                    title = engagement.Name;
+                    url = engagement.Url;
+                    description = engagement.Comments ?? "";
+                    break;
+                case ScheduledItemType.Talks:
+                    var talk = await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey);
+                    title = talk.Name;
+                    url = talk.UrlForTalk;
+                    description = talk.Comments;
+                    break;
+                default:
+                    return null;
+            }
+
+            var template = Template.Parse(templateContent);
+            var scriptObject = new ScriptObject();
+            scriptObject.Import(new { title, url, description, tags, image_url = scheduledItem.ImageUrl });
+            var context = new TemplateContext();
+            context.PushGlobal(scriptObject);
+            var rendered = await template.RenderAsync(context);
+            return string.IsNullOrWhiteSpace(rendered) ? null : rendered.Trim();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Scriban template rendering failed for Bluesky scheduled item {Id}", scheduledItem.Id);
+            return null;
+        }
     }
 }

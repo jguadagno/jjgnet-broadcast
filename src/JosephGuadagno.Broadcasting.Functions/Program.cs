@@ -201,6 +201,8 @@ void ConfigureFunction(IServiceCollection services)
 
     services.TryAddScoped<ITokenRefreshDataStore, TokenRefreshDataStore>();
     services.TryAddScoped<ITokenRefreshManager, TokenRefreshManager>();
+
+    services.TryAddScoped<IMessageTemplateDataStore, MessageTemplateDataStore>();
 }
 
 void ConfigureBitly(IServiceCollection services, IConfiguration config)

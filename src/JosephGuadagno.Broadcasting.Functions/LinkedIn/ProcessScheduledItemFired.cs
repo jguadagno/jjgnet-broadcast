@@ -4,11 +4,14 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Scriban;
+using Scriban.Runtime;
 
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
@@ -18,6 +21,7 @@ public class ProcessScheduledItemFired(
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
     IYouTubeSourceManager youTubeSourceManager,
     ILinkedInApplicationSettings linkedInApplicationSettings,
+    IMessageTemplateDataStore messageTemplateDataStore,
     ILogger<ProcessScheduledItemFired> logger)
 {
 
@@ -78,9 +82,21 @@ public class ProcessScheduledItemFired(
                     return null;
             }
 
-            linkedInPost.Text = scheduledItem.Message;
+            // Attempt Scriban template rendering for the post text; fall back to scheduledItem.Message if unavailable
+            var messageTemplate = await messageTemplateDataStore.GetAsync("LinkedIn", "RandomPost");
+            string? renderedText = null;
+            if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
+                renderedText = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);
+
+            linkedInPost.Text = renderedText ?? scheduledItem.Message;
             linkedInPost.AuthorId = linkedInApplicationSettings.AuthorId;
             linkedInPost.AccessToken = linkedInApplicationSettings.AccessToken;
+
+            // ImageUrl is available on the scheduled item but not supported in the LinkedInPostLink queue payload
+            if (!string.IsNullOrEmpty(scheduledItem.ImageUrl))
+                logger.LogInformation(
+                    "ImageUrl '{ImageUrl}' is available for scheduled item {Id} but is not supported in the LinkedIn queue payload",
+                    scheduledItem.ImageUrl, scheduledItem.Id);
 
             var properties = new Dictionary<string, string>
             {
@@ -191,5 +207,55 @@ public class ProcessScheduledItemFired(
         }
 
         return post;
+    }
+
+    private async Task<string?> TryRenderTemplateAsync(ScheduledItem scheduledItem, string templateContent)
+    {
+        try
+        {
+            string title = "", url = "", description = "", tags = "";
+            switch (scheduledItem.ItemType)
+            {
+                case ScheduledItemType.SyndicationFeedSources:
+                    var feed = await syndicationFeedSourceManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                    title = feed.Title;
+                    url = feed.ShortenedUrl ?? feed.Url;
+                    tags = feed.Tags ?? "";
+                    break;
+                case ScheduledItemType.YouTubeSources:
+                    var yt = await youTubeSourceManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                    title = yt.Title;
+                    url = yt.ShortenedUrl ?? yt.Url;
+                    tags = yt.Tags ?? "";
+                    break;
+                case ScheduledItemType.Engagements:
+                    var engagement = await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                    title = engagement.Name;
+                    url = engagement.Url;
+                    description = engagement.Comments ?? "";
+                    break;
+                case ScheduledItemType.Talks:
+                    var talk = await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey);
+                    title = talk.Name;
+                    url = talk.UrlForTalk;
+                    description = talk.Comments;
+                    break;
+                default:
+                    return null;
+            }
+
+            var template = Template.Parse(templateContent);
+            var scriptObject = new ScriptObject();
+            scriptObject.Import(new { title, url, description, tags, image_url = scheduledItem.ImageUrl });
+            var context = new TemplateContext();
+            context.PushGlobal(scriptObject);
+            var rendered = await template.RenderAsync(context);
+            return string.IsNullOrWhiteSpace(rendered) ? null : rendered.Trim();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Scriban template rendering failed for LinkedIn scheduled item {Id}", scheduledItem.Id);
+            return null;
+        }
     }
 }
