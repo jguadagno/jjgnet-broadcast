@@ -9,16 +9,16 @@ namespace JosephGuadagno.Broadcasting.Managers;
 
 public class EngagementManager: IEngagementManager
 {
-    private readonly IEngagementRepository _engagementRepository;
+    private readonly IEngagementDataStore _engagementDataStore;
 
-    public EngagementManager(IEngagementRepository engagementRepository)
+    public EngagementManager(IEngagementDataStore engagementDataStore)
     {
-        _engagementRepository = engagementRepository;
+        _engagementDataStore = engagementDataStore;
     }
     
     public async Task<Engagement> GetAsync(int primaryKey)
     {
-        return await _engagementRepository.GetAsync(primaryKey);
+        return await _engagementDataStore.GetAsync(primaryKey);
     }
 
     public async Task<Engagement> SaveAsync(Engagement entity)
@@ -29,7 +29,7 @@ public class EngagementManager: IEngagementManager
             // We need to see if there is an existing record since there is no "id" from the SpeakingEngagementsReaders
             // We will assume that if the following fields match, we will update the record.
             //  - Name, Url, StartDateTime (Year)
-            var existingEngagement = await _engagementRepository.GetByNameAndUrlAndYearAsync(entity.Name, entity.Url, entity.StartDateTime.Year);
+            var existingEngagement = await _engagementDataStore.GetByNameAndUrlAndYearAsync(entity.Name, entity.Url, entity.StartDateTime.Year);
             if (existingEngagement != null)
             {
                 entity.Id = existingEngagement.Id;
@@ -39,32 +39,32 @@ public class EngagementManager: IEngagementManager
         // Apply the time zone offset to the hours
         entity.StartDateTime = UpdateDateTimeOffsetWithTimeZone(entity.TimeZoneId, entity.StartDateTime); 
         entity.EndDateTime = UpdateDateTimeOffsetWithTimeZone(entity.TimeZoneId, entity.EndDateTime); 
-        return await _engagementRepository.SaveAsync(entity);
+        return await _engagementDataStore.SaveAsync(entity);
     }
     
     public async Task<List<Engagement>> GetAllAsync()
     {
-        return await _engagementRepository.GetAllAsync();
+        return await _engagementDataStore.GetAllAsync();
     }
 
     public async Task<bool> DeleteAsync(Engagement entity)
     {
-        return await _engagementRepository.DeleteAsync(entity);
+        return await _engagementDataStore.DeleteAsync(entity);
     }
 
     public async Task<bool> DeleteAsync(int primaryKey)
     {
-        return await _engagementRepository.DeleteAsync(primaryKey);
+        return await _engagementDataStore.DeleteAsync(primaryKey);
     }
 
     public async Task<List<Talk>> GetTalksForEngagementAsync(int engagementId)
     {
-        return await _engagementRepository.GetTalksForEngagementAsync(engagementId);
+        return await _engagementDataStore.GetTalksForEngagementAsync(engagementId);
     }
 
     public async Task<Talk> SaveTalkAsync(Talk talk)
     {
-        var engagement = await _engagementRepository.GetAsync(talk.EngagementId);
+        var engagement = await _engagementDataStore.GetAsync(talk.EngagementId);
         if (engagement is null)
         {
             throw new ApplicationException(
@@ -73,21 +73,22 @@ public class EngagementManager: IEngagementManager
 
         talk.StartDateTime = UpdateDateTimeOffsetWithTimeZone(engagement.TimeZoneId, talk.StartDateTime);
         talk.EndDateTime = UpdateDateTimeOffsetWithTimeZone(engagement.TimeZoneId, talk.EndDateTime);
-        return await _engagementRepository.SaveTalkAsync(talk);
+        return await _engagementDataStore.SaveTalkAsync(talk);
     }
 
     public async Task<bool> RemoveTalkFromEngagementAsync(int talkId)
     {
-        return await _engagementRepository.RemoveTalkFromEngagementAsync(talkId);
+        return await _engagementDataStore.RemoveTalkFromEngagementAsync(talkId);
     }
     public async Task<bool> RemoveTalkFromEngagementAsync(Talk talk)
     {
-        return await _engagementRepository.RemoveTalkFromEngagementAsync(talk);
+        return await _engagementDataStore.RemoveTalkFromEngagementAsync(talk);
     }
 
     public async Task<Talk> GetTalkAsync(int talkId)
     {
-        return await _engagementRepository.GetTalkAsync(talkId);
+        return await _engagementDataStore.GetTalkAsync(talkId)
+            ?? throw new ApplicationException($"Talk with id '{talkId}' not found.");
     }
     
     public DateTimeOffset UpdateDateTimeOffsetWithTimeZone(string timeZoneId, DateTimeOffset dateTimeOffset)
@@ -102,6 +103,6 @@ public class EngagementManager: IEngagementManager
 
     public async Task<Engagement?> GetByNameAndUrlAndYearAsync(string name, string url, int year)
     {
-        return await _engagementRepository.GetByNameAndUrlAndYearAsync(name, url, year);
+        return await _engagementDataStore.GetByNameAndUrlAndYearAsync(name, url, year);
     }
 }

@@ -45,8 +45,8 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
     <PackageReference Include="Microsoft.Identity.Web" Version="4.5.0" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.0" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.13.8" />
-    <PackageReference Include="Scalar.AspNetCore.Microsoft" Version="2.13.8" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.13.9" />
+    <PackageReference Include="Scalar.AspNetCore.Microsoft" Version="2.13.9" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
