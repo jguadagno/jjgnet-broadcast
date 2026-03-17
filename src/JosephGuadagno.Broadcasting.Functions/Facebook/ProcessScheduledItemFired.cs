@@ -201,7 +201,7 @@ public class ProcessScheduledItemFired(
         statusText += $" in room {talk.TalkLocation}";
 
         var commentsLength = talk.Comments.Length;
-        var comments = " Comments: {engagement.Comments}";
+        var comments = $" Comments: {talk.Comments}";
         statusText += comments;
         
         if (statusText.Length + commentsLength + 1 >= MaxFacebookStatusText)

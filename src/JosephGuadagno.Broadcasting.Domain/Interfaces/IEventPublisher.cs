@@ -10,6 +10,9 @@ public interface IEventPublisher
     public Task<bool> PublishYouTubeEventsAsync(string subject,
         IReadOnlyCollection<YouTubeSource> youTubeSourceDataItems);
 
+    public Task<bool> PublishSpeakingEngagementEventsAsync(string subject,
+        IReadOnlyCollection<Engagement> engagements);
+
     public Task<bool> PublishScheduledItemFiredEventsAsync(string subject,
         IReadOnlyCollection<ScheduledItem> scheduledItems );
 

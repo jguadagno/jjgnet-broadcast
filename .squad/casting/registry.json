@@ -35,6 +35,42 @@
       "persistent_name": "Ralph",
       "universe": "The Matrix",
       "status": "active"
+    },
+    "switch": {
+      "created_at": "2026-03-16T00:00:00.000Z",
+      "persistent_name": "Switch",
+      "universe": "The Matrix",
+      "status": "active"
+    },
+    "oracle": {
+      "created_at": "2026-03-16T00:00:00.000Z",
+      "persistent_name": "Oracle",
+      "universe": "The Matrix",
+      "status": "active"
+    },
+    "cypher": {
+      "created_at": "2026-03-16T00:00:00.000Z",
+      "persistent_name": "Cypher",
+      "universe": "The Matrix",
+      "status": "active"
+    },
+    "ghost": {
+      "created_at": "2026-03-16T00:00:00.000Z",
+      "persistent_name": "Ghost",
+      "universe": "The Matrix",
+      "status": "active"
+    },
+    "link": {
+      "created_at": "2026-03-16T00:00:00.000Z",
+      "persistent_name": "Link",
+      "universe": "The Matrix",
+      "status": "active"
+    },
+    "sparks": {
+      "created_at": "2026-03-16T00:00:00.000Z",
+      "persistent_name": "Sparks",
+      "universe": "The Matrix",
+      "status": "active"
     }
   }
 }
