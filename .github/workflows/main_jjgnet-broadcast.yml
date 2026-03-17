@@ -44,14 +44,14 @@ jobs:
 
       # Run unit tests
       - name: Run tests
-        run: dotnet test ./src/JosephGuadagno.Broadcasting.Functions.Tests/JosephGuadagno.Broadcasting.Functions.Tests.csproj --configuration Release --no-build --verbosity normal
+        run: dotnet test ./src/JosephGuadagno.Broadcasting.Functions.Tests/JosephGuadagno.Broadcasting.Functions.Tests.csproj --configuration Release --verbosity normal
 
       # Publish the function app for deployment
       - name: Publish
         run: dotnet publish --configuration Release --output ./publish
         working-directory: ${{ env.WORKING_DIRECTORY }}
 
-      # Upload the published output as an artifact for the deploy job
+      # Upload the published output as an artifact for the deployment job
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
