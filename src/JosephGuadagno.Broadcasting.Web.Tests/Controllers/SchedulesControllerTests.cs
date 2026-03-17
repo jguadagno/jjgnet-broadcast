@@ -141,13 +141,30 @@ public class SchedulesControllerTests
     }
 
     [Fact]
-    public async Task Delete_WhenDeleteSucceeds_ShouldRedirectToIndex()
+    public async Task Delete_Get_ShouldReturnConfirmationView()
+    {
+        // Arrange
+        var scheduledItem = new ScheduledItem { Id = 1 };
+        var viewModel = new ScheduledItemViewModel { Id = 1 };
+        _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(scheduledItem);
+        _mapper.Setup(m => m.Map<ScheduledItemViewModel>(It.IsAny<object>())).Returns(viewModel);
+
+        // Act
+        var result = await _controller.Delete(1);
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        Assert.Equal(viewModel, viewResult.Model);
+    }
+
+    [Fact]
+    public async Task DeleteConfirmed_WhenDeleteSucceeds_ShouldRedirectToIndex()
     {
         // Arrange
         _scheduledItemService.Setup(s => s.DeleteScheduledItemAsync(1)).ReturnsAsync(true);
 
         // Act
-        var result = await _controller.Delete(1);
+        var result = await _controller.DeleteConfirmed(1);
 
         // Assert
         var redirectResult = Assert.IsType<RedirectToActionResult>(result);
@@ -156,13 +173,17 @@ public class SchedulesControllerTests
     }
 
     [Fact]
-    public async Task Delete_WhenDeleteFails_ShouldReturnView()
+    public async Task DeleteConfirmed_WhenDeleteFails_ShouldReturnView()
     {
         // Arrange
+        var scheduledItem = new ScheduledItem { Id = 1 };
+        var viewModel = new ScheduledItemViewModel { Id = 1 };
         _scheduledItemService.Setup(s => s.DeleteScheduledItemAsync(1)).ReturnsAsync(false);
+        _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(scheduledItem);
+        _mapper.Setup(m => m.Map<ScheduledItemViewModel>(It.IsAny<object>())).Returns(viewModel);
 
         // Act
-        var result = await _controller.Delete(1);
+        var result = await _controller.DeleteConfirmed(1);
 
         // Assert
         Assert.IsType<ViewResult>(result);

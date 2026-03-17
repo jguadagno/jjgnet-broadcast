@@ -12,6 +12,38 @@ namespace JosephGuadagno.Broadcasting.Managers.Bluesky;
 public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySettings, ILogger<BlueskyManager> logger)
     : IBlueskyManager
 {
+    private BlueskyAgent? _agent;
+    private readonly SemaphoreSlim _loginLock = new(1, 1);
+
+    private async Task<BlueskyAgent> EnsureAuthenticatedAsync()
+    {
+        if (_agent?.IsAuthenticated == true)
+            return _agent;
+
+        await _loginLock.WaitAsync();
+        try
+        {
+            // Double-check after acquiring the lock
+            if (_agent?.IsAuthenticated == true)
+                return _agent;
+
+            _agent ??= new BlueskyAgent();
+            var loginResult = await _agent.Login(blueskySettings.BlueskyUserName, blueskySettings.BlueskyPassword);
+            if (loginResult.Succeeded)
+                return _agent;
+
+            logger.LogError("Login failed. Status Code: {LoginResultStatusCode}, Error Details {LoginResultAtErrorDetail}",
+                loginResult.StatusCode, loginResult.AtErrorDetail?.Message);
+            throw new BlueskyPostException(
+                "Bluesky login failed.",
+                (int?)loginResult.StatusCode,
+                loginResult.AtErrorDetail?.Message);
+        }
+        finally
+        {
+            _loginLock.Release();
+        }
+    }
 
     public async Task<CreateRecordResult?> PostText(string postText)
     {
@@ -20,58 +52,79 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
 
     public async Task<CreateRecordResult?> Post(PostBuilder postBuilder)
     {
-        using BlueskyAgent agent = new();
-        var loginResult = await agent.Login(blueskySettings.BlueskyUserName, blueskySettings.BlueskyPassword);
-        if (loginResult.Succeeded)
-        {
-            var response = await agent.Post(postBuilder);
-            if (response.Succeeded)
-            {
-                return response.Result;
-            }
+        var agent = await EnsureAuthenticatedAsync();
 
-            // Post Failed
-            logger.LogError(
-                "Bluesky Post failed! Status Code: {ResponseStatusCode}, Error Details {ResponseErrorDetail}",
-                response.StatusCode, response.AtErrorDetail?.Message);
-            throw new BlueskyPostException(
-                $"Bluesky post failed.",
-                (int?)response.StatusCode,
-                response.AtErrorDetail?.Message);
+        var response = await agent.Post(postBuilder);
+        if (response.Succeeded)
+        {
+            return response.Result;
         }
 
-        // Login Failed
-        logger.LogError("Login failed. Status Code: {LoginResultStatusCode}, Error Details {LoginResultAtErrorDetail}",
-            loginResult.StatusCode, loginResult.AtErrorDetail?.Message);
+        // On auth failure, clear the cached session and retry once
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _agent = null;
+            agent = await EnsureAuthenticatedAsync();
+            response = await agent.Post(postBuilder);
+            if (response.Succeeded)
+                return response.Result;
+        }
+
+        // Post Failed
+        logger.LogError(
+            "Bluesky Post failed! Status Code: {ResponseStatusCode}, Error Details {ResponseErrorDetail}",
+            response.StatusCode, response.AtErrorDetail?.Message);
         throw new BlueskyPostException(
-            "Bluesky login failed.",
-            (int?)loginResult.StatusCode,
-            loginResult.AtErrorDetail?.Message);
+            $"Bluesky post failed.",
+            (int?)response.StatusCode,
+            response.AtErrorDetail?.Message);
     }
 
     public async Task<bool> DeletePost(StrongReference strongReference)
     {
-        using BlueskyAgent agent = new();
-
-        var loginResult = await agent.Login(blueskySettings.BlueskyUserName, blueskySettings.BlueskyPassword);
-        if (loginResult.Succeeded)
+        BlueskyAgent agent;
+        try
         {
-            var response = await agent.DeletePost(strongReference);
-            if (response.Succeeded)
-            {
-                logger.LogDebug("Bluesky Post successfully deleted! Cid: \'{StrongReferenceCid}\'",
-                    strongReference.Cid);
-                return true;
-            }
-
-            logger.LogWarning(
-                "Failed to delete Bluesky Post! Status Code: {LoginResultStatusCode}, Message: \'{Message}\', Cid: {StrongReferenceCid}",
-                loginResult.StatusCode, loginResult.AtErrorDetail?.Message, strongReference.Cid);
+            agent = await EnsureAuthenticatedAsync();
+        }
+        catch (BlueskyPostException ex)
+        {
+            logger.LogError(ex, "Failed to delete Bluesky Post! Login failed. Cid: '{StrongReferenceCid}'", strongReference.Cid);
             return false;
         }
 
-        logger.LogError("Failed to delete Bluesky Post! Login Failed! Status Code: {LoginResultStatusCode}, Message: '{Message}', {StrongReferenceCidId}", loginResult.StatusCode, loginResult.AtErrorDetail?.Message, strongReference.Cid);
+        var response = await agent.DeletePost(strongReference);
+        if (response.Succeeded)
+        {
+            logger.LogDebug("Bluesky Post successfully deleted! Cid: \'{StrongReferenceCid}\'",
+                strongReference.Cid);
+            return true;
+        }
 
+        // On auth failure, clear the cached session and retry once
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _agent = null;
+            try
+            {
+                agent = await EnsureAuthenticatedAsync();
+                response = await agent.DeletePost(strongReference);
+                if (response.Succeeded)
+                {
+                    logger.LogDebug("Bluesky Post successfully deleted after re-auth! Cid: '{StrongReferenceCid}'", strongReference.Cid);
+                    return true;
+                }
+            }
+            catch (BlueskyPostException ex)
+            {
+                logger.LogError(ex, "Failed to delete Bluesky Post! Re-auth failed. Cid: '{StrongReferenceCid}'", strongReference.Cid);
+                return false;
+            }
+        }
+
+        logger.LogWarning(
+            "Failed to delete Bluesky Post! Status Code: {ResponseStatusCode}, Message: \'{Message}\', Cid: {StrongReferenceCid}",
+            response.StatusCode, response.AtErrorDetail?.Message, strongReference.Cid);
         return false;
     }
 
@@ -82,10 +135,12 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
             return null;
         }
 
-        using BlueskyAgent agent = new();
-
-        var loginResult = await agent.Login(blueskySettings.BlueskyUserName, blueskySettings.BlueskyPassword);
-        if (!loginResult.Succeeded)
+        BlueskyAgent agent;
+        try
+        {
+            agent = await EnsureAuthenticatedAsync();
+        }
+        catch (BlueskyPostException)
         {
             return null;
         }
