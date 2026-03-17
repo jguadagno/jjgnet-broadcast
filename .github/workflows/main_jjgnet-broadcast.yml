@@ -47,7 +47,7 @@ jobs:
 
       # Run unit tests
       - name: Run tests
-        run: dotnet test ./src/JosephGuadagno.Broadcasting.Functions.Tests --configuration Release --no-build --verbosity normal
+        run: dotnet test ./src/JosephGuadagno.Broadcasting.Functions.Tests/JosephGuadagno.Broadcasting.Functions.Tests.csproj --configuration Release --no-build --verbosity normal
         working-directory: ${{ env.WORKING_DIRECTORY }}
 
       # Publish the function app for deployment
