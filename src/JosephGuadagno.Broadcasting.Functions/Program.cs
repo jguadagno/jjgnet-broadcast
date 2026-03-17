@@ -5,7 +5,6 @@ using Azure.Monitor.OpenTelemetry.Exporter;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
-using JosephGuadagno.Broadcasting.Data.Repositories;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -186,27 +185,21 @@ void ConfigureFunction(IServiceCollection services)
         });
 
     services.TryAddScoped<IEngagementDataStore, EngagementDataStore>();
-    services.TryAddScoped<IEngagementRepository, EngagementRepository>();
     services.TryAddScoped<IEngagementManager, EngagementManager>();
 
     services.TryAddScoped<IScheduledItemDataStore, ScheduledItemDataStore>();
-    services.TryAddScoped<IScheduledItemRepository, ScheduledItemRepository>();
     services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
 
     services.TryAddScoped<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
-    services.TryAddScoped<IYouTubeSourceRepository, YouTubeSourceRepository>();
     services.TryAddScoped<IYouTubeSourceManager, YouTubeSourceManager>();
 
     services.TryAddScoped<ISyndicationFeedSourceDataStore, SyndicationFeedSourceDataStore>();
-    services.TryAddScoped<ISyndicationFeedSourceRepository, SyndicationFeedSourceRepository>();
     services.TryAddScoped<ISyndicationFeedSourceManager, SyndicationFeedSourceManager>();
 
     services.TryAddScoped<IFeedCheckDataStore, FeedCheckDataStore>();
-    services.TryAddScoped<IFeedCheckRepository, FeedCheckRepository>();
     services.TryAddScoped<IFeedCheckManager, FeedCheckManager>();
 
     services.TryAddScoped<ITokenRefreshDataStore, TokenRefreshDataStore>();
-    services.TryAddScoped<ITokenRefreshRepository, TokenRefreshRepository>();
     services.TryAddScoped<ITokenRefreshManager, TokenRefreshManager>();
 }
 

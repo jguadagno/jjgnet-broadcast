@@ -8,45 +8,45 @@ namespace JosephGuadagno.Broadcasting.Managers;
 
 public class YouTubeSourceManager : IYouTubeSourceManager
 {
-    private readonly IYouTubeSourceRepository _youTubeSourceRepository;
+    private readonly IYouTubeSourceDataStore _youTubeSourceDataStore;
 
-    public YouTubeSourceManager(IYouTubeSourceRepository youTubeSourceRepository)
+    public YouTubeSourceManager(IYouTubeSourceDataStore youTubeSourceDataStore)
     {
-        _youTubeSourceRepository = youTubeSourceRepository;
+        _youTubeSourceDataStore = youTubeSourceDataStore;
     }
 
     public async Task<YouTubeSource> GetAsync(int primaryKey)
     {
-        return await _youTubeSourceRepository.GetAsync(primaryKey);
+        return await _youTubeSourceDataStore.GetAsync(primaryKey);
     }
 
     public async Task<YouTubeSource> SaveAsync(YouTubeSource entity)
     {
-        return await _youTubeSourceRepository.SaveAsync(entity);
+        return await _youTubeSourceDataStore.SaveAsync(entity);
     }
 
     public async Task<List<YouTubeSource>> GetAllAsync()
     {
-        return await _youTubeSourceRepository.GetAllAsync();
+        return await _youTubeSourceDataStore.GetAllAsync();
     }
 
     public async Task<bool> DeleteAsync(YouTubeSource entity)
     {
-        return await _youTubeSourceRepository.DeleteAsync(entity);
+        return await _youTubeSourceDataStore.DeleteAsync(entity);
     }
 
     public async Task<bool> DeleteAsync(int primaryKey)
     {
-        return await _youTubeSourceRepository.DeleteAsync(primaryKey);
+        return await _youTubeSourceDataStore.DeleteAsync(primaryKey);
     }
 
     public async Task<YouTubeSource?> GetByUrlAsync(string url)
     {
-        return await _youTubeSourceRepository.GetByUrlAsync(url);
+        return await _youTubeSourceDataStore.GetByUrlAsync(url);
     }
 
     public async Task<YouTubeSource?> GetByVideoIdAsync(string videoId)
     {
-        return await _youTubeSourceRepository.GetByVideoIdAsync(videoId);
+        return await _youTubeSourceDataStore.GetByVideoIdAsync(videoId);
     }
 }

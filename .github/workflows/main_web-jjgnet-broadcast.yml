@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up .NET Core
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.x'
           include-prerelease: true
@@ -26,13 +26,13 @@ jobs:
         run: dotnet build ./src/JosephGuadagno.Broadcasting.Web --configuration Release
 
       - name: Test
-        run: dotnet test src/ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"
+        run: dotnet test ./src/JosephGuadagno.Broadcasting.Web.Tests --no-build --verbosity normal --configuration Release
 
       - name: dotnet publish
         run: dotnet publish ./src/JosephGuadagno.Broadcasting.Web -c Release -o ${{env.DOTNET_ROOT}}/web-jjgnet-broadcast
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: .web-app
           path: ${{env.DOTNET_ROOT}}/web-jjgnet-broadcast
@@ -48,10 +48,10 @@ jobs:
 
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: .web-app
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -66,4 +66,3 @@ jobs:
           app-name: 'web-jjgnet-broadcast'
           slot-name: 'production'
           package: .
-          
