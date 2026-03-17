@@ -47,8 +47,8 @@ jobs:
 
       # Run unit tests
       - name: Run tests
-        run: dotnet test --configuration Release --no-build --verbosity normal
-        working-directory: ./src/JosephGuadagno.Broadcasting.Functions.Tests
+        run: dotnet test ./src/JosephGuadagno.Broadcasting.Functions.Tests --configuration Release --no-build --verbosity normal
+        working-directory: ${{ env.WORKING_DIRECTORY }}
 
       # Publish the function app for deployment
       - name: Publish
@@ -64,6 +64,7 @@ jobs:
 
   deploy-to-function-app:
     runs-on: ubuntu-latest
+    needs: build-and-test
     environment: production
     permissions:
       id-token: write #This is required for requesting the JWT
