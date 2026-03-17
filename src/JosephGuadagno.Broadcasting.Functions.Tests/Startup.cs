@@ -99,8 +99,9 @@ public class Startup
         services.TryAddSingleton<IEventPublisherSettings>(eventPublisherSettings);
 
         // Configure the logger
-        string loggerFile = Path.Combine(_currentDirectory, $"logs{Path.DirectorySeparatorChar}logs.txt");
-        ConfigureTelemetryAndLogging(services, settings.LoggingStorageAccount, loggerFile,"Functions");
+        // Removed since logging is not required for tests and won't work on CI servers
+        // string loggerFile = Path.Combine(_currentDirectory, $"logs{Path.DirectorySeparatorChar}logs.txt");
+        // ConfigureTelemetryAndLogging(services, settings.LoggingStorageAccount, loggerFile,"Functions");
 
         // Add in AutoMapper
         var autoMapperSettings = new AutoMapperSettings();
