@@ -55,75 +55,64 @@ web-jjgnet-broadcast
 
 ### Event Grid Topics
 
-#### New Source Data
+Topics are defined as constants in `JosephGuadagno.Broadcasting.Domain.Constants.Topics` and provisioned via the Aspire AppHost.
 
-Name: `new-source-data`
+Each topic delivers events to Bluesky, Facebook, LinkedIn, and Twitter Azure Functions subscribers.
 
-Topic Endpoint: `https://new-source-data.westus2-1.eventgrid.azure.net/api/events`
+#### `new-random-post`
 
-[Azure Resource Manager](https://new-source-data.westus2-1.eventgrid.azure.net/api/events)
+Fired when a random post is selected for broadcast.
 
-##### Event Grid - Twitter
+| Subscriber Function             | Platform  |
+|---------------------------------|-----------|
+| `BlueskyProcessRandomPostFired` | Bluesky   |
+| `FacebookProcessNewRandomPost`  | Facebook  |
+| `LinkedInProcessNewRandomPost`  | LinkedIn  |
+| `TwitterProcessRandomPostFired` | Twitter   |
 
-| Name          | Value                             | Description |
-|---------------|-----------------------------------|-------------|
-| Name          | `source-data-to-twitter`          |             |
-| Event Schema  | `Event Grid Scheme`               |             |
-| Endpoint Type | `Azure Functions`                 |             |
-| Endpoint      | `twitter-process-new-source-data` |             |
+#### `new-speaking-engagement`
 
-##### Event Grid - Facebook
+Fired when a new speaking engagement is collected.
 
-| Name          | Value                              | Description |
-|---------------|------------------------------------|-------------|
-| Name          | `source-data-to-facebook`          |             |
-| Event Schema  | `Event Grid Scheme`                |             |
-| Endpoint Type | `Azure Functions`                  |             |
-| Endpoint      | `facebook-process-new-source-data` |             |
+| Subscriber Function                         | Platform  |
+|---------------------------------------------|-----------|
+| `BlueskyProcessSpeakingEngagementDataFired` | Bluesky   |
+| `FacebookProcessSpeakingEngagementDataFired`| Facebook  |
+| `LinkedInProcessSpeakingEngagementDataFired`| LinkedIn  |
+| `TwitterProcessSpeakingEngagementDataFired` | Twitter   |
 
-##### Event Grid - LinkedIn
+#### `new-syndication-feed-item`
 
-| Name          | Value                                | Description |
-|---------------|--------------------------------------|-------------|
-| Name          | `source-data-to-linkedin`            |             |
-| Event Schema  | `Event Grid Scheme`                  |             |
-| Endpoint Type | `Azure Functions`                    |             |
-| Endpoint      | `linkedin-process-new-source-data`   |             |
+Fired when a new syndication feed item is collected.
 
-#### Scheduled Item Fired
+| Subscriber Function                    | Platform  |
+|----------------------------------------|-----------|
+| `BlueskyProcessNewSyndicationDataFired`| Bluesky   |
+| `FacebookProcessNewSyndicationDataFired`| Facebook |
+| `LinkedInProcessNewSyndicationDataFired`| LinkedIn |
+| `TwitterProcessNewSyndicationDataFired`| Twitter   |
 
-Name: `scheduled-item-fired`
+#### `new-youtube-item`
 
-Topic Endpoint: `https://scheduled-item-fired.westus2-1.eventgrid.azure.net/api/events`
+Fired when a new YouTube video is collected.
 
-[Azure Resource Manager](https://scheduled-item-fired.westus2-1.eventgrid.azure.net/api/events)
+| Subscriber Function                 | Platform  |
+|-------------------------------------|-----------|
+| `BlueskyProcessNewYouTubeDataFired` | Bluesky   |
+| `FacebookProcessNewYouTubeDataFired`| Facebook  |
+| `LinkedInProcessNewYouTubeDataFired`| LinkedIn  |
+| `TwitterProcessNewYouTubeDataFired` | Twitter   |
 
-##### Event Grid - Twitter
+#### `scheduled-item-fired`
 
-| Name          | Value                                  | Description |
-|---------------|----------------------------------------|-------------|
-| Name          | `scheduled-item-to-twitter`            |             |
-| Event Schema  | `Event Grid Scheme`                    |             |
-| Endpoint Type | `Azure Functions`                      |             |
-| Endpoint      | `twitter-process-scheduled-item-fired` |             |
+Fired when a scheduled broadcast item is due.
 
-##### Event Grid - Facebook
-
-| Name          | Value                                   | Description |
-|---------------|-----------------------------------------|-------------|
-| Name          | `scheduled-item-to-facebook`            |             |
-| Event Schema  | `Event Grid Scheme`                     |             |
-| Endpoint Type | `Azure Functions`                       |             |
-| Endpoint      | `facebook-process-scheduled-item-fired` |             |
-
-##### Event Grid - LinkedIn
-
-| Name          | Value                                   | Description |
-|---------------|-----------------------------------------|-------------|
-| Name          | `scheduled-item-to-linkedin`            |             |
-| Event Schema  | `Event Grid Scheme`                     |             |
-| Endpoint Type | `Azure Functions`                       |             |
-| Endpoint      | `linkedin-process-scheduled-item-fired` |             |
+| Subscriber Function                  | Platform  |
+|--------------------------------------|-----------|
+| `BlueskyProcessScheduledItemFired`   | Bluesky   |
+| `FacebookProcessScheduledItemFired`  | Facebook  |
+| `LinkedInProcessScheduledItemFired`  | LinkedIn  |
+| `TwitterProcessScheduledItemFired`   | Twitter   |
 
 ## Database
 
