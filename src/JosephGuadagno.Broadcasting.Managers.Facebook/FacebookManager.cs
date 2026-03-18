@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
@@ -102,6 +102,61 @@ public class FacebookManager : IFacebookManager
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to post status. Exception: {ExceptionMessage}",  ex.Message);
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<string> PostMessageLinkAndPictureToPage(string message, string link, string picture)
+    {
+        if (string.IsNullOrEmpty(message))
+            throw new ArgumentNullException(nameof(message));
+        if (string.IsNullOrEmpty(link))
+            throw new ArgumentNullException(nameof(link));
+        if (string.IsNullOrEmpty(picture))
+            throw new ArgumentNullException(nameof(picture));
+
+        try
+        {
+            var postToPageWithPictureUrl = GraphApiRoot + "{page_id}/feed?message={message}&link={link}&picture={picture}&access_token={access_token}";
+
+            var url = postToPageWithPictureUrl
+                .Replace("{page_id}", _facebookApplicationSettings.PageId)
+                .Replace("{message}", System.Web.HttpUtility.UrlEncode(message))
+                .Replace("{link}", link)
+                .Replace("{picture}", System.Web.HttpUtility.UrlEncode(picture))
+                .Replace("{access_token}", _facebookApplicationSettings.PageAccessToken);
+
+            _logger.LogTrace("Url: `{Url}`", url);
+            var response = await _httpClient.PostAsync(url, null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var postStatusResponse = JsonSerializer.Deserialize<PostStatusResponse>(content);
+                if (postStatusResponse is not null)
+                {
+                    if (!string.IsNullOrEmpty(postStatusResponse.Id))
+                    {
+                        _logger.LogDebug("Successfully posted status with picture. Id: '{Id}'", postStatusResponse.Id);
+                        return postStatusResponse.Id;
+                    }
+                    if (postStatusResponse.Error is not null)
+                    {
+                        _logger.LogError("Failed to post status with picture. Message: '{Message}'", postStatusResponse.Error.Message);
+                        throw new FacebookPostException($"Failed to post status with picture. Reason {postStatusResponse.Error.Message}");
+                    }
+                    throw new FacebookPostException("Failed to post status with picture. Could not determine the reason.");
+                }
+                throw new FacebookPostException("Failed to post status with picture. Could not deserialize the response.");
+            }
+
+            _logger.LogError("Failed to post status with picture. StatusCode: '{StatusCode}'", response.StatusCode);
+            throw new FacebookPostException($"Failed to post status with picture. StatusCode: '{response.StatusCode}'");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to post status with picture. Exception: {ExceptionMessage}", ex.Message);
             throw;
         }
     }

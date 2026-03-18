@@ -6,6 +6,7 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
+using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -24,7 +25,7 @@ public class ProcessNewSyndicationDataFired(
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=twitter_process_new_source_data`
     [Function(ConfigurationFunctionNames.TwitterProcessNewSyndicationDataFired)]
     [QueueOutput(Queues.TwitterTweetsToSend)] 
-    public async Task<string?> RunAsync(
+    public async Task<TwitterTweetMessage?> RunAsync(
         [EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTime.UtcNow;
@@ -68,7 +69,7 @@ public class ProcessNewSyndicationDataFired(
         };
         logger.LogCustomEvent(Metrics.FacebookProcessedNewSyndicationData, properties);
         logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", syndicationFeedSource.Id, syndicationFeedSource.Title);
-        return status;
+        return new TwitterTweetMessage { Text = status };
     }
         
     private string ComposeTweet(SyndicationFeedSource syndicationFeedSource)

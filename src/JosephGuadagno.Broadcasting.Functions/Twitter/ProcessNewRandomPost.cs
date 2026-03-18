@@ -1,9 +1,10 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
+using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -14,7 +15,7 @@ public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedS
 {
     [Function(ConfigurationFunctionNames.TwitterProcessRandomPostFired)]
     [QueueOutput(Queues.TwitterTweetsToSend)]
-    public async Task<string?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<TwitterTweetMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTime.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -52,7 +53,7 @@ public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedS
             };
             logger.LogCustomEvent(Metrics.TwitterProcessedRandomPost, properties);
             logger.LogDebug("Picked a random post {Title}", syndicationFeedSource.Title);
-            return status;
+            return new TwitterTweetMessage { Text = status };
         }
         catch (Exception e)
         {

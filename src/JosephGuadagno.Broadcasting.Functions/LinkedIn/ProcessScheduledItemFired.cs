@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
@@ -91,12 +91,7 @@ public class ProcessScheduledItemFired(
             linkedInPost.Text = renderedText ?? scheduledItem.Message;
             linkedInPost.AuthorId = linkedInApplicationSettings.AuthorId;
             linkedInPost.AccessToken = linkedInApplicationSettings.AccessToken;
-
-            // ImageUrl is available on the scheduled item but not supported in the LinkedInPostLink queue payload
-            if (!string.IsNullOrEmpty(scheduledItem.ImageUrl))
-                logger.LogInformation(
-                    "ImageUrl '{ImageUrl}' is available for scheduled item {Id} but is not supported in the LinkedIn queue payload",
-                    scheduledItem.ImageUrl, scheduledItem.Id);
+            linkedInPost.ImageUrl = scheduledItem.ImageUrl;
 
             var properties = new Dictionary<string, string>
             {

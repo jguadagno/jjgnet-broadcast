@@ -1,4 +1,4 @@
-﻿namespace JosephGuadagno.Broadcasting.Domain.Models.Messages;
+namespace JosephGuadagno.Broadcasting.Domain.Models.Messages;
 
 /// <summary>
 /// Sends a message to create a LinkedIn Post with a link
@@ -29,4 +29,9 @@ public class LinkedInPostLink
     /// The description of the Url (Optional)
     /// </summary>
     public string Description { get; set; }
+    /// <summary>
+    /// An optional URL for an image. When set, the post is submitted as an image share
+    /// (downloading the image and calling <c>PostShareTextAndImage</c>) rather than a link share.
+    /// </summary>
+    public string? ImageUrl { get; set; }
 }
