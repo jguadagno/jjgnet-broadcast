@@ -30,6 +30,11 @@
     {
       "library": "bootstrap-icons@1.13.1",
       "destination": "wwwroot/libs/bootstrap-icons"
+    },
+    {
+      "library": "fullcalendar@6.1.15",
+      "destination": "wwwroot/libs/fullcalendar",
+      "files": ["index.global.min.js"]
     }
   ]
 }

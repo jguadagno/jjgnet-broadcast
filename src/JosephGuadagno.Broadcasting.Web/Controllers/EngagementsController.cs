@@ -127,6 +127,31 @@ public class EngagementsController : Controller
     }
 
     /// <summary>
+    /// Returns all engagements as FullCalendar-compatible JSON events.
+    /// </summary>
+    /// <returns>A JSON array of calendar events.</returns>
+    [HttpGet]
+    public async Task<JsonResult> GetCalendarEvents()
+    {
+        var engagements = await _engagementService.GetEngagementsAsync();
+        if (engagements == null)
+        {
+            return Json(Array.Empty<object>());
+        }
+
+        var events = engagements.Select(e => new
+        {
+            id = e.Id.ToString(),
+            title = e.Name,
+            start = e.StartDateTime.ToString("yyyy-MM-ddTHH:mm:ss"),
+            end = e.EndDateTime.ToString("yyyy-MM-ddTHH:mm:ss"),
+            url = e.Url
+        });
+
+        return Json(events);
+    }
+
+    /// <summary>
     /// Adds a new engagement.
     /// </summary>
     /// <returns>The add new engagement view.</returns>

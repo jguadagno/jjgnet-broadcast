@@ -1,3 +1,5 @@
+using Azure.Provisioning;
+using Azure.Provisioning.EventGrid;
 using Azure.Provisioning.Storage;
 
 using Projects;
@@ -37,7 +39,37 @@ var api = builder.AddProject<JosephGuadagno_Broadcasting_Api>("josephguadagno-br
     .WaitFor(blobStorage)
     .WaitFor(db);
 
-builder.AddAzureFunctionsProject<JosephGuadagno_Broadcasting_Functions>("Functions")
+// Event Grid topics — provisioned in Azure via azd; for local dev configure endpoints/keys
+// via local.settings.json or user secrets (see event-grid-simulator-config.json for local setup).
+// Topic keys must be set separately in Azure App Service settings or Key Vault.
+var eventGridTopicNames = new[]
+{
+    "new-random-post",
+    "new-speaking-engagement",
+    "new-syndication-feed-item",
+    "new-youtube-item",
+    "scheduled-item-fired"
+};
+
+var eventGridTopics = eventGridTopicNames
+    .Select((topicName, index) =>
+    {
+        var bicepName = topicName.Replace("-", string.Empty);
+        var resource = builder.AddAzureInfrastructure(bicepName, infra =>
+        {
+            var topic = new EventGridTopic(bicepName)
+            {
+                Tags = { { "aspire-resource-name", topicName } }
+            };
+            topic.Name = topicName;
+            infra.Add(topic);
+            infra.Add(new ProvisioningOutput("topicEndpoint", typeof(string)) { Value = topic.Endpoint });
+        });
+        return (index, topicName, resource);
+    })
+    .ToList();
+
+var functions = builder.AddAzureFunctionsProject<JosephGuadagno_Broadcasting_Functions>("Functions")
     .WithRoleAssignments(storage,
         // Storage Account Contributor and Storage Blob Data Owner roles are required by the Azure Functions host
         StorageBuiltInRole.StorageAccountContributor, StorageBuiltInRole.StorageBlobDataOwner,
@@ -54,6 +86,14 @@ builder.AddAzureFunctionsProject<JosephGuadagno_Broadcasting_Functions>("Functio
     .WaitFor(queueStorage)
     .WithEnvironment("ConnectionStrings__JJGNetDatabaseSqlServer", db)
     .WithEnvironment("Settings__LoggingStorageAccount", tableStorage);
+
+foreach (var (index, topicName, resource) in eventGridTopics)
+{
+    functions
+        .WithEnvironment($"EventGridTopics__TopicEndpointSettings__{index}__TopicName", topicName)
+        .WithEnvironment($"EventGridTopics__TopicEndpointSettings__{index}__Endpoint",
+            resource.GetOutput("topicEndpoint"));
+}
 
 builder.AddProject<JosephGuadagno_Broadcasting_Web>("josephguadagno-broadcasting-web")
     .WithEnvironment("ConnectionStrings__JJGNetDatabaseSqlServer", db)

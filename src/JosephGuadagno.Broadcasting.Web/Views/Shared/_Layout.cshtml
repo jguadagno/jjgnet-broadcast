@@ -38,6 +38,7 @@
     <meta name="msapplication-square310x310logo" content="@Settings.StaticContentRootUrl/imgs/favicon/mstile-310x310.png" />
     <script src="~/js/theme-support.js" asp-append-version="true"></script>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
 <header>
