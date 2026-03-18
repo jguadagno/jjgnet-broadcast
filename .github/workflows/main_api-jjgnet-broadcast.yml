@@ -51,12 +51,12 @@ jobs:
           name: .api-app
 
       - name: Login to Azure
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.API_CLIENT_ID }}
           tenant-id: ${{ secrets.API_TENANT_ID }}
           subscription-id: ${{ secrets.API_SUBSCRIPTION_ID }}
-          auth_type: IDENTITY
+          auth-type: 'IDENTITY'
 
       - name: Deploy to staging slot
         id: deploy-to-staging
@@ -78,12 +78,12 @@ jobs:
 
     steps:
       - name: Login to Azure
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.API_CLIENT_ID }}
           tenant-id: ${{ secrets.API_TENANT_ID }}
           subscription-id: ${{ secrets.API_SUBSCRIPTION_ID }}
-          auth_type: IDENTITY
+          auth-type: 'IDENTITY'
 
       - name: Swap staging to production
         run: |
