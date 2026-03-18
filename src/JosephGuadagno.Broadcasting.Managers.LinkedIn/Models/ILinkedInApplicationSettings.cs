@@ -6,4 +6,5 @@ public interface ILinkedInApplicationSettings
     string ClientSecret { get; set; }
     string AccessToken { get; set; }
     string AuthorId { get; set; }
+    string AccessTokenUrl { get; set; }
 }
