@@ -59,6 +59,21 @@ public static class Scopes
         }
     }
     /// <summary>
+    /// Contains the scopes for the MessageTemplate API
+    /// </summary>
+    public static class MessageTemplates
+    {
+        public static readonly string All = "MessageTemplates.All";
+
+        public static Dictionary<string, string> ToDictionary()
+        {
+            return new Dictionary<string, string>
+            {
+                { All, All }
+            };
+        }
+    }
+    /// <summary>
     /// Contains the scopes for the Talk API
     /// </summary>
     public static class Talks
@@ -112,7 +127,8 @@ public static class Scopes
         {
             { scopeUri + Engagements.All, Engagements.All },
             { scopeUri + Talks.All, Talks.All },
-            { scopeUri + Schedules.All, Schedules.All }
+            { scopeUri + Schedules.All, Schedules.All },
+            { scopeUri + MessageTemplates.All, MessageTemplates.All }
         };
     }
 }

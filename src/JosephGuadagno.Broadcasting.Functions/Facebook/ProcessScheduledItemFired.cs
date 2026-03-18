@@ -87,12 +87,7 @@ public class ProcessScheduledItemFired(
                 if (rendered is not null)
                     facebookPostStatus.StatusText = rendered;
             }
-
-            // ImageUrl is available on the scheduled item but not supported in the FacebookPostStatus queue payload
-            if (!string.IsNullOrEmpty(scheduledItem.ImageUrl))
-                logger.LogInformation(
-                    "ImageUrl '{ImageUrl}' is available for scheduled item {Id} but is not supported in the Facebook queue payload",
-                    scheduledItem.ImageUrl, scheduledItem.Id);
+            facebookPostStatus.ImageUrl = scheduledItem.ImageUrl;
 
             var properties = new Dictionary<string, string>
             {

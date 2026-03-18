@@ -1,0 +1,64 @@
+@model List<JosephGuadagno.Broadcasting.Web.Models.MessageTemplateViewModel>
+
+@{
+    ViewData["Title"] = "Message Templates";
+    var platforms = Model.GroupBy(t => t.Platform).OrderBy(g => g.Key).ToList();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Message Templates</h1>
+</div>
+<p class="lead">
+    Scriban templates used to render broadcast messages for each platform. Edit the template body to customize how posts are formatted.
+</p>
+
+@foreach (var platform in platforms)
+{
+    <h4 class="mt-4 mb-2">
+        <i class="bi bi-broadcast me-2"></i>@platform.Key
+    </h4>
+    <table class="table table-striped table-hover">
+        <thead>
+        <tr>
+            <th scope="col" style="width: 25%">Message Type</th>
+            <th scope="col">Description</th>
+            <th scope="col">Template</th>
+            <th scope="col" style="width: 80px">&nbsp;</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var template in platform.OrderBy(t => t.MessageType))
+        {
+            var truncated = template.Template.Length > 80
+                ? template.Template.Substring(0, 80) + "…"
+                : template.Template;
+            <tr>
+                <td>@template.MessageType</td>
+                <td>@template.Description</td>
+                <td>
+                    <span title="@template.Template" data-bs-toggle="tooltip" data-bs-placement="top"
+                          style="font-family: monospace; font-size: 0.875em;">@truncated</span>
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-controller="MessageTemplates"
+                       asp-route-platform="@template.Platform"
+                       asp-route-messageType="@template.MessageType"
+                       class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@section Scripts {
+    <script>
+        // Enable Bootstrap tooltips for truncated template preview
+        document.addEventListener('DOMContentLoaded', function () {
+            var tooltipEls = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            tooltipEls.forEach(function (el) { new bootstrap.Tooltip(el); });
+        });
+    </script>
+}

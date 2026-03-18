@@ -152,6 +152,7 @@ void ConfigureApplication(IServiceCollection services)
     services.AddHttpClient();
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
+    services.TryAddScoped<IMessageTemplateService, MessageTemplateService>();
     ConfigureKeyVault(services);
 }
 

@@ -91,7 +91,7 @@ public class ProcessScheduledItemFiredTests
         var result = await sut.RunAsync(BuildEventGridEvent(1));
 
         // Assert — rendered text, not the "Blog Post: ..." fallback
-        Assert.Equal("Test Blog Post Title - https://example.com/post", result);
+        Assert.Equal("Test Blog Post Title - https://example.com/post", result?.Text);
     }
 
     [Fact]
@@ -122,8 +122,8 @@ public class ProcessScheduledItemFiredTests
 
         // Assert — fallback generates "Blog Post: ..." format
         Assert.NotNull(result);
-        Assert.Contains("Blog Post:", result);
-        Assert.Contains("Test Blog Post Title", result);
+        Assert.Contains("Blog Post:", result!.Text);
+        Assert.Contains("Test Blog Post Title", result!.Text);
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public class ProcessScheduledItemFiredTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.Contains("https://cdn.example.com/image.jpg", result);
+        Assert.Contains("https://cdn.example.com/image.jpg", result!.Text);
     }
 
     [Fact]
@@ -201,7 +201,7 @@ public class ProcessScheduledItemFiredTests
 
         // Assert — image_url renders as empty string
         Assert.NotNull(result);
-        Assert.Equal("Test Blog Post Title|", result);
+        Assert.Equal("Test Blog Post Title|", result!.Text);
     }
 
     [Fact]
@@ -238,6 +238,6 @@ public class ProcessScheduledItemFiredTests
 
         // Assert — empty template is treated as no template → fallback
         Assert.NotNull(result);
-        Assert.Contains("Blog Post:", result);
+        Assert.Contains("Blog Post:", result!.Text);
     }
 }

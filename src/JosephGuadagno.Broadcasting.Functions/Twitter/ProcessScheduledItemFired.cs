@@ -6,6 +6,7 @@ using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
+using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Scriban;
@@ -30,7 +31,7 @@ public class ProcessScheduledItemFired(
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=twitter_process_scheduled_item_fired`
     [Function(ConfigurationFunctionNames.TwitterProcessScheduledItemFired)]
     [QueueOutput(Queues.TwitterTweetsToSend)]
-    public async Task<string?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<TwitterTweetMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTime.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -85,13 +86,6 @@ public class ProcessScheduledItemFired(
                         return null;
                 }
             }
-
-            // ImageUrl is available on the scheduled item but not supported in the Twitter queue payload (plain string)
-            if (!string.IsNullOrEmpty(scheduledItem.ImageUrl))
-                logger.LogInformation(
-                    "ImageUrl '{ImageUrl}' is available for scheduled item {Id} but is not supported in the Twitter queue payload",
-                    scheduledItem.ImageUrl, scheduledItem.Id);
-
             var properties = new Dictionary<string, string>
             {
                 { "tableName", scheduledItem.ItemTableName },
@@ -101,7 +95,7 @@ public class ProcessScheduledItemFired(
             logger.LogCustomEvent(Metrics.TwitterProcessScheduledItemFired, properties);
             logger.LogDebug("Generated the tweet for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
-            return tweetText;
+            return new TwitterTweetMessage { Text = tweetText, ImageUrl = scheduledItem.ImageUrl };
         }
         catch (Exception e)
         {
