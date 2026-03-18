@@ -1,0 +1,77 @@
+name: Deploy Infrastructure (Bicep)
+# Manual trigger only — infrastructure changes are intentional and reviewed before apply.
+# To deploy automatically on merge, change the trigger to: push: branches: [main]
+#
+# Required GitHub Secrets:
+#   INFRA_CLIENT_ID          — Azure service principal / managed identity client ID (OIDC)
+#   INFRA_TENANT_ID          — Azure tenant ID
+#   INFRA_SUBSCRIPTION_ID    — Azure subscription ID
+#   INFRA_SQL_ADMIN_PASSWORD — SQL Server admin password (strong, rotated)
+#   INFRA_ADMIN_PRINCIPAL_ID — Object ID of the SP that becomes Key Vault Administrator
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - dev
+          - prod
+      resource_group:
+        description: 'Azure Resource Group name'
+        required: true
+        default: 'rg-jjgnet-prod'
+      location:
+        description: 'Azure region'
+        required: false
+        default: 'westus2'
+
+jobs:
+  deploy-infra:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    permissions:
+      id-token: write   # Required for OIDC login
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.INFRA_CLIENT_ID }}
+          tenant-id: ${{ secrets.INFRA_TENANT_ID }}
+          subscription-id: ${{ secrets.INFRA_SUBSCRIPTION_ID }}
+
+      - name: Install Bicep CLI
+        run: az bicep install
+
+      - name: Ensure resource group exists
+        run: |
+          az group create \
+            --name "${{ github.event.inputs.resource_group }}" \
+            --location "${{ github.event.inputs.location }}" \
+            --output none
+
+      - name: Deploy Bicep templates
+        run: |
+          az deployment group create \
+            --resource-group "${{ github.event.inputs.resource_group }}" \
+            --template-file infra/main.bicep \
+            --parameters "infra/parameters/${{ github.event.inputs.environment }}.bicepparam" \
+            --parameters "sqlAdminPassword=${{ secrets.INFRA_SQL_ADMIN_PASSWORD }}" \
+            --parameters "adminPrincipalObjectId=${{ secrets.INFRA_ADMIN_PRINCIPAL_ID }}" \
+            --name "jjgnet-infra-${{ github.run_number }}" \
+            --output table
+
+      - name: Show deployment outputs
+        run: |
+          az deployment group show \
+            --resource-group "${{ github.event.inputs.resource_group }}" \
+            --name "jjgnet-infra-${{ github.run_number }}" \
+            --query properties.outputs \
+            --output table
