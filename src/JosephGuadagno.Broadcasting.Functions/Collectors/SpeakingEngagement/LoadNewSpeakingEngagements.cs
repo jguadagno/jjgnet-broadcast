@@ -64,20 +64,10 @@ public class LoadNewSpeakingEngagements(
             var savedCount = 0;
             foreach (var item in newItems)
             {
-                // Skip if the engagement already exists (Name + Url + StartDateTime.Year is the natural key)
-                var existingEngagement = await engagementManager.GetByNameAndUrlAndYearAsync(
-                    item.Name, item.Url, item.StartDateTime.Year);
-                if (existingEngagement != null)
-                {
-                    logger.LogDebug(
-                        "Skipping duplicate speaking engagement '{Name}' ({Url}, {Year})",
-                        item.Name, item.Url, item.StartDateTime.Year);
-                    continue;
-                }
-
                 // attempt to save the item
                 try
                 {
+                    // TODO: Add a check to see if the item already exists, if so, update it.
                     var engagement = await SavePipeline.ExecuteAsync(
                         async ct => await engagementManager.SaveAsync(item));
                     var properties = new Dictionary<string, string>
