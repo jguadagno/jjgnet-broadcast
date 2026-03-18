@@ -58,7 +58,7 @@ public class ProcessScheduledItemFired(
 
             // Attempt Scriban template rendering; fall back to per-type message construction if unavailable
             string? blueSkyPostText = null;
-            var messageTemplate = await messageTemplateDataStore.GetAsync("Bluesky", "RandomPost");
+            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.Bluesky, MessageTemplates.MessageTypes.RandomPost);
             if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
                 blueSkyPostText = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);
 

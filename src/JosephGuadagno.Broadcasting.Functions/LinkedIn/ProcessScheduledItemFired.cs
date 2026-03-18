@@ -83,7 +83,7 @@ public class ProcessScheduledItemFired(
             }
 
             // Attempt Scriban template rendering for the post text; fall back to scheduledItem.Message if unavailable
-            var messageTemplate = await messageTemplateDataStore.GetAsync("LinkedIn", "RandomPost");
+            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.RandomPost);
             string? renderedText = null;
             if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
                 renderedText = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);

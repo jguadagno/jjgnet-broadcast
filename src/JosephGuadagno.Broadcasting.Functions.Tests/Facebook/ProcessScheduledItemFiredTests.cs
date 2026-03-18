@@ -2,6 +2,7 @@ using System;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Azure.Messaging.EventGrid;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -77,7 +78,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync("Facebook", "RandomPost")).ReturnsAsync(messageTemplate);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.Facebook, MessageTemplates.MessageTypes.RandomPost)).ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -109,7 +110,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync("Facebook", "RandomPost")).ReturnsAsync((MessageTemplate?)null);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.Facebook, MessageTemplates.MessageTypes.RandomPost)).ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -150,7 +151,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync("Facebook", "RandomPost")).ReturnsAsync(messageTemplate);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.Facebook, MessageTemplates.MessageTypes.RandomPost)).ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -189,7 +190,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync("Facebook", "RandomPost")).ReturnsAsync(messageTemplate);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.Facebook, MessageTemplates.MessageTypes.RandomPost)).ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -226,7 +227,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync("Facebook", "RandomPost")).ReturnsAsync(messageTemplate);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.Facebook, MessageTemplates.MessageTypes.RandomPost)).ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(
             mockScheduledItemManager,

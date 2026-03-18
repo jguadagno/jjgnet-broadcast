@@ -80,7 +80,7 @@ public class ProcessScheduledItemFired(
             }
 
             // Attempt Scriban template override of StatusText; LinkUri is always sourced from the item above
-            var messageTemplate = await messageTemplateDataStore.GetAsync("Facebook", "RandomPost");
+            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.Facebook, MessageTemplates.MessageTypes.RandomPost);
             if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
             {
                 var rendered = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);

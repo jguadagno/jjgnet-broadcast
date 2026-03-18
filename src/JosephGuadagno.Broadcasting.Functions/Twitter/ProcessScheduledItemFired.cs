@@ -59,7 +59,7 @@ public class ProcessScheduledItemFired(
 
             // Attempt Scriban template rendering; fall back to per-type message construction if unavailable
             string? tweetText = null;
-            var messageTemplate = await messageTemplateDataStore.GetAsync("Twitter", "RandomPost");
+            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.Twitter, MessageTemplates.MessageTypes.RandomPost);
             if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
                 tweetText = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);
 

@@ -1,5 +1,6 @@
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Data.Sql.Models;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Xunit;
@@ -53,7 +54,7 @@ public class MessageTemplateDataStoreTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _dataStore.GetAsync("Twitter", "RandomPost");
+        var result = await _dataStore.GetAsync(MessageTemplates.Platforms.Twitter, MessageTemplates.MessageTypes.RandomPost);
 
         // Assert
         Assert.NotNull(result);
@@ -67,7 +68,7 @@ public class MessageTemplateDataStoreTests : IDisposable
     public async Task GetAsync_WhenNoTemplatesExist_ReturnsNull()
     {
         // Act
-        var result = await _dataStore.GetAsync("Twitter", "RandomPost");
+        var result = await _dataStore.GetAsync(MessageTemplates.Platforms.Twitter, MessageTemplates.MessageTypes.RandomPost);
 
         // Assert
         Assert.Null(result);
@@ -81,7 +82,7 @@ public class MessageTemplateDataStoreTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _dataStore.GetAsync("Twitter", "RandomPost");
+        var result = await _dataStore.GetAsync(MessageTemplates.Platforms.Twitter, MessageTemplates.MessageTypes.RandomPost);
 
         // Assert
         Assert.Null(result);
@@ -95,7 +96,7 @@ public class MessageTemplateDataStoreTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _dataStore.GetAsync("Twitter", "RandomPost");
+        var result = await _dataStore.GetAsync(MessageTemplates.Platforms.Twitter, MessageTemplates.MessageTypes.RandomPost);
 
         // Assert
         Assert.Null(result);
@@ -114,7 +115,7 @@ public class MessageTemplateDataStoreTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _dataStore.GetAsync("LinkedIn", "RandomPost");
+        var result = await _dataStore.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.RandomPost);
 
         // Assert
         Assert.NotNull(result);
