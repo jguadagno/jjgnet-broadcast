@@ -50,17 +50,17 @@ class JjgnetStack : Stack
                     new NameValuePairArgs
                     {
                         Name = "runtime",
-                        Value = "dotnet",
+                        Value = "dotnet-isolated",
                     },
                     new NameValuePairArgs
                     {
                         Name = "FUNCTIONS_WORKER_RUNTIME",
-                        Value = "dotnet",
+                        Value = "dotnet-isolated",
                     },
                     new NameValuePairArgs
                     {
                         Name = "FUNCTIONS_EXTENSION_VERSION",
-                        Value = "~3"
+                        Value = "~4"
                     },
                     new NameValuePairArgs
                     {
@@ -87,6 +87,30 @@ class JjgnetStack : Stack
         });
 
         var facebookQueue = new Queue("facebook-post-status-to-page", new QueueArgs
+        {
+            AccountName = storageAccount.Name,
+            ResourceGroupName = resourceGroup.Name,
+        });
+
+        var linkedInPostLinkQueue = new Queue("linkedin-post-link", new QueueArgs
+        {
+            AccountName = storageAccount.Name,
+            ResourceGroupName = resourceGroup.Name,
+        });
+
+        var linkedInPostTextQueue = new Queue("linkedin-post-text", new QueueArgs
+        {
+            AccountName = storageAccount.Name,
+            ResourceGroupName = resourceGroup.Name,
+        });
+
+        var linkedInPostImageQueue = new Queue("linkedin-post-image", new QueueArgs
+        {
+            AccountName = storageAccount.Name,
+            ResourceGroupName = resourceGroup.Name,
+        });
+
+        var blueskyPostToSendQueue = new Queue("bluesky-post-to-send", new QueueArgs
         {
             AccountName = storageAccount.Name,
             ResourceGroupName = resourceGroup.Name,
