@@ -7,8 +7,8 @@ public class Presentation
 {
     [JsonPropertyName("name")] public string Name { get; set; }
     [JsonPropertyName("url")] public string Url { get; set; }
-    [JsonPropertyName("startDate")] public DateTime? PresentationStartDateTime { get; set; }
-    [JsonPropertyName("endDate")] public DateTime? PresentationEndDateTime { get; set; }
+    [JsonPropertyName("startDate")] public DateTimeOffset? PresentationStartDateTime { get; set; }
+    [JsonPropertyName("endDate")] public DateTimeOffset? PresentationEndDateTime { get; set; }
     [JsonPropertyName("room")] public string Room { get; set; }
     [JsonPropertyName("comments")] public string Comments { get; set; }
     [JsonPropertyName("isCanceled")] public bool IsCanceled { get; set; }
