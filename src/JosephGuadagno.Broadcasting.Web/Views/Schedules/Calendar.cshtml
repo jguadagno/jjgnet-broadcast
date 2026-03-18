@@ -19,7 +19,14 @@
 <div id="calendar"></div>
 
 @section Scripts {
-    <script src="~/libs/fullcalendar/index.global.min.js" asp-append-version="true"></script>
+    <environment include="Production">
+        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"
+                integrity="sha256-ZztCtsADLKbUFK/X6nOYnJr0eelmV2X3dhLDB/JK6fM="
+                crossorigin="anonymous"></script>
+    </environment>
+    <environment exclude="Production">
+        <script src="~/libs/fullcalendar/index.global.min.js" asp-append-version="true"></script>
+    </environment>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var calendarEl = document.getElementById('calendar');
