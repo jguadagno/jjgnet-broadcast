@@ -17,7 +17,6 @@ env:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    environment: production
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read
@@ -59,10 +58,9 @@ jobs:
           path: ${{ env.WORKING_DIRECTORY }}/publish
           include-hidden-files: 'true'
 
-  deploy-to-function-app:
+  deploy-to-staging:
     runs-on: ubuntu-latest
     needs: build-and-test
-    environment: production
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read
@@ -82,10 +80,34 @@ jobs:
           tenant-id: ${{ secrets.FUNCTIONAPP_TENANT_ID }}
           subscription-id: ${{ secrets.FUNCTIONAPP_SUBSCRIPTION_ID }}
 
-      - name: 'Deploy Azure Functions '
+      - name: Deploy to staging slot
         uses: Azure/functions-action@v1
-        id: fa
+        id: fa-staging
         with:
           app-name: 'jjgnet-broadcast'
-          slot-name: 'production'
+          slot-name: 'staging'
           package: ./publish
+
+  swap-to-production:
+    runs-on: ubuntu-latest
+    needs: deploy-to-staging
+    environment: production
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read
+
+    steps:
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.FUNCTIONAPP_CLIENT_ID }}
+          tenant-id: ${{ secrets.FUNCTIONAPP_TENANT_ID }}
+          subscription-id: ${{ secrets.FUNCTIONAPP_SUBSCRIPTION_ID }}
+
+      - name: Swap staging to production
+        run: |
+          az functionapp deployment slot swap \
+            --name jjgnet-broadcast \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --slot staging \
+            --target-slot production
