@@ -37,12 +37,9 @@ jobs:
           name: .api-app
           path: ${{env.DOTNET_ROOT}}/api-jjgnet-broadcast
 
-  deploy:
+  deploy-to-staging:
     runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: 'production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read
@@ -61,10 +58,43 @@ jobs:
           subscription-id: ${{ secrets.API_SUBSCRIPTION_ID }}
           auth_type: IDENTITY
 
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
+      - name: Deploy to staging slot
+        id: deploy-to-staging
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'api-jjgnet-broadcast'
-          slot-name: 'production'
+          slot-name: 'staging'
           package: .
+
+  swap-to-production:
+    runs-on: ubuntu-latest
+    needs: deploy-to-staging
+    environment:
+      name: 'production'
+      url: ${{ steps.get-url.outputs.webapp-url }}
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read
+
+    steps:
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.API_CLIENT_ID }}
+          tenant-id: ${{ secrets.API_TENANT_ID }}
+          subscription-id: ${{ secrets.API_SUBSCRIPTION_ID }}
+          auth_type: IDENTITY
+
+      - name: Swap staging to production
+        run: |
+          az webapp deployment slot swap \
+            --name api-jjgnet-broadcast \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --slot staging \
+            --target-slot production
+
+      - name: Get production URL
+        id: get-url
+        run: |
+          url=$(az webapp show --name api-jjgnet-broadcast --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --query defaultHostName -o tsv)
+          echo "webapp-url=https://$url" >> $GITHUB_OUTPUT
