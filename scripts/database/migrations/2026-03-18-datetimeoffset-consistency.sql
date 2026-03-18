@@ -1,0 +1,40 @@
+-- Migration: DateTimeOffset Consistency Audit (feature/datetimeoffset-consistency)
+-- Date: 2026-03-18
+-- Author: Morpheus
+--
+-- PURPOSE
+-- -------
+-- Audited all datetime columns in the JJGNet SQL schema for timezone-awareness.
+-- The table-create.sql schema and all prior migrations already define every
+-- point-in-time column as DATETIMEOFFSET (not DATETIME or DATETIME2).
+-- No ALTER TABLE statements are required for production databases created from
+-- the current base scripts.
+--
+-- SCHEMA FINDINGS (all columns confirmed DATETIMEOFFSET)
+-- ------------------------------------------------------
+-- dbo.Engagements      : StartDateTime, EndDateTime, CreatedOn, LastUpdatedOn
+-- dbo.Talks            : StartDateTime, EndDateTime
+-- dbo.ScheduledItems   : SendOnDateTime, MessageSentOn
+-- dbo.Cache            : ExpiresAtTime, AbsoluteExpiration
+-- dbo.FeedChecks       : LastCheckedFeed, LastItemAddedOrUpdated, LastUpdatedOn
+-- dbo.TokenRefreshes   : Expires, LastChecked, LastRefreshed, LastUpdatedOn
+-- dbo.SyndicationFeedSources : PublicationDate, AddedOn, ItemLastUpdatedOn, LastUpdatedOn
+-- dbo.YouTubeSources   : PublicationDate, AddedOn, ItemLastUpdatedOn, LastUpdatedOn
+-- dbo.MessageTemplates : (no datetime columns)
+--
+-- C# MODEL CHANGES APPLIED IN THIS BRANCH
+-- ----------------------------------------
+-- 1. Domain.Models.LoadFeedItemsRequest.CheckFrom  : DateTime  → DateTimeOffset
+-- 2. SpeakingEngagementsReader.Models.Presentation.PresentationStartDateTime : DateTime? → DateTimeOffset?
+-- 3. SpeakingEngagementsReader.Models.Presentation.PresentationEndDateTime   : DateTime? → DateTimeOffset?
+--
+-- HISTORY NOTE
+-- ------------
+-- The schema was originally migrated to DATETIMEOFFSET in:
+--   scripts/database/2026-01-31-engagement-add-time-columns.sql
+--   scripts/database/2026-02-04-move-from-table-storage.sql
+-- Those migrations introduced all new tables/columns with DATETIMEOFFSET from the start.
+-- No legacy DATETIME/DATETIME2 columns remain.
+
+-- (intentionally no DML/DDL — nothing to change in SQL)
+GO

@@ -71,8 +71,8 @@ public class ModelsTests
         // Assert
         Assert.Equal("Name", presentation.Name);
         Assert.Equal("Url", presentation.Url);
-        Assert.Equal(new DateTime(2023, 1, 1), presentation.PresentationStartDateTime);
-        Assert.Equal(new DateTime(2023, 1, 2), presentation.PresentationEndDateTime);
+        Assert.Equal(new DateTimeOffset(new DateTime(2023, 1, 1)), presentation.PresentationStartDateTime);
+        Assert.Equal(new DateTimeOffset(new DateTime(2023, 1, 2)), presentation.PresentationEndDateTime);
         Assert.Equal("Room", presentation.Room);
         Assert.Equal("Comments", presentation.Comments);
         Assert.True(presentation.IsCanceled);
