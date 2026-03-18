@@ -39,7 +39,14 @@ public class ScheduledItemViewModel
     /// </summary>
     [Required]
     public string Message { get; set; }
-    
+
+    /// <summary>
+    /// An optional URL of an image to attach or embed in the broadcast post.
+    /// </summary>
+    [Url]
+    [Display(Name = "Image URL")]
+    public string? ImageUrl { get; set; }
+
     /// <summary>
     /// When the message was sent by the scheduler
     /// </summary>

@@ -47,7 +47,8 @@ create table dbo.ScheduledItems
     Message          nvarchar(max),
     SendOnDateTime   datetimeoffset not null,
     MessageSent      bit default 0  not null,
-    MessageSentOn    datetimeoffset
+    MessageSentOn    datetimeoffset,
+    ImageUrl         nvarchar(2048)
 )
 go
 
@@ -145,5 +146,16 @@ create table dbo.YouTubeSources
     AddedOn           datetimeoffset default getutcdate() not null,
     ItemLastUpdatedOn datetimeoffset default getutcdate(),
     LastUpdatedOn     datetimeoffset default getutcdate() not null
+)
+go
+
+-- Create the MessageTemplates table
+create table dbo.MessageTemplates
+(
+    Platform      nvarchar(50)  not null,
+    MessageType   nvarchar(50)  not null,
+    Template      nvarchar(max) not null,
+    Description   nvarchar(500) null,
+    constraint PK_MessageTemplates primary key ([Platform], [MessageType])
 )
 go

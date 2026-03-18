@@ -40,6 +40,11 @@
         <span asp-validation-for="Message" class="text-danger"></span>
     </div>
     <div class="mb-3">
+        <label asp-for="ImageUrl" class="form-label"></label>
+        <input asp-for="ImageUrl" type="url" class="form-control" placeholder="https://example.com/image.jpg" />
+        <span asp-validation-for="ImageUrl" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
         <label asp-for="MessageSentOn" class="form-label">Sent on Date/Time</label>
         <input asp-for="MessageSentOn" type="datetime-local" class="form-control" />
         <span asp-validation-for="MessageSentOn" class="text-danger"></span>

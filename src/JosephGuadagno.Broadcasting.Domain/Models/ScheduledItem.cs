@@ -37,6 +37,11 @@ public class ScheduledItem
     /// </summary>
     [Required]
     public string Message { get; set; }
+
+    /// <summary>
+    /// An optional URL of an image to attach or embed in the broadcast post.
+    /// </summary>
+    public string? ImageUrl { get; set; }
     
     /// <summary>
     /// When the message was sent by the scheduler
