@@ -250,6 +250,52 @@ public class LinkedInManager : ILinkedInManager
         throw new LinkedInPostException(BuildLinkedInResponseErrorMessage(linkedInResponse));
     }
 
+    public async Task<LinkedInTokenInfo> RefreshTokenAsync(string clientId, string clientSecret, string refreshToken, string accessTokenUrl)
+    {
+        if (string.IsNullOrEmpty(clientId))
+            throw new ArgumentNullException(nameof(clientId));
+        if (string.IsNullOrEmpty(clientSecret))
+            throw new ArgumentNullException(nameof(clientSecret));
+        if (string.IsNullOrEmpty(refreshToken))
+            throw new ArgumentNullException(nameof(refreshToken));
+        if (string.IsNullOrEmpty(accessTokenUrl))
+            throw new ArgumentNullException(nameof(accessTokenUrl));
+
+        var formContent = new FormUrlEncodedContent(new[]
+        {
+            new KeyValuePair<string, string>("grant_type", "refresh_token"),
+            new KeyValuePair<string, string>("refresh_token", refreshToken),
+            new KeyValuePair<string, string>("client_id", clientId),
+            new KeyValuePair<string, string>("client_secret", clientSecret)
+        });
+
+        var response = await _httpClient.PostAsync(accessTokenUrl, formContent);
+        var content = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            throw new LinkedInPostException(
+                $"LinkedIn token refresh failed with status {response.StatusCode}: {content}");
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var tokenResponse = JsonSerializer.Deserialize<LinkedInRefreshResponse>(content, options);
+
+        if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.AccessToken))
+            throw new LinkedInPostException(
+                $"Unable to deserialize the token refresh response from LinkedIn: {content}");
+
+        var now = DateTime.UtcNow;
+        return new LinkedInTokenInfo
+        {
+            AccessToken = tokenResponse.AccessToken,
+            ExpiresOn = now.AddSeconds(tokenResponse.ExpiresIn),
+            RefreshToken = tokenResponse.RefreshToken,
+            RefreshTokenExpiresOn = tokenResponse.RefreshTokenExpiresIn.HasValue
+                ? now.AddSeconds(tokenResponse.RefreshTokenExpiresIn.Value)
+                : null
+        };
+    }
+
+    
     private async Task<T> ExecuteGetAsync<T>(string url, string accessToken)
     {
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

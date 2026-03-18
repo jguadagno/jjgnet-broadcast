@@ -17,6 +17,7 @@ public class LinkedInController : Controller
     private readonly ILogger<LinkedInController> _logger;
     
     const string KeyVaultSecretName = "jjg-net-linkedin-access-token";
+    const string KeyVaultRefreshTokenSecretName = "jjg-net-linkedin-refresh-token";
     const string State = "state";
     
     /// <summary>
@@ -142,7 +143,17 @@ public class LinkedInController : Controller
         var tokenExpiration = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn); 
         await _keyVault.UpdateSecretValueAndPropertiesAsync(KeyVaultSecretName, tokenResponse.AccessToken, tokenExpiration);
         
-        _logger.LogInformation("Saved new token 'jjg-net-linkedin-access-token' to KeyVault");
+        _logger.LogInformation("Saved new token '{KeyVaultSecretName}' to KeyVault", KeyVaultSecretName);
+
+        // Save the refresh token if one was returned
+        if (!string.IsNullOrEmpty(tokenResponse.RefreshToken))
+        {
+            var refreshTokenExpiration = tokenResponse.RefreshTokenExpiresIn.HasValue
+                ? DateTime.UtcNow.AddSeconds(tokenResponse.RefreshTokenExpiresIn.Value)
+                : DateTime.UtcNow.AddDays(365);
+            await _keyVault.UpdateSecretValueAndPropertiesAsync(KeyVaultRefreshTokenSecretName, tokenResponse.RefreshToken, refreshTokenExpiration);
+            _logger.LogInformation("Saved new refresh token '{KeyVaultRefreshTokenSecretName}' to KeyVault", KeyVaultRefreshTokenSecretName);
+        }
 
         return RedirectToAction("Index");
     }

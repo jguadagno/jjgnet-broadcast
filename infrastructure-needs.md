@@ -34,6 +34,7 @@ web-jjgnet-broadcast
 | LinkedIn   | `linkedin_post_text`                    | Sends a tweet from **linkedin-post-text** queue                         | `JosephGuadagno.Broadcasting.Functions` | `LinkedIn.PostText`                   |
 | LinkedIn   | `linkedin_post_link`                    | Sends a tweet from **linkedin-post-link** queue                         | `JosephGuadagno.Broadcasting.Functions` | `LinkedIn.PostLink`                   |
 | LinkedIn   | `linkedin_post_image`                   | Sends a tweet from **linkedin-post-image** queue                        | `JosephGuadagno.Broadcasting.Functions` | `LinkedIn.PostImage`                  |
+| LinkedIn   | `linkedin_refresh_tokens`               | Proactively refreshes LinkedIn access token using stored refresh token (5-day buffer, daily check) | `JosephGuadagno.Broadcasting.Functions` | `LinkedIn.RefreshTokens` |
 
 ### Queues
 
