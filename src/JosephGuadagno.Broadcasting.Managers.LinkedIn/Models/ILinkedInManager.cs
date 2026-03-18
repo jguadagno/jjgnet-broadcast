@@ -20,6 +20,20 @@ public interface ILinkedInManager
     Task<LinkedInUser> GetMyLinkedInUserProfile(string accessToken);
 
     /// <summary>
+    /// Refreshes the LinkedIn access token using a refresh token
+    /// </summary>
+    /// <param name="clientId">The application client ID</param>
+    /// <param name="clientSecret">The application client secret</param>
+    /// <param name="refreshToken">The refresh token to use</param>
+    /// <param name="accessTokenUrl">The token endpoint URL</param>
+    /// <returns>A <see cref="LinkedInTokenInfo"/> with the new tokens and expiry</returns>
+    /// <remarks>
+    /// Uses the OAuth2 refresh_token grant type.
+    /// Documentation: https://learn.microsoft.com/en-us/linkedin/shared/authentication/programmatic-refresh-tokens
+    /// </remarks>
+    Task<LinkedInTokenInfo> RefreshTokenAsync(string clientId, string clientSecret, string refreshToken, string accessTokenUrl);
+
+    /// <summary>
     /// Shares a text only post to LinkedIn
     /// </summary>
     /// <remarks>Based on the API https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/share-on-linkedin?context=linkedin%2Fconsumer%2Fcontext#create-a-text-share</remarks>

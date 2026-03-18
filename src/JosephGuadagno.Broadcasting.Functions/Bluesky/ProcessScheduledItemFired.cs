@@ -6,6 +6,7 @@ using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
+using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Scriban;
@@ -30,7 +31,7 @@ public class ProcessScheduledItemFired(
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=twitter_process_scheduled_item_fired`
     [Function(ConfigurationFunctionNames.BlueskyProcessScheduledItemFired)]
     [QueueOutput(Queues.BlueskyPostToSend)]
-    public async Task<string?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<BlueskyPostMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.Now;
         logger.LogDebug("{FunctionName} started at: {StartedOn:f}",
@@ -86,11 +87,8 @@ public class ProcessScheduledItemFired(
                 }
             }
 
-            // ImageUrl is available on the scheduled item but not supported in the Bluesky queue payload (plain string)
-            if (!string.IsNullOrEmpty(scheduledItem.ImageUrl))
-                logger.LogInformation(
-                    "ImageUrl '{ImageUrl}' is available for scheduled item {Id} but is not supported in the Bluesky queue payload",
-                    scheduledItem.ImageUrl, scheduledItem.Id);
+            // Get the source URL for the embed (used when ImageUrl is present to attach a thumbnail)
+            var sourceUrl = await GetSourceUrlAsync(scheduledItem);
 
             var properties = new Dictionary<string, string>
             {
@@ -101,7 +99,12 @@ public class ProcessScheduledItemFired(
             logger.LogCustomEvent(Metrics.BlueskyProcessedScheduledItemFired, properties);
             logger.LogDebug("Generated the BlueSky post text for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
-            return blueSkyPostText;
+            return new BlueskyPostMessage
+            {
+                Text = blueSkyPostText,
+                Url = sourceUrl,
+                ImageUrl = scheduledItem.ImageUrl
+            };
         }
         catch (Exception e)
         {
@@ -114,6 +117,22 @@ public class ProcessScheduledItemFired(
             logger.LogDebug("Ended {FunctionName} at {EndedOn:f} with duration {Duration:c}",
                 ConfigurationFunctionNames.BlueskyProcessScheduledItemFired, endedOn, endedOn - startedOn);
         }
+    }
+
+    private async Task<string?> GetSourceUrlAsync(ScheduledItem scheduledItem)
+    {
+        return scheduledItem.ItemType switch
+        {
+            ScheduledItemType.SyndicationFeedSources =>
+                (await syndicationFeedSourceManager.GetAsync(scheduledItem.ItemPrimaryKey)).Url,
+            ScheduledItemType.YouTubeSources =>
+                (await youTubeSourceManager.GetAsync(scheduledItem.ItemPrimaryKey)).Url,
+            ScheduledItemType.Engagements =>
+                (await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey)).Url,
+            ScheduledItemType.Talks =>
+                (await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey)).UrlForConferenceTalk,
+            _ => null
+        };
     }
 
     private async Task<string> GetPostForSyndicationSource(int primaryKey)

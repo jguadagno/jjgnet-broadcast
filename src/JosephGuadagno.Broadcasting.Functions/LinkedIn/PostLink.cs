@@ -1,4 +1,5 @@
-﻿using JosephGuadagno.Broadcasting.Domain;
+using System.Net;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Exceptions;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
-public class PostLink(ILinkedInManager linkedInManager, ILogger<PostLink> logger)
+public class PostLink(ILinkedInManager linkedInManager, HttpClient httpClient, ILogger<PostLink> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInPostLink)]
     public async Task Run(
@@ -17,9 +18,34 @@ public class PostLink(ILinkedInManager linkedInManager, ILogger<PostLink> logger
     {
         try
         {
-            var linkedInShareId = await linkedInManager.PostShareTextAndLink(linkedInPostLink.AccessToken, linkedInPostLink.AuthorId,
-                linkedInPostLink.Text, linkedInPostLink.LinkUrl, linkedInPostLink.Title, linkedInPostLink.Description);
-        
+            string? linkedInShareId;
+            if (!string.IsNullOrEmpty(linkedInPostLink.ImageUrl))
+            {
+                // ImageUrl is set — download the image and post as an image share
+                var imageResponse = await httpClient.GetAsync(linkedInPostLink.ImageUrl);
+                if (imageResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    logger.LogError("Unable to get the image from the url: {ImageUrl}. Status Code: {StatusCode}. Falling back to link post.",
+                        linkedInPostLink.ImageUrl, imageResponse.StatusCode);
+                    linkedInShareId = await linkedInManager.PostShareTextAndLink(
+                        linkedInPostLink.AccessToken, linkedInPostLink.AuthorId,
+                        linkedInPostLink.Text, linkedInPostLink.LinkUrl, linkedInPostLink.Title, linkedInPostLink.Description);
+                }
+                else
+                {
+                    var imageBytes = await imageResponse.Content.ReadAsByteArrayAsync();
+                    linkedInShareId = await linkedInManager.PostShareTextAndImage(
+                        linkedInPostLink.AccessToken, linkedInPostLink.AuthorId,
+                        linkedInPostLink.Text, imageBytes, linkedInPostLink.Title, linkedInPostLink.Description);
+                }
+            }
+            else
+            {
+                linkedInShareId = await linkedInManager.PostShareTextAndLink(
+                    linkedInPostLink.AccessToken, linkedInPostLink.AuthorId,
+                    linkedInPostLink.Text, linkedInPostLink.LinkUrl, linkedInPostLink.Title, linkedInPostLink.Description);
+            }
+
             if (!string.IsNullOrEmpty(linkedInShareId))
             {
                 var properties = new Dictionary<string, string>

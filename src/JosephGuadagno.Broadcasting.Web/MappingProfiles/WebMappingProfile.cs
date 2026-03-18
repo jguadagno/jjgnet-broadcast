@@ -19,6 +19,7 @@ public class WebMappingProfile: Profile
             .ForMember(
                 destination => destination.ItemType,
                 options => options.MapFrom(source => Enum.Parse<ScheduledItemType>(source.ItemTableName)));
+        CreateMap<Models.MessageTemplateViewModel, Domain.Models.MessageTemplate>();
 
         CreateMap<Domain.Models.Engagement, Models.EngagementViewModel>()
             .ForMember(destination => destination.TimeZones, options => options.Ignore());
@@ -27,5 +28,6 @@ public class WebMappingProfile: Profile
             .ForMember(
                 destination => destination.ItemTableName,
                 options => options.MapFrom(source => source.ItemType.ToString()));
+        CreateMap<Domain.Models.MessageTemplate, Models.MessageTemplateViewModel>();
     }
 }

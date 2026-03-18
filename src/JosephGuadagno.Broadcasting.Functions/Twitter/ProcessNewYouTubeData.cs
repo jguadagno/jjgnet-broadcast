@@ -6,6 +6,7 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
+using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -24,7 +25,7 @@ public class ProcessNewYouTubeDataFired(
     // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=twitter_process_new_source_data`
     [Function(ConfigurationFunctionNames.TwitterProcessNewYouTubeDataFired)]
     [QueueOutput(Queues.TwitterTweetsToSend)] 
-    public async Task<string?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<TwitterTweetMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTime.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -67,7 +68,7 @@ public class ProcessNewYouTubeDataFired(
         };
         logger.LogCustomEvent(Metrics.TwitterProcessedNewYouTubeData, properties);
         logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", youTubeSource.Id, youTubeSource.Title);
-        return status;
+        return new TwitterTweetMessage { Text = status };
     }
         
     private string ComposeTweet(YouTubeSource youTubeSource)

@@ -20,7 +20,12 @@ public class PostPageStatus(IFacebookManager facebookManager, ILogger<PostPageSt
 
         try
         {
-            var pageId = await facebookManager.PostMessageAndLinkToPage(facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
+            string? pageId;
+            if (!string.IsNullOrEmpty(facebookPostStatus.ImageUrl))
+                pageId = await facebookManager.PostMessageLinkAndPictureToPage(
+                    facebookPostStatus.StatusText, facebookPostStatus.LinkUri, facebookPostStatus.ImageUrl);
+            else
+                pageId = await facebookManager.PostMessageAndLinkToPage(facebookPostStatus.StatusText, facebookPostStatus.LinkUri);
 
             if (!string.IsNullOrEmpty(pageId))
             {

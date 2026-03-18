@@ -1,4 +1,4 @@
-﻿using idunno.Bluesky;
+using idunno.Bluesky;
 using idunno.Bluesky.RichText;
 
 using JosephGuadagno.Broadcasting.Domain;
@@ -31,8 +31,20 @@ public class SendPost(IBlueskyManager blueskyManager,ILogger<SendPost> logger)
                 }
                 postBuilder.Append(new Link(blueskyPostMessage.ShortenedUrl, blueskyPostMessage.ShortenedUrl));
                 
-                // Get the OpenGraph info to embed
-                var embeddedExternalRecord = await blueskyManager.GetEmbeddedExternalRecord(blueskyPostMessage.Url);
+                // Get the OpenGraph info to embed; use explicit ImageUrl as thumbnail override when available
+                var embeddedExternalRecord = !string.IsNullOrEmpty(blueskyPostMessage.ImageUrl)
+                    ? await blueskyManager.GetEmbeddedExternalRecordWithThumbnail(blueskyPostMessage.Url, blueskyPostMessage.ImageUrl)
+                    : await blueskyManager.GetEmbeddedExternalRecord(blueskyPostMessage.Url);
+                if (embeddedExternalRecord != null)
+                {
+                    postBuilder.EmbedRecord(embeddedExternalRecord);
+                }
+            }
+            else if (!string.IsNullOrEmpty(blueskyPostMessage.ImageUrl) && !string.IsNullOrEmpty(blueskyPostMessage.Url))
+            {
+                // No ShortenedUrl, but Url + ImageUrl are both set — embed with custom thumbnail
+                var embeddedExternalRecord = await blueskyManager.GetEmbeddedExternalRecordWithThumbnail(
+                    blueskyPostMessage.Url, blueskyPostMessage.ImageUrl);
                 if (embeddedExternalRecord != null)
                 {
                     postBuilder.EmbedRecord(embeddedExternalRecord);

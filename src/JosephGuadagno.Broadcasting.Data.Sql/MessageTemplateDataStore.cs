@@ -19,4 +19,16 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
         var dbMessageTemplates = await broadcastingContext.MessageTemplates.AsNoTracking().ToListAsync();
         return mapper.Map<List<Domain.Models.MessageTemplate>>(dbMessageTemplates);
     }
+
+    public async Task<Domain.Models.MessageTemplate?> UpdateAsync(Domain.Models.MessageTemplate messageTemplate)
+    {
+        var existing = await broadcastingContext.MessageTemplates
+            .FirstOrDefaultAsync(mt => mt.Platform == messageTemplate.Platform && mt.MessageType == messageTemplate.MessageType);
+        if (existing is null) return null;
+
+        existing.Template = messageTemplate.Template;
+        existing.Description = messageTemplate.Description;
+        await broadcastingContext.SaveChangesAsync();
+        return mapper.Map<Domain.Models.MessageTemplate>(existing);
+    }
 }

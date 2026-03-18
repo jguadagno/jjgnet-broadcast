@@ -1,4 +1,4 @@
-﻿using idunno.AtProto;
+using idunno.AtProto;
 using idunno.AtProto.Repo;
 using idunno.Bluesky;
 using idunno.Bluesky.Embed;
@@ -197,6 +197,60 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
         }
 
         // If we made it here, something failed.
+        return null;
+    }
+
+    public async Task<EmbeddedExternal?> GetEmbeddedExternalRecordWithThumbnail(string externalUrl, string thumbnailImageUrl)
+    {
+        if (string.IsNullOrEmpty(externalUrl))
+            return null;
+
+        BlueskyAgent agent;
+        try
+        {
+            agent = await EnsureAuthenticatedAsync();
+        }
+        catch (BlueskyPostException)
+        {
+            return null;
+        }
+
+        Uri page = new(externalUrl);
+        Extractor metadataExtractor = new();
+        var pageMetadata = await metadataExtractor.Extract(page, CancellationToken.None);
+
+        string title = pageMetadata.Title;
+        string? pageUri = pageMetadata.Source?.Url.ToString();
+        string description = pageMetadata.Description;
+
+        if (!string.IsNullOrEmpty(pageUri) && !string.IsNullOrEmpty(title))
+        {
+            Blob? thumbnailBlob = null;
+
+            if (!string.IsNullOrEmpty(thumbnailImageUrl))
+            {
+                try
+                {
+                    using HttpResponseMessage response = await httpClient.GetAsync(thumbnailImageUrl);
+                    response.EnsureSuccessStatusCode();
+
+                    var responseBody = await response.Content.ReadAsByteArrayAsync();
+                    if (response.Content.Headers.ContentType?.MediaType is not null)
+                    {
+                        AtProtoHttpResult<Blob> uploadResult = await
+                            agent.UploadBlob(responseBody, response.Content.Headers.ContentType.MediaType);
+                        if (uploadResult.Succeeded)
+                            thumbnailBlob = uploadResult.Result;
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                } // Ignore any exceptions from trying to get the thumbnail.
+            }
+
+            return new EmbeddedExternal(pageUri, title, description, thumbnailBlob);
+        }
+
         return null;
     }
 }
