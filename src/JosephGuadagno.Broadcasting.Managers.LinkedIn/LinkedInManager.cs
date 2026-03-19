@@ -99,7 +99,8 @@ public class LinkedInManager : ILinkedInManager
         {
             return linkedInResponse.Id;
         }
-        throw new LinkedInPostException($"Failed to post status update to LinkedIn: LinkedIn Status Code: '{linkedInResponse.ServiceErrorCode}', LinkedIn Message: '{linkedInResponse.Message}'");
+        throw new LinkedInPostException("Failed to post status update to LinkedIn",
+            linkedInResponse.ServiceErrorCode, linkedInResponse.Message);
     }
     
     /// <summary>
