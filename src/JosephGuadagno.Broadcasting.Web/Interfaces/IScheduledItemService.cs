@@ -1,4 +1,4 @@
-using JosephGuadagno.Broadcasting.Domain.Models;
+﻿using JosephGuadagno.Broadcasting.Domain.Models;
 
 namespace JosephGuadagno.Broadcasting.Web.Interfaces;
 
@@ -11,4 +11,5 @@ public interface IScheduledItemService
     Task<List<ScheduledItem>?> GetUnsentScheduledItemsAsync();
     Task<List<ScheduledItem>?> GetScheduledItemsToSendAsync();
     Task<List<ScheduledItem>?> GetScheduledItemsByCalendarMonthAsync(int year, int month);
+    Task<List<ScheduledItem>?> GetOrphanedScheduledItemsAsync();
 }

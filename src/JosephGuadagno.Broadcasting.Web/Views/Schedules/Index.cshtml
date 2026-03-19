@@ -1,7 +1,17 @@
-@model List<JosephGuadagno.Broadcasting.Web.Models.ScheduledItemViewModel>
+﻿@model List<JosephGuadagno.Broadcasting.Web.Models.ScheduledItemViewModel>
 
 @{
     ViewData["Title"] = "View Scheduled Items";
+    var orphanedCount = (int)(ViewBag.OrphanedCount ?? 0);
+}
+@if (orphanedCount > 0)
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <strong>&#9888;&#65039; @orphanedCount orphaned scheduled item(s) detected.</strong>
+        These items reference source records that no longer exist.
+        <a asp-action="Orphaned" class="alert-link">View orphaned items</a>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 }
 <div class="text-center">
     <table class="table table-striped">

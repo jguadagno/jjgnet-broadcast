@@ -1,0 +1,62 @@
+﻿@model List<JosephGuadagno.Broadcasting.Web.Models.ScheduledItemViewModel>?
+
+@{
+    ViewData["Title"] = "Orphaned Scheduled Items";
+}
+
+<h1>Orphaned Scheduled Items</h1>
+<div class="alert alert-warning" role="alert">
+    These scheduled items reference source records (talks, engagements, etc.) that no longer exist.
+    They will never be sent and can be safely deleted.
+</div>
+
+@if (Model is null || Model.Count == 0)
+{
+    <p class="lead">No orphaned scheduled items found.</p>
+}
+else
+{
+    <div class="text-center">
+        <table class="table table-striped">
+            <thead class="thead-dark">
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Table Name</th>
+                <th scope="col">Key</th>
+                <th scope="col">Scheduled Send DateTime</th>
+                <th scope="col">Was Sent</th>
+                <th scope="col">&nbsp;</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var scheduledItem in Model)
+            {
+                <tr>
+                    <td><a asp-controller="Schedules" asp-action="Details" asp-route-id="@scheduledItem.Id">@scheduledItem.Id</a></td>
+                    <td>@scheduledItem.ItemTableName</td>
+                    <td>@scheduledItem.ItemPrimaryKey</td>
+                    <td><local-time value="@scheduledItem.SendOnDateTime" /></td>
+                    <td>
+                        @if (scheduledItem.MessageSent)
+                        {
+                            <i class="bi bi-check-circle text-success"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-x-circle text-danger"></i>
+                        }
+                    </td>
+                    <td>
+                        <a asp-action="Delete" asp-controller="Schedules" asp-route-id="@scheduledItem.Id" class="btn btn-danger">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+<a asp-action="Index" asp-controller="Schedules" class="btn btn-secondary">
+    <i class="bi bi-arrow-left me-2"></i>Back to Scheduled Items
+</a>
