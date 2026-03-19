@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
@@ -60,7 +60,14 @@ public class ProcessScheduledItemFired(
 
             // Attempt Scriban template rendering; fall back to per-type message construction if unavailable
             string? tweetText = null;
-            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.Twitter, MessageTemplates.MessageTypes.RandomPost);
+            var messageType = scheduledItem.ItemType switch
+            {
+                ScheduledItemType.Engagements => MessageTemplates.MessageTypes.NewSpeakingEngagement,
+                ScheduledItemType.Talks => MessageTemplates.MessageTypes.ScheduledItem,
+                ScheduledItemType.SyndicationFeedSources => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
+                ScheduledItemType.YouTubeSources => MessageTemplates.MessageTypes.NewYouTubeItem,
+                _ => MessageTemplates.MessageTypes.RandomPost
+            };            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.Twitter, messageType);
             if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
                 tweetText = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);
 
@@ -153,11 +160,6 @@ public class ProcessScheduledItemFired(
 
     private async Task<string> GetPostForEngagement(int primaryKey)
     {
-        // TODO: Account for custom images for engagement
-        // TODO: Account for custom message for engagement
-        //  i.e: Join me tomorrow, Join me next week
-        // TODO: Maybe handle timezone?
-
         var engagement = await engagementManager.GetAsync(primaryKey);
         
         var statusText = $"I'm speaking at {engagement.Name} ({engagement.Url}) starting on {engagement.StartDateTime:f}";
@@ -177,11 +179,6 @@ public class ProcessScheduledItemFired(
     
     private async Task<string> GetPostForTalk(int primaryKey)
     {
-
-        // TODO: Account for custom images for talk
-        // TODO: Account for custom message for talk
-        //  i.e: Join me tomorrow, Join me next week, "Up next in room...", "Join me today..."
-        // TODO: Maybe handle timezone?
 
         var talk = await engagementManager.GetTalkAsync(primaryKey);
         var engagement = await engagementManager.GetAsync(talk.Id);
