@@ -76,6 +76,7 @@ public class MessageTemplatesController : Controller
             return View(model);
         }
 
+        TempData["SuccessMessage"] = "Message template saved successfully.";
         return RedirectToAction(nameof(Index));
     }
 }

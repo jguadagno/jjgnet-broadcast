@@ -81,9 +81,13 @@ public class EngagementsController : Controller
     {
         var engagementToEdit = _mapper.Map<Domain.Models.Engagement>(engagementViewModel);
         var savedEngagement = await _engagementService.SaveEngagementAsync(engagementToEdit);
-        return savedEngagement == null
-            ? RedirectToAction("Edit", new { id = engagementViewModel.Id })
-            : RedirectToAction("Details", new { id = savedEngagement.Id });
+        if (savedEngagement == null)
+        {
+            TempData["ErrorMessage"] = "Failed to update the engagement.";
+            return RedirectToAction("Edit", new { id = engagementViewModel.Id });
+        }
+        TempData["SuccessMessage"] = "Engagement updated successfully.";
+        return RedirectToAction("Details", new { id = savedEngagement.Id });
     }
 
     /// <summary>
@@ -117,6 +121,7 @@ public class EngagementsController : Controller
         var result = await _engagementService.DeleteEngagementAsync(id);
         if (result)
         {
+            TempData["SuccessMessage"] = "Engagement deleted successfully.";
             return RedirectToAction("Index");
         }
 
@@ -171,8 +176,12 @@ public class EngagementsController : Controller
     {
         var engagementToAdd = _mapper.Map<Domain.Models.Engagement>(engagementViewModel);
         var savedEngagement = await _engagementService.SaveEngagementAsync(engagementToAdd);
-        return savedEngagement == null
-            ? RedirectToAction("Add")
-            : RedirectToAction("Details", new { id = savedEngagement.Id });
+        if (savedEngagement == null)
+        {
+            TempData["ErrorMessage"] = "Failed to add the engagement.";
+            return RedirectToAction("Add");
+        }
+        TempData["SuccessMessage"] = "Engagement added successfully.";
+        return RedirectToAction("Details", new { id = savedEngagement.Id });
     }
 }

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -96,9 +96,13 @@ public class SchedulesController : Controller
     {
         var scheduledItemToEdit = _mapper.Map<Domain.Models.ScheduledItem>(scheduledItemViewModel);
         var savedScheduledItem = await _scheduledItemService.SaveScheduledItemAsync(scheduledItemToEdit);
-        return savedScheduledItem == null
-            ? RedirectToAction("Edit", new { id = scheduledItemViewModel.Id })
-            : RedirectToAction("Details", new { id = savedScheduledItem.Id });
+        if (savedScheduledItem == null)
+        {
+            TempData["ErrorMessage"] = "Failed to update the scheduled item.";
+            return RedirectToAction("Edit", new { id = scheduledItemViewModel.Id });
+        }
+        TempData["SuccessMessage"] = "Scheduled item updated successfully.";
+        return RedirectToAction("Details", new { id = savedScheduledItem.Id });
     }
     
     /// <summary>
@@ -132,6 +136,7 @@ public class SchedulesController : Controller
         var result = await _scheduledItemService.DeleteScheduledItemAsync(id);
         if (result)
         {
+            TempData["SuccessMessage"] = "Scheduled item deleted successfully.";
             return RedirectToAction("Index");
         }
 
@@ -160,9 +165,13 @@ public class SchedulesController : Controller
     {
         var scheduledItemToAdd = _mapper.Map<Domain.Models.ScheduledItem>(scheduledItemViewModel);
         var savedScheduledItem = await _scheduledItemService.SaveScheduledItemAsync(scheduledItemToAdd);
-        return savedScheduledItem == null
-            ? RedirectToAction("Add")
-            : RedirectToAction("Details", new { id = savedScheduledItem.Id });
+        if (savedScheduledItem == null)
+        {
+            TempData["ErrorMessage"] = "Failed to add the scheduled item.";
+            return RedirectToAction("Add");
+        }
+        TempData["SuccessMessage"] = "Scheduled item added successfully.";
+        return RedirectToAction("Details", new { id = savedScheduledItem.Id });
     }
 
     /// <summary>
