@@ -80,7 +80,7 @@ public class ProcessScheduledItemFiredTests
         var messageTemplate = new MessageTemplate
         {
             Platform = "LinkedIn",
-            MessageType = "RandomPost",
+            MessageType = "NewSyndicationFeedItem",
             Template = "{{ title }} - {{ url }}"
         };
 
@@ -91,7 +91,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.RandomPost)).ReturnsAsync(messageTemplate);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -123,7 +123,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.RandomPost)).ReturnsAsync((MessageTemplate?)null);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -152,7 +152,7 @@ public class ProcessScheduledItemFiredTests
         var messageTemplate = new MessageTemplate
         {
             Platform = "LinkedIn",
-            MessageType = "RandomPost",
+            MessageType = "NewSyndicationFeedItem",
             Template = "{{ title }} {{ image_url }}"
         };
 
@@ -163,7 +163,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.RandomPost)).ReturnsAsync(messageTemplate);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -192,7 +192,7 @@ public class ProcessScheduledItemFiredTests
         var messageTemplate = new MessageTemplate
         {
             Platform = "LinkedIn",
-            MessageType = "RandomPost",
+            MessageType = "NewSyndicationFeedItem",
             Template = "{{ title }}|{{ image_url }}"
         };
 
@@ -203,7 +203,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.RandomPost)).ReturnsAsync(messageTemplate);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -235,7 +235,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.RandomPost)).ReturnsAsync((MessageTemplate?)null);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(
             mockScheduledItemManager,
