@@ -1,4 +1,4 @@
-﻿@inject JosephGuadagno.Broadcasting.Web.Interfaces.ISettings Settings;
+@inject JosephGuadagno.Broadcasting.Web.Interfaces.ISettings Settings;
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
@@ -140,18 +140,6 @@
     <script src="~/libs/jquery/dist/jquery.js"></script>
     <script src="~/libs/bootstrap/dist/js/bootstrap.bundle.js"></script>
     <script src="~/libs/fontawesome-free/js/all.js"></script>
-</environment>
-<environment include="Production">
-    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.21.0/dist/jquery.validate.min.js" integrity="sha256-umbTaFxP31Fv6O1itpLS/3+v5fOAWDLOUzlmvOGaKV4=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.21.0/dist/additional-methods.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive@4.0.0/dist/jquery.validate.unobtrusive.min.js" integrity="sha256-RFWFWIIPsjB4DucR4jqwxTWw13ZmtI+s6tVR2LJmZXk=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive-bootstrap@2.2.0/dist/unobtrusive-bootstrap.min.js"></script>
-</environment>
-<environment exclude="Production">
-    <script src="~/libs/jquery-validation/dist/jquery.validate.js"></script>
-    <script src="~/libs/jquery-validation/dist/additional-methods.js"></script>
-    <script src="~/libs/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.js"></script>
-    <script src="~/libs/jquery-validation-unobtrusive-bootstrap/dist/unobtrusive-bootstrap.js"></script>
 </environment>
 <script src="~/js/site.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)

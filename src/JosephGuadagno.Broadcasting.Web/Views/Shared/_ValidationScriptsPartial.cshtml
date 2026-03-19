@@ -1,2 +1,12 @@
-﻿<script src="~/libs/jquery-validation/dist/jquery.validate.min.js"></script>
-<script src="~/libs/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+<environment include="Production">
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.21.0/dist/jquery.validate.min.js" integrity="sha256-umbTaFxP31Fv6O1itpLS/3+v5fOAWDLOUzlmvOGaKV4=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.21.0/dist/additional-methods.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive@4.0.0/dist/jquery.validate.unobtrusive.min.js" integrity="sha256-RFWFWIIPsjB4DucR4jqwxTWw13ZmtI+s6tVR2LJmZXk=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive-bootstrap@2.2.0/dist/unobtrusive-bootstrap.min.js"></script>
+</environment>
+<environment exclude="Production">
+    <script src="~/libs/jquery-validation/dist/jquery.validate.js"></script>
+    <script src="~/libs/jquery-validation/dist/additional-methods.js"></script>
+    <script src="~/libs/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.js"></script>
+    <script src="~/libs/jquery-validation-unobtrusive-bootstrap/dist/unobtrusive-bootstrap.js"></script>
+</environment>
