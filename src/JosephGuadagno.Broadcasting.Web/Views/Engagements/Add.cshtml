@@ -47,3 +47,6 @@
         <i class="bi bi-floppy me-2"></i>Save
     </button>
 </form>
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

@@ -4,6 +4,7 @@
 }
 @section Scripts
 {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
     <script src="/js/schedules.edit.js"></script>    
 }
 <h1>Schedule a new item</h1>
