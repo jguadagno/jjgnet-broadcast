@@ -43,6 +43,44 @@ public class ProcessScheduledItemFiredTests
         LastUpdatedOn = DateTimeOffset.UtcNow
     };
 
+    private static Engagement BuildEngagement(int id = 42) => new()
+    {
+        Id = id,
+        Name = "Tech Conference 2026",
+        Url = "https://conf.example.com",
+        StartDateTime = new DateTimeOffset(2026, 6, 1, 9, 0, 0, TimeSpan.Zero),
+        EndDateTime = new DateTimeOffset(2026, 6, 3, 17, 0, 0, TimeSpan.Zero),
+        TimeZoneId = "UTC",
+        Comments = "Great event!"
+    };
+
+    private static Talk BuildTalk(int id = 42, int engagementId = 99) => new()
+    {
+        Id = id,
+        Name = "Building .NET Apps",
+        UrlForConferenceTalk = "https://conf.example.com/talks/dotnet",
+        UrlForTalk = "https://josephguadagno.net/talks/dotnet",
+        StartDateTime = new DateTimeOffset(2026, 6, 2, 10, 0, 0, TimeSpan.Zero),
+        EndDateTime = new DateTimeOffset(2026, 6, 2, 11, 0, 0, TimeSpan.Zero),
+        TalkLocation = "Room A",
+        Comments = "Excellent session",
+        EngagementId = engagementId
+    };
+
+    private static YouTubeSource BuildYouTubeSource(int id = 42) => new()
+    {
+        Id = id,
+        VideoId = "abc123def",
+        Author = "Joseph Guadagno",
+        Title = "Building Better Apps with .NET",
+        Url = "https://youtube.com/watch?v=abc123def",
+        ShortenedUrl = null,
+        Tags = null,
+        PublicationDate = DateTimeOffset.UtcNow,
+        AddedOn = DateTimeOffset.UtcNow,
+        LastUpdatedOn = DateTimeOffset.UtcNow
+    };
+
     private static Mock<ILinkedInApplicationSettings> BuildLinkedInSettings()
     {
         var mock = new Mock<ILinkedInApplicationSettings>();
@@ -252,5 +290,321 @@ public class ProcessScheduledItemFiredTests
         Assert.NotNull(result);
         Assert.Equal("urn:li:person:test123", result.AuthorId);
         Assert.Equal("test-access-token", result.AccessToken);
+    }
+
+    // ── Per-type template selection: Engagements ─────────────────────────────
+
+    [Fact]
+    public async Task RunAsync_ShouldRequestNewSpeakingEngagementTemplate_WhenItemTypeIsEngagements()
+    {
+        // Arrange
+        var scheduledItem = new Domain.Models.ScheduledItem
+        {
+            Id = 1, ItemType = ScheduledItemType.Engagements, ItemPrimaryKey = 42,
+            Message = "engagement message", SendOnDateTime = DateTimeOffset.UtcNow
+        };
+        var engagement = BuildEngagement();
+
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+
+        var mockEngagementManager = new Mock<IEngagementManager>();
+        mockEngagementManager.Setup(m => m.GetAsync(42)).ReturnsAsync(engagement);
+
+        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((MessageTemplate?)null);
+
+        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore);
+
+        // Act
+        await sut.RunAsync(BuildEventGridEvent(1));
+
+        // Assert — must request the engagement-specific template
+        mockMessageTemplateDataStore.Verify(
+            m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSpeakingEngagement),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenEngagementTemplateFound_RendersEngagementNameAndUrl()
+    {
+        // Arrange
+        var scheduledItem = new Domain.Models.ScheduledItem
+        {
+            Id = 1, ItemType = ScheduledItemType.Engagements, ItemPrimaryKey = 42,
+            Message = "engagement message", SendOnDateTime = DateTimeOffset.UtcNow
+        };
+        var engagement = BuildEngagement();
+        var messageTemplate = new MessageTemplate
+        {
+            Platform = "LinkedIn",
+            MessageType = MessageTemplates.MessageTypes.NewSpeakingEngagement,
+            Template = "Speaking at {{ title }} - {{ url }}"
+        };
+
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+
+        var mockEngagementManager = new Mock<IEngagementManager>();
+        mockEngagementManager.Setup(m => m.GetAsync(42)).ReturnsAsync(engagement);
+
+        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSpeakingEngagement))
+            .ReturnsAsync(messageTemplate);
+
+        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore);
+
+        // Act
+        var result = await sut.RunAsync(BuildEventGridEvent(1));
+
+        // Assert — rendered via Scriban using engagement fields
+        Assert.NotNull(result);
+        Assert.Equal("Speaking at Tech Conference 2026 - https://conf.example.com", result!.Text);
+        Assert.Equal("urn:li:person:test123", result.AuthorId);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenEngagementTemplateIsNull_FallsBackToScheduledItemMessage()
+    {
+        // Arrange
+        var scheduledItem = new Domain.Models.ScheduledItem
+        {
+            Id = 1, ItemType = ScheduledItemType.Engagements, ItemPrimaryKey = 42,
+            Message = "engagement fallback message", SendOnDateTime = DateTimeOffset.UtcNow
+        };
+        var engagement = BuildEngagement();
+
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+
+        var mockEngagementManager = new Mock<IEngagementManager>();
+        mockEngagementManager.Setup(m => m.GetAsync(42)).ReturnsAsync(engagement);
+
+        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSpeakingEngagement))
+            .ReturnsAsync((MessageTemplate?)null);
+
+        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore);
+
+        // Act
+        var result = await sut.RunAsync(BuildEventGridEvent(1));
+
+        // Assert — LinkedIn fallback is scheduledItem.Message (not auto-generated)
+        Assert.NotNull(result);
+        Assert.Equal("engagement fallback message", result!.Text);
+    }
+
+    // ── Per-type template selection: Talks ────────────────────────────────────
+
+    [Fact]
+    public async Task RunAsync_ShouldRequestScheduledItemTemplate_WhenItemTypeIsTalks()
+    {
+        // Arrange
+        var scheduledItem = new Domain.Models.ScheduledItem
+        {
+            Id = 1, ItemType = ScheduledItemType.Talks, ItemPrimaryKey = 42,
+            Message = "talk message", SendOnDateTime = DateTimeOffset.UtcNow
+        };
+        var talk = BuildTalk();
+
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+
+        var mockEngagementManager = new Mock<IEngagementManager>();
+        mockEngagementManager.Setup(m => m.GetTalkAsync(42)).ReturnsAsync(talk);
+
+        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((MessageTemplate?)null);
+
+        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore);
+
+        // Act
+        await sut.RunAsync(BuildEventGridEvent(1));
+
+        // Assert — must request the talk-specific template
+        mockMessageTemplateDataStore.Verify(
+            m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.ScheduledItem),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenTalkTemplateFound_RendersTalkNameAndUrl()
+    {
+        // Arrange
+        var scheduledItem = new Domain.Models.ScheduledItem
+        {
+            Id = 1, ItemType = ScheduledItemType.Talks, ItemPrimaryKey = 42,
+            Message = "talk message", SendOnDateTime = DateTimeOffset.UtcNow
+        };
+        var talk = BuildTalk();
+        var messageTemplate = new MessageTemplate
+        {
+            Platform = "LinkedIn",
+            MessageType = MessageTemplates.MessageTypes.ScheduledItem,
+            Template = "My talk: {{ title }} - {{ url }}"
+        };
+
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+
+        var mockEngagementManager = new Mock<IEngagementManager>();
+        mockEngagementManager.Setup(m => m.GetTalkAsync(42)).ReturnsAsync(talk);
+
+        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.ScheduledItem))
+            .ReturnsAsync(messageTemplate);
+
+        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore);
+
+        // Act
+        var result = await sut.RunAsync(BuildEventGridEvent(1));
+
+        // Assert — template renders talk name and URL
+        Assert.NotNull(result);
+        Assert.Equal("My talk: Building .NET Apps - https://josephguadagno.net/talks/dotnet", result!.Text);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenTalkTemplateIsNull_FallsBackToScheduledItemMessage()
+    {
+        // Arrange
+        var scheduledItem = new Domain.Models.ScheduledItem
+        {
+            Id = 1, ItemType = ScheduledItemType.Talks, ItemPrimaryKey = 42,
+            Message = "talk fallback message", SendOnDateTime = DateTimeOffset.UtcNow
+        };
+        var talk = BuildTalk();
+
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+
+        var mockEngagementManager = new Mock<IEngagementManager>();
+        mockEngagementManager.Setup(m => m.GetTalkAsync(42)).ReturnsAsync(talk);
+
+        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.ScheduledItem))
+            .ReturnsAsync((MessageTemplate?)null);
+
+        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore);
+
+        // Act
+        var result = await sut.RunAsync(BuildEventGridEvent(1));
+
+        // Assert — LinkedIn fallback is scheduledItem.Message
+        Assert.NotNull(result);
+        Assert.Equal("talk fallback message", result!.Text);
+    }
+
+    // ── Per-type template selection: YouTubeSources ───────────────────────────
+
+    [Fact]
+    public async Task RunAsync_ShouldRequestNewYouTubeItemTemplate_WhenItemTypeIsYouTubeSources()
+    {
+        // Arrange
+        var scheduledItem = new Domain.Models.ScheduledItem
+        {
+            Id = 1, ItemType = ScheduledItemType.YouTubeSources, ItemPrimaryKey = 42,
+            Message = "youtube message", SendOnDateTime = DateTimeOffset.UtcNow
+        };
+        var youTubeSource = BuildYouTubeSource();
+
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+
+        var mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
+        mockYouTubeSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(youTubeSource);
+
+        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((MessageTemplate?)null);
+
+        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
+            mockYouTubeSourceManager, new Mock<IEngagementManager>(), BuildLinkedInSettings(), mockMessageTemplateDataStore);
+
+        // Act
+        await sut.RunAsync(BuildEventGridEvent(1));
+
+        // Assert — must request the YouTube-specific template
+        mockMessageTemplateDataStore.Verify(
+            m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewYouTubeItem),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenYouTubeTemplateFound_RendersVideoTitleAndUrl()
+    {
+        // Arrange
+        var scheduledItem = new Domain.Models.ScheduledItem
+        {
+            Id = 1, ItemType = ScheduledItemType.YouTubeSources, ItemPrimaryKey = 42,
+            Message = "youtube message", SendOnDateTime = DateTimeOffset.UtcNow
+        };
+        var youTubeSource = BuildYouTubeSource();
+        var messageTemplate = new MessageTemplate
+        {
+            Platform = "LinkedIn",
+            MessageType = MessageTemplates.MessageTypes.NewYouTubeItem,
+            Template = "New video: {{ title }} - {{ url }}"
+        };
+
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+
+        var mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
+        mockYouTubeSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(youTubeSource);
+
+        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewYouTubeItem))
+            .ReturnsAsync(messageTemplate);
+
+        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
+            mockYouTubeSourceManager, new Mock<IEngagementManager>(), BuildLinkedInSettings(), mockMessageTemplateDataStore);
+
+        // Act
+        var result = await sut.RunAsync(BuildEventGridEvent(1));
+
+        // Assert — template renders video title and URL
+        Assert.NotNull(result);
+        Assert.Equal("New video: Building Better Apps with .NET - https://youtube.com/watch?v=abc123def", result!.Text);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenYouTubeTemplateIsNull_FallsBackToScheduledItemMessage()
+    {
+        // Arrange
+        var scheduledItem = new Domain.Models.ScheduledItem
+        {
+            Id = 1, ItemType = ScheduledItemType.YouTubeSources, ItemPrimaryKey = 42,
+            Message = "youtube fallback message", SendOnDateTime = DateTimeOffset.UtcNow
+        };
+        var youTubeSource = BuildYouTubeSource();
+
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+
+        var mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
+        mockYouTubeSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(youTubeSource);
+
+        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewYouTubeItem))
+            .ReturnsAsync((MessageTemplate?)null);
+
+        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
+            mockYouTubeSourceManager, new Mock<IEngagementManager>(), BuildLinkedInSettings(), mockMessageTemplateDataStore);
+
+        // Act
+        var result = await sut.RunAsync(BuildEventGridEvent(1));
+
+        // Assert — LinkedIn fallback is scheduledItem.Message
+        Assert.NotNull(result);
+        Assert.Equal("youtube fallback message", result!.Text);
     }
 }
