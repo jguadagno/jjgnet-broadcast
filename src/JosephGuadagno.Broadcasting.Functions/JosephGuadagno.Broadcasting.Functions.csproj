@@ -76,7 +76,7 @@
     <PackageReference Include="Microsoft.Extensions.Resilience" Version="10.4.0" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.0" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.0" />
-    <PackageReference Include="Scriban" Version="6.5.8" />
+    <PackageReference Include="Scriban" Version="6.6.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Enrichers.AssemblyName" Version="2.0.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
