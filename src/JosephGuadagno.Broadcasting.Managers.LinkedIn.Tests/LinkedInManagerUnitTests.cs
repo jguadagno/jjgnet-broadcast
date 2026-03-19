@@ -203,6 +203,23 @@ public class LinkedInManagerUnitTests
     }
 
     [Fact]
+    public async Task PostShareText_OnApiFailure_PopulatesApiErrorCodeAndMessage()
+    {
+        // Arrange — LinkedIn returns a failure response (no "id" field, so IsSuccess == false)
+        var errorJson = "{\"message\": \"Unauthorized\", \"serviceErrorCode\": 401, \"status\": 401}";
+        SetupHttpMessageHandler(HttpStatusCode.OK, errorJson);
+        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+
+        // Act
+        var exception = await Assert.ThrowsAsync<LinkedInPostException>(
+            () => sut.PostShareText("validToken", "authorId123", "Hello LinkedIn!"));
+
+        // Assert — structured fields must be populated so PostText's catch handler can log them
+        Assert.Equal(401, exception.ApiErrorCode);
+        Assert.Equal("Unauthorized", exception.ApiErrorMessage);
+    }
+
+    [Fact]
     public async Task PostShareTextAndLink_OnApiFailure_ThrowsLinkedInPostException()
     {
         // Arrange
