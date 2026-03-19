@@ -9,4 +9,5 @@ public interface IScheduledItemManager : IManager<ScheduledItem>
     public Task<List<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month);
     public Task<bool> SentScheduledItemAsync(int primaryKey);
     public Task<bool> SentScheduledItemAsync(int primaryKey, DateTimeOffset sentOn);
+    public Task<List<ScheduledItem>> GetOrphanedScheduledItemsAsync();
 }

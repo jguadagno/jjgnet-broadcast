@@ -209,4 +209,28 @@ public class SchedulesController: ControllerBase
 
         return items;
     }
+
+    /// <summary>
+    /// Gets a list of orphaned scheduled items (items whose source no longer exists)
+    /// </summary>
+    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that reference source items that no longer exist.</returns>
+    /// <response code="200">Returned if there are orphaned scheduled items.</response>
+    /// <response code="404">If there are no orphaned scheduled items</response>
+    /// <response code="401">If the current user was unauthorized to access this endpoint</response>
+    [HttpGet("orphaned")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItem>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<List<ScheduledItem>>> GetOrphanedScheduledItemsAsync()
+    {
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
+
+        var items = await _scheduledItemManager.GetOrphanedScheduledItemsAsync();
+        if (items.Count == 0)
+        {
+            return NotFound();
+        }
+
+        return items;
+    }
 }
