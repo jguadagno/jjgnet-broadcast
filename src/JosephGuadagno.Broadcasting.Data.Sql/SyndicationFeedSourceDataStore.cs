@@ -74,7 +74,7 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
             query = query.Where(s => s.Tags == null || !s.Tags.Contains(excludedCategory));
         }
 
-        var dbSyndicationFeedSource = await query.OrderBy(u => Guid.NewGuid())
+        var dbSyndicationFeedSource = await query.OrderBy(x => EF.Functions.Random())
             .FirstOrDefaultAsync();
 
         return dbSyndicationFeedSource is null ? null : mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
