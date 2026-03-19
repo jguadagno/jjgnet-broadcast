@@ -66,6 +66,7 @@ builder.Services.AddAutoMapper(config =>
 
 // Configure Microsoft Identity
 var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
+scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
 // Token acquisition service based on MSAL.NET
 // and chosen token cache implementation
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
