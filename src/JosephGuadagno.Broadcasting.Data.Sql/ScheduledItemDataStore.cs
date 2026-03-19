@@ -91,17 +91,16 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
 
     public async Task<IEnumerable<Domain.Models.ScheduledItem>> GetOrphanedScheduledItemsAsync()
     {
-        var engagementIds = await broadcastingContext.Engagements.Select(e => e.Id).ToListAsync();
-        var talkIds = await broadcastingContext.Talks.Select(t => t.Id).ToListAsync();
-        var syndicationFeedSourceIds = await broadcastingContext.SyndicationFeedSources.Select(s => s.Id).ToListAsync();
-        var youTubeSourceIds = await broadcastingContext.YouTubeSources.Select(y => y.Id).ToListAsync();
-
         var dbScheduledItems = await broadcastingContext.ScheduledItems
             .Where(s =>
-                (s.ItemTableName == ScheduledItemType.Engagements.ToString() && !engagementIds.Contains(s.ItemPrimaryKey)) ||
-                (s.ItemTableName == ScheduledItemType.Talks.ToString() && !talkIds.Contains(s.ItemPrimaryKey)) ||
-                (s.ItemTableName == ScheduledItemType.SyndicationFeedSources.ToString() && !syndicationFeedSourceIds.Contains(s.ItemPrimaryKey)) ||
-                (s.ItemTableName == ScheduledItemType.YouTubeSources.ToString() && !youTubeSourceIds.Contains(s.ItemPrimaryKey))
+                (s.ItemTableName == ScheduledItemType.Engagements.ToString() &&
+                 !broadcastingContext.Engagements.Any(e => e.Id == s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.Talks.ToString() &&
+                 !broadcastingContext.Talks.Any(t => t.Id == s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.SyndicationFeedSources.ToString() &&
+                 !broadcastingContext.SyndicationFeedSources.Any(sf => sf.Id == s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.YouTubeSources.ToString() &&
+                 !broadcastingContext.YouTubeSources.Any(y => y.Id == s.ItemPrimaryKey))
             )
             .ToListAsync();
 
