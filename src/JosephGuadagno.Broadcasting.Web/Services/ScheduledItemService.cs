@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text;
 using System.Text.Json;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -129,5 +129,16 @@ public class ScheduledItemService: ServiceBase, IScheduledItemService
         //await SetRequestHeader(Domain.Scopes.Schedules.UpcomingScheduled);
         var url = $"{_scheduleBaseUrl}/calendar/{year}/{month}";
         return await ExecuteGetAsync<List<ScheduledItem>?>(url);
+    }
+
+    /// <summary>
+    /// Returns a list of orphaned scheduled items (items whose source records no longer exist)
+    /// </summary>
+    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
+    public async Task<List<ScheduledItem>?> GetOrphanedScheduledItemsAsync()
+    {
+        await SetRequestHeader(Domain.Scopes.Schedules.All);
+        var url = $"{_scheduleBaseUrl}/orphaned";
+        return await ExecuteGetAsync<List<ScheduledItem>>(url);
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -63,5 +64,11 @@ public class ScheduledItemManager: IScheduledItemManager
     public async Task<bool> SentScheduledItemAsync(int primaryKey, DateTimeOffset sentOn)
     {
         return await _scheduledItemDataStore.SentScheduledItemAsync(primaryKey, sentOn);
+    }
+
+    public async Task<List<ScheduledItem>> GetOrphanedScheduledItemsAsync()
+    {
+        var items = await _scheduledItemDataStore.GetOrphanedScheduledItemsAsync();
+        return items.ToList();
     }
 }

@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -35,7 +35,23 @@ public class SchedulesController : Controller
     {
         var scheduledItems = await _scheduledItemService.GetScheduledItemsAsync();
         var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(scheduledItems);
+
+        var orphanedItems = await _scheduledItemService.GetOrphanedScheduledItemsAsync();
+        ViewBag.OrphanedCount = orphanedItems?.Count ?? 0;
+
         return View(scheduledItemViewModels);
+    }
+
+    /// <summary>
+    /// Returns a view with all orphaned scheduled items (items whose source records no longer exist).
+    /// </summary>
+    /// <returns>A view of orphaned scheduled items</returns>
+    [HttpGet]
+    public async Task<IActionResult> Orphaned()
+    {
+        var orphanedItems = await _scheduledItemService.GetOrphanedScheduledItemsAsync();
+        var orphanedViewModels = _mapper.Map<List<ScheduledItemViewModel>>(orphanedItems);
+        return View(orphanedViewModels);
     }
     
     /// <summary>
