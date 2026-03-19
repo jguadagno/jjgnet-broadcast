@@ -24,5 +24,5 @@
 | Razor views, LibMan, Bootstrap, JS/CSS, static assets | Sparks | Switch | Views only, not controllers |
 | OAuth2 / OIDC flows, token lifecycle, auth middleware, MSAL | Ghost | Neo | End-to-end auth implementation |
 | Azure AD app registrations, Key Vault secrets, secret rotation | Oracle | Ghost | Secret management & policy |
-| GitHub Actions CI/CD pipelines, Pulumi IaC, Event Grid, Azure resource deployment | Link | Neo | Full infra-as-code ownership |
+| GitHub Actions CI/CD pipelines, Event Grid, Azure resource deployment | Link | Neo | Full infra-as-code ownership |
 | .NET Aspire AppHost, Bicep, local dev orchestration, container config | Cypher | Link | Local + staging environment config |
