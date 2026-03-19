@@ -104,6 +104,28 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
+    context.Response.Headers["X-XSS-Protection"] = "0";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["Content-Security-Policy"] =
+        "default-src 'self'; " +
+        "script-src 'self' cdn.jsdelivr.net; " +
+        "style-src 'self' cdn.jsdelivr.net; " +
+        "img-src 'self' data: https:; " +
+        "font-src 'self' cdn.jsdelivr.net data:; " +
+        "connect-src 'self'; " +
+        "frame-ancestors 'self'; " +
+        "object-src 'none'; " +
+        "base-uri 'self'; " +
+        "form-action 'self'";
+    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()";
+    await next();
+});
+
 app.UseStaticFiles();
 
 app.UseRouting();
