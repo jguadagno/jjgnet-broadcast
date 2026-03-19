@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
@@ -80,7 +80,14 @@ public class ProcessScheduledItemFired(
             }
 
             // Attempt Scriban template override of StatusText; LinkUri is always sourced from the item above
-            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.Facebook, MessageTemplates.MessageTypes.RandomPost);
+            var messageType = scheduledItem.ItemType switch
+            {
+                ScheduledItemType.Engagements => MessageTemplates.MessageTypes.NewSpeakingEngagement,
+                ScheduledItemType.Talks => MessageTemplates.MessageTypes.ScheduledItem,
+                ScheduledItemType.SyndicationFeedSources => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
+                ScheduledItemType.YouTubeSources => MessageTemplates.MessageTypes.NewYouTubeItem,
+                _ => MessageTemplates.MessageTypes.RandomPost
+            };            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.Facebook, messageType);
             if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
             {
                 var rendered = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);
@@ -171,11 +178,6 @@ public class ProcessScheduledItemFired(
     }
     private async Task<FacebookPostStatus> GetFacebookPostStatusForEngagement(int primaryKey)
     {
-        // TODO: Account for custom images for engagement
-        // TODO: Account for custom message for engagement
-        //  i.e: Join me tomorrow, Join me next week
-        // TODO: Maybe handle timezone?
-
         var engagement = await engagementManager.GetAsync(primaryKey);
         
         var statusText = $"I'm speaking at {engagement.Name} ({engagement.Url}) starting on {engagement.StartDateTime:f}\n";
@@ -203,11 +205,6 @@ public class ProcessScheduledItemFired(
     
     private async Task<FacebookPostStatus> GetFacebookPostStatusForTalk(int primaryKey)
     {
-
-        // TODO: Account for custom images for talk
-        // TODO: Account for custom message for talk
-        //  i.e: Join me tomorrow, Join me next week, "Up next in room...", "Join me today..."
-        // TODO: Maybe handle timezone?
 
         var talk = await engagementManager.GetTalkAsync(primaryKey);
         

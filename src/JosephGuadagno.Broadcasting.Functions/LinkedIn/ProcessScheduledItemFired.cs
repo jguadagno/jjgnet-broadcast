@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
@@ -83,7 +83,14 @@ public class ProcessScheduledItemFired(
             }
 
             // Attempt Scriban template rendering for the post text; fall back to scheduledItem.Message if unavailable
-            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.RandomPost);
+            var messageType = scheduledItem.ItemType switch
+            {
+                ScheduledItemType.Engagements => MessageTemplates.MessageTypes.NewSpeakingEngagement,
+                ScheduledItemType.Talks => MessageTemplates.MessageTypes.ScheduledItem,
+                ScheduledItemType.SyndicationFeedSources => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
+                ScheduledItemType.YouTubeSources => MessageTemplates.MessageTypes.NewYouTubeItem,
+                _ => MessageTemplates.MessageTypes.RandomPost
+            };            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.LinkedIn, messageType);
             string? renderedText = null;
             if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
                 renderedText = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);
