@@ -1,17 +1,22 @@
+using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
+using SqlModels = JosephGuadagno.Broadcasting.Data.Sql.Models;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql.Tests;
 
 /// <summary>
-/// Mock-based contract tests for IScheduledItemDataStore.GetOrphanedScheduledItemsAsync()
-/// introduced in issue #274.
+/// Tests for IScheduledItemDataStore.GetOrphanedScheduledItemsAsync().
 ///
-/// Note: The concrete implementation relies on FromSqlRaw which is not supported by the
-/// InMemory EF provider, so these tests verify the interface contract via Moq.
+/// Contract tests use Moq to verify interface-level behaviour.
+/// Concrete implementation tests use the EF Core InMemory provider to verify
+/// that the LINQ query correctly identifies orphaned scheduled items without
+/// loading all parent IDs into memory (issue #298).
 /// </summary>
 public class ScheduledItemOrphanTests
 {
@@ -116,5 +121,104 @@ public class ScheduledItemOrphanTests
 
         Assert.Equal("Engagements", result[0].ItemTableName);
         Assert.Equal("YouTubeSources", result[1].ItemTableName);
+    }
+
+    // ── Concrete implementation tests (EF InMemory) ───────────────────────────
+
+    private static (BroadcastingContext context, ScheduledItemDataStore store) CreateInMemoryStore()
+    {
+        var options = new DbContextOptionsBuilder<BroadcastingContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        var context = new BroadcastingContext(options);
+        var config = new MapperConfiguration(
+            cfg => cfg.AddProfile<MappingProfiles.BroadcastingProfile>(),
+            new LoggerFactory());
+        return (context, new ScheduledItemDataStore(context, config.CreateMapper()));
+    }
+
+    [Fact]
+    public async Task GetOrphanedScheduledItemsAsync_Concrete_ReturnsOrphan_WhenEngagementParentMissing()
+    {
+        var (context, store) = CreateInMemoryStore();
+        context.ScheduledItems.Add(new SqlModels.ScheduledItem
+        {
+            ItemTableName = "Engagements", ItemPrimaryKey = 999,
+            Message = "Orphan", SendOnDateTime = DateTimeOffset.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        var result = (await store.GetOrphanedScheduledItemsAsync()).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(999, result[0].ItemPrimaryKey);
+    }
+
+    [Fact]
+    public async Task GetOrphanedScheduledItemsAsync_Concrete_ExcludesItem_WhenEngagementParentExists()
+    {
+        var (context, store) = CreateInMemoryStore();
+        context.Engagements.Add(new SqlModels.Engagement
+        {
+            Id = 1, Name = "Conf", Url = "url", TimeZoneId = "UTC",
+            StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow,
+            CreatedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow
+        });
+        context.ScheduledItems.Add(new SqlModels.ScheduledItem
+        {
+            ItemTableName = "Engagements", ItemPrimaryKey = 1,
+            Message = "Has parent", SendOnDateTime = DateTimeOffset.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        var result = (await store.GetOrphanedScheduledItemsAsync()).ToList();
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetOrphanedScheduledItemsAsync_Concrete_DetectsOrphansAcrossAllFourTypes()
+    {
+        var (context, store) = CreateInMemoryStore();
+
+        context.Engagements.Add(new SqlModels.Engagement
+        {
+            Id = 1, Name = "Conf", Url = "url", TimeZoneId = "UTC",
+            StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow,
+            CreatedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow
+        });
+        context.Talks.Add(new SqlModels.Talk
+        {
+            Id = 1, EngagementId = 1, Name = "Talk",
+            UrlForConferenceTalk = "url1", UrlForTalk = "url2",
+            StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow
+        });
+
+        // Non-orphaned items
+        context.ScheduledItems.Add(new SqlModels.ScheduledItem { ItemTableName = "Engagements", ItemPrimaryKey = 1, Message = "ok-eng", SendOnDateTime = DateTimeOffset.UtcNow });
+        context.ScheduledItems.Add(new SqlModels.ScheduledItem { ItemTableName = "Talks", ItemPrimaryKey = 1, Message = "ok-talk", SendOnDateTime = DateTimeOffset.UtcNow });
+
+        // Orphaned items — parents don't exist
+        context.ScheduledItems.Add(new SqlModels.ScheduledItem { ItemTableName = "Engagements", ItemPrimaryKey = 99, Message = "orphan-eng", SendOnDateTime = DateTimeOffset.UtcNow });
+        context.ScheduledItems.Add(new SqlModels.ScheduledItem { ItemTableName = "Talks", ItemPrimaryKey = 99, Message = "orphan-talk", SendOnDateTime = DateTimeOffset.UtcNow });
+        context.ScheduledItems.Add(new SqlModels.ScheduledItem { ItemTableName = "SyndicationFeedSources", ItemPrimaryKey = 99, Message = "orphan-sfs", SendOnDateTime = DateTimeOffset.UtcNow });
+        context.ScheduledItems.Add(new SqlModels.ScheduledItem { ItemTableName = "YouTubeSources", ItemPrimaryKey = 99, Message = "orphan-yt", SendOnDateTime = DateTimeOffset.UtcNow });
+        await context.SaveChangesAsync();
+
+        var result = (await store.GetOrphanedScheduledItemsAsync()).ToList();
+
+        Assert.Equal(4, result.Count);
+        Assert.Contains(result, r => r.Message == "orphan-eng");
+        Assert.Contains(result, r => r.Message == "orphan-talk");
+        Assert.Contains(result, r => r.Message == "orphan-sfs");
+        Assert.Contains(result, r => r.Message == "orphan-yt");
+    }
+
+    [Fact]
+    public async Task GetOrphanedScheduledItemsAsync_Concrete_ReturnsEmpty_WhenNoScheduledItems()
+    {
+        var (_, store) = CreateInMemoryStore();
+        var result = (await store.GetOrphanedScheduledItemsAsync()).ToList();
+        Assert.Empty(result);
     }
 }
