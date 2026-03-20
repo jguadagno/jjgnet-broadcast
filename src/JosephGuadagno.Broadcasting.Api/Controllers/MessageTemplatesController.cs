@@ -1,4 +1,4 @@
-﻿using JosephGuadagno.Broadcasting.Api.Dtos;
+using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;

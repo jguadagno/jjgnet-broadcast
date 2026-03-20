@@ -27,7 +27,4 @@ public class TalkRequest
     public string TalkLocation { get; set; } = string.Empty;
 
     public string Comments { get; set; } = string.Empty;
-
-    [Required]
-    public int EngagementId { get; set; }
 }
