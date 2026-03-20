@@ -134,24 +134,24 @@ public class SchedulesControllerTests
         var result = await sut.GetScheduledItemAsync(7);
 
         // Assert
-        result.Value.Should().NotBeNull();
-        result.Value.Should().BeEquivalentTo(item, opts => opts.ExcludingMissingMembers());
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.Value.Should().BeEquivalentTo(item, opts => opts.ExcludingMissingMembers());
         _scheduledItemManagerMock.Verify(m => m.GetAsync(7), Times.Once);
     }
 
     [Fact]
-    public async Task GetScheduledItemAsync_WhenItemNotFound_ThrowsNullReferenceException()
+    public async Task GetScheduledItemAsync_WhenItemNotFound_ReturnsNotFound()
     {
         // Arrange
-        // TODO: Controller should return NotFound when item is null — tracked as production bug from PR #512.
-        // ToResponse(null) throws NullReferenceException; this test documents current behavior until the controller is fixed.
         _scheduledItemManagerMock.Setup(m => m.GetAsync(99)).Returns(Task.FromResult<ScheduledItem?>(null));
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
-        // Act & Assert
-        await FluentActions.Awaiting(() => sut.GetScheduledItemAsync(99))
-            .Should().ThrowAsync<NullReferenceException>();
+        // Act
+        var result = await sut.GetScheduledItemAsync(99);
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundResult>();
         _scheduledItemManagerMock.Verify(m => m.GetAsync(99), Times.Once);
     }
 

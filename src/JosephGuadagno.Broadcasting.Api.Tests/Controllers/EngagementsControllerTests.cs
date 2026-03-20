@@ -124,24 +124,24 @@ public class EngagementsControllerTests
         var result = await sut.GetEngagementAsync(1);
 
         // Assert
-        result.Value.Should().NotBeNull();
-        result.Value.Should().BeEquivalentTo(engagement, opts => opts.ExcludingMissingMembers());
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.Value.Should().BeEquivalentTo(engagement, opts => opts.ExcludingMissingMembers());
         _engagementManagerMock.Verify(m => m.GetAsync(1), Times.Once);
     }
 
     [Fact]
-    public async Task GetEngagementAsync_WhenEngagementNotFound_ThrowsNullReferenceException()
+    public async Task GetEngagementAsync_WhenEngagementNotFound_ReturnsNotFound()
     {
         // Arrange
-        // TODO: Controller should return NotFound when engagement is null — tracked as production bug from PR #512.
-        // ToResponse(null) throws NullReferenceException; this test documents current behavior until the controller is fixed.
         _engagementManagerMock.Setup(m => m.GetAsync(99)).Returns(Task.FromResult<Engagement?>(null));
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
 
-        // Act & Assert
-        await FluentActions.Awaiting(() => sut.GetEngagementAsync(99))
-            .Should().ThrowAsync<NullReferenceException>();
+        // Act
+        var result = await sut.GetEngagementAsync(99);
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundResult>();
         _engagementManagerMock.Verify(m => m.GetAsync(99), Times.Once);
     }
 
@@ -573,24 +573,24 @@ public class EngagementsControllerTests
         var result = await sut.GetTalkAsync(10, 5);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(talk, opts => opts.ExcludingMissingMembers());
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.Value.Should().BeEquivalentTo(talk, opts => opts.ExcludingMissingMembers());
         _engagementManagerMock.Verify(m => m.GetTalkAsync(5), Times.Once);
     }
 
     [Fact]
-    public async Task GetTalkAsync_WhenTalkNotFound_ThrowsNullReferenceException()
+    public async Task GetTalkAsync_WhenTalkNotFound_ReturnsNotFound()
     {
         // Arrange
-        // TODO: Controller should return NotFound when talk is null — tracked as production bug from PR #512.
-        // ToResponse(null) throws NullReferenceException; this test documents current behavior until the controller is fixed.
         _engagementManagerMock.Setup(m => m.GetTalkAsync(99)).Returns(Task.FromResult<Talk?>(null));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
 
-        // Act & Assert
-        await FluentActions.Awaiting(() => sut.GetTalkAsync(10, 99))
-            .Should().ThrowAsync<NullReferenceException>();
+        // Act
+        var result = await sut.GetTalkAsync(10, 99);
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundResult>();
         _engagementManagerMock.Verify(m => m.GetTalkAsync(99), Times.Once);
     }
 
