@@ -32,6 +32,9 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.LastUpdatedOn)
                 .HasDefaultValueSql("(getdate())");
+
+            entity.Property(e => e.BlueSkyHandle)
+                .HasMaxLength(255);
         });
 
         modelBuilder.Entity<ScheduledItem>(entity =>
@@ -62,6 +65,9 @@ public partial class BroadcastingContext : DbContext
                 .WithMany(p => p.Talks)
                 .HasForeignKey(d => d.EngagementId)
                 .HasConstraintName("Talks_Engagements_Id");
+
+            entity.Property(e => e.BlueSkyHandle)
+                .HasMaxLength(255);
         });
 
         modelBuilder.Entity<FeedCheck>(entity =>

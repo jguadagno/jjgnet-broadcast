@@ -24,6 +24,7 @@ public partial class Talk
     public DateTimeOffset EndDateTime { get; set; }
     public string TalkLocation { get; set; }
     public string Comments { get; set; }
+    public string BlueSkyHandle { get; set; }
 
     public virtual Engagement Engagement { get; set; }
 }

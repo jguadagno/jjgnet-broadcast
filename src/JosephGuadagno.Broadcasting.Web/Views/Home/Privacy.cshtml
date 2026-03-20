@@ -2,5 +2,73 @@
     ViewData["Title"] = "Privacy Policy";
 }
 <h1>@ViewData["Title"]</h1>
+<p class="text-muted"><em>Last updated: @DateTime.UtcNow.Year</em></p>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<p>
+    JosephGuadagno.NET Broadcasting (<strong>"this application"</strong>) is a personal automation tool used exclusively
+    by Joseph Guadagno to collect content from RSS feeds and YouTube and distribute it to social media platforms.
+    It is not a public-facing consumer service.
+</p>
+
+<h2>Information We Collect</h2>
+<p>
+    This application does <strong>not</strong> collect, store, or process any personal data from end users or site visitors.
+    There are no sign-up forms, contact forms, or analytics tracking directed at visitors. The only data stored is
+    content metadata (blog post titles, URLs, talk descriptions, scheduling timestamps) that belongs to Joseph Guadagno.
+</p>
+
+<h2>Authentication</h2>
+<p>
+    Access to this application is restricted to authorised users via Microsoft identity (Azure AD / Entra ID).
+    A session cookie is set upon successful authentication to maintain your signed-in state. This cookie is
+    strictly necessary for the application to function and is not used for tracking or advertising.
+    It expires when your browser session ends or when you sign out.
+</p>
+
+<h2>Cookies</h2>
+<p>This application uses only the following cookie:</p>
+<table class="table table-bordered table-sm" style="max-width: 600px;">
+    <thead class="table-light">
+    <tr>
+        <th>Cookie</th>
+        <th>Purpose</th>
+        <th>Duration</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td><code>.AspNetCore.Cookies</code></td>
+        <td>Authentication session — keeps you signed in</td>
+        <td>Session / sign-out</td>
+    </tr>
+    </tbody>
+</table>
+<p>No third-party tracking, advertising, or analytics cookies are used.</p>
+
+<h2>Third-Party Services</h2>
+<p>
+    This application integrates with the following external platforms to publish content on behalf of the owner.
+    Your use of those platforms is governed by their own privacy policies:
+</p>
+<ul>
+    <li><a href="https://twitter.com/en/privacy" target="_blank" rel="noopener noreferrer">Twitter / X Privacy Policy</a></li>
+    <li><a href="https://www.facebook.com/policy.php" target="_blank" rel="noopener noreferrer">Facebook / Meta Privacy Policy</a></li>
+    <li><a href="https://www.linkedin.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">LinkedIn Privacy Policy</a></li>
+    <li><a href="https://bsky.social/about/support/privacy-policy" target="_blank" rel="noopener noreferrer">Bluesky Privacy Policy</a></li>
+</ul>
+<p>
+    API credentials for these services are stored securely in Azure Key Vault and are never exposed to end users
+    or committed to source control.
+</p>
+
+<h2>Data Retention</h2>
+<p>
+    Engagement, talk, and schedule data is retained in the application database for as long as needed
+    by the owner and is deleted on demand. No personal data belonging to third parties is stored.
+</p>
+
+<h2>Contact</h2>
+<p>
+    If you have any questions about this privacy policy, please contact:
+    <a href="mailto:joseph@josephguadagno.net">joseph@josephguadagno.net</a>
+</p>

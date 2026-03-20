@@ -53,3 +53,11 @@
 - **Pattern:** When merging DTO refactors + pagination features, always preserve BOTH layers — DTOs handle input/output shape, pagination adds page/pageSize guards and PagedResponse wrappers
 
 <!-- Append learnings below -->
+
+### 2026-03-21 — PR #523 BlueSkyHandle on Engagement and Talk (Issues #167, #166)
+- **Task:** Added `BlueSkyHandle NVARCHAR(255) NULL` to `dbo.Engagements` and `dbo.Talks`
+- **Files changed:** `table-create.sql`, migration `2026-03-21-add-bluesky-handle.sql`, `Domain.Models.Engagement`, `Domain.Models.Talk`, `Data.Sql.Models.Engagement`, `Data.Sql.Models.Talk`, `BroadcastingContext.cs`
+- **Pattern:** Nullable nullable column is additive/backward-compatible. No AutoMapper changes needed — convention handles it via `ReverseMap()` (Engagement) and named explicit map (Talk).
+- **EF config:** `HasMaxLength(255)` configured in `OnModelCreating` for both columns to match SQL definition.
+- **Branch discipline:** Always confirm `git branch --show-current` before committing. Multiple concurrent branch checkouts in parallel shell sessions can put commits on the wrong branch. Use cherry-pick + reset to correct.
+- **Migration location:** `scripts/database/migrations/` for one-off ALTER TABLE scripts. `scripts/database/table-create.sql` also updated to keep base schema in sync.
