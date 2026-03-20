@@ -118,3 +118,30 @@
 **Pattern observation:**
 - Self-authored PRs cannot be approved via `gh pr review --approve` — merge directly when CI is green and review is satisfactory
 - The `ToResponse(null)` production bug (NullReferenceException instead of NotFound) from PR #512 is now documented in tests and needs a follow-up fix in the controllers
+
+### 2026-03-20: Sparks PR Review — Forms UX & Accessibility Batch
+
+**PRs reviewed:** #520 (form loading state), #522 (form accessibility), #524 (privacy page)
+
+**#520 — APPROVED (confirmed merged by jguadagno)**
+- Submit-button loading/spinner state in `site.js` using existing jQuery — no new dependencies
+- Bootstrap 5 spinner markup correct, button restored on `invalid-form.validate`
+- Calendar (`schedules.edit.js`) and theme toggle unaffected
+- CI: ✅ build-and-test + GitGuardian passed
+
+**#522 — HELD (code correct, CI red — not Sparks' fault)**
+- All 5 accessibility criteria met: `id="val-{Field}"` on spans, `aria-describedby` on inputs, correct `autocomplete` values, no structural changes
+- CI FAILED on `MappingTests.MappingProfile_IsValid` — `BlueSkyHandle` unmapped in `EngagementViewModel → Engagement` and `TalkViewModel → Talk`
+- Root cause: PR #523 (BlueSkyHandle schema) merged 6 seconds before #522's CI ran; GitHub CI runs against the merged state with main, so #522 inherited the broken mapping
+- The failure is NOT from #522's code — it's follow-on from #523 (ViewModels need `BlueSkyHandle`)
+- Action: ViewModels + AutoMapper need updating before #522 can merge (not Sparks' work)
+
+**#524 — APPROVED (confirmed merged by jguadagno)**
+- Placeholder text fully replaced with real privacy policy
+- Covers: no personal data, auth session cookie, third-party APIs, data retention, contact
+- Correct Bootstrap table for cookie disclosure, external links with `rel="noopener noreferrer"`
+- CI: ✅ (merged without issue)
+
+**Key observation:**
+- Cross-PR CI interference: When multiple branches are open simultaneously and one merges to main just before another's CI starts, the second PR inherits the merged state and can show red CI from the first PR's incomplete follow-on work
+- Fix protocol: Incomplete ViewModel/mapping follow-on from #523 should be fixed first; then #522 rebased
