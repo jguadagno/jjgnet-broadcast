@@ -28,15 +28,15 @@
             <div class="mb-3">
                 <label asp-for="Description" class="form-label">Description</label>
                 <input asp-for="Description" type="text" class="form-control"
-                       placeholder="Optional description of this template" />
-                <span asp-validation-for="Description" class="text-danger"></span>
+                       placeholder="Optional description of this template" autocomplete="off" aria-describedby="val-Description" />
+                <span id="val-Description" asp-validation-for="Description" class="text-danger"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="Template" class="form-label">Template</label>
                 <textarea asp-for="Template" class="form-control" rows="6"
                           style="font-family: monospace; font-size: 0.9em;"
-                          placeholder="e.g. {{ title }} {{ url }} {{ tags }}"></textarea>
-                <span asp-validation-for="Template" class="text-danger"></span>
+                          placeholder="e.g. {{ title }} {{ url }} {{ tags }}" autocomplete="off" aria-describedby="val-Template"></textarea>
+                <span id="val-Template" asp-validation-for="Template" class="text-danger"></span>
                 <div class="form-text">Use Scriban syntax. See variable reference panel →</div>
             </div>
 
