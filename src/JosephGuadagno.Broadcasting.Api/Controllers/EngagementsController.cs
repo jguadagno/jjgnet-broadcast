@@ -1,4 +1,5 @@
 using JosephGuadagno.Broadcasting.Api.Dtos;
+using JosephGuadagno.Broadcasting.Api.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -33,20 +34,35 @@ public class EngagementsController: ControllerBase
     /// <summary>
     /// Gets all the engagements
     /// </summary>
-    /// <returns>A list of engagements</returns>
+    /// <param name="page">The page number (default: 1)</param>
+    /// <param name="pageSize">The page size (default: 25)</param>
+    /// <returns>A paginated list of engagements</returns>
     /// <response code="200">If the call was successful</response>
     /// <response code="400">If the request is poorly formatted</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response> 
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(List<EngagementResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(PagedResponse<EngagementResponse>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<EngagementResponse>>> GetEngagementsAsync()
+    public async Task<ActionResult<PagedResponse<EngagementResponse>>> GetEngagementsAsync(int page = 1, int pageSize = 25)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
         // HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List);
-        var engagements = await _engagementManager.GetAllAsync();
-        return engagements.Select(ToResponse).ToList();
+        var allEngagements = await _engagementManager.GetAllAsync();
+        var totalCount = allEngagements.Count;
+        var items = allEngagements
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ToResponse)
+            .ToList();
+        
+        return new PagedResponse<EngagementResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
     /// <summary>
@@ -176,19 +192,34 @@ public class EngagementsController: ControllerBase
     /// Gets the talks for a given engagement
     /// </summary>
     /// <param name="engagementId">The identifier of the engagement</param>
-    /// <returns>A List&lt;<see cref="Talk"/>&gt;s</returns>
+    /// <param name="page">The page number (default: 1)</param>
+    /// <param name="pageSize">The page size (default: 25)</param>
+    /// <returns>A paginated list of talks</returns>
     /// <response code="200">Upon success</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{engagementId:int}/talks")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(List<TalkResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(PagedResponse<TalkResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<TalkResponse>>> GetTalksForEngagementAsync(int engagementId)
+    public async Task<ActionResult<PagedResponse<TalkResponse>>> GetTalksForEngagementAsync(int engagementId, int page = 1, int pageSize = 25)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List);
         
-        var talks = await _engagementManager.GetTalksForEngagementAsync(engagementId);
-        return talks.Select(ToResponse).ToList();
+        var allTalks = await _engagementManager.GetTalksForEngagementAsync(engagementId);
+        var totalCount = allTalks.Count;
+        var items = allTalks
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ToResponse)
+            .ToList();
+        
+        return new PagedResponse<TalkResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
     
     /// <summary>
