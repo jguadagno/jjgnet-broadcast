@@ -34,9 +34,27 @@
 3. **No character limit enforcement in templates**: Functions still enforce platform limits with fallback truncation if templates render too long
 
 **Outcome:**
-- Pushed directly to `main` branch (commit `6c32c01`)
+- ~~Pushed directly to `main` branch (commit `6c32c01`)~~ **CORRECTED:** Commits reverted from main and moved to PR #502
 - Single commit covers all 4 platforms since they share the same infrastructure
 - Build succeeds (Debug configuration, Release has known file locking issue in CI)
 - No code changes needed - only database seed data
+
+### 2026-03-20: Workflow Correction - Always Use Feature Branch + PR
+
+**CRITICAL LEARNING:** ALL work must use a feature branch and PR workflow. **NEVER commit directly to `main`.**
+
+**Remediation Performed:**
+- Original commits `6c32c01` and `e5a4f73` were pushed directly to main (violating team policy)
+- Created feature branch `feature/s7-474-scriban-message-templates` from commit `f35a60d` (before the direct commits)
+- Cherry-picked both commits onto the feature branch
+- Reverted the direct commits from main (new commits `2264f7f` and `d3c3843`)
+- Pushed feature branch and created PR #502: https://github.com/jguadagno/jjgnet-broadcast/pull/502
+- PR includes proper milestone (Sprint 7) and closes issues #474-478
+
+**Going Forward:**
+1. **Always** create a feature branch first: `git checkout -b feature/description`
+2. **Always** push to feature branch: `git push origin feature/description`
+3. **Always** create a PR with `gh pr create` (include milestone, issue links)
+4. **Never** push directly to `main` - even for "small" changes like SQL migrations or documentation
 
 <!-- Append learnings below -->
