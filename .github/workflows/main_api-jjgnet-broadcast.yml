@@ -30,8 +30,16 @@ jobs:
           dotnet-version: '10.x'
           include-prerelease: true
 
+      - name: Restore dependencies
+        run: dotnet restore ./src/JosephGuadagno.Broadcasting.Api
+
+      - name: Check for vulnerable NuGet packages
+        run: |
+          dotnet list ./src/JosephGuadagno.Broadcasting.Api package --vulnerable --include-transitive 2>&1 | tee vuln-report.txt
+          if grep -q "Critical\|High" vuln-report.txt; then exit 1; fi
+
       - name: Build with dotnet
-        run: dotnet build ./src/JosephGuadagno.Broadcasting.Api --configuration Release
+        run: dotnet build ./src/JosephGuadagno.Broadcasting.Api --configuration Release --no-restore
 
       - name: Test
         run: dotnet test ./src/JosephGuadagno.Broadcasting.Api.Tests --no-build --verbosity normal --configuration Release

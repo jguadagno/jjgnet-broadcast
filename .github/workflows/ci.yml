@@ -20,6 +20,10 @@ jobs:
           dotnet-quality: 'preview'
       - name: Restore
         run: dotnet restore src/
+      - name: Check for vulnerable NuGet packages
+        run: |
+          dotnet list src/ package --vulnerable --include-transitive 2>&1 | tee vuln-report.txt
+          if grep -q "Critical\|High" vuln-report.txt; then exit 1; fi
       - name: Build
         run: dotnet build src/ --no-restore --configuration Release
       - name: Test

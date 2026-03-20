@@ -41,6 +41,13 @@ jobs:
         run: dotnet restore
         working-directory: ${{ env.WORKING_DIRECTORY }}
 
+      # Check for vulnerable NuGet packages — fails build on High/Critical severity
+      - name: Check for vulnerable NuGet packages
+        run: |
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vuln-report.txt
+          if grep -q "Critical\|High" vuln-report.txt; then exit 1; fi
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
       # Build in Release mode
       - name: Build
         run: dotnet build --configuration Release --no-restore
