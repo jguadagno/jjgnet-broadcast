@@ -50,8 +50,7 @@ public class EngagementsController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > 100) pageSize = 100;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
-        // HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List, Domain.Scopes.Engagements.All);
         var allEngagements = await _engagementManager.GetAllAsync();
         var totalCount = allEngagements.Count;
         var items = allEngagements
@@ -86,11 +85,12 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<EngagementResponse>> GetEngagementAsync(int engagementId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
-        // HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.View);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.View, Domain.Scopes.Engagements.All);
 
         var engagement = await _engagementManager.GetAsync(engagementId);
-        return ToResponse(engagement);
+        if (engagement is null)
+            return NotFound();
+        return Ok(ToResponse(engagement));
     }
 
     /// <summary>
@@ -107,8 +107,7 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<EngagementResponse>> CreateEngagementAsync(EngagementRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify, Domain.Scopes.Engagements.All);
 
         if (!ModelState.IsValid)
         {
@@ -318,13 +317,15 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ActionName(nameof(GetTalkAsync))]
-    public async Task<TalkResponse> GetTalkAsync(int engagementId, int talkId)
+    public async Task<ActionResult<TalkResponse>> GetTalkAsync(int engagementId, int talkId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.View);
         
         var talk = await _engagementManager.GetTalkAsync(talkId);
-        return ToResponse(talk);
+        if (talk is null)
+            return NotFound();
+        return Ok(ToResponse(talk));
     }
     
     /// <summary>

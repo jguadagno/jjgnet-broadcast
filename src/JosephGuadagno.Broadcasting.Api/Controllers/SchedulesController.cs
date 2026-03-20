@@ -89,7 +89,9 @@ public class SchedulesController: ControllerBase
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View);
         
         var item = await _scheduledItemManager.GetAsync(scheduledItemId);
-        return ToResponse(item);
+        if (item is null)
+            return NotFound();
+        return Ok(ToResponse(item));
     }
 
     /// <summary>
