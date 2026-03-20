@@ -202,3 +202,29 @@ public async Task<ActionResult<PagedResponse<T>>> GetItemsAsync(int page = 1, in
 - **Build Verification**: All builds succeeded with expected warnings (NU1903, NETSDK1206) - no errors introduced.
 
 **Outcome**: Successfully created 24 message templates across 4 platforms, each matching existing hard-coded formats exactly. All PRs opened in Sprint 7 milestone.
+
+### 2026-03-21: Issue #321 - Bluesky Session Caching Investigation
+
+**Task:** Implement session caching for Bluesky authentication to avoid rate limits and reduce latency (issue #321).
+
+**What I Found:**
+- **Issue already resolved**: Commit `eae6d54` (2026-03-16 by Joseph Guadagno) implemented the complete fix: "fix(functions,bluesky): add LinkedIn error handling and cache Bluesky auth session (#320, #321)"
+- The commit message references both #320 and #321, but no PR was created to formally close the issues
+- Issue #321 remained in OPEN state despite being fully resolved
+
+**Current Implementation (Already Complete):**
+1. **Cached agent**: `private BlueskyAgent? _agent;` field persists authenticated session
+2. **Session validation**: `EnsureAuthenticatedAsync()` checks `_agent?.IsAuthenticated == true` before re-authenticating (fast path)
+3. **Thread-safe**: Uses `SemaphoreSlim _loginLock` with double-check locking pattern for singleton safety
+4. **Singleton lifetime**: Registered as `services.TryAddSingleton<IBlueskyManager, BlueskyManager>()` in Functions/Program.cs
+5. **Automatic re-auth**: Clears `_agent` on HTTP 401 and retries once (graceful session expiry handling)
+
+**What I Implemented:**
+- Created documentation PR to formally close issue #321 with investigation notes
+- Added `.squad/decisions/inbox/trinity-321-bluesky-cache-already-implemented.md` documenting the existing implementation
+- PR #TBD: Simple documentation-only PR to close the issue
+
+**Lesson Learned:**
+- Always check git history when assigned an issue; it may have been resolved in a direct commit without a formal PR workflow
+- Issues mentioned in commit messages don't auto-close unless referenced in a PR description using "Closes #XXX" syntax
+- Investigation and documentation are valuable even when no code changes are needed
