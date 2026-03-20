@@ -1916,3 +1916,137 @@ to `wwwroot/css/site.css`.
 - `src/JosephGuadagno.Broadcasting.Web/wwwroot/css/site.css` — calendar style appended
 - `src/JosephGuadagno.Broadcasting.Web/Views/MessageTemplates/Index.cshtml` — inline script removed
 - `src/JosephGuadagno.Broadcasting.Web/Views/Schedules/Calendar.cshtml` — inline script and style removed
+
+---
+
+## 2026-03-20: Branch + PR required for all work
+All team work must use a feature branch and PR. Direct commits to main are not allowed.
+Applies to: all agents, all work types (code, SQL migrations, config changes).
+
+
+## 2026-03-20: Sprint 9 Planning — Test Coverage Expansion
+# Neo Decision: Sprint 9 Plan
+
+**Date:** 2026-03-20  
+**Decision by:** Neo (Lead)  
+**Context:** Sprint planning for Sprint 9, following Sprint 7 (Message Templating) and Sprint 8 (API/Security)
+
+## Decision
+
+**Sprint 9 Theme:** Test Coverage Expansion — comprehensive unit tests for Azure Functions (collectors & publishers), manager business logic, and removal of external test dependencies.
+
+**Milestone:** [Sprint 9](https://github.com/jguadagno/jjgnet-broadcast/milestone/4)
+
+**Issues assigned:**
+
+| # | Title | Labels | Why |
+|---|-------|--------|-----|
+| #300 | test: add unit tests for all Azure Function collectors | azure-functions, testing, priority: high | Collectors are untested; need mocked infrastructure for RSS/YouTube feeds |
+| #301 | test: add unit tests for Facebook, LinkedIn, and Bluesky publisher Functions | azure-functions, testing, priority: high | Publishers are untested; need mocked social API clients |
+| #330 | test: add real logic tests for EngagementManager (timezone correction, deduplication) | .NET, testing, priority: high | EngagementManager has complex business logic that needs coverage |
+| #331 | test: add local unit tests to SyndicationFeedReader.Tests — remove network dependency | .NET, testing, priority: high | Current tests hit external URLs; need local mocked tests for CI stability |
+| #319 | feat(functions): add retry policies and dead-letter queue handling to host.json | azure-functions, priority: medium | Functions reliability improvement; complements testing work |
+
+## Rationale
+
+1. **Follows Sprint 7/8 progression:** Sprint 7 establishes the first test project (#302), Sprint 8 hardens API/security, Sprint 9 expands test coverage across the board.
+
+2. **Cohesive theme:** All 5 issues focus on Azure Functions reliability — 4 are direct testing improvements, and #319 adds production-ready error handling (retries + DLQ) to the Functions host configuration.
+
+3. **High priority cluster:** Testing Cluster was identified in Sprint 7/8 planning as a deferred high-priority cluster. All 4 testing issues are marked "priority: high" and are ready to execute.
+
+4. **Reduces flaky tests:** #331 specifically addresses the network-dependent tests that fail in CI/sandboxed environments (noted in the repository's custom instructions).
+
+5. **Balanced scope:** 5 issues is appropriate for a sprint focused on testing — no external dependencies, all work is internal to the test suite and Functions configuration.
+
+## Deferred to Later Sprints
+
+- **Database Improvements Cluster** (#322-325): Deferred to Sprint 10 or 11 — larger architectural change requiring schema migrations and data migrations.
+- **Architectural Refactors** (#309-312, #314): Deferred to dedicated refactor sprint — significant code changes across multiple layers (Managers, Data, logging).
+
+## Next Steps
+
+1. Sprint 9 milestone created and issues assigned
+2. Sprint 7 and 8 remain open for execution
+3. Database and refactor work remains in backlog for future sprint planning
+
+
+
+## 2026-03-20: JsonFeedReader Implementation Pattern
+# Decision: JsonFeedReader Implementation Pattern
+
+**Date:** 2026-03-20  
+**Author:** Tank (Tester)  
+**Context:** Issue #302 - Create JsonFeedReader.Tests project  
+**PR:** #501
+
+## Problem
+
+Issue #302 requested creation of JsonFeedReader.Tests, but the JsonFeedReader implementation project didn't exist — only an empty directory with build artifacts. Blocker documented in issue comment.
+
+## Decision
+
+Created minimal JsonFeedReader implementation using TDD approach to unblock test creation, following established SyndicationFeedReader pattern.
+
+## Implementation Choices
+
+### 1. JSON Parsing Library
+**Chosen:** System.Text.Json (built-in)  
+**Rejected:** JsonFeed.NET (namespace/compatibility issues with .NET 10)
+
+**Rationale:** System.Text.Json provides sufficient functionality for JSON feed parsing without external dependencies. Private model classes (JsonFeedModel, JsonFeedItem, JsonFeedAuthor) handle deserialization. This keeps the implementation simple and maintainable.
+
+### 2. Project Structure
+Mirrored SyndicationFeedReader exactly:
+- `Interfaces/` - IJsonFeedReader, IJsonFeedReaderSettings
+- `Models/` - JsonFeedReaderSettings
+- `JsonFeedReader.cs` - Main implementation
+
+**Rationale:** Consistency across reader implementations. New developers can pattern-match against SyndicationFeedReader.
+
+### 3. Domain Model
+Created `JsonFeedSource` in `Domain/Models/` mirroring `SyndicationFeedSource` structure.
+
+**Properties:**
+- Id, FeedIdentifier, Author, Title, Url, Tags
+- PublicationDate, AddedOn, LastUpdatedOn, ItemLastUpdatedOn
+- All match SyndicationFeedSource for consistency
+
+### 4. Test Coverage Strategy
+**Unit Tests (JsonFeedReader.Tests):**
+- Constructor validation (4 tests)
+- NO network calls
+
+**Integration Tests:**
+- Deferred to future JsonFeedReader.IntegrationTests project
+- Follows SyndicationFeedReader.IntegrationTests pattern
+
+**Rationale:** Unit tests should be fast, reliable, and not dependent on external services. Integration tests belong in separate project.
+
+### 5. Constructor Validation
+Strict validation matches SyndicationFeedReader:
+- Null settings → ArgumentNullException
+- Null/Empty FeedUrl → ArgumentNullException
+
+**Rationale:** Fail fast on misconfiguration. Clear error messages guide developers.
+
+## Test Results
+
+All 4 tests passing:
+- ✅ Constructor_WithValidParameters_ShouldNotThrowException
+- ✅ Constructor_WithNullFeedSettings_ShouldThrowArgumentNullException  
+- ✅ Constructor_WithFeedSettingsUrlNull_ShouldThrowArgumentNullException
+- ✅ Constructor_WithFeedSettingsUrlEmpty_ShouldThrowArgumentNullException
+
+## Future Work
+
+1. **Integration Tests:** Create JsonFeedReader.IntegrationTests with real feed URLs (test against josephguadagno.net/feed.json if available)
+2. **Error Handling Tests:** Malformed JSON, empty feed, missing required fields
+3. **Function Collector:** Create LoadJsonFeedItems Azure Function (infrastructure-needs.md references collectors_feed_load_json_feed_items)
+
+## Applies To
+
+- JsonFeedReader implementation
+- JsonFeedReader.Tests
+- Future JSON feed-related features
+
