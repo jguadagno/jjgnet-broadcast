@@ -2981,3 +2981,41 @@ Each platform's `TryRenderTemplateAsync` provides:
 5. **Template validation**: Add UI preview/test functionality in the Web app
 
 
+
+
+# Decision: ToResponse(null) NullReferenceException is a Known Production Bug
+
+**By:** Neo (Lead)
+**Date:** 2026-03-20
+**Context:** PR #518 review — Api.Tests DTO fix
+
+## Decision
+
+The ToResponse(null) calls in EngagementsController and SchedulesController throw NullReferenceException when the manager returns 
+ull (resource not found). Controllers should return NotFound() instead. This is a **tracked production bug** introduced by PR #512.
+
+## Current Behavior (Bug)
+
+`csharp
+// Controller calls ToResponse(null) → NullReferenceException
+var engagement = await _manager.GetAsync(id);  // returns null
+return Ok(EngagementResponse.ToResponse(engagement!));  // throws
+`
+
+## Expected Behavior (Fix Required)
+
+`csharp
+var engagement = await _manager.GetAsync(id);
+if (engagement == null) return NotFound();
+return Ok(EngagementResponse.ToResponse(engagement));
+`
+
+## Impact
+
+- Affects GetEngagementAsync, GetTalkAsync, GetScheduledItemAsync
+- Returns 500 instead of 404 when resource doesn't exist
+- Documented in test TODO comments pending fix
+
+## Action Required
+
+A follow-up issue/PR should fix null checks in all three controllers. This is **not** a test issue — it's a production code bug. Assign to Trinity (owns controllers/API).
