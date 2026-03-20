@@ -8,6 +8,7 @@ using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
+using JosephGuadagno.Broadcasting.Web.Middleware;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
@@ -146,6 +147,8 @@ app.Use(async (context, next) =>
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseMsalExceptionHandler();
 
 app.UseAuthentication();
 app.UseAuthorization();
