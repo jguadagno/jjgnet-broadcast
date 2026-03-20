@@ -2,6 +2,7 @@
 
 using JosephGuadagno.Broadcasting.Domain;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using JosephGuadagno.Broadcasting.Web.Models;
 
@@ -29,6 +30,22 @@ public class HomeController(ILogger<HomeController> logger) : Controller
     public IActionResult Privacy()
     {
         return View();
+    }
+
+    /// <summary>
+    /// Returns the authentication error page
+    /// </summary>
+    /// <param name="message">Optional sanitized error message from the OIDC event handler.</param>
+    /// <returns>The authentication error view</returns>
+    [AllowAnonymous]
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult AuthError(string? message)
+    {
+        return View(new AuthErrorViewModel
+        {
+            Message = message ?? "An error occurred during authentication.",
+            RetryUrl = "/Account/SignIn"
+        });
     }
 
     /// <summary>
