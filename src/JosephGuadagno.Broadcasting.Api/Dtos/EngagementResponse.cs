@@ -12,6 +12,9 @@ public class EngagementResponse
     public DateTimeOffset EndDateTime { get; set; }
     public string TimeZoneId { get; set; } = string.Empty;
     public string? Comments { get; set; }
+    public string? BlueSkyHandle { get; set; }
+    public string? ConferenceHashtag { get; set; }
+    public string? ConferenceTwitterHandle { get; set; }
     public List<TalkResponse>? Talks { get; set; }
     public DateTimeOffset CreatedOn { get; set; }
     public DateTimeOffset LastUpdatedOn { get; set; }
