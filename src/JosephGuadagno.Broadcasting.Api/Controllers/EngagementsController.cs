@@ -72,39 +72,76 @@ public class EngagementsController: ControllerBase
     }
 
     /// <summary>
-    /// Saves an engagement
+    /// Creates an engagement
     /// </summary>
-    /// <param name="engagement">The engagement to save</param>
-    /// <returns>The engagement with the Url to view its details</returns>
-    /// <response code="200">Returns if the engagement was updated</response>
+    /// <param name="engagement">The engagement to create</param>
+    /// <returns>The newly created engagement with the Url to view its details</returns>
     /// <response code="201">Returns the newly created engagement</response>
-    /// <response code="400">If the talk is null or there are data violations</response>     
+    /// <response code="400">If the engagement is null or there are data violations</response>     
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>       
-    [HttpPost, HttpPut]
-    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Engagement))]
+    [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(Engagement))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<Engagement>> SaveEngagementAsync(Engagement engagement)
+    public async Task<ActionResult<Engagement>> CreateEngagementAsync(Engagement engagement)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify);
 
         if (!ModelState.IsValid)
         {
-            _logger.LogWarning("SaveEngagementAsync called with invalid model state");
+            _logger.LogWarning("CreateEngagementAsync called with invalid model state");
             return BadRequest(ModelState);    
         }
         
         var savedEngagement = await _engagementManager.SaveAsync(engagement);
         if (savedEngagement != null)
         {
-            _logger.LogInformation("Engagement saved with Id {EngagementId}", savedEngagement.Id);
+            _logger.LogInformation("Engagement created with Id {EngagementId}", savedEngagement.Id);
             return CreatedAtAction(nameof(GetEngagementAsync), new { engagementId = savedEngagement.Id },
                 savedEngagement);
         }
 
-        return Problem("Failed to save the engagement");
+        return Problem("Failed to create the engagement");
+    }
+
+    /// <summary>
+    /// Updates an existing engagement
+    /// </summary>
+    /// <param name="engagementId">The identifier of the engagement to update</param>
+    /// <param name="engagement">The updated engagement data</param>
+    /// <returns>The updated engagement</returns>
+    /// <response code="200">Returns the updated engagement</response>
+    /// <response code="400">If the engagement is null, the id does not match, or there are data violations</response>
+    /// <response code="401">If the current user was unauthorized to access this endpoint</response>
+    [HttpPut("{engagementId:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Engagement))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<Engagement>> UpdateEngagementAsync(int engagementId, Engagement engagement)
+    {
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify);
+
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning("UpdateEngagementAsync called with invalid model state");
+            return BadRequest(ModelState);    
+        }
+
+        if (engagementId != engagement.Id)
+        {
+            return BadRequest("Route id must match the engagement Id.");
+        }
+        
+        var savedEngagement = await _engagementManager.SaveAsync(engagement);
+        if (savedEngagement != null)
+        {
+            _logger.LogInformation("Engagement updated with Id {EngagementId}", savedEngagement.Id);
+            return Ok(savedEngagement);
+        }
+
+        return Problem("Failed to update the engagement");
     }
     
     /// <summary>
@@ -155,40 +192,78 @@ public class EngagementsController: ControllerBase
     }
     
     /// <summary>
-    /// Saves a talk
+    /// Creates a talk for an engagement
     /// </summary>
-    /// <param name="talk">The talk to save</param>
-    /// <returns>The talk with the Url to view its details</returns>
-    /// <response code="200">Returns if the talk was successfully updated</response>
+    /// <param name="engagementId">The identifier of the engagement</param>
+    /// <param name="talk">The talk to create</param>
+    /// <returns>The newly created talk with the Url to view its details</returns>
     /// <response code="201">Returns the newly created talk</response>
     /// <response code="400">If the data provided is null or there are data violations</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>      
-    [HttpPost("{engagementId:int}/talks/")]
-    [HttpPut("{engagementId:int}/talks/")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Talk))]
+    [HttpPost("{engagementId:int}/talks")]
     [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(Talk))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<Talk>> SaveTalkAsync(Talk talk)
+    public async Task<ActionResult<Talk>> CreateTalkAsync(int engagementId, Talk talk)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify);
 
         if (!ModelState.IsValid)
         {
-            _logger.LogWarning("SaveTalkAsync called with invalid model state");
+            _logger.LogWarning("CreateTalkAsync called with invalid model state");
             return BadRequest(ModelState);
         }
         
         var savedTalk = await _engagementManager.SaveTalkAsync(talk);
         if (savedTalk != null)
         {
-            _logger.LogInformation("Talk saved with Id {TalkId} for Engagement {EngagementId}", savedTalk.Id, talk.EngagementId);
-            return CreatedAtAction(nameof(GetTalkAsync), new { engagementId = talk.EngagementId, talkId = talk.Id },
+            _logger.LogInformation("Talk created with Id {TalkId} for Engagement {EngagementId}", savedTalk.Id, engagementId);
+            return CreatedAtAction(nameof(GetTalkAsync), new { engagementId = engagementId, talkId = savedTalk.Id },
                 savedTalk);
         }
 
-        return Problem("Failed to save the talk");
+        return Problem("Failed to create the talk");
+    }
+
+    /// <summary>
+    /// Updates an existing talk for an engagement
+    /// </summary>
+    /// <param name="engagementId">The identifier of the engagement</param>
+    /// <param name="talkId">The identifier of the talk to update</param>
+    /// <param name="talk">The updated talk data</param>
+    /// <returns>The updated talk</returns>
+    /// <response code="200">Returns the updated talk</response>
+    /// <response code="400">If the data provided is null, the id does not match, or there are data violations</response>
+    /// <response code="401">If the current user was unauthorized to access this endpoint</response>
+    [HttpPut("{engagementId:int}/talks/{talkId:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Talk))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<Talk>> UpdateTalkAsync(int engagementId, int talkId, Talk talk)
+    {
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify);
+
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning("UpdateTalkAsync called with invalid model state");
+            return BadRequest(ModelState);
+        }
+
+        if (talkId != talk.Id)
+        {
+            return BadRequest("Route id must match the talk Id.");
+        }
+        
+        var savedTalk = await _engagementManager.SaveTalkAsync(talk);
+        if (savedTalk != null)
+        {
+            _logger.LogInformation("Talk updated with Id {TalkId} for Engagement {EngagementId}", savedTalk.Id, engagementId);
+            return Ok(savedTalk);
+        }
+
+        return Problem("Failed to update the talk");
     }
     
     /// <summary>
