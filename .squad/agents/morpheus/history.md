@@ -52,6 +52,18 @@
 - **Verification:** Build passed with exit code 0 (expected warnings only)
 - **Pattern:** When merging DTO refactors + pagination features, always preserve BOTH layers — DTOs handle input/output shape, pagination adds page/pageSize guards and PagedResponse wrappers
 
+### 2026-03-21 — Issue #324: SQL Server 50MB Size Cap Fix
+- **Task:** Fixed SQL Server 50MB database size cap causing silent INSERT failures
+- **Root cause:** database-create.sql had `MAXSIZE = 50` (50MB) for data file and `MAXSIZE = 25MB` for log file
+- **Two-part solution:**
+  1. **Preventive:** Changed database-create.sql to `MAXSIZE = UNLIMITED` for both data and log files
+  2. **Defensive:** Added `SaveChangesAsync` override in BroadcastingContext to catch SQL error 1105 (out of space) and throw meaningful InvalidOperationException
+- **Migration:** Created 2026-03-21-increase-database-size-limits.sql using ALTER DATABASE MODIFY FILE to update existing databases without data loss or recreation
+- **Error handling pattern:** Override SaveChangesAsync in DbContext to catch DbUpdateException with inner SqlException and check for specific error numbers (1105 = insufficient space)
+- **Pattern:** Two-layer defense for database capacity issues: (1) remove arbitrary limits in provisioning scripts, (2) surface capacity errors with clear messages if they occur
+- **PR:** #517
+- **Outcome:** New databases will be provisioned without size caps, existing databases can be migrated, and capacity errors will no longer fail silently
+
 <!-- Append learnings below -->
 
 ### 2026-03-21 — PR #523 BlueSkyHandle on Engagement and Talk (Issues #167, #166)
