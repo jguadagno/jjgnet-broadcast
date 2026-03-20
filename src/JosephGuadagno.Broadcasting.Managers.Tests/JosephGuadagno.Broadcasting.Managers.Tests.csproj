@@ -45,6 +45,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="FluentAssertions" Version="7.1.1" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

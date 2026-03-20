@@ -19,6 +19,16 @@
     <dd class="col-sm-9"><local-time value="@Model.EndDateTime" /></dd>
     <dt class="col-sm-3">Comments</dt>
     <dd class="col-sm-9">@Model.Comments</dd>
+    @if (!string.IsNullOrEmpty(Model.ConferenceHashtag))
+    {
+        <dt class="col-sm-3">Conference Hashtag</dt>
+        <dd class="col-sm-9">@Model.ConferenceHashtag</dd>
+    }
+    @if (!string.IsNullOrEmpty(Model.ConferenceTwitterHandle))
+    {
+        <dt class="col-sm-3">Conference Handle</dt>
+        <dd class="col-sm-9">@Model.ConferenceTwitterHandle</dd>
+    }
     <dt class="col-sm-3">Created On</dt>
     <dd class="col-sm-9"><local-time value="@Model.CreatedOn" /></dd>
     <dt class="col-sm-3">Last Updated On</dt>
