@@ -250,3 +250,27 @@ Previously merged: #520 (#333), #522 (#332), #523 (#167/#166), #524 (#191), #525
 - Always check if issue is already closed before reviewing PR
 - Branch naming should match the issue number/scope to avoid confusion
 - Duplicate PRs for the same issue can occur if multiple squad members pick up the same work simultaneously
+
+## Work Log
+
+### 2026-03-21: Sprint 11 Ghost PR Review — Issues #544–#547
+
+**PRs reviewed:** #551, #552, #553, #554 (all part of issue #85 — Handle Exceptions with Microsoft Entra login)
+
+**Verdicts:**
+
+| PR | Title | Verdict | Reason |
+|----|-------|---------|--------|
+| #551 | AuthError page & ViewModel | ✅ APPROVED | [AllowAnonymous] present, correct ViewModel, Razor auto-encoding for XSS protection, ResponseCache correct |
+| #552 | Error.cshtml hardening | ✅ APPROVED | IsDevelopment() used correctly, 8-char reference safe, Dev advisory correctly gated |
+| #553 | OIDC event handlers | ❌ CHANGES REQUESTED | Program.cs changes completely missing — PR body describes OnRemoteFailure/OnAuthenticationFailed handlers but they are not in the diff |
+| #554 | MsalExceptionMiddleware | ✅ APPROVED | All 4 MSAL exception types handled, middleware ordering correct (after UseRouting, before UseAuthentication), log levels appropriate, CI passes |
+
+**Critical finding (PR #553):** The `issue-544` branch contains only duplicates of PR #551 and PR #552 files. The actual OIDC event handler code in Program.cs (OnRemoteFailure, OnAuthenticationFailed, error code mapping) was never committed. PR cannot close #544 in its current state.
+
+**Merge sequence recommendation (when #553 fixed):** #551 → #552 → #553 → #554 (in order; #554 depends on /Home/AuthError from #551, and #552/#554 both touch Error.cshtml so sequential merge avoids conflict).
+
+**Patterns reinforced:**
+- PR description checklist items can be marked complete before code is actually committed — always verify diff against description
+- Stacked or co-dependent PRs sharing files (Error.cshtml here) should document merge order in PR body
+- Self-authored PRs cannot be approved via `gh pr review --approve`; post `--comment` with explicit APPROVED/CHANGES REQUESTED verdict instead
