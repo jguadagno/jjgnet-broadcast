@@ -40,12 +40,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="coverlet.collector" Version="8.0.0">
+    <PackageReference Include="coverlet.collector" Version="8.0.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="xunit.v3" Version="3.2.2" />
-    <PackageReference Include="FluentAssertions" Version="7.1.1" />
+    <PackageReference Include="FluentAssertions" Version="8.9.0" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
