@@ -1,7 +1,5 @@
 using System.Reflection;
 
-using Azure.Monitor.OpenTelemetry.Exporter;
-
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
@@ -125,8 +123,7 @@ void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorage
 {
 
     services.AddOpenTelemetry()
-        .UseFunctionsWorkerDefaults()
-        .UseAzureMonitorExporter();
+        .UseFunctionsWorkerDefaults();
 
     var logger = new LoggerConfiguration()
         #if DEBUG
