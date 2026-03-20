@@ -142,8 +142,7 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<EngagementResponse>> UpdateEngagementAsync(int engagementId, EngagementRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify, Domain.Scopes.Engagements.All);
 
         if (!ModelState.IsValid)
         {
@@ -178,8 +177,7 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<bool>> DeleteEngagementAsync(int engagementId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Delete);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Delete, Domain.Scopes.Engagements.All);
         
         var wasDeleted = await _engagementManager.DeleteAsync(engagementId);
         if (wasDeleted)
@@ -209,8 +207,7 @@ public class EngagementsController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > 100) pageSize = 100;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List, Domain.Scopes.Talks.All);
         
         var allTalks = await _engagementManager.GetTalksForEngagementAsync(engagementId);
         var totalCount = allTalks.Count;
@@ -244,8 +241,7 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<TalkResponse>> CreateTalkAsync(int engagementId, TalkRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify, Domain.Scopes.Talks.All);
 
         if (!ModelState.IsValid)
         {
@@ -281,8 +277,7 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<TalkResponse>> UpdateTalkAsync(int engagementId, int talkId, TalkRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify, Domain.Scopes.Talks.All);
 
         if (!ModelState.IsValid)
         {
@@ -319,8 +314,7 @@ public class EngagementsController: ControllerBase
     [ActionName(nameof(GetTalkAsync))]
     public async Task<ActionResult<TalkResponse>> GetTalkAsync(int engagementId, int talkId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.View);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.View, Domain.Scopes.Talks.All);
         
         var talk = await _engagementManager.GetTalkAsync(talkId);
         if (talk is null)
@@ -345,8 +339,7 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<bool>> DeleteTalkAsync(int engagementId, int talkId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Delete);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Delete, Domain.Scopes.Talks.All);
         
         var wasDeleted =  await _engagementManager.RemoveTalkFromEngagementAsync(talkId);
         

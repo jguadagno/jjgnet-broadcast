@@ -49,7 +49,7 @@ public class MessageTemplatesController : ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > 100) pageSize = 100;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.All);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.List, Domain.Scopes.MessageTemplates.All);
         var allTemplates = await _messageTemplateDataStore.GetAllAsync();
         var totalCount = allTemplates.Count;
         var items = allTemplates
@@ -82,7 +82,7 @@ public class MessageTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<MessageTemplateResponse>> GetAsync(string platform, string messageType)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.All);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.View, Domain.Scopes.MessageTemplates.All);
         var template = await _messageTemplateDataStore.GetAsync(platform, messageType);
         if (template is null)
         {
@@ -111,7 +111,7 @@ public class MessageTemplatesController : ControllerBase
     public async Task<ActionResult<MessageTemplateResponse>> UpdateAsync(string platform, string messageType,
         [FromBody] MessageTemplateRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.All);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.Modify, Domain.Scopes.MessageTemplates.All);
 
         if (!ModelState.IsValid)
         {

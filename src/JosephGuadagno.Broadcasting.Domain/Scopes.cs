@@ -63,12 +63,18 @@ public static class Scopes
     /// </summary>
     public static class MessageTemplates
     {
+        public static readonly string List = "MessageTemplates.List";
+        public static readonly string View = "MessageTemplates.View";
+        public static readonly string Modify = "MessageTemplates.Modify";
         public static readonly string All = "MessageTemplates.All";
 
         public static Dictionary<string, string> ToDictionary()
         {
             return new Dictionary<string, string>
             {
+                { List, List },
+                { View, View },
+                { Modify, Modify },
                 { All, All }
             };
         }
@@ -114,6 +120,11 @@ public static class Scopes
         }
         
         foreach (var scope in Schedules.ToDictionary())
+        {
+            allScopes.Add(scopeUrl + scope.Key, scope.Value);
+        }
+
+        foreach (var scope in MessageTemplates.ToDictionary())
         {
             allScopes.Add(scopeUrl + scope.Key, scope.Value);
         }
