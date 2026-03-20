@@ -15,4 +15,29 @@
 - **Verification:** Build passed with only expected NU1903 and CS8618 warnings (tracked, safe to ignore)
 - **Pattern:** DTOs should NOT include fields that come from route parameters — the controller mapping layer injects them at the call site
 
+### 2026-03-20 — PR #514 Pagination Validation Fixes
+- **Task:** Fixed Neo's blocking review comments on Trinity's PR #514 (feature/s8-316-pagination)
+- **Issue 1:** pageSize=0 caused division-by-zero errors in Skip/Take logic
+- **Issue 2:** page=0 caused negative Skip values: `(page - 1) * pageSize` produces -1 * pageSize
+- **Solution:** Added consistent inline guards at the top of all 8 paginated endpoints:
+  - `if (page < 1) page = 1;`
+  - `if (pageSize < 1) pageSize = 1;`
+  - `if (pageSize > 100) pageSize = 100;`
+- **Controllers updated:**
+  - EngagementsController: GetEngagementsAsync, GetTalksForEngagementAsync
+  - SchedulesController: GetScheduledItemsAsync, GetUnsentScheduledItemsAsync, GetScheduledItemsToSendAsync, GetUpcomingScheduledItemsForCalendarMonthAsync, GetOrphanedScheduledItemsAsync
+  - MessageTemplatesController: GetAllAsync
+- **Verification:** Build passed (no-restore build succeeded with expected warnings)
+- **Pattern:** All paginated endpoints now clamp page and pageSize before any Skip/Take calculations to prevent runtime errors
+
+### 2026-03-20 — Merge Conflict Resolution (main → feature/s8-316-pagination)
+- **Task:** Resolved merge conflicts between PR #512 (DTO layer fixes) and PR #514 (pagination)
+- **Conflicts resolved:**
+  1. **EngagementsController.cs**: Kept both DTO helper methods (ToResponse/ToModel) from main AND pagination parameters/PagedResponse wrappers
+  2. **MessageTemplatesController.cs**: Kept both DTO fixes (BOM removal, ToResponse/ToModel helpers) AND pagination logic (page/pageSize params, guards, PagedResponse wrapper)
+  3. **TalkRequest.cs**: Used main's version — NO EngagementId property per route-as-ground-truth decision (Neo's PR #512 fix)
+  4. **link/history.md**: Merged all entries from both branches (append-only)
+- **Verification:** Build passed with exit code 0 (expected warnings only)
+- **Pattern:** When merging DTO refactors + pagination features, always preserve BOTH layers — DTOs handle input/output shape, pagination adds page/pageSize guards and PagedResponse wrappers
+
 <!-- Append learnings below -->
