@@ -2,12 +2,14 @@ using AutoMapper;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Identity.Web;
 
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
 
 /// <summary>
 /// The controller for managing message templates.
 /// </summary>
+[AuthorizeForScopes]
 public class MessageTemplatesController : Controller
 {
     private readonly IMessageTemplateService _messageTemplateService;
