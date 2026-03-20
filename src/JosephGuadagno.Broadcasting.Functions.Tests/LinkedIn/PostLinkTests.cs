@@ -45,7 +45,7 @@ public class PostLinkTests
         ImageUrl = imageUrl
     };
 
-    // ── Successful link post without image ───────────────────────────────────
+    // ΓöÇΓöÇ Successful link post without image ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WithValidLinkWithoutImage_CallsPostShareTextAndLink()
@@ -75,7 +75,7 @@ public class PostLinkTests
             Times.Never);
     }
 
-    // ── Successful link post with image (HTTP 200) ───────────────────────────
+    // ΓöÇΓöÇ Successful link post with image (HTTP 200) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WithValidLinkWithImage_WhenImageDownloadSucceeds_CallsPostShareTextAndImage()
@@ -117,7 +117,7 @@ public class PostLinkTests
             Times.Never);
     }
 
-    // ── Image download fails (HTTP 404) — fallback to link post ──────────────
+    // ΓöÇΓöÇ Image download fails (HTTP 404) ΓÇö fallback to link post ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WithValidLinkWithImage_WhenImageDownloadFails_FallsBackToLinkPost()
@@ -145,7 +145,7 @@ public class PostLinkTests
         // Act
         await sut.Run(postLink);
 
-        // Assert — should fallback to link post when image download fails
+        // Assert ΓÇö should fallback to link post when image download fails
         _linkedInManager.Verify(
             m => m.PostShareTextAndLink(
                 postLink.AccessToken, postLink.AuthorId, postLink.Text,
@@ -157,12 +157,12 @@ public class PostLinkTests
             Times.Never);
     }
 
-    // ── Manager returns null (post failed) ───────────────────────────────────
+    // ΓöÇΓöÇ Manager returns null (post failed) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WhenManagerReturnsNull_DoesNotThrow()
     {
-        // Arrange — manager returns null (post failed but no exception)
+        // Arrange ΓÇö manager returns null (post failed but no exception)
         var postLink = BuildLinkedInPostLink();
         _linkedInManager
             .Setup(m => m.PostShareTextAndLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
@@ -171,12 +171,12 @@ public class PostLinkTests
 
         var sut = BuildSut();
 
-        // Act & Assert — should not throw
+        // Act & Assert ΓÇö should not throw
         var exception = await Record.ExceptionAsync(() => sut.Run(postLink));
         Assert.Null(exception);
     }
 
-    // ── LinkedInPostException handling ───────────────────────────────────────
+    // ΓöÇΓöÇ LinkedInPostException handling ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WhenLinkedInPostExceptionThrown_RethrowsException()
@@ -191,11 +191,11 @@ public class PostLinkTests
 
         var sut = BuildSut();
 
-        // Act & Assert — should rethrow LinkedInPostException
+        // Act & Assert ΓÇö should rethrow LinkedInPostException
         await Assert.ThrowsAsync<LinkedInPostException>(() => sut.Run(postLink));
     }
 
-    // ── Generic exception handling ────────────────────────────────────────────
+    // ΓöÇΓöÇ Generic exception handling ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WhenGenericExceptionThrown_RethrowsException()
@@ -209,7 +209,7 @@ public class PostLinkTests
 
         var sut = BuildSut();
 
-        // Act & Assert — should rethrow generic Exception
+        // Act & Assert ΓÇö should rethrow generic Exception
         await Assert.ThrowsAsync<Exception>(() => sut.Run(postLink));
     }
 }
