@@ -7100,3 +7100,82 @@ Assignments based on established squad domain expertise:
 - **Neo self-assigned 12 architecture issues** — These represent foundational decisions that will guide future development (Result<T>, IOptions<T>, CancellationToken, health checks, etc.)
 - **Documentation issues** (#12, #13, #14) marked `good first issue` — Can be delegated or completed by Neo
 - **Social platform schema changes** (#536, #537, #53-#55) — All assigned to Switch for consistent data layer ownership
+
+---
+
+## Sealed Type Mocking Pattern for idunno.AtProto Library
+
+**Date:** 2026-03-21  
+**Decision Owner:** Tank (Tester)  
+**Status:** ✅ Resolved  
+**Related Issues:** #301, Commit 450aa70 (partial), Commit 9aeee7a (full fix)
+
+### Context
+
+Azure Functions test project (`JosephGuadagno.Broadcasting.Functions.Tests`) was failing in CI with:
+```
+System.NotSupportedException : Type to mock (CreateRecordResult) must be an interface, 
+a delegate, or a non-sealed, non-static class.
+```
+
+The `idunno.AtProto` library contains sealed types that cannot be mocked by Moq:
+- `CreateRecordResult` (from `idunno.AtProto.Repo`)
+- `EmbeddedExternal` (from `idunno.Bluesky.Embed`)
+
+Even `Mock.Of<T>()` fails because it validates type mockability before attempting to create the mock.
+
+### Decision
+
+**Use typed null instead of mocking sealed types** for interface methods that return nullable reference types.
+
+```csharp
+// ❌ WRONG — throws NotSupportedException
+var mockResponse = Mock.Of<CreateRecordResult>();
+
+// ✅ CORRECT — use typed null for Task<T?> return types
+_manager.Setup(m => m.Method()).ReturnsAsync((CreateRecordResult?)null);
+```
+
+### Rationale
+
+1. Interface methods return nullable types: `Task<CreateRecordResult?>`, `Task<EmbeddedExternal?>`
+2. Tests verify method was called, not return value inspection
+3. Actual function code gracefully handles null returns
+4. Typed null `(TypeName?)null` avoids ambiguous overload resolution vs. `null!`
+
+### Pattern Established
+
+For sealed library types in tests:
+```csharp
+// When mocking methods returning sealed types from 3rd-party libraries:
+
+// ❌ NEVER
+var mock = new SealedType(...);      // May lack accessible constructors
+var mock = Mock.Of<SealedType>();   // Throws NotSupportedException
+
+// ✅ ALWAYS
+.ReturnsAsync((SealedType?)null);    // Typed null for nullable return types
+```
+
+### Lessons Learned
+
+1. **`Mock.Of<T>()` is NOT a bypass for sealed types** — validates mockability regardless
+2. **Always check library type definitions** before attempting to mock
+3. **Typed null preferred over `null!`** — avoids method overload ambiguity
+4. **Run tests locally before committing** — hard rule for catching Moq validation errors
+5. **Sealed types from 3rd-party libraries** (idunno.AtProto) cannot be mocked — use null or construct real instances
+
+### Implementation
+
+**File:** `src/JosephGuadagno.Broadcasting.Functions.Tests/Bluesky/SendPostTests.cs`
+- 6 instances: `Mock.Of<CreateRecordResult>()` → `(CreateRecordResult?)null`
+- 3 instances: `Mock.Of<EmbeddedExternal>()` → `(EmbeddedExternal?)null`
+
+**Verification:**
+- ✅ Build: 0 errors (55 pre-existing warnings)
+- ✅ Tests: 153/153 passing
+- ✅ CI/CD: Green pipeline
+
+**Commits:**
+- 450aa70 — UTF-8 encoding fix (partial, sealed type issue remained)
+- 9aeee7a — Sealed type mocking fix (full resolution)
