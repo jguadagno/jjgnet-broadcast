@@ -16,43 +16,44 @@
     <input type="hidden" asp-for="Id" />
     <div class="mb-3">
         <label asp-for="ItemTableName" class="form-label">Table</label>
-        <select asp-for="ItemTableName" class="form-select" aria-label="Select table name">
+        <select asp-for="ItemTableName" class="form-select" aria-label="Select table name" aria-describedby="val-ItemTableName">
             <option selected>Select Table</option>
             <option value="Engagements">Engagements</option>
             <option value="Talks">Talks</option>
             <option value="SyndicationFeedSources">Syndication Feed</option>
             <option value="YouTubeSources">YouTube</option>
         </select>
-        <span asp-validation-for="ItemTableName" class="text-danger"></span>
+        <span id="val-ItemTableName" asp-validation-for="ItemTableName" class="text-danger"></span>
     </div>
     <div class="mb-3">
         <label asp-for="ItemPrimaryKey" class="form-label">Primary Key</label>
-        <input asp-for="ItemPrimaryKey" type="number" class="form-control" readonly/>
-        <span asp-validation-for="ItemPrimaryKey" class="text-danger"></span>
+        <input asp-for="ItemPrimaryKey" type="number" class="form-control" readonly autocomplete="off" aria-describedby="val-ItemPrimaryKey" />
+        <span id="val-ItemPrimaryKey" asp-validation-for="ItemPrimaryKey" class="text-danger"></span>
     </div>
     <div class="mb-3">
         <label asp-for="SendOnDateTime" class="form-label">Send on Date/Time</label>
-        <input asp-for="SendOnDateTime" type="datetime-local" class="form-control" />
-        <span asp-validation-for="SendOnDateTime" class="text-danger"></span>
+        <input asp-for="SendOnDateTime" type="datetime-local" class="form-control" autocomplete="off" aria-describedby="val-SendOnDateTime" />
+        <span id="val-SendOnDateTime" asp-validation-for="SendOnDateTime" class="text-danger"></span>
     </div>
     <div class="mb-3">
         <label asp-for="Message" class="form-label">Message</label>
-        <input asp-for="Message" type="text" class="form-control" />
-        <span asp-validation-for="Message" class="text-danger"></span>
+        <input asp-for="Message" type="text" class="form-control" autocomplete="off" aria-describedby="val-Message" />
+        <span id="val-Message" asp-validation-for="Message" class="text-danger"></span>
     </div>
     <div class="mb-3">
         <label asp-for="ImageUrl" class="form-label"></label>
-        <input asp-for="ImageUrl" type="url" class="form-control" placeholder="https://example.com/image.jpg" />
-        <span asp-validation-for="ImageUrl" class="text-danger"></span>
+        <input asp-for="ImageUrl" type="url" class="form-control" placeholder="https://example.com/image.jpg" autocomplete="url" aria-describedby="val-ImageUrl" />
+        <span id="val-ImageUrl" asp-validation-for="ImageUrl" class="text-danger"></span>
     </div>
     <div class="mb-3">
         <label asp-for="MessageSentOn" class="form-label">Sent on Date/Time</label>
-        <input asp-for="MessageSentOn" type="datetime-local" class="form-control" />
-        <span asp-validation-for="MessageSentOn" class="text-danger"></span>
+        <input asp-for="MessageSentOn" type="datetime-local" class="form-control" autocomplete="off" aria-describedby="val-MessageSentOn" />
+        <span id="val-MessageSentOn" asp-validation-for="MessageSentOn" class="text-danger"></span>
     </div>
     <div class="form-check form-switch mb-3">
-        <input class="form-check-input" asp-for="MessageSent"/>
+        <input class="form-check-input" asp-for="MessageSent" aria-describedby="val-MessageSent" />
         <label class="form-check-label" asp-for="MessageSent">Was Sent</label>
+        <span id="val-MessageSent" asp-validation-for="MessageSent" class="text-danger d-block"></span>
     </div>
 
     <button type="submit" class="btn btn-primary">
