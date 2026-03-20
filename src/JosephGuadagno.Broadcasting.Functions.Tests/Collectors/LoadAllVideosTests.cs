@@ -6,44 +6,40 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.YouTube;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Primitives;
 using Moq;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests.Collectors;
 
-public class LoadNewVideosTests
+public class LoadAllVideosTests
 {
     private readonly Mock<IYouTubeReader> _youTubeReader;
     private readonly Mock<ISettings> _settings;
-    private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly Mock<IYouTubeSourceManager> _youTubeSourceManager;
+    private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly Mock<IUrlShortener> _urlShortener;
-    private readonly Mock<IEventPublisher> _eventPublisher;
-    private readonly LoadNewVideos _sut;
+    private readonly LoadAllVideos _sut;
 
-    public LoadNewVideosTests()
+    public LoadAllVideosTests()
     {
         _youTubeReader = new Mock<IYouTubeReader>();
         _settings = new Mock<ISettings>();
-        _feedCheckManager = new Mock<IFeedCheckManager>();
         _youTubeSourceManager = new Mock<IYouTubeSourceManager>();
+        _feedCheckManager = new Mock<IFeedCheckManager>();
         _urlShortener = new Mock<IUrlShortener>();
-        _eventPublisher = new Mock<IEventPublisher>();
 
         _settings.Setup(s => s.ShortenedDomainToUse).Returns("short.example.com");
-        _eventPublisher.Setup(e => e.PublishYouTubeEventsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<YouTubeSource>>()))
-            .ReturnsAsync(true);
 
-        _sut = new LoadNewVideos(
+        _sut = new LoadAllVideos(
             _youTubeReader.Object,
             _settings.Object,
-            _feedCheckManager.Object,
             _youTubeSourceManager.Object,
+            _feedCheckManager.Object,
             _urlShortener.Object,
-            _eventPublisher.Object,
-            NullLogger<LoadNewVideos>.Instance);
+            NullLogger<LoadAllVideos>.Instance);
     }
 
     private static YouTubeSource CreateVideoSource(string videoId = "abc123") =>
@@ -64,11 +60,50 @@ public class LoadNewVideosTests
             .ReturnsAsync(new FeedCheck
             {
                 Id = 1,
-                Name = "LoadNewVideos",
+                Name = "LoadAllVideos",
                 LastCheckedFeed = DateTimeOffset.UtcNow,
                 LastItemAddedOrUpdated = DateTimeOffset.MinValue,
                 LastUpdatedOn = DateTimeOffset.UtcNow
             });
+
+    private static HttpRequest CreateHttpRequest(string? checkFrom = null)
+    {
+        var context = new DefaultHttpContext();
+        if (checkFrom != null)
+        {
+            context.Request.Query = new QueryCollection(new Dictionary<string, StringValues>
+            {
+                { "checkFrom", checkFrom }
+            });
+        }
+        return context.Request;
+    }
+
+    [Fact]
+    public async Task RunAsync_SavesVideos_WhenVideosAreFound()
+    {
+        // Arrange
+        var item = CreateVideoSource("new-video-id");
+        var savedItem = CreateVideoSource("new-video-id");
+        savedItem.Id = 42;
+
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _youTubeReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<YouTubeSource> { item });
+        _youTubeSourceManager.Setup(m => m.GetByVideoIdAsync("new-video-id")).ReturnsAsync((YouTubeSource?)null);
+        _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("https://short.example.com/xyz");
+        _youTubeSourceManager.Setup(m => m.SaveAsync(It.IsAny<YouTubeSource>())).ReturnsAsync(savedItem);
+
+        var request = CreateHttpRequest();
+
+        // Act
+        var result = await _sut.RunAsync(request, null);
+
+        // Assert
+        _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Once);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Contains("1", okResult.Value!.ToString());
+    }
 
     [Fact]
     public async Task RunAsync_SkipsDuplicate_WhenVideoIdAlreadyExists()
@@ -83,60 +118,91 @@ public class LoadNewVideosTests
         _youTubeReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<YouTubeSource> { item });
         _youTubeSourceManager.Setup(m => m.GetByVideoIdAsync("duplicate-video-id")).ReturnsAsync(existingItem);
 
+        var request = CreateHttpRequest();
+
         // Act
-        var result = await _sut.RunAsync(null!);
+        var result = await _sut.RunAsync(request, null);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Never);
-        _eventPublisher.Verify(
-            e => e.PublishYouTubeEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<YouTubeSource>>(l => l.Count == 0)),
-            Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
     }
 
     [Fact]
-    public async Task RunAsync_SavesVideo_WhenVideoIdIsNew()
-    {
-        // Arrange
-        var item = CreateVideoSource("brand-new-video-id");
-        var savedItem = CreateVideoSource("brand-new-video-id");
-        savedItem.Id = 55;
-
-        SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
-        _youTubeReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<YouTubeSource> { item });
-        _youTubeSourceManager.Setup(m => m.GetByVideoIdAsync("brand-new-video-id")).ReturnsAsync((YouTubeSource?)null);
-        _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("https://short.example.com/xyz");
-        _youTubeSourceManager.Setup(m => m.SaveAsync(It.IsAny<YouTubeSource>())).ReturnsAsync(savedItem);
-
-        // Act
-        var result = await _sut.RunAsync(null!);
-
-        // Assert
-        _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Once);
-        _eventPublisher.Verify(
-            e => e.PublishYouTubeEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<YouTubeSource>>(l => l.Count == 1)),
-            Times.Once);
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Contains("1", okResult.Value!.ToString());
-    }
-
-    [Fact]
-    public async Task RunAsync_ReturnsOk_WhenNoNewVideosFound()
+    public async Task RunAsync_ReturnsOk_WhenNoVideosFound()
     {
         // Arrange
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
         _youTubeReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<YouTubeSource>());
 
+        var request = CreateHttpRequest();
+
         // Act
-        var result = await _sut.RunAsync(null!);
+        var result = await _sut.RunAsync(request, null);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Never);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
+    }
+
+    [Fact]
+    public async Task RunAsync_ParsesCheckFromParameter_WhenValidDateProvided()
+    {
+        // Arrange
+        var checkFromDate = "2024-01-15";
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _youTubeReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<YouTubeSource>());
+
+        var request = CreateHttpRequest(checkFromDate);
+
+        // Act
+        var result = await _sut.RunAsync(request, checkFromDate);
+
+        // Assert
+        _youTubeReader.Verify(r => r.GetAsync(It.Is<DateTimeOffset>(d => d.Year == 2024 && d.Month == 1 && d.Day == 15)), Times.Once);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Contains("0", okResult.Value!.ToString());
+    }
+
+    [Fact]
+    public async Task RunAsync_UsesMinValue_WhenCheckFromIsNull()
+    {
+        // Arrange
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _youTubeReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<YouTubeSource>());
+
+        var request = CreateHttpRequest();
+
+        // Act
+        var result = await _sut.RunAsync(request, null);
+
+        // Assert
+        _youTubeReader.Verify(r => r.GetAsync(It.Is<DateTimeOffset>(d => d == DateTimeOffset.MinValue || d == DateTime.MinValue)), Times.Once);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task RunAsync_UsesMinValue_WhenCheckFromIsInvalid()
+    {
+        // Arrange
+        var invalidCheckFrom = "not-a-date";
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _youTubeReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<YouTubeSource>());
+
+        var request = CreateHttpRequest(invalidCheckFrom);
+
+        // Act
+        var result = await _sut.RunAsync(request, invalidCheckFrom);
+
+        // Assert
+        _youTubeReader.Verify(r => r.GetAsync(It.Is<DateTimeOffset>(d => d == DateTimeOffset.MinValue || d == DateTime.MinValue)), Times.Once);
+        var okResult = Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -168,16 +234,16 @@ public class LoadNewVideosTests
         _youTubeSourceManager.Setup(m => m.SaveAsync(It.Is<YouTubeSource>(v => v.VideoId == "new-1"))).ReturnsAsync(savedVideo1);
         _youTubeSourceManager.Setup(m => m.SaveAsync(It.Is<YouTubeSource>(v => v.VideoId == "new-2"))).ReturnsAsync(savedVideo2);
 
+        var request = CreateHttpRequest();
+
         // Act
-        var result = await _sut.RunAsync(null!);
+        var result = await _sut.RunAsync(request, null);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Exactly(2));
-        _eventPublisher.Verify(
-            e => e.PublishYouTubeEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<YouTubeSource>>(l => l.Count == 2)),
-            Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("2", okResult.Value!.ToString());
+        Assert.Contains("3", okResult.Value!.ToString()); // 2 of 3 videos
     }
 
     [Fact]
@@ -187,8 +253,10 @@ public class LoadNewVideosTests
         SetupFeedCheck();
         _youTubeReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ThrowsAsync(new Exception("Reader error"));
 
+        var request = CreateHttpRequest();
+
         // Act
-        var result = await _sut.RunAsync(null!);
+        var result = await _sut.RunAsync(request, null);
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -199,38 +267,25 @@ public class LoadNewVideosTests
     public async Task RunAsync_CallsUrlShortener_WhenSavingVideo()
     {
         // Arrange
-        var item = CreateVideoSource("video-789");
-        var savedItem = CreateVideoSource("video-789");
+        var item = CreateVideoSource("video-123");
+        var savedItem = CreateVideoSource("video-123");
         savedItem.Id = 50;
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
         _youTubeReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<YouTubeSource> { item });
-        _youTubeSourceManager.Setup(m => m.GetByVideoIdAsync("video-789")).ReturnsAsync((YouTubeSource?)null);
+        _youTubeSourceManager.Setup(m => m.GetByVideoIdAsync("video-123")).ReturnsAsync((YouTubeSource?)null);
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(item.Url, "short.example.com")).ReturnsAsync("https://short.example.com/abc");
         _youTubeSourceManager.Setup(m => m.SaveAsync(It.IsAny<YouTubeSource>())).ReturnsAsync(savedItem);
 
+        var request = CreateHttpRequest();
+
         // Act
-        var result = await _sut.RunAsync(null!);
+        var result = await _sut.RunAsync(request, null);
 
         // Assert
         _urlShortener.Verify(u => u.GetShortenedUrlAsync(item.Url, "short.example.com"), Times.Once);
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.Is<YouTubeSource>(v => v.ShortenedUrl == "https://short.example.com/abc")), Times.Once);
     }
-
-    [Fact]
-    public async Task RunAsync_ReturnsBadRequest_WhenReaderReturnsNull()
-    {
-        // Arrange
-        SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
-        _youTubeReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync((List<YouTubeSource>?)null);
-
-        // Act
-        var result = await _sut.RunAsync(null!);
-
-        // Assert
-        _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Never);
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-    }
 }
+
