@@ -48,3 +48,22 @@
 - Deferred Database Improvements Cluster (#322-325) and Architectural Refactors (#309-312, #314) to future sprints for dedicated focus
 
 **Session note (2026-03-20):** Sprint 9 milestone (#4) created this session as part of Sprint 7 kickoff + Sprint 9 planning orchestration. Neo's sprint planning work (trilogy: S7→S8→S9) documented in orchestration-log/2026-03-20T00-51-00-neo.md.
+
+### 2026-03-21: PR #512 Review — DTO Layer Implementation
+
+**Review verdict:** CHANGES REQUESTED  
+**PR:** #512 `feature/s8-315-api-dtos` (Trinity's work)  
+**Status:** 2 issues found, different agent required for fixes per team protocol
+
+**Findings:**
+1. ✅ **Pattern compliance**: Correctly implements decision from `.squad/decisions/inbox/trinity-pr512-dtos.md` — private static `ToResponse`/`ToModel` helpers, no AutoMapper, route IDs as ground truth
+2. ✅ **Clean validation removal**: Old "route id must match body id" checks eliminated from `EngagementsController` and `SchedulesController`
+3. ✅ **Proper null handling**: `EngagementResponse.ToResponse` uses `?.` operator for optional Talks collection
+4. ❌ **BOM character**: `MessageTemplatesController.cs` line 1 has UTF-8 BOM (U+FEFF) before first `using` statement
+5. ❌ **Pattern violation**: `TalkRequest.EngagementId` property contradicts "route as ground truth" — engagementId comes from route parameter in `POST /engagements/{engagementId}/talks`, not request body
+
+**Pattern observation for future reviews:**
+- Request DTOs should **never** include route parameters as properties — creates misleading API contract and violates single source of truth principle
+- Watch for file encoding issues (BOM characters) when reviewing multi-file PRs
+
+**Next step:** Coordinator to assign different agent for fixes (not Trinity per rejection protocol).
