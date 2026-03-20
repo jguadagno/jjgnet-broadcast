@@ -1,0 +1,1 @@
+{{ if item_last_updated_on > publication_date }}Updated Video Post: {{ else }}New Video Post: {{ end }}({{ publication_date | date.to_string '%M/%d/%Y' }}): "{{ title }}." RPs and feedback are always appreciated! {{ url }} {{ hashtags }}
