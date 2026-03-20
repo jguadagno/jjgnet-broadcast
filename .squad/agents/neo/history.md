@@ -43,11 +43,15 @@
 
 <!-- Append learnings below -->
 
-### 2026-03-20: PR #521 Review — Null Guard / 404 Fix
-
-**Review verdict:** APPROVED (already merged by jguadagno)
-**PR:** #521 `squad/519-fix-null-ref-404`
-**Issue closed:** #519 (auto-closed by PR merge)
+### 2026-03-20T20:11:20Z — PR Review Completions & Session Wrap-Up
+- **PR #512 (API DTO pattern):** APPROVED & merged (all pattern violations fixed by Morpheus, CI green)
+- **PR #514 (Pagination):** APPROVED & merged (all validation gaps fixed by Morpheus, all 8 endpoints validated)
+- **PR #520 (Form loading):** APPROVED & merged (no dependencies, correct Bootstrap markup)
+- **PR #522 (Form accessibility):** HELD pending BlueSkyHandle ViewModel fix (code correct, CI inherited failure from PR #523)
+- **PR #524 (Privacy page):** APPROVED & merged (content complete, layout consistent)
+- **Orchestration log:** Created 2026-03-20T20-11-20Z-neo.md documenting lead reviewer role, pattern compliance verification, cross-PR interference documentation
+- **Session log:** Created 2026-03-20T20-11-20Z-ralph-round2.md summarizing 4 merged PRs, 2 approved (pending merge), 1 held on dependencies
+- **Key pattern documented:** Cross-PR CI interference — when schema PRs merge while downstream PRs' CI is running, second PR's CI tests merged state of main and can show false failures. Always trace root cause before attributing failure to PR author.
 **Status:** Squash-merged to main, branch deleted, issue closed
 
 **Findings:**
@@ -120,3 +124,24 @@ Previously merged: #520 (#333), #522 (#332), #523 (#167/#166), #524 (#191), #525
   - **#528**: MSAL token cache eviction causing `MsalUiRequiredException` on API calls → routed to Ghost
 - **Status:** Both marked high priority for immediate action
 - **Outcome:** Trinity verified scope already fixed in PR #526 (PR #531 opened with full audit). Ghost implemented `[AuthorizeForScopes]` on all 4 API-calling Web controllers (PR #532 opened).
+
+### 2026-03-21: PR #534 Review — Engagement Social Fields Web UI
+
+**Review verdict:** MERGED (self-authored)  
+**PR:** #534 squad/105-engagement-social-fields-web (Switch/jguadagno)  
+**Issue closed:** #105 (auto-closed — completes full feature)  
+**Status:** Squash-merged to main, branch deleted
+
+**PR #534 Findings (Web UI for conference social fields):**
+1. ✅ **Form inputs added**: Both `ConferenceHashtag` and `ConferenceTwitterHandle` present in Add.cshtml and Edit.cshtml
+2. ✅ **Fields are optional**: No `required` attribute — matches nullable design from PR #529
+3. ✅ **Razor @@ escaping correct**: `placeholder="@@MyConference"` properly uses `@@` for literal `@` in Razor syntax
+4. ✅ **Conditional display in Details**: Uses `@if (!string.IsNullOrEmpty(Model.ConferenceHashtag))` pattern — only shows non-empty values
+5. ✅ **Bootstrap styling consistent**: Uses `mb-3`, `form-label`, `form-control`, `aria-describedby` matching existing patterns
+6. ✅ **Placeholders sensible**: `#MyConf2026` and `@@MyConference` provide clear guidance
+7. ✅ **CI green**: All 2 checks passed (GitGuardian + CI/build-and-test)
+
+**Issue #105 completion:**
+- PR #529: Data layer (EF entity, migration, ViewModels, DTOs) ✅
+- PR #534: Web UI (Create/Edit/Details views) ✅
+- **Full feature delivered** — users can now capture and display conference social identity in Engagements

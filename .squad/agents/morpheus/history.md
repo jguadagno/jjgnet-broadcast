@@ -48,6 +48,17 @@
   1. **EngagementsController.cs**: Kept both DTO helper methods (ToResponse/ToModel) from main AND pagination parameters/PagedResponse wrappers
   2. **MessageTemplatesController.cs**: Kept both DTO fixes (BOM removal, ToResponse/ToModel helpers) AND pagination logic (page/pageSize params, guards, PagedResponse wrapper)
   3. **TalkRequest.cs**: Used main's version — NO EngagementId property per route-as-ground-truth decision (Neo's PR #512 fix)
+
+### 2026-03-20T20:11:20Z — Orchestration Log & Session Wrap-Up
+- **Task:** Record completion of Sprint 8 work and document team decisions/patterns
+- **Orchestration log:** Created 2026-03-20T20-11-20Z-morpheus.md documenting PR #529 merge (Engagement social fields)
+- **Decisions consolidated:** 19 inbox files merged into decisions.md, documenting:
+  - ViewModel/DTO completeness pattern (all layers update when domain properties added)
+  - BlueSkyHandle schema addition (Engagements and Talks tables)
+  - SQL Server size cap removal and error surfacing (Issue #324)
+  - Pagination parameter validation pattern
+- **Session log:** Created 2026-03-20T20-11-20Z-ralph-round2.md summarizing squad status
+- **Pattern reinforced:** Domain model changes require simultaneous updates to EF entity, Web ViewModel, and API DTOs to prevent AutoMapper validation failures (PR #529 example)
   4. **link/history.md**: Merged all entries from both branches (append-only)
 - **Verification:** Build passed with exit code 0 (expected warnings only)
 - **Pattern:** When merging DTO refactors + pagination features, always preserve BOTH layers — DTOs handle input/output shape, pagination adds page/pageSize guards and PagedResponse wrappers
