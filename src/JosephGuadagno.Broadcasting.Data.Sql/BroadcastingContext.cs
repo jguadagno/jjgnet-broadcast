@@ -55,6 +55,12 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.BlueSkyHandle)
                 .HasMaxLength(255);
+
+            entity.Property(e => e.ConferenceHashtag)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.ConferenceTwitterHandle)
+                .HasMaxLength(255);
         });
 
         modelBuilder.Entity<ScheduledItem>(entity =>

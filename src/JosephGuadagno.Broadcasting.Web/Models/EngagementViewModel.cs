@@ -57,6 +57,16 @@ public class EngagementViewModel
     /// </summary>
     public string? BlueSkyHandle { get; set; }
 
+    /// <summary>
+    /// The hashtag for the conference
+    /// </summary>
+    public string? ConferenceHashtag { get; set; }
+
+    /// <summary>
+    /// The Twitter/X handle for the conference
+    /// </summary>
+    public string? ConferenceTwitterHandle { get; set; }
+
     public DateTimeOffset CreatedOn { get; set; }
     public DateTimeOffset LastUpdatedOn { get; set; }
 

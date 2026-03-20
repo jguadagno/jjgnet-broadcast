@@ -12,6 +12,8 @@ create table dbo.Engagements
     EndDateTime   datetimeoffset             not null,
     Comments      nvarchar(max),
     BlueSkyHandle nvarchar(255)  null,
+    ConferenceHashtag nvarchar(255) null,
+    ConferenceTwitterHandle nvarchar(255) null,
     TimeZoneId    nvarchar(50) default 'America/Phoenix' not null,
     CreatedOn datetimeoffset default getutcdate() NOT NULL,
     LastUpdatedOn datetimeoffset default getutcdate() NOT NULL

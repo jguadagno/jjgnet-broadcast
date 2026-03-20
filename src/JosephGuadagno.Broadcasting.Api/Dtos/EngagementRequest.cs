@@ -24,4 +24,10 @@ public class EngagementRequest
     public string TimeZoneId { get; set; } = string.Empty;
 
     public string? Comments { get; set; }
+
+    public string? BlueSkyHandle { get; set; }
+
+    public string? ConferenceHashtag { get; set; }
+
+    public string? ConferenceTwitterHandle { get; set; }
 }

@@ -63,6 +63,16 @@ public class Engagement
     public string? BlueSkyHandle { get; set; }
 
     /// <summary>
+    /// The hashtag for the conference/event (e.g. #NDCSydney)
+    /// </summary>
+    public string? ConferenceHashtag { get; set; }
+
+    /// <summary>
+    /// The Twitter/X handle for the conference/event (e.g. @NDCSydney)
+    /// </summary>
+    public string? ConferenceTwitterHandle { get; set; }
+
+    /// <summary>
     /// The date and time the item was created
     /// </summary>
     public DateTimeOffset CreatedOn { get; set; }
