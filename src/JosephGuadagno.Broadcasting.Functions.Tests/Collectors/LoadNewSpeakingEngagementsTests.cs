@@ -124,4 +124,98 @@ public class LoadNewSpeakingEngagementsTests
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
     }
+
+    [Fact]
+    public async Task RunAsync_HandlesMultipleEngagements_WithMixedDuplicates()
+    {
+        // Arrange
+        var newEngagement1 = CreateEngagement("Conf A", "https://a.com", 2024);
+        var newEngagement2 = CreateEngagement("Conf B", "https://b.com", 2024);
+        var duplicateEngagement = CreateEngagement("Conf C", "https://c.com", 2024);
+        var existingEngagement = CreateEngagement("Conf C", "https://c.com", 2024);
+        existingEngagement.Id = 99;
+
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _engagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<Engagement> { newEngagement1, duplicateEngagement, newEngagement2 });
+        
+        _engagementManager.Setup(m => m.GetByNameAndUrlAndYearAsync("Conf A", "https://a.com", 2024))
+            .ReturnsAsync((Engagement?)null);
+        _engagementManager.Setup(m => m.GetByNameAndUrlAndYearAsync("Conf B", "https://b.com", 2024))
+            .ReturnsAsync((Engagement?)null);
+        _engagementManager.Setup(m => m.GetByNameAndUrlAndYearAsync("Conf C", "https://c.com", 2024))
+            .ReturnsAsync(existingEngagement);
+        
+        var saved1 = CreateEngagement("Conf A", "https://a.com", 2024);
+        saved1.Id = 1;
+        var saved2 = CreateEngagement("Conf B", "https://b.com", 2024);
+        saved2.Id = 2;
+        
+        _engagementManager.Setup(m => m.SaveAsync(It.Is<Engagement>(e => e.Name == "Conf A"))).ReturnsAsync(saved1);
+        _engagementManager.Setup(m => m.SaveAsync(It.Is<Engagement>(e => e.Name == "Conf B"))).ReturnsAsync(saved2);
+
+        // Act
+        var result = await _sut.RunAsync(null!);
+
+        // Assert
+        _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Exactly(2));
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Contains("2", okResult.Value!.ToString());
+    }
+
+    [Fact]
+    public async Task RunAsync_ReturnsBadRequest_WhenReaderThrowsException()
+    {
+        // Arrange
+        SetupFeedCheck();
+        _engagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ThrowsAsync(new Exception("Reader error"));
+
+        // Act
+        var result = await _sut.RunAsync(null!);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains("Reader error", badRequestResult.Value!.ToString());
+    }
+
+    [Fact]
+    public async Task RunAsync_ChecksDeduplicationByCompositeKey_NameUrlAndYear()
+    {
+        // Arrange
+        var item = CreateEngagement("CodeConf", "https://codeconf.com/2024", 2024);
+        var existingItem = CreateEngagement("CodeConf", "https://codeconf.com/2024", 2024);
+        existingItem.Id = 88;
+
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _engagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<Engagement> { item });
+        _engagementManager.Setup(m => m.GetByNameAndUrlAndYearAsync("CodeConf", "https://codeconf.com/2024", 2024))
+            .ReturnsAsync(existingItem);
+
+        // Act
+        var result = await _sut.RunAsync(null!);
+
+        // Assert
+        _engagementManager.Verify(m => m.GetByNameAndUrlAndYearAsync("CodeConf", "https://codeconf.com/2024", 2024), Times.Once);
+        _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RunAsync_HandlesNullEngagementList_Gracefully()
+    {
+        // Arrange
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _engagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync((List<Engagement>?)null);
+
+        // Act
+        var result = await _sut.RunAsync(null!);
+
+        // Assert
+        _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Contains("0", okResult.Value!.ToString());
+    }
 }

@@ -138,4 +138,100 @@ public class LoadNewPostsTests
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
     }
+
+    [Fact]
+    public async Task RunAsync_HandlesMultiplePosts_WithMixedDuplicates()
+    {
+        // Arrange
+        var newPost1 = CreateFeedSource("new-1");
+        var newPost2 = CreateFeedSource("new-2");
+        var duplicatePost = CreateFeedSource("duplicate-1");
+        var existingPost = CreateFeedSource("duplicate-1");
+        existingPost.Id = 99;
+
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<SyndicationFeedSource> { newPost1, duplicatePost, newPost2 });
+        
+        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("new-1")).ReturnsAsync((SyndicationFeedSource?)null);
+        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("new-2")).ReturnsAsync((SyndicationFeedSource?)null);
+        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("duplicate-1")).ReturnsAsync(existingPost);
+        
+        _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("https://short.example.com/xyz");
+        
+        var savedPost1 = CreateFeedSource("new-1");
+        savedPost1.Id = 1;
+        var savedPost2 = CreateFeedSource("new-2");
+        savedPost2.Id = 2;
+        
+        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "new-1"))).ReturnsAsync(savedPost1);
+        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "new-2"))).ReturnsAsync(savedPost2);
+
+        // Act
+        var result = await _sut.RunAsync(null!);
+
+        // Assert
+        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Exactly(2));
+        _eventPublisher.Verify(
+            e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<SyndicationFeedSource>>(l => l.Count == 2)),
+            Times.Once);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Contains("2", okResult.Value!.ToString());
+    }
+
+    [Fact]
+    public async Task RunAsync_ReturnsBadRequest_WhenReaderThrowsException()
+    {
+        // Arrange
+        SetupFeedCheck();
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ThrowsAsync(new Exception("Reader error"));
+
+        // Act
+        var result = await _sut.RunAsync(null!);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains("Reader error", badRequestResult.Value!.ToString());
+    }
+
+    [Fact]
+    public async Task RunAsync_CallsUrlShortener_WhenSavingPost()
+    {
+        // Arrange
+        var item = CreateFeedSource("post-456");
+        var savedItem = CreateFeedSource("post-456");
+        savedItem.Id = 50;
+
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedSource> { item });
+        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("post-456")).ReturnsAsync((SyndicationFeedSource?)null);
+        _urlShortener.Setup(u => u.GetShortenedUrlAsync(item.Url, "short.example.com")).ReturnsAsync("https://short.example.com/abc");
+        _feedSourceManager.Setup(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>())).ReturnsAsync(savedItem);
+
+        // Act
+        var result = await _sut.RunAsync(null!);
+
+        // Assert
+        _urlShortener.Verify(u => u.GetShortenedUrlAsync(item.Url, "short.example.com"), Times.Once);
+        _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.ShortenedUrl == "https://short.example.com/abc")), Times.Once);
+    }
+
+    [Fact]
+    public async Task RunAsync_HandlesNullFeedList_Gracefully()
+    {
+        // Arrange
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync((List<SyndicationFeedSource>?)null);
+
+        // Act
+        var result = await _sut.RunAsync(null!);
+
+        // Assert
+        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Never);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Contains("0", okResult.Value!.ToString());
+    }
 }
