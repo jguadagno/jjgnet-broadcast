@@ -1,4 +1,5 @@
-﻿using JosephGuadagno.Broadcasting.Api.Dtos;
+using JosephGuadagno.Broadcasting.Api.Dtos;
+using JosephGuadagno.Broadcasting.Api.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -34,17 +35,36 @@ public class MessageTemplatesController : ControllerBase
     /// <summary>
     /// Gets all message templates
     /// </summary>
-    /// <returns>A list of message templates</returns>
+    /// <param name="page">The page number (default: 1)</param>
+    /// <param name="pageSize">The page size (default: 25)</param>
+    /// <returns>A paginated list of message templates</returns>
     /// <response code="200">If the call was successful</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MessageTemplateResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<MessageTemplateResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<MessageTemplateResponse>>> GetAllAsync()
+    public async Task<ActionResult<PagedResponse<MessageTemplateResponse>>> GetAllAsync(int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.All);
-        var templates = await _messageTemplateDataStore.GetAllAsync();
-        return templates.Select(ToResponse).ToList();
+        var allTemplates = await _messageTemplateDataStore.GetAllAsync();
+        var totalCount = allTemplates.Count;
+        var items = allTemplates
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ToResponse)
+            .ToList();
+        
+        return new PagedResponse<MessageTemplateResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
     /// <summary>

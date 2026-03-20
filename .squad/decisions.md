@@ -2050,3 +2050,123 @@ All 4 tests passing:
 - JsonFeedReader.Tests
 - Future JSON feed-related features
 
+
+
+---
+
+# Decision: DTO Mapping Pattern for API Controllers
+
+**Author:** Trinity  
+**Date:** 2026-03-21  
+**Related PR:** #512 (`feature/s8-315-api-dtos`)
+
+## Decision
+
+DTO mapping in API controllers uses private static helper methods (`ToResponse` / `ToModel`) co-located in the controller class — no AutoMapper or external mapping library.
+
+## Pattern
+
+```csharp
+// In controller class:
+private static EngagementResponse ToResponse(Engagement e) => new() { ... };
+private static Engagement ToModel(EngagementRequest r, int id = 0) => new() { ... };
+```
+
+For **update** endpoints, the route `id` is injected at the `ToModel` call site:
+```csharp
+var engagement = ToModel(request, engagementId);  // id from route, not from DTO
+```
+
+This eliminates the "route id must match body id" validation check — the DTO simply doesn't carry an `Id` field.
+
+## Rationale
+
+1. **Zero new dependencies** — consistent with how `MessageTemplatesController` was already implemented.
+2. **Co-location is readable** — helpers are at the bottom of the controller, easy to find.
+3. **Route id as ground truth** — the route parameter is authoritative; no need to repeat it in the request body.
+
+## Scope
+
+Applies to: `EngagementsController`, `SchedulesController`, `MessageTemplatesController` (already done).  
+Future controllers should follow the same pattern unless a compelling reason exists to introduce a mapping library.
+
+
+---
+
+# Decision: Request DTOs Must NOT Include Route Parameters
+
+**Author:** Neo  
+**Date:** 2026-03-21  
+**Related PR:** #512 review (`feature/s8-315-api-dtos`)
+
+## Decision
+
+Request DTOs must **never** include properties that are provided via route parameters. Route parameters are the single source of truth for entity identifiers and other URL-based values.
+
+## Violation Found
+
+In PR #512, `TalkRequest.cs` includes:
+```csharp
+[Required]
+public int EngagementId { get; set; }
+```
+
+But the controller route is:
+```csharp
+[HttpPost("{engagementId:int}/talks")]
+public async Task<ActionResult<TalkResponse>> CreateTalkAsync(int engagementId, TalkRequest request)
+```
+
+The `engagementId` comes from the route, not the request body. The DTO property is:
+- **Misleading**: API consumers might think they need to provide it in the JSON body
+- **Redundant**: The controller correctly ignores the DTO property and uses `ToModel(request, engagementId)` (route parameter)
+- **Violates ground truth principle**: Route parameter is authoritative, not the DTO
+
+## Rationale
+
+1. **Single source of truth**: Route parameters are part of the URL (RESTful resource identifier) and must not be duplicated in the request body
+2. **Clear API contract**: DTOs should only include data that comes from the request body, not from URL components
+3. **Prevents confusion**: Having the same value in two places (URL and body) creates ambiguity and requires validation logic to ensure they match
+4. **Consistency**: This aligns with the broader DTO pattern decision where route IDs eliminated the need for "route id must match body id" checks
+
+## Correct Pattern
+
+### ✅ Good (current `EngagementRequest`)
+```csharp
+public class EngagementRequest
+{
+    [Required] public string Name { get; set; }
+    [Required] public DateTimeOffset StartDateTime { get; set; }
+    // No Id property — comes from route in PUT /engagements/{id}
+}
+```
+
+### ❌ Bad (PR #512's `TalkRequest`)
+```csharp
+public class TalkRequest
+{
+    [Required] public string Name { get; set; }
+    [Required] public int EngagementId { get; set; }  // ← WRONG: route provides this
+}
+```
+
+### ✅ Good (corrected `TalkRequest`)
+```csharp
+public class TalkRequest
+{
+    [Required] public string Name { get; set; }
+    // EngagementId removed — route provides it in POST /engagements/{engagementId}/talks
+}
+```
+
+## Scope
+
+Applies to all Request DTOs in the API layer. Response DTOs **may** include IDs since they represent the full resource state being returned to the client.
+
+## Review Checklist for Future PRs
+
+When reviewing DTO PRs, verify:
+- [ ] Request DTOs do not include route parameters as properties
+- [ ] Controller `ToModel` mapping uses route parameters, not DTO properties, for IDs
+- [ ] No "route id must match body id" validation checks exist
+
