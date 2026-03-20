@@ -134,8 +134,8 @@ public class SchedulesControllerTests
         var result = await sut.GetScheduledItemAsync(7);
 
         // Assert
-        result.Value.Should().NotBeNull();
-        result.Value.Should().BeEquivalentTo(item, opts => opts.ExcludingMissingMembers());
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.Value.Should().BeEquivalentTo(item, opts => opts.ExcludingMissingMembers());
         _scheduledItemManagerMock.Verify(m => m.GetAsync(7), Times.Once);
     }
 

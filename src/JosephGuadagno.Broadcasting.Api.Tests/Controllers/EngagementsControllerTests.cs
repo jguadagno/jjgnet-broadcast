@@ -124,8 +124,8 @@ public class EngagementsControllerTests
         var result = await sut.GetEngagementAsync(1);
 
         // Assert
-        result.Value.Should().NotBeNull();
-        result.Value.Should().BeEquivalentTo(engagement, opts => opts.ExcludingMissingMembers());
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.Value.Should().BeEquivalentTo(engagement, opts => opts.ExcludingMissingMembers());
         _engagementManagerMock.Verify(m => m.GetAsync(1), Times.Once);
     }
 
@@ -573,8 +573,8 @@ public class EngagementsControllerTests
         var result = await sut.GetTalkAsync(10, 5);
 
         // Assert
-        result.Value.Should().NotBeNull();
-        result.Value.Should().BeEquivalentTo(talk, opts => opts.ExcludingMissingMembers());
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.Value.Should().BeEquivalentTo(talk, opts => opts.ExcludingMissingMembers());
         _engagementManagerMock.Verify(m => m.GetTalkAsync(5), Times.Once);
     }
 
