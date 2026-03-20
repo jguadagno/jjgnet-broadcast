@@ -43,11 +43,10 @@ public class SendPostTests
     {
         // Arrange
         var postMessage = BuildBlueskyPostMessage();
-        var mockResponse = Mock.Of<CreateRecordResult>();
 
         _blueskyManager
             .Setup(m => m.Post(It.Is<PostBuilder>(pb => pb.Text == postMessage.Text)))
-            .ReturnsAsync(mockResponse);
+            .ReturnsAsync((CreateRecordResult?)null);
 
         var sut = BuildSut();
 
@@ -70,15 +69,13 @@ public class SendPostTests
             text: "Check this out",
             url: "https://example.com/article",
             shortenedUrl: "https://short.url/abc");
-        var mockResponse = Mock.Of<CreateRecordResult>();
-        var mockEmbedRecord = Mock.Of<EmbeddedExternal>();
 
         _blueskyManager
             .Setup(m => m.GetEmbeddedExternalRecord(postMessage.Url))
-            .ReturnsAsync(mockEmbedRecord);
+            .ReturnsAsync((EmbeddedExternal?)null);
         _blueskyManager
             .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ReturnsAsync(mockResponse);
+            .ReturnsAsync((CreateRecordResult?)null);
 
         var sut = BuildSut();
 
@@ -103,15 +100,13 @@ public class SendPostTests
             url: "https://example.com/article",
             shortenedUrl: "https://short.url/abc",
             imageUrl: "https://example.com/image.jpg");
-        var mockResponse = Mock.Of<CreateRecordResult>();
-        var mockEmbedRecord = Mock.Of<EmbeddedExternal>();
 
         _blueskyManager
             .Setup(m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url, postMessage.ImageUrl!))
-            .ReturnsAsync(mockEmbedRecord);
+            .ReturnsAsync((EmbeddedExternal?)null);
         _blueskyManager
             .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ReturnsAsync(mockResponse);
+            .ReturnsAsync((CreateRecordResult?)null);
 
         var sut = BuildSut();
 
@@ -139,15 +134,13 @@ public class SendPostTests
             url: "https://example.com/article",
             shortenedUrl: null,
             imageUrl: "https://example.com/image.jpg");
-        var mockResponse = Mock.Of<CreateRecordResult>();
-        var mockEmbedRecord = Mock.Of<EmbeddedExternal>();
 
         _blueskyManager
             .Setup(m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url, postMessage.ImageUrl!))
-            .ReturnsAsync(mockEmbedRecord);
+            .ReturnsAsync((EmbeddedExternal?)null);
         _blueskyManager
             .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ReturnsAsync(mockResponse);
+            .ReturnsAsync((CreateRecordResult?)null);
 
         var sut = BuildSut();
 
@@ -170,11 +163,10 @@ public class SendPostTests
         var postMessage = BuildBlueskyPostMessage(
             text: "Great article",
             hashtags: new List<string> { "tech", "dotnet", "azure" });
-        var mockResponse = Mock.Of<CreateRecordResult>();
 
         _blueskyManager
             .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ReturnsAsync(mockResponse);
+            .ReturnsAsync((CreateRecordResult?)null);
 
         var sut = BuildSut();
 
@@ -248,14 +240,13 @@ public class SendPostTests
             text: "Check this out",
             url: "https://example.com/article",
             shortenedUrl: "https://short.url/abc");
-        var mockResponse = Mock.Of<CreateRecordResult>();
 
         _blueskyManager
             .Setup(m => m.GetEmbeddedExternalRecord(It.IsAny<string>()))
             .ReturnsAsync((EmbeddedExternal?)null);
         _blueskyManager
             .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ReturnsAsync(mockResponse);
+            .ReturnsAsync((CreateRecordResult?)null);
 
         var sut = BuildSut();
 
