@@ -3,13 +3,13 @@ CREATE DATABASE JJGNet
     ( NAME = JJGNet_Data,
         FILENAME = '/var/opt/mssql/data/jjgnet.mdf',
         SIZE = 10,
-        MAXSIZE = 50,
+        MAXSIZE = UNLIMITED,
         FILEGROWTH = 5 )
     LOG ON
     ( NAME = JJGNet_Log,
         FILENAME = '/var/opt/mssql/data/jjgnet.ldf',
         SIZE = 5MB,
-        MAXSIZE = 25MB,
+        MAXSIZE = UNLIMITED,
         FILEGROWTH = 5MB ) ;
 GO
 

@@ -1,4 +1,5 @@
 ﻿using JosephGuadagno.Broadcasting.Data.Sql.Models;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
@@ -8,6 +9,25 @@ public partial class BroadcastingContext : DbContext
 
     public BroadcastingContext(DbContextOptions<BroadcastingContext> options) : base(options)
     {
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
+        {
+            if (sqlEx.Number == 1105)
+            {
+                throw new InvalidOperationException(
+                    "Database capacity exceeded. The database has reached its maximum size limit. " +
+                    "Contact the administrator to increase the database capacity or archive old data.",
+                    ex);
+            }
+            throw;
+        }
     }
 
     public virtual DbSet<Engagement> Engagements { get; set; } = null!;
