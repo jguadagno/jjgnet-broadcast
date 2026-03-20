@@ -66,7 +66,19 @@
 
 <!-- Append learnings below -->
 
-### 2026-03-21 — PR #523 BlueSkyHandle on Engagement and Talk (Issues #167, #166)
+### 2026-03-21 — PR #529 Feature: ConferenceHashtag and ConferenceTwitterHandle on Engagement (Issue #105)
+- **Task:** Add social media metadata fields to Engagements
+- **Implementation:** 
+  - Added `ConferenceHashtag NVARCHAR(255) NULL` and `ConferenceTwitterHandle NVARCHAR(255) NULL` to `dbo.Engagements`
+  - Migration idempotent with IF NOT EXISTS guard
+  - Domain model uses nullable string types (`string?`)
+  - EF HasMaxLength(255) configured per team convention
+- **Status:** PR #529 opened; Neo requested changes for CI blockers:
+  - AutoMapper `EngagementViewModel → Engagement` missing new fields (fails `AssertConfigurationIsValid()`)
+  - `Data.Sql/Models/Engagement.cs` uses non-nullable `string` (should be `string?` per domain)
+- **Downstream:** Once merged, Trinity handles API DTOs, Switch handles Web UI (ViewModel + Razor views)
+- **Pattern:** Every new field on Domain.Engagement must also be added to EngagementViewModel to pass AutoMapper CI test
+- **Decision documented** in `.squad/decisions/inbox/morpheus-105-social-fields.md`
 - **Task:** Added `BlueSkyHandle NVARCHAR(255) NULL` to `dbo.Engagements` and `dbo.Talks`
 - **Files changed:** `table-create.sql`, migration `2026-03-21-add-bluesky-handle.sql`, `Domain.Models.Engagement`, `Domain.Models.Talk`, `Data.Sql.Models.Engagement`, `Data.Sql.Models.Talk`, `BroadcastingContext.cs`
 - **Pattern:** Nullable nullable column is additive/backward-compatible. No AutoMapper changes needed — convention handles it via `ReverseMap()` (Engagement) and named explicit map (Talk).

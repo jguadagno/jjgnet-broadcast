@@ -6,8 +6,28 @@
 |------|------|---------|
 | 2026-03-19 | Sprint 8 #336 — Explicit cookie security options (HttpOnly, Secure, SameSite) in Web/Program.cs | ✅ PR #510 opened, merged to Sprint 8 milestone |
 | 2026-03-20 | Issue #170 — Fine-grained permission scopes on all API endpoints | ✅ PR #526 opened targeting main |
+| 2026-03-21 | Issue #528 — MsalUiRequiredException on token cache eviction (Web → API calls) | ✅ PR #532 opened targeting main |
+| 2026-03-21 | Sprint Summary — Auth token lifecycle handling complete, SQL token cache confirmed | ✅ [AuthorizeForScopes] on all 4 Web controllers calling API |
 
 ## Learnings
+
+### Issue #528 — MsalUiRequiredException / incremental consent
+
+**Scenario covered:**
+Session cookie is valid, but the MSAL SQL token cache has been evicted (app restart or SQL Cache table expiry). `RejectSessionCookieWhenAccountNotInCacheEvents` covers the case where the account object itself is missing from cache (`user_null` error code → rejects cookie). Issue #528 is the remaining gap: account IS in cache (so `ValidatePrincipal` passes), but the specific API scope tokens are gone.
+
+**Root cause path:**
+`ServiceBase.SetRequestHeader` → `ITokenAcquisition.GetAccessTokenForUserAsync(scope)` → MSAL can't silently refresh (no refresh token in cache) → throws `MsalUiRequiredException` → wrapped by Microsoft.Identity.Web as `MicrosoftIdentityWebChallengeUserException` → unhandled = 500.
+
+**Fix chosen: `[AuthorizeForScopes]` at controller class level**
+Applied to all 4 API-calling controllers: `EngagementsController`, `TalksController`, `SchedulesController`, `MessageTemplatesController`. The attribute is an `ExceptionFilterAttribute`. When it catches `MicrosoftIdentityWebChallengeUserException`, it reads `ex.Scopes` (populated by Microsoft.Identity.Web with the exact scope that failed) and issues a `ChallengeResult` with those scopes — redirecting to AAD for re-auth. No `Scopes`/`ScopeKeySection` attribute params needed: the exception carries the required scope.
+
+**Token cache is SQL-backed — confirmed.**
+`AddDistributedSqlServerCache` (SQL `dbo.Cache` table) + `AddDistributedTokenCaches()` in `Program.cs`. No in-memory fallback. This is correct. Noted as observation only — not changed in this PR.
+
+**Issue #83 / #85 context:**
+- #83: `MsalClientException` "cache contains multiple tokens" — different error code, not addressed here.
+- #85: `OpenIdConnectProtocolException` on login with wrong org — AADSTS650052, separate auth config issue, not addressed here.
 
 ### Issue #170 — Fine-grained API scopes
 
