@@ -1,6 +1,3 @@
-using Azure.Monitor.OpenTelemetry.AspNetCore;
-using Azure.Monitor.OpenTelemetry.Exporter;
-
 using JosephGuadagno.Broadcasting.Api.Infrastructure;
 using JosephGuadagno.Broadcasting.Api.Interfaces;
 using JosephGuadagno.Broadcasting.Api.Models;
@@ -121,9 +118,6 @@ app.Run();
 
 void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorageAccount, string logPath, string applicationName)
 {
-
-    builder.Services.AddOpenTelemetry().UseAzureMonitor();
-
     var logger = new LoggerConfiguration()
         .Enrich.FromLogContext()
         .Enrich.WithMachineName()

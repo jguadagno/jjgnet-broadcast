@@ -1,4 +1,5 @@
 using JosephGuadagno.Broadcasting.Api.Dtos;
+using JosephGuadagno.Broadcasting.Api.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -33,19 +34,38 @@ public class SchedulesController: ControllerBase
     /// <summary>
     /// Returns all the scheduled items
     /// </summary>
-    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
+    /// <param name="page">The page number (default: 1)</param>
+    /// <param name="pageSize">The page size (default: 25)</param>
+    /// <returns>A paginated list of scheduled items</returns>
     /// <response code="200">Upon success</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItemResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<ScheduledItemResponse>>> GetScheduledItemsAsync()
+    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetScheduledItemsAsync(int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List);
         
-        var items = await _scheduledItemManager.GetAllAsync();
-        return items.Select(ToResponse).ToList();
+        var allItems = await _scheduledItemManager.GetAllAsync();
+        var totalCount = allItems.Count;
+        var items = allItems
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ToResponse)
+            .ToList();
+        
+        return new PagedResponse<ScheduledItemResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
     /// <summary>
@@ -174,100 +194,178 @@ public class SchedulesController: ControllerBase
     /// <summary>
     /// Gets a list of unsent scheduled items
     /// </summary>
-    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that have not yet been sent.</returns>
+    /// <param name="page">The page number (default: 1)</param>
+    /// <param name="pageSize">The page size (default: 25)</param>
+    /// <returns>A paginated list of scheduled items that have not yet been sent.</returns>
     /// <response code="200">Returned if there are unscheduled items that need to be sent.</response>
     /// <response code="404">If there are not items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("unsent")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItemResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<ScheduledItemResponse>>> GetUnsentScheduledItemsAsync()
+    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetUnsentScheduledItemsAsync(int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled);
         
-        var items = await _scheduledItemManager.GetUnsentScheduledItemsAsync();
-        if (items.Count == 0)
+        var allItems = await _scheduledItemManager.GetUnsentScheduledItemsAsync();
+        if (allItems.Count == 0)
         {
             return NotFound();
         }
 
-        return items.Select(ToResponse).ToList();
+        var totalCount = allItems.Count;
+        var items = allItems
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ToResponse)
+            .ToList();
+        
+        return new PagedResponse<ScheduledItemResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
     /// <summary>
     /// Gets a list of unsent scheduled items that should have been sent already
     /// </summary>
-    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that have not yet been sent.</returns>
+    /// <param name="page">The page number (default: 1)</param>
+    /// <param name="pageSize">The page size (default: 25)</param>
+    /// <returns>A paginated list of scheduled items that have not yet been sent.</returns>
     /// <response code="200">Returned if there are unscheduled items that need to be sent.</response>
     /// <response code="404">If there are not items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("upcoming")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItemResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<ScheduledItemResponse>>> GetScheduledItemsToSendAsync()
+    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetScheduledItemsToSendAsync(int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend);
         
-        var items = await _scheduledItemManager.GetScheduledItemsToSendAsync();
-        if (items.Count == 0)
+        var allItems = await _scheduledItemManager.GetScheduledItemsToSendAsync();
+        if (allItems.Count == 0)
         {
             return NotFound();
         }
 
-        return items.Select(ToResponse).ToList();
+        var totalCount = allItems.Count;
+        var items = allItems
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ToResponse)
+            .ToList();
+        
+        return new PagedResponse<ScheduledItemResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
     
     /// <summary>
     /// Gets a list of unsent scheduled items for a given calendar month
     /// </summary>
-    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that have not yet been sent.</returns>
+    /// <param name="year">The calendar year</param>
+    /// <param name="month">The calendar month</param>
+    /// <param name="page">The page number (default: 1)</param>
+    /// <param name="pageSize">The page size (default: 25)</param>
+    /// <returns>A paginated list of scheduled items that have not yet been sent.</returns>
     /// <response code="200">Returned if there are unscheduled items that need to be sent.</response>
     /// <response code="404">If there are not items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("calendar/{year:int}/{month:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItemResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<ScheduledItemResponse>>> GetUpcomingScheduledItemsForCalendarMonthAsync(int year, int month)
+    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetUpcomingScheduledItemsForCalendarMonthAsync(int year, int month, int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled);
         
-        var items = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month);
-        if (items.Count == 0)
+        var allItems = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month);
+        if (allItems.Count == 0)
         {
             return NotFound();
         }
 
-        return items.Select(ToResponse).ToList();
+        var totalCount = allItems.Count;
+        var items = allItems
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ToResponse)
+            .ToList();
+        
+        return new PagedResponse<ScheduledItemResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
     /// <summary>
     /// Gets a list of orphaned scheduled items (items whose source no longer exists)
     /// </summary>
-    /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that reference source items that no longer exist.</returns>
+    /// <param name="page">The page number (default: 1)</param>
+    /// <param name="pageSize">The page size (default: 25)</param>
+    /// <returns>A paginated list of scheduled items that reference source items that no longer exist.</returns>
     /// <response code="200">Returned if there are orphaned scheduled items.</response>
     /// <response code="404">If there are no orphaned scheduled items</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("orphaned")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItemResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<ScheduledItemResponse>>> GetOrphanedScheduledItemsAsync()
+    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetOrphanedScheduledItemsAsync(int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
 
-        var items = await _scheduledItemManager.GetOrphanedScheduledItemsAsync();
-        if (items.Count == 0)
+        var allItems = await _scheduledItemManager.GetOrphanedScheduledItemsAsync();
+        if (allItems.Count == 0)
         {
             return NotFound();
         }
 
-        return items.Select(ToResponse).ToList();
+        var totalCount = allItems.Count;
+        var items = allItems
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ToResponse)
+            .ToList();
+        
+        return new PagedResponse<ScheduledItemResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
     private static ScheduledItemResponse ToResponse(ScheduledItem s) => new()
