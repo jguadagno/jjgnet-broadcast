@@ -147,19 +147,19 @@ public class SchedulesControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // SaveScheduledItemAsync
+    // CreateScheduledItemAsync
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task SaveScheduledItemAsync_WhenModelStateIsInvalid_ReturnsBadRequest()
+    public async Task CreateScheduledItemAsync_WhenModelStateIsInvalid_ReturnsBadRequest()
     {
         // Arrange
-        var item = new ScheduledItem { Id = 1 };
+        var item = new ScheduledItem { Id = 0 };
         var sut = CreateSut(Domain.Scopes.Schedules.All);
         sut.ModelState.AddModelError("Message", "Message is required");
 
         // Act
-        var result = await sut.SaveScheduledItemAsync(item);
+        var result = await sut.CreateScheduledItemAsync(item);
 
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>();
@@ -167,7 +167,7 @@ public class SchedulesControllerTests
     }
 
     [Fact]
-    public async Task SaveScheduledItemAsync_WhenSaveSucceeds_ReturnsCreatedAtActionWithItem()
+    public async Task CreateScheduledItemAsync_WhenSaveSucceeds_ReturnsCreatedAtActionWithItem()
     {
         // Arrange
         var item = new ScheduledItem
@@ -185,7 +185,7 @@ public class SchedulesControllerTests
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
         // Act
-        var result = await sut.SaveScheduledItemAsync(item);
+        var result = await sut.CreateScheduledItemAsync(item);
 
         // Assert
         var createdResult = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
@@ -197,7 +197,88 @@ public class SchedulesControllerTests
     }
 
     [Fact]
-    public async Task SaveScheduledItemAsync_WhenSaveFails_ReturnsInternalServerError()
+    public async Task CreateScheduledItemAsync_WhenSaveFails_ReturnsInternalServerError()
+    {
+        // Arrange
+        var item = new ScheduledItem
+        {
+            Id = 0,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemPrimaryKey = 10,
+            Message = "Check out item!",
+            SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
+            MessageSent = false
+        };
+        _scheduledItemManagerMock.Setup(m => m.SaveAsync(item)).Returns(Task.FromResult<ScheduledItem?>(null));
+
+        var sut = CreateSut(Domain.Scopes.Schedules.All);
+
+        // Act
+        var result = await sut.CreateScheduledItemAsync(item);
+
+        // Assert
+        result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
+        _scheduledItemManagerMock.Verify(m => m.SaveAsync(item), Times.Once);
+    }
+
+    // -------------------------------------------------------------------------
+    // UpdateScheduledItemAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task UpdateScheduledItemAsync_WhenModelStateIsInvalid_ReturnsBadRequest()
+    {
+        // Arrange
+        var item = BuildScheduledItem(5);
+        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        sut.ModelState.AddModelError("Message", "Message is required");
+
+        // Act
+        var result = await sut.UpdateScheduledItemAsync(5, item);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+        _scheduledItemManagerMock.Verify(m => m.SaveAsync(It.IsAny<ScheduledItem>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateScheduledItemAsync_WhenIdMismatch_ReturnsBadRequest()
+    {
+        // Arrange
+        var item = BuildScheduledItem(5);
+        var sut = CreateSut(Domain.Scopes.Schedules.All);
+
+        // Act
+        var result = await sut.UpdateScheduledItemAsync(99, item);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+        _scheduledItemManagerMock.Verify(m => m.SaveAsync(It.IsAny<ScheduledItem>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateScheduledItemAsync_WhenUpdateSucceeds_ReturnsOkWithItem()
+    {
+        // Arrange
+        var item = BuildScheduledItem(5);
+        var savedItem = BuildScheduledItem(5);
+        savedItem.Message = "Updated message";
+        _scheduledItemManagerMock.Setup(m => m.SaveAsync(item)).ReturnsAsync(savedItem);
+
+        var sut = CreateSut(Domain.Scopes.Schedules.All);
+
+        // Act
+        var result = await sut.UpdateScheduledItemAsync(5, item);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.StatusCode.Should().Be(200);
+        okResult.Value.Should().Be(savedItem);
+        _scheduledItemManagerMock.Verify(m => m.SaveAsync(item), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateScheduledItemAsync_WhenUpdateFails_ReturnsInternalServerError()
     {
         // Arrange
         var item = BuildScheduledItem(5);
@@ -206,7 +287,7 @@ public class SchedulesControllerTests
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
         // Act
-        var result = await sut.SaveScheduledItemAsync(item);
+        var result = await sut.UpdateScheduledItemAsync(5, item);
 
         // Assert
         result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);

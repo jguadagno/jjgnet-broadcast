@@ -145,19 +145,19 @@ public class EngagementsControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // SaveEngagementAsync
+    // CreateEngagementAsync
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task SaveEngagementAsync_WhenModelStateIsInvalid_ReturnsBadRequest()
+    public async Task CreateEngagementAsync_WhenModelStateIsInvalid_ReturnsBadRequest()
     {
         // Arrange
-        var engagement = new Engagement { Id = 1 };
+        var engagement = new Engagement { Id = 0, Name = "New Conference", Url = "https://new-conf.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(2), TimeZoneId = "UTC" };
         var sut = CreateSut(Domain.Scopes.Engagements.All);
         sut.ModelState.AddModelError("Name", "Name is required");
 
         // Act
-        var result = await sut.SaveEngagementAsync(engagement);
+        var result = await sut.CreateEngagementAsync(engagement);
 
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>();
@@ -165,7 +165,7 @@ public class EngagementsControllerTests
     }
 
     [Fact]
-    public async Task SaveEngagementAsync_WhenSaveSucceeds_ReturnsCreatedAtActionWithEngagement()
+    public async Task CreateEngagementAsync_WhenSaveSucceeds_ReturnsCreatedAtActionWithEngagement()
     {
         // Arrange
         var engagement = new Engagement
@@ -191,7 +191,7 @@ public class EngagementsControllerTests
         var sut = CreateSut(Domain.Scopes.Engagements.All);
 
         // Act
-        var result = await sut.SaveEngagementAsync(engagement);
+        var result = await sut.CreateEngagementAsync(engagement);
 
         // Assert
         var createdResult = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
@@ -203,7 +203,103 @@ public class EngagementsControllerTests
     }
 
     [Fact]
-    public async Task SaveEngagementAsync_WhenSaveFails_ReturnsInternalServerError()
+    public async Task CreateEngagementAsync_WhenSaveFails_ReturnsInternalServerError()
+    {
+        // Arrange
+        var engagement = new Engagement
+        {
+            Id = 0,
+            Name = "Test",
+            Url = "https://test.example.com",
+            StartDateTime = DateTimeOffset.UtcNow,
+            EndDateTime = DateTimeOffset.UtcNow.AddDays(1),
+            TimeZoneId = "UTC"
+        };
+        _engagementManagerMock.Setup(m => m.SaveAsync(engagement)).Returns(Task.FromResult<Engagement?>(null));
+
+        var sut = CreateSut(Domain.Scopes.Engagements.All);
+
+        // Act
+        var result = await sut.CreateEngagementAsync(engagement);
+
+        // Assert
+        result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
+        _engagementManagerMock.Verify(m => m.SaveAsync(engagement), Times.Once);
+    }
+
+    // -------------------------------------------------------------------------
+    // UpdateEngagementAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task UpdateEngagementAsync_WhenModelStateIsInvalid_ReturnsBadRequest()
+    {
+        // Arrange
+        var engagement = new Engagement { Id = 1, Name = "Conference A", Url = "https://conf-a.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(2), TimeZoneId = "UTC" };
+        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        sut.ModelState.AddModelError("Name", "Name is required");
+
+        // Act
+        var result = await sut.UpdateEngagementAsync(1, engagement);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+        _engagementManagerMock.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateEngagementAsync_WhenIdMismatch_ReturnsBadRequest()
+    {
+        // Arrange
+        var engagement = new Engagement { Id = 5, Name = "Conference A", Url = "https://conf-a.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(2), TimeZoneId = "UTC" };
+        var sut = CreateSut(Domain.Scopes.Engagements.All);
+
+        // Act
+        var result = await sut.UpdateEngagementAsync(99, engagement);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+        _engagementManagerMock.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateEngagementAsync_WhenUpdateSucceeds_ReturnsOkWithEngagement()
+    {
+        // Arrange
+        var engagement = new Engagement
+        {
+            Id = 1,
+            Name = "Updated Conference",
+            Url = "https://updated-conf.example.com",
+            StartDateTime = DateTimeOffset.UtcNow,
+            EndDateTime = DateTimeOffset.UtcNow.AddDays(2),
+            TimeZoneId = "UTC"
+        };
+        var savedEngagement = new Engagement
+        {
+            Id = 1,
+            Name = engagement.Name,
+            Url = engagement.Url,
+            StartDateTime = engagement.StartDateTime,
+            EndDateTime = engagement.EndDateTime,
+            TimeZoneId = engagement.TimeZoneId
+        };
+        _engagementManagerMock.Setup(m => m.SaveAsync(engagement)).ReturnsAsync(savedEngagement);
+
+        var sut = CreateSut(Domain.Scopes.Engagements.All);
+
+        // Act
+        var result = await sut.UpdateEngagementAsync(1, engagement);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.StatusCode.Should().Be(200);
+        okResult.Value.Should().Be(savedEngagement);
+        _engagementManagerMock.Verify(m => m.SaveAsync(engagement), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateEngagementAsync_WhenUpdateFails_ReturnsInternalServerError()
     {
         // Arrange
         var engagement = new Engagement
@@ -220,7 +316,7 @@ public class EngagementsControllerTests
         var sut = CreateSut(Domain.Scopes.Engagements.All);
 
         // Act
-        var result = await sut.SaveEngagementAsync(engagement);
+        var result = await sut.UpdateEngagementAsync(1, engagement);
 
         // Assert
         result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
@@ -308,19 +404,19 @@ public class EngagementsControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // SaveTalkAsync
+    // CreateTalkAsync
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task SaveTalkAsync_WhenModelStateIsInvalid_ReturnsBadRequest()
+    public async Task CreateTalkAsync_WhenModelStateIsInvalid_ReturnsBadRequest()
     {
         // Arrange
-        var talk = new Talk { Id = 1, EngagementId = 10 };
+        var talk = new Talk { Id = 0, EngagementId = 10 };
         var sut = CreateSut(Domain.Scopes.Talks.All);
         sut.ModelState.AddModelError("Name", "Name is required");
 
         // Act
-        var result = await sut.SaveTalkAsync(talk);
+        var result = await sut.CreateTalkAsync(10, talk);
 
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>();
@@ -328,7 +424,7 @@ public class EngagementsControllerTests
     }
 
     [Fact]
-    public async Task SaveTalkAsync_WhenSaveSucceeds_ReturnsCreatedAtActionWithTalk()
+    public async Task CreateTalkAsync_WhenSaveSucceeds_ReturnsCreatedAtActionWithTalk()
     {
         // Arrange
         var talk = new Talk
@@ -356,24 +452,24 @@ public class EngagementsControllerTests
         var sut = CreateSut(Domain.Scopes.Talks.All);
 
         // Act
-        var result = await sut.SaveTalkAsync(talk);
+        var result = await sut.CreateTalkAsync(10, talk);
 
         // Assert
         var createdResult = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
         createdResult.StatusCode.Should().Be(201);
         createdResult.ActionName.Should().Be(nameof(EngagementsController.GetTalkAsync));
-        createdResult.RouteValues.Should().ContainKey("talkId").WhoseValue.Should().Be(talk.Id);
+        createdResult.RouteValues.Should().ContainKey("talkId").WhoseValue.Should().Be(savedTalk.Id);
         createdResult.Value.Should().Be(savedTalk);
         _engagementManagerMock.Verify(m => m.SaveTalkAsync(talk), Times.Once);
     }
 
     [Fact]
-    public async Task SaveTalkAsync_WhenSaveFails_ReturnsInternalServerError()
+    public async Task CreateTalkAsync_WhenSaveFails_ReturnsInternalServerError()
     {
         // Arrange
         var talk = new Talk
         {
-            Id = 1,
+            Id = 0,
             EngagementId = 10,
             Name = "Failing Talk",
             UrlForConferenceTalk = "https://conf.example.com/talk",
@@ -386,7 +482,106 @@ public class EngagementsControllerTests
         var sut = CreateSut(Domain.Scopes.Talks.All);
 
         // Act
-        var result = await sut.SaveTalkAsync(talk);
+        var result = await sut.CreateTalkAsync(10, talk);
+
+        // Assert
+        result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
+        _engagementManagerMock.Verify(m => m.SaveTalkAsync(talk), Times.Once);
+    }
+
+    // -------------------------------------------------------------------------
+    // UpdateTalkAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task UpdateTalkAsync_WhenModelStateIsInvalid_ReturnsBadRequest()
+    {
+        // Arrange
+        var talk = new Talk { Id = 5, EngagementId = 10 };
+        var sut = CreateSut(Domain.Scopes.Talks.All);
+        sut.ModelState.AddModelError("Name", "Name is required");
+
+        // Act
+        var result = await sut.UpdateTalkAsync(10, 5, talk);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+        _engagementManagerMock.Verify(m => m.SaveTalkAsync(It.IsAny<Talk>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateTalkAsync_WhenIdMismatch_ReturnsBadRequest()
+    {
+        // Arrange
+        var talk = new Talk { Id = 5, EngagementId = 10, Name = "Talk A", UrlForConferenceTalk = "https://conf.example.com/talk", UrlForTalk = "https://example.com/talk", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddHours(1) };
+        var sut = CreateSut(Domain.Scopes.Talks.All);
+
+        // Act
+        var result = await sut.UpdateTalkAsync(10, 99, talk);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+        _engagementManagerMock.Verify(m => m.SaveTalkAsync(It.IsAny<Talk>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateTalkAsync_WhenUpdateSucceeds_ReturnsOkWithTalk()
+    {
+        // Arrange
+        var talk = new Talk
+        {
+            Id = 5,
+            EngagementId = 10,
+            Name = "Updated Talk",
+            UrlForConferenceTalk = "https://conf.example.com/talk",
+            UrlForTalk = "https://example.com/talk",
+            StartDateTime = DateTimeOffset.UtcNow,
+            EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
+        };
+        var savedTalk = new Talk
+        {
+            Id = 5,
+            EngagementId = talk.EngagementId,
+            Name = talk.Name,
+            UrlForConferenceTalk = talk.UrlForConferenceTalk,
+            UrlForTalk = talk.UrlForTalk,
+            StartDateTime = talk.StartDateTime,
+            EndDateTime = talk.EndDateTime
+        };
+        _engagementManagerMock.Setup(m => m.SaveTalkAsync(talk)).ReturnsAsync(savedTalk);
+
+        var sut = CreateSut(Domain.Scopes.Talks.All);
+
+        // Act
+        var result = await sut.UpdateTalkAsync(10, 5, talk);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.StatusCode.Should().Be(200);
+        okResult.Value.Should().Be(savedTalk);
+        _engagementManagerMock.Verify(m => m.SaveTalkAsync(talk), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateTalkAsync_WhenUpdateFails_ReturnsInternalServerError()
+    {
+        // Arrange
+        var talk = new Talk
+        {
+            Id = 5,
+            EngagementId = 10,
+            Name = "Failing Talk",
+            UrlForConferenceTalk = "https://conf.example.com/talk",
+            UrlForTalk = "https://example.com/talk",
+            StartDateTime = DateTimeOffset.UtcNow,
+            EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
+        };
+        _engagementManagerMock.Setup(m => m.SaveTalkAsync(talk)).Returns(Task.FromResult<Talk?>(null));
+
+        var sut = CreateSut(Domain.Scopes.Talks.All);
+
+        // Act
+        var result = await sut.UpdateTalkAsync(10, 5, talk);
 
         // Assert
         result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
