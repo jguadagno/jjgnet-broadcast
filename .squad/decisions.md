@@ -4466,3 +4466,171 @@ Each platform's `TryRenderTemplateAsync` provides:
 
 
 
+
+---
+
+# DECISIONS CONSOLIDATED FROM INBOX (2026-03-20T20-11-20Z)
+
+## CRITICAL: Squad Routing Policy (squad:joe label)
+
+**Date:** 2026-03-20T20:07:44Z  
+**From:** Copilot (Joseph Guadagno directive)
+
+### Decision
+
+The squad:joe label on GitHub issues designates work that **ONLY Joseph (the human)** can or should do. The squad **MUST NOT** initiate, pick up, or start work on any issue labeled squad:joe.
+
+**Ralph's work-check loop must skip these issues entirely.**
+
+Joseph may still request design help, architecture input, or code review from the team on these issues, but **only when he explicitly asks**.
+
+### Why
+
+User-requested policy — captured for team memory and Ralph routing rules to ensure no autonomous work is started on human-reserved work.
+
+
+---
+
+# Fine-Grained API Permission Scopes (Issue #170)
+
+**Date:** 2026-03-20  
+**Author:** Ghost (Security & Identity Specialist)  
+**Applies to:** API controllers, Web services, Domain/Scopes.cs  
+**PR:** #526
+
+Scope naming: GET collection=List, GET by ID=View, POST/PUT=Modify, DELETE=Delete. Controllers accept both specific scopes and *.All for backward compatibility. Web services request fine-grained scopes. Swagger shows all fine-grained scopes. Added List/View/Modify scopes for MessageTemplates. Fixed EngagementService.DeleteEngagementTalkAsync bug (was requesting Engagements.All instead of Talks.Delete).
+
+---
+
+# Cookie Security Hardening (Issue #336)
+
+**Date:** 2026-03-19  
+**Sprint:** Sprint 8  
+**PR:** #510
+
+Auth cookie: HttpOnly=true, SecurePolicy=Always, SameSite=Lax (Lax required for OIDC).  
+Session cookie: HttpOnly=true, SecurePolicy=Always, SameSite=Lax, IsEssential=true.  
+Antiforgery cookie: HttpOnly=true, SecurePolicy=Always, SameSite=Strict.
+
+Pattern: Cookie security flags must be explicitly set on all surfaces (auth, session, antiforgery).
+
+---
+
+# Application Insights Wiring Centralization (S8-328)
+
+**From:** Link, **Sprint:** Sprint 8, **PR:** #511
+
+Centralized UseAzureMonitor() in ServiceDefaults, guarded by APPLICATIONINSIGHTS_CONNECTION_STRING env var. Removed unconditional calls from Api, Web. Removed UseAzureMonitorExporter() from Functions (ServiceDefaults handles exporter). Pattern: no-op locally, auto-activates in Azure-deployed services.
+
+---
+
+# Pagination Parameter Validation Pattern
+
+**By:** Morpheus  
+**Date:** 2026-03-20
+
+Paginated endpoints clamp page to min 1, pageSize to range 1-100. Applied as inline guards at top of each list action method. Prevents division-by-zero (pageSize=0) and negative Skip (page=0).
+
+---
+
+# SQL Server Size Cap Removal & Error Surfacing (Issue #324)
+
+**Date:** 2026-03-21
+
+Database-create.sql: Data file MAXSIZE=50 → UNLIMITED, Log file MAXSIZE=25MB → UNLIMITED.  
+Added SaveChangesAsync override in BroadcastingContext to catch DbUpdateException/SqlException error 1105 (insufficient space) and throw clear InvalidOperationException.  
+Created migration 2026-03-21-increase-database-size-limits.sql using ALTER DATABASE MODIFY FILE (non-destructive, zero-downtime).
+
+Two-layer defense: Preventive (remove arbitrary limits) + Defensive (surface SQL errors).
+
+---
+
+# BlueSkyHandle Schema Addition
+
+**Date:** 2026-03-21  
+**Author:** Morpheus  
+**Issues:** #167, #166  
+**PR:** #523
+
+Added NVARCHAR(255) NULL to Engagements and Talks tables.  
+Updated table-create.sql and created migration 2026-03-21-add-bluesky-handle.sql.  
+Added to Domain models and EF entities. Configured HasMaxLength(255) in BroadcastingContext.
+
+---
+
+# API Pagination Pattern (Issue #316)
+
+**Author:** Trinity  
+**Date:** 2026-03-20
+
+All list endpoints use query parameter-based pagination with PagedResponse<T> wrapper.  
+Defaults: page=1, pageSize=25.  
+PagedResponse properties: Items, Page, PageSize, TotalCount, TotalPages (derived).  
+Endpoints updated: 9 across Engagements, Schedules, MessageTemplates controllers.  
+Special cases (404 endpoints) check count before pagination to maintain existing behavior.
+
+---
+
+# Scriban Template Seeding Strategy (Sprint 7)
+
+**Date:** 2026-03-20  
+**Decider:** Trinity  
+**Epic:** #474, **Issues:** #475-478
+
+Created scripts/database/migrations/2026-03-20-seed-message-templates.sql with 20 templates (5 per platform).  
+Database-backed approach (SQL migration) chosen over embedded files or Azure Config for flexibility and Web UI manageability.  
+Templates expose: title, url, description, tags, image_url.  
+Platform limits (280 Twitter, 300 Bluesky, 2000 Facebook, unlimited LinkedIn) enforced by Function code fallback truncation.
+
+Positive: Customizable without redeployment, hard-coded fallback remains, Web UI manages templates.  
+Negative: Database migration required, not co-located with code (but migrations are version-controlled), no compile-time validation.
+
+---
+
+# HTTP Security Headers Middleware (S6-6, Issue #303)
+
+**Date:** 2026-03-19  
+**Author:** Oracle  
+**Status:** Pending Ghost review for CSP allowlist
+
+Used inline app.Use middleware (zero dependencies, small header set).  
+
+API headers: X-Content-Type-Options: nosniff, X-Frame-Options: DENY, X-XSS-Protection: 0, Referrer-Policy: strict-origin-when-cross-origin, Content-Security-Policy: default-src 'none'; frame-ancestors 'none', Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=().  
+
+Web headers: Same except X-Frame-Options: SAMEORIGIN, CSP more permissive with default-src 'self'; script-src 'self' cdn.jsdelivr.net; style-src 'self' cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' cdn.jsdelivr.net data:; connect-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'.
+
+Inline script/style externalization: Views/MessageTemplates/Index.cshtml → wwwroot/js/message-templates-index.js, Views/Schedules/Calendar.cshtml → wwwroot/js/schedules-calendar.js, calendar style moved to wwwroot/css/site.css.
+
+Open questions for Ghost: (1) img-src https: scope, (2) cdn.jsdelivr.net scope validation, (3) future nonce-based CSP.
+
+---
+
+# Engagement View Patterns for Optional Social Fields (Issue #105)
+
+**Date:** 2026-03-16  
+**Issue:** #105  
+**PR:** #534  
+**Author:** Switch
+
+Form field pattern (Create/Edit): Standard Bootstrap mb-3 form-group with label, input, validation span.  
+Details view pattern: Conditional rendering to hide empty fields.  
+Razor escaping: Use @@ for literal @ in HTML attributes (e.g., placeholder="@@MyConference" renders as @MyConference).  
+Field placement: After Comments, before submit button.
+
+---
+
+# ViewModel and DTO Completeness Pattern
+
+**Date:** 2026-03-21  
+**Author:** Morpheus  
+**Context:** PR #529 review fix
+
+When adding domain model properties, ALL layers must update in SAME PR:  
+1. EF entity (match domain nullability)  
+2. Web ViewModel (for MVC views and AutoMapper)  
+3. API DTOs (Request and Response)
+
+Rationale: AutoMapper validation catches unmapped properties. Missing DTOs break contracts and cause runtime errors. Nullable alignment prevents mapping inconsistencies.
+
+Pattern observed in PR #523 (BlueSkyHandle) and PR #529 (Conference fields).
+
