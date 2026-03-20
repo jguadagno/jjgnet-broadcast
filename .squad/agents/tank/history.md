@@ -49,4 +49,30 @@
 
 **Session note (2026-03-20):** Tank discovered that JsonFeedReader implementation didn't exist when starting issue #302. Used pragmatic TDD approach to create both minimal implementation and comprehensive test suite, allowing Sprint 7 work to unblock. This approach (TDD when implementation missing) documented in decision-inbox/tank-jsonfeedreader-tests.md and merged to decisions.md. Details in orchestration-log/2026-03-20T00-51-00-tank.md.
 
+### 2026-03-20: Api.Tests Verification (Issue #515)
+
+**Context:** Issue #515 requested fix for Api.Tests controller tests broken by Sprint 8 DTO and pagination changes. Branch squad/515-fix-api-tests was created to address:
+- Tests missing page/pageSize parameters on list endpoints
+- Tests expecting raw List<T> instead of PagedResponse<T>
+- Potential issues with TalkRequest EngagementId construction
+
+**Investigation:** Verified Api.Tests build and test status:
+- **Build:** Clean build (warnings only, no errors)
+- **Tests:** All 42 tests pass
+- **Code Review:** Confirmed all tests correctly use:
+  - PagedResponse<T> for list endpoint returns (Engagements, Schedules)
+  - TalkRequest properly constructed WITHOUT EngagementId
+  - Correct pagination assertions with `.Items.Should()` pattern
+
+**Finding:** Api.Tests are already correctly implemented. Tests reflect current API design:
+- Controllers use (int page = 1, int pageSize = 25) parameters
+- Endpoints return PagedResponse<TResponse> with pagination metadata
+- Response DTOs use helper methods (ToResponse) for model mapping
+- No EngagementId in TalkRequest (route provides engagementId context)
+
+**Status:** Issue #515 acceptance criteria fully met — tests build cleanly and all 42 pass.
+
+**Branch:** squad/515-fix-api-tests  
+**Result:** Ready for PR submission (no code changes required — tests already correct)
+
 <!-- Append learnings below -->
