@@ -36,7 +36,7 @@ public class SendPostTests
         ImageUrl = imageUrl
     };
 
-    // ── Successful post with text only ───────────────────────────────────────
+    // ΓöÇΓöÇ Successful post with text only ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WithTextOnly_CallsBlueskyManagerPost()
@@ -60,7 +60,7 @@ public class SendPostTests
             Times.Once);
     }
 
-    // ── Post with URL and shortened URL (with embed) ─────────────────────────
+    // ΓöÇΓöÇ Post with URL and shortened URL (with embed) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WithUrlAndShortenedUrl_CallsGetEmbeddedExternalRecord()
@@ -94,7 +94,7 @@ public class SendPostTests
         _blueskyManager.Verify(m => m.Post(It.IsAny<PostBuilder>()), Times.Once);
     }
 
-    // ── Post with URL, shortened URL, and image (with embed) ─────────────────
+    // ΓöÇΓöÇ Post with URL, shortened URL, and image (with embed) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WithUrlShortenedUrlAndImage_CallsGetEmbeddedExternalRecordWithThumbnail()
@@ -132,7 +132,7 @@ public class SendPostTests
         _blueskyManager.Verify(m => m.Post(It.IsAny<PostBuilder>()), Times.Once);
     }
 
-    // ── Post with URL and image but no shortened URL ─────────────────────────
+    // ΓöÇΓöÇ Post with URL and image but no shortened URL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WithUrlAndImageButNoShortenedUrl_CallsGetEmbeddedExternalRecordWithThumbnail()
@@ -167,7 +167,7 @@ public class SendPostTests
         _blueskyManager.Verify(m => m.Post(It.IsAny<PostBuilder>()), Times.Once);
     }
 
-    // ── Post with hashtags ────────────────────────────────────────────────────
+    // ΓöÇΓöÇ Post with hashtags ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WithHashtags_IncludesHashtagsInPost()
@@ -191,12 +191,12 @@ public class SendPostTests
         _blueskyManager.Verify(m => m.Post(It.IsAny<PostBuilder>()), Times.Once);
     }
 
-    // ── Manager returns null (post failed) ───────────────────────────────────
+    // ΓöÇΓöÇ Manager returns null (post failed) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WhenManagerReturnsNull_DoesNotThrow()
     {
-        // Arrange — manager returns null (post failed but no exception)
+        // Arrange ΓÇö manager returns null (post failed but no exception)
         var postMessage = BuildBlueskyPostMessage();
         _blueskyManager
             .Setup(m => m.Post(It.IsAny<PostBuilder>()))
@@ -204,12 +204,12 @@ public class SendPostTests
 
         var sut = BuildSut();
 
-        // Act & Assert — should not throw (error is logged)
+        // Act & Assert ΓÇö should not throw (error is logged)
         var exception = await Record.ExceptionAsync(() => sut.Run(postMessage));
         Assert.Null(exception);
     }
 
-    // ── BlueskyPostException handling ─────────────────────────────────────────
+    // ΓöÇΓöÇ BlueskyPostException handling ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WhenBlueskyPostExceptionThrown_RethrowsException()
@@ -223,11 +223,11 @@ public class SendPostTests
 
         var sut = BuildSut();
 
-        // Act & Assert — should rethrow BlueskyPostException
+        // Act & Assert ΓÇö should rethrow BlueskyPostException
         await Assert.ThrowsAsync<BlueskyPostException>(() => sut.Run(postMessage));
     }
 
-    // ── Generic exception handling ────────────────────────────────────────────
+    // ΓöÇΓöÇ Generic exception handling ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WhenGenericExceptionThrown_RethrowsException()
@@ -240,11 +240,11 @@ public class SendPostTests
 
         var sut = BuildSut();
 
-        // Act & Assert — should rethrow generic Exception
+        // Act & Assert ΓÇö should rethrow generic Exception
         await Assert.ThrowsAsync<Exception>(() => sut.Run(postMessage));
     }
 
-    // ── GetEmbeddedExternalRecord returns null ────────────────────────────────
+    // ΓöÇΓöÇ GetEmbeddedExternalRecord returns null ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
     [Fact]
     public async Task Run_WhenGetEmbeddedExternalRecordReturnsNull_StillPostsWithoutEmbed()
@@ -268,7 +268,7 @@ public class SendPostTests
         // Act
         await sut.Run(postMessage);
 
-        // Assert — post should still succeed even if embed fails
+        // Assert ΓÇö post should still succeed even if embed fails
         _blueskyManager.Verify(m => m.Post(It.IsAny<PostBuilder>()), Times.Once);
     }
 }
