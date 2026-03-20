@@ -221,3 +221,31 @@ Previously merged: #520 (#333), #522 (#332), #523 (#167/#166), #524 (#191), #525
 - Assert.ThrowsAsync<TException> for exception presence verification
 
 **Sprint 9 milestone progress:** Issues #300 and #301 now complete (collector & publisher tests). Sprint 9 test coverage expansion continues.
+
+### 2026-03-20: PR #538 Review — Duplicate PR Closed
+
+**Review verdict:** CLOSED AS DUPLICATE  
+**PR:** #538 squad/321-bluesky-session-cache  
+**Issue:** #330 (already closed by PR #539)  
+**Status:** Closed without merge - duplicate work
+
+**Findings:**
+1. ❌ **Duplicate PR**: PR #538 implements identical changes to already-merged PR #539 (both close #330)
+2. ❌ **Branch naming mismatch**: Branch named `squad/321-bluesky-session-cache` but contains EngagementManager tests for issue #330, not Bluesky session cache work for #321
+3. ✅ **Code quality was good**: Before discovering duplication, reviewed the 223 additions to EngagementManagerTests.cs:
+   - All 10 new tests follow Method_Scenario_ExpectedResult naming convention
+   - Comprehensive timezone conversion coverage (EST, PST, PDT, CET, UTC)
+   - Proper deduplication logic tests (SaveAsync with Id=0, GetByNameAndUrlAndYearAsync)
+   - FluentAssertions used correctly throughout
+   - Moq usage proper with It.IsAny<> patterns
+4. ⚠️ **CI failure unrelated**: Build failed on SendPostTests.cs (AtCid type missing) - this is from PR #542/#543 merge into main, not from PR #538's changes
+
+**Action taken:**
+- Closed PR #538 with comment explaining it's a duplicate of PR #539
+- Issue #330 remains closed (already completed by PR #539)
+- Deleted local branch squad/321-bluesky-session-cache
+
+**Pattern reinforced:**
+- Always check if issue is already closed before reviewing PR
+- Branch naming should match the issue number/scope to avoid confusion
+- Duplicate PRs for the same issue can occur if multiple squad members pick up the same work simultaneously
