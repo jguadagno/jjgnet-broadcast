@@ -7179,3 +7179,157 @@ var mock = Mock.Of<SealedType>();   // Throws NotSupportedException
 **Commits:**
 - 450aa70 — UTF-8 encoding fix (partial, sealed type issue remained)
 - 9aeee7a — Sealed type mocking fix (full resolution)
+
+
+--- From: neo-329-closure.md ---
+# Neo Decision: Issue #329 Closure
+
+**Date:** 2026-03-20  
+**Issue:** #329 - feat(ci): add staging deployment slot for zero-downtime deployments  
+**PR:** #483 - feat(infra,ci): add staging deployment slots and production approval gate  
+**Status:** ✅ CLOSED (Implemented by PR #483)
+
+## Analysis
+
+### Requirement (Issue #329)
+- Add staging deployment slots for all three CI workflows (API, Web, Functions)
+- Implement slot-swap mechanism for zero-downtime deployments
+- Enable instant rollback capability via Azure slot swap
+
+### Implementation (PR #483)
+PR #483 fully addresses the requirement:
+
+1. **Staging Slots Created**: All three App Services (api-jjgnet-broadcast, web-jjgnet-broadcast, jjgnet-broadcast) now have staging slots
+2. **Deploy-to-Staging Job**: All three CI workflows updated with `deploy-to-staging` job that publishes to `slot-name: staging`
+3. **Slot Swap**: Added `swap-to-production` job that uses `az webapp/functionapp deployment slot swap` with GitHub `environment: production` approval gate
+4. **Zero-Downtime**: Atomic swap mechanism ensures no downtime; staging slot is validated before swap
+5. **Rollback**: Slot swap is atomic and reversible via CLI
+
+## Decision
+**Close #329 as implemented.**
+
+PR #483 provides a complete solution with proper approval gates and infrastructure provisioning. No additional work needed.
+
+--- From: tank-functions-test-fix-v2.md ---
+# Decision: Sealed Type Mocking Pattern for idunno.AtProto Library
+
+**Date:** 2026-03-21  
+**Agent:** Tank (Tester)  
+**Status:** ✅ Resolved  
+**Related:** Issue #301, Commit 450aa70 (partial fix), Commit 9aeee7a (full fix)
+
+## Context
+
+The Azure Functions test project (JosephGuadagno.Broadcasting.Functions.Tests) was failing in CI with the error:
+```
+System.NotSupportedException : Type to mock (CreateRecordResult) must be an interface, 
+a delegate, or a non-sealed, non-static class.
+```
+
+This occurred even after commit 450aa70 attempted to fix UTF-8 encoding and mocking issues by switching from constructor-based mocking to `Mock.Of<T>()` pattern.
+
+## Problem
+
+The `idunno.AtProto` and `idunno.Bluesky` libraries contain sealed types that cannot be mocked:
+- `CreateRecordResult` (from `idunno.AtProto.Repo`)
+- `EmbeddedExternal` (from `idunno.Bluesky.Embed`)
+
+**Why `Mock.Of<T>()` doesn't work:**
+- `Mock.Of<T>()` is a Moq convenience method that creates a mock instance
+- It still requires the type to be mockable (interface, delegate, or non-sealed class)
+- Sealed types from 3rd-party libraries cannot be mocked by Moq
+- Moq validates type mockability before attempting to create the mock
+
+**Test scenario:**
+```csharp
+// ❌ This throws NotSupportedException
+var mockResponse = Mock.Of<CreateRecordResult>();
+_blueskyManager
+    .Setup(m => m.Post(It.IsAny<PostBuilder>()))
+    .ReturnsAsync(mockResponse);
+```
+
+## Solution
+
+**Use typed null instead of mocking sealed types:**
+
+```csharp
+// ✅ Correct approach
+_blueskyManager
+    .Setup(m => m.Post(It.IsAny<PostBuilder>()))
+    .ReturnsAsync((CreateRecordResult?)null);
+
+_blueskyManager
+    .Setup(m => m.GetEmbeddedExternalRecord(It.IsAny<string>()))
+    .ReturnsAsync((EmbeddedExternal?)null);
+```
+
+**Why this works:**
+1. The interface methods return nullable types: `Task<CreateRecordResult?>` and `Task<EmbeddedExternal?>`
+2. Tests are verifying that the method was called, NOT inspecting the return value
+3. The actual function code checks for null and handles it gracefully
+4. Typed null `(TypeName?)null` avoids ambiguous method resolution (vs. `null!`)
+
+## Files Fixed
+
+**Bluesky/SendPostTests.cs:**
+- 6 occurrences of `Mock.Of<CreateRecordResult>()` → `(CreateRecordResult?)null`
+- 3 occurrences of `Mock.Of<EmbeddedExternal>()` → `(EmbeddedExternal?)null`
+
+## Verification Before Commit
+
+**Build:**
+```bash
+cd src
+dotnet build JosephGuadagno.Broadcasting.Functions.Tests
+# Result: 0 errors, 55 warnings (expected)
+```
+
+**Tests:**
+```bash
+cd src
+dotnet test JosephGuadagno.Broadcasting.Functions.Tests --no-build --verbosity normal
+# Result: 153/153 tests passed
+```
+
+**CI/CD:**
+- Build-and-test job: ✅ Passed
+- Deploy-to-staging job: ✅ Passed
+- Azure Functions workflow no longer failing
+
+## Pattern Established
+
+**General rule for sealed library types in tests:**
+
+```csharp
+// When mocking methods that return sealed types from 3rd-party libraries:
+
+// ❌ NEVER do this
+var mock = new SealedType(...);           // May not have accessible constructors
+var mock = Mock.Of<SealedType>();         // Throws NotSupportedException
+
+// ✅ ALWAYS do this
+.ReturnsAsync((SealedType?)null);         // Typed null for nullable return types
+
+// OR if you need a real instance:
+var real = SealedTypeFactory.Create(...); // Use library's factory methods if available
+```
+
+## Lessons Learned
+
+1. **`Mock.Of<T>()` is NOT a bypass for sealed types** — it still validates mockability
+2. **Always check library type definitions** before attempting to mock
+3. **Typed null is preferred over `null!`** — avoids ambiguous overload resolution
+4. **Run tests locally before committing** — new hard rule established
+5. **Verify CI build status** after pushing to catch deployment issues early
+
+## References
+
+- Moq documentation: https://github.com/moq/moq4/wiki/Quickstart
+- idunno.AtProto library: https://github.com/blowdart/idunno.Bluesky
+- Commit 450aa70: UTF-8 fix (partial)
+- Commit 9aeee7a: Sealed type mocking fix (full resolution)
+
+## Tags
+`#testing` `#moq` `#sealed-types` `#azure-functions` `#bluesky` `#idunno-atproto`
+

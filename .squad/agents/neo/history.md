@@ -51,7 +51,25 @@
 
 ## Learnings
 
-<!-- Append learnings below -->
+### 2026-03-20: Issue Closure Verification Pattern — Check PR for Implementation Completeness
+
+**Task:** Evaluate if issue #329 (feat: staging deployment slots) was already implemented by PR #483.
+
+**Process:**
+1. Fetch issue details (title, body, labels, creation date)
+2. Fetch PR details + full diff to verify coverage
+3. Cross-reference: does PR implementation **fully address** all stated requirements in the issue?
+4. If yes: close the issue with a comment explaining which PR delivered the work
+
+**Result:** ✅ Issue #329 closed as implemented by PR #483
+
+**Reusable Pattern:**
+- **Before closing an issue**, verify the PR actually implemented it (don't assume from PR title alone)
+- Issues often reference future work in sprint context; PRs from different sprints might have already solved them
+- Use `gh issue close 329 --comment "..."` with PR reference to maintain audit trail
+- Document decision in `.squad/decisions/inbox/<name>.md` for future reference
+
+**Key Learning:** Always check issue status before reviewing related PRs to catch duplicates early and avoid redundant work across squads.
 
 ### 2025-03-21: Full Backlog Triage — 32 Issues Assigned Across 6 Squads
 
