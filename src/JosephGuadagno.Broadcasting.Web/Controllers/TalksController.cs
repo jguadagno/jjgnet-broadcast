@@ -2,13 +2,14 @@ using AutoMapper;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.Identity.Web;
 
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
 
 /// <summary>
 /// The controller for the talks.
 /// </summary>
+[AuthorizeForScopes]
 [Route("engagements/{engagementId:int}/[controller]/[action]")]
 public class TalksController : Controller
 {

@@ -4,12 +4,14 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Identity.Web;
 
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
 
 /// <summary>
 /// This is the controller for managing the engagements.
 /// </summary>
+[AuthorizeForScopes]
 public class EngagementsController : Controller
 {
     private readonly IEngagementService _engagementService;

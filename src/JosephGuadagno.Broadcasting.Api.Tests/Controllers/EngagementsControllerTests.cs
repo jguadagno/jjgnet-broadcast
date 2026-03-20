@@ -594,6 +594,32 @@ public class EngagementsControllerTests
         _engagementManagerMock.Verify(m => m.GetTalkAsync(99), Times.Once);
     }
 
+    [Fact]
+    public async Task GetTalkAsync_WithViewScope_ReturnsTalk()
+    {
+        // Arrange - verifies Talks.View (fine-grained) is accepted, not just Talks.All
+        var talk = new Talk
+        {
+            Id = 5,
+            EngagementId = 10,
+            Name = "Talk 5",
+            UrlForConferenceTalk = "https://conf.example.com/talk5",
+            UrlForTalk = "https://example.com/talk5",
+            StartDateTime = DateTimeOffset.UtcNow,
+            EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
+        };
+        _engagementManagerMock.Setup(m => m.GetTalkAsync(5)).ReturnsAsync(talk);
+
+        var sut = CreateSut(Domain.Scopes.Talks.View);
+
+        // Act
+        var result = await sut.GetTalkAsync(10, 5);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.Value.Should().BeEquivalentTo(talk, opts => opts.ExcludingMissingMembers());
+    }
+
     // -------------------------------------------------------------------------
     // DeleteTalkAsync
     // -------------------------------------------------------------------------
