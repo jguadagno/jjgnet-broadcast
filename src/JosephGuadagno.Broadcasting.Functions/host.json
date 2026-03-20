@@ -16,5 +16,20 @@
       "JosephGuadagno": "Warning",
       "Azure.Core": "Error"
     }
+  },
+  "retry": {
+    "strategy": "exponentialBackoff",
+    "maxRetryCount": 3,
+    "minimumInterval": "00:00:05",
+    "maximumInterval": "00:00:30"
+  },
+  "extensions": {
+    "queues": {
+      "maxPollingInterval": "00:00:02",
+      "visibilityTimeout": "00:00:30",
+      "batchSize": 16,
+      "maxDequeueCount": 3,
+      "newBatchThreshold": 8
+    }
   }
 }
