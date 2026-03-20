@@ -1,3 +1,4 @@
+﻿using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -37,12 +38,13 @@ public class MessageTemplatesController : ControllerBase
     /// <response code="200">If the call was successful</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MessageTemplate>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MessageTemplateResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<MessageTemplate>>> GetAllAsync()
+    public async Task<ActionResult<List<MessageTemplateResponse>>> GetAllAsync()
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.All);
-        return await _messageTemplateDataStore.GetAllAsync();
+        var templates = await _messageTemplateDataStore.GetAllAsync();
+        return templates.Select(ToResponse).ToList();
     }
 
     /// <summary>
@@ -50,15 +52,15 @@ public class MessageTemplatesController : ControllerBase
     /// </summary>
     /// <param name="platform">The platform name</param>
     /// <param name="messageType">The message type</param>
-    /// <returns>A <see cref="MessageTemplate"/></returns>
+    /// <returns>A <see cref="MessageTemplateResponse"/></returns>
     /// <response code="200">If the item was found</response>
     /// <response code="404">If the item was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{platform}/{messageType}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MessageTemplate))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MessageTemplateResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<MessageTemplate>> GetAsync(string platform, string messageType)
+    public async Task<ActionResult<MessageTemplateResponse>> GetAsync(string platform, string messageType)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.All);
         var template = await _messageTemplateDataStore.GetAsync(platform, messageType);
@@ -67,7 +69,7 @@ public class MessageTemplatesController : ControllerBase
             _logger.LogWarning("MessageTemplate not found for Platform={Platform}, MessageType={MessageType}", platform, messageType);
             return NotFound();
         }
-        return template;
+        return ToResponse(template);
     }
 
     /// <summary>
@@ -75,28 +77,29 @@ public class MessageTemplatesController : ControllerBase
     /// </summary>
     /// <param name="platform">The platform name</param>
     /// <param name="messageType">The message type</param>
-    /// <param name="messageTemplate">The updated message template</param>
-    /// <returns>The updated <see cref="MessageTemplate"/></returns>
+    /// <param name="request">The updated message template data</param>
+    /// <returns>The updated <see cref="MessageTemplateResponse"/></returns>
     /// <response code="200">If the item was updated successfully</response>
-    /// <response code="400">If the route parameters do not match the body</response>
+    /// <response code="400">If the route parameters are invalid</response>
     /// <response code="404">If the item was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPut("{platform}/{messageType}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MessageTemplate))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MessageTemplateResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<MessageTemplate>> UpdateAsync(string platform, string messageType,
-        [FromBody] MessageTemplate messageTemplate)
+    public async Task<ActionResult<MessageTemplateResponse>> UpdateAsync(string platform, string messageType,
+        [FromBody] MessageTemplateRequest request)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.All);
 
-        if (!platform.Equals(messageTemplate.Platform, StringComparison.OrdinalIgnoreCase) ||
-            !messageType.Equals(messageTemplate.MessageType, StringComparison.OrdinalIgnoreCase))
+        if (!ModelState.IsValid)
         {
-            return BadRequest("Route parameters must match the message template body.");
+            _logger.LogWarning("UpdateAsync called with invalid model state");
+            return BadRequest(ModelState);
         }
 
+        var messageTemplate = ToModel(request, platform, messageType);
         var updated = await _messageTemplateDataStore.UpdateAsync(messageTemplate);
         if (updated is null)
         {
@@ -105,6 +108,22 @@ public class MessageTemplatesController : ControllerBase
         }
 
         _logger.LogInformation("MessageTemplate updated for Platform={Platform}, MessageType={MessageType}", platform, messageType);
-        return updated;
+        return ToResponse(updated);
     }
+
+    private static MessageTemplateResponse ToResponse(MessageTemplate t) => new()
+    {
+        Platform = t.Platform,
+        MessageType = t.MessageType,
+        Template = t.Template,
+        Description = t.Description
+    };
+
+    private static MessageTemplate ToModel(MessageTemplateRequest r, string platform, string messageType) => new()
+    {
+        Platform = platform,
+        MessageType = messageType,
+        Template = r.Template,
+        Description = r.Description
+    };
 }

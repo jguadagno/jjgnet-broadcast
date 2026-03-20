@@ -70,40 +70,76 @@ public class SchedulesController: ControllerBase
     }
 
     /// <summary>
-    /// Saves a scheduled item
+    /// Creates a scheduled item
     /// </summary>
-    /// <param name="scheduledItem">The scheduled item</param>
-    /// <returns></returns>
-    /// <remarks>If the <see cref="ScheduledItem.Id"/> is 0, the scheduled item will be updated.</remarks>
-    /// <response code="200">If the scheduled item was updated</response>
+    /// <param name="scheduledItem">The scheduled item to create</param>
+    /// <returns>The newly created scheduled item</returns>
     /// <response code="201">If the scheduled item was created</response>
     /// <response code="400">If the data provided failed validation</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
-    [HttpPost, HttpPut]
-    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(ScheduledItem))]
+    [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(ScheduledItem))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<ScheduledItem>> SaveScheduledItemAsync(ScheduledItem scheduledItem)
+    public async Task<ActionResult<ScheduledItem>> CreateScheduledItemAsync(ScheduledItem scheduledItem)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
 
         if (!ModelState.IsValid)
         {
-            _logger.LogWarning("SaveScheduledItemAsync called with invalid model state");
+            _logger.LogWarning("CreateScheduledItemAsync called with invalid model state");
             return BadRequest(ModelState);
         }
         
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (savedScheduledItem != null)
         {
-            _logger.LogInformation("ScheduledItem saved with Id {ScheduledItemId}", savedScheduledItem.Id);
+            _logger.LogInformation("ScheduledItem created with Id {ScheduledItemId}", savedScheduledItem.Id);
             return CreatedAtAction(nameof(GetScheduledItemAsync), new { scheduledItemId = savedScheduledItem.Id },
                 savedScheduledItem);
         }
 
-        return Problem("Failed to save the scheduled item");
+        return Problem("Failed to create the scheduled item");
+    }
+
+    /// <summary>
+    /// Updates an existing scheduled item
+    /// </summary>
+    /// <param name="scheduledItemId">The identifier of the scheduled item to update</param>
+    /// <param name="scheduledItem">The updated scheduled item data</param>
+    /// <returns>The updated scheduled item</returns>
+    /// <response code="200">If the scheduled item was updated</response>
+    /// <response code="400">If the data provided failed validation or the id does not match</response>
+    /// <response code="401">If the current user was unauthorized to access this endpoint</response>
+    [HttpPut("{scheduledItemId:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(ScheduledItem))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ScheduledItem>> UpdateScheduledItemAsync(int scheduledItemId, ScheduledItem scheduledItem)
+    {
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
+        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
+
+        if (!ModelState.IsValid)
+        {
+            _logger.LogWarning("UpdateScheduledItemAsync called with invalid model state");
+            return BadRequest(ModelState);
+        }
+
+        if (scheduledItemId != scheduledItem.Id)
+        {
+            return BadRequest("Route id must match the scheduled item Id.");
+        }
+        
+        var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
+        if (savedScheduledItem != null)
+        {
+            _logger.LogInformation("ScheduledItem updated with Id {ScheduledItemId}", savedScheduledItem.Id);
+            return Ok(savedScheduledItem);
+        }
+
+        return Problem("Failed to update the scheduled item");
     }
     
     /// <summary>
