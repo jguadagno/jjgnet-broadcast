@@ -82,4 +82,66 @@
 **Branch:** squad/515-fix-api-tests  
 **Result:** Ready for PR submission (no code changes required — tests already correct)
 
+### 2026-03-20: Publisher Functions Unit Tests (Issue #301, PR #543)
+
+**Context:** Issue #301 requested unit tests for all publisher Azure Functions (PostPageStatus, PostText, PostLink, SendPost, Process*Fired variants) across Facebook, LinkedIn, and Bluesky platforms. Functions.Tests had only 4 model-initialization tests - all publisher trigger functions were completely untested.
+
+**What I Created:**
+1. **Facebook/PostPageStatusTests.cs** (5 tests)
+   - Successful post without image → calls PostMessageAndLinkToPage
+   - Successful post with image → calls PostMessageLinkAndPictureToPage
+   - Manager returns null → doesn't throw
+   - FacebookPostException → rethrows
+   - Generic exception → rethrows
+
+2. **LinkedIn/PostTextTests.cs** (4 tests)
+   - Successful text post → calls PostShareText
+   - Manager returns null → doesn't throw
+   - LinkedInPostException → rethrows
+   - Generic exception → rethrows
+
+3. **LinkedIn/PostLinkTests.cs** (7 tests)
+   - Link post without image → calls PostShareTextAndLink
+   - Link post with image (HTTP 200) → calls PostShareTextAndImage
+   - Image download fails (HTTP 404) → falls back to link post
+   - Manager returns null → doesn't throw
+   - LinkedInPostException → rethrows
+   - Generic exception → rethrows
+   - Uses Moq.Protected for HttpMessageHandler mocking
+
+4. **LinkedIn/PostImageTests.cs** (7 tests)
+   - Image download succeeds → calls PostShareTextAndImage
+   - Image download fails (HTTP 404/500) → doesn't call manager
+   - Manager returns null → doesn't throw
+   - HttpClient throws → doesn't throw (caught)
+   - Manager throws → doesn't throw (caught)
+   - Note: PostImage swallows all exceptions (different pattern than PostText/PostLink)
+
+5. **Bluesky/SendPostTests.cs** (10 tests)
+   - Text-only post → calls Post
+   - URL + shortened URL → calls GetEmbeddedExternalRecord + Post
+   - URL + shortened URL + image → calls GetEmbeddedExternalRecordWithThumbnail (not GetEmbeddedExternalRecord)
+   - URL + image (no shortened) → calls GetEmbeddedExternalRecordWithThumbnail
+   - Post with hashtags → calls Post
+   - Manager returns null → doesn't throw
+   - BlueskyPostException → rethrows
+   - Generic exception → rethrows
+   - GetEmbeddedExternalRecord returns null → still posts without embed
+   - Uses `Mock.Of<T>()` pattern since CreateRecordResult/EmbeddedExternal are sealed classes
+
+**Test Results:** ✅ All 30 tests pass
+
+**Lessons:**
+- Sealed classes (CreateRecordResult, EmbeddedExternal) can't be mocked with `new` — use `Mock.Of<T>()` or return null
+- HttpClient mocking requires `Moq.Protected` and `ItExpr` for protected SendAsync method
+- Different error handling patterns: PostText/PostLink rethrow all exceptions, PostImage swallows all exceptions
+- LinkedIn fallback logic: if image download fails, fallback to link post instead of throwing
+- Bluesky embed logic: ShortenedUrl+ImageUrl → use GetEmbeddedExternalRecordWithThumbnail (not GetEmbeddedExternalRecord)
+- Test naming: `Method_Scenario_ExpectedResult` (e.g., `Run_WithValidLinkWithImage_WhenImageDownloadSucceeds_CallsPostShareTextAndImage`)
+
+**Branch:** squad/301-publisher-tests  
+**PR:** #543  
+**Status:** Merged to main
+
 <!-- Append learnings below -->
+
