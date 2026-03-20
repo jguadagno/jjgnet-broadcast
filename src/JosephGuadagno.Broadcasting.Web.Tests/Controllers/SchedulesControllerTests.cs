@@ -1,6 +1,8 @@
 using Moq;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Logging;
 
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -23,6 +25,12 @@ public class SchedulesControllerTests
         _mapper = new Mock<IMapper>();
         _logger = new Mock<ILogger<SchedulesController>>();
         _controller = new SchedulesController(_scheduledItemService.Object, _mapper.Object, _logger.Object);
+        
+        // Initialize TempData
+        var httpContext = new DefaultHttpContext();
+        var tempDataProvider = new Mock<ITempDataProvider>();
+        var tempDataDictionaryFactory = new TempDataDictionaryFactory(tempDataProvider.Object);
+        _controller.TempData = tempDataDictionaryFactory.GetTempData(httpContext);
     }
 
     [Fact]

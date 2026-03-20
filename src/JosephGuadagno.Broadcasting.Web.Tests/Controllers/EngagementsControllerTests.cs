@@ -1,6 +1,8 @@
 using Moq;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Logging;
 
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -21,6 +23,12 @@ public class EngagementsControllerTests
         _engagementService = new Mock<IEngagementService>();
         _mapper = new Mock<IMapper>();
         _controller = new EngagementsController(_engagementService.Object, _mapper.Object);
+        
+        // Initialize TempData
+        var httpContext = new DefaultHttpContext();
+        var tempDataProvider = new Mock<ITempDataProvider>();
+        var tempDataDictionaryFactory = new TempDataDictionaryFactory(tempDataProvider.Object);
+        _controller.TempData = tempDataDictionaryFactory.GetTempData(httpContext);
     }
 
     [Fact]
