@@ -8,6 +8,18 @@
 
 ## Learnings
 
+### 2026-03-20 — PR #512 Merge Conflict Resolution (feature/s8-315-api-dtos → main)
+- **Task:** Resolved merge conflicts between PR #512 (DTO pattern) and PR #514 (pagination) that was merged to main first
+- **Conflicts:** Three controllers (EngagementsController, MessageTemplatesController, SchedulesController) had overlapping changes
+- **Resolution strategy:** Kept BOTH sets of changes — pagination parameters/guards/PagedResponse wrappers from main AND DTO ToResponse/ToModel helpers from PR #512
+- **Controllers merged:**
+  - EngagementsController: 2 endpoints (GetEngagementsAsync, GetTalksForEngagementAsync)
+  - MessageTemplatesController: 1 endpoint (GetAllAsync)
+  - SchedulesController: 5 endpoints (GetScheduledItemsAsync, GetUnsentScheduledItemsAsync, GetScheduledItemsToSendAsync, GetUpcomingScheduledItemsForCalendarMonthAsync, GetOrphanedScheduledItemsAsync)
+- **History files:** Merged .squad/agents/link/history.md and .squad/agents/neo/history.md preserving all team learnings
+- **Outcome:** PR #512 merged successfully via squash merge after conflict resolution
+- **Pattern:** When merging complementary refactors (DTOs + pagination), preserve ALL layers — they work together, not against each other
+
 ### 2025-01-XX — PR #512 Review Fixes
 - **Task:** Fixed blocking issues in Trinity's PR #512 (feature/s8-315-api-dtos)
 - **Issue 1 (BOM):** Removed UTF-8 BOM from MessageTemplatesController.cs line 1 using PowerShell UTF8Encoding without BOM
