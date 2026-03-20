@@ -172,3 +172,52 @@ Previously merged: #520 (#333), #522 (#332), #523 (#167/#166), #524 (#191), #525
 - PR #529: Data layer (EF entity, migration, ViewModels, DTOs) ✅
 - PR #534: Web UI (Create/Edit/Details views) ✅
 - **Full feature delivered** — users can now capture and display conference social identity in Engagements
+
+### 2026-03-21: PR #542 & #543 Review — Azure Functions Collector & Publisher Tests
+
+**Review verdict:** BOTH APPROVED & MERGED  
+**PRs:** #542 squad/300-collector-tests (Tank), #543 squad/301-publisher-tests (Tank)  
+**Issues closed:** #300 (auto), #301 (auto)  
+**Status:** Both squash-merged to main, branches deleted
+
+**PR #542 Review (51 collector tests):**
+1. ✅ **Comprehensive coverage**: 3 new LoadAll* test files (32 tests), enhanced 3 LoadNew* files (19 tests added)
+2. ✅ **Issue #300 requirements met**:
+   - Successful load scenarios ✅
+   - Empty feed handling ✅
+   - Duplicate detection (VideoId, FeedIdentifier, composite keys) ✅
+   - Error handling (reader exceptions, manager exceptions) ✅
+   - Parameter validation (checkFrom parsing) ✅
+3. ✅ **Naming convention**: All tests follow Method_Scenario_ExpectedResult (e.g., `RunAsync_SkipsDuplicate_WhenFeedIdentifierAlreadyExists`)
+4. ✅ **Real logic testing**: Tests verify actual duplicate detection, error handling, and data validation — not just mock call verification
+5. ✅ **Moq usage**: Proper mocking of ISyndicationFeedReader, managers, IUrlShortener with correct It.IsAny<DateTimeOffset>() patterns
+6. ✅ **AAA pattern**: Clean Arrange-Act-Assert structure throughout
+7. ✅ **CI green**: All checks passed
+
+**PR #543 Review (30 publisher tests):**
+1. ✅ **Comprehensive coverage**: Facebook (5 tests), LinkedIn (18 tests), Bluesky (10 tests)
+2. ✅ **Issue #301 requirements met**:
+   - Successful publish scenarios ✅
+   - Null/empty queue message handling ✅
+   - Manager exception handling (FacebookPostException, LinkedInPostException, BlueskyPostException) ✅
+   - Generic exception propagation ✅
+3. ✅ **Naming convention**: All tests follow Method_Scenario_ExpectedResult (e.g., `Run_WithValidPostText_CallsPostShareText`)
+4. ✅ **Real logic testing**: Tests verify error handling, null returns, API-specific exceptions — not just surface-level mock calls
+5. ✅ **Moq usage**: Proper mocking with Times.Once/Times.Never verification, exception setup
+6. ✅ **AAA pattern**: Clean Arrange-Act-Assert structure with clear section comments
+7. ✅ **CI green**: All checks passed
+
+**Merge sequence:**
+- Both PRs self-authored (squad branch pattern)
+- PR #542 merged first — had merge conflict in tank/history.md, resolved by keeping both sections
+- PR #543 merged second — had "both added" conflicts in test files (collector vs publisher tests), resolved by keeping PR #543 versions
+- Cannot approve self-authored PRs via `gh pr review --approve` — merged directly when CI green per established protocol
+
+**Test quality patterns observed:**
+- xUnit [Fact] attributes with proper async Task signatures
+- NullLogger used for test logging (no real logging infrastructure needed)
+- Helper methods (BuildSut, CreateFeedSource, BuildLinkedInPostText) reduce test boilerplate
+- Record.ExceptionAsync pattern for exception absence verification
+- Assert.ThrowsAsync<TException> for exception presence verification
+
+**Sprint 9 milestone progress:** Issues #300 and #301 now complete (collector & publisher tests). Sprint 9 test coverage expansion continues.
