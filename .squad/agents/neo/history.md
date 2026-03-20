@@ -110,6 +110,28 @@ User-merged this session: #526 (#170) + Azure AD updated
 Previously merged: #520 (#333), #522 (#332), #523 (#167/#166), #524 (#191), #525  
 **Follow-up created:** Issue #527 — GetTalkAsync only accepts Talks.All scope; Talks.View still commented (pre-existing gap flagged during #521 review)
 
+### 2026-03-21: Sprint 9 Closure & Sprint 11 Planning — 5 Sub-Issues Created
+
+**Final Sprint 9 work (2026-03-20T22:05:20Z):**
+- **PRs #542 & #543 reviewed & merged:** 51 collector tests + 30 publisher tests → issues #300, #301 closed
+- **PR #538 identified as duplicate:** Closed without merge (duplicate of already-merged PR #539)
+- **Tank's encoding fix deployed:** UTF-8 corruption in publisher tests fixed (commit 450aa70), Azure Functions deployment unblocked
+
+**Sprint 11 MSAL Planning:**
+- **Created 5 sub-issues for issue #85 decomposition:**
+  - #544: Audit existing token cache strategy
+  - #545: Implement token cache resilience (retry + fallback for MsalUiRequiredException)
+  - #546: Add token refresh pre-check
+  - #547: Integration tests for token cache
+  - #548: Document MSAL token lifecycle
+- **Labels:** `squad:ghost`, `sprint:11` on all sub-issues
+- **Status:** Ready for Sprint 11 implementation kick-off
+
+**Sprint 9 Test Coverage Delivered:**
+- 81 new tests across 11 test files (collectors + publishers)
+- All issues closed, all PRs merged, no blockers remaining
+- Deployment unblocked after Tank's fix
+
 ### 2026-03-21: PR #529 & #533 Review — Engagement Social Fields & Api.Tests Fix
 
 **Review verdict:** BOTH APPROVED & MERGED  
