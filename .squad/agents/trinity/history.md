@@ -19,6 +19,15 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 
 ## Recent Work
 
+### 2026-03-21: Fix PR #553 — Correct Branch with OIDC Event Handlers (Trinity)
+
+- **Task:** Branch `issue-544` had wrong files committed (AuthError page, HomeController, Error.cshtml from other PRs). Program.cs changes were missing.
+- **Root cause:** Ghost committed duplicate work from issues #545 and #547 into issue-544.
+- **What the Scribe already did:** Reverted HomeController.cs, deleted AuthErrorViewModel.cs and AuthError.cshtml, restored Error.cshtml in local commits.
+- **What I implemented:** Added `Configure<OpenIdConnectOptions>` block to `Program.cs` wiring `OnRemoteFailure` (maps AADSTS650052/700016/invalid_client to friendly messages) and `OnAuthenticationFailed` (generic error redirect). Both handlers call `context.HandleResponse()` before redirecting to `/Home/AuthError`.
+- **Build:** ✅ 0 errors. Pushed to origin, commented on PR #553.
+- **Lesson:** Scribe may already have partially cleaned up a branch before I work it — check local HEAD vs main carefully before re-reverting.
+
 ### 2026-03-21: Scope Audit & Regression Test for Issue #527 (Trinity)
 
 - **Task:** Verify and add regression test for GetTalkAsync fine-grained scope support
