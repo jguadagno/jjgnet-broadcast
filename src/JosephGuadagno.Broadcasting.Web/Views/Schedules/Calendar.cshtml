@@ -4,14 +4,7 @@
     ViewData["Title"] = "Engagements Calendar";
 }
 
-@section Styles {
-    <style>
-        #calendar {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-    </style>
-}
+
 
 <h2>Engagements Calendar</h2>
 <p class="text-muted">Click an event to open the engagement page.</p>
@@ -27,26 +20,6 @@
     <environment exclude="Production">
         <script src="~/libs/fullcalendar/index.global.min.js" asp-append-version="true"></script>
     </environment>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var calendarEl = document.getElementById('calendar');
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,listYear'
-                },
-                events: '/Engagements/GetCalendarEvents',
-                eventClick: function (info) {
-                    if (info.event.url) {
-                        window.open(info.event.url, '_blank');
-                        info.jsEvent.preventDefault();
-                    }
-                }
-            });
-            calendar.render();
-        });
-    </script>
+    <script src="~/js/schedules-calendar.js" asp-append-version="true"></script>
 }
 
