@@ -45,7 +45,13 @@ var autoMapperSettings = new AutoMapperSettings();
 builder.Configuration.Bind("AutoMapper", autoMapperSettings);
 builder.Services.AddSingleton<IAutoMapperSettings>(autoMapperSettings);
 
-builder.Services.AddSession();
+builder.Services.AddSession(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.IsEssential = true;
+});
 
 // Configure the logger
 var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
@@ -72,13 +78,26 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .EnableTokenAcquisitionToCallDownstreamApi(scopes.Select(k => k.Key))
     .AddDistributedTokenCaches();
 builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme,
-    options => options.Events = new RejectSessionCookieWhenAccountNotInCacheEvents());
+    options =>
+    {
+        options.Events = new RejectSessionCookieWhenAccountNotInCacheEvents();
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+    });
 
 builder.Services.AddDistributedSqlServerCache(options =>
 {
     options.ConnectionString = builder.Configuration.GetConnectionString("JJGNetDatabaseSqlServer");
     options.SchemaName = "dbo";
     options.TableName = "Cache";
+});
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
 });
 
 builder.Services.AddControllersWithViews(options =>
