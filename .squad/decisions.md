@@ -6942,3 +6942,161 @@ Rationale: AutoMapper validation catches unmapped properties. Missing DTOs break
 Pattern observed in PR #523 (BlueSkyHandle) and PR #529 (Conference fields).
 
 
+
+
+### 2026-03-20T15-18-38Z: User directive (supersedes prior Tank test directive)
+**By:** Joseph Guadagno (via Copilot)
+**What:** Tank must run the relevant test project(s) before committing any work -- not just the Functions test project, but ANY test project that is being worked on or affected by the changes.
+**Why:** User request -- broadened from a Functions-specific rule to a general commit quality gate for all of Tank's work.
+
+
+# Backlog Triage Report — Sprint 11
+**Triaged by:** Neo  
+**Date:** 2025-03-21  
+**Total Open Issues:** 41  
+**Issues Triaged:** 32  
+
+## Summary
+
+Performed full backlog triage across all 41 open issues in jguadagno/jjgnet-broadcast repository. Applied squad assignments to 32 previously unassigned issues based on domain expertise and established squad responsibilities.
+
+### Triage Statistics
+
+| Status | Count | Notes |
+|--------|-------|-------|
+| **Already Assigned** | 8 | Issues with existing `squad:*` labels (no action taken) |
+| **Newly Assigned** | 32 | Issues triaged and assigned during this session |
+| **Human-Only (Skipped)** | 1 | Issue #535 has `squad:Joe` label (reserved for human-only work) |
+| **Total Open Issues** | 41 | |
+
+### Squad Assignment Breakdown
+
+| Squad | Newly Assigned | Already Assigned | Total Owned |
+|-------|----------------|------------------|-------------|
+| **squad:neo** | 12 | 0 | 12 |
+| **squad:sparks** | 7 | 1 | 8 |
+| **squad:switch** | 8 | 0 | 8 |
+| **squad:ghost** | 1 | 5 | 6 |
+| **squad:trinity** | 2 | 2 | 4 |
+| **squad:morpheus** | 2 | 0 | 2 |
+| **squad:Joe** | 0 | 1 | 1 |
+
+## Issues Already Assigned (No Action Taken)
+
+| Issue | Title | Squad | Sprint |
+|-------|-------|-------|--------|
+| #548 | feat(web): Add token cache collision resilience to cookie validation | squad:ghost | sprint:11 |
+| #547 | fix(web): Harden Error.cshtml to hide Request ID in production | squad:ghost | sprint:11 |
+| #546 | feat(web): Add global MsalExceptionMiddleware | squad:ghost | sprint:11 |
+| #545 | feat(web): Add dedicated AuthError page and view model | squad:ghost | sprint:11 |
+| #544 | feat(web): Add OpenID Connect event handlers for login failures | squad:ghost | sprint:11 |
+| #307 | feat(web): implement real calendar widget in Schedules/Calendar.cshtml | squad:sparks | sprint:10 |
+| #304 | feat(api): add rate limiting to the API | squad:trinity | sprint:10 |
+| #85 | Handle Exceptions with Microsoft Entra (Microsoft Identity) login | squad:ghost | (parent of #544-#548) |
+
+## Issues Newly Assigned
+
+### squad:neo (Architecture & Cross-Cutting) — 12 issues
+
+| Issue | Title | Rationale |
+|-------|-------|-----------|
+| #329 | feat(ci): add staging deployment slot for zero-downtime deployments | CI/CD deployment strategy (architecture decision) |
+| #327 | feat(aspire): add Event Grid topics to AppHost | Aspire AppHost infrastructure (architecture) |
+| #326 | feat(ci): add CodeQL and vulnerable package scanning to CI pipelines | CI/CD security scanning (architecture) |
+| #314 | refactor: deduplicate Serilog configuration across API, Functions, and Web | Cross-cutting Serilog config (architecture) |
+| #313 | feat: add health checks for external dependencies (Bitly, social APIs, EventGrid) | Health checks infrastructure (architecture) |
+| #312 | feat: introduce Result<T> operation result pattern in Managers | Result<T> pattern (architecture decision) |
+| #311 | feat: add CancellationToken propagation through manager and datastore stack | CancellationToken architecture (cross-cutting) |
+| #310 | refactor: fix EventPublisher failure semantics — throw typed exception instead of returning bool | EventPublisher failure semantics (architecture) |
+| #309 | refactor: adopt IOptions<T> instead of singleton-bound settings snapshots | IOptions<T> pattern (architecture decision) |
+| #14 | Create documentation for getting Facebook credentials | Documentation (can delegate or handle) |
+| #13 | Create documentation for getting Bitly Credentials | Documentation (can delegate or handle) |
+| #12 | Create documentation for getting Twitter Credentials | Documentation (can delegate or handle) |
+
+### squad:sparks (Azure Functions) — 7 issues
+
+| Issue | Title | Rationale |
+|-------|-------|-----------|
+| #102 | Refactor out LinkedIn Message composition from Azure Function | Azure Function refactor (LinkedIn publisher) |
+| #94 | Create a custom FacebookPostException | Azure Function exception handling (Facebook) |
+| #69 | For social publishers, allow for the messages to be customized | Social publishers message customization (Functions) |
+| #46 | Refactor out Facebook Status composition | Facebook publisher refactor (Functions) |
+| #45 | Refactor out Tweet composition to Manager | Twitter publisher refactor (Functions) |
+| #9 | Rename the 'social media' plugins as 'publishers' | Publisher naming refactor (Functions) |
+| #8 | Add GitHub as a collector source | GitHub collector (new Functions collector) |
+
+### squad:switch (Database & Data Layer) — 8 issues
+
+| Issue | Title | Rationale |
+|-------|-------|-----------|
+| #537 | Add conference LinkedIn page to the Engagement | LinkedIn data schema change |
+| #536 | Add conference Bluesky handle to the Engagement | Bluesky data schema change |
+| #325 | feat(data): add pagination to all repository GetAllAsync methods | Repository pagination (data layer) |
+| #323 | feat(data): normalize Tags column from delimited string to junction table | Database schema normalization (junction table) |
+| #322 | fix(sql): replace NVARCHAR(MAX) with bounded lengths on filterable columns | SQL column sizing optimization |
+| #55 | For a scheduled engagement, add custom image with alt text | Scheduled engagement schema (custom image/alt text) |
+| #54 | For a scheduled talk, we should add the twitter handle | Scheduled talk schema (twitter handle field) |
+| #53 | For scheduled engagements, add twitter handle | Scheduled engagement schema (twitter handle field) |
+
+### squad:trinity (Web UI) — 2 issues
+
+| Issue | Title | Rationale |
+|-------|-------|-----------|
+| #334 | feat(web): add server-side pagination to all list views | Web UI list views pagination |
+| #67 | UI: Schedule Add/Edit: Add feature to validate and/or select the item that is being scheduled | Schedule UI validation feature |
+
+### squad:morpheus (API & Managers) — 2 issues
+
+| Issue | Title | Rationale |
+|-------|-------|-----------|
+| #89 | Refactor the scheduled items feature | Scheduled items feature refactor (API/manager) |
+| #78 | Add caching to WebApi | WebApi caching (API layer) |
+
+### squad:ghost (Auth & Security) — 1 issue
+
+| Issue | Title | Rationale |
+|-------|-------|-----------|
+| #81 | Web Ui, might not reload if user is already signed in | Web UI session/auth reload issue |
+
+## Human-Only Issues (Skipped)
+
+| Issue | Title | Labels | Status |
+|-------|-------|--------|--------|
+| #535 | doc: Update the project readme to accurately so they state of the project | documentation, squad:Joe | Reserved for Joseph — not assigned |
+
+## Triage Methodology
+
+### Assignment Rules Applied
+
+Assignments based on established squad domain expertise:
+
+- **squad:ghost** → Auth / MSAL / OIDC / security
+- **squad:tank** → Tests / xUnit / Moq / FluentAssertions (no new issues this triage)
+- **squad:morpheus** → API endpoints / controllers / DTOs / business logic
+- **squad:trinity** → Web UI / Razor / MVC controllers / views
+- **squad:sparks** → Azure Functions / collectors / publishers
+- **squad:neo** → Architecture / decisions / cross-cutting concerns / CI/CD
+- **squad:switch** → Database schema / SQL / data layer / repositories
+- **squad:Joe** → Human-reserved issues (NEVER auto-assigned)
+
+### Key Constraints Honored
+
+1. ✅ **Never removed existing squad labels** — All 8 pre-assigned issues left unchanged
+2. ✅ **Never touched squad:Joe issues** — Issue #535 skipped entirely
+3. ✅ **Applied triage comments** — All 32 newly assigned issues received triage comment explaining assignment
+4. ✅ **No sprint labels added** — Sprint assignments deferred to individual squad members and sprint planning
+5. ✅ **Domain-based assignments** — All assignments follow established squad expertise patterns
+
+## Next Steps
+
+1. **Sprint 11 Planning** — Squad members should review newly assigned issues in their backlog
+2. **Priority Review** — Issues marked `priority: high` and `priority: medium` should be evaluated for Sprint 11 inclusion
+3. **Sprint 10 Completion** — Issues #307 (squad:sparks) and #304 (squad:trinity) still in sprint:10 — verify completion status
+4. **Issue #85 Sub-Tasks** — Parent issue has 5 sub-issues (#544-#548) all assigned to squad:ghost for Sprint 11
+
+## Notes
+
+- **Total backlog size increased** from Sprint 9 baseline — many older issues (2+ years old) now have squad assignments for future planning
+- **Neo self-assigned 12 architecture issues** — These represent foundational decisions that will guide future development (Result<T>, IOptions<T>, CancellationToken, health checks, etc.)
+- **Documentation issues** (#12, #13, #14) marked `good first issue` — Can be delegated or completed by Neo
+- **Social platform schema changes** (#536, #537, #53-#55) — All assigned to Switch for consistent data layer ownership

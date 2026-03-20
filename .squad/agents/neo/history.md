@@ -53,6 +53,69 @@
 
 <!-- Append learnings below -->
 
+### 2025-03-21: Full Backlog Triage — 32 Issues Assigned Across 6 Squads
+
+**Task:** Complete triage of all 41 open issues in jguadagno/jjgnet-broadcast repository.
+
+**Results:**
+- **32 issues newly assigned** with squad labels based on domain expertise
+- **8 issues already assigned** (no action taken)
+- **1 issue skipped** (squad:Joe — human-only work)
+
+**Squad Breakdown (Newly Assigned):**
+- squad:neo → 12 issues (architecture, CI/CD, cross-cutting patterns)
+- squad:sparks → 7 issues (Azure Functions collectors/publishers)
+- squad:switch → 8 issues (database schema, data layer, repositories)
+- squad:trinity → 2 issues (Web UI features)
+- squad:morpheus → 2 issues (API endpoints, managers)
+- squad:ghost → 1 issue (Web UI auth/session)
+
+**Key Triage Patterns Established:**
+1. **Architecture & Cross-Cutting** → squad:neo
+   - Result<T> pattern (#312), IOptions<T> adoption (#309), CancellationToken propagation (#311)
+   - Health checks (#313), Serilog deduplication (#314), EventPublisher semantics (#310)
+   - CI/CD strategy (#329, #326), Aspire infrastructure (#327)
+   - Documentation tasks (#12, #13, #14) — delegable or self-assigned
+
+2. **Azure Functions** → squad:sparks
+   - Collector implementations (#8 - GitHub)
+   - Publisher refactoring (#45 - Tweet, #46 - Facebook, #102 - LinkedIn)
+   - Message customization (#69), exception handling (#94)
+   - Naming refactor (#9 - 'publishers' terminology)
+
+3. **Database & Data Layer** → squad:switch
+   - Schema additions (#536 - Bluesky handle, #537 - LinkedIn page, #53-#55 - twitter handles, custom images)
+   - Repository pagination (#325)
+   - Schema normalization (#323 - Tags junction table)
+   - SQL optimization (#322 - NVARCHAR sizing)
+
+4. **Web UI** → squad:trinity
+   - Server-side pagination (#334)
+   - Schedule validation UI (#67)
+
+5. **API & Managers** → squad:morpheus
+   - Scheduled items refactor (#89)
+   - WebApi caching (#78)
+
+6. **Auth & Security** → squad:ghost
+   - Web UI session reload (#81)
+   - Already owns #85 parent + 5 sub-issues (#544-#548) for Sprint 11 MSAL work
+
+**Triage Constraints Honored:**
+- ✅ Never removed existing squad labels
+- ✅ Never touched squad:Joe issues (issue #535 skipped entirely)
+- ✅ Applied triage comments to all 32 newly assigned issues
+- ✅ No sprint labels added (deferred to squad members and sprint planning)
+- ✅ All assignments follow established domain expertise
+
+**Process Efficiency:**
+- Used `gh issue view` batch fetching to retrieve all issue labels
+- Grouped label applications by squad (7 batches total)
+- Applied triage comments in single loop (32 comments added)
+- Total execution: ~5 minutes for complete backlog triage
+
+**Triage Report:** `.squad/decisions/inbox/neo-backlog-triage-sprint11.md` (comprehensive assignment breakdown with rationales)
+
 **Sprint 9 Final Status & Earlier PR Review Sessions:**
 - Sprint 9 (4 issues) closure completed via PRs #516, #517, #520-526 (all merged)
 - Key reviews: DTO patterns (#512/#514), Functions retry/DLQ (#516), SQL sizing (#517), API scopes (#526)
