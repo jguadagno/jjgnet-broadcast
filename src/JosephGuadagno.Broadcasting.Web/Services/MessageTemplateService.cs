@@ -31,7 +31,7 @@ public class MessageTemplateService : ServiceBase, IMessageTemplateService
     /// </summary>
     public async Task<List<MessageTemplate>?> GetAllAsync()
     {
-        await SetRequestHeader(Domain.Scopes.MessageTemplates.All);
+        await SetRequestHeader(Domain.Scopes.MessageTemplates.List);
         return await ExecuteGetAsync<List<MessageTemplate>>(_baseUrl);
     }
 
@@ -40,7 +40,7 @@ public class MessageTemplateService : ServiceBase, IMessageTemplateService
     /// </summary>
     public async Task<MessageTemplate?> GetAsync(string platform, string messageType)
     {
-        await SetRequestHeader(Domain.Scopes.MessageTemplates.All);
+        await SetRequestHeader(Domain.Scopes.MessageTemplates.View);
         return await ExecuteGetAsync<MessageTemplate>($"{_baseUrl}/{platform}/{messageType}");
     }
 
@@ -49,7 +49,7 @@ public class MessageTemplateService : ServiceBase, IMessageTemplateService
     /// </summary>
     public async Task<MessageTemplate?> UpdateAsync(MessageTemplate messageTemplate)
     {
-        await SetRequestHeader(Domain.Scopes.MessageTemplates.All);
+        await SetRequestHeader(Domain.Scopes.MessageTemplates.Modify);
         var json = JsonSerializer.Serialize(messageTemplate);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         var response = await HttpClient.PutAsync(

@@ -48,8 +48,7 @@ public class SchedulesController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > 100) pageSize = 100;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         
         var allItems = await _scheduledItemManager.GetAllAsync();
         var totalCount = allItems.Count;
@@ -85,8 +84,7 @@ public class SchedulesController: ControllerBase
     [ActionName(nameof(GetScheduledItemAsync))]
     public async Task<ActionResult<ScheduledItemResponse>> GetScheduledItemAsync(int scheduledItemId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View, Domain.Scopes.Schedules.All);
         
         var item = await _scheduledItemManager.GetAsync(scheduledItemId);
         return ToResponse(item);
@@ -106,8 +104,7 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ScheduledItemResponse>> CreateScheduledItemAsync(ScheduledItemRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify, Domain.Scopes.Schedules.All);
 
         if (!ModelState.IsValid)
         {
@@ -142,8 +139,7 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ScheduledItemResponse>> UpdateScheduledItemAsync(int scheduledItemId, ScheduledItemRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify, Domain.Scopes.Schedules.All);
 
         if (!ModelState.IsValid)
         {
@@ -178,8 +174,7 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<bool>> DeleteScheduledItemAsync(int scheduledItemId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Delete);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Delete, Domain.Scopes.Schedules.All);
         
         var wasDeleted = await _scheduledItemManager.DeleteAsync(scheduledItemId);
         if (wasDeleted)
@@ -210,8 +205,7 @@ public class SchedulesController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > 100) pageSize = 100;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         
         var allItems = await _scheduledItemManager.GetUnsentScheduledItemsAsync();
         if (allItems.Count == 0)
@@ -254,8 +248,7 @@ public class SchedulesController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > 100) pageSize = 100;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         
         var allItems = await _scheduledItemManager.GetScheduledItemsToSendAsync();
         if (allItems.Count == 0)
@@ -300,8 +293,7 @@ public class SchedulesController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > 100) pageSize = 100;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
-        //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         
         var allItems = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month);
         if (allItems.Count == 0)
@@ -344,7 +336,7 @@ public class SchedulesController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > 100) pageSize = 100;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
+        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
 
         var allItems = await _scheduledItemManager.GetOrphanedScheduledItemsAsync();
         if (allItems.Count == 0)

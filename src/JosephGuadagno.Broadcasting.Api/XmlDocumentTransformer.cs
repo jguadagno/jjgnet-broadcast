@@ -32,7 +32,7 @@ public sealed class XmlDocumentTransformer(ISettings settings, IAzureAdSettings 
         var audience = settings.ApiScopeUrl;
         var schemaKey = "OAuth2"; // This name is used as a key and could be anything as long as you are consistent.
 
-        var scopes = Domain.Scopes.AllAccessToDictionary(audience);
+        var scopes = Domain.Scopes.ToDictionary(audience);
         scopes.Add($"{audience}user_impersonation", "Access application on user behalf");
 
         var securitySchemes = new Dictionary<string, IOpenApiSecurityScheme>
