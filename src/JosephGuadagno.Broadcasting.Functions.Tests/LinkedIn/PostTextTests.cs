@@ -26,7 +26,7 @@ public class PostTextTests
         Text = text
     };
 
-    // ΓöÇΓöÇ Successful post ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // Successful post
 
     [Fact]
     public async Task Run_WithValidPostText_CallsPostShareText()
@@ -48,12 +48,12 @@ public class PostTextTests
             Times.Once);
     }
 
-    // ΓöÇΓöÇ Manager returns null (post failed) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // Manager returns null (post failed)
 
     [Fact]
     public async Task Run_WhenManagerReturnsNull_DoesNotThrow()
     {
-        // Arrange ΓÇö manager returns null (post failed but no exception)
+        // Arrange - manager returns null (post failed but no exception)
         var postText = BuildLinkedInPostText();
         _linkedInManager
             .Setup(m => m.PostShareText(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
@@ -61,12 +61,12 @@ public class PostTextTests
 
         var sut = BuildSut();
 
-        // Act & Assert ΓÇö should not throw
+        // Act & Assert - should not throw
         var exception = await Record.ExceptionAsync(() => sut.Run(postText));
         Assert.Null(exception);
     }
 
-    // ΓöÇΓöÇ LinkedInPostException handling ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // LinkedInPostException handling
 
     [Fact]
     public async Task Run_WhenLinkedInPostExceptionThrown_RethrowsException()
@@ -80,11 +80,11 @@ public class PostTextTests
 
         var sut = BuildSut();
 
-        // Act & Assert ΓÇö should rethrow LinkedInPostException
+        // Act & Assert - should rethrow LinkedInPostException
         await Assert.ThrowsAsync<LinkedInPostException>(() => sut.Run(postText));
     }
 
-    // ΓöÇΓöÇ Generic exception handling ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // Generic exception handling
 
     [Fact]
     public async Task Run_WhenGenericExceptionThrown_RethrowsException()
@@ -97,7 +97,7 @@ public class PostTextTests
 
         var sut = BuildSut();
 
-        // Act & Assert ΓÇö should rethrow generic Exception
+        // Act & Assert - should rethrow generic Exception
         await Assert.ThrowsAsync<Exception>(() => sut.Run(postText));
     }
 }

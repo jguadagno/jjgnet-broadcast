@@ -42,7 +42,7 @@ public class PostImageTests
         Description = description
     };
 
-    // ΓöÇΓöÇ Successful image post (HTTP 200) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // Successful image post (HTTP 200)
 
     [Fact]
     public async Task Run_WithValidImage_WhenImageDownloadSucceeds_CallsPostShareTextAndImage()
@@ -80,7 +80,7 @@ public class PostImageTests
             Times.Once);
     }
 
-    // ΓöÇΓöÇ Image download fails (HTTP 404) ΓÇö no post, no exception ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // Image download fails (HTTP 404) - no post, no exception
 
     [Fact]
     public async Task Run_WhenImageDownloadFails_DoesNotCallManager()
@@ -102,14 +102,14 @@ public class PostImageTests
         // Act
         await sut.Run(postImage);
 
-        // Assert ΓÇö manager should NOT be called when image download fails
+        // Assert - manager should NOT be called when image download fails
         _linkedInManager.Verify(
             m => m.PostShareTextAndImage(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>()),
             Times.Never);
     }
 
-    // ΓöÇΓöÇ Image download fails (HTTP 500) ΓÇö no post, no exception ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // Image download fails (HTTP 500) - no post, no exception
 
     [Fact]
     public async Task Run_WhenImageDownloadReturnsServerError_DoesNotCallManager()
@@ -131,19 +131,19 @@ public class PostImageTests
         // Act
         await sut.Run(postImage);
 
-        // Assert ΓÇö manager should NOT be called when image download fails
+        // Assert - manager should NOT be called when image download fails
         _linkedInManager.Verify(
             m => m.PostShareTextAndImage(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>()),
             Times.Never);
     }
 
-    // ΓöÇΓöÇ Manager returns null (post failed) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // Manager returns null (post failed)
 
     [Fact]
     public async Task Run_WhenManagerReturnsNull_DoesNotThrow()
     {
-        // Arrange ΓÇö manager returns null (post failed but no exception)
+        // Arrange - manager returns null (post failed but no exception)
         var postImage = BuildLinkedInPostImage();
         var imageBytes = new byte[] { 0x89, 0x50, 0x4E, 0x47 };
 
@@ -164,17 +164,17 @@ public class PostImageTests
 
         var sut = BuildSut();
 
-        // Act & Assert ΓÇö should not throw
+        // Act & Assert - should not throw
         var exception = await Record.ExceptionAsync(() => sut.Run(postImage));
         Assert.Null(exception);
     }
 
-    // ΓöÇΓöÇ Exception during processing ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // Exception during processing
 
     [Fact]
     public async Task Run_WhenExceptionThrown_DoesNotThrow()
     {
-        // Arrange ΓÇö HttpClient throws exception
+        // Arrange - HttpClient throws exception
         var postImage = BuildLinkedInPostImage();
         _httpMessageHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync",
@@ -189,7 +189,7 @@ public class PostImageTests
         Assert.Null(exception);
     }
 
-    // ΓöÇΓöÇ Manager throws exception ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // Manager throws exception
 
     [Fact]
     public async Task Run_WhenManagerThrowsException_DoesNotThrow()
@@ -215,7 +215,7 @@ public class PostImageTests
 
         var sut = BuildSut();
 
-        // Act & Assert ΓÇö exceptions are caught and logged, not rethrown
+        // Act & Assert - exceptions are caught and logged, not rethrown
         var exception = await Record.ExceptionAsync(() => sut.Run(postImage));
         Assert.Null(exception);
     }

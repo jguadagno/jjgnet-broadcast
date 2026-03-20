@@ -26,7 +26,7 @@ public class PostPageStatusTests
         ImageUrl = imageUrl
     };
 
-    // ── Successful post without image ────────────────────────────────────────
+    // Successful post without image
 
     [Fact]
     public async Task Run_WithValidStatusWithoutImage_CallsPostMessageAndLink()
@@ -51,7 +51,7 @@ public class PostPageStatusTests
             Times.Never);
     }
 
-    // ── Successful post with image ───────────────────────────────────────────
+    // Successful post with image
 
     [Fact]
     public async Task Run_WithValidStatusWithImage_CallsPostMessageLinkAndPicture()
@@ -76,12 +76,12 @@ public class PostPageStatusTests
             Times.Never);
     }
 
-    // ── Manager returns null (post failed) ───────────────────────────────────
+    // Manager returns null (post failed)
 
     [Fact]
     public async Task Run_WhenManagerReturnsNull_DoesNotThrow()
     {
-        // Arrange — manager returns null (post failed but no exception)
+        // Arrange - manager returns null (post failed but no exception)
         var postStatus = BuildFacebookPostStatus();
         _facebookManager
             .Setup(m => m.PostMessageAndLinkToPage(It.IsAny<string>(), It.IsAny<string>()))
@@ -89,12 +89,12 @@ public class PostPageStatusTests
 
         var sut = BuildSut();
 
-        // Act & Assert — should not throw
+        // Act & Assert - should not throw
         var exception = await Record.ExceptionAsync(() => sut.Run(postStatus));
         Assert.Null(exception);
     }
 
-    // ── FacebookPostException handling ────────────────────────────────────────
+    // FacebookPostException handling
 
     [Fact]
     public async Task Run_WhenFacebookPostExceptionThrown_RethrowsException()
@@ -108,11 +108,11 @@ public class PostPageStatusTests
 
         var sut = BuildSut();
 
-        // Act & Assert — should rethrow FacebookPostException
+        // Act & Assert - should rethrow FacebookPostException
         await Assert.ThrowsAsync<FacebookPostException>(() => sut.Run(postStatus));
     }
 
-    // ── Generic exception handling ────────────────────────────────────────────
+    // Generic exception handling
 
     [Fact]
     public async Task Run_WhenGenericExceptionThrown_RethrowsException()
@@ -125,7 +125,7 @@ public class PostPageStatusTests
 
         var sut = BuildSut();
 
-        // Act & Assert — should rethrow generic Exception
+        // Act & Assert - should rethrow generic Exception
         await Assert.ThrowsAsync<Exception>(() => sut.Run(postStatus));
     }
 }
