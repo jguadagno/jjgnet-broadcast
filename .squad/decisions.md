@@ -2170,3 +2170,814 @@ When reviewing DTO PRs, verify:
 - [ ] Controller `ToModel` mapping uses route parameters, not DTO properties, for IDs
 - [ ] No "route id must match body id" validation checks exist
 
+
+---
+
+### 2026-03-19T21-16-29Z: User directive
+**By:** Joseph Guadagno (via Copilot)
+**What:** When a PR is merged, delete the local branch in addition to the remote branch. Agents must run `git branch -d {branch-name}` after every `gh pr merge --delete-branch`. Also set `git config fetch.prune true` so remote tracking refs are pruned on fetch.
+**Why:** User request — keep local workspace clean after merges
+
+---
+
+# Ralph's Triage and Audit Report
+**Date:** 2026-03-19  
+**Reporter:** Ralph (Work Monitor)  
+**Requested by:** Joseph Guadagno
+
+---
+
+## Summary
+
+**Part 1 - Untriaged Backlog:** No untriaged squad issues found. All issues with the `squad` label already had `squad:{member}` labels.
+
+**Part 2 - Issues Below #201 Audit:** Reviewed 5 open issues numbered below 201. Closed 1 resolved issue, triaged 4 still-relevant issues.
+
+---
+
+## Part 1: Triage of Untriaged Backlog Issues
+
+### Finding
+There were **zero untriaged issues** with the `squad` label but no `squad:{member}` label. All squad-tracked work has been properly routed.
+
+### Action Taken
+Created the complete set of squad labels for future use:
+- `squad` - General squad tracking label (triage required)
+- `squad:neo` - Lead (Architecture, decisions, review)
+- `squad:trinity` - Backend Dev (API, Azure Functions, business logic)
+- `squad:morpheus` - Data Engineer (SQL Server, Table Storage, EF Core)
+- `squad:tank` - Tester (xUnit, Moq, FluentAssertions)
+- `squad:switch` - Frontend Engineer (MVC controllers, ViewModels)
+- `squad:sparks` - Frontend Developer (Razor views, LibMan, Bootstrap, CSS/JS)
+- `squad:ghost` - Security & Identity (OAuth2/OIDC, auth middleware, MSAL)
+- `squad:oracle` - Security Engineer (Azure AD, Key Vault, secrets)
+- `squad:cypher` - DevOps Engineer (.NET Aspire, Bicep, local dev)
+- `squad:link` - Platform & DevOps (GitHub Actions, Event Grid, Azure deployment)
+
+---
+
+## Part 2: Audit of Issues Numbered Below #201
+
+### Issues Closed (1)
+
+#### #200 - LoadAllSpeakingEngagements and LoadNewSpeakingEngagements are not populating talks
+**Status:** ✅ CLOSED  
+**Reason:** Already resolved  
+**Evidence:** Code review of `SpeakingEngagementsReader.cs` (lines 76-93) shows that talks are now being populated from the Presentations collection. The logic iterates through `speakingEngagement.Presentations` and adds each talk to `engagement.Talks` with proper field mapping (Name, Url, StartDateTime, EndDateTime, Room, Comments).
+
+---
+
+### Issues Triaged (4)
+
+#### #198 - Create an event in EventGrid for when a SpeakingEngagement is added
+**Status:** 🔄 STILL RELEVANT  
+**Assigned to:** Trinity (squad:trinity)  
+**Reasoning:** This is about Azure Functions and EventGrid integration. The infrastructure is partially in place:
+- ✅ EventGrid topic `new-speaking-engagement` is defined in Topics.cs
+- ✅ EventPublisher has `PublishNewSpeakingEngagementEventsAsync` method
+- ✅ EventGrid simulator config defines subscribers for all 4 platforms
+- ❌ The actual subscriber functions (BlueskyProcessSpeakingEngagementDataFired, FacebookProcessSpeakingEngagementDataFired, LinkedInProcessSpeakingEngagementDataFired, TwitterProcessSpeakingEngagementDataFired) **do not exist**
+
+The issue requests publishers for Bluesky, Facebook, LinkedIn, and Twitter/X. Trinity owns Azure Functions and should implement these EventGrid subscriber functions.
+
+---
+
+#### #191 - Update the site privacy page
+**Status:** 🔄 STILL RELEVANT  
+**Assigned to:** Sparks (squad:sparks)  
+**Reasoning:** This is a Razor view update. The file `Views/Home/Privacy.cshtml` currently contains placeholder text: "Use this page to detail your site's privacy policy." Sparks owns Razor views, static assets, and frontend content. This is a straightforward content update requiring real privacy policy text.
+
+---
+
+#### #170 - Add back in the fine-grained permissions to the API endpoints
+**Status:** 🔄 STILL RELEVANT  
+**Assigned to:** Ghost (squad:ghost)  
+**Reasoning:** This issue is about OAuth2/OIDC scopes and API authorization. The description states: "The scopes should not be *.All, the *Modify, *.List, etc." This is about implementing fine-grained authorization with specific permission scopes rather than broad wildcard permissions. Ghost owns OAuth2/OIDC flows, token lifecycle, auth middleware, and MSAL integration. Recent commits show some scope-related work (PR #487 "Update identity scopes and refine MessageTemplates view"), but without a detailed review of all API endpoints, it's unclear if this is fully resolved. Ghost should audit API authorization attributes and implement granular scopes.
+
+---
+
+#### #167 - For an engagement, we should add the BlueSky handle
+**Status:** 🔄 STILL RELEVANT  
+**Assigned to:** Morpheus (squad:morpheus)  
+**Reasoning:** This is a database schema and domain model change. The request is to add a BlueSky handle field to the Engagement/ScheduledItem models. Code search found no evidence of a `BlueSkyHandle` field in the domain models. Morpheus owns SQL Server, Table Storage, and EF Core — this requires:
+1. Adding the field to the Engagement domain model
+2. Creating a database migration (or SQL script, since this project uses raw SQL)
+3. Updating the EF Core DbContext and entity configuration
+4. Potentially updating the API DTOs and Web ViewModels
+
+This is a data layer task that falls squarely in Morpheus's domain.
+
+---
+
+## Evidence Review
+
+### Commits Analyzed
+Reviewed last 50 commits (git log --oneline -50) for evidence of issue resolution. Key commits:
+- `fbc62df` - feat: add duplicate detection to LoadNewSpeakingEngagements collector
+- `361e7e9` - feat(aspire): enable all 5 Event Grid topics in local dev event-grid-simulator
+- `1eac700` - feat(web): update identity scopes and improve MessageTemplates view
+- Multiple Scriban template and scheduled item commits
+
+### Merged PRs Analyzed
+Reviewed last 50 merged PRs. Notable PRs:
+- #514 - feat(api): add pagination to all list API endpoints
+- #512 - feat(api): introduce DTOs to decouple API contract from domain models
+- #511 - fix: uncomment and wire up Application Insights/Azure Monitor
+- #487 - Update identity scopes and refine MessageTemplates view
+- #482 - feat(aspire): enable all 5 Event Grid topics in local dev event-grid-simulator
+
+### Code Files Examined
+- `src/JosephGuadagno.Broadcasting.SpeakingEngagementsReader/SpeakingEngagementsReader.cs` - Verified talks population logic
+- `src/JosephGuadagno.Broadcasting.Data/EventPublisher.cs` - Confirmed NewSpeakingEngagement topic publishing method exists
+- `src/JosephGuadagno.Broadcasting.Functions/event-grid-simulator-config.json` - Verified EventGrid subscriber configuration
+- `src/JosephGuadagno.Broadcasting.Web/Views/Home/Privacy.cshtml` - Confirmed placeholder text still present
+- `src/JosephGuadagno.Broadcasting.Domain/Constants/Topics.cs` - Verified topic definitions
+
+---
+
+## Recommendations
+
+1. **Trinity** should create the 4 EventGrid subscriber functions for new-speaking-engagement events (#198)
+2. **Sparks** should replace the privacy page placeholder with real privacy policy text (#191)
+3. **Ghost** should audit API endpoint authorization and implement fine-grained scopes (#170)
+4. **Morpheus** should add the BlueSkyHandle field to Engagement model and database schema (#167)
+
+All issues are now properly labeled and ready for squad members to pick up.
+
+---
+
+## Label System Status
+
+✅ Squad label system fully operational  
+✅ All 11 squad labels created with descriptions and color coding  
+✅ Labels ready for future triage and routing  
+
+The label system follows the routing matrix defined in `.squad/routing.md` and maps to team members in `.squad/team.md`.
+
+---
+
+# Ghost — Cookie Security Hardening (Issue #336)
+
+**Date:** 2026-03-19
+**Sprint:** Sprint 8
+**PR:** #510
+
+## What Was Done
+
+Three separate cookie surfaces were hardened in `src/JosephGuadagno.Broadcasting.Web/Program.cs`:
+
+### 1. Auth Cookie (`CookieAuthenticationOptions`)
+Previously only set `Events`. Now also sets:
+- `HttpOnly = true`
+- `SecurePolicy = CookieSecurePolicy.Always`
+- `SameSite = SameSiteMode.Lax`
+
+*Lax is appropriate for the auth cookie — it must survive top-level cross-site navigations (e.g., OIDC redirect back from Azure AD).*
+
+### 2. Session Cookie (`AddSession`)
+Previously used `AddSession()` with no options. Now:
+- `HttpOnly = true`
+- `SecurePolicy = CookieSecurePolicy.Always`
+- `SameSite = SameSiteMode.Lax`
+- `IsEssential = true` — prevents session cookie from being blocked by GDPR middleware before consent
+
+### 3. Antiforgery Cookie (`AddAntiforgery`)
+Not previously configured at all. Added explicit:
+- `HttpOnly = true`
+- `SecurePolicy = CookieSecurePolicy.Always`
+- `SameSite = SameSiteMode.Strict`
+
+*Strict is correct for the antiforgery token — it never needs to be sent on cross-site requests. This provides the strongest CSRF protection.*
+
+## Findings / Learnings
+
+- `ImplicitUsings=enable` on the Web project means `Microsoft.AspNetCore.Http` types (`CookieSecurePolicy`, `SameSiteMode`) are available without explicit `using` statements.
+- `AddAntiforgery` is called before `AddControllersWithViews` so our explicit configuration wins over the default registered by MVC.
+- The `Configure<CookieAuthenticationOptions>` post-configuration pattern used by MSAL (`RejectSessionCookieWhenAccountNotInCacheEvents`) still works fine when security options are added to the same lambda.
+- SameSite=Lax (not Strict) is required for the auth cookie because the OIDC `redirect_uri` is a cross-site POST from Azure AD — Strict would break login.
+
+## Decision
+
+> Cookie security flags must be explicitly set on all cookie surfaces (auth, session, antiforgery) rather than relying on framework defaults. This is now the pattern for this project.
+
+---
+
+# Decision Inbox: Application Insights / Azure Monitor Wiring (S8-328)
+
+**From:** Link  
+**Sprint:** Sprint 8  
+**PR:** #511  
+**Date:** 2025-07
+
+---
+
+## Findings
+
+### What Was Wrong
+
+`UseAzureMonitor()` was commented out in `ServiceDefaults/Extensions.cs` and the required NuGet package (`Azure.Monitor.OpenTelemetry.AspNetCore`) was absent from `ServiceDefaults.csproj`. In production, no traces, metrics, or logs were flowing to Application Insights.
+
+### Inconsistency Found Across Services
+
+| Service | Before | After |
+|---------|--------|-------|
+| ServiceDefaults | `UseAzureMonitor()` commented out, package missing | ✅ Uncommented, guarded by `APPLICATIONINSIGHTS_CONNECTION_STRING`, package added |
+| Api | Unconditional `UseAzureMonitor()` in `ConfigureTelemetryAndLogging` (no env var guard) | ✅ Removed — ServiceDefaults handles it |
+| Web | Same as Api — unconditional `UseAzureMonitor()` | ✅ Removed — ServiceDefaults handles it |
+| Functions | `UseAzureMonitorExporter()` in telemetry setup | ✅ Removed — ServiceDefaults handles the exporter; `UseFunctionsWorkerDefaults()` retained |
+| Functions host.json | `telemetryMode: OpenTelemetry` | ✅ Already correct — no change needed |
+
+### Design Decision Made
+
+**Centralize Azure Monitor registration in ServiceDefaults.** The conditional guard `if (!string.IsNullOrEmpty(APPLICATIONINSIGHTS_CONNECTION_STRING))` is the right pattern: it's a no-op locally (no env var set) and activates automatically in all Azure-deployed services.
+
+### Risks / Notes
+
+- **Double-registration was the prior state**: Api and Web were calling `UseAzureMonitor()` unconditionally AND ServiceDefaults was supposed to do it (once uncommented). OpenTelemetry's SDK is mostly idempotent here but this is now clean.
+- **Functions worker model**: `UseAzureMonitor()` from the AspNetCore package works for isolated worker Functions too. `UseFunctionsWorkerDefaults()` adds the Functions-specific trace source — that's the only Functions-specific piece needed.
+- **Package pinned at v1.4.0**: Matches what Api and Web already referenced. Should be reviewed against the latest stable release in a future sprint.
+
+### Recommendation
+
+In a future sprint: audit whether Api and Web still need `Azure.Monitor.OpenTelemetry.AspNetCore` as a direct package reference, since ServiceDefaults is now the only consumer and they'll get it transitively.
+
+---
+
+# Decision: PR #511 CI Fix — Merge main instead of rebase
+
+**Date:** 2025-07-14  
+**Author:** Link (Platform & DevOps Engineer)  
+**PR:** #511 `feature/s8-328-wire-application-insights`
+
+## Decision
+
+Used `git merge origin/main --no-edit` (not rebase) to bring PR #511 up to date with main after PR #513 landed.
+
+## Rationale
+
+- PR #511's changes are entirely in `ServiceDefaults/` and `Program.cs` files — no overlap with the controller/test renames from PR #513.
+- Merge produced a clean auto-merge with no conflicts.
+- Rebase was unnecessary complexity for a non-overlapping change set; merge preserves the original commit history and is less risky in a shared branch.
+
+## Workflow conflict policy (secondary decision)
+
+When popping stashes onto branches that have received `origin/main` updates, workflow file conflicts in `.github/workflows/*.yml` should always resolve to the `origin/main` version. The vuln-scan policy (Critical-only gate, with High/Medium/Low logged but non-blocking) was deliberately established in PR #509 and must not be regressed.
+
+---
+
+### 2026-03-20: Pagination parameter validation pattern
+**By:** Morpheus
+**What:** Paginated endpoints clamp page to min 1, pageSize to range 1-100. Applied as inline guards at the top of each list action method.
+**Why:** Neo review blocked on division-by-zero (pageSize=0) and negative Skip (page=0).
+
+---
+
+# Neo PR #512 Re-Review Verdict
+
+**Date:** 2026-03-21
+**PR:** #512 `feature/s8-315-api-dtos`
+**Original Review:** 2026-03-21 (CHANGES REQUESTED)
+**Fix Author:** Morpheus
+**Re-Review Author:** Neo
+
+## Verdict: APPROVED ✅
+
+Both blocking issues from initial review have been resolved.
+
+## Issues Resolved
+
+### 1. ✅ BOM Character Removed
+**Original issue:** MessageTemplatesController.cs line 1 had UTF-8 BOM (U+FEFF) before first `using` statement.
+
+**Fix verified:** Commit `9f02d429` changed line 1 from `\uFEFFusing` to clean `using`. File now clean UTF-8.
+
+### 2. ✅ Route-as-Ground-Truth Pattern Fixed
+**Original issue:** `TalkRequest.EngagementId` property violated route-as-ground-truth pattern. The route `POST /engagements/{engagementId}/talks` provides `engagementId`, so it should not be in the request body DTO.
+
+**Fix verified:** 
+- Commit `9f02d429` removed these lines from TalkRequest.cs:
+  ```csharp
+  [Required]
+  public int EngagementId { get; set; }
+  ```
+- Controller ToModel calls correctly use route parameter:
+  - CREATE: `var talk = ToModel(request, engagementId);`
+  - UPDATE: `var talk = ToModel(request, engagementId, talkId);`
+- ToModel signature: `private static Talk ToModel(TalkRequest r, int engagementId, int id = 0)`
+
+## Pattern Compliance Verified
+
+All 3 controllers (EngagementsController, SchedulesController, MessageTemplatesController) follow the approved DTO pattern:
+
+1. ✅ Private static `ToResponse(DomainModel)` helpers
+2. ✅ Private static `ToModel(RequestDTO, routeParams...)` helpers
+3. ✅ No AutoMapper or external mapping library
+4. ✅ Route parameters passed to ToModel as arguments, not from DTO
+5. ✅ Request DTOs for input, Response DTOs for output
+6. ✅ Proper null handling with `?.` operator (e.g., `e.Talks?.Select(ToResponse).ToList()`)
+7. ✅ No "route id must match body id" validation checks
+
+## CI Status
+
+- ✅ GitGuardian Security Checks passed
+
+## New Issues
+
+None identified.
+
+## Recommendation
+
+**Ready to merge.** PR #512 successfully implements DTO layer pattern and closes issue #315.
+
+## GitHub Limitation Note
+
+Cannot formally approve PR via GitHub API because reviewer (jguadagno) is same as PR author. Posted approval verdict as comment: https://github.com/jguadagno/jjgnet-broadcast/pull/512#issuecomment-4095334205
+
+---
+
+### 2026-03-19T20:47:12: PR #514 pagination review verdict
+**By:** Neo
+**Verdict:** CHANGES REQUESTED
+**Blocking issues:**
+1. Division by zero in PagedResponse.TotalPages when pageSize=0
+2. Negative Skip() calculation when page=0
+
+**Why:**
+The core pagination pattern is correctly implemented (PagedResponse<T> wrapper, consistent defaults, full coverage of all list endpoints, proper DTO usage). However, two edge cases will cause runtime failures:
+- pageSize=0 throws DivideByZeroException in TotalPages calculation
+- page=0 produces negative Skip() value, leading to misleading client behavior
+
+These are defensive validation gaps that must be fixed before production use. Pattern compliance is otherwise excellent — no BOM issues, consistent across all 9 list endpoints.
+
+**Remediation:** Per team protocol, Trinity (PR author) cannot fix their own rejected PR. Coordinator must assign a different agent.
+
+---
+
+# Neo Re-Review Verdict: PR #514 — Pagination Implementation (APPROVED)
+
+**Date:** 2026-03-21  
+**Reviewer:** Neo  
+**PR:** #514 `feature/s8-316-pagination`  
+**Previous Review:** 2026-03-19T20:47:12 (CHANGES REQUESTED)  
+**Fixes By:** Morpheus  
+
+## Verdict: APPROVED ✅
+
+Both blocking edge cases from the initial review have been resolved with proper input validation guards.
+
+## Issues Resolved
+
+### 1. ✅ Division by Zero — FIXED
+**Original Issue:** PagedResponse.TotalPages calculation (`TotalCount / PageSize`) threw DivideByZeroException when `pageSize=0`.
+
+**Fix Applied:** All 8 paginated endpoints now validate and clamp pageSize:
+```csharp
+if (pageSize < 1) pageSize = 1;
+if (pageSize > 100) pageSize = 100;
+```
+
+**Result:** TotalPages calculation is always safe because PageSize is guaranteed to be ≥ 1.
+
+### 2. ✅ Negative Skip — FIXED
+**Original Issue:** `Skip((page - 1) * pageSize)` produced negative values when `page=0`, causing undefined behavior.
+
+**Fix Applied:** All 8 paginated endpoints now validate and clamp page:
+```csharp
+if (page < 1) page = 1;
+```
+
+**Result:** Skip calculation always receives valid positive or zero values.
+
+## Validation Coverage (8/8 Endpoints)
+
+All paginated list endpoints have consistent validation guards:
+
+1. **EngagementsController.GetEngagementsAsync** — ✅ page/pageSize guards present
+2. **EngagementsController.GetTalksForEngagementAsync** — ✅ page/pageSize guards present
+3. **MessageTemplatesController.GetAllAsync** — ✅ page/pageSize guards present
+4. **SchedulesController.GetScheduledItemsAsync** — ✅ page/pageSize guards present
+5. **SchedulesController.GetUnsentScheduledItemsAsync** — ✅ page/pageSize guards present
+6. **SchedulesController.GetScheduledItemsToSendAsync** — ✅ page/pageSize guards present
+7. **SchedulesController.GetUpcomingScheduledItemsForCalendarMonthAsync** — ✅ page/pageSize guards present
+8. **SchedulesController.GetOrphanedScheduledItemsAsync** — ✅ page/pageSize guards present
+
+## Pattern Compliance
+
+✅ **Consistent validation logic** across all endpoints (page: min 1, pageSize: 1-100)  
+✅ **PagedResponse\<T\> wrapper** correctly used with Items, Page, PageSize, TotalCount, TotalPages  
+✅ **Response DTOs** properly wrapped in PagedResponse  
+✅ **No route-as-ground-truth violations** detected  
+✅ **No BOM characters** in modified files  
+✅ **CI passing** (GitGuardian checks successful)  
+
+## New Issues Found
+
+**None.** The validation fix is clean and introduces no new problems.
+
+## Recommendation
+
+**READY TO MERGE.** All blocking issues resolved, pattern compliance verified, CI passing.
+
+## Next Steps
+
+1. Merge PR #514
+2. Close issue #316
+3. Consider documenting the pagination pattern (min/max limits, validation approach) for future API endpoint development
+
+---
+
+*Note: Could not formally approve PR via `gh pr review --approve` because PR author (jguadagno) cannot approve their own PR per GitHub policy. Added approval comment to PR thread instead.*
+
+---
+
+# Oracle Decision Record: HTTP Security Headers Middleware (S6-6, Issue #303)
+
+## Date
+2026-03-19
+
+## Author
+Oracle (Security Engineer)
+
+## Status
+Pending Ghost review for CSP allowlist
+
+---
+
+## Context
+
+Both the API and Web applications were missing standard HTTP security response headers, leaving
+responses vulnerable to clickjacking, MIME sniffing, and cross-site scripting. Issue #303 requires
+adding the full recommended header set to every response in both projects.
+
+---
+
+## Decisions
+
+### 1. Implementation approach — inline `app.Use` middleware
+
+Used `app.Use(async (context, next) => { ... })` in each `Program.cs` rather than a third-party
+package (`NWebsec`, `NetEscapades.AspNetCore.SecurityHeaders`). Rationale: zero new dependencies,
+the header set is small and stable, and the policy strings are clearly readable in one place. If
+the policy grows significantly, migrating to `NetEscapades.AspNetCore.SecurityHeaders` is a low-cost
+future refactor.
+
+Middleware is placed **after** `UseHttpsRedirection()` so headers are only emitted on HTTPS
+responses and are not duplicated on redirect responses.
+
+### 2. Headers applied — API (`JosephGuadagno.Broadcasting.Api`)
+
+| Header | Value | Rationale |
+|---|---|---|
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing |
+| `X-Frame-Options` | `DENY` | API has no legitimate iframe use; strictest setting |
+| `X-XSS-Protection` | `0` | Modern recommendation: disable legacy browser XSS auditor (superseded by CSP) |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer leakage on cross-origin navigation |
+| `Content-Security-Policy` | `default-src 'none'; frame-ancestors 'none'` | API serves JSON only; no scripts/styles/frames needed. `frame-ancestors 'none'` reinforces DENY framing |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=()` | Disable browser features not required by a REST API |
+
+### 3. Headers applied — Web (`JosephGuadagno.Broadcasting.Web`)
+
+| Header | Value | Rationale |
+|---|---|---|
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing |
+| `X-Frame-Options` | `SAMEORIGIN` | MVC app may legitimately frame its own pages (e.g. OAuth popups) |
+| `X-XSS-Protection` | `0` | Modern recommendation: disable legacy XSS auditor |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer leakage |
+| `Content-Security-Policy` | See §4 below | |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=()` | No browser hardware features used |
+
+### 4. Web Content-Security-Policy rationale
+
+**Policy:**
+```
+default-src 'self';
+script-src 'self' cdn.jsdelivr.net;
+style-src 'self' cdn.jsdelivr.net;
+img-src 'self' data: https:;
+font-src 'self' cdn.jsdelivr.net data:;
+connect-src 'self';
+frame-ancestors 'self';
+object-src 'none';
+base-uri 'self';
+form-action 'self'
+```
+
+**Directive-by-directive rationale:**
+
+- **`default-src 'self'`** — safe fallback; anything not explicitly listed must come from the
+  same origin.
+- **`script-src 'self' cdn.jsdelivr.net`** — `'self'` covers all local JS bundles (jQuery,
+  Bootstrap, site.js, schedules.edit.js, theme-support.js, the two new externalized scripts).
+  `cdn.jsdelivr.net` is required in production for jQuery, Bootstrap bundle, FontAwesome JS,
+  jquery-validation, and FullCalendar. No `'unsafe-inline'` — inline scripts were externalized
+  (see §5).
+- **`style-src 'self' cdn.jsdelivr.net`** — `cdn.jsdelivr.net` required in production for
+  Bootstrap CSS, Bootstrap Icons CSS, and FontAwesome CSS. No `'unsafe-inline'` — the one inline
+  `<style>` block in Calendar.cshtml was moved to `site.css`.
+- **`img-src 'self' data: https:`** — `'self'` covers `/favicon.ico` and local images.
+  `data:` is required for Bootstrap Icons (inline SVG data-URIs in the CSS). `https:` covers
+  `@Settings.StaticContentRootUrl` favicon images whose exact hostname is a runtime setting
+  (see open question §6).
+- **`font-src 'self' cdn.jsdelivr.net data:`** — `cdn.jsdelivr.net` for FontAwesome woff2/woff
+  files. `data:` covers any base64-encoded font fallbacks in vendor CSS.
+- **`connect-src 'self'`** — all XHR/fetch calls go to the same origin (Engagements calendar
+  events endpoint, API calls proxied by the Web app).
+- **`frame-ancestors 'self'`** — paired with `X-Frame-Options: SAMEORIGIN`; allows same-origin
+  framing, denies cross-origin.
+- **`object-src 'none'`** — no Flash/plugin content.
+- **`base-uri 'self'`** — prevents base tag injection attacks.
+- **`form-action 'self'`** — all form POSTs must target the same origin.
+
+### 5. Inline script/style externalization
+
+Two inline `<script>` blocks were moved to dedicated JS files to avoid needing `'unsafe-inline'`
+in `script-src`:
+
+- `Views/MessageTemplates/Index.cshtml` → `wwwroot/js/message-templates-index.js`
+  (Bootstrap tooltip initializer)
+- `Views/Schedules/Calendar.cshtml` → `wwwroot/js/schedules-calendar.js`
+  (FullCalendar initializer; no server-side data injection — uses an AJAX endpoint)
+
+One inline `<style>` block from `Views/Schedules/Calendar.cshtml` (`#calendar` sizing) was moved
+to `wwwroot/css/site.css`.
+
+### 6. Open Questions for Ghost Review
+
+1. **`img-src https:`** — This broad allowance was chosen because `Settings.StaticContentRootUrl`
+   (used for favicons) is a runtime configuration value with an unknown hostname at code-time.
+   Ghost should evaluate whether this should be tightened to the known static asset host
+   (e.g., `https://static.josephguadagno.net`) and potentially read from config at startup.
+
+2. **`cdn.jsdelivr.net` scope** — All CDN assets are pinned with SRI `integrity=` hashes in
+   the Production `<environment>` blocks. The CSP host allowance is a belt-and-suspenders
+   measure. Ghost should confirm no other CDN hostnames are referenced in any partial views
+   not covered by this review.
+
+3. **Nonce-based CSP** — A future improvement would replace the `cdn.jsdelivr.net` allowance
+   with per-request nonces, eliminating CDN host trust entirely. Out of scope for S6-6.
+
+---
+
+## Files Changed
+
+- `src/JosephGuadagno.Broadcasting.Api/Program.cs` — security headers middleware added
+- `src/JosephGuadagno.Broadcasting.Web/Program.cs` — security headers middleware added
+- `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/message-templates-index.js` — new (externalized)
+- `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/schedules-calendar.js` — new (externalized)
+- `src/JosephGuadagno.Broadcasting.Web/wwwroot/css/site.css` — calendar style appended
+- `src/JosephGuadagno.Broadcasting.Web/Views/MessageTemplates/Index.cshtml` — inline script removed
+- `src/JosephGuadagno.Broadcasting.Web/Views/Schedules/Calendar.cshtml` — inline script and style removed
+
+---
+
+# Decision: API Pagination Pattern
+
+**Author:** Trinity  
+**Date:** 2026-03-20  
+**Context:** Issue #316 - Add pagination to all list API endpoints
+
+## Decision
+
+All list endpoints in API controllers use **query parameter-based pagination** with `PagedResponse<T>` wrapper.
+
+## Pattern
+
+```csharp
+// Add using statement
+using JosephGuadagno.Broadcasting.Api.Models;
+
+// Endpoint signature
+public async Task<ActionResult<PagedResponse<TResponse>>> GetItemsAsync(
+    int page = 1, 
+    int pageSize = 25)
+{
+    var allItems = await _manager.GetAllAsync();
+    var totalCount = allItems.Count;
+    var items = allItems
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .Select(ToResponse)
+        .ToList();
+    
+    return new PagedResponse<TResponse>
+    {
+        Items = items,
+        Page = page,
+        PageSize = pageSize,
+        TotalCount = totalCount
+    };
+}
+```
+
+## PagedResponse Model
+
+Located at `src/JosephGuadagno.Broadcasting.Api/Models/PagedResponse.cs`:
+
+```csharp
+public class PagedResponse<T>
+{
+    public IEnumerable<T> Items { get; set; } = [];
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
+    public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+}
+```
+
+## Defaults
+
+- **page**: 1 (first page)
+- **pageSize**: 25 (items per page)
+
+## Rationale
+
+1. **Query parameters** - RESTful convention for pagination, allows optional parameters
+2. **Default values** - Backward compatible - omitting params gives sensible defaults
+3. **Client-side pagination** - Current managers return full collections; pagination happens in controller (acceptable for current data volumes)
+4. **Consistent wrapper** - `PagedResponse<T>` provides uniform structure across all list endpoints
+5. **TotalPages calculation** - Derived property eliminates need for clients to calculate page count
+
+## Endpoints Updated (Issue #316)
+
+### EngagementsController
+- `GET /engagements?page={page}&pageSize={pageSize}`
+- `GET /engagements/{id}/talks?page={page}&pageSize={pageSize}`
+
+### SchedulesController
+- `GET /schedules?page={page}&pageSize={pageSize}`
+- `GET /schedules/unsent?page={page}&pageSize={pageSize}`
+- `GET /schedules/upcoming?page={page}&pageSize={pageSize}`
+- `GET /schedules/calendar/{year}/{month}?page={page}&pageSize={pageSize}`
+- `GET /schedules/orphaned?page={page}&pageSize={pageSize}`
+
+### MessageTemplatesController
+- `GET /messagetemplates?page={page}&pageSize={pageSize}`
+
+## Special Cases: 404 Endpoints
+
+Endpoints that return `404 NotFound` when no items exist (e.g., unsent, orphaned) check count **before** pagination to maintain existing behavior:
+
+```csharp
+var allItems = await _manager.GetUnsentScheduledItemsAsync();
+if (allItems.Count == 0)
+{
+    return NotFound();
+}
+// ... then paginate
+```
+
+## Future Considerations
+
+- If data volumes grow significantly, consider adding server-side pagination to managers/data stores
+- Could add sorting parameters (e.g., `?sortBy=createdOn&sortDirection=desc`)
+- Could add filtering parameters (e.g., `?status=unsent`)
+
+## References
+
+- PR #514: https://github.com/jguadagno/jjgnet-broadcast/pull/514
+- Issue #316: https://github.com/jguadagno/jjgnet-broadcast/issues/316
+
+---
+
+# Decision: Scriban Template Seeding Strategy (Sprint 7)
+
+**Date:** 2026-03-20  
+**Decider:** Trinity (Backend Dev)  
+**Epic:** #474 - Templatize all of the messages  
+**Issues:** #475 (Bluesky), #476 (Facebook), #477 (LinkedIn), #478 (Twitter)
+
+## Context
+
+The Scriban template infrastructure was implemented in PR #491, adding:
+- `MessageTemplate` domain model (Platform, MessageType, Template, Description)
+- `IMessageTemplateDataStore` interface with SQL implementation
+- Template lookup in all 4 `ProcessScheduledItemFired` functions with fallback to hard-coded messages
+- Constants for platforms (Twitter, Facebook, LinkedIn, Bluesky) and message types (RandomPost, NewSyndicationFeedItem, NewYouTubeItem, NewSpeakingEngagement, ScheduledItem)
+
+However, NO templates were seeded in the database, so the system always fell back to the hard-coded message construction.
+
+## Decision
+
+**Seed default Scriban templates via SQL migration script** instead of embedded resource files.
+
+Created `scripts/database/migrations/2026-03-20-seed-message-templates.sql` with 20 templates (5 per platform).
+
+## Options Considered
+
+### Option 1: Database-backed templates (SQL migration) ✅ CHOSEN
+**Pros:**
+- Can be updated via Web UI (`MessageTemplatesController` already exists)
+- No code deployment required to change templates
+- Centralized storage in SQL Server (already used for all other configuration)
+- Consistent with existing `IMessageTemplateDataStore` implementation
+
+**Cons:**
+- Requires database migration execution
+- Not version-controlled alongside code (but migrations are)
+
+### Option 2: Embedded resource files (.liquid or .scriban in Functions project)
+**Pros:**
+- Version-controlled with code
+- No database dependency
+- Faster lookup (no DB round-trip)
+
+**Cons:**
+- Requires code redeployment to update templates
+- Would need new loader implementation (file reader)
+- Inconsistent with existing `IMessageTemplateDataStore` interface
+
+### Option 3: Azure App Configuration or Key Vault
+**Pros:**
+- Centralized cloud configuration
+- Can be updated without deployment
+
+**Cons:**
+- Adds external dependency
+- Higher latency than local DB
+- More complex than necessary for this use case
+
+## Template Design
+
+### Field Model (Exposed to all templates)
+Each platform's `TryRenderTemplateAsync` provides:
+- `title`: Post/engagement/talk title
+- `url`: Full or shortened URL
+- `description`: Comments/engagement details
+- `tags`: Space-separated hashtags
+- `image_url`: Optional thumbnail URL
+
+### Platform-Specific Templates
+
+#### Bluesky (300 char limit)
+- **NewSyndicationFeedItem**: `Blog Post: {{ title }} {{ url }} {{ tags }}`
+- **NewYouTubeItem**: `Video: {{ title }} {{ url }} {{ tags }}`
+- **NewSpeakingEngagement**: `I'm speaking at {{ title }} ({{ url }}) {{ description }}`
+- **ScheduledItem**: `My talk: {{ title }} ({{ url }}) {{ description }} Come see it!`
+- **RandomPost**: `{{ title }} {{ url }} {{ tags }}`
+
+#### Facebook (2000 char limit, link preview handles URL)
+- **NewSyndicationFeedItem**: `ICYMI: Blog Post: {{ title }} {{ tags }}`
+- **NewYouTubeItem**: `ICYMI: Video: {{ title }} {{ tags }}`
+- **NewSpeakingEngagement**: `I'm speaking at {{ title }} ({{ url }})\n\n{{ description }}`
+- **ScheduledItem**: `Talk: {{ title }} ({{ url }})\n\n{{ description }}`
+- **RandomPost**: `{{ title }}\n\n{{ description }}`
+
+#### LinkedIn (Professional tone)
+- **NewSyndicationFeedItem**: `New blog post: {{ title }}\n\n{{ description }}\n\n{{ tags }}`
+- **NewYouTubeItem**: `New video: {{ title }}\n\n{{ description }}\n\n{{ tags }}`
+- **NewSpeakingEngagement**: `Excited to announce I'll be speaking at {{ title }}!\n\n{{ description }}\n\nLearn more: {{ url }}`
+- **ScheduledItem**: `My talk: {{ title }}\n\n{{ description }}\n\nJoin me: {{ url }}`
+- **RandomPost**: `{{ title }}\n\n{{ description }}\n\n{{ tags }}`
+
+#### Twitter/X (280 char limit)
+- **NewSyndicationFeedItem**: `Blog Post: {{ title }} {{ url }} {{ tags }}`
+- **NewYouTubeItem**: `Video: {{ title }} {{ url }} {{ tags }}`
+- **NewSpeakingEngagement**: `I'm speaking at {{ title }} ({{ url }}) {{ description }}`
+- **ScheduledItem**: `My talk: {{ title }} ({{ url }}) {{ description }} Come see it!`
+- **RandomPost**: `{{ title }} {{ url }} {{ tags }}`
+
+## Rationale
+
+1. **Database-backed wins for flexibility**: The Web UI already has a MessageTemplates controller. Admins can tweak templates without code changes.
+2. **Simple templates first**: Initial templates mirror the existing hard-coded logic. Future iterations can add Scriban conditionals (`if`/`else`), filters, etc.
+3. **Platform limits enforced by code**: Functions already have fallback truncation logic. Templates don't need to handle character limits—they just provide the structure.
+4. **Single migration for all platforms**: All 4 platforms share the same infrastructure, so a single SQL file seeds all 20 templates.
+
+## Consequences
+
+### Positive
+- Templates are now customizable without redeployment
+- Hard-coded fallback logic remains as safety net
+- Web UI can manage templates (list, edit, update)
+- Future templates can use Scriban's full feature set (conditionals, loops, filters)
+
+### Negative
+- Database must be migrated before templates take effect
+- Templates are not co-located with code (but migrations are version-controlled)
+- No compile-time validation of template syntax (errors logged at runtime)
+
+## Implementation
+
+**Commit:** `6c32c01` (pushed directly to `main`)  
+**File:** `scripts/database/migrations/2026-03-20-seed-message-templates.sql`  
+**Testing:** Build succeeds (Debug configuration). No unit tests needed for seed data.  
+**Deployment:** Run migration script against production SQL Server to activate templates.
+
+## Related
+
+- **Epic:** #474 - Templatize all of the messages
+- **Issues:** #475 (Bluesky), #476 (Facebook), #477 (LinkedIn), #478 (Twitter)
+- **PR:** #491 - Original template infrastructure implementation
+- **Domain Model:** `JosephGuadagno.Broadcasting.Domain.Models.MessageTemplate`
+- **Data Store:** `JosephGuadagno.Broadcasting.Data.Sql.MessageTemplateDataStore`
+- **Functions:** `ProcessScheduledItemFired` in Twitter, Facebook, LinkedIn, Bluesky folders
+
+## Future Enhancements
+
+1. **Conditional formatting**: Use Scriban `if`/`else` to vary messages based on field values (e.g., "Updated Blog Post" vs "New Blog Post" based on `item_last_updated_on`)
+2. **Character limit enforcement in templates**: Add Scriban custom functions to truncate strings at specific lengths
+3. **A/B testing**: Store multiple templates per (Platform, MessageType) and randomly select
+4. **Localization**: Add a `Language` field to support multi-language templates
+5. **Template validation**: Add UI preview/test functionality in the Web app
+
+
