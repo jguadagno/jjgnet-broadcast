@@ -74,9 +74,13 @@ public class TalksController : Controller
     {
         var talkToEdit = _mapper.Map<Domain.Models.Talk>(talkViewModel);
         var savedTalk = await _engagementService.SaveEngagementTalkAsync(talkToEdit);
-        return savedTalk == null
-            ? RedirectToAction("Edit", new { engagementId = talkViewModel.EngagementId, talkId = talkViewModel.Id })
-            : RedirectToAction("Details", new { engagementId = savedTalk.EngagementId, talkId = savedTalk.Id });
+        if (savedTalk == null)
+        {
+            TempData["ErrorMessage"] = "Failed to update the talk.";
+            return RedirectToAction("Edit", new { engagementId = talkViewModel.EngagementId, talkId = talkViewModel.Id });
+        }
+        TempData["SuccessMessage"] = "Talk updated successfully.";
+        return RedirectToAction("Details", new { engagementId = savedTalk.EngagementId, talkId = savedTalk.Id });
     }
 
     /// <summary>
@@ -93,8 +97,10 @@ public class TalksController : Controller
 
         if (result)
         {
+            TempData["SuccessMessage"] = "Talk deleted successfully.";
             return RedirectToAction("Edit", "Engagements", new {id = engagementId});
         }
+        TempData["ErrorMessage"] = "Failed to delete the talk.";
         return View();
     }
     
@@ -123,8 +129,12 @@ public class TalksController : Controller
     {
         var talkToAdd = _mapper.Map<Domain.Models.Talk>(talkViewModel);
         var savedTalk = await _engagementService.SaveEngagementTalkAsync(talkToAdd);
-        return savedTalk == null
-            ? RedirectToAction("Add")
-            : RedirectToAction("Details", new { engagementId = savedTalk.EngagementId, talkId = savedTalk.Id });
+        if (savedTalk == null)
+        {
+            TempData["ErrorMessage"] = "Failed to add the talk.";
+            return RedirectToAction("Add");
+        }
+        TempData["SuccessMessage"] = "Talk added successfully.";
+        return RedirectToAction("Details", new { engagementId = savedTalk.EngagementId, talkId = savedTalk.Id });
     }
 }
