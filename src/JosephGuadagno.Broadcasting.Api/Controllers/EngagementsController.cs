@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -37,14 +38,15 @@ public class EngagementsController: ControllerBase
     /// <response code="400">If the request is poorly formatted</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response> 
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(List<Engagement>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(List<EngagementResponse>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<Engagement>>> GetEngagementsAsync()
+    public async Task<ActionResult<List<EngagementResponse>>> GetEngagementsAsync()
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
         // HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List);
-        return await _engagementManager.GetAllAsync();
+        var engagements = await _engagementManager.GetAllAsync();
+        return engagements.Select(ToResponse).ToList();
     }
 
     /// <summary>
@@ -58,32 +60,32 @@ public class EngagementsController: ControllerBase
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>             
     [HttpGet("{engagementId:int}")]
     [ActionName(nameof(GetEngagementAsync))]
-    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Engagement))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(EngagementResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<Engagement>> GetEngagementAsync(int engagementId)
+    public async Task<ActionResult<EngagementResponse>> GetEngagementAsync(int engagementId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
         // HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.View);
 
         var engagement = await _engagementManager.GetAsync(engagementId);
-        return engagement;
+        return ToResponse(engagement);
     }
 
     /// <summary>
     /// Creates an engagement
     /// </summary>
-    /// <param name="engagement">The engagement to create</param>
+    /// <param name="request">The engagement data to create</param>
     /// <returns>The newly created engagement with the Url to view its details</returns>
     /// <response code="201">Returns the newly created engagement</response>
     /// <response code="400">If the engagement is null or there are data violations</response>     
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>       
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(Engagement))]
+    [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(EngagementResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<Engagement>> CreateEngagementAsync(Engagement engagement)
+    public async Task<ActionResult<EngagementResponse>> CreateEngagementAsync(EngagementRequest request)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify);
@@ -93,13 +95,14 @@ public class EngagementsController: ControllerBase
             _logger.LogWarning("CreateEngagementAsync called with invalid model state");
             return BadRequest(ModelState);    
         }
-        
+
+        var engagement = ToModel(request);
         var savedEngagement = await _engagementManager.SaveAsync(engagement);
         if (savedEngagement != null)
         {
             _logger.LogInformation("Engagement created with Id {EngagementId}", savedEngagement.Id);
             return CreatedAtAction(nameof(GetEngagementAsync), new { engagementId = savedEngagement.Id },
-                savedEngagement);
+                ToResponse(savedEngagement));
         }
 
         return Problem("Failed to create the engagement");
@@ -109,16 +112,16 @@ public class EngagementsController: ControllerBase
     /// Updates an existing engagement
     /// </summary>
     /// <param name="engagementId">The identifier of the engagement to update</param>
-    /// <param name="engagement">The updated engagement data</param>
+    /// <param name="request">The updated engagement data</param>
     /// <returns>The updated engagement</returns>
     /// <response code="200">Returns the updated engagement</response>
     /// <response code="400">If the engagement is null, the id does not match, or there are data violations</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPut("{engagementId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Engagement))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(EngagementResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<Engagement>> UpdateEngagementAsync(int engagementId, Engagement engagement)
+    public async Task<ActionResult<EngagementResponse>> UpdateEngagementAsync(int engagementId, EngagementRequest request)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify);
@@ -129,16 +132,12 @@ public class EngagementsController: ControllerBase
             return BadRequest(ModelState);    
         }
 
-        if (engagementId != engagement.Id)
-        {
-            return BadRequest("Route id must match the engagement Id.");
-        }
-        
+        var engagement = ToModel(request, engagementId);
         var savedEngagement = await _engagementManager.SaveAsync(engagement);
         if (savedEngagement != null)
         {
             _logger.LogInformation("Engagement updated with Id {EngagementId}", savedEngagement.Id);
-            return Ok(savedEngagement);
+            return Ok(ToResponse(savedEngagement));
         }
 
         return Problem("Failed to update the engagement");
@@ -181,30 +180,31 @@ public class EngagementsController: ControllerBase
     /// <response code="200">Upon success</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{engagementId:int}/talks")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(List<Talk>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(List<TalkResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<Talk>>> GetTalksForEngagementAsync(int engagementId)
+    public async Task<ActionResult<List<TalkResponse>>> GetTalksForEngagementAsync(int engagementId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List);
         
-        return await _engagementManager.GetTalksForEngagementAsync(engagementId);
+        var talks = await _engagementManager.GetTalksForEngagementAsync(engagementId);
+        return talks.Select(ToResponse).ToList();
     }
     
     /// <summary>
     /// Creates a talk for an engagement
     /// </summary>
     /// <param name="engagementId">The identifier of the engagement</param>
-    /// <param name="talk">The talk to create</param>
+    /// <param name="request">The talk data to create</param>
     /// <returns>The newly created talk with the Url to view its details</returns>
     /// <response code="201">Returns the newly created talk</response>
     /// <response code="400">If the data provided is null or there are data violations</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>      
     [HttpPost("{engagementId:int}/talks")]
-    [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(Talk))]
+    [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(TalkResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<Talk>> CreateTalkAsync(int engagementId, Talk talk)
+    public async Task<ActionResult<TalkResponse>> CreateTalkAsync(int engagementId, TalkRequest request)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify);
@@ -214,13 +214,14 @@ public class EngagementsController: ControllerBase
             _logger.LogWarning("CreateTalkAsync called with invalid model state");
             return BadRequest(ModelState);
         }
-        
+
+        var talk = ToModel(request, engagementId);
         var savedTalk = await _engagementManager.SaveTalkAsync(talk);
         if (savedTalk != null)
         {
             _logger.LogInformation("Talk created with Id {TalkId} for Engagement {EngagementId}", savedTalk.Id, engagementId);
             return CreatedAtAction(nameof(GetTalkAsync), new { engagementId = engagementId, talkId = savedTalk.Id },
-                savedTalk);
+                ToResponse(savedTalk));
         }
 
         return Problem("Failed to create the talk");
@@ -231,16 +232,16 @@ public class EngagementsController: ControllerBase
     /// </summary>
     /// <param name="engagementId">The identifier of the engagement</param>
     /// <param name="talkId">The identifier of the talk to update</param>
-    /// <param name="talk">The updated talk data</param>
+    /// <param name="request">The updated talk data</param>
     /// <returns>The updated talk</returns>
     /// <response code="200">Returns the updated talk</response>
     /// <response code="400">If the data provided is null, the id does not match, or there are data violations</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPut("{engagementId:int}/talks/{talkId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Talk))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(TalkResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<Talk>> UpdateTalkAsync(int engagementId, int talkId, Talk talk)
+    public async Task<ActionResult<TalkResponse>> UpdateTalkAsync(int engagementId, int talkId, TalkRequest request)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify);
@@ -251,16 +252,12 @@ public class EngagementsController: ControllerBase
             return BadRequest(ModelState);
         }
 
-        if (talkId != talk.Id)
-        {
-            return BadRequest("Route id must match the talk Id.");
-        }
-        
+        var talk = ToModel(request, engagementId, talkId);
         var savedTalk = await _engagementManager.SaveTalkAsync(talk);
         if (savedTalk != null)
         {
             _logger.LogInformation("Talk updated with Id {TalkId} for Engagement {EngagementId}", savedTalk.Id, engagementId);
-            return Ok(savedTalk);
+            return Ok(ToResponse(savedTalk));
         }
 
         return Problem("Failed to update the talk");
@@ -277,17 +274,18 @@ public class EngagementsController: ControllerBase
     /// <response code="404">If the requested id was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>   
     [HttpGet("{engagementId:int}/talks/{talkId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(Talk))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(TalkResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ActionName(nameof(GetTalkAsync))]
-    public async Task<Talk> GetTalkAsync(int engagementId, int talkId)
+    public async Task<TalkResponse> GetTalkAsync(int engagementId, int talkId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.View);
         
-        return await _engagementManager.GetTalkAsync(talkId);
+        var talk = await _engagementManager.GetTalkAsync(talkId);
+        return ToResponse(talk);
     }
     
     /// <summary>
@@ -320,4 +318,55 @@ public class EngagementsController: ControllerBase
         _logger.LogWarning("Talk {TalkId} not found for deletion in Engagement {EngagementId}", talkId, engagementId);
         return new NotFoundResult();
     }
+
+    private static EngagementResponse ToResponse(Engagement e) => new()
+    {
+        Id = e.Id,
+        Name = e.Name,
+        Url = e.Url,
+        StartDateTime = e.StartDateTime,
+        EndDateTime = e.EndDateTime,
+        TimeZoneId = e.TimeZoneId,
+        Comments = e.Comments,
+        Talks = e.Talks?.Select(ToResponse).ToList(),
+        CreatedOn = e.CreatedOn,
+        LastUpdatedOn = e.LastUpdatedOn
+    };
+
+    private static Engagement ToModel(EngagementRequest r, int id = 0) => new()
+    {
+        Id = id,
+        Name = r.Name,
+        Url = r.Url,
+        StartDateTime = r.StartDateTime,
+        EndDateTime = r.EndDateTime,
+        TimeZoneId = r.TimeZoneId,
+        Comments = r.Comments
+    };
+
+    private static TalkResponse ToResponse(Talk t) => new()
+    {
+        Id = t.Id,
+        Name = t.Name,
+        UrlForConferenceTalk = t.UrlForConferenceTalk,
+        UrlForTalk = t.UrlForTalk,
+        StartDateTime = t.StartDateTime,
+        EndDateTime = t.EndDateTime,
+        TalkLocation = t.TalkLocation,
+        Comments = t.Comments,
+        EngagementId = t.EngagementId
+    };
+
+    private static Talk ToModel(TalkRequest r, int engagementId, int id = 0) => new()
+    {
+        Id = id,
+        Name = r.Name,
+        UrlForConferenceTalk = r.UrlForConferenceTalk,
+        UrlForTalk = r.UrlForTalk,
+        StartDateTime = r.StartDateTime,
+        EndDateTime = r.EndDateTime,
+        TalkLocation = r.TalkLocation,
+        Comments = r.Comments,
+        EngagementId = engagementId
+    };
 }

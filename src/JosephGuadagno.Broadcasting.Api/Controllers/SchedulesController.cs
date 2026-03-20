@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -36,14 +37,15 @@ public class SchedulesController: ControllerBase
     /// <response code="200">Upon success</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItem>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<ScheduledItem>>> GetScheduledItemsAsync()
+    public async Task<ActionResult<List<ScheduledItemResponse>>> GetScheduledItemsAsync()
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List);
         
-        return await _scheduledItemManager.GetAllAsync();
+        var items = await _scheduledItemManager.GetAllAsync();
+        return items.Select(ToResponse).ToList();
     }
 
     /// <summary>
@@ -56,32 +58,33 @@ public class SchedulesController: ControllerBase
     /// <response code="404">Returned if an <see cref="ScheduledItem"/> was not found for the specified id</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{scheduledItemId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScheduledItem))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScheduledItemResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ActionName(nameof(GetScheduledItemAsync))]
-    public async Task<ActionResult<ScheduledItem>> GetScheduledItemAsync(int scheduledItemId)
+    public async Task<ActionResult<ScheduledItemResponse>> GetScheduledItemAsync(int scheduledItemId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View);
         
-        return await _scheduledItemManager.GetAsync(scheduledItemId);
+        var item = await _scheduledItemManager.GetAsync(scheduledItemId);
+        return ToResponse(item);
     }
 
     /// <summary>
     /// Creates a scheduled item
     /// </summary>
-    /// <param name="scheduledItem">The scheduled item to create</param>
+    /// <param name="request">The scheduled item data to create</param>
     /// <returns>The newly created scheduled item</returns>
     /// <response code="201">If the scheduled item was created</response>
     /// <response code="400">If the data provided failed validation</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(ScheduledItem))]
+    [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(ScheduledItemResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<ScheduledItem>> CreateScheduledItemAsync(ScheduledItem scheduledItem)
+    public async Task<ActionResult<ScheduledItemResponse>> CreateScheduledItemAsync(ScheduledItemRequest request)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
@@ -91,13 +94,14 @@ public class SchedulesController: ControllerBase
             _logger.LogWarning("CreateScheduledItemAsync called with invalid model state");
             return BadRequest(ModelState);
         }
-        
+
+        var scheduledItem = ToModel(request);
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (savedScheduledItem != null)
         {
             _logger.LogInformation("ScheduledItem created with Id {ScheduledItemId}", savedScheduledItem.Id);
             return CreatedAtAction(nameof(GetScheduledItemAsync), new { scheduledItemId = savedScheduledItem.Id },
-                savedScheduledItem);
+                ToResponse(savedScheduledItem));
         }
 
         return Problem("Failed to create the scheduled item");
@@ -107,16 +111,16 @@ public class SchedulesController: ControllerBase
     /// Updates an existing scheduled item
     /// </summary>
     /// <param name="scheduledItemId">The identifier of the scheduled item to update</param>
-    /// <param name="scheduledItem">The updated scheduled item data</param>
+    /// <param name="request">The updated scheduled item data</param>
     /// <returns>The updated scheduled item</returns>
     /// <response code="200">If the scheduled item was updated</response>
     /// <response code="400">If the data provided failed validation or the id does not match</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPut("{scheduledItemId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(ScheduledItem))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(ScheduledItemResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<ScheduledItem>> UpdateScheduledItemAsync(int scheduledItemId, ScheduledItem scheduledItem)
+    public async Task<ActionResult<ScheduledItemResponse>> UpdateScheduledItemAsync(int scheduledItemId, ScheduledItemRequest request)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify);
@@ -127,16 +131,12 @@ public class SchedulesController: ControllerBase
             return BadRequest(ModelState);
         }
 
-        if (scheduledItemId != scheduledItem.Id)
-        {
-            return BadRequest("Route id must match the scheduled item Id.");
-        }
-        
+        var scheduledItem = ToModel(request, scheduledItemId);
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (savedScheduledItem != null)
         {
             _logger.LogInformation("ScheduledItem updated with Id {ScheduledItemId}", savedScheduledItem.Id);
-            return Ok(savedScheduledItem);
+            return Ok(ToResponse(savedScheduledItem));
         }
 
         return Problem("Failed to update the scheduled item");
@@ -179,10 +179,10 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If there are not items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("unsent")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItem>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<ScheduledItem>>> GetUnsentScheduledItemsAsync()
+    public async Task<ActionResult<List<ScheduledItemResponse>>> GetUnsentScheduledItemsAsync()
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled);
@@ -193,7 +193,7 @@ public class SchedulesController: ControllerBase
             return NotFound();
         }
 
-        return items;
+        return items.Select(ToResponse).ToList();
     }
 
     /// <summary>
@@ -204,10 +204,10 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If there are not items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("upcoming")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItem>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<ScheduledItem>>> GetScheduledItemsToSendAsync()
+    public async Task<ActionResult<List<ScheduledItemResponse>>> GetScheduledItemsToSendAsync()
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend);
@@ -218,7 +218,7 @@ public class SchedulesController: ControllerBase
             return NotFound();
         }
 
-        return items;
+        return items.Select(ToResponse).ToList();
     }
     
     /// <summary>
@@ -229,10 +229,10 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If there are not items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("calendar/{year:int}/{month:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItem>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<ScheduledItem>>> GetUpcomingScheduledItemsForCalendarMonthAsync(int year, int month)
+    public async Task<ActionResult<List<ScheduledItemResponse>>> GetUpcomingScheduledItemsForCalendarMonthAsync(int year, int month)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled);
@@ -243,7 +243,7 @@ public class SchedulesController: ControllerBase
             return NotFound();
         }
 
-        return items;
+        return items.Select(ToResponse).ToList();
     }
 
     /// <summary>
@@ -254,10 +254,10 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If there are no orphaned scheduled items</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("orphaned")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItem>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<ScheduledItem>>> GetOrphanedScheduledItemsAsync()
+    public async Task<ActionResult<List<ScheduledItemResponse>>> GetOrphanedScheduledItemsAsync()
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
 
@@ -267,6 +267,29 @@ public class SchedulesController: ControllerBase
             return NotFound();
         }
 
-        return items;
+        return items.Select(ToResponse).ToList();
     }
+
+    private static ScheduledItemResponse ToResponse(ScheduledItem s) => new()
+    {
+        Id = s.Id,
+        ItemType = s.ItemType,
+        ItemTableName = s.ItemTableName,
+        ItemPrimaryKey = s.ItemPrimaryKey,
+        Message = s.Message,
+        ImageUrl = s.ImageUrl,
+        MessageSentOn = s.MessageSentOn,
+        MessageSent = s.MessageSent,
+        SendOnDateTime = s.SendOnDateTime
+    };
+
+    private static ScheduledItem ToModel(ScheduledItemRequest r, int id = 0) => new()
+    {
+        Id = id,
+        ItemType = r.ItemType,
+        ItemPrimaryKey = r.ItemPrimaryKey,
+        Message = r.Message,
+        ImageUrl = r.ImageUrl,
+        SendOnDateTime = r.SendOnDateTime
+    };
 }
