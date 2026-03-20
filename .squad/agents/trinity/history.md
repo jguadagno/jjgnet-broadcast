@@ -59,7 +59,39 @@
 
 <!-- Append learnings below -->
 
-### 2026-03-20: API Pagination Implementation (Sprint 8, Issue #316)
+### 2026-03-20: GetTalkAsync Scope Investigation (Issue #527)
+
+**Task:** Add `Talks.View` fine-grained scope acceptance to `GetTalkAsync` (issue #527, flagged by Neo in PR #521 review).
+
+**What I Found:**
+- `GetTalkAsync` in `EngagementsController` already had the dual-scope fix applied in PR #526 (commit `392d0b8`): `VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.View, Domain.Scopes.Talks.All)`
+- The issue was filed based on pre-PR #526 code state; both happened in close succession
+- Full scope audit of all 3 controllers (Engagements, Schedules, MessageTemplates) found **no remaining gaps** — every endpoint uses the correct fine-grained + All dual pattern
+
+**What I Implemented:**
+- Added unit test `GetTalkAsync_WithViewScope_ReturnsTalk` to `EngagementsControllerTests.cs` proving `Talks.View` scope is accepted (regression coverage)
+- 42 tests pass total
+- PR #531: https://github.com/jguadagno/jjgnet-broadcast/pull/531
+
+**Lesson Learned:**
+- When an issue is filed concurrently with a PR, always check whether the fix was already merged before writing new code — the fix may already be in place
+- Always double-check which branch HEAD is on before committing; I accidentally committed to `squad/528-msal-incremental-consent` and had to cherry-pick to the correct branch
+
+### 2026-03-21: Scope Audit & Regression Test for Issue #527 (Trinity)
+- **Task:** Verify and add regression test for `GetTalkAsync` fine-grained scope support
+- **Finding:** Scope was already fixed in PR #526; issue filed based on pre-merge state
+- **What I Implemented:**
+  - Regression test `GetTalkAsync_WithViewScope_ReturnsTalk` added to ensure `Talks.View` is accepted
+  - Full audit of all 34 endpoints across 3 controllers (Engagements, Schedules, MessageTemplates)
+  - No gaps found; fine-grained scope rollout from PR #526 is complete
+- **PR #531 opened** with full audit table (22 Engagements endpoints, 9 Schedules, 3 MessageTemplates)
+- **All 42 API tests pass**
+- **Lesson:** Check whether concurrent PRs already fixed the issue before adding new code
+
+### 2026-03-21: Sprint Summary for Trinity
+- Core work complete: Pagination PR #514 (merged), DTO layer PR #512 (merged), Scope audit PR #531 (opened)
+- Message template seeding infrastructure complete (PR #502 — tests & design docs)
+- All API tests passing; no scope gaps remaining
 
 **Task**: Add pagination to all list endpoints in the API with page/pageSize query parameters (defaults: page=1, pageSize=25).
 

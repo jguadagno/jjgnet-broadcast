@@ -3359,3 +3359,1110 @@ The fine-grained scopes (`Engagements.List`, `Engagements.View`, etc.) must be r
 
 Until then, clients must use `*.All` tokens, which the API continues to accept.
 
+
+---
+
+## Decisions from Sprint — Inbox Merged 2026-03-20T19-35-21Z
+
+
+# Ghost Decision: MSAL Token Cache Eviction Handling (Issue #528)
+
+## Date
+2026-03-20
+
+## Decision
+
+### 1. Use `[AuthorizeForScopes]` at controller class level — no params needed
+
+`[AuthorizeForScopes]` from `Microsoft.Identity.Web` is applied as a class-level attribute on all four controllers that call the downstream API (`EngagementsController`, `TalksController`, `SchedulesController`, `MessageTemplatesController`).
+
+No `Scopes` or `ScopeKeySection` attribute parameters are set. This is intentional: when `GetAccessTokenForUserAsync` fails, Microsoft.Identity.Web wraps the exception as `MicrosoftIdentityWebChallengeUserException` and populates `ex.Scopes` with the exact scope that was requested. The attribute reads those scopes directly from the exception and issues the correct challenge.
+
+### 2. Two distinct "not in cache" scenarios — handled separately
+
+| Scenario | Handler | Behavior |
+|----------|---------|----------|
+| Account object missing from cache entirely (`user_null`) | `RejectSessionCookieWhenAccountNotInCacheEvents` | Rejects the session cookie → user is signed out |
+| Account in cache, but specific API token missing | `[AuthorizeForScopes]` on each controller | Issues OIDC challenge → user re-authenticates and gets new tokens |
+
+These are complementary. Do not collapse them into one handler.
+
+### 3. Token cache is SQL-backed — confirmed, no change needed
+
+`AddDistributedSqlServerCache` + `AddDistributedTokenCaches()` in `Web/Program.cs`. The SQL `dbo.Cache` table is the token store. No in-memory fallback. If the cache table is cleared externally, both the account-missing and token-missing paths will trigger.
+
+### 4. Scope URL is not required in the attribute
+
+The `ApiScopeUrl` configuration key (`Settings:ApiScopeUrl`) holds only the base URI. Do NOT use it as a `ScopeKeySection` value on `[AuthorizeForScopes]` — it is not a valid scope on its own. The exception-embedded scopes approach is the correct pattern for this codebase.
+
+### 5. Issues #83 and #85 are separate
+
+- **#83**: `MsalClientException` with "cache contains multiple tokens" — different code path, not addressed by `[AuthorizeForScopes]`.
+- **#85**: `OpenIdConnectProtocolException` AADSTS650052 — tenant/subscription configuration issue, separate from token cache handling.
+
+
+# Decision: Fine-Grained API Permission Scopes (Issue #170)
+
+**Date:** 2026-03-20
+**Author:** Ghost (Security & Identity Specialist)
+**Applies to:** API controllers, Web services, Domain/Scopes.cs
+**PR:** #526
+
+---
+
+## Context
+
+The API used `*.All` scopes on every endpoint. Issue #170 requires breaking these into specific least-privilege scopes so callers only need the permission for what they're actually doing.
+
+---
+
+## Decisions
+
+### 1. Scope naming convention — `{Resource}.{Action}`
+
+| HTTP verb | Scope action |
+|-----------|-------------|
+| GET (collection) | `List` |
+| GET (by ID) | `View` |
+| POST / PUT | `Modify` |
+| DELETE | `Delete` |
+
+Special read-only Schedules sub-endpoints retain their existing scope constants:
+- `Schedules.UnsentScheduled` → GET /schedules/unsent
+- `Schedules.ScheduledToSend` → GET /schedules/upcoming
+- `Schedules.UpcomingScheduled` → GET /schedules/calendar/{year}/{month}
+
+These special scopes also accept `Schedules.List` or `Schedules.All` as fallback (three-argument `VerifyUserHasAnyAcceptedScope`).
+
+### 2. Backward compatibility — dual-scope acceptance on API side
+
+**Decision:** Controllers accept `(specificScope, *.All)` via `VerifyUserHasAnyAcceptedScope`.
+
+**Rationale:** Existing Azure AD app registrations and client credentials using `*.All` must continue working without forced reconfiguration. Least-privilege enforcement is opt-in via new token issuance.
+
+**When to remove the *.All fallback:** After all callers have been updated to request only fine-grained scopes and verified in production, the `*.All` fallback can be stripped from controller checks. Track this as a follow-up.
+
+### 3. Web services request fine-grained scopes
+
+**Decision:** `SetRequestHeader(scope)` in all Web services now uses the specific scope, not `*.All`.
+
+**Rationale:** This is the correct least-privilege behavior at the MSAL token level. The Web app's MSAL client (`EnableTokenAcquisitionToCallDownstreamApi`) can still acquire the broader `*.All` scopes if needed; the per-request scope narrows what the token carries.
+
+### 4. `Web/Program.cs` MSAL scope config unchanged
+
+`AllAccessToDictionary` is still used for `EnableTokenAcquisitionToCallDownstreamApi` because it defines the universe of scopes the Web app's OIDC client is allowed to request. No change needed here — the per-request `SetRequestHeader(specificScope)` handles narrowing.
+
+### 5. Swagger advertises all fine-grained scopes
+
+`XmlDocumentTransformer` changed from `AllAccessToDictionary` → `ToDictionary` so Swagger UI shows every available scope for interactive testing. This helps API consumers discover and test with least-privilege tokens.
+
+### 6. MessageTemplates scopes added
+
+`MessageTemplates` only had `All` defined. Added `List`, `View`, and `Modify` to match the other resources. No `Delete` scope defined because the API has no delete endpoint for message templates.
+
+### 7. Bug fix: EngagementService.DeleteEngagementTalkAsync
+
+Was requesting `Engagements.All` (and comment incorrectly said `Engagements.Delete`). Corrected to `Talks.Delete` since the operation deletes a talk, not an engagement.
+
+---
+
+## What still needs Azure AD configuration
+
+The fine-grained scopes (`Engagements.List`, `Engagements.View`, etc.) must be registered as **delegated permissions** on the API App Registration in Azure AD before production tokens can use them. This is an infrastructure step — see `infrastructure-needs.md`.
+
+Until then, clients must use `*.All` tokens, which the API continues to accept.
+
+
+# Ghost — Cookie Security Hardening (Issue #336)
+
+**Date:** 2026-03-19
+**Sprint:** Sprint 8
+**PR:** #510
+
+## What Was Done
+
+Three separate cookie surfaces were hardened in `src/JosephGuadagno.Broadcasting.Web/Program.cs`:
+
+### 1. Auth Cookie (`CookieAuthenticationOptions`)
+Previously only set `Events`. Now also sets:
+- `HttpOnly = true`
+- `SecurePolicy = CookieSecurePolicy.Always`
+- `SameSite = SameSiteMode.Lax`
+
+*Lax is appropriate for the auth cookie — it must survive top-level cross-site navigations (e.g., OIDC redirect back from Azure AD).*
+
+### 2. Session Cookie (`AddSession`)
+Previously used `AddSession()` with no options. Now:
+- `HttpOnly = true`
+- `SecurePolicy = CookieSecurePolicy.Always`
+- `SameSite = SameSiteMode.Lax`
+- `IsEssential = true` — prevents session cookie from being blocked by GDPR middleware before consent
+
+### 3. Antiforgery Cookie (`AddAntiforgery`)
+Not previously configured at all. Added explicit:
+- `HttpOnly = true`
+- `SecurePolicy = CookieSecurePolicy.Always`
+- `SameSite = SameSiteMode.Strict`
+
+*Strict is correct for the antiforgery token — it never needs to be sent on cross-site requests. This provides the strongest CSRF protection.*
+
+## Findings / Learnings
+
+- `ImplicitUsings=enable` on the Web project means `Microsoft.AspNetCore.Http` types (`CookieSecurePolicy`, `SameSiteMode`) are available without explicit `using` statements.
+- `AddAntiforgery` is called before `AddControllersWithViews` so our explicit configuration wins over the default registered by MVC.
+- The `Configure<CookieAuthenticationOptions>` post-configuration pattern used by MSAL (`RejectSessionCookieWhenAccountNotInCacheEvents`) still works fine when security options are added to the same lambda.
+- SameSite=Lax (not Strict) is required for the auth cookie because the OIDC `redirect_uri` is a cross-site POST from Azure AD — Strict would break login.
+
+## Decision
+
+> Cookie security flags must be explicitly set on all cookie surfaces (auth, session, antiforgery) rather than relying on framework defaults. This is now the pattern for this project.
+
+
+# Decision Inbox: Application Insights / Azure Monitor Wiring (S8-328)
+
+**From:** Link  
+**Sprint:** Sprint 8  
+**PR:** #511  
+**Date:** 2025-07
+
+---
+
+## Findings
+
+### What Was Wrong
+
+`UseAzureMonitor()` was commented out in `ServiceDefaults/Extensions.cs` and the required NuGet package (`Azure.Monitor.OpenTelemetry.AspNetCore`) was absent from `ServiceDefaults.csproj`. In production, no traces, metrics, or logs were flowing to Application Insights.
+
+### Inconsistency Found Across Services
+
+| Service | Before | After |
+|---------|--------|-------|
+| ServiceDefaults | `UseAzureMonitor()` commented out, package missing | ✅ Uncommented, guarded by `APPLICATIONINSIGHTS_CONNECTION_STRING`, package added |
+| Api | Unconditional `UseAzureMonitor()` in `ConfigureTelemetryAndLogging` (no env var guard) | ✅ Removed — ServiceDefaults handles it |
+| Web | Same as Api — unconditional `UseAzureMonitor()` | ✅ Removed — ServiceDefaults handles it |
+| Functions | `UseAzureMonitorExporter()` in telemetry setup | ✅ Removed — ServiceDefaults handles the exporter; `UseFunctionsWorkerDefaults()` retained |
+| Functions host.json | `telemetryMode: OpenTelemetry` | ✅ Already correct — no change needed |
+
+### Design Decision Made
+
+**Centralize Azure Monitor registration in ServiceDefaults.** The conditional guard `if (!string.IsNullOrEmpty(APPLICATIONINSIGHTS_CONNECTION_STRING))` is the right pattern: it's a no-op locally (no env var set) and activates automatically in all Azure-deployed services.
+
+### Risks / Notes
+
+- **Double-registration was the prior state**: Api and Web were calling `UseAzureMonitor()` unconditionally AND ServiceDefaults was supposed to do it (once uncommented). OpenTelemetry's SDK is mostly idempotent here but this is now clean.
+- **Functions worker model**: `UseAzureMonitor()` from the AspNetCore package works for isolated worker Functions too. `UseFunctionsWorkerDefaults()` adds the Functions-specific trace source — that's the only Functions-specific piece needed.
+- **Package pinned at v1.4.0**: Matches what Api and Web already referenced. Should be reviewed against the latest stable release in a future sprint.
+
+### Recommendation
+
+In a future sprint: audit whether Api and Web still need `Azure.Monitor.OpenTelemetry.AspNetCore` as a direct package reference, since ServiceDefaults is now the only consumer and they'll get it transitively.
+
+
+# Decision: PR #511 CI Fix — Merge main instead of rebase
+
+**Date:** 2025-07-14  
+**Author:** Link (Platform & DevOps Engineer)  
+**PR:** #511 `feature/s8-328-wire-application-insights`
+
+## Decision
+
+Used `git merge origin/main --no-edit` (not rebase) to bring PR #511 up to date with main after PR #513 landed.
+
+## Rationale
+
+- PR #511's changes are entirely in `ServiceDefaults/` and `Program.cs` files — no overlap with the controller/test renames from PR #513.
+- Merge produced a clean auto-merge with no conflicts.
+- Rebase was unnecessary complexity for a non-overlapping change set; merge preserves the original commit history and is less risky in a shared branch.
+
+## Workflow conflict policy (secondary decision)
+
+When popping stashes onto branches that have received `origin/main` updates, workflow file conflicts in `.github/workflows/*.yml` should always resolve to the `origin/main` version. The vuln-scan policy (Critical-only gate, with High/Medium/Low logged but non-blocking) was deliberately established in PR #509 and must not be regressed.
+
+
+# Decision: ConferenceHashtag and ConferenceTwitterHandle naming (Issue #105)
+
+**Author:** Morpheus  
+**Date:** 2026-03-21  
+**Issue:** #105  
+**PR:** #529
+
+## Decision
+
+Fields added to `dbo.Engagements` are named `ConferenceHashtag` and `ConferenceTwitterHandle` — both `NVARCHAR(255) NULL`.
+
+## Rationale
+
+- **Nullable:** Not every engagement has a hashtag or Twitter handle. Nullable is the right default for additive optional fields.
+- **NVARCHAR(255):** Follows the team convention of bounded lengths (no MAX) on all columns. 255 is sufficient for any social handle or hashtag string.
+- **`ConferenceTwitterHandle` not `TwitterHandle`:** Scoped to conference/event identity to distinguish it from a speaker handle. Parallel to the existing `BlueSkyHandle` field.
+- **`ConferenceHashtag` not `HashTag` or `ConferenceHashTag`:** Pascal-case consistent with C# conventions; "Hashtag" as a single word follows current naming in the domain.
+
+## Downstream impact
+
+- **Trinity (API):** Add `ConferenceHashtag` and `ConferenceTwitterHandle` to `EngagementRequest` and `EngagementResponse` DTOs.
+- **Switch (Web):** Surface both fields in `EngagementViewModel` and the Add/Edit/Details Razor views.
+
+
+# Schema Decision: BlueSkyHandle on Engagements and Talks
+
+**Date:** 2026-03-21
+**Author:** Morpheus (Data Engineer)
+**Issues:** #167 (Engagement BlueSkyHandle), #166 (Scheduled Talk BlueSkyHandle)
+**PR:** #523
+
+## Decision
+
+Added `BlueSkyHandle NVARCHAR(255) NULL` to both the `dbo.Engagements` and `dbo.Talks` tables.
+
+## Column Spec
+
+| Table        | Column        | Type            | Nullable | Max Length |
+|--------------|---------------|-----------------|----------|------------|
+| Engagements  | BlueSkyHandle | NVARCHAR(255)   | YES      | 255        |
+| Talks        | BlueSkyHandle | NVARCHAR(255)   | YES      | 255        |
+
+## Rationale
+
+- **Nullable:** No existing rows have a BlueSky handle. Making it nullable is the only backward-compatible choice.
+- **NVARCHAR(255):** BlueSky handles follow the format `@user.bsky.social` (max ~253 chars). 255 is consistent with other handle/name columns in this schema.
+- **Both tables:** An engagement (conference/event) may have its own BlueSky account. A talk's speaker may have a different BlueSky handle than the event itself.
+
+## Files Changed
+
+- `scripts/database/table-create.sql` — base schema updated
+- `scripts/database/migrations/2026-03-21-add-bluesky-handle.sql` — ALTER TABLE for existing databases
+- `src/JosephGuadagno.Broadcasting.Domain/Models/Engagement.cs` — `public string? BlueSkyHandle { get; set; }`
+- `src/JosephGuadagno.Broadcasting.Domain/Models/Talk.cs` — `public string? BlueSkyHandle { get; set; }`
+- `src/JosephGuadagno.Broadcasting.Data.Sql/Models/Engagement.cs` — EF entity property added
+- `src/JosephGuadagno.Broadcasting.Data.Sql/Models/Talk.cs` — EF entity property added
+- `src/JosephGuadagno.Broadcasting.Data.Sql/BroadcastingContext.cs` — `HasMaxLength(255)` configured for both
+
+## Follow-on Work
+
+- **Trinity:** Update DTOs (`EngagementResponse`, `TalkRequest`/`TalkResponse`) to expose the field
+- **Sparks:** Add BlueSkyHandle input fields to Engagement and Talk Add/Edit forms
+
+
+### 2026-03-20: Pagination parameter validation pattern
+**By:** Morpheus
+**What:** Paginated endpoints clamp page to min 1, pageSize to range 1-100. Applied as inline guards at the top of each list action method.
+**Why:** Neo review blocked on division-by-zero (pageSize=0) and negative Skip (page=0).
+
+
+# Decision: SQL Server Size Cap Removal and Error Surfacing
+
+## Date
+2026-03-21
+
+## Issue
+#324 — SQL Server 50MB database size cap causes silent INSERT failures
+
+## Context
+The database-create.sql script provisioned SQL Server with a hard 50MB cap on the data file (`MAXSIZE = 50`) and 25MB cap on the log file (`MAXSIZE = 25MB`). When these limits were hit, INSERT operations would silently fail without surfacing any error to the application layer, making debugging extremely difficult.
+
+## Root Cause
+1. **Provisioning constraint:** The database creation script had arbitrary size limits (likely remnants of LocalDB or Azure SQL free-tier constraints)
+2. **Silent failure:** EF Core's SaveChangesAsync would not surface SQL error 1105 (insufficient space) as a meaningful exception, leaving the application unaware of capacity issues
+
+## Decision
+
+### 1. Remove Size Caps (Preventive)
+Changed `scripts/database/database-create.sql`:
+- Data file: `MAXSIZE = 50` → `MAXSIZE = UNLIMITED`
+- Log file: `MAXSIZE = 25MB` → `MAXSIZE = UNLIMITED`
+
+**Rationale:** The 50MB cap was arbitrary and inappropriate for a production-grade application. Modern SQL Server containers and Azure SQL tiers support much larger databases. UNLIMITED allows the database to grow as needed (subject to disk space and SQL Server edition limits).
+
+### 2. Surface Capacity Errors (Defensive)
+Added `SaveChangesAsync` override in `BroadcastingContext` to catch `DbUpdateException` with inner `SqlException` and check for error number 1105 (insufficient space):
+
+```csharp
+public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+{
+    try
+    {
+        return await base.SaveChangesAsync(cancellationToken);
+    }
+    catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
+    {
+        if (sqlEx.Number == 1105)
+        {
+            throw new InvalidOperationException(
+                "Database capacity exceeded. The database has reached its maximum size limit. " +
+                "Contact the administrator to increase the database capacity or archive old data.",
+                ex);
+        }
+        throw;
+    }
+}
+```
+
+**Rationale:** Even with UNLIMITED, capacity issues can still occur (disk full, quota limits). This ensures the application fails fast with a clear error message rather than silently swallowing INSERT failures.
+
+### 3. Migration for Existing Databases
+Created `scripts/database/migrations/2026-03-21-increase-database-size-limits.sql` using `ALTER DATABASE MODIFY FILE`, which updates existing databases without requiring recreation or data loss.
+
+**Rationale:** Allows zero-downtime migration of existing databases. `MODIFY FILE` is non-destructive and can be run on live databases.
+
+## Pattern Established
+**Two-layer defense for database capacity issues:**
+1. **Preventive:** Remove arbitrary limits in provisioning scripts unless there's a specific business or infrastructure constraint
+2. **Defensive:** Override SaveChangesAsync in DbContext to catch and surface SQL errors that would otherwise fail silently
+
+**SQL Error Handling in EF Core:**
+- Wrap `DbUpdateException` and check `InnerException` for `SqlException`
+- Check `SqlException.Number` for specific error codes (e.g., 1105 = insufficient space, 2627 = unique constraint violation)
+- Throw domain-appropriate exceptions (e.g., `InvalidOperationException`, `ArgumentException`) with clear messages
+
+## Alternatives Considered
+1. **Increase cap to 500MB instead of UNLIMITED:** Rejected because it just delays the problem and adds complexity
+2. **Add monitoring/alerting instead of error handling:** Rejected as insufficient — alerting is good but doesn't prevent silent failures
+3. **Use EF Core interceptors instead of SaveChangesAsync override:** Considered but SaveChangesAsync override is simpler and sufficient for this use case
+
+## Impact
+- New databases provisioned via Aspire AppHost will have no size caps
+- Existing databases can be migrated using the provided script
+- INSERT failures due to capacity will throw clear exceptions visible in logs and monitoring
+- No breaking changes to existing code
+
+## Related
+- PR #517
+- Sprint 9 milestone
+
+
+# Neo PR #512 Re-Review Verdict
+
+**Date:** 2026-03-21
+**PR:** #512 `feature/s8-315-api-dtos`
+**Original Review:** 2026-03-21 (CHANGES REQUESTED)
+**Fix Author:** Morpheus
+**Re-Review Author:** Neo
+
+## Verdict: APPROVED ✅
+
+Both blocking issues from initial review have been resolved.
+
+## Issues Resolved
+
+### 1. ✅ BOM Character Removed
+**Original issue:** MessageTemplatesController.cs line 1 had UTF-8 BOM (U+FEFF) before first `using` statement.
+
+**Fix verified:** Commit `9f02d429` changed line 1 from `\uFEFFusing` to clean `using`. File now clean UTF-8.
+
+### 2. ✅ Route-as-Ground-Truth Pattern Fixed
+**Original issue:** `TalkRequest.EngagementId` property violated route-as-ground-truth pattern. The route `POST /engagements/{engagementId}/talks` provides `engagementId`, so it should not be in the request body DTO.
+
+**Fix verified:** 
+- Commit `9f02d429` removed these lines from TalkRequest.cs:
+  ```csharp
+  [Required]
+  public int EngagementId { get; set; }
+  ```
+- Controller ToModel calls correctly use route parameter:
+  - CREATE: `var talk = ToModel(request, engagementId);`
+  - UPDATE: `var talk = ToModel(request, engagementId, talkId);`
+- ToModel signature: `private static Talk ToModel(TalkRequest r, int engagementId, int id = 0)`
+
+## Pattern Compliance Verified
+
+All 3 controllers (EngagementsController, SchedulesController, MessageTemplatesController) follow the approved DTO pattern:
+
+1. ✅ Private static `ToResponse(DomainModel)` helpers
+2. ✅ Private static `ToModel(RequestDTO, routeParams...)` helpers
+3. ✅ No AutoMapper or external mapping library
+4. ✅ Route parameters passed to ToModel as arguments, not from DTO
+5. ✅ Request DTOs for input, Response DTOs for output
+6. ✅ Proper null handling with `?.` operator (e.g., `e.Talks?.Select(ToResponse).ToList()`)
+7. ✅ No "route id must match body id" validation checks
+
+## CI Status
+
+- ✅ GitGuardian Security Checks passed
+
+## New Issues
+
+None identified.
+
+## Recommendation
+
+**Ready to merge.** PR #512 successfully implements DTO layer pattern and closes issue #315.
+
+## GitHub Limitation Note
+
+Cannot formally approve PR via GitHub API because reviewer (jguadagno) is same as PR author. Posted approval verdict as comment: https://github.com/jguadagno/jjgnet-broadcast/pull/512#issuecomment-4095334205
+
+
+### 2026-03-19T20:47:12: PR #514 pagination review verdict
+**By:** Neo
+**Verdict:** CHANGES REQUESTED
+**Blocking issues:**
+1. Division by zero in PagedResponse.TotalPages when pageSize=0
+2. Negative Skip() calculation when page=0
+
+**Why:**
+The core pagination pattern is correctly implemented (PagedResponse<T> wrapper, consistent defaults, full coverage of all list endpoints, proper DTO usage). However, two edge cases will cause runtime failures:
+- pageSize=0 throws DivideByZeroException in TotalPages calculation
+- page=0 produces negative Skip() value, leading to misleading client behavior
+
+These are defensive validation gaps that must be fixed before production use. Pattern compliance is otherwise excellent — no BOM issues, consistent across all 9 list endpoints.
+
+**Remediation:** Per team protocol, Trinity (PR author) cannot fix their own rejected PR. Coordinator must assign a different agent.
+
+
+# Neo Re-Review Verdict: PR #514 — Pagination Implementation (APPROVED)
+
+**Date:** 2026-03-21  
+**Reviewer:** Neo  
+**PR:** #514 `feature/s8-316-pagination`  
+**Previous Review:** 2026-03-19T20:47:12 (CHANGES REQUESTED)  
+**Fixes By:** Morpheus  
+
+## Verdict: APPROVED ✅
+
+Both blocking edge cases from the initial review have been resolved with proper input validation guards.
+
+## Issues Resolved
+
+### 1. ✅ Division by Zero — FIXED
+**Original Issue:** PagedResponse.TotalPages calculation (`TotalCount / PageSize`) threw DivideByZeroException when `pageSize=0`.
+
+**Fix Applied:** All 8 paginated endpoints now validate and clamp pageSize:
+```csharp
+if (pageSize < 1) pageSize = 1;
+if (pageSize > 100) pageSize = 100;
+```
+
+**Result:** TotalPages calculation is always safe because PageSize is guaranteed to be ≥ 1.
+
+### 2. ✅ Negative Skip — FIXED
+**Original Issue:** `Skip((page - 1) * pageSize)` produced negative values when `page=0`, causing undefined behavior.
+
+**Fix Applied:** All 8 paginated endpoints now validate and clamp page:
+```csharp
+if (page < 1) page = 1;
+```
+
+**Result:** Skip calculation always receives valid positive or zero values.
+
+## Validation Coverage (8/8 Endpoints)
+
+All paginated list endpoints have consistent validation guards:
+
+1. **EngagementsController.GetEngagementsAsync** — ✅ page/pageSize guards present
+2. **EngagementsController.GetTalksForEngagementAsync** — ✅ page/pageSize guards present
+3. **MessageTemplatesController.GetAllAsync** — ✅ page/pageSize guards present
+4. **SchedulesController.GetScheduledItemsAsync** — ✅ page/pageSize guards present
+5. **SchedulesController.GetUnsentScheduledItemsAsync** — ✅ page/pageSize guards present
+6. **SchedulesController.GetScheduledItemsToSendAsync** — ✅ page/pageSize guards present
+7. **SchedulesController.GetUpcomingScheduledItemsForCalendarMonthAsync** — ✅ page/pageSize guards present
+8. **SchedulesController.GetOrphanedScheduledItemsAsync** — ✅ page/pageSize guards present
+
+## Pattern Compliance
+
+✅ **Consistent validation logic** across all endpoints (page: min 1, pageSize: 1-100)  
+✅ **PagedResponse\<T\> wrapper** correctly used with Items, Page, PageSize, TotalCount, TotalPages  
+✅ **Response DTOs** properly wrapped in PagedResponse  
+✅ **No route-as-ground-truth violations** detected  
+✅ **No BOM characters** in modified files  
+✅ **CI passing** (GitGuardian checks successful)  
+
+## New Issues Found
+
+**None.** The validation fix is clean and introduces no new problems.
+
+## Recommendation
+
+**READY TO MERGE.** All blocking issues resolved, pattern compliance verified, CI passing.
+
+## Next Steps
+
+1. Merge PR #514
+2. Close issue #316
+3. Consider documenting the pagination pattern (min/max limits, validation approach) for future API endpoint development
+
+---
+
+*Note: Could not formally approve PR via `gh pr review --approve` because PR author (jguadagno) cannot approve their own PR per GitHub policy. Added approval comment to PR thread instead.*
+
+
+# Review Decision: PR #529 — feat(data): add HashTag and ConferenceHandle fields to Engagement
+
+**Date:** 2026-03-21  
+**Author:** Neo (Lead)  
+**PR:** #529  
+**Branch:** squad/105-conference-hashtag-handle  
+**Decision:** REQUEST CHANGES (not merged)
+
+## Verdict
+
+Changes requested. Two issues must be fixed before merge:
+
+### Blocker: CI Failure — Web.Tests.MappingTests.MappingProfile_IsValid
+AutoMapper `EngagementViewModel → Engagement` doesn't map the two new domain properties (`ConferenceHashtag`, `ConferenceTwitterHandle`). Fails at `AssertConfigurationIsValid()`. Fix: add the properties to `EngagementViewModel` OR add `.Ignore()` in the mapping profile. Identical pattern to PR #523 (BlueSkyHandle).
+
+### Minor: EF Entity Nullability Mismatch
+`Data.Sql/Models/Engagement.cs` declares the new columns as `string` (non-nullable) while domain model has `string?`. Should be `string?` to match domain and the `BlueSkyHandle` pattern on the same file.
+
+## What Passed
+- Migration idempotent (IF NOT EXISTS guard) ✅
+- NVARCHAR(255) bounded ✅  
+- Domain model nullable ✅  
+- EF HasMaxLength(255) configured ✅  
+- PR body notes downstream work (Trinity: DTOs, Switch: views) ✅
+
+## Downstream Work Queue (after merge)
+1. **Trinity** — `EngagementRequest` / `EngagementResponse` DTOs need the two new fields
+2. **Switch** — `EngagementViewModel` + Add/Edit/Details Razor views need the fields surfaced
+
+
+# Decision: Sparks PR Batch Review — Forms UX & Accessibility
+
+**By:** Neo (Lead)
+**Date:** 2026-03-20
+**Context:** Review of PRs #520, #522, #524 (Sparks' work)
+
+---
+
+## Decision: PR #520 — APPROVED (confirmed merged)
+
+**PR:** feat(web): add loading/submitting state to forms (Closes #333)
+**Branch:** squad/333-form-loading-state
+**Status:** Squash-merged to main, branch deleted, issue #333 closed ✅
+
+All criteria met:
+1. JS uses existing jQuery — no new dependencies
+2. Button re-enabled on `invalid-form.validate` (no permanent lock)
+3. Calendar and theme toggle unaffected
+4. Bootstrap 5 spinner markup correct
+5. Change in `wwwroot/js/site.js` only
+
+---
+
+## Decision: PR #522 — HELD (code correct, CI red — not Sparks' fault)
+
+**PR:** feat(web): add form accessibility (Closes #332)
+**Branch:** squad/332-form-accessibility
+**Status:** Open, awaiting fix of pre-existing AutoMapper issue
+
+### Code Review: PASS (all 5 criteria met)
+1. Every `<span asp-validation-for="X">` has `id="val-X"` ✅
+2. Every input has `aria-describedby="val-{FieldName}"` ✅
+3. `autocomplete` values correct (url for URLs, off for others) ✅
+4. No structural changes — purely additive attributes ✅
+5. WCAG 2.1 AA intent preserved ✅
+
+### CI: FAIL (pre-existing issue from PR #523)
+
+The `MappingTests.MappingProfile_IsValid` test fails because PR #523 (BlueSkyHandle
+schema work) added `BlueSkyHandle` to `Domain.Models.Engagement` and
+`Domain.Models.Talk` but did NOT add it to `Web.Models.EngagementViewModel` or
+`Web.Models.TalkViewModel`. AutoMapper's `AssertConfigurationIsValid()` catches this.
+
+PR #523 was merged at 15:21:46. PR #522's CI started at 15:21:52 (6 seconds later).
+GitHub CI runs against the merged state with main, so #522 inherited the broken mapping.
+
+### Required Fix (NOT Sparks' work)
+1. Add `BlueSkyHandle` string? property to `EngagementViewModel`
+2. Add `BlueSkyHandle` string? property to `TalkViewModel`
+3. Ensure AutoMapper maps it (likely automatic via convention, or add `.Ignore()` if not
+   yet exposed in the form)
+
+Once fixed on main, Sparks should rebase #522 and re-run CI.
+
+---
+
+## Decision: PR #524 — APPROVED (confirmed merged)
+
+**PR:** feat(web): add privacy page content (Closes #191)
+**Branch:** squad/191-privacy-page
+**Status:** Squash-merged to main, issue #191 closed ✅
+
+All criteria met:
+1. Placeholder replaced with real content — no TODO or lorem ipsum ✅
+2. Appropriate for a personal broadcasting tool ✅
+3. No broken HTML or Razor syntax ✅
+4. Layout consistent with other content pages (Bootstrap table, standard headings) ✅
+
+---
+
+## Cross-PR Interference Pattern
+
+When multiple feature branches are simultaneously open and one merges while another's CI
+is queued/running, the second PR's CI will test against the merged state of main. This
+means a branch with perfectly correct code can show red CI due to incomplete follow-on
+work from a different PR.
+
+**Protocol going forward:**
+- When a schema/model PR (like BlueSkyHandle) merges, all open PRs against the same area
+  should have their CI re-run after the follow-on ViewModel/mapping work is also merged
+- Do not attribute a CI failure to the PR author without tracing the root cause
+
+
+# Neo Triage Decision: Issues #527 and #528
+
+**Date:** 2026-03-21
+**Author:** Neo (Lead)
+
+## Issue #527 — `fix(api): GetTalkAsync only accepts Talks.All scope — add fine-grained Talks.View support`
+
+**Routed to:** Trinity (`squad:trinity`)
+**Priority:** High
+
+**Rationale:**
+API scope gap — `EngagementsController.GetTalkAsync` was missed during the PR #526 multi-policy scope pass. All other GET endpoints in the controller accept both a fine-grained scope and `*.All`. This issue is surgical: add the `Talks.View` policy acceptance alongside `Talks.All` in `GetTalkAsync`. Breaks least-privilege callers immediately; backward compat must hold for existing `Talks.All` tokens.
+
+**Acceptance criteria:**
+- `GetTalkAsync` accepts `Talks.View` and `Talks.All`
+- Existing `Talks.All` tokens unaffected
+- Unit test covers fine-grained scope path
+
+---
+
+## Issue #528 — `(fix): Authentication: Managing incremental consent and conditional access`
+
+**Routed to:** Ghost (`squad:ghost`)
+**Priority:** High
+
+**Rationale:**
+Classic MSAL `MsalUiRequiredException` scenario in the Web project. In-memory token cache clears on restart or eviction; session cookie still marks user as signed-in; subsequent protected API calls throw instead of silently re-acquiring a token. The fix requires applying `[AuthorizeForScopes]` attribute (or equivalent middleware challenge handling) to MVC controllers that call downstream APIs, per the microsoft-identity-web wiki pattern.
+
+**Acceptance criteria:**
+- All Web MVC controllers calling downstream APIs handle `MsalUiRequiredException` via re-challenge, not 500
+- `[AuthorizeForScopes]` applied where missing
+- Auth failures produce a transparent re-auth flow, not an error page
+
+---
+
+## Summary
+
+Both issues are High priority. #527 goes to Trinity (API scope fix, tight scope). #528 goes to Ghost (MSAL/token lifecycle, broader auth middleware review across Web controllers).
+
+
+# Oracle Decision Record: HTTP Security Headers Middleware (S6-6, Issue #303)
+
+## Date
+2026-03-19
+
+## Author
+Oracle (Security Engineer)
+
+## Status
+Pending Ghost review for CSP allowlist
+
+---
+
+## Context
+
+Both the API and Web applications were missing standard HTTP security response headers, leaving
+responses vulnerable to clickjacking, MIME sniffing, and cross-site scripting. Issue #303 requires
+adding the full recommended header set to every response in both projects.
+
+---
+
+## Decisions
+
+### 1. Implementation approach — inline `app.Use` middleware
+
+Used `app.Use(async (context, next) => { ... })` in each `Program.cs` rather than a third-party
+package (`NWebsec`, `NetEscapades.AspNetCore.SecurityHeaders`). Rationale: zero new dependencies,
+the header set is small and stable, and the policy strings are clearly readable in one place. If
+the policy grows significantly, migrating to `NetEscapades.AspNetCore.SecurityHeaders` is a low-cost
+future refactor.
+
+Middleware is placed **after** `UseHttpsRedirection()` so headers are only emitted on HTTPS
+responses and are not duplicated on redirect responses.
+
+### 2. Headers applied — API (`JosephGuadagno.Broadcasting.Api`)
+
+| Header | Value | Rationale |
+|---|---|---|
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing |
+| `X-Frame-Options` | `DENY` | API has no legitimate iframe use; strictest setting |
+| `X-XSS-Protection` | `0` | Modern recommendation: disable legacy browser XSS auditor (superseded by CSP) |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer leakage on cross-origin navigation |
+| `Content-Security-Policy` | `default-src 'none'; frame-ancestors 'none'` | API serves JSON only; no scripts/styles/frames needed. `frame-ancestors 'none'` reinforces DENY framing |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=()` | Disable browser features not required by a REST API |
+
+### 3. Headers applied — Web (`JosephGuadagno.Broadcasting.Web`)
+
+| Header | Value | Rationale |
+|---|---|---|
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing |
+| `X-Frame-Options` | `SAMEORIGIN` | MVC app may legitimately frame its own pages (e.g. OAuth popups) |
+| `X-XSS-Protection` | `0` | Modern recommendation: disable legacy XSS auditor |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer leakage |
+| `Content-Security-Policy` | See §4 below | |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=()` | No browser hardware features used |
+
+### 4. Web Content-Security-Policy rationale
+
+**Policy:**
+```
+default-src 'self';
+script-src 'self' cdn.jsdelivr.net;
+style-src 'self' cdn.jsdelivr.net;
+img-src 'self' data: https:;
+font-src 'self' cdn.jsdelivr.net data:;
+connect-src 'self';
+frame-ancestors 'self';
+object-src 'none';
+base-uri 'self';
+form-action 'self'
+```
+
+**Directive-by-directive rationale:**
+
+- **`default-src 'self'`** — safe fallback; anything not explicitly listed must come from the
+  same origin.
+- **`script-src 'self' cdn.jsdelivr.net`** — `'self'` covers all local JS bundles (jQuery,
+  Bootstrap, site.js, schedules.edit.js, theme-support.js, the two new externalized scripts).
+  `cdn.jsdelivr.net` is required in production for jQuery, Bootstrap bundle, FontAwesome JS,
+  jquery-validation, and FullCalendar. No `'unsafe-inline'` — inline scripts were externalized
+  (see §5).
+- **`style-src 'self' cdn.jsdelivr.net`** — `cdn.jsdelivr.net` required in production for
+  Bootstrap CSS, Bootstrap Icons CSS, and FontAwesome CSS. No `'unsafe-inline'` — the one inline
+  `<style>` block in Calendar.cshtml was moved to `site.css`.
+- **`img-src 'self' data: https:`** — `'self'` covers `/favicon.ico` and local images.
+  `data:` is required for Bootstrap Icons (inline SVG data-URIs in the CSS). `https:` covers
+  `@Settings.StaticContentRootUrl` favicon images whose exact hostname is a runtime setting
+  (see open question §6).
+- **`font-src 'self' cdn.jsdelivr.net data:`** — `cdn.jsdelivr.net` for FontAwesome woff2/woff
+  files. `data:` covers any base64-encoded font fallbacks in vendor CSS.
+- **`connect-src 'self'`** — all XHR/fetch calls go to the same origin (Engagements calendar
+  events endpoint, API calls proxied by the Web app).
+- **`frame-ancestors 'self'`** — paired with `X-Frame-Options: SAMEORIGIN`; allows same-origin
+  framing, denies cross-origin.
+- **`object-src 'none'`** — no Flash/plugin content.
+- **`base-uri 'self'`** — prevents base tag injection attacks.
+- **`form-action 'self'`** — all form POSTs must target the same origin.
+
+### 5. Inline script/style externalization
+
+Two inline `<script>` blocks were moved to dedicated JS files to avoid needing `'unsafe-inline'`
+in `script-src`:
+
+- `Views/MessageTemplates/Index.cshtml` → `wwwroot/js/message-templates-index.js`
+  (Bootstrap tooltip initializer)
+- `Views/Schedules/Calendar.cshtml` → `wwwroot/js/schedules-calendar.js`
+  (FullCalendar initializer; no server-side data injection — uses an AJAX endpoint)
+
+One inline `<style>` block from `Views/Schedules/Calendar.cshtml` (`#calendar` sizing) was moved
+to `wwwroot/css/site.css`.
+
+### 6. Open Questions for Ghost Review
+
+1. **`img-src https:`** — This broad allowance was chosen because `Settings.StaticContentRootUrl`
+   (used for favicons) is a runtime configuration value with an unknown hostname at code-time.
+   Ghost should evaluate whether this should be tightened to the known static asset host
+   (e.g., `https://static.josephguadagno.net`) and potentially read from config at startup.
+
+2. **`cdn.jsdelivr.net` scope** — All CDN assets are pinned with SRI `integrity=` hashes in
+   the Production `<environment>` blocks. The CSP host allowance is a belt-and-suspenders
+   measure. Ghost should confirm no other CDN hostnames are referenced in any partial views
+   not covered by this review.
+
+3. **Nonce-based CSP** — A future improvement would replace the `cdn.jsdelivr.net` allowance
+   with per-request nonces, eliminating CDN host trust entirely. Out of scope for S6-6.
+
+---
+
+## Files Changed
+
+- `src/JosephGuadagno.Broadcasting.Api/Program.cs` — security headers middleware added
+- `src/JosephGuadagno.Broadcasting.Web/Program.cs` — security headers middleware added
+- `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/message-templates-index.js` — new (externalized)
+- `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/schedules-calendar.js` — new (externalized)
+- `src/JosephGuadagno.Broadcasting.Web/wwwroot/css/site.css` — calendar style appended
+- `src/JosephGuadagno.Broadcasting.Web/Views/MessageTemplates/Index.cshtml` — inline script removed
+- `src/JosephGuadagno.Broadcasting.Web/Views/Schedules/Calendar.cshtml` — inline script and style removed
+
+
+# Scope Audit — Issue #527 Follow-up
+
+**Date:** 2026-03-20  
+**Author:** Trinity  
+**Related Issue:** #527
+
+## Finding: All Controllers Clean
+
+After auditing all three API controllers for fine-grained scope gaps:
+
+| Controller | Endpoint | Scope Check | Status |
+|---|---|---|---|
+| EngagementsController | GetEngagementsAsync | Engagements.List, Engagements.All | ✅ |
+| EngagementsController | GetEngagementAsync | Engagements.View, Engagements.All | ✅ |
+| EngagementsController | CreateEngagementAsync | Engagements.Modify, Engagements.All | ✅ |
+| EngagementsController | UpdateEngagementAsync | Engagements.Modify, Engagements.All | ✅ |
+| EngagementsController | DeleteEngagementAsync | Engagements.Delete, Engagements.All | ✅ |
+| EngagementsController | GetTalksForEngagementAsync | Talks.List, Talks.All | ✅ |
+| EngagementsController | GetTalkAsync | Talks.View, Talks.All | ✅ (fixed in PR #526) |
+| EngagementsController | CreateTalkAsync | Talks.Modify, Talks.All | ✅ |
+| EngagementsController | UpdateTalkAsync | Talks.Modify, Talks.All | ✅ |
+| EngagementsController | DeleteTalkAsync | Talks.Delete, Talks.All | ✅ |
+| SchedulesController | GetScheduledItemsAsync | Schedules.List, Schedules.All | ✅ |
+| SchedulesController | GetScheduledItemAsync | Schedules.View, Schedules.All | ✅ |
+| SchedulesController | CreateScheduledItemAsync | Schedules.Modify, Schedules.All | ✅ |
+| SchedulesController | UpdateScheduledItemAsync | Schedules.Modify, Schedules.All | ✅ |
+| SchedulesController | DeleteScheduledItemAsync | Schedules.Delete, Schedules.All | ✅ |
+| SchedulesController | GetUnsentScheduledItemsAsync | Schedules.UnsentScheduled, Schedules.List, Schedules.All | ✅ |
+| SchedulesController | GetScheduledItemsToSendAsync | Schedules.ScheduledToSend, Schedules.List, Schedules.All | ✅ |
+| SchedulesController | GetUpcomingScheduledItemsForCalendarMonthAsync | Schedules.UpcomingScheduled, Schedules.List, Schedules.All | ✅ |
+| SchedulesController | GetOrphanedScheduledItemsAsync | Schedules.List, Schedules.All | ✅ |
+| MessageTemplatesController | GetAllAsync | MessageTemplates.List, MessageTemplates.All | ✅ |
+| MessageTemplatesController | GetAsync | MessageTemplates.View, MessageTemplates.All | ✅ |
+| MessageTemplatesController | UpdateAsync | MessageTemplates.Modify, MessageTemplates.All | ✅ |
+
+**Conclusion:** No additional scope gaps found. The fine-grained scope rollout from PR #526 is complete.
+
+
+# Decision: API Pagination Pattern
+
+**Author:** Trinity  
+**Date:** 2026-03-20  
+**Context:** Issue #316 - Add pagination to all list API endpoints
+
+## Decision
+
+All list endpoints in API controllers use **query parameter-based pagination** with `PagedResponse<T>` wrapper.
+
+## Pattern
+
+```csharp
+// Add using statement
+using JosephGuadagno.Broadcasting.Api.Models;
+
+// Endpoint signature
+public async Task<ActionResult<PagedResponse<TResponse>>> GetItemsAsync(
+    int page = 1, 
+    int pageSize = 25)
+{
+    var allItems = await _manager.GetAllAsync();
+    var totalCount = allItems.Count;
+    var items = allItems
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .Select(ToResponse)
+        .ToList();
+    
+    return new PagedResponse<TResponse>
+    {
+        Items = items,
+        Page = page,
+        PageSize = pageSize,
+        TotalCount = totalCount
+    };
+}
+```
+
+## PagedResponse Model
+
+Located at `src/JosephGuadagno.Broadcasting.Api/Models/PagedResponse.cs`:
+
+```csharp
+public class PagedResponse<T>
+{
+    public IEnumerable<T> Items { get; set; } = [];
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
+    public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+}
+```
+
+## Defaults
+
+- **page**: 1 (first page)
+- **pageSize**: 25 (items per page)
+
+## Rationale
+
+1. **Query parameters** - RESTful convention for pagination, allows optional parameters
+2. **Default values** - Backward compatible - omitting params gives sensible defaults
+3. **Client-side pagination** - Current managers return full collections; pagination happens in controller (acceptable for current data volumes)
+4. **Consistent wrapper** - `PagedResponse<T>` provides uniform structure across all list endpoints
+5. **TotalPages calculation** - Derived property eliminates need for clients to calculate page count
+
+## Endpoints Updated (Issue #316)
+
+### EngagementsController
+- `GET /engagements?page={page}&pageSize={pageSize}`
+- `GET /engagements/{id}/talks?page={page}&pageSize={pageSize}`
+
+### SchedulesController
+- `GET /schedules?page={page}&pageSize={pageSize}`
+- `GET /schedules/unsent?page={page}&pageSize={pageSize}`
+- `GET /schedules/upcoming?page={page}&pageSize={pageSize}`
+- `GET /schedules/calendar/{year}/{month}?page={page}&pageSize={pageSize}`
+- `GET /schedules/orphaned?page={page}&pageSize={pageSize}`
+
+### MessageTemplatesController
+- `GET /messagetemplates?page={page}&pageSize={pageSize}`
+
+## Special Cases: 404 Endpoints
+
+Endpoints that return `404 NotFound` when no items exist (e.g., unsent, orphaned) check count **before** pagination to maintain existing behavior:
+
+```csharp
+var allItems = await _manager.GetUnsentScheduledItemsAsync();
+if (allItems.Count == 0)
+{
+    return NotFound();
+}
+// ... then paginate
+```
+
+## Future Considerations
+
+- If data volumes grow significantly, consider adding server-side pagination to managers/data stores
+- Could add sorting parameters (e.g., `?sortBy=createdOn&sortDirection=desc`)
+- Could add filtering parameters (e.g., `?status=unsent`)
+
+## References
+
+- PR #514: https://github.com/jguadagno/jjgnet-broadcast/pull/514
+- Issue #316: https://github.com/jguadagno/jjgnet-broadcast/issues/316
+
+
+# Decision: Scriban Template Seeding Strategy (Sprint 7)
+
+**Date:** 2026-03-20  
+**Decider:** Trinity (Backend Dev)  
+**Epic:** #474 - Templatize all of the messages  
+**Issues:** #475 (Bluesky), #476 (Facebook), #477 (LinkedIn), #478 (Twitter)
+
+## Context
+
+The Scriban template infrastructure was implemented in PR #491, adding:
+- `MessageTemplate` domain model (Platform, MessageType, Template, Description)
+- `IMessageTemplateDataStore` interface with SQL implementation
+- Template lookup in all 4 `ProcessScheduledItemFired` functions with fallback to hard-coded messages
+- Constants for platforms (Twitter, Facebook, LinkedIn, Bluesky) and message types (RandomPost, NewSyndicationFeedItem, NewYouTubeItem, NewSpeakingEngagement, ScheduledItem)
+
+However, NO templates were seeded in the database, so the system always fell back to the hard-coded message construction.
+
+## Decision
+
+**Seed default Scriban templates via SQL migration script** instead of embedded resource files.
+
+Created `scripts/database/migrations/2026-03-20-seed-message-templates.sql` with 20 templates (5 per platform).
+
+## Options Considered
+
+### Option 1: Database-backed templates (SQL migration) ✅ CHOSEN
+**Pros:**
+- Can be updated via Web UI (`MessageTemplatesController` already exists)
+- No code deployment required to change templates
+- Centralized storage in SQL Server (already used for all other configuration)
+- Consistent with existing `IMessageTemplateDataStore` implementation
+
+**Cons:**
+- Requires database migration execution
+- Not version-controlled alongside code (but migrations are)
+
+### Option 2: Embedded resource files (.liquid or .scriban in Functions project)
+**Pros:**
+- Version-controlled with code
+- No database dependency
+- Faster lookup (no DB round-trip)
+
+**Cons:**
+- Requires code redeployment to update templates
+- Would need new loader implementation (file reader)
+- Inconsistent with existing `IMessageTemplateDataStore` interface
+
+### Option 3: Azure App Configuration or Key Vault
+**Pros:**
+- Centralized cloud configuration
+- Can be updated without deployment
+
+**Cons:**
+- Adds external dependency
+- Higher latency than local DB
+- More complex than necessary for this use case
+
+## Template Design
+
+### Field Model (Exposed to all templates)
+Each platform's `TryRenderTemplateAsync` provides:
+- `title`: Post/engagement/talk title
+- `url`: Full or shortened URL
+- `description`: Comments/engagement details
+- `tags`: Space-separated hashtags
+- `image_url`: Optional thumbnail URL
+
+### Platform-Specific Templates
+
+#### Bluesky (300 char limit)
+- **NewSyndicationFeedItem**: `Blog Post: {{ title }} {{ url }} {{ tags }}`
+- **NewYouTubeItem**: `Video: {{ title }} {{ url }} {{ tags }}`
+- **NewSpeakingEngagement**: `I'm speaking at {{ title }} ({{ url }}) {{ description }}`
+- **ScheduledItem**: `My talk: {{ title }} ({{ url }}) {{ description }} Come see it!`
+- **RandomPost**: `{{ title }} {{ url }} {{ tags }}`
+
+#### Facebook (2000 char limit, link preview handles URL)
+- **NewSyndicationFeedItem**: `ICYMI: Blog Post: {{ title }} {{ tags }}`
+- **NewYouTubeItem**: `ICYMI: Video: {{ title }} {{ tags }}`
+- **NewSpeakingEngagement**: `I'm speaking at {{ title }} ({{ url }})\n\n{{ description }}`
+- **ScheduledItem**: `Talk: {{ title }} ({{ url }})\n\n{{ description }}`
+- **RandomPost**: `{{ title }}\n\n{{ description }}`
+
+#### LinkedIn (Professional tone)
+- **NewSyndicationFeedItem**: `New blog post: {{ title }}\n\n{{ description }}\n\n{{ tags }}`
+- **NewYouTubeItem**: `New video: {{ title }}\n\n{{ description }}\n\n{{ tags }}`
+- **NewSpeakingEngagement**: `Excited to announce I'll be speaking at {{ title }}!\n\n{{ description }}\n\nLearn more: {{ url }}`
+- **ScheduledItem**: `My talk: {{ title }}\n\n{{ description }}\n\nJoin me: {{ url }}`
+- **RandomPost**: `{{ title }}\n\n{{ description }}\n\n{{ tags }}`
+
+#### Twitter/X (280 char limit)
+- **NewSyndicationFeedItem**: `Blog Post: {{ title }} {{ url }} {{ tags }}`
+- **NewYouTubeItem**: `Video: {{ title }} {{ url }} {{ tags }}`
+- **NewSpeakingEngagement**: `I'm speaking at {{ title }} ({{ url }}) {{ description }}`
+- **ScheduledItem**: `My talk: {{ title }} ({{ url }}) {{ description }} Come see it!`
+- **RandomPost**: `{{ title }} {{ url }} {{ tags }}`
+
+## Rationale
+
+1. **Database-backed wins for flexibility**: The Web UI already has a MessageTemplates controller. Admins can tweak templates without code changes.
+2. **Simple templates first**: Initial templates mirror the existing hard-coded logic. Future iterations can add Scriban conditionals (`if`/`else`), filters, etc.
+3. **Platform limits enforced by code**: Functions already have fallback truncation logic. Templates don't need to handle character limits—they just provide the structure.
+4. **Single migration for all platforms**: All 4 platforms share the same infrastructure, so a single SQL file seeds all 20 templates.
+
+## Consequences
+
+### Positive
+- Templates are now customizable without redeployment
+- Hard-coded fallback logic remains as safety net
+- Web UI can manage templates (list, edit, update)
+- Future templates can use Scriban's full feature set (conditionals, loops, filters)
+
+### Negative
+- Database must be migrated before templates take effect
+- Templates are not co-located with code (but migrations are version-controlled)
+- No compile-time validation of template syntax (errors logged at runtime)
+
+## Implementation
+
+**Commit:** `6c32c01` (pushed directly to `main`)  
+**File:** `scripts/database/migrations/2026-03-20-seed-message-templates.sql`  
+**Testing:** Build succeeds (Debug configuration). No unit tests needed for seed data.  
+**Deployment:** Run migration script against production SQL Server to activate templates.
+
+## Related
+
+- **Epic:** #474 - Templatize all of the messages
+- **Issues:** #475 (Bluesky), #476 (Facebook), #477 (LinkedIn), #478 (Twitter)
+- **PR:** #491 - Original template infrastructure implementation
+- **Domain Model:** `JosephGuadagno.Broadcasting.Domain.Models.MessageTemplate`
+- **Data Store:** `JosephGuadagno.Broadcasting.Data.Sql.MessageTemplateDataStore`
+- **Functions:** `ProcessScheduledItemFired` in Twitter, Facebook, LinkedIn, Bluesky folders
+
+## Future Enhancements
+
+1. **Conditional formatting**: Use Scriban `if`/`else` to vary messages based on field values (e.g., "Updated Blog Post" vs "New Blog Post" based on `item_last_updated_on`)
+2. **Character limit enforcement in templates**: Add Scriban custom functions to truncate strings at specific lengths
+3. **A/B testing**: Store multiple templates per (Platform, MessageType) and randomly select
+4. **Localization**: Add a `Language` field to support multi-language templates
+5. **Template validation**: Add UI preview/test functionality in the Web app
+
+
+

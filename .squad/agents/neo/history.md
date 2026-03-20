@@ -105,3 +105,18 @@ All PRs merged this session: #516 (#319), #517 (#324), #521 (#519)
 User-merged this session: #526 (#170) + Azure AD updated  
 Previously merged: #520 (#333), #522 (#332), #523 (#167/#166), #524 (#191), #525  
 **Follow-up created:** Issue #527 — GetTalkAsync only accepts Talks.All scope; Talks.View still commented (pre-existing gap flagged during #521 review)
+
+
+### PR #529 Review — feat(data): add HashTag and ConferenceHandle fields to Engagement
+- **Date:** 2026-03-21
+- **Outcome:** Changes requested (not merged)
+- **Key finding:** Adding fields to Domain model without updating `EngagementViewModel` breaks `Web.Tests.MappingTests.MappingProfile_IsValid`. This is the third time this pattern has surfaced (BlueSkyHandle in #523 was the same). Must be a standing checklist item: whenever Domain.Models.Engagement gains a new field, also update `EngagementViewModel`.
+- **Secondary finding:** `Data.Sql/Models/Engagement.cs` uses non-nullable `string` for columns that are NULL in the DB. Convention should be `string?` to match domain nullability.
+- **Pattern confirmed:** AutoMapper `AssertConfigurationIsValid()` catches unmapped destination members — any new nullable domain property that isn't yet in the ViewModel will fail CI immediately.
+
+### 2026-03-21 Sprint Completion: Issues #527, #528 Triaged & Routed
+- **High-priority issues filed:**
+  - **#527**: `GetTalkAsync` missing `Talks.View` fine-grained scope (scope gap) → routed to Trinity
+  - **#528**: MSAL token cache eviction causing `MsalUiRequiredException` on API calls → routed to Ghost
+- **Status:** Both marked high priority for immediate action
+- **Outcome:** Trinity verified scope already fixed in PR #526 (PR #531 opened with full audit). Ghost implemented `[AuthorizeForScopes]` on all 4 API-calling Web controllers (PR #532 opened).
