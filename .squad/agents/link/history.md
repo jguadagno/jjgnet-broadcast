@@ -4,6 +4,8 @@
 
 | Date | Task | Outcome |
 |------|------|---------|
+| 2026-03-20 | **Rebase v2** — Re-rebase PRs #516 and #517 after main advanced again; monitored CI for both | ✅ Both branches rebased (same conflict pattern in `.squad/decisions.md`, resolved by taking origin/main). CI green on both. PRs ready for Neo review — both merged this session. |
+| 2026-03-20 | Rebase PRs #516 and #517 (`squad/319-functions-retry-policies`, `squad/324-sql-size-cap`) onto main to pick up Api.Tests fix from #518 | ✅ Both branches rebased and force-pushed. One conflict each in `.squad/decisions.md` (housekeeping commit `862fd19` vs main's newer decisions) — resolved by taking origin/main's version. Comments posted on both PRs. |
 | 2025-07-14 | Fix PR #511 CI — merge main into `feature/s8-328-wire-application-insights` to pick up PR #513 test renames | ✅ Clean merge, pushed successfully. Also resolved workflow conflict in `feature/s8-315-api-dtos` stash pop (kept origin/main Critical-only vuln gate). |
 | 2025-07 | S8-328: Wire Application Insights in ServiceDefaults | PR #511 opened — `UseAzureMonitor()` uncommented in ServiceDefaults, package added, redundant calls removed from Api/Web/Functions |
 
@@ -12,6 +14,9 @@
 - **Branch-behind-main CI failures**: When a PR branch pre-dates a merge to main that renames symbols (controllers, methods), the CI merge commit will fail to compile. Fix is always `git merge origin/main --no-edit` on the feature branch — no rebase needed when the changes are non-overlapping.
 - **Stash pop conflicts in shared workflow files**: Workflow files (`.github/workflows/*.yml`) change frequently across branches. When popping a stash onto a branch that has received main updates, expect conflicts in workflow steps. Always favour the `origin/main` version of vuln-scan logic since those decisions are made intentionally and tracked in PRs.
 - **Stash hygiene**: After a conflicted stash pop, git leaves the stash entry in the list. Always `git stash drop stash@{N}` after manually committing the resolution.
+- **Use `git worktree` for rebases in active repos**: When the main working tree has in-flight changes from other agents, `git worktree add ../tmp-wt <branch>` creates a clean isolated directory for rebasing. No stash juggling needed. Clean up with `git worktree remove` when done.
+- **Rebase conflicts in squad housekeeping commits**: The `862fd19` commit (merging squad inbox into decisions.md) conflicts with main whenever main also updates decisions.md. During rebase, this is always resolvable by `git checkout --ours .squad/decisions.md` (take origin/main's version) — it is more up-to-date and the inbox content is already incorporated via other paths.
+- **Rebase vs merge for CI fixes**: When branches are behind main due to a test fix, `git rebase origin/main` is preferred over merge — it produces a cleaner linear history on the PR and only the feature commit(s) show as new work.
 
 ### Application Insights / Azure Monitor wiring (S8-328)
 - **ServiceDefaults was the gap**: `UseAzureMonitor()` was commented out in `ServiceDefaults/Extensions.cs` AND the `Azure.Monitor.OpenTelemetry.AspNetCore` package was missing from `ServiceDefaults.csproj`.

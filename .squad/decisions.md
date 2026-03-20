@@ -3019,3 +3019,343 @@ return Ok(EngagementResponse.ToResponse(engagement));
 ## Action Required
 
 A follow-up issue/PR should fix null checks in all three controllers. This is **not** a test issue — it's a production code bug. Assign to Trinity (owns controllers/API).
+
+
+# Decision: Sparks PR Batch Review — Forms UX & Accessibility
+
+**By:** Neo (Lead)
+**Date:** 2026-03-20
+**Context:** Review of PRs #520, #522, #524 (Sparks' work)
+
+---
+
+## Decision: PR #520 — APPROVED (confirmed merged)
+
+**PR:** feat(web): add loading/submitting state to forms (Closes #333)
+**Branch:** squad/333-form-loading-state
+**Status:** Squash-merged to main, branch deleted, issue #333 closed ✅
+
+All criteria met:
+1. JS uses existing jQuery — no new dependencies
+2. Button re-enabled on `invalid-form.validate` (no permanent lock)
+3. Calendar and theme toggle unaffected
+4. Bootstrap 5 spinner markup correct
+5. Change in `wwwroot/js/site.js` only
+
+---
+
+## Decision: PR #522 — HELD (code correct, CI red — not Sparks' fault)
+
+**PR:** feat(web): add form accessibility (Closes #332)
+**Branch:** squad/332-form-accessibility
+**Status:** Open, awaiting fix of pre-existing AutoMapper issue
+
+### Code Review: PASS (all 5 criteria met)
+1. Every `<span asp-validation-for="X">` has `id="val-X"` ✅
+2. Every input has `aria-describedby="val-{FieldName}"` ✅
+3. `autocomplete` values correct (url for URLs, off for others) ✅
+4. No structural changes — purely additive attributes ✅
+5. WCAG 2.1 AA intent preserved ✅
+
+### CI: FAIL (pre-existing issue from PR #523)
+
+The `MappingTests.MappingProfile_IsValid` test fails because PR #523 (BlueSkyHandle
+schema work) added `BlueSkyHandle` to `Domain.Models.Engagement` and
+`Domain.Models.Talk` but did NOT add it to `Web.Models.EngagementViewModel` or
+`Web.Models.TalkViewModel`. AutoMapper's `AssertConfigurationIsValid()` catches this.
+
+PR #523 was merged at 15:21:46. PR #522's CI started at 15:21:52 (6 seconds later).
+GitHub CI runs against the merged state with main, so #522 inherited the broken mapping.
+
+### Required Fix (NOT Sparks' work)
+1. Add `BlueSkyHandle` string? property to `EngagementViewModel`
+2. Add `BlueSkyHandle` string? property to `TalkViewModel`
+3. Ensure AutoMapper maps it (likely automatic via convention, or add `.Ignore()` if not
+   yet exposed in the form)
+
+Once fixed on main, Sparks should rebase #522 and re-run CI.
+
+---
+
+## Decision: PR #524 — APPROVED (confirmed merged)
+
+**PR:** feat(web): add privacy page content (Closes #191)
+**Branch:** squad/191-privacy-page
+**Status:** Squash-merged to main, issue #191 closed ✅
+
+All criteria met:
+1. Placeholder replaced with real content — no TODO or lorem ipsum ✅
+2. Appropriate for a personal broadcasting tool ✅
+3. No broken HTML or Razor syntax ✅
+4. Layout consistent with other content pages (Bootstrap table, standard headings) ✅
+
+---
+
+## Cross-PR Interference Pattern
+
+When multiple feature branches are simultaneously open and one merges while another's CI
+is queued/running, the second PR's CI will test against the merged state of main. This
+means a branch with perfectly correct code can show red CI due to incomplete follow-on
+work from a different PR.
+
+**Protocol going forward:**
+- When a schema/model PR (like BlueSkyHandle) merges, all open PRs against the same area
+  should have their CI re-run after the follow-on ViewModel/mapping work is also merged
+- Do not attribute a CI failure to the PR author without tracing the root cause
+
+
+# Schema Decision: BlueSkyHandle on Engagements and Talks
+
+**Date:** 2026-03-21
+**Author:** Morpheus (Data Engineer)
+**Issues:** #167 (Engagement BlueSkyHandle), #166 (Scheduled Talk BlueSkyHandle)
+**PR:** #523
+
+## Decision
+
+Added `BlueSkyHandle NVARCHAR(255) NULL` to both the `dbo.Engagements` and `dbo.Talks` tables.
+
+## Column Spec
+
+| Table        | Column        | Type            | Nullable | Max Length |
+|--------------|---------------|-----------------|----------|------------|
+| Engagements  | BlueSkyHandle | NVARCHAR(255)   | YES      | 255        |
+| Talks        | BlueSkyHandle | NVARCHAR(255)   | YES      | 255        |
+
+## Rationale
+
+- **Nullable:** No existing rows have a BlueSky handle. Making it nullable is the only backward-compatible choice.
+- **NVARCHAR(255):** BlueSky handles follow the format `@user.bsky.social` (max ~253 chars). 255 is consistent with other handle/name columns in this schema.
+- **Both tables:** An engagement (conference/event) may have its own BlueSky account. A talk's speaker may have a different BlueSky handle than the event itself.
+
+## Files Changed
+
+- `scripts/database/table-create.sql` — base schema updated
+- `scripts/database/migrations/2026-03-21-add-bluesky-handle.sql` — ALTER TABLE for existing databases
+- `src/JosephGuadagno.Broadcasting.Domain/Models/Engagement.cs` — `public string? BlueSkyHandle { get; set; }`
+- `src/JosephGuadagno.Broadcasting.Domain/Models/Talk.cs` — `public string? BlueSkyHandle { get; set; }`
+- `src/JosephGuadagno.Broadcasting.Data.Sql/Models/Engagement.cs` — EF entity property added
+- `src/JosephGuadagno.Broadcasting.Data.Sql/Models/Talk.cs` — EF entity property added
+- `src/JosephGuadagno.Broadcasting.Data.Sql/BroadcastingContext.cs` — `HasMaxLength(255)` configured for both
+
+## Follow-on Work
+
+- **Trinity:** Update DTOs (`EngagementResponse`, `TalkRequest`/`TalkResponse`) to expose the field
+- **Sparks:** Add BlueSkyHandle input fields to Engagement and Talk Add/Edit forms
+
+
+# Decision: PR #516 and PR #517 Merge Review
+
+## Date
+2026-03-21
+
+## Reviewer
+Neo (Lead)
+
+## PRs Merged
+
+### PR #516 — feat(functions): add retry policies and dead-letter queue handling
+- **Branch:** squad/319-functions-retry-policies
+- **Issue closed:** #319
+- **Verdict:** APPROVED & MERGED (squash)
+
+### PR #517 — fix(sql): address 50MB database size cap and surface capacity errors
+- **Branch:** squad/324-sql-size-cap
+- **Issue closed:** #324
+- **Verdict:** APPROVED & MERGED (squash)
+
+---
+
+## PR #516 — host.json Retry Policies
+
+### Schema Verification
+Azure Functions v4 `host.json` retry and queue extension config is valid:
+
+```json
+"retry": {
+  "strategy": "exponentialBackoff",
+  "maxRetryCount": 3,
+  "minimumInterval": "00:00:05",
+  "maximumInterval": "00:00:30"
+},
+"extensions": {
+  "queues": {
+    "maxPollingInterval": "00:00:02",
+    "visibilityTimeout": "00:00:30",
+    "batchSize": 16,
+    "maxDequeueCount": 3,
+    "newBatchThreshold": 8
+  }
+}
+```
+
+### Findings
+1. `exponentialBackoff` strategy with `minimumInterval`/`maximumInterval` — correct v4 schema (TimeSpan `hh:mm:ss` format)
+2. `maxRetryCount: 3` (function-level) = `maxDequeueCount: 3` (queue-level) — consistent; function gets 3 retries, then poison-queue routing
+3. `visibilityTimeout: 30s` ≥ `maximumInterval: 30s` — no race where message re-appears on queue before retry backoff completes
+4. All `extensions.queues` properties are valid Azure Storage Queue trigger settings
+5. Poison queues auto-created by Azure Storage SDK — no provisioning work needed
+
+### Pattern Established
+- For Azure Functions queue retry config: `maxRetryCount` (function retries) should equal `maxDequeueCount` (queue DLQ threshold) to ensure consistent failure behavior
+- `visibilityTimeout` must be ≥ `maximumInterval` to prevent retry/visibility race conditions
+
+---
+
+## PR #517 — SQL Size Cap Fix
+
+### Verification: SQL Error 1105
+SQL Server error **1105** = "Could not allocate space for object in database because the filegroup is full" — correct error for capacity-exceeded INSERT failures. ✅
+
+### Migration Script Safety
+`ALTER DATABASE JJGNet MODIFY FILE` is:
+- Non-destructive DDL (does not recreate or truncate)
+- Safe to run on live databases
+- Idempotent (setting UNLIMITED on already-UNLIMITED files is a no-op)
+- Includes verification SELECT for confirmation
+
+### Code Quality: SaveChangesAsync Override
+```csharp
+public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+{
+    try { return await base.SaveChangesAsync(cancellationToken); }
+    catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
+    {
+        if (sqlEx.Number == 1105)
+            throw new InvalidOperationException("Database capacity exceeded...", ex);
+        throw;
+    }
+}
+```
+- `when` clause is efficient — no overhead on non-SqlException paths
+- Overriding `CancellationToken` variant covers both overloads (no-arg `SaveChangesAsync()` delegates to it in EF Core's DbContext base)
+- Original exception preserved as `innerException` — stack trace intact
+- Non-1105 SqlExceptions are re-thrown unchanged — no swallowing
+
+### Pattern Established
+**Two-layer defense for database infrastructure constraints:**
+1. **Preventive:** Remove arbitrary limits in provisioning scripts (`MAXSIZE = UNLIMITED`)
+2. **Defensive:** Override `SaveChangesAsync` in DbContext to catch and surface specific SQL error codes
+
+**SQL error handling in EF Core DbContext:**
+- Catch `DbUpdateException` → check `InnerException is SqlException`
+- Check `SqlException.Number` for specific codes (1105 = capacity, 2627 = unique constraint, etc.)
+- Throw domain-appropriate exceptions with clear messages, preserving original as inner
+
+---
+
+## Impact
+- Azure Functions: All 6 queue-triggered functions now have exponential backoff retry (3x, 5s→30s) and DLQ routing
+- SQL: New databases provisioned without size caps; existing databases can be migrated; capacity failures now throw clear exceptions
+- No breaking changes in either PR
+
+## Related
+- Sprint 9 milestone (#4)
+- Issues #319, #324 (auto-closed)
+
+
+# Neo Decision: PR #521 Merge — Null Guard / 404 Fix
+
+**Date:** 2026-03-20
+**PR:** #521 `squad/519-fix-null-ref-404`
+**Issue:** #519 (auto-closed)
+**Merged by:** jguadagno (already merged before review)
+
+## Decision
+
+**APPROVED.** PR #521 is correct, complete, and safe to merge. All changes verified.
+
+## What Changed
+
+### Production Code
+- `EngagementsController.GetEngagementAsync`: null guard + `return Ok(ToResponse(engagement))`
+- `EngagementsController.GetTalkAsync`: return type fixed (`Task<TalkResponse>` → `Task<ActionResult<TalkResponse>>`), null guard added
+- `SchedulesController.GetScheduledItemAsync`: null guard + `return Ok(ToResponse(item))`
+- Bonus: scope acceptance updated to include granular scopes (`.List`/`.View`/`.Modify`) alongside `.All` in EngagementsController
+
+### Tests
+- 3 not-found tests: `ThrowsNullReferenceException` → `ReturnsNotFound` (`result.Result.Should().BeOfType<NotFoundResult>()`)
+- 3 success tests: `result.Value` → `result.Result.Should().BeOfType<OkObjectResult>().Subject` (correct for explicit `return Ok()`)
+
+## Patterns Established
+
+1. **Null guard before ToResponse**: `if (x is null) return NotFound(); return Ok(ToResponse(x));`
+2. **OkObjectResult test pattern**: When testing explicit `return Ok(value)` endpoints, access value via `((OkObjectResult)result.Result).Value`, not `result.Value`
+3. **ActionResult return type required**: Methods returning `NotFound()` must have return type `ActionResult<T>` — bare `T` return type cannot carry non-200 responses
+
+## Minor Gap (Not Blocking)
+
+`GetTalkAsync` scope still only accepts `Talks.All` (`.View` remains commented). This is pre-existing from before this PR. Recommend a follow-up scope cleanup pass across all Talk endpoints.
+
+
+# Decision: Fine-Grained API Permission Scopes (Issue #170)
+
+**Date:** 2026-03-20
+**Author:** Ghost (Security & Identity Specialist)
+**Applies to:** API controllers, Web services, Domain/Scopes.cs
+**PR:** #526
+
+---
+
+## Context
+
+The API used `*.All` scopes on every endpoint. Issue #170 requires breaking these into specific least-privilege scopes so callers only need the permission for what they're actually doing.
+
+---
+
+## Decisions
+
+### 1. Scope naming convention — `{Resource}.{Action}`
+
+| HTTP verb | Scope action |
+|-----------|-------------|
+| GET (collection) | `List` |
+| GET (by ID) | `View` |
+| POST / PUT | `Modify` |
+| DELETE | `Delete` |
+
+Special read-only Schedules sub-endpoints retain their existing scope constants:
+- `Schedules.UnsentScheduled` → GET /schedules/unsent
+- `Schedules.ScheduledToSend` → GET /schedules/upcoming
+- `Schedules.UpcomingScheduled` → GET /schedules/calendar/{year}/{month}
+
+These special scopes also accept `Schedules.List` or `Schedules.All` as fallback (three-argument `VerifyUserHasAnyAcceptedScope`).
+
+### 2. Backward compatibility — dual-scope acceptance on API side
+
+**Decision:** Controllers accept `(specificScope, *.All)` via `VerifyUserHasAnyAcceptedScope`.
+
+**Rationale:** Existing Azure AD app registrations and client credentials using `*.All` must continue working without forced reconfiguration. Least-privilege enforcement is opt-in via new token issuance.
+
+**When to remove the *.All fallback:** After all callers have been updated to request only fine-grained scopes and verified in production, the `*.All` fallback can be stripped from controller checks. Track this as a follow-up.
+
+### 3. Web services request fine-grained scopes
+
+**Decision:** `SetRequestHeader(scope)` in all Web services now uses the specific scope, not `*.All`.
+
+**Rationale:** This is the correct least-privilege behavior at the MSAL token level. The Web app's MSAL client (`EnableTokenAcquisitionToCallDownstreamApi`) can still acquire the broader `*.All` scopes if needed; the per-request scope narrows what the token carries.
+
+### 4. `Web/Program.cs` MSAL scope config unchanged
+
+`AllAccessToDictionary` is still used for `EnableTokenAcquisitionToCallDownstreamApi` because it defines the universe of scopes the Web app's OIDC client is allowed to request. No change needed here — the per-request `SetRequestHeader(specificScope)` handles narrowing.
+
+### 5. Swagger advertises all fine-grained scopes
+
+`XmlDocumentTransformer` changed from `AllAccessToDictionary` → `ToDictionary` so Swagger UI shows every available scope for interactive testing. This helps API consumers discover and test with least-privilege tokens.
+
+### 6. MessageTemplates scopes added
+
+`MessageTemplates` only had `All` defined. Added `List`, `View`, and `Modify` to match the other resources. No `Delete` scope defined because the API has no delete endpoint for message templates.
+
+### 7. Bug fix: EngagementService.DeleteEngagementTalkAsync
+
+Was requesting `Engagements.All` (and comment incorrectly said `Engagements.Delete`). Corrected to `Talks.Delete` since the operation deletes a talk, not an engagement.
+
+---
+
+## What still needs Azure AD configuration
+
+The fine-grained scopes (`Engagements.List`, `Engagements.View`, etc.) must be registered as **delegated permissions** on the API App Registration in Azure AD before production tokens can use them. This is an infrastructure step — see `infrastructure-needs.md`.
+
+Until then, clients must use `*.All` tokens, which the API continues to accept.
+
