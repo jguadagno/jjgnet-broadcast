@@ -11,6 +11,7 @@ create table dbo.Engagements
     StartDateTime datetimeoffset             not null,
     EndDateTime   datetimeoffset             not null,
     Comments      nvarchar(max),
+    BlueSkyHandle nvarchar(255)  null,
     TimeZoneId    nvarchar(50) default 'America/Phoenix' not null,
     CreatedOn datetimeoffset default getutcdate() NOT NULL,
     LastUpdatedOn datetimeoffset default getutcdate() NOT NULL
@@ -31,7 +32,8 @@ create table dbo.Talks
     StartDateTime        datetimeoffset not null,
     EndDateTime          datetimeoffset not null,
     TalkLocation         nvarchar(max),
-    Comments             nvarchar(max)
+    Comments             nvarchar(max),
+    BlueSkyHandle        nvarchar(255)  null
 )
 go
 

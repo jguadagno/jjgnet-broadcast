@@ -58,6 +58,11 @@ public class Engagement
     public List<Talk>? Talks { get; set; }
 
     /// <summary>
+    /// The BlueSky handle for the engagement (e.g. the speaker's or event's BlueSky account)
+    /// </summary>
+    public string? BlueSkyHandle { get; set; }
+
+    /// <summary>
     /// The date and time the item was created
     /// </summary>
     public DateTimeOffset CreatedOn { get; set; }
