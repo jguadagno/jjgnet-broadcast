@@ -20,6 +20,8 @@ public partial class Engagement
     public string TimeZoneId { get; set; }
     public string Comments { get; set; }
     public string BlueSkyHandle { get; set; }
+    public string ConferenceHashtag { get; set; }
+    public string ConferenceTwitterHandle { get; set; }
     public DateTimeOffset CreatedOn { get; set; }
     public DateTimeOffset LastUpdatedOn { get; set; }
 
