@@ -59,6 +59,66 @@
 
 <!-- Append learnings below -->
 
+### 2026-03-20: API Pagination Implementation (Sprint 8, Issue #316)
+
+**Task**: Add pagination to all list endpoints in the API with page/pageSize query parameters (defaults: page=1, pageSize=25).
+
+**Controllers Updated**:
+1. **EngagementsController** (`src/JosephGuadagno.Broadcasting.Api/Controllers/EngagementsController.cs`)
+   - `GetEngagementsAsync()` - list all engagements
+   - `GetTalksForEngagementAsync(int engagementId)` - list talks for an engagement
+
+2. **SchedulesController** (`src/JosephGuadagno.Broadcasting.Api/Controllers/SchedulesController.cs`)
+   - `GetScheduledItemsAsync()` - list all scheduled items
+   - `GetUnsentScheduledItemsAsync()` - list unsent items
+   - `GetScheduledItemsToSendAsync()` - list upcoming items
+   - `GetUpcomingScheduledItemsForCalendarMonthAsync(int year, int month)` - list items for calendar month
+   - `GetOrphanedScheduledItemsAsync()` - list orphaned items
+
+3. **MessageTemplatesController** (`src/JosephGuadagno.Broadcasting.Api/Controllers/MessageTemplatesController.cs`)
+   - `GetAllAsync()` - list all message templates
+
+**Implementation Pattern**:
+```csharp
+public async Task<ActionResult<PagedResponse<T>>> GetItemsAsync(int page = 1, int pageSize = 25)
+{
+    var allItems = await _manager.GetAllAsync();
+    var totalCount = allItems.Count;
+    var items = allItems
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .Select(ToResponse)
+        .ToList();
+    
+    return new PagedResponse<T>
+    {
+        Items = items,
+        Page = page,
+        PageSize = pageSize,
+        TotalCount = totalCount
+    };
+}
+```
+
+**Key Decisions**:
+- Used existing `PagedResponse<T>` model (already existed as uncommitted file on main)
+- Maintained existing behavior for endpoints with 404 handling (e.g., unsent/upcoming/orphaned) - check count before pagination
+- Added `using JosephGuadagno.Broadcasting.Api.Models;` to each controller
+- Query parameters default to `page=1, pageSize=25` per issue spec
+- Changed return types from `List<TResponse>` to `PagedResponse<TResponse>`
+- Updated ProducesResponseType attributes to reflect new return type
+
+**Files Changed**:
+- `src/JosephGuadagno.Broadcasting.Api/Models/PagedResponse.cs` (committed first - was untracked)
+- 3 controller files (EngagementsController, SchedulesController, MessageTemplatesController)
+
+**Branch & PR**:
+- Branch: `feature/s8-316-pagination`
+- PR #514: https://github.com/jguadagno/jjgnet-broadcast/pull/514
+- Build succeeded with expected warnings (NU1903, NETSDK1206)
+
+**Outcome**: All 8 list endpoints now support pagination with sensible defaults, maintaining backward compatibility via optional parameters.
+
 ### 2026-03-19: Scriban Message Templates Implementation
 
 **Task**: Implement Scriban/Liquid message templates for all 4 social media platforms (Bluesky, Twitter/X, Facebook, LinkedIn) - issues #475-478.

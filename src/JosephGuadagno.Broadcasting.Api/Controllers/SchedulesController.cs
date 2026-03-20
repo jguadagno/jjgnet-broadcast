@@ -44,6 +44,10 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetScheduledItemsAsync(int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List);
         
@@ -202,6 +206,10 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetUnsentScheduledItemsAsync(int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled);
         
@@ -242,6 +250,10 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetScheduledItemsToSendAsync(int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend);
         
@@ -284,6 +296,10 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetUpcomingScheduledItemsForCalendarMonthAsync(int year, int month, int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled);
         
@@ -324,6 +340,10 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetOrphanedScheduledItemsAsync(int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.All);
 
         var allItems = await _scheduledItemManager.GetOrphanedScheduledItemsAsync();

@@ -45,6 +45,10 @@ public class MessageTemplatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<MessageTemplateResponse>>> GetAllAsync(int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.All);
         var allTemplates = await _messageTemplateDataStore.GetAllAsync();
         var totalCount = allTemplates.Count;

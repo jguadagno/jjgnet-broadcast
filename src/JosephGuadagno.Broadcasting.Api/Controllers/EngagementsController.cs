@@ -46,6 +46,10 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<EngagementResponse>>> GetEngagementsAsync(int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.All);
         // HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List);
         var allEngagements = await _engagementManager.GetAllAsync();
@@ -202,6 +206,10 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<TalkResponse>>> GetTalksForEngagementAsync(int engagementId, int page = 1, int pageSize = 25)
     {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 1;
+        if (pageSize > 100) pageSize = 100;
+        
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.All);
         //HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List);
         
