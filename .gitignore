@@ -730,3 +730,9 @@ startup.ps1
 
 ### Agent working files ###
 **/sessions/
+
+# Squad runtime state (local diagnostic artifacts — not committed)
+.squad/orchestration-log/
+.squad/log/
+.squad/decisions/inbox/
+.squad/sessions/
