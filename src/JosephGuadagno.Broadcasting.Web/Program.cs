@@ -8,8 +8,10 @@ using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
+using JosephGuadagno.Broadcasting.Web.Middleware;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Azure;
@@ -86,6 +88,48 @@ builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefa
         options.Cookie.SameSite = SameSiteMode.Lax;
     });
 
+builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
+{
+    options.Events ??= new OpenIdConnectEvents();
+
+    options.Events.OnRemoteFailure = context =>
+    {
+        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogError(context.Failure, "Remote authentication failure");
+
+        string sanitizedMessage;
+        if (context.Failure is OpenIdConnectProtocolException)
+        {
+            var errorMessage = context.Failure.Message;
+            if (errorMessage.Contains("AADSTS650052"))
+                sanitizedMessage = "This app is not authorized for your organization. Please contact your administrator.";
+            else if (errorMessage.Contains("AADSTS700016"))
+                sanitizedMessage = "Application configuration error. Please contact support.";
+            else if (errorMessage.Contains("invalid_client"))
+                sanitizedMessage = "Authentication configuration error. Please contact support.";
+            else
+                sanitizedMessage = "An error occurred during sign-in. Please try again.";
+        }
+        else
+        {
+            sanitizedMessage = "An error occurred during sign-in. Please try again.";
+        }
+
+        context.HandleResponse();
+        context.Response.Redirect($"/Home/AuthError?message={Uri.EscapeDataString(sanitizedMessage)}");
+        return Task.CompletedTask;
+    };
+
+    options.Events.OnAuthenticationFailed = context =>
+    {
+        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogError(context.Exception, "Authentication failed");
+        context.HandleResponse();
+        context.Response.Redirect("/Home/AuthError?message=An+error+occurred+during+sign-in.+Please+try+again.");
+        return Task.CompletedTask;
+    };
+});
+
 builder.Services.AddDistributedSqlServerCache(options =>
 {
     options.ConnectionString = builder.Configuration.GetConnectionString("JJGNetDatabaseSqlServer");
@@ -146,6 +190,8 @@ app.Use(async (context, next) =>
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseMsalExceptionHandler();
 
 app.UseAuthentication();
 app.UseAuthorization();
