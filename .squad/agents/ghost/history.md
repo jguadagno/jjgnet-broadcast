@@ -14,6 +14,22 @@
 | 2026-03-21 | Issue #544 — Add OpenID Connect event handlers for login failures (OnRemoteFailure, OnAuthenticationFailed) | ✅ PR #553 opened targeting main |
 | 2026-03-21 | Issue #548 — Add token cache collision resilience to RejectSessionCookieWhenAccountNotInCacheEvents (first line of defence for #83) | ✅ PR #555 opened targeting main |
 
+## Sprint 11 Final Outcomes
+
+All 5 sprint 11 PRs merged to main. All 5 issues (#544–#548) closed. Three-layer auth exception defence for issue #85 fully delivered:
+
+| Layer | Component | PR | Issue |
+|-------|-----------|-----|-------|
+| Layer 1 | `RejectSessionCookieWhenAccountNotInCacheEvents` — `multiple_matching_tokens_detected` catch | #555 | #548 |
+| Layer 2 | `MsalExceptionMiddleware` — global middleware (after UseRouting, before UseAuthentication) | #554 | #546 |
+| Layer 3 | `Program.cs` OIDC event handlers (`OnRemoteFailure`/`OnAuthenticationFailed`) | #553 | #544 |
+| Support | `AuthError` page + `AuthErrorViewModel` + `[AllowAnonymous]` action | #551 | #545 |
+| Support | `Error.cshtml` hardened — `IsDevelopment()` gates full Request ID | #552 | #547 |
+
+**Incident note:** PR #553 branch `issue-544` was initially submitted with stray files from #545/#547 and no Program.cs changes. Neo flagged during review. Trinity corrected the branch; Neo re-approved. Lesson: verify diff matches commit intent before pushing.
+
+Sprint 12 is tagged with 13 issues.
+
 ## Learnings
 
 ### Issue #528 — MsalUiRequiredException / incremental consent

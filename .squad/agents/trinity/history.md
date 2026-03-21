@@ -19,6 +19,19 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 
 ## Recent Work
 
+### 2026-03-21: Sprint 11 Closeout — All PRs Merged
+
+Sprint 11 complete. All 5 PRs (#551–#555) merged to main. All 5 issues (#544–#548) closed. Three-layer auth exception defence for issue #85 is live on main:
+- Layer 1: `RejectSessionCookieWhenAccountNotInCacheEvents` handles `multiple_matching_tokens_detected` (PR #555)
+- Layer 2: `MsalExceptionMiddleware` catches MSAL exceptions globally (PR #554)
+- Layer 3: `Program.cs` OIDC event handlers map AADSTS codes to friendly messages (PR #553)
+- AuthError page (`[AllowAnonymous]`, ResponseCache(NoStore)) serves as the landing page (PR #551)
+- Error.cshtml gated by `IsDevelopment()` — 8-char reference ID in production (PR #552)
+
+Sprint 12 tagged with 13 issues.
+
+---
+
 ### 2026-03-21: Fix PR #553 — Correct Branch with OIDC Event Handlers (Trinity)
 
 - **Task:** Branch `issue-544` had wrong files committed (AuthError page, HomeController, Error.cshtml from other PRs). Program.cs changes were missing.
@@ -38,6 +51,14 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
   - No gaps found; fine-grained scope rollout from PR #526 is complete
 - **PR #531 opened** with full audit table (22 Engagements endpoints, 9 Schedules, 3 MessageTemplates)
 - **Lesson:** Check whether concurrent PRs already fixed the issue before adding new code
+
+### 2026-03-21: Sprint 11 Branch Cleanup (Trinity)
+
+- **Task:** Delete all 5 sprint 11 local branches after their PRs were squash-merged to main.
+- **Branches deleted:** `issue-544` (-D), `issue-545` (-d), `issue-546` (-D), `issue-547` (-D), `issue-548` (-d)
+- **Note:** `issue-545` and `issue-548` deleted cleanly with `-d`. The other three required `-D` because squash merges leave branch tips unrecognized by `git branch --merged`; confirm via `git log --oneline` on main before force-deleting.
+- **Remote tracking refs:** Pruned via `git remote prune origin`; no issue-54x refs remained after.
+- **Complication:** Local main had a diverged commit, requiring a merge commit during `git pull`. Also had to stash uncommitted changes on a feature branch before switching to main.
 
 ---
 
