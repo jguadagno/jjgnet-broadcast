@@ -8,6 +8,11 @@
 | 2026-03-20 | Issue #170 — Fine-grained permission scopes on all API endpoints | ✅ PR #526 opened targeting main |
 | 2026-03-21 | Issue #528 — MsalUiRequiredException on token cache eviction (Web → API calls) | ✅ PR #532 opened targeting main |
 | 2026-03-21 | Sprint Summary — Auth token lifecycle handling complete, SQL token cache confirmed | ✅ [AuthorizeForScopes] on all 4 Web controllers calling API |
+| 2026-03-21 | Issue #547 — Harden Error.cshtml: full Request ID in Dev only; first-8-char 'Error reference' in Production | ✅ PR #552 opened targeting main |
+| 2026-03-21 | Issue #545 — Add dedicated AuthError page and view model (part of #85) | ✅ PR #551 opened targeting main |
+| 2026-03-21 | Issue #546 — Add global MsalExceptionMiddleware (part of #85) | ✅ PR #554 opened targeting main |
+| 2026-03-21 | Issue #544 — Add OpenID Connect event handlers for login failures (OnRemoteFailure, OnAuthenticationFailed) | ✅ PR #553 opened targeting main |
+| 2026-03-21 | Issue #548 — Add token cache collision resilience to RejectSessionCookieWhenAccountNotInCacheEvents (first line of defence for #83) | ✅ PR #555 opened targeting main |
 
 ## Learnings
 
@@ -49,3 +54,18 @@ Was requesting `Engagements.All` scope and the comment incorrectly said `Engagem
 
 **Tests: *.All remains valid**
 Existing unit tests pass `*.All` tokens and they continue to pass because the API accepts `specificScope OR All`. No test changes needed. The 42/42 pass rate also resolved 3 pre-existing test failures (those failures were unrelated to scope logic — they appear to have been caused by in-flight branch state on the workspace).
+
+### Issue #548 — Token cache collision resilience in cookie validation (first line of defence for #83)
+
+**What was built:**
+Added a `catch (MsalClientException msalEx) when (msalEx.ErrorCode == "multiple_matching_tokens_detected")` block inside `RejectSessionCookieWhenAccountNotInCacheEvents.ValidatePrincipal`. The handler logs a Warning (including the user's identity name resolved from `context.Principal?.Identity?.Name`) then calls `context.RejectPrincipal()` to invalidate the session cookie and force a fresh OIDC sign-in.
+
+**Logger resolution pattern:**
+The class is instantiated via `new RejectSessionCookieWhenAccountNotInCacheEvents()` in `Program.cs` — no constructor DI. Logger is resolved at call time via `context.HttpContext.RequestServices.GetService<ILogger<...>>()`. Null-coalesced with `?.LogWarning(...)` so no NRE if logging is somehow not registered.
+
+**Why cache-clear is not done here:**
+`ITokenAcquisition` has no public cache-clear API. The correct low-level path (`IConfidentialClientApplication.GetAccountAsync` → `RemoveAsync`) requires an `IAccount` object — but when the cache is in a collision state MSAL cannot resolve the account, making this circular. Principal rejection is the correct recovery: re-sign-in creates a clean single cache entry.
+
+**Two-layer defence (Issue #83):**
+- Layer 1 (this issue): `RejectSessionCookieWhenAccountNotInCacheEvents.ValidatePrincipal` — fires on every request with a valid session cookie, before any controller code runs. Catches the collision early and forces re-auth.
+- Layer 2 (Issue #546 / PR #554): `MsalExceptionMiddleware` — global middleware fallback. Catches any `MsalClientException multiple_matching_tokens_detected` that bubbles up from a controller/service layer token acquisition call. Redirects to sign-out.

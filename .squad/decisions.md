@@ -7333,3 +7333,149 @@ var real = SealedTypeFactory.Create(...); // Use library's factory methods if av
 ## Tags
 `#testing` `#moq` `#sealed-types` `#azure-functions` `#bluesky` `#idunno-atproto`
 
+
+
+---
+
+# Decision: Two-Layer Defence Against MSAL Token Cache Collisions (Issue #83)
+
+**Author:** Ghost — Security & Identity Specialist  
+**Date:** 2026-03-21  
+**Related Issues:** #83, #85, #546, #548  
+**Related PRs:** #554 (Layer 2), #555 (Layer 1)
+
+---
+
+## Context
+
+MSAL's SQL-backed distributed token cache (`dbo.Cache`) can accumulate multiple entries for the same account/scope combination under certain race or restart conditions. When this happens, MSAL throws `MsalClientException` with `ErrorCode == "multiple_matching_tokens_detected"`. If unhandled, this surfaces as a 500 for the user.
+
+---
+
+## Decision: Two-Layer Defence
+
+Rather than a single catch point, the mitigation is applied at two places in the request pipeline to ensure coverage regardless of how the exception surfaces.
+
+### Layer 1 — Cookie Validation (First Line of Defence)
+**File:** `RejectSessionCookieWhenAccountNotInCacheEvents.cs`  
+**Issue:** #548 / PR #555
+
+`ValidatePrincipal` runs on every request that presents a valid session cookie — before any controller or service code executes. The new catch block:
+
+```csharp
+catch (MsalClientException msalEx) when (msalEx.ErrorCode == "multiple_matching_tokens_detected")
+{
+    // Log Warning with user identity name
+    // Call context.RejectPrincipal() → invalidates the session cookie
+}
+```
+
+**Effect:** The session cookie is rejected, the framework redirects to sign-in, a fresh OIDC cycle completes, and MSAL writes a single clean cache entry. This handles the collision before the user ever reaches a page.
+
+### Layer 2 — Global Middleware (Fallback)
+**File:** `Middleware/MsalExceptionMiddleware.cs`  
+**Issue:** #546 / PR #554
+
+Wraps the entire request pipeline. If Layer 1 is bypassed (e.g., the `ValidatePrincipal` token acquisition call doesn't trigger the exception but a later service call does), the middleware catches the bubbled `MsalClientException` and redirects to `/Account/SignOut?reason=cache_error`.
+
+---
+
+## Why Cache-Clear Is Not Attempted
+
+`ITokenAcquisition` (Microsoft.Identity.Web's public abstraction) has no `ClearCacheAsync` method. The underlying path — `IConfidentialClientApplication.GetAccountAsync(identifier)` → `RemoveAsync(account)` — requires a resolved `IAccount` object. In a collision state, MSAL cannot reliably resolve the account (it's the collision that causes the exception), making a cache-clear attempt circular and unreliable.
+
+**Correct recovery:** reject the principal. The next sign-in creates a single canonical cache entry, resolving the collision permanently for that user session.
+
+---
+
+## Coverage Matrix
+
+| Scenario | Handled by |
+|----------|-----------|
+| Collision detected during cookie validation tick | Layer 1 (ValidatePrincipal catch) |
+| Collision detected during controller/service token acquisition | Layer 2 (MsalExceptionMiddleware) |
+| Collision during OIDC login flow itself | Layer 2 + OnRemoteFailure handler (Issue #544) |
+
+---
+
+## Future Work
+
+If the collision rate is high enough to warrant proactive cleanup, a background `IHostedService` could scan `dbo.Cache` for duplicate MSAL entries and purge them. This would be a separate issue under #83.
+
+
+---
+
+# Pattern: Ghost Sprint 11 PR Review — OIDC Exception Handling
+
+**Date:** 2026-03-21  
+**Author:** Neo (Lead)  
+**Context:** Review of PRs #551–#554 (Issue #85 — Handle Exceptions with Microsoft Entra login)
+
+---
+
+## Pattern: PR Description ≠ Committed Code
+
+PR #553 had a fully-written PR body with acceptance criteria all checked, describing OIDC event handlers in Program.cs. The actual diff contained zero Program.cs changes — only duplicates of files from other PRs. 
+
+**Rule:** Always verify the diff against the PR body during review. Checked acceptance criteria are aspirational, not confirmatory. Treat the diff as ground truth.
+
+---
+
+## Pattern: Shared Files Across Co-dependent PRs
+
+PRs #552 and #554 both modified `Error.cshtml` with identical changes. When PRs in the same sprint touch the same file, document merge order in the PR body or they will create a trivial conflict requiring manual resolution.
+
+**Rule:** When a sprint has multiple PRs that touch the same file, note the merge dependency explicitly. Recommended order: #551 → #552 → #553 → #554.
+
+---
+
+## Pattern: MsalExceptionMiddleware Ordering
+
+The correct ASP.NET Core middleware order for MSAL exception handling is:
+
+```
+app.UseRouting();
+app.UseMsalExceptionMiddleware();   // BEFORE UseAuthentication
+app.UseAuthentication();
+app.UseAuthorization();
+```
+
+Rationale: The try/catch in `InvokeAsync` wraps `_next(context)`, catching exceptions thrown by the downstream Authentication and Authorization pipeline. Placing it before them is what enables the catch.
+
+---
+
+## Pattern: ILogger DI in Middleware vs OIDC Handlers
+
+| Location | DI Pattern | Reason |
+|----------|-----------|--------|
+| Middleware class | Constructor injection `ILogger<T>` | Middleware instances are created by DI at startup; constructor injection works normally |
+| OIDC event handler (Program.cs lambda) | `context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>()` | Event handlers are lambdas, not DI-constructed classes; must resolve at runtime when RequestServices is available |
+
+Do not mix these up. Constructor injection in an OIDC event lambda will capture a null or scoped logger incorrectly.
+
+---
+
+## Pattern: AADSTS Error Code Mapping (Established Decision)
+
+For `OnRemoteFailure` in OIDC event handlers:
+
+| Error Code | User-facing message |
+|-----------|---------------------|
+| AADSTS650052 | "This app is not authorized for your organization. Please contact your administrator." |
+| AADSTS700016 | "Application configuration error. Please contact support." |
+| invalid_client | "Authentication configuration error. Please contact support." |
+| (all others) | "An error occurred during sign-in. Please try again." |
+
+For `OnAuthenticationFailed`: always use generic message (crypto failures are never user-actionable, no error-code inspection).
+
+Raw Azure AD error strings must **never** be passed to the user.
+
+---
+
+## Pattern: AuthError Page Security
+
+- `[AllowAnonymous]` is mandatory — the user is not authenticated when hitting this page
+- `[ResponseCache(Duration = 0, NoStore = true)]` prevents stale error pages from CDN/proxy caches
+- `message` query param must come from server-side code (OIDC handler) only, never from user input directly
+- Razor `@Model.Message` auto-encodes, preventing XSS even if a bad message somehow reaches the view
+
