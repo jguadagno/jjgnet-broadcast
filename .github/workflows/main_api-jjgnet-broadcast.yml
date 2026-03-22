@@ -112,6 +112,13 @@ jobs:
             --slot staging \
             --target-slot production
 
+      - name: Stop staging slot
+        run: |
+          az webapp stop \
+            --name api-jjgnet-broadcast \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --slot staging
+
       - name: Get production URL
         id: get-url
         run: |

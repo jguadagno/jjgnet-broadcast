@@ -124,3 +124,10 @@ jobs:
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
             --slot staging \
             --target-slot production
+
+      - name: Stop staging slot
+        run: |
+          az functionapp stop \
+            --name jjgnet-broadcast \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --slot staging
