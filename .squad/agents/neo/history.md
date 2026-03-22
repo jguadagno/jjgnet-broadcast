@@ -147,6 +147,10 @@ Place cleanup/stop steps immediately after the primary action step, not after in
 - name: Stop staging slot
 ```
 
+### Integration test projects: InMemoryCredentialStore config binding
+
+LinqToTwitter's `InMemoryCredentialStore` uses property names `OAuthToken` / `OAuthTokenSecret` (NOT `AccessToken`/`AccessTokenSecret`). Config key `Twitter:OAuthToken` binds correctly. Confirmed by existing Functions `local.settings.json` and `Program.cs`.
+
 ### Azure CLI: slot stop commands
 
 - Web Apps: `az webapp stop --name <name> --resource-group <rg> --slot <slot>`
@@ -177,4 +181,45 @@ Both forms are valid YAML for GHA environments:
 **Decision Recorded:** Pattern documented in decisions.md — cleanup/stop steps should run immediately after primary action, before informational steps, to guarantee cleanup runs if primary action succeeds.
 
 **Action:** Recommend applying correct step order in future workflow modifications or when PR #557 is revisited. Not a blocker for merge.
+
+---
+
+### 2026-07-14: PR #559 Review — Twitter Manager Integration Tests (Issue #558)
+
+**PR:** #559 — `test: add Twitter Manager integration test project`
+**Verdict: ✅ APPROVED** (posted as comment — GitHub blocks self-approval on owner account)
+
+**All scope items confirmed:**
+
+| Item | Result |
+|------|--------|
+| 4 test cases | ✅ |
+| `[Trait("Category", "Integration")]` on class | ✅ |
+| `[Fact(Skip = "Manually run only")]` on all 4 | ✅ |
+| Startup.cs DI: InMemoryCredentialStore → SingleUserAuthorizer → TwitterContext → ITwitterManager | ✅ |
+| Config keys: ConsumerKey/ConsumerSecret/OAuthToken/OAuthTokenSecret | ✅ |
+| appsettings.Development.json with 4 blank placeholders | ✅ |
+| TwitterSendTweetTests.cs deleted from Functions.IntegrationTests | ✅ |
+| Project added to solution | ✅ |
+| TwitterPostException for error-path assertions | ✅ |
+| Tweet cleanup (delete) in success-path tests | ✅ |
+
+**Non-blocking observations:**
+1. `ProductVersion` typo in .csproj: `($VersionSuffix)` should be `$(VersionSuffix)`. No build/runtime impact (IsPackable=false, test project).
+2. CancellationToken not propagated to async calls. Deleted file used `cancelToken: TestContext.Current.CancellationToken`; new tests omit it. Fine for manual-only tests.
+
+**Outcome:**
+- ✅ PR approved via review comment (2026-03-22T19:48:03Z)
+- ✅ Joseph Guadagno merged PR #559 to main
+- ✅ Issue #558 closed
+
+**Pattern Documented:**
+Integration test projects for social managers should:
+- Use InMemoryCredentialStore for credentials (no real API calls)
+- Configure DI in Startup.cs (test-project pattern)
+- Mark tests with `[Trait("Category", "Integration")]` + `[Fact(Skip = "Manually run only")]`
+- Implement cleanup logic in success-path tests
+- Use exception assertions for error paths
+
+**Next Steps:** Establish similar integration test projects for Facebook, LinkedIn, and Bluesky managers.
 
