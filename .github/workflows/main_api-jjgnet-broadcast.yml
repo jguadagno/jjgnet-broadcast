@@ -117,3 +117,10 @@ jobs:
         run: |
           url=$(az webapp show --name api-jjgnet-broadcast --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --query defaultHostName -o tsv)
           echo "webapp-url=https://$url" >> $GITHUB_OUTPUT
+
+      - name: Stop staging slot
+        run: |
+          az webapp stop \
+            --name api-jjgnet-broadcast \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --slot staging
