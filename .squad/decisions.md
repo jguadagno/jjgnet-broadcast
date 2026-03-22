@@ -7479,3 +7479,82 @@ Raw Azure AD error strings must **never** be passed to the user.
 - `message` query param must come from server-side code (OIDC handler) only, never from user input directly
 - Razor `@Model.Message` auto-encodes, preventing XSS even if a bad message somehow reaches the view
 
+
+---
+
+# Decision: Production Approval Gate + Staging Stop After Swap
+
+# Decision: Production Approval Gate + Staging Stop After Swap
+
+**Author:** Cypher (DevOps Engineer)  
+**Date:** 2026-03-14  
+**Status:** Implemented
+
+## Context
+
+All three deployment workflows (API, Web, Functions) deployed to a staging slot and then immediately swapped to production with no human approval gate. There was also no cleanup of the staging slot after the swap.
+
+## Decision
+
+1. **Approval gate via GitHub Environment:** All three `swap-to-production` jobs already carried `environment: production`. This is the correct GitHub Actions pattern — GitHub will enforce required reviewers if the `production` environment is configured with protection rules in **Settings → Environments → production**. No structural job reorganization was needed; the gate was already architecturally correct.
+
+2. **Stop staging after swap:** Added a final step to each `swap-to-production` job that stops the staging slot after a successful swap:
+   - App Service workflows (API, Web): `az webapp stop --name <app> --resource-group ... --slot staging`
+   - Functions workflow: `az functionapp stop --name jjgnet-broadcast --resource-group ... --slot staging`
+
+## Job Flow (all three pipelines)
+
+```
+build / build-and-test
+  └─► deploy-to-staging   [environment: staging]
+        └─► swap-to-production   [environment: production — APPROVAL GATE HERE]
+              1. Login to Azure
+              2. Swap slot (staging → production)
+              3. Get production URL  (App Service only)
+              4. Stop staging slot   ← NEW
+```
+
+## Action Required by Joseph
+
+Go to **GitHub → Settings → Environments → production** and add required reviewers. Until reviewers are configured, the `environment: production` gate exists but will auto-proceed without waiting.
+
+## Files Changed
+
+- `.github/workflows/main_api-jjgnet-broadcast.yml` — Added "Stop staging slot" step (`az webapp stop`)
+- `.github/workflows/main_web-jjgnet-broadcast.yml` — Added "Stop staging slot" step (`az webapp stop`)
+- `.github/workflows/main_jjgnet-broadcast.yml` — Added "Stop staging slot" step (`az functionapp stop`)
+
+---
+
+# Pattern: CI Cleanup Step Ordering Pattern
+
+# Decision: CI Cleanup Step Ordering Pattern
+
+**Date:** 2026-07-14
+**Author:** Neo
+**Related PR:** #557 — `ci: add production approval gate and stop staging slot after swap`
+**Related Issue:** #556
+
+## Decision
+
+**Cleanup/stop steps in CI deployment jobs should be placed immediately after the primary action step, not after informational steps.**
+
+## Rationale
+
+PR #557 placed the "Stop staging slot" step after the "Get production URL" step in the API and Web workflows. If the URL-fetch step fails (e.g., transient Azure API issue), the stop step is skipped — leaving the staging slot running after a successful swap. The Functions workflow correctly places stop immediately after the swap.
+
+The URL-fetch step is purely informational (it outputs a URL to the GitHub environment). It has no dependency on the slot state. Reordering to `Swap → Stop → Get URL` eliminates the gap without affecting correctness.
+
+## Rule
+
+In GitHub Actions deployment jobs, order steps as:
+1. Primary action (swap, deploy, etc.)
+2. Resource cleanup (stop slot, clean artifacts, etc.)
+3. Informational steps (get URL, post summary, etc.)
+
+This ensures cleanup always runs after the primary action succeeds, regardless of informational step outcomes.
+
+## Status
+
+Approved as-is in PR #557 (gap is minor, not a blocker). Recommend applying correct ordering in any future CI workflow modifications or when PR #557 is revisited.
+

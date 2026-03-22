@@ -102,3 +102,79 @@ Sprint 12 tagged with 13 issues.
 ---
 
 *For earlier work, see git log and orchestration-log/ records.*
+
+---
+
+### 2026-07-14: PR #557 Review — Production Approval Gate + Stop Staging Slot (Issue #556)
+
+**PR:** #557 — `ci: add production approval gate and stop staging slot after swap`
+**Verdict: ✅ APPROVED** (posted as comment — GitHub blocks self-approval on owner account)
+
+**What the PR does:**
+1. Adds `environment: production` gate to `swap-to-production` job in all three workflows
+2. Adds `az webapp stop --slot staging` / `az functionapp stop --slot staging` after each swap
+
+**Checklist:**
+
+| Check | API | Web | Functions |
+|---|---|---|---|
+| `environment: production` gate | ✅ | ✅ | ✅ |
+| Correct CLI command | ✅ `az webapp stop` | ✅ `az webapp stop` | ✅ `az functionapp stop` |
+| `--slot staging` flag | ✅ | ✅ | ✅ |
+| Correct app name | ✅ | ✅ | ✅ |
+| Stop skipped if swap fails | ✅ default | ✅ default | ✅ default |
+| YAML valid | ✅ | ✅ | ✅ |
+
+**Non-blocking observations:**
+1. API and Web place "Stop staging slot" AFTER "Get production URL" — if the URL-fetch fails post-swap, staging slot stays running. Correct fix: move stop step before get-URL step. Functions workflow already has correct ordering.
+2. `if: success()` not explicit on stop step — intent is implicit via default GHA behaviour. Acceptable but documenting with explicit condition is cleaner.
+
+## Learnings
+
+### CI/CD: Step ordering for cleanup steps
+
+Place cleanup/stop steps immediately after the primary action step, not after informational steps. If the info step fails, downstream steps won't run and cleanup is skipped.
+
+```yaml
+# ✅ Correct ordering
+- name: Swap
+- name: Stop staging slot   # cleanup immediately after primary action
+- name: Get production URL  # info last — its failure doesn't skip cleanup
+
+# ⚠️ Fragile — URL-fetch failure skips stop
+- name: Swap
+- name: Get production URL
+- name: Stop staging slot
+```
+
+### Azure CLI: slot stop commands
+
+- Web Apps: `az webapp stop --name <name> --resource-group <rg> --slot <slot>`
+- Function Apps: `az functionapp stop --name <name> --resource-group <rg> --slot <slot>`
+
+Both commands are symmetric and both accept `--slot`.
+
+### GitHub Actions: `environment:` scalar vs object
+
+Both forms are valid YAML for GHA environments:
+- Scalar: `environment: production` (no URL — correct for Functions)
+- Object: `environment:\n  name: 'production'\n  url: ${{ ... }}` (with deployment URL — correct for web apps)
+
+### 2026-03-22: Issue #556 / PR #557 Review — Deployment Approval Gate
+
+**Related:** Issue #556 (created by Scribe), PR #557 (Cypher, awaiting merge)
+
+**Summary:** All three deployment workflows (API, Web, Functions) now include approval gate + staging slot cleanup.
+
+**Review Verdict:** ✅ APPROVED (with non-blocking observations)
+
+**Observations:**
+
+1. **Step ordering in API + Web workflows:** "Stop staging slot" is placed after "Get production URL" step. If the URL-fetch step fails (transient Azure issue), the stop step is skipped — leaving staging running. Correct order: `Swap → Stop → Get URL`. Functions workflow already has correct order.
+
+2. **Implicit success condition:** The cleanup step relies on all prior steps succeeding. This is correct for `stop` (we only want to stop after a successful swap), but the observation is just a note on the pattern.
+
+**Decision Recorded:** Pattern documented in decisions.md — cleanup/stop steps should run immediately after primary action, before informational steps, to guarantee cleanup runs if primary action succeeds.
+
+**Action:** Recommend applying correct step order in future workflow modifications or when PR #557 is revisited. Not a blocker for merge.
+
