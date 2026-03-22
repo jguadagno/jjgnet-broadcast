@@ -112,15 +112,15 @@ jobs:
             --slot staging \
             --target-slot production
 
-      - name: Get production URL
-        id: get-url
-        run: |
-          url=$(az webapp show --name api-jjgnet-broadcast --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --query defaultHostName -o tsv)
-          echo "webapp-url=https://$url" >> $GITHUB_OUTPUT
-
       - name: Stop staging slot
         run: |
           az webapp stop \
             --name api-jjgnet-broadcast \
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
             --slot staging
+
+      - name: Get production URL
+        id: get-url
+        run: |
+          url=$(az webapp show --name api-jjgnet-broadcast --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --query defaultHostName -o tsv)
+          echo "webapp-url=https://$url" >> $GITHUB_OUTPUT
