@@ -69,7 +69,7 @@ jobs:
 
       # Upload the published output as an artifact for the deployment job
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: function-app
           path: ${{ env.WORKING_DIRECTORY }}/publish
