@@ -8,10 +8,8 @@ using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
-using JosephGuadagno.Broadcasting.Web.Middleware;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Azure;
@@ -88,48 +86,6 @@ builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefa
         options.Cookie.SameSite = SameSiteMode.Lax;
     });
 
-builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
-{
-    options.Events ??= new OpenIdConnectEvents();
-
-    options.Events.OnRemoteFailure = context =>
-    {
-        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-        logger.LogError(context.Failure, "Remote authentication failure");
-
-        string sanitizedMessage;
-        if (context.Failure is OpenIdConnectProtocolException)
-        {
-            var errorMessage = context.Failure.Message;
-            if (errorMessage.Contains("AADSTS650052"))
-                sanitizedMessage = "This app is not authorized for your organization. Please contact your administrator.";
-            else if (errorMessage.Contains("AADSTS700016"))
-                sanitizedMessage = "Application configuration error. Please contact support.";
-            else if (errorMessage.Contains("invalid_client"))
-                sanitizedMessage = "Authentication configuration error. Please contact support.";
-            else
-                sanitizedMessage = "An error occurred during sign-in. Please try again.";
-        }
-        else
-        {
-            sanitizedMessage = "An error occurred during sign-in. Please try again.";
-        }
-
-        context.HandleResponse();
-        context.Response.Redirect($"/Home/AuthError?message={Uri.EscapeDataString(sanitizedMessage)}");
-        return Task.CompletedTask;
-    };
-
-    options.Events.OnAuthenticationFailed = context =>
-    {
-        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-        logger.LogError(context.Exception, "Authentication failed");
-        context.HandleResponse();
-        context.Response.Redirect("/Home/AuthError?message=An+error+occurred+during+sign-in.+Please+try+again.");
-        return Task.CompletedTask;
-    };
-});
-
 builder.Services.AddDistributedSqlServerCache(options =>
 {
     options.ConnectionString = builder.Configuration.GetConnectionString("JJGNetDatabaseSqlServer");
@@ -165,33 +121,9 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.Use(async (context, next) =>
-{
-    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-    context.Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
-    context.Response.Headers["X-XSS-Protection"] = "0";
-    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    context.Response.Headers["Content-Security-Policy"] =
-        "default-src 'self'; " +
-        "script-src 'self' cdn.jsdelivr.net; " +
-        "style-src 'self' cdn.jsdelivr.net; " +
-        "img-src 'self' data: https:; " +
-        "font-src 'self' cdn.jsdelivr.net data:; " +
-        "connect-src 'self'; " +
-        "frame-ancestors 'self'; " +
-        "object-src 'none'; " +
-        "base-uri 'self'; " +
-        "form-action 'self'";
-    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()";
-    await next();
-});
-
 app.UseStaticFiles();
 
 app.UseRouting();
-
-app.UseMsalExceptionHandler();
 
 app.UseAuthentication();
 app.UseAuthorization();
