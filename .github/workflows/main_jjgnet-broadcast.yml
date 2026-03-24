@@ -28,7 +28,7 @@ jobs:
 
     steps:
       # Check out the repository code
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Set up the .NET SDK
       - name: Setup .NET
