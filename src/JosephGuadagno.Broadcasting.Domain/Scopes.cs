@@ -105,6 +105,27 @@ public static class Scopes
         }
     }
 
+    public static class MicrosoftGraph
+    {
+        public static readonly string UserRead = "User.Read";
+        public static readonly string Email = "email";
+        public static readonly string OfflineAccess = "offline_access";
+        public static readonly string OpenId = "openid";
+        public static readonly string Profile = "profile";
+
+        public static Dictionary<string, string> ToDictionary()
+        {
+            return new Dictionary<string, string>
+            {
+                { UserRead, UserRead },
+                { Email, Email },
+                { OfflineAccess, OfflineAccess },
+                { OpenId, OpenId },
+                { Profile, Profile }
+            };
+        }
+    }
+
     public static Dictionary<string, string> ToDictionary(string scopeUrl)
     {
         var allScopes = new Dictionary<string, string>();
@@ -134,12 +155,14 @@ public static class Scopes
 
     public static Dictionary<string, string> AllAccessToDictionary(string scopeUri)
     {
-        return new Dictionary<string, string>
+        var scopes = new Dictionary<string, string>
         {
             { scopeUri + Engagements.All, Engagements.All },
             { scopeUri + Talks.All, Talks.All },
             { scopeUri + Schedules.All, Schedules.All },
             { scopeUri + MessageTemplates.All, MessageTemplates.All }
         };
+
+        return scopes.Concat(MicrosoftGraph.ToDictionary()).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
     }
 }
