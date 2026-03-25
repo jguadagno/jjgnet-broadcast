@@ -7,100 +7,103 @@ public static class Scopes
     /// </summary>
     public static class Engagements
     {
-        public static readonly string List = "Engagements.List";
-        public static readonly string View = "Engagements.View";
-        public static readonly string Delete = "Engagements.Delete";
-        public static readonly string Modify = "Engagements.Modify";
         public static readonly string Add = "Engagements.Add";
         public static readonly string All = "Engagements.All";
+        public static readonly string Delete = "Engagements.Delete";
+        public static readonly string List = "Engagements.List";
+        public static readonly string Modify = "Engagements.Modify";
+        public static readonly string View = "Engagements.View";
         
         public static Dictionary<string, string> ToDictionary()
         {
             return new Dictionary<string, string>
             {
-                { List, List },
-                { View, View },
-                { Delete, Delete },
-                { Modify, Modify },
                 { Add, Add },
-                { All, All }
+                { All, All },
+                { Delete, Delete },
+                { List, List },
+                { Modify, Modify },
+                { View, View }
             };
         }
     }
-    /// <summary>
-    /// Contains the scopes for the Schedule API
-    /// </summary>
-    public static class Schedules
-    {
-        public static readonly string List = "Schedules.List";
-        public static readonly string View = "Schedules.View";
-        public static readonly string Delete = "Schedules.Delete";
-        public static readonly string Modify = "Schedules.Modify";
-        public static readonly string Add = "Schedules.Add";
-        public static readonly string UnsentScheduled = "Schedules.UnsentScheduled";
-        public static readonly string ScheduledToSend = "Schedules.ScheduledToSend";
-        public static readonly string UpcomingScheduled = "Schedules.UpcomingScheduled";
-        public static readonly string All = "Schedules.All";
-        
-        public static Dictionary<string, string> ToDictionary()
-        {
-            return new Dictionary<string, string>
-            {
-                { List, List },
-                { View, View },
-                { Delete, Delete },
-                { Modify, Modify },
-                { Add, Add },
-                { UnsentScheduled, UnsentScheduled },
-                { ScheduledToSend, ScheduledToSend},
-                { UpcomingScheduled, UpcomingScheduled},
-                { All, All}
-            };
-        }
-    }
+
     /// <summary>
     /// Contains the scopes for the MessageTemplate API
     /// </summary>
     public static class MessageTemplates
     {
-        public static readonly string List = "MessageTemplates.List";
-        public static readonly string View = "MessageTemplates.View";
-        public static readonly string Modify = "MessageTemplates.Modify";
         public static readonly string All = "MessageTemplates.All";
+        public static readonly string List = "MessageTemplates.List";
+        public static readonly string Modify = "MessageTemplates.Modify";
+        public static readonly string View = "MessageTemplates.View";
 
         public static Dictionary<string, string> ToDictionary()
         {
             return new Dictionary<string, string>
             {
+                { All, All },
                 { List, List },
-                { View, View },
                 { Modify, Modify },
-                { All, All }
+                { View, View }
             };
         }
     }
+
+    /// <summary>
+    /// Contains the scopes for the Schedule API
+    /// </summary>
+    public static class Schedules
+    {
+        public static readonly string Add = "Schedules.Add";
+        public static readonly string All = "Schedules.All";
+        public static readonly string Delete = "Schedules.Delete";
+        public static readonly string List = "Schedules.List";
+        public static readonly string Modify = "Schedules.Modify";
+        public static readonly string ScheduledToSend = "Schedules.ScheduledToSend";
+        public static readonly string UpcomingScheduled = "Schedules.UpcomingScheduled";
+        public static readonly string UnsentScheduled = "Schedules.UnsentScheduled";
+        public static readonly string View = "Schedules.View";
+
+        public static Dictionary<string, string> ToDictionary()
+        {
+            return new Dictionary<string, string>
+            {
+                { Add, Add },
+                { All, All},
+                { Delete, Delete },
+                { List, List },
+                { Modify, Modify },
+                { ScheduledToSend, ScheduledToSend},
+                { UpcomingScheduled, UpcomingScheduled},
+                { UnsentScheduled, UnsentScheduled },
+                { View, View }
+            };
+        }
+    }
+
     /// <summary>
     /// Contains the scopes for the Talk API
     /// </summary>
     public static class Talks
     {
-        public static readonly string List = "Talks.List";
-        public static readonly string View = "Talks.View";
-        public static readonly string Delete = "Talks.Delete";
-        public static readonly string Modify = "Talks.Modify";
         public static readonly string Add = "Talks.Add";
         public static readonly string All = "Talks.All";
+        public static readonly string Delete = "Talks.Delete";
+        public static readonly string List = "Talks.List";
+        public static readonly string Modify = "Talks.Modify";
+        public static readonly string View = "Talks.View";
 
         public static Dictionary<string, string> ToDictionary()
         {
             return new Dictionary<string, string>
             {
-                { List, List },
-                { View, View },
-                { Delete, Delete },
-                { Modify, Modify },
                 { Add, Add },
-                { All, All}
+                { All, All},
+                { Delete, Delete },
+                { List, List },
+                { Modify, Modify },
+                { View, View }
             };
         }
     }
@@ -112,6 +115,7 @@ public static class Scopes
         public static readonly string OfflineAccess = "offline_access";
         public static readonly string OpenId = "openid";
         public static readonly string Profile = "profile";
+        public static readonly string UserImpersonation = "user_impersonation";
 
         public static Dictionary<string, string> ToDictionary()
         {
@@ -121,7 +125,8 @@ public static class Scopes
                 { Email, Email },
                 { OfflineAccess, OfflineAccess },
                 { OpenId, OpenId },
-                { Profile, Profile }
+                { Profile, Profile },
+                { UserImpersonation, UserImpersonation}
             };
         }
     }
@@ -163,6 +168,6 @@ public static class Scopes
             { scopeUri + MessageTemplates.All, MessageTemplates.All }
         };
 
-        return scopes.Concat(MicrosoftGraph.ToDictionary()).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        return scopes;
     }
 }

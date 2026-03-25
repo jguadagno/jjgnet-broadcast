@@ -47,11 +47,32 @@ public partial class BroadcastingContext : DbContext
                 .HasName("Engagements_pk")
                 .IsClustered(false);
 
+            entity.Property(e => e.Name)
+                .IsRequired();
+            entity.Property(e => e.Url);
+
+            entity.Property(e => e.StartDateTime)
+                .IsRequired()
+                .HasColumnType("datetimeoffset");
+
+            entity.Property(e => e.EndDateTime)
+                .IsRequired()
+                .HasColumnType("datetimeoffset");
+
+            entity.Property(e => e.Comments);
+
+            entity.Property(e => e.TimeZoneId)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValueSql("America/Phoenix");
+
             entity.Property(e => e.CreatedOn)
-                .HasDefaultValueSql("(getdate())");
+                .IsRequired()
+                .HasDefaultValueSql("(getutcdate())");
 
             entity.Property(e => e.LastUpdatedOn)
-                .HasDefaultValueSql("(getdate())");
+                .IsRequired()
+                .HasDefaultValueSql("(getutcdate())");
 
             entity.Property(e => e.BlueSkyHandle)
                 .HasMaxLength(255);
@@ -77,6 +98,15 @@ public partial class BroadcastingContext : DbContext
                 .HasMaxLength(255)
                 .IsUnicode(false);
 
+            entity.Property(e => e.SendOnDateTime)
+                .HasColumnType("datetimeoffset")
+                .IsRequired();
+
+            entity.Property(e => e.Message);
+
+            entity.Property(e => e.MessageSent)
+                .HasDefaultValueSql("0");
+
             entity.Property(e => e.ImageUrl)
                 .HasMaxLength(2048);
         });
@@ -92,8 +122,7 @@ public partial class BroadcastingContext : DbContext
                 .HasForeignKey(d => d.EngagementId)
                 .HasConstraintName("Talks_Engagements_Id");
 
-            entity.Property(e => e.BlueSkyHandle)
-                .HasMaxLength(255);
+
         });
 
         modelBuilder.Entity<FeedCheck>(entity =>

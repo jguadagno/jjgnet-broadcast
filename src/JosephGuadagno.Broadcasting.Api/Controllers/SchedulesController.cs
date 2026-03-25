@@ -1,5 +1,4 @@
 using JosephGuadagno.Broadcasting.Api.Dtos;
-using JosephGuadagno.Broadcasting.Api.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -49,7 +48,7 @@ public class SchedulesController: ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
-        
+        // TODO: Move paging to the data store
         var allItems = await _scheduledItemManager.GetAllAsync();
         var totalCount = allItems.Count;
         var items = allItems
@@ -195,20 +194,20 @@ public class SchedulesController: ControllerBase
     /// <param name="pageSize">The page size (default: 25)</param>
     /// <returns>A paginated list of scheduled items that have not yet been sent.</returns>
     /// <response code="200">Returned if there are unscheduled items that need to be sent.</response>
-    /// <response code="404">If there are not items that need to be sent</response>
+    /// <response code="404">If there are no items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("unsent")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetUnsentScheduledItemsAsync(int page = 1, int pageSize = 25)
+    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetUnsentScheduledItemsAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 25)
     {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 1;
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
-        
+        // TODO: Move paging to the data store
         var allItems = await _scheduledItemManager.GetUnsentScheduledItemsAsync();
         if (allItems.Count == 0)
         {
@@ -251,7 +250,7 @@ public class SchedulesController: ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
-        
+        // TODO: Move paging to the data store
         var allItems = await _scheduledItemManager.GetScheduledItemsToSendAsync();
         if (allItems.Count == 0)
         {
@@ -296,7 +295,7 @@ public class SchedulesController: ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
-        
+        // TODO: Move paging to the data store
         var allItems = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month);
         if (allItems.Count == 0)
         {
@@ -339,7 +338,7 @@ public class SchedulesController: ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
-
+        // TODO: Move paging to the data store
         var allItems = await _scheduledItemManager.GetOrphanedScheduledItemsAsync();
         if (allItems.Count == 0)
         {
@@ -362,6 +361,7 @@ public class SchedulesController: ControllerBase
         };
     }
 
+    // TODO: Move to a Automapper profile
     private static ScheduledItemResponse ToResponse(ScheduledItem s) => new()
     {
         Id = s.Id,
@@ -375,6 +375,7 @@ public class SchedulesController: ControllerBase
         SendOnDateTime = s.SendOnDateTime
     };
 
+    // TODO: Move to a Automapper profile
     private static ScheduledItem ToModel(ScheduledItemRequest r, int id = 0) => new()
     {
         Id = id,

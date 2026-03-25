@@ -11,7 +11,6 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// This is the controller for managing the engagements.
 /// </summary>
-[AuthorizeForScopes]
 public class EngagementsController : Controller
 {
     private readonly IEngagementService _engagementService;

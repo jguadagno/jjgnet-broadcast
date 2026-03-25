@@ -69,7 +69,7 @@ create nonclustered index IX_Talks_EngagementId
     on Talks (EngagementId)
 go
 
-create table dbo.Cache
+create table dbo.TokenCache
 (
     Id                         nvarchar(449)  not null
         primary key,

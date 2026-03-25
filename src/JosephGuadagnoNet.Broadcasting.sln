@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.9.34518.117
+# Visual Studio Version 18
+VisualStudioVersion = 18.5.11619.145 insiders
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.Domain", "JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj", "{5B756462-15B1-43FB-BFB0-26B945FFD454}"
 EndProject
@@ -11,8 +11,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", "{CA7CFF1F-4DB2-4B9A-BB46-5D922C457D29}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		..\.gitignore = ..\.gitignore
 		bitly-tests.http = bitly-tests.http
+		..\CONTRIBUTING.md = ..\CONTRIBUTING.md
 		..\developer-getting-started.md = ..\developer-getting-started.md
 		facebook-access-tokens.http = facebook-access-tokens.http
 		function-tests.http = function-tests.http
@@ -21,8 +23,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 		libman-restore.ps1 = libman-restore.ps1
 		LinkedIn.http = LinkedIn.http
 		..\README.md = ..\README.md
-		..\CONTRIBUTING.md = ..\CONTRIBUTING.md
-		.editorconfig = .editorconfig
 		..\docs\YouTube-README.md = ..\docs\YouTube-README.md
 	EndProjectSection
 EndProject
@@ -132,9 +132,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{DE
 	ProjectSection(SolutionItems) = preProject
 		..\scripts\database\data-create.sql = ..\scripts\database\data-create.sql
 		..\scripts\database\database-create.sql = ..\scripts\database\database-create.sql
+		..\scripts\database\reset-feed-check-data-tests-scripts.sql = ..\scripts\database\reset-feed-check-data-tests-scripts.sql
 		..\scripts\database\table-create.sql = ..\scripts\database\table-create.sql
 		..\scripts\database\truncate-data.sql = ..\scripts\database\truncate-data.sql
-		..\scripts\database\reset-feed-check-data-tests-scripts.sql = ..\scripts\database\reset-feed-check-data-tests-scripts.sql
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.SpeakingEngagementsReader", "JosephGuadagno.Broadcasting.SpeakingEngagementsReader\JosephGuadagno.Broadcasting.SpeakingEngagementsReader.csproj", "{FC2D8648-E911-466D-8A62-FDAEB4ABC6A8}"
@@ -292,8 +292,16 @@ Global
 		{484611B0-CB3F-4CFF-8B80-A78A31775FA7}.Release|x86.Build.0 = Release|Any CPU
 		{B0A1C2D3-E4F5-6789-ABCD-EF0123456789}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B0A1C2D3-E4F5-6789-ABCD-EF0123456789}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0A1C2D3-E4F5-6789-ABCD-EF0123456789}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B0A1C2D3-E4F5-6789-ABCD-EF0123456789}.Debug|x64.Build.0 = Debug|Any CPU
+		{B0A1C2D3-E4F5-6789-ABCD-EF0123456789}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B0A1C2D3-E4F5-6789-ABCD-EF0123456789}.Debug|x86.Build.0 = Debug|Any CPU
 		{B0A1C2D3-E4F5-6789-ABCD-EF0123456789}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0A1C2D3-E4F5-6789-ABCD-EF0123456789}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0A1C2D3-E4F5-6789-ABCD-EF0123456789}.Release|x64.ActiveCfg = Release|Any CPU
+		{B0A1C2D3-E4F5-6789-ABCD-EF0123456789}.Release|x64.Build.0 = Release|Any CPU
+		{B0A1C2D3-E4F5-6789-ABCD-EF0123456789}.Release|x86.ActiveCfg = Release|Any CPU
+		{B0A1C2D3-E4F5-6789-ABCD-EF0123456789}.Release|x86.Build.0 = Release|Any CPU
 		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D34B771F-E95B-4F72-BB25-64EBE122DADA}.Debug|x64.ActiveCfg = Debug|Any CPU

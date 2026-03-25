@@ -20,8 +20,9 @@ public class MappingTests
             configuration.AssertConfigurationIsValid();
             Assert.True(true);
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Console.WriteLine(exception);
             Assert.True(false);
         }
     }

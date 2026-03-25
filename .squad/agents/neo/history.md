@@ -131,6 +131,30 @@ Sprint 12 tagged with 13 issues.
 
 ## Learnings
 
+### 2026-07-14: MSAL Auth Broken — Revert PRs #500 #553 #554 #555
+
+**Trigger:** Joseph reported that the merged Sprint 11 auth PRs (plus PR #500 security headers) broke MSAL authentication.
+
+**PRs reverted (newest-first, single combined commit):**
+
+| PR | Commit | Description |
+|----|--------|-------------|
+| #553 | `6d25597` | OIDC event handlers — squash merge |
+| #555 | `34b597b` | Token cache collision resilience — squash merge |
+| #554 | `b8e5169` | MsalExceptionMiddleware — squash merge |
+| #500 | `663a76d` | Security headers middleware — true merge commit (`-m 1`) |
+
+**Branch:** `revert/msal-prs-500-553-554-555`
+**PR:** [#572](https://github.com/jguadagno/jjgnet-broadcast/pull/572)
+
+**Key execution notes:**
+- PRs #553–#555 were squash merges (single commit on main) — reverted directly
+- PR #500 was a true merge commit — required `git revert -m 1 <sha>`
+- Squad doc files (neo/trinity/ghost history.md, decisions.md) conflicted during revert of #553; resolved by keeping HEAD (post-merge doc updates are not part of the MSAL issue)
+- All 9 code files staged into a single revert commit
+
+
+
 ### CI/CD: Step ordering for cleanup steps
 
 Place cleanup/stop steps immediately after the primary action step, not after informational steps. If the info step fails, downstream steps won't run and cleanup is skipped.

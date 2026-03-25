@@ -50,6 +50,7 @@ public class MessageTemplatesController : ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.List, Domain.Scopes.MessageTemplates.All);
+        // TODO: Move paging to the data store
         var allTemplates = await _messageTemplateDataStore.GetAllAsync();
         var totalCount = allTemplates.Count;
         var items = allTemplates
@@ -131,6 +132,7 @@ public class MessageTemplatesController : ControllerBase
         return ToResponse(updated);
     }
 
+    // TODO: Move to a Automapper profile
     private static MessageTemplateResponse ToResponse(MessageTemplate t) => new()
     {
         Platform = t.Platform,
@@ -139,6 +141,7 @@ public class MessageTemplatesController : ControllerBase
         Description = t.Description
     };
 
+    // TODO: Move to a Automapper profile
     private static MessageTemplate ToModel(MessageTemplateRequest r, string platform, string messageType) => new()
     {
         Platform = platform,

@@ -9,7 +9,6 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// The controller for the talks.
 /// </summary>
-[AuthorizeForScopes]
 [Route("engagements/{engagementId:int}/[controller]/[action]")]
 public class TalksController : Controller
 {

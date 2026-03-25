@@ -1,9 +1,9 @@
-@model List<JosephGuadagno.Broadcasting.Web.Models.ScheduledItemViewModel>?
+@model List<JosephGuadagno.Broadcasting.Web.Models.ScheduledItemViewModel>
 
 @{
     ViewData["Title"] = "Upcoming Scheduled Items";
 }
-@if (@Model is null)
+@if (Model.Count == 0)
 {
     <p class="lead">There are no upcoming items that have not been sent.</p>
 }
@@ -22,7 +22,7 @@ else
             </tr>
             </thead>
             <tbody>
-            @foreach (var scheduledItem in @Model)
+            @foreach (var scheduledItem in Model)
             {
                 <tr>
                     <td><a asp-controller="Schedules" asp-action="Details" asp-route-id="@scheduledItem.Id">@scheduledItem.Id</a></td>
@@ -51,8 +51,8 @@ else
             }
             </tbody>
         </table>
-        <a asp-action="Add" asp-controller="Schedules" class="btn btn-primary">
-            <i class="bi bi-calendar-plus me-2"></i>Add Scheduled Item
-        </a>
     </div>
 }
+<a asp-action="Add" asp-controller="Schedules" class="btn btn-primary">
+    <i class="bi bi-calendar-plus me-2"></i>Add Scheduled Item
+</a>
