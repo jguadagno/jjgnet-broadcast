@@ -9,7 +9,6 @@ using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Azure;
@@ -30,8 +29,6 @@ builder.AddServiceDefaults();
 
 var settings = new Settings
 {
-    ApiRootUrl = null!,
-    ApiScopeUrl = null!,
     StaticContentRootUrl = null!,
     LoggingStorageAccount = null!
 };
@@ -73,7 +70,7 @@ IEnumerable<string>? initialScopes = builder.Configuration.GetSection("Downstrea
 IEnumerable<string>? downstreamApiScopes = builder.Configuration.GetSection("DownstreamApis:JosephGuadagno.Broadcasting.Api:Scopes").Get<IEnumerable<string>>();
 var allScopes = initialScopes?.Union(downstreamApiScopes!);
 
-builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration, "AzureAd")
+builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
     .EnableTokenAcquisitionToCallDownstreamApi(allScopes)
     .AddInMemoryTokenCaches();
 builder.Services.AddDownstreamApis(builder.Configuration.GetSection("DownstreamApis"));
