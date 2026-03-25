@@ -56,11 +56,6 @@ public class TalkViewModel
     public string? Comments { get; set; }
 
     /// <summary>
-    /// The BlueSky handle for the talk
-    /// </summary>
-    public string? BlueSkyHandle { get; set; }
-
-    /// <summary>
     /// The identifier for the <see cref="EngagementViewModel"/> that the talk is for.
     /// </summary>
     public int? EngagementId { get; set; }
