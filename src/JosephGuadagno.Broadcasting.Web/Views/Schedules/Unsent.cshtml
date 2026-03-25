@@ -1,9 +1,9 @@
-@model List<JosephGuadagno.Broadcasting.Web.Models.ScheduledItemViewModel>?
+@model List<JosephGuadagno.Broadcasting.Web.Models.ScheduledItemViewModel>
 
 @{
     ViewData["Title"] = "Unsent Scheduled Items";
 }
-@if (@Model is null)
+@if (Model.Count == 0)
 {
     <p class="lead">There are no items that have not been sent.</p>
 }
@@ -57,12 +57,8 @@ else
             }
             </tbody>
         </table>
-        <a asp-action="Add" asp-controller="Schedules" class="btn btn-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-plus" viewBox="0 0 16 16">
-                <path d="M8 7a.5.5 0 0 1 .5.5V9H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V10H6a.5.5 0 0 1 0-1h1.5V7.5A.5.5 0 0 1 8 7z"/>
-                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
-            </svg>
-            Add Scheduled Item
-        </a>
     </div>
 }
+<a asp-action="Add" asp-controller="Schedules" class="btn btn-primary">
+    <i class="bi bi-calendar-plus me-2"></i>Add Scheduled Item
+</a>

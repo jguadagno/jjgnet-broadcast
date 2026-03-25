@@ -60,7 +60,6 @@ var functions = builder.AddAzureFunctionsProject<JosephGuadagno_Broadcasting_Fun
 builder.AddProject<JosephGuadagno_Broadcasting_Web>("josephguadagno-broadcasting-web")
     .WithEnvironment("ConnectionStrings__JJGNetDatabaseSqlServer", db)
     .WithEnvironment("Settings__LoggingStorageAccount", tableStorage)
-    //.WithEnvironment("DownstreamApis__JosephGuadagno.Broadcasting.Api__BaseUrl", api)
     .WithReference(api)
     .WaitFor(api);
 

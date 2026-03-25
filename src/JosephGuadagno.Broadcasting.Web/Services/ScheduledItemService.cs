@@ -10,7 +10,7 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// <summary>
 /// Calls out to the schedule Api
 /// </summary>
-public class ScheduledItemService (IDownstreamApi apiClient): IScheduledItemService
+public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledItemService> logger): IScheduledItemService
 {
     private const string ApiServiceName = "JosephGuadagno.Broadcasting.Api";
     private const string ScheduledItemBaseUrl = "/Schedules";
@@ -74,7 +74,7 @@ public class ScheduledItemService (IDownstreamApi apiClient): IScheduledItemServ
 
         return response is { StatusCode: HttpStatusCode.NoContent };
     }
-    
+
     /// <summary>
     /// Returns a list of any scheduled items that have not been sent
     /// </summary>
@@ -83,13 +83,31 @@ public class ScheduledItemService (IDownstreamApi apiClient): IScheduledItemServ
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
     public async Task<List<ScheduledItem>> GetUnsentScheduledItemsAsync(int? page = 1, int? pageSize = 25)
     {
-        var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<ScheduledItem>>(ApiServiceName, options =>
+        try
         {
-            options.RelativePath = $"{ScheduledItemBaseUrl}/unsent?page={page}&pageSize={pageSize}";
-        });
-        return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+            var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<ScheduledItem>>(ApiServiceName, options =>
+            {
+                options.RelativePath = $"{ScheduledItemBaseUrl}/unsent?page={page}&pageSize={pageSize}";
+            });
+            return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+        }
+        catch (HttpRequestException exception)
+        {
+            if (exception.StatusCode == HttpStatusCode.NotFound)
+            {
+                return [];
+            }
+
+            logger.LogError(exception, "Error getting unsent scheduled items");
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Error getting unsent scheduled items");
+            throw;
+        }
     }
-    
+
     /// <summary>
     /// Returns a list of any scheduled items that have not been sent that should have been sent
     /// </summary>
@@ -98,11 +116,29 @@ public class ScheduledItemService (IDownstreamApi apiClient): IScheduledItemServ
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
     public async Task<List<ScheduledItem>> GetScheduledItemsToSendAsync(int? page = 1, int? pageSize = 25)
     {
-        var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<ScheduledItem>>(ApiServiceName, options =>
+        try
         {
-            options.RelativePath = $"{ScheduledItemBaseUrl}/upcoming?page={page}&pageSize={pageSize}";
-        });
-        return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+            var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<ScheduledItem>>(ApiServiceName, options =>
+            {
+                options.RelativePath = $"{ScheduledItemBaseUrl}/upcoming?page={page}&pageSize={pageSize}";
+            });
+            return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+        }
+        catch (HttpRequestException exception)
+        {
+            if (exception.StatusCode == HttpStatusCode.NotFound)
+            {
+                return [];
+            }
+
+            logger.LogError(exception, "Error getting scheduled items to send");
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Error getting scheduled items to send");
+            throw;
+        }
     }
 
     /// <summary>
@@ -115,11 +151,30 @@ public class ScheduledItemService (IDownstreamApi apiClient): IScheduledItemServ
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that are for the month.  If there are no scheduled items, null will be returned</returns>
     public async Task<List<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, int? page = 1, int? pageSize = 25)
     {
-        var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<ScheduledItem>>(ApiServiceName, options =>
+        try
         {
-            options.RelativePath = $"{ScheduledItemBaseUrl}/calendar/{year}/{month}?page={page}&pageSize={pageSize}";
-        });
-        return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+            var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<ScheduledItem>>(ApiServiceName, options =>
+            {
+                options.RelativePath =
+                    $"{ScheduledItemBaseUrl}/calendar/{year}/{month}?page={page}&pageSize={pageSize}";
+            });
+            return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+        }
+        catch (HttpRequestException exception)
+        {
+            if (exception.StatusCode == HttpStatusCode.NotFound)
+            {
+                return [];
+            }
+
+            logger.LogError(exception, "Error getting scheduled items by calendar month");
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Error getting scheduled items by calendar month");
+            throw;
+        }
     }
 
     /// <summary>
@@ -130,10 +185,27 @@ public class ScheduledItemService (IDownstreamApi apiClient): IScheduledItemServ
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
     public async Task<List<ScheduledItem>> GetOrphanedScheduledItemsAsync(int? page = 1, int? pageSize = 25)
     {
-        var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<ScheduledItem>>(ApiServiceName, options =>
+        try
         {
-            options.RelativePath = $"{ScheduledItemBaseUrl}/orphaned/?page={page}&pageSize={pageSize}";
-        });
-        return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+            var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<ScheduledItem>>(ApiServiceName, options =>
+            {
+                options.RelativePath = $"{ScheduledItemBaseUrl}/orphaned/?page={page}&pageSize={pageSize}";
+            });
+            return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+        }
+        catch (HttpRequestException exception)
+        {
+            if (exception.StatusCode == HttpStatusCode.NotFound)
+            {
+                return [];
+            }
+            logger.LogError(exception, "Error getting orphaned scheduled items");
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Error getting orphaned scheduled items");
+            throw;
+        }
     }
 }
