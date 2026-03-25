@@ -1,41 +1,33 @@
 using System.Net;
-using System.Text;
-using System.Text.Json;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
-using JosephGuadagno.Broadcasting.Web.Models;
 
-using Microsoft.Identity.Web;
+using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
 /// <summary>
 /// Calls out to the Engagement Api
 /// </summary>
-public class EngagementService: ServiceBase, IEngagementService
+public class EngagementService(IDownstreamApi apiClient): IEngagementService
 {
-    private readonly string _engagementBaseUrl;
+    private const string ApiServiceName = "JosephGuadagno.Broadcasting.Api";
+    private const string EngagementBaseUrl = "/engagements";
 
     /// <summary>
-    /// Initializes the service
+    /// Gets all the engagements
     /// </summary>
-    /// <param name="httpClient">The HttpClient to use</param>
-    /// <param name="tokenAcquisition">The token acquisition client</param>
-    /// <param name="settings">Application <see cref="Settings"/> to use</param>
-    public EngagementService(HttpClient httpClient, ITokenAcquisition tokenAcquisition, ISettings settings
-        ): base(httpClient, tokenAcquisition, settings.ApiScopeUrl)
-    {
-        _engagementBaseUrl = settings.ApiRootUrl + "/engagements";
-    }
-    
-    /// <summary>
-    /// Gets all of the engagements
-    /// </summary>
+    /// <param name="page">The page number to get</param>
+    /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="Engagement"/>&gt;s</returns>
-    public async Task<List<Engagement>?> GetEngagementsAsync()
+    public async Task<List<Engagement>> GetEngagementsAsync(int? page = 1, int? pageSize = 25)
     {
-        await SetRequestHeader(Domain.Scopes.Engagements.List);
-        return await ExecuteGetAsync<List<Engagement>>(_engagementBaseUrl);
+        var pagedResponse  = await apiClient.GetForUserAsync<PagedResponse<Engagement>>(ApiServiceName, options =>
+        {
+            options.RelativePath = $"{EngagementBaseUrl}?page={page}&pageSize={pageSize}";
+        });
+
+        return pagedResponse is null ? [] : pagedResponse.Items.ToList();
     }
     
     /// <summary>
@@ -45,9 +37,11 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>An <see cref="Engagement"/></returns>
     public async Task<Engagement?> GetEngagementAsync(int engagementId)
     {
-        await SetRequestHeader(Domain.Scopes.Engagements.View);
-        var url = $"{_engagementBaseUrl}/{engagementId}";
-        return await ExecuteGetAsync<Engagement>(url);
+        var engagement = await apiClient.GetForUserAsync<Engagement>(ApiServiceName, options =>
+        {
+            options.RelativePath = $"{EngagementBaseUrl}/{engagementId}";
+        });
+        return engagement;
     }
     
     /// <summary>
@@ -58,22 +52,10 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <exception cref="HttpRequestException"></exception>
     public async Task<Engagement?> SaveEngagementAsync(Engagement engagement)
     {
-        await SetRequestHeader(Domain.Scopes.Engagements.Modify);
-        var jsonRequest = JsonSerializer.Serialize(engagement);
-        var jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
-
-        var response = await HttpClient.PostAsync(_engagementBaseUrl, jsonContent);
-
-        if (response.StatusCode != HttpStatusCode.Created && response.StatusCode != HttpStatusCode.OK)
-            throw new HttpRequestException(
-                $"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");
-            
-        var content = await response.Content.ReadAsStringAsync();
-        var options = new JsonSerializerOptions
+        var savedEngagement = await apiClient.PostForUserAsync<Engagement, Engagement>(ApiServiceName, engagement, options =>
         {
-            PropertyNameCaseInsensitive = true,
-        };
-        var savedEngagement = JsonSerializer.Deserialize<Engagement>(content, options);
+            options.RelativePath = EngagementBaseUrl;
+        });
         return savedEngagement;
     }
     
@@ -84,22 +66,30 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>True if successful, otherwise false.</returns>
     public async Task<bool> DeleteEngagementAsync(int engagementId)
     {
-        await SetRequestHeader(Domain.Scopes.Engagements.Delete);
-        var url = $"{_engagementBaseUrl}/{engagementId}";
-        var response = await HttpClient.DeleteAsync(url);
-        return response.StatusCode == HttpStatusCode.NoContent;
+        var response = await apiClient.CallApiForUserAsync<HttpResponseMessage>(ApiServiceName, options =>
+        {
+            options.RelativePath = $"{EngagementBaseUrl}/{engagementId}";
+            options.HttpMethod = HttpMethod.Delete.Method;
+        });
+
+        return response is { StatusCode: HttpStatusCode.NoContent };
     }
-    
+
     /// <summary>
     /// Gets all the talks for a given engagement
     /// </summary>
     /// <param name="engagementId">The identifier of the engagement to get the talks of</param>
+    /// <param name="page">The page number to get</param>
+    /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="Talk"/>&gt;s</returns>
-    public async Task<List<Talk>?> GetEngagementTalksAsync(int engagementId)
+    public async Task<List<Talk>> GetEngagementTalksAsync(int engagementId, int? page = 1, int? pageSize = 25)
     {
-        await SetRequestHeader(Domain.Scopes.Talks.List);
-        var url = $"{_engagementBaseUrl}/{engagementId}/talks";
-        return await ExecuteGetAsync<List<Talk>>(url);
+        var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<Talk>>(ApiServiceName, options =>
+        {
+            options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/talks?page={page}&pageSize={pageSize}";
+        });
+
+        return pagedResponse is null ? [] : pagedResponse.Items.ToList();
     }
     
     /// <summary>
@@ -110,23 +100,11 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <exception cref="HttpRequestException"></exception>
     public async Task<Talk?> SaveEngagementTalkAsync(Talk talk)
     {
-        await SetRequestHeader(Domain.Scopes.Talks.Modify);
-        var url = $"{_engagementBaseUrl}/{talk.EngagementId}/talks";
-        var jsonRequest = JsonSerializer.Serialize(talk);
-        var jsonContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
-
-        var response = await HttpClient.PostAsync(url, jsonContent);
-
-        if (response.StatusCode != HttpStatusCode.Created && response.StatusCode != HttpStatusCode.OK)
-            throw new HttpRequestException(
-                $"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");
-            
-        var content = await response.Content.ReadAsStringAsync();
-        var options = new JsonSerializerOptions
+        var savedTalk = await apiClient.PostForUserAsync<Talk, Talk>(ApiServiceName, talk, options =>
         {
-            PropertyNameCaseInsensitive = true,
-        };
-        var savedTalk = JsonSerializer.Deserialize<Talk>(content, options);
+            options.RelativePath = $"{EngagementBaseUrl}/{talk.EngagementId}/talks";
+        });
+
         return savedTalk;
     }
     
@@ -138,9 +116,11 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>A <see cref="Talk"/></returns>
     public async Task<Talk?> GetEngagementTalkAsync(int engagementId, int talkId)
     {
-        await SetRequestHeader(Domain.Scopes.Talks.View);
-        var url = $"{_engagementBaseUrl}/{engagementId}/talks/{talkId}";
-        return await ExecuteGetAsync<Talk>(url);
+        var talk = await apiClient.GetForUserAsync<Talk>(ApiServiceName, options =>
+        {
+            options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/talks/{talkId}";
+        });
+        return talk;
     }
     
     /// <summary>
@@ -151,10 +131,12 @@ public class EngagementService: ServiceBase, IEngagementService
     /// <returns>True if successful, otherwise false</returns>
     public async Task<bool> DeleteEngagementTalkAsync(int engagementId, int talkId)
     {
-        await SetRequestHeader(Domain.Scopes.Talks.Delete);
-        var url = $"{_engagementBaseUrl}/{engagementId}/talks/{talkId}";
-        var response = await HttpClient.DeleteAsync(url);
-        return response.StatusCode == HttpStatusCode.NoContent;
-    }
+        var response = await apiClient.CallApiForUserAsync<HttpResponseMessage>(ApiServiceName, options =>
+        {
+            options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/talks/{talkId}";
+            options.HttpMethod = HttpMethod.Delete.Method;
+        });
 
+        return response is { StatusCode: HttpStatusCode.NoContent };
+    }
 }

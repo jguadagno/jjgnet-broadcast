@@ -9,7 +9,6 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// The controller for the schedules
 /// </summary>
-[AuthorizeForScopes]
 public class SchedulesController : Controller
 {
     private readonly IScheduledItemService _scheduledItemService;

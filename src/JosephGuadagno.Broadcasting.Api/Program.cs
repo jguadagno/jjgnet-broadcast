@@ -68,7 +68,6 @@ var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpLogging();
@@ -76,7 +75,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference("/scalar", options =>
     {
         // Configure OAuth2 security
-        var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
+        var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.ToDictionary(settings.ApiScopeUrl);
         scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
 
         options

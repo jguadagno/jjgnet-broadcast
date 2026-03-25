@@ -1,5 +1,4 @@
 using JosephGuadagno.Broadcasting.Api.Dtos;
-using JosephGuadagno.Broadcasting.Api.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -51,6 +50,8 @@ public class EngagementsController: ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List, Domain.Scopes.Engagements.All);
+
+        // TODO: Move paging to the data store
         var allEngagements = await _engagementManager.GetAllAsync();
         var totalCount = allEngagements.Count;
         var items = allEngagements
@@ -208,7 +209,7 @@ public class EngagementsController: ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List, Domain.Scopes.Talks.All);
-        
+        // TODO: Move paging to the data store
         var allTalks = await _engagementManager.GetTalksForEngagementAsync(engagementId);
         var totalCount = allTalks.Count;
         var items = allTalks
@@ -352,6 +353,7 @@ public class EngagementsController: ControllerBase
         return new NotFoundResult();
     }
 
+    // TODO: Move to a Automapper profile
     private static EngagementResponse ToResponse(Engagement e) => new()
     {
         Id = e.Id,
@@ -366,6 +368,7 @@ public class EngagementsController: ControllerBase
         LastUpdatedOn = e.LastUpdatedOn
     };
 
+    // TODO: Move to a Automapper profile
     private static Engagement ToModel(EngagementRequest r, int id = 0) => new()
     {
         Id = id,
@@ -377,6 +380,7 @@ public class EngagementsController: ControllerBase
         Comments = r.Comments
     };
 
+    // TODO: Move to a Automapper profile
     private static TalkResponse ToResponse(Talk t) => new()
     {
         Id = t.Id,
@@ -390,6 +394,7 @@ public class EngagementsController: ControllerBase
         EngagementId = t.EngagementId
     };
 
+    // TODO: Move to a Automapper profile
     private static Talk ToModel(TalkRequest r, int engagementId, int id = 0) => new()
     {
         Id = id,

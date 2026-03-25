@@ -69,14 +69,23 @@ builder.Services.AddAutoMapper(config =>
 }, typeof(Program));
 
 // Configure Microsoft Identity
-var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.AllAccessToDictionary(settings.ApiScopeUrl);
-scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
-// Token acquisition service based on MSAL.NET
-// and chosen token cache implementation
-builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApp(builder.Configuration)
-    .EnableTokenAcquisitionToCallDownstreamApi(scopes.Select(k => k.Key))
-    .AddDistributedTokenCaches();
+IEnumerable<string>? initialScopes = builder.Configuration.GetSection("DownstreamApis:MicrosoftGraph:Scopes").Get<IEnumerable<string>>();
+IEnumerable<string>? downstreamApiScopes = builder.Configuration.GetSection("DownstreamApis:JosephGuadagno.Broadcasting.Api:Scopes").Get<IEnumerable<string>>();
+var allScopes = initialScopes?.Union(downstreamApiScopes!);
+
+builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration, "AzureAd")
+    .EnableTokenAcquisitionToCallDownstreamApi(allScopes)
+    .AddInMemoryTokenCaches();
+builder.Services.AddDownstreamApis(builder.Configuration.GetSection("DownstreamApis"));
+
+builder.Services.AddControllersWithViews(options =>
+{
+    var policy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+    options.Filters.Add(new AuthorizeFilter(policy));
+}).AddMicrosoftIdentityUI();
+
 builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme,
     options =>
     {
@@ -90,7 +99,7 @@ builder.Services.AddDistributedSqlServerCache(options =>
 {
     options.ConnectionString = builder.Configuration.GetConnectionString("JJGNetDatabaseSqlServer");
     options.SchemaName = "dbo";
-    options.TableName = "Cache";
+    options.TableName = "TokenCache";
 });
 
 builder.Services.AddAntiforgery(options =>
@@ -99,14 +108,6 @@ builder.Services.AddAntiforgery(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Strict;
 });
-
-builder.Services.AddControllersWithViews(options =>
-{
-    var policy = new AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build();
-    options.Filters.Add(new AuthorizeFilter(policy));
-}).AddMicrosoftIdentityUI();
 
 var app = builder.Build();
 

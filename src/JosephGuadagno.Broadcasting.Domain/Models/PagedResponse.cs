@@ -1,4 +1,4 @@
-namespace JosephGuadagno.Broadcasting.Api.Models;
+namespace JosephGuadagno.Broadcasting.Domain.Models;
 
 public class PagedResponse<T>
 {
