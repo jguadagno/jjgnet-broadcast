@@ -86,6 +86,8 @@ public class SchedulesController: ControllerBase
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View, Domain.Scopes.Schedules.All);
         
         var item = await _scheduledItemManager.GetAsync(scheduledItemId);
+        if (item is null)
+            return NotFound();
         return Ok(ToResponse(item));
     }
 
@@ -113,9 +115,14 @@ public class SchedulesController: ControllerBase
 
         var scheduledItem = ToModel(request);
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
-        _logger.LogInformation("ScheduledItem created with Id {ScheduledItemId}", savedScheduledItem.Id);
-        return CreatedAtAction(nameof(GetScheduledItemAsync), new { scheduledItemId = savedScheduledItem.Id },
-            ToResponse(savedScheduledItem));
+        if (savedScheduledItem != null)
+        {
+            _logger.LogInformation("ScheduledItem created with Id {ScheduledItemId}", savedScheduledItem.Id);
+            return CreatedAtAction(nameof(GetScheduledItemAsync), new { scheduledItemId = savedScheduledItem.Id },
+                ToResponse(savedScheduledItem));
+        }
+
+        return Problem("Failed to create the scheduled item");
     }
 
     /// <summary>
@@ -143,8 +150,13 @@ public class SchedulesController: ControllerBase
 
         var scheduledItem = ToModel(request, scheduledItemId);
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
-        _logger.LogInformation("ScheduledItem updated with Id {ScheduledItemId}", savedScheduledItem.Id);
-        return Ok(ToResponse(savedScheduledItem));
+        if (savedScheduledItem != null)
+        {
+            _logger.LogInformation("ScheduledItem updated with Id {ScheduledItemId}", savedScheduledItem.Id);
+            return Ok(ToResponse(savedScheduledItem));
+        }
+
+        return Problem("Failed to update the scheduled item");
     }
     
     /// <summary>
