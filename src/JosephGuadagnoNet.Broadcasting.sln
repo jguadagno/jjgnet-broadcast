@@ -13,15 +13,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		..\.gitignore = ..\.gitignore
-		bitly-tests.http = bitly-tests.http
 		..\CONTRIBUTING.md = ..\CONTRIBUTING.md
 		..\developer-getting-started.md = ..\developer-getting-started.md
-		facebook-access-tokens.http = facebook-access-tokens.http
-		function-tests.http = function-tests.http
-		..\infrastructure-needs.md = ..\infrastructure-needs.md
-		install-libman.ps1 = install-libman.ps1
-		libman-restore.ps1 = libman-restore.ps1
-		LinkedIn.http = LinkedIn.http
+		..\infrastructure.md = ..\infrastructure.md
 		..\README.md = ..\README.md
 		..\docs\YouTube-README.md = ..\docs\YouTube-README.md
 	EndProjectSection
@@ -171,6 +165,24 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.JsonFeedReader.Tests", "JosephGuadagno.Broadcasting.JsonFeedReader.Tests\JosephGuadagno.Broadcasting.JsonFeedReader.Tests.csproj", "{FF0D75C5-8913-4C0E-B27B-FAFE2420A499}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Managers.Twitter.IntegrationTests", "JosephGuadagno.Broadcasting.Managers.Twitter.IntegrationTests\JosephGuadagno.Broadcasting.Managers.Twitter.IntegrationTests.csproj", "{C0290E8A-0B94-4B4F-BFA8-10ABE38467BE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{23038D41-FCAC-44A2-987D-73FCB62E04E3}"
+	ProjectSection(SolutionItems) = preProject
+		bitly-tests.http = bitly-tests.http
+		facebook-access-tokens.http = facebook-access-tokens.http
+		function-tests.http = function-tests.http
+		install-libman.ps1 = install-libman.ps1
+		libman-restore.ps1 = libman-restore.ps1
+		LinkedIn.http = LinkedIn.http
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Squad", "Squad", "{00FC7229-CCF2-4439-9CB0-258F2975F919}"
+	ProjectSection(SolutionItems) = preProject
+		..\.squad\team.md = ..\.squad\team.md
+		..\.squad\decisions.md = ..\.squad\decisions.md
+		..\.squad\routing.md = ..\.squad\routing.md
+		..\.github\agents\squad.agent.md = ..\.github\agents\squad.agent.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -700,6 +712,7 @@ Global
 		{290FCE16-7698-49BD-B80F-9818BD6A96BE} = {95E9F7C6-7B96-4866-9549-388C20DE9FF2}
 		{558DF30B-539E-4C11-B1DD-3A07C5E0CD69} = {290FCE16-7698-49BD-B80F-9818BD6A96BE}
 		{CEDA8D57-0981-429E-B025-FBA84122462D} = {95E9F7C6-7B96-4866-9549-388C20DE9FF2}
+		{00FC7229-CCF2-4439-9CB0-258F2975F919} = {95E9F7C6-7B96-4866-9549-388C20DE9FF2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2AE5E501-D335-4D3F-9431-F8EFC70886E2}
