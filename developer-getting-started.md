@@ -1,17 +1,17 @@
 # Developers Getting Started Guide
 
 This document will cover what you need on your development machine to get started with the project. 
-As well as how to setup the project for development.
+As well as how to set up the project for development.
 
 ## Required Software
 
+Outside an IDE, you'll need the following software installed on your machine.
+
 * Docker Desktop
-  * Microsoft SQL Server
-  * Azurite
 * Microsoft Azure Storage Explorer (`winget install Microsoft.AzureStorageExplorer`)
-* NPM (`winget install NPM.NodeJS`)
 * Microsoft LibMan (`dotnet tool install -g Microsoft.Web.LibraryManager.Cli`)
-* ngrok (`choco install ngrok`)
+* [Azure Event Grid Simulator](https://github.com/pm7y/AzureEventGridSimulator)
+  * For more information on how to run the simulator, check out the [readme](./src/JosephGuadagno.Broadcasting.Functions/readme.md) in the functions’ project.
 
 ## Setup
 
@@ -40,7 +40,7 @@ you'll need to generate a `facebook.private.env.json` file that looks like this
 }
 ```
 
-The `page-access-token` is the secret that is needed for the *JosephGuadagno.Broadcasting.Functions* project `FacebookPageAccessToken` secret..
+The `page-access-token` is the secret that is needed for the *JosephGuadagno.Broadcasting.Functions* project `FacebookPageAccessToken` secret.
 
 #### Certificate Generation
 
@@ -128,7 +128,7 @@ Create the following queues
 
 *No blobs or containers are needed*
 
-### Web Site
+### Website
 
 Restore Libman packages
 

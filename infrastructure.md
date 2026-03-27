@@ -4,7 +4,7 @@ A list of all the infrastructure required for this
 
 ## Server
 
-App Service (jjgnet) with an Application Insights services
+App Service (jjgnet) with an Application Insights service
 
 US West 2 - Type (P1v2)
 
@@ -46,17 +46,15 @@ web-jjgnet-broadcast
 
 ### Storage - Blob
 
-* jjgnet (hold the functions)
+* jjgnet (holds the functions)
 
 ### Storage - Table
 
-* Configuration
-* SourceData
 * Logging
 
 ### Event Grid Topics
 
-Topics are defined as constants in `JosephGuadagno.Broadcasting.Domain.Constants.Topics` and provisioned via the Aspire AppHost.
+Topics are defined as constants in `JosephGuadagno.Broadcasting.Domain.Constants.Topics` ([topics.cs](./src/JosephGuadagno.Broadcasting.Domain/Constants/Topics.cs)) and provisioned via the Aspire AppHost.
 
 Each topic delivers events to Bluesky, Facebook, LinkedIn, and Twitter Azure Functions subscribers.
 
