@@ -67,7 +67,7 @@ builder.Services.AddAutoMapper(config =>
 
 // Configure Microsoft Identity
 IEnumerable<string>? initialScopes = builder.Configuration.GetSection("DownstreamApis:MicrosoftGraph:Scopes").Get<IEnumerable<string>>();
-IEnumerable<string>? downstreamApiScopes = builder.Configuration.GetSection("DownstreamApis:JosephGuadagno.Broadcasting.Api:Scopes").Get<IEnumerable<string>>();
+IEnumerable<string>? downstreamApiScopes = builder.Configuration.GetSection("DownstreamApis:JosephGuadagnoBroadcastingApi:Scopes").Get<IEnumerable<string>>();
 var allScopes = initialScopes?.Union(downstreamApiScopes!);
 
 builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
