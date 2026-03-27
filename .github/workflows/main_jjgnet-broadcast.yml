@@ -75,11 +75,11 @@ jobs:
           path: ${{ env.WORKING_DIRECTORY }}/publish
           include-hidden-files: 'true'
 
-  deploy-to-staging:
+  deploy-to-production:
     runs-on: ubuntu-latest
     needs: build-and-test
     environment:
-      name: 'staging'
+      name: 'production'
 
     steps:
       # Download the build artifact from the previous job
@@ -96,38 +96,10 @@ jobs:
           tenant-id: ${{ secrets.FUNCTIONAPP_TENANT_ID }}
           subscription-id: ${{ secrets.FUNCTIONAPP_SUBSCRIPTION_ID }}
 
-      - name: Deploy to staging slot
+      - name: Deploy to production
         uses: Azure/functions-action@v1
-        id: fa-staging
+        id: fa-production
         with:
           app-name: 'jjgnet-broadcast'
-          slot-name: 'staging'
+          slot-name: 'production'
           package: ./publish
-
-  swap-to-production:
-    runs-on: ubuntu-latest
-    needs: deploy-to-staging
-    environment: production
-
-    steps:
-      - name: Login to Azure
-        uses: azure/login@v3
-        with:
-          client-id: ${{ secrets.FUNCTIONAPP_CLIENT_ID }}
-          tenant-id: ${{ secrets.FUNCTIONAPP_TENANT_ID }}
-          subscription-id: ${{ secrets.FUNCTIONAPP_SUBSCRIPTION_ID }}
-
-      - name: Swap staging to production
-        run: |
-          az functionapp deployment slot swap \
-            --name jjgnet-broadcast \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --slot staging \
-            --target-slot production
-
-      - name: Stop staging slot
-        run: |
-          az functionapp stop \
-            --name jjgnet-broadcast \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --slot staging
