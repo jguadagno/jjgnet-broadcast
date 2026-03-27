@@ -28,7 +28,6 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.x'
-          include-prerelease: true
 
       - name: Restore dependencies
         run: dotnet restore ./src/JosephGuadagno.Broadcasting.Api
@@ -59,11 +58,11 @@ jobs:
           name: .api-app
           path: ${{env.DOTNET_ROOT}}/api-jjgnet-broadcast
 
-  deploy-to-staging:
+  deploy-to-production:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: 'staging'
+      name: 'production'
 
     steps:
       - name: Download artifact from build job
@@ -78,49 +77,10 @@ jobs:
           tenant-id: ${{ secrets.API_TENANT_ID }}
           subscription-id: ${{ secrets.API_SUBSCRIPTION_ID }}
 
-      - name: Deploy to staging slot
-        id: deploy-to-staging
+      - name: Deploy to production
+        id: deploy-to-production
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'api-jjgnet-broadcast'
-          slot-name: 'staging'
+          slot-name: 'production'
           package: .
-
-  swap-to-production:
-    runs-on: ubuntu-latest
-    needs: deploy-to-staging
-    environment:
-      name: 'production'
-      url: ${{ steps.get-url.outputs.webapp-url }}
-    permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read
-
-    steps:
-      - name: Login to Azure
-        uses: azure/login@v3
-        with:
-          client-id: ${{ secrets.API_CLIENT_ID }}
-          tenant-id: ${{ secrets.API_TENANT_ID }}
-          subscription-id: ${{ secrets.API_SUBSCRIPTION_ID }}
-
-      - name: Swap staging to production
-        run: |
-          az webapp deployment slot swap \
-            --name api-jjgnet-broadcast \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --slot staging \
-            --target-slot production
-
-      - name: Stop staging slot
-        run: |
-          az webapp stop \
-            --name api-jjgnet-broadcast \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --slot staging
-
-      - name: Get production URL
-        id: get-url
-        run: |
-          url=$(az webapp show --name api-jjgnet-broadcast --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --query defaultHostName -o tsv)
-          echo "webapp-url=https://$url" >> $GITHUB_OUTPUT
