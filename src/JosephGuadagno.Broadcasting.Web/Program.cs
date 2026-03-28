@@ -72,7 +72,7 @@ var allScopes = initialScopes?.Union(downstreamApiScopes!);
 
 builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
     .EnableTokenAcquisitionToCallDownstreamApi(allScopes)
-    .AddInMemoryTokenCaches();
+    .AddDistributedTokenCaches();
 builder.Services.AddDownstreamApis(builder.Configuration.GetSection("DownstreamApis"));
 
 builder.Services.AddControllersWithViews(options =>
