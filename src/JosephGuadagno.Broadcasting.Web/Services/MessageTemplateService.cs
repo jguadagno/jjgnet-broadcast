@@ -11,7 +11,7 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplateService
 
 {
-    private const string ApiServiceName = "JosephGuadagno.Broadcasting.Api";
+    private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
     private const string MessageTemplateBaseUrl = "/messagetemplates";
 
     /// <summary>

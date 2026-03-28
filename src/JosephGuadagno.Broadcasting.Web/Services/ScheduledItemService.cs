@@ -12,7 +12,7 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// </summary>
 public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledItemService> logger): IScheduledItemService
 {
-    private const string ApiServiceName = "JosephGuadagno.Broadcasting.Api";
+    private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
     private const string ScheduledItemBaseUrl = "/Schedules";
 
     /// <summary>

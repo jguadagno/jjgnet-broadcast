@@ -11,7 +11,7 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// </summary>
 public class EngagementService(IDownstreamApi apiClient): IEngagementService
 {
-    private const string ApiServiceName = "JosephGuadagno.Broadcasting.Api";
+    private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
     private const string EngagementBaseUrl = "/engagements";
 
     /// <summary>
