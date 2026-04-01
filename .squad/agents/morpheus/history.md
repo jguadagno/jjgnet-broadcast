@@ -102,3 +102,29 @@
 - **Relevant specs:** `.squad/sessions/issue-specs-591-575-574-573.md`
 - **Issue #574** — Add paged overloads to `IScheduledItemDataStore`, `IEngagementDataStore`, `IMessageTemplateDataStore` and their EF Core implementations. Introduce `PagedResult<T>` in `Domain.Models`. Do NOT remove existing parameterless overloads (Decision D2) — they are called from Functions.
 - **Dependency:** This data layer work must ship before Trinity can complete the API controller work for #574.
+
+### 2026-04-01 — Issue #574 Phase 1: Paged Data Store Overloads
+- **Task:** Implement paging at the SQL layer (Phase 1 of 2-phase refactor)
+- **Implementation:**
+  - Created `PagedResult<T>` in Domain.Models — contains `List<T> Items` and `int TotalCount`
+  - Added paged overloads to 5 domain interfaces: `IScheduledItemDataStore`, `IEngagementDataStore`, `IMessageTemplateDataStore`, `IScheduledItemManager`, `IEngagementManager`
+  - Implemented paged overloads in 3 Data.Sql classes: `ScheduledItemDataStore` (5 methods), `EngagementDataStore` (2 methods), `MessageTemplateDataStore` (1 method)
+- **Pattern:** IQueryable-fork approach for filtered queries:
+  1. Build query with WHERE clause
+  2. `CountAsync()` on query for TotalCount
+  3. Apply OrderBy + Skip/Take + ToListAsync for Items
+  4. Return `new PagedResult<T> { Items, TotalCount }`
+- **Sort orders:** ScheduledItems by `SendOnDateTime`, Engagements by `StartDateTime`, MessageTemplates by `Platform` then `MessageType`, Talks by `Name`
+- **Preserved:** All existing non-paged methods untouched — Azure Functions depend on them
+- **Branch:** `issue-574-paging-data-store` pushed (Phase 1 complete)
+- **Blocked:** Build fails with Manager interface errors — expected, Trinity will implement Manager + Controller paged methods in Phase 2
+- **Pattern reinforced:** Two-count SQL for pagination — total count for response metadata, filtered count for current page
+
+
+
+## Team Standing Rules (2026-04-01)
+Established by Joseph Guadagno:
+
+1. **PR Merge Authority**: Only Joseph may merge PRs
+2. **Mapping**: All object mapping must use AutoMapper profiles
+3. **Paging/Sorting/Filtering**: Must be at the data layer only

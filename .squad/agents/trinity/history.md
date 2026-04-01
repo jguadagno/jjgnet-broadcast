@@ -104,3 +104,11 @@ Sprint 12 tagged with 13 issues.
 - **Build:** ✅ API project compiles cleanly; 0 errors
 - **PR:** #593 created (issue-575-automapper-profile-v2 → main)
 - **Key Learning:** AutoMapper ForMember(..., opt => opt.Ignore()) required for properties that cannot be resolved by convention (e.g., route params, computed properties like ItemTableName). Manual assignment post-map is the correct pattern for route-derived fields.
+
+
+## Team Standing Rules (2026-04-01)
+Established by Joseph Guadagno:
+
+1. **PR Merge Authority**: Only Joseph may merge PRs
+2. **Mapping**: All object mapping must use AutoMapper profiles
+3. **Paging/Sorting/Filtering**: Must be at the data layer only
