@@ -48,21 +48,15 @@ public class SchedulesController: ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
-        // TODO: Move paging to the data store
-        var allItems = await _scheduledItemManager.GetAllAsync();
-        var totalCount = allItems.Count;
-        var items = allItems
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(ToResponse)
-            .ToList();
+        var result = await _scheduledItemManager.GetAllAsync(page, pageSize);
+        var items = result.Items.Select(ToResponse).ToList();
         
         return new PagedResponse<ScheduledItemResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = totalCount
+            TotalCount = result.TotalCount
         };
     }
 
@@ -207,26 +201,20 @@ public class SchedulesController: ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
-        // TODO: Move paging to the data store
-        var allItems = await _scheduledItemManager.GetUnsentScheduledItemsAsync();
-        if (allItems.Count == 0)
+        var result = await _scheduledItemManager.GetUnsentScheduledItemsAsync(page, pageSize);
+        if (result.TotalCount == 0)
         {
             return NotFound();
         }
 
-        var totalCount = allItems.Count;
-        var items = allItems
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(ToResponse)
-            .ToList();
+        var items = result.Items.Select(ToResponse).ToList();
         
         return new PagedResponse<ScheduledItemResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = totalCount
+            TotalCount = result.TotalCount
         };
     }
 
@@ -250,26 +238,20 @@ public class SchedulesController: ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
-        // TODO: Move paging to the data store
-        var allItems = await _scheduledItemManager.GetScheduledItemsToSendAsync();
-        if (allItems.Count == 0)
+        var result = await _scheduledItemManager.GetScheduledItemsToSendAsync(page, pageSize);
+        if (result.TotalCount == 0)
         {
             return NotFound();
         }
 
-        var totalCount = allItems.Count;
-        var items = allItems
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(ToResponse)
-            .ToList();
+        var items = result.Items.Select(ToResponse).ToList();
         
         return new PagedResponse<ScheduledItemResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = totalCount
+            TotalCount = result.TotalCount
         };
     }
     
@@ -295,26 +277,20 @@ public class SchedulesController: ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
-        // TODO: Move paging to the data store
-        var allItems = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month);
-        if (allItems.Count == 0)
+        var result = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month, page, pageSize);
+        if (result.TotalCount == 0)
         {
             return NotFound();
         }
 
-        var totalCount = allItems.Count;
-        var items = allItems
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(ToResponse)
-            .ToList();
+        var items = result.Items.Select(ToResponse).ToList();
         
         return new PagedResponse<ScheduledItemResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = totalCount
+            TotalCount = result.TotalCount
         };
     }
 
@@ -338,26 +314,20 @@ public class SchedulesController: ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
-        // TODO: Move paging to the data store
-        var allItems = await _scheduledItemManager.GetOrphanedScheduledItemsAsync();
-        if (allItems.Count == 0)
+        var result = await _scheduledItemManager.GetOrphanedScheduledItemsAsync(page, pageSize);
+        if (result.TotalCount == 0)
         {
             return NotFound();
         }
 
-        var totalCount = allItems.Count;
-        var items = allItems
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(ToResponse)
-            .ToList();
+        var items = result.Items.Select(ToResponse).ToList();
         
         return new PagedResponse<ScheduledItemResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = totalCount
+            TotalCount = result.TotalCount
         };
     }
 
