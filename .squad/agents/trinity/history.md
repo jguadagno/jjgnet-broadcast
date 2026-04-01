@@ -133,3 +133,24 @@ Established by Joseph Guadagno:
 - PagedResponse<T> lives in Domain.Models; used for API contracts (IEnumerable<T> Items, int Page, int PageSize, int TotalCount, int TotalPages calculated property)
 - Manager paging pattern: pure delegation to data store, no logic, no Skip/Take
 - 8 controller actions with in-memory paging identified in SchedulesController (5), EngagementsController (2), MessageTemplatesController (1)
+- AutoMapper profiles must be registered in Program.cs via AddProfile<T>() for dependency injection to work
+- Manual field assignment post-map is the correct pattern for route-derived fields (Id, EngagementId, Platform, MessageType)
+- AutoMapper 16.1.1 requires explicit package reference in test projects even when transitively available
+
+---
+
+### 2026-04-01 — Issue #575: Complete AutoMapper Migration (Trinity)
+
+- **Context:** Issue #575 reopened after PR #593 was merged. PR created ApiBroadcastingProfile but didn't register it or update controllers.
+- **Gap found:** ApiBroadcastingProfile existed but wasn't wired up; all 8 manual ToResponse/ToModel helper methods still in controllers with TODO comments.
+- **What I Implemented:**
+  - Registered `ApiBroadcastingProfile` in `Program.cs` alongside existing `BroadcastingProfile`
+  - Injected `IMapper` into EngagementsController, SchedulesController, MessageTemplatesController constructors
+  - Replaced all manual `ToResponse(entity)` calls with `_mapper.Map<TResponse>(entity)`
+  - Replaced all manual `ToModel(request, id)` calls with `_mapper.Map<TEntity>(request)` + manual `entity.Id = id` assignments
+  - Removed all 8 private static helper methods (4 from EngagementsController, 2 from SchedulesController, 2 from MessageTemplatesController)
+  - Removed all 8 `TODO: Move to a Automapper profile` comments
+  - Added AutoMapper 16.1.1 to API.Tests project to fix test compilation errors
+- **Build & Test:** ✅ API project compiles cleanly; all 43 API controller tests passing
+- **Branch:** `issue-575-complete-automapper-migration` → pushed to origin
+- **Lesson:** PR #593 was incomplete — profile created but not registered, controllers not refactored. Always verify end-to-end integration when completing AutoMapper migrations.
