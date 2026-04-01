@@ -1,5 +1,6 @@
 using System.Net;
 
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 
@@ -21,7 +22,7 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
-    public async Task<List<ScheduledItem>> GetScheduledItemsAsync(int? page = 1, int? pageSize = 25)
+    public async Task<List<ScheduledItem>> GetScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<ScheduledItem>>(ApiServiceName, options =>
         {
@@ -81,7 +82,7 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
-    public async Task<List<ScheduledItem>> GetUnsentScheduledItemsAsync(int? page = 1, int? pageSize = 25)
+    public async Task<List<ScheduledItem>> GetUnsentScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         try
         {
@@ -114,7 +115,7 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
-    public async Task<List<ScheduledItem>> GetScheduledItemsToSendAsync(int? page = 1, int? pageSize = 25)
+    public async Task<List<ScheduledItem>> GetScheduledItemsToSendAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         try
         {
@@ -149,7 +150,7 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that are for the month.  If there are no scheduled items, null will be returned</returns>
-    public async Task<List<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, int? page = 1, int? pageSize = 25)
+    public async Task<List<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         try
         {
@@ -183,7 +184,7 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
-    public async Task<List<ScheduledItem>> GetOrphanedScheduledItemsAsync(int? page = 1, int? pageSize = 25)
+    public async Task<List<ScheduledItem>> GetOrphanedScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         try
         {

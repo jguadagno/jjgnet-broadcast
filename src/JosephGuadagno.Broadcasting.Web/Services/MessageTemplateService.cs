@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 
@@ -19,7 +20,7 @@ public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplate
     /// </summary>
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
-    public async Task<List<MessageTemplate>?> GetAllAsync(int? page = 1, int? pageSize = 25)
+    public async Task<List<MessageTemplate>?> GetAllAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<MessageTemplate>>(ApiServiceName, options =>
         {

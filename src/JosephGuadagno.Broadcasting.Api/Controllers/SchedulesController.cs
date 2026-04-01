@@ -1,4 +1,5 @@
 using JosephGuadagno.Broadcasting.Api.Dtos;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -41,11 +42,11 @@ public class SchedulesController: ControllerBase
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetScheduledItemsAsync(int page = 1, int pageSize = 25)
+    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetScheduledItemsAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
     {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 1;
-        if (pageSize > 100) pageSize = 100;
+        if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         var result = await _scheduledItemManager.GetAllAsync(page, pageSize);
@@ -194,11 +195,11 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetUnsentScheduledItemsAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 25)
+    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetUnsentScheduledItemsAsync([FromQuery] int page = Pagination.DefaultPage, [FromQuery] int pageSize = Pagination.DefaultPageSize)
     {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 1;
-        if (pageSize > 100) pageSize = 100;
+        if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         var result = await _scheduledItemManager.GetUnsentScheduledItemsAsync(page, pageSize);
@@ -231,11 +232,11 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetScheduledItemsToSendAsync(int page = 1, int pageSize = 25)
+    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetScheduledItemsToSendAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
     {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 1;
-        if (pageSize > 100) pageSize = 100;
+        if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         var result = await _scheduledItemManager.GetScheduledItemsToSendAsync(page, pageSize);
@@ -270,11 +271,11 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetUpcomingScheduledItemsForCalendarMonthAsync(int year, int month, int page = 1, int pageSize = 25)
+    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetUpcomingScheduledItemsForCalendarMonthAsync(int year, int month, int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
     {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 1;
-        if (pageSize > 100) pageSize = 100;
+        if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         var result = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month, page, pageSize);
@@ -307,11 +308,11 @@ public class SchedulesController: ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetOrphanedScheduledItemsAsync(int page = 1, int pageSize = 25)
+    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetOrphanedScheduledItemsAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
     {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 1;
-        if (pageSize > 100) pageSize = 100;
+        if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         var result = await _scheduledItemManager.GetOrphanedScheduledItemsAsync(page, pageSize);
