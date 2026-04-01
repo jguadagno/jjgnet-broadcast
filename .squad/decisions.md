@@ -7558,3 +7558,126 @@ This ensures cleanup always runs after the primary action succeeds, regardless o
 
 Approved as-is in PR #557 (gap is minor, not a blocker). Recommend applying correct ordering in any future CI workflow modifications or when PR #557 is revisited.
 
+
+
+--- From: neo-issue-specs-batch.md ---
+
+# Decision: Issue Specs Batch — #591 #575 #574 #573
+
+**Author:** Neo  
+**Date:** 2026-07-15  
+**Type:** Architectural / Design  
+**Status:** Active
+
+---
+
+## Context
+
+Speccing out four backlog issues that form a cohesive quality push: logging cost reduction, AutoMapper migration, DB-side paging, and web paging UI. Several architectural choices had to be made before the issues could be handed to implementing agents.
+
+---
+
+## Decisions Made
+
+### D1 — `PagedResult<T>` as a new domain model (Issue #574)
+
+**Decision:** Introduce `PagedResult<T>` in `Domain.Models` as a data-layer return type for paged data store queries. Do **not** reuse the existing `PagedResponse<T>`.
+
+**Rationale:** `PagedResponse<T>` is an API-contract type (carries `Page`, `PageSize`, `TotalPages`). Data stores should not know about API response shapes. `PagedResult<T>` carries only `Items` and `TotalCount` — the raw data the controller needs to assemble a `PagedResponse<T>`. This preserves separation of concerns across layers.
+
+### D2 — Non-breaking interface extension (Issue #574)
+
+**Decision:** Add new overloaded paged methods to data store and manager interfaces with `(int page, int pageSize)` parameters. Do **not** modify or remove existing parameterless overloads.
+
+**Rationale:** Non-paged methods are called from Azure Functions (collectors, publishers). Removing them would cascade breaking changes into Function triggers that have nothing to do with paging. Overloads keep the change additive.
+
+### D3 — Route params set manually after AutoMapper (Issue #575)
+
+**Decision:** Ignore route-derived fields (`Id`, `EngagementId`, `Platform`, `MessageType`) in AutoMapper `CreateMap<TRequest, TDomain>` and set them manually in the controller after mapping.
+
+**Rationale:** These values come from URL route segments, not from the request body. AutoMapper has no direct mechanism to inject arbitrary controller-scope values into mappings without `IMappingOperationOptions` lambda overheads that obscure intent. Manual assignment is one line and makes the controller code self-documenting.
+
+### D4 — Paging metadata passed via `ViewBag` in Web layer (Issue #573)
+
+**Decision:** Use `ViewBag.Page`, `ViewBag.TotalPages`, etc. in Web controllers; do not change the view `@model` type from `List<T>` to a paged wrapper.
+
+**Rationale:** All six affected views already have `@model List<T>`. Changing model types would require corresponding changes to the mapper calls and any tests that exercise the views. `ViewBag` is idiomatic for auxiliary display data in ASP.NET Core MVC. The shared `_PaginationPartial.cshtml` reads from `ViewBag`, keeping the coupling explicit but localised.
+
+### D5 — Service interfaces return `PagedResponse<T>` for list methods (Issue #573)
+
+**Decision:** Change the Web service interfaces and implementations for list methods to return `Task<PagedResponse<T>>` instead of `Task<List<T>>`.
+
+**Rationale:** The services already receive a `PagedResponse<T>` from the downstream API but strip it today. Preserving the full response is the minimal change that enables the web layer to do pagination correctly. Returning the full `PagedResponse<T>` also means future changes to pagination behaviour (e.g. adding a cursor) only need to touch the API and domain, not the web service layer.
+
+### D6 — Logging minimum level: `Information` not `Warning` (Issue #591)
+
+**Decision:** Set production Serilog minimum level to `Information` (not `Warning`), with namespace overrides for `Microsoft.*` and `System.*` to `Warning`.
+
+**Rationale:** `Warning` suppresses application-level `Information` logs (e.g. "Engagement created", "Scheduled item sent") that are operationally essential. `Information` with namespace overrides for the noisy framework namespaces achieves the cost reduction without sacrificing application observability.
+
+### D7 — Execution order
+
+**Decision:** Ship in this sequence:
+1. **#591** (standalone, no deps — ship immediately to control costs)
+2. **#574** Morpheus data store work (blocks #574 Trinity + #573)
+3. **#575** (independent, can overlap with #574)
+4. **#574** Trinity controller work (unblocked after Morpheus)
+5. **#573** Switch + Sparks (unblocked after #574 Trinity)
+
+---
+
+## Impact
+
+- `Domain.Models.PagedResult<T>` is a new type — document it.
+- `IScheduledItemDataStore`, `IEngagementDataStore`, `IMessageTemplateDataStore`, `IScheduledItemManager`, `IEngagementManager` all gain new paged overloads — all concrete implementations must satisfy the new contract (compiler-enforced).
+- Web `IScheduledItemService`, `IEngagementService` return type changes — all callers in Web controllers must be updated.
+- API `Program.cs` profile registration must include `ApiBroadcastingProfile` — omitting it causes runtime `AutoMapper.AutoMapperMappingException` on first request.
+
+
+--- From: neo-revert-msal-prs.md ---
+
+# Decision: Revert PRs #500 #553 #554 #555 — MSAL Authentication Broken
+
+**Date:** 2026-07-14
+**Author:** Neo
+**PR:** [#572](https://github.com/jguadagno/jjgnet-broadcast/pull/572)
+
+## Decision
+
+Revert all four PRs that were reported as breaking MSAL authentication, in a single combined revert commit on a dedicated branch.
+
+## Context
+
+Following Sprint 11 closeout, Joseph Guadagno reported that MSAL authentication was broken. The four PRs implicated span security headers middleware and three layers of MSAL exception defence:
+
+- **PR #500** — `feat(web): add HTTP security headers middleware` (merged 2026-03-20)
+- **PR #554** — `feat(web): Add global MsalExceptionMiddleware` (merged 2026-03-20)
+- **PR #555** — `feat(web): Add token cache collision resilience to cookie validation` (merged 2026-03-20)
+- **PR #553** — `feat(web): Add OpenID Connect event handlers for login failures` (merged 2026-03-21)
+
+## Rationale
+
+- Authentication is a blocking issue; the fastest safe path is a clean revert
+- Individual fixes can be re-applied once the root cause is isolated
+- A single combined commit (rather than four separate revert commits) keeps the history clean
+
+## Files Reverted
+
+| File | Change |
+|------|--------|
+| `src/JosephGuadagno.Broadcasting.Web/Program.cs` | OIDC handlers, MsalExceptionMiddleware registration, security headers removed |
+| `src/JosephGuadagno.Broadcasting.Web/Middleware/MsalExceptionMiddleware.cs` | Deleted |
+| `src/JosephGuadagno.Broadcasting.Web/RejectSessionCookieWhenAccountNotInCacheEvents.cs` | Token cache catch block reverted |
+| `src/JosephGuadagno.Broadcasting.Api/Program.cs` | Security headers middleware removed |
+| `src/JosephGuadagno.Broadcasting.Web/Views/MessageTemplates/Index.cshtml` | Reverted |
+| `src/JosephGuadagno.Broadcasting.Web/Views/Schedules/Calendar.cshtml` | Reverted |
+| `src/JosephGuadagno.Broadcasting.Web/wwwroot/css/site.css` | Reverted |
+| `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/message-templates-index.js` | Deleted |
+| `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/schedules-calendar.js` | Deleted |
+
+## Next Steps
+
+1. Merge PR #572 after CI passes
+2. Verify MSAL authentication is restored
+3. Investigate root cause (likely CSP headers from PR #500 interfering with AAD redirect, or middleware ordering conflict)
+4. Re-apply individual PRs with targeted fixes that do not interfere with MSAL

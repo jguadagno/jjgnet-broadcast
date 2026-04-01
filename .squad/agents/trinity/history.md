@@ -63,3 +63,10 @@ Sprint 12 tagged with 13 issues.
 ---
 
 *For earlier work, see git log and orchestration-log/ records.*
+
+
+### 2026-04-01 — Issue Specs #575 and #574 (API layer)
+- **Relevant specs:** `.squad/sessions/issue-specs-591-575-574-573.md`
+- **Issue #575** — AutoMapper migration: replace manual property-by-property mapping in API controllers with AutoMapper profiles. Introduce `ApiBroadcastingProfile`. Route-derived fields (`Id`, `EngagementId`, `Platform`, `MessageType`) must be set manually after mapping (Decision D3).
+- **Issue #574 (API layer)** — Add paged action overloads to API controllers once Morpheus completes data store work. Controllers return `PagedResponse<T>` assembled from `PagedResult<T>`.
+- **Dependency:** #574 API work is blocked on Morpheus completing data store paging (#574 data layer).

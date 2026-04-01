@@ -131,6 +131,29 @@ Sprint 12 tagged with 13 issues.
 
 ## Learnings
 
+### 2026-07-15: Issue Specs Batch — #591 #575 #574 #573
+
+Full specs written to `.squad/sessions/issue-specs-591-575-574-573.md`.
+
+**Key paths discovered:**
+- `src/JosephGuadagno.Broadcasting.Api/Program.cs` — `ConfigureTelemetryAndLogging()` has no Serilog MinimumLevel (defaults Verbose) — root of #591
+- `src/JosephGuadagno.Broadcasting.Functions/Program.cs` — Has `#if DEBUG/.MinimumLevel.Debug()/.MinimumLevel.Warning()` guard — correct direction but Warning is too strict
+- `src/JosephGuadagno.Broadcasting.Domain/Models/PagedResponse.cs` — existing paged API response type; NOT suitable as data-store return type
+- `src/JosephGuadagno.Broadcasting.Data.Sql/MappingProfiles/BroadcastingProfile.cs` — SQL↔Domain; no Api DTO mappings
+- `src/JosephGuadagno.Broadcasting.Web/MappingProfiles/WebMappingProfile.cs` — Domain↔ViewModel; no Api DTO mappings
+- No `ApiBroadcastingProfile` exists yet — needed for #575
+
+**Patterns established:**
+- New `PagedResult<T>` type in Domain.Models for data-store paged returns (Items + TotalCount only)
+- Route-derived fields (Id, EngagementId, Platform, MessageType) are Ignored in AutoMapper Request→Model maps; set manually in controller post-map
+- Web paging: services return `PagedResponse<T>`, controllers populate ViewBag, shared `_PaginationPartial.cshtml` reads ViewBag
+- Logging: `MinimumLevel.Information()` + `Override("Microsoft", Warning)` + `Override("System", Warning)` is the target prod config for both Api and Functions
+
+**Team assignments:**
+- #591 → Link | #575 → Trinity | #574 data stores → Morpheus | #574 managers+controllers → Trinity | #573 services+controllers → Switch | #573 views → Sparks | Tests → Tank
+
+**Dependency order:** #591 first (standalone), then #574 Morpheus, then #575 + #574 Trinity in parallel, then #573.
+
 ### 2026-07-14: MSAL Auth Broken — Revert PRs #500 #553 #554 #555
 
 **Trigger:** Joseph reported that the merged Sprint 11 auth PRs (plus PR #500 security headers) broke MSAL authentication.

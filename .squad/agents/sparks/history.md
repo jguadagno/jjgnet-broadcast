@@ -14,3 +14,9 @@
 - CodeQL requires a build step for compiled languages like C#; used `dotnet build src/ --no-incremental`
 - Added push to main trigger to ensure CodeQL runs on both PRs and main branch commits
 - Vulnerable package scanning was already implemented with Critical CVE failure threshold
+
+
+### 2026-04-01 — Issue Spec #573 (Web paging UI — frontend)
+- **Relevant specs:** `.squad/sessions/issue-specs-591-575-574-573.md`
+- **Issue #573** — Paging controls need frontend wiring. Shared `_PaginationPartial.cshtml` partial view to be created/updated to render page navigation using `ViewBag.Page`, `ViewBag.TotalPages` etc.
+- **Dependency:** Blocked on Trinity completing #574 API layer work.
