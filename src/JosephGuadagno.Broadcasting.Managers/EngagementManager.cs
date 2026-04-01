@@ -105,4 +105,14 @@ public class EngagementManager: IEngagementManager
     {
         return await _engagementDataStore.GetByNameAndUrlAndYearAsync(name, url, year);
     }
+    
+    public async Task<PagedResult<Engagement>> GetAllAsync(int page, int pageSize)
+    {
+        return await _engagementDataStore.GetAllAsync(page, pageSize);
+    }
+    
+    public async Task<PagedResult<Talk>> GetTalksForEngagementAsync(int engagementId, int page, int pageSize)
+    {
+        return await _engagementDataStore.GetTalksForEngagementAsync(engagementId, page, pageSize);
+    }
 }
