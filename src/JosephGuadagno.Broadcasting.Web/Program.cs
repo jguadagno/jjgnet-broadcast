@@ -19,7 +19,6 @@ using Microsoft.Identity.Web.UI;
 using OpenTelemetry.Logs;
 
 using Serilog;
-using Serilog.Exceptions;
 using Rocket.Surgery.Extensions.AutoMapper.NodaTime;
 using ISettings = JosephGuadagno.Broadcasting.Web.Interfaces.ISettings;
 
@@ -136,21 +135,7 @@ app.Run();
 void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorageAccount, string logPath, string applicationName)
 {
     var logger = new LoggerConfiguration()
-        .Enrich.FromLogContext()
-        .Enrich.WithMachineName()
-        .Enrich.WithThreadId()
-        .Enrich.WithEnvironmentName()
-        .Enrich.WithAssemblyName()
-        .Enrich.WithAssemblyVersion(true)
-        .Enrich.WithExceptionDetails()
-        .Enrich.WithProperty("Application", applicationName)
-        .Destructure.ToMaximumDepth(4)
-        .Destructure.ToMaximumStringLength(100)
-        .Destructure.ToMaximumCollectionCount(10)
-        .WriteTo.Console()
-        .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-        .WriteTo.AzureTableStorage(logStorageAccount, storageTableName:"Logging", keyGenerator: new SerilogKeyGenerator())
-        //.WriteTo.OpenTelemetry()
+        .ConfigureSerilog(builder.Configuration, applicationName, logPath)
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {
