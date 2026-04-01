@@ -71,4 +71,29 @@ public class ScheduledItemManager: IScheduledItemManager
         var items = await _scheduledItemDataStore.GetOrphanedScheduledItemsAsync();
         return items.ToList();
     }
+    
+    public async Task<PagedResult<ScheduledItem>> GetAllAsync(int page, int pageSize)
+    {
+        return await _scheduledItemDataStore.GetAllAsync(page, pageSize);
+    }
+    
+    public async Task<PagedResult<ScheduledItem>> GetUnsentScheduledItemsAsync(int page, int pageSize)
+    {
+        return await _scheduledItemDataStore.GetUnsentScheduledItemsAsync(page, pageSize);
+    }
+    
+    public async Task<PagedResult<ScheduledItem>> GetScheduledItemsToSendAsync(int page, int pageSize)
+    {
+        return await _scheduledItemDataStore.GetScheduledItemsToSendAsync(page, pageSize);
+    }
+    
+    public async Task<PagedResult<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, int page, int pageSize)
+    {
+        return await _scheduledItemDataStore.GetScheduledItemsByCalendarMonthAsync(year, month, page, pageSize);
+    }
+    
+    public async Task<PagedResult<ScheduledItem>> GetOrphanedScheduledItemsAsync(int page, int pageSize)
+    {
+        return await _scheduledItemDataStore.GetOrphanedScheduledItemsAsync(page, pageSize);
+    }
 }

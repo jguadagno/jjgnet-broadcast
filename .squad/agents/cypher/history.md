@@ -24,3 +24,11 @@
 - GitHub environment gates already in place (`environment: production`) — required reviewers needed in GitHub Settings
 - Scribe created orchestration logs and merged decisions into team decisions.md
 - Neo flagged non-blocking observation: cleanup steps should run immediately after primary action (swap), before informational steps, to avoid skipping if downstream steps fail
+
+
+## Team Standing Rules (2026-04-01)
+Established by Joseph Guadagno:
+
+1. **PR Merge Authority**: Only Joseph may merge PRs
+2. **Mapping**: All object mapping must use AutoMapper profiles
+3. **Paging/Sorting/Filtering**: Must be at the data layer only

@@ -85,3 +85,11 @@ The class is instantiated via `new RejectSessionCookieWhenAccountNotInCacheEvent
 **Two-layer defence (Issue #83):**
 - Layer 1 (this issue): `RejectSessionCookieWhenAccountNotInCacheEvents.ValidatePrincipal` — fires on every request with a valid session cookie, before any controller code runs. Catches the collision early and forces re-auth.
 - Layer 2 (Issue #546 / PR #554): `MsalExceptionMiddleware` — global middleware fallback. Catches any `MsalClientException multiple_matching_tokens_detected` that bubbles up from a controller/service layer token acquisition call. Redirects to sign-out.
+
+
+## Team Standing Rules (2026-04-01)
+Established by Joseph Guadagno:
+
+1. **PR Merge Authority**: Only Joseph may merge PRs
+2. **Mapping**: All object mapping must use AutoMapper profiles
+3. **Paging/Sorting/Filtering**: Must be at the data layer only

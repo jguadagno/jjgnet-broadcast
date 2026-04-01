@@ -185,4 +185,35 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
             .FirstOrDefaultAsync(e => e.Name == name && e.Url == url && e.StartDateTime.Year == year);
         return dbEngagement is null ? null : mapper.Map<Domain.Models.Engagement>(dbEngagement);
     }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.Engagement>> GetAllAsync(int page, int pageSize)
+    {
+        var totalCount = await broadcastingContext.Engagements.CountAsync();
+        var dbItems = await broadcastingContext.Engagements
+            .OrderBy(e => e.StartDateTime)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        return new Domain.Models.PagedResult<Domain.Models.Engagement>
+        {
+            Items = mapper.Map<List<Domain.Models.Engagement>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.Talk>> GetTalksForEngagementAsync(int engagementId, int page, int pageSize)
+    {
+        var query = broadcastingContext.Talks.Where(e => e.EngagementId == engagementId);
+        var totalCount = await query.CountAsync();
+        var dbItems = await query
+            .OrderBy(t => t.Name)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        return new Domain.Models.PagedResult<Domain.Models.Talk>
+        {
+            Items = mapper.Map<List<Domain.Models.Talk>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
 }

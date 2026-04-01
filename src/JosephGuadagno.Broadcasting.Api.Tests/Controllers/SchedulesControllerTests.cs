@@ -86,7 +86,8 @@ public class SchedulesControllerTests
             BuildScheduledItem(1),
             BuildScheduledItem(2)
         };
-        _scheduledItemManagerMock.Setup(m => m.GetAllAsync()).ReturnsAsync(items);
+        _scheduledItemManagerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = items, TotalCount = items.Count });
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -97,14 +98,16 @@ public class SchedulesControllerTests
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().HaveCount(2);
         result.Value!.Items.Should().BeEquivalentTo(items, opts => opts.ExcludingMissingMembers());
-        _scheduledItemManagerMock.Verify(m => m.GetAllAsync(), Times.Once);
+        result.Value!.TotalCount.Should().Be(2);
+        _scheduledItemManagerMock.Verify(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     [Fact]
     public async Task GetScheduledItemsAsync_WhenNoItemsExist_ReturnsEmptyList()
     {
         // Arrange
-        _scheduledItemManagerMock.Setup(m => m.GetAllAsync()).ReturnsAsync(new List<ScheduledItem>());
+        _scheduledItemManagerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 });
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -114,7 +117,8 @@ public class SchedulesControllerTests
         // Assert
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().BeEmpty();
-        _scheduledItemManagerMock.Verify(m => m.GetAllAsync(), Times.Once);
+        result.Value!.TotalCount.Should().Be(0);
+        _scheduledItemManagerMock.Verify(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------
@@ -334,7 +338,8 @@ public class SchedulesControllerTests
             BuildScheduledItem(1),
             BuildScheduledItem(2)
         };
-        _scheduledItemManagerMock.Setup(m => m.GetUnsentScheduledItemsAsync()).ReturnsAsync(unsentItems);
+        _scheduledItemManagerMock.Setup(m => m.GetUnsentScheduledItemsAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = unsentItems, TotalCount = unsentItems.Count });
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -345,15 +350,16 @@ public class SchedulesControllerTests
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().HaveCount(2);
         result.Value!.Items.Should().BeEquivalentTo(unsentItems, opts => opts.ExcludingMissingMembers());
-        _scheduledItemManagerMock.Verify(m => m.GetUnsentScheduledItemsAsync(), Times.Once);
+        result.Value!.TotalCount.Should().Be(2);
+        _scheduledItemManagerMock.Verify(m => m.GetUnsentScheduledItemsAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     [Fact]
     public async Task GetUnsentScheduledItemsAsync_WhenNoUnsentItems_ReturnsNotFound()
     {
         // Arrange
-        _scheduledItemManagerMock.Setup(m => m.GetUnsentScheduledItemsAsync())
-            .ReturnsAsync(new List<ScheduledItem>());
+        _scheduledItemManagerMock.Setup(m => m.GetUnsentScheduledItemsAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 });
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -362,7 +368,7 @@ public class SchedulesControllerTests
 
         // Assert
         result.Result.Should().BeOfType<NotFoundResult>();
-        _scheduledItemManagerMock.Verify(m => m.GetUnsentScheduledItemsAsync(), Times.Once);
+        _scheduledItemManagerMock.Verify(m => m.GetUnsentScheduledItemsAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------
@@ -378,7 +384,8 @@ public class SchedulesControllerTests
             BuildScheduledItem(3),
             BuildScheduledItem(4)
         };
-        _scheduledItemManagerMock.Setup(m => m.GetScheduledItemsToSendAsync()).ReturnsAsync(upcomingItems);
+        _scheduledItemManagerMock.Setup(m => m.GetScheduledItemsToSendAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = upcomingItems, TotalCount = upcomingItems.Count });
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -389,15 +396,16 @@ public class SchedulesControllerTests
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().HaveCount(2);
         result.Value!.Items.Should().BeEquivalentTo(upcomingItems, opts => opts.ExcludingMissingMembers());
-        _scheduledItemManagerMock.Verify(m => m.GetScheduledItemsToSendAsync(), Times.Once);
+        result.Value!.TotalCount.Should().Be(2);
+        _scheduledItemManagerMock.Verify(m => m.GetScheduledItemsToSendAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     [Fact]
     public async Task GetScheduledItemsToSendAsync_WhenNoItemsToSend_ReturnsNotFound()
     {
         // Arrange
-        _scheduledItemManagerMock.Setup(m => m.GetScheduledItemsToSendAsync())
-            .ReturnsAsync(new List<ScheduledItem>());
+        _scheduledItemManagerMock.Setup(m => m.GetScheduledItemsToSendAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 });
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -406,7 +414,7 @@ public class SchedulesControllerTests
 
         // Assert
         result.Result.Should().BeOfType<NotFoundResult>();
-        _scheduledItemManagerMock.Verify(m => m.GetScheduledItemsToSendAsync(), Times.Once);
+        _scheduledItemManagerMock.Verify(m => m.GetScheduledItemsToSendAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------
@@ -423,8 +431,8 @@ public class SchedulesControllerTests
             BuildScheduledItem(6)
         };
         _scheduledItemManagerMock
-            .Setup(m => m.GetScheduledItemsByCalendarMonthAsync(2025, 8))
-            .ReturnsAsync(calendarItems);
+            .Setup(m => m.GetScheduledItemsByCalendarMonthAsync(2025, 8, It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = calendarItems, TotalCount = calendarItems.Count });
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -435,7 +443,8 @@ public class SchedulesControllerTests
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().HaveCount(2);
         result.Value!.Items.Should().BeEquivalentTo(calendarItems, opts => opts.ExcludingMissingMembers());
-        _scheduledItemManagerMock.Verify(m => m.GetScheduledItemsByCalendarMonthAsync(2025, 8), Times.Once);
+        result.Value!.TotalCount.Should().Be(2);
+        _scheduledItemManagerMock.Verify(m => m.GetScheduledItemsByCalendarMonthAsync(2025, 8, It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     [Fact]
@@ -443,8 +452,8 @@ public class SchedulesControllerTests
     {
         // Arrange
         _scheduledItemManagerMock
-            .Setup(m => m.GetScheduledItemsByCalendarMonthAsync(2025, 1))
-            .ReturnsAsync(new List<ScheduledItem>());
+            .Setup(m => m.GetScheduledItemsByCalendarMonthAsync(2025, 1, It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 });
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -453,6 +462,6 @@ public class SchedulesControllerTests
 
         // Assert
         result.Result.Should().BeOfType<NotFoundResult>();
-        _scheduledItemManagerMock.Verify(m => m.GetScheduledItemsByCalendarMonthAsync(2025, 1), Times.Once);
+        _scheduledItemManagerMock.Verify(m => m.GetScheduledItemsByCalendarMonthAsync(2025, 1, It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 }

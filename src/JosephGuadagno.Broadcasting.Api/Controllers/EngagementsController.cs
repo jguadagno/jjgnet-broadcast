@@ -51,21 +51,15 @@ public class EngagementsController: ControllerBase
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List, Domain.Scopes.Engagements.All);
 
-        // TODO: Move paging to the data store
-        var allEngagements = await _engagementManager.GetAllAsync();
-        var totalCount = allEngagements.Count;
-        var items = allEngagements
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(ToResponse)
-            .ToList();
+        var result = await _engagementManager.GetAllAsync(page, pageSize);
+        var items = result.Items.Select(ToResponse).ToList();
         
         return new PagedResponse<EngagementResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = totalCount
+            TotalCount = result.TotalCount
         };
     }
 
@@ -209,21 +203,15 @@ public class EngagementsController: ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List, Domain.Scopes.Talks.All);
-        // TODO: Move paging to the data store
-        var allTalks = await _engagementManager.GetTalksForEngagementAsync(engagementId);
-        var totalCount = allTalks.Count;
-        var items = allTalks
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(ToResponse)
-            .ToList();
+        var result = await _engagementManager.GetTalksForEngagementAsync(engagementId, page, pageSize);
+        var items = result.Items.Select(ToResponse).ToList();
         
         return new PagedResponse<TalkResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = totalCount
+            TotalCount = result.TotalCount
         };
     }
     

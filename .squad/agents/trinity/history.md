@@ -89,3 +89,47 @@ Sprint 12 tagged with 13 issues.
 - **Issue #575** — AutoMapper migration: replace manual property-by-property mapping in API controllers with AutoMapper profiles. Introduce `ApiBroadcastingProfile`. Route-derived fields (`Id`, `EngagementId`, `Platform`, `MessageType`) must be set manually after mapping (Decision D3).
 - **Issue #574 (API layer)** — Add paged action overloads to API controllers once Morpheus completes data store work. Controllers return `PagedResponse<T>` assembled from `PagedResult<T>`.
 - **Dependency:** #574 API work is blocked on Morpheus completing data store paging (#574 data layer).
+
+---
+
+### 2026-04-01 — Issue #575: AutoMapper Profile Implementation Complete (Trinity)
+
+- **Task:** Create AutoMapper profile to replace manual ToResponse/ToModel helper methods in API controllers
+- **What I Implemented:**
+  - Created MappingProfiles/ApiBroadcastingProfile.cs with 8 bidirectional mappings (Engagement, Talk, ScheduledItem, MessageTemplate ↔ DTOs)
+  - Registered profile in Program.cs via AddAutoMapper()
+  - Injected IMapper into EngagementsController, SchedulesController, MessageTemplatesController
+  - Replaced all 8 private static helper methods with _mapper.Map<T>() calls
+  - Route-param fields (Id, EngagementId, Platform, MessageType) set manually post-map per Decision D3
+- **Build:** ✅ API project compiles cleanly; 0 errors
+- **PR:** #593 created (issue-575-automapper-profile-v2 → main)
+- **Key Learning:** AutoMapper ForMember(..., opt => opt.Ignore()) required for properties that cannot be resolved by convention (e.g., route params, computed properties like ItemTableName). Manual assignment post-map is the correct pattern for route-derived fields.
+
+---
+
+### 2026-04-01 — Issue #574 Phase 2: Manager Paging + Controller Rewrites (Trinity)
+
+- **Task:** Add paged manager interfaces and rewrite 8 controller paging blocks (Phase 2 of SQL-level paging)
+- **Dependency:** Morpheus completed Phase 1 (data store paged methods, PagedResult<T>)
+- **What I Implemented:**
+  - Added 5 paged methods to IScheduledItemManager, 2 to IEngagementManager (mirroring data store signatures)
+  - Implemented all paged methods in ScheduledItemManager and EngagementManager as pure delegators (zero logic)
+  - Rewrote 8 controller actions: replaced `GetAllAsync() + Skip((page-1)*pageSize).Take(pageSize)` in-memory paging with `GetAllAsync(page, pageSize)` calls
+  - Controllers: SchedulesController (5), EngagementsController (2), MessageTemplatesController (1 - direct data store call)
+- **Build:** ✅ 0 errors, unit tests pass
+- **PR:** #595 created (issue-574-paging-data-store → main)
+- **Key Learning:** Manager layer is pure pass-through for paging; all filtering, ordering, and pagination logic lives in the data store (EF Core queries). PagedResult<T> (data layer) vs PagedResponse<T> (API layer) distinction is critical.
+
+## Team Standing Rules (2026-04-01)
+Established by Joseph Guadagno:
+
+1. **PR Merge Authority**: Only Joseph may merge PRs
+2. **Mapping**: All object mapping must use AutoMapper profiles
+3. **Paging/Sorting/Filtering**: Must be at the data layer only
+
+## Learnings
+
+- PagedResult<T> lives in Domain.Models; used for data layer contracts (List<T> Items, int TotalCount)
+- PagedResponse<T> lives in Domain.Models; used for API contracts (IEnumerable<T> Items, int Page, int PageSize, int TotalCount, int TotalPages calculated property)
+- Manager paging pattern: pure delegation to data store, no logic, no Skip/Take
+- 8 controller actions with in-memory paging identified in SchedulesController (5), EngagementsController (2), MessageTemplatesController (1)

@@ -50,21 +50,15 @@ public class MessageTemplatesController : ControllerBase
         if (pageSize > 100) pageSize = 100;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.List, Domain.Scopes.MessageTemplates.All);
-        // TODO: Move paging to the data store
-        var allTemplates = await _messageTemplateDataStore.GetAllAsync();
-        var totalCount = allTemplates.Count;
-        var items = allTemplates
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(ToResponse)
-            .ToList();
+        var result = await _messageTemplateDataStore.GetAllAsync(page, pageSize);
+        var items = result.Items.Select(ToResponse).ToList();
         
         return new PagedResponse<MessageTemplateResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = totalCount
+            TotalCount = result.TotalCount
         };
     }
 

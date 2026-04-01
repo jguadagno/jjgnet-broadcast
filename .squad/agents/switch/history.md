@@ -29,3 +29,11 @@
 - **Relevant specs:** `.squad/sessions/issue-specs-591-575-574-573.md`
 - **Issue #573** — Add paging UI to Web controllers and views. Pass paging metadata via `ViewBag` (Decision D4). Do not change existing `@model List<T>` view types. Shared `_PaginationPartial.cshtml` reads from `ViewBag`.
 - **Dependency:** Blocked on Trinity completing #574 API layer work.
+
+
+## Team Standing Rules (2026-04-01)
+Established by Joseph Guadagno:
+
+1. **PR Merge Authority**: Only Joseph may merge PRs
+2. **Mapping**: All object mapping must use AutoMapper profiles
+3. **Paging/Sorting/Filtering**: Must be at the data layer only
