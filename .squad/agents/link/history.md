@@ -4,6 +4,7 @@
 
 | Date | Task | Outcome |
 |------|------|---------|
+| 2026-04-01 | **Serilog Configuration Deduplication (#314)** — Extract duplicate Serilog bootstrap from Api/Functions/Web into shared `LoggingExtensions.ConfigureSerilog()` method; Web gains OpenTelemetry sink | ✅ PR #594 opened, targets `issue-591-reduce-production-logging` branch (depends on PR #592). Web/Program.cs now has `WriteTo.OpenTelemetry()` enabled. |
 | 2026-03-20 | **Rebase v2** — Re-rebase PRs #516 and #517 after main advanced again; monitored CI for both | ✅ Both branches rebased (same conflict pattern in `.squad/decisions.md`, resolved by taking origin/main). CI green on both. PRs ready for Neo review — both merged this session. |
 | 2026-03-20 | Rebase PRs #516 and #517 (`squad/319-functions-retry-policies`, `squad/324-sql-size-cap`) onto main to pick up Api.Tests fix from #518 | ✅ Both branches rebased and force-pushed. One conflict each in `.squad/decisions.md` (housekeeping commit `862fd19` vs main's newer decisions) — resolved by taking origin/main's version. Comments posted on both PRs. |
 | 2025-07-14 | Fix PR #511 CI — merge main into `feature/s8-328-wire-application-insights` to pick up PR #513 test renames | ✅ Clean merge, pushed successfully. Also resolved workflow conflict in `feature/s8-315-api-dtos` stash pop (kept origin/main Critical-only vuln gate). |
