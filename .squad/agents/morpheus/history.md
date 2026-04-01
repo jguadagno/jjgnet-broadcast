@@ -96,3 +96,9 @@
 - **EF config:** `HasMaxLength(255)` configured in `OnModelCreating` for both columns to match SQL definition.
 - **Branch discipline:** Always confirm `git branch --show-current` before committing. Multiple concurrent branch checkouts in parallel shell sessions can put commits on the wrong branch. Use cherry-pick + reset to correct.
 - **Migration location:** `scripts/database/migrations/` for one-off ALTER TABLE scripts. `scripts/database/table-create.sql` also updated to keep base schema in sync.
+
+
+### 2026-04-01 — Issue Spec #574 (data layer)
+- **Relevant specs:** `.squad/sessions/issue-specs-591-575-574-573.md`
+- **Issue #574** — Add paged overloads to `IScheduledItemDataStore`, `IEngagementDataStore`, `IMessageTemplateDataStore` and their EF Core implementations. Introduce `PagedResult<T>` in `Domain.Models`. Do NOT remove existing parameterless overloads (Decision D2) — they are called from Functions.
+- **Dependency:** This data layer work must ship before Trinity can complete the API controller work for #574.

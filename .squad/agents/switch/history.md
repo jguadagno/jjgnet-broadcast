@@ -23,3 +23,9 @@
 - **PR status:** #534 open, ready for review
 - **Vertical slice completion:** Full engagement social fields feature now spans Domain → Data → API → Web UI (all layers in sync)
 - **Pattern documented:** Form accessibility improvements (PR #522) blocked on ViewModel updates, to be rebase once BlueSkyHandle props added
+
+
+### 2026-04-01 — Issue Spec #573 (Web paging UI)
+- **Relevant specs:** `.squad/sessions/issue-specs-591-575-574-573.md`
+- **Issue #573** — Add paging UI to Web controllers and views. Pass paging metadata via `ViewBag` (Decision D4). Do not change existing `@model List<T>` view types. Shared `_PaginationPartial.cshtml` reads from `ViewBag`.
+- **Dependency:** Blocked on Trinity completing #574 API layer work.

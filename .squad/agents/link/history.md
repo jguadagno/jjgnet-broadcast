@@ -24,3 +24,9 @@
 - **Functions uses a different pattern**: The isolated worker model uses `UseFunctionsWorkerDefaults()` (from `Microsoft.Azure.Functions.Worker.OpenTelemetry`) for worker-specific instrumentation. `UseAzureMonitorExporter()` was removed because ServiceDefaults' `UseAzureMonitor()` now handles the exporter centrally — including for Functions.
 - **host.json** already had `telemetryMode: OpenTelemetry` — no change needed there.
 - **Package versions**: Api and Web both referenced `Azure.Monitor.OpenTelemetry.AspNetCore` v1.4.0; ServiceDefaults now uses the same version for consistency.
+
+
+### 2026-04-01 — Issue Specs batch #591 #575 #574 #573
+- **Relevant specs:** `.squad/sessions/issue-specs-591-575-574-573.md`
+- Neo specced four issues. Once implemented, these will generate PRs requiring branch management: #591 (standalone), #575 (independent), #574 (two-phase: Morpheus then Trinity), #573 (depends on #574 Trinity).
+- Recommended ship order: #591 → #574-data → #575 → #574-api → #573.
