@@ -1,3 +1,4 @@
+using AutoMapper;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -19,16 +20,19 @@ public class EngagementsController: ControllerBase
 {
     private readonly IEngagementManager _engagementManager;
     private readonly ILogger<EngagementsController> _logger;
+    private readonly IMapper _mapper;
 
     /// <summary>
     /// Handles the interactions with Engagements
     /// </summary>
     /// <param name="engagementManager"></param>
     /// <param name="logger"></param>
-    public EngagementsController(IEngagementManager engagementManager, ILogger<EngagementsController> logger)
+    /// <param name="mapper"></param>
+    public EngagementsController(IEngagementManager engagementManager, ILogger<EngagementsController> logger, IMapper mapper)
     {
         _engagementManager = engagementManager;
         _logger = logger;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -53,7 +57,7 @@ public class EngagementsController: ControllerBase
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List, Domain.Scopes.Engagements.All);
 
         var result = await _engagementManager.GetAllAsync(page, pageSize);
-        var items = result.Items.Select(ToResponse).ToList();
+        var items = _mapper.Map<List<EngagementResponse>>(result.Items);
         
         return new PagedResponse<EngagementResponse>
         {
@@ -86,7 +90,7 @@ public class EngagementsController: ControllerBase
         var engagement = await _engagementManager.GetAsync(engagementId);
         if (engagement is null)
             return NotFound();
-        return Ok(ToResponse(engagement));
+        return Ok(_mapper.Map<EngagementResponse>(engagement));
     }
 
     /// <summary>
@@ -111,13 +115,13 @@ public class EngagementsController: ControllerBase
             return BadRequest(ModelState);    
         }
 
-        var engagement = ToModel(request);
+        var engagement = _mapper.Map<Engagement>(request);
         var savedEngagement = await _engagementManager.SaveAsync(engagement);
         if (savedEngagement != null)
         {
             _logger.LogInformation("Engagement created with Id {EngagementId}", savedEngagement.Id);
             return CreatedAtAction(nameof(GetEngagementAsync), new { engagementId = savedEngagement.Id },
-                ToResponse(savedEngagement));
+                _mapper.Map<EngagementResponse>(savedEngagement));
         }
 
         return Problem("Failed to create the engagement");
@@ -146,12 +150,13 @@ public class EngagementsController: ControllerBase
             return BadRequest(ModelState);    
         }
 
-        var engagement = ToModel(request, engagementId);
+        var engagement = _mapper.Map<Engagement>(request);
+        engagement.Id = engagementId;
         var savedEngagement = await _engagementManager.SaveAsync(engagement);
         if (savedEngagement != null)
         {
             _logger.LogInformation("Engagement updated with Id {EngagementId}", savedEngagement.Id);
-            return Ok(ToResponse(savedEngagement));
+            return Ok(_mapper.Map<EngagementResponse>(savedEngagement));
         }
 
         return Problem("Failed to update the engagement");
@@ -205,7 +210,7 @@ public class EngagementsController: ControllerBase
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List, Domain.Scopes.Talks.All);
         var result = await _engagementManager.GetTalksForEngagementAsync(engagementId, page, pageSize);
-        var items = result.Items.Select(ToResponse).ToList();
+        var items = _mapper.Map<List<TalkResponse>>(result.Items);
         
         return new PagedResponse<TalkResponse>
         {
@@ -239,13 +244,14 @@ public class EngagementsController: ControllerBase
             return BadRequest(ModelState);
         }
 
-        var talk = ToModel(request, engagementId);
+        var talk = _mapper.Map<Talk>(request);
+        talk.EngagementId = engagementId;
         var savedTalk = await _engagementManager.SaveTalkAsync(talk);
         if (savedTalk != null)
         {
             _logger.LogInformation("Talk created with Id {TalkId} for Engagement {EngagementId}", savedTalk.Id, engagementId);
             return CreatedAtAction(nameof(GetTalkAsync), new { engagementId = engagementId, talkId = savedTalk.Id },
-                ToResponse(savedTalk));
+                _mapper.Map<TalkResponse>(savedTalk));
         }
 
         return Problem("Failed to create the talk");
@@ -275,12 +281,14 @@ public class EngagementsController: ControllerBase
             return BadRequest(ModelState);
         }
 
-        var talk = ToModel(request, engagementId, talkId);
+        var talk = _mapper.Map<Talk>(request);
+        talk.EngagementId = engagementId;
+        talk.Id = talkId;
         var savedTalk = await _engagementManager.SaveTalkAsync(talk);
         if (savedTalk != null)
         {
             _logger.LogInformation("Talk updated with Id {TalkId} for Engagement {EngagementId}", savedTalk.Id, engagementId);
-            return Ok(ToResponse(savedTalk));
+            return Ok(_mapper.Map<TalkResponse>(savedTalk));
         }
 
         return Problem("Failed to update the talk");
@@ -309,7 +317,7 @@ public class EngagementsController: ControllerBase
         var talk = await _engagementManager.GetTalkAsync(talkId);
         if (talk is null)
             return NotFound();
-        return Ok(ToResponse(talk));
+        return Ok(_mapper.Map<TalkResponse>(talk));
     }
     
     /// <summary>
@@ -341,59 +349,4 @@ public class EngagementsController: ControllerBase
         _logger.LogWarning("Talk {TalkId} not found for deletion in Engagement {EngagementId}", talkId, engagementId);
         return new NotFoundResult();
     }
-
-    // TODO: Move to a Automapper profile
-    private static EngagementResponse ToResponse(Engagement e) => new()
-    {
-        Id = e.Id,
-        Name = e.Name,
-        Url = e.Url,
-        StartDateTime = e.StartDateTime,
-        EndDateTime = e.EndDateTime,
-        TimeZoneId = e.TimeZoneId,
-        Comments = e.Comments,
-        Talks = e.Talks?.Select(ToResponse).ToList(),
-        CreatedOn = e.CreatedOn,
-        LastUpdatedOn = e.LastUpdatedOn
-    };
-
-    // TODO: Move to a Automapper profile
-    private static Engagement ToModel(EngagementRequest r, int id = 0) => new()
-    {
-        Id = id,
-        Name = r.Name,
-        Url = r.Url,
-        StartDateTime = r.StartDateTime,
-        EndDateTime = r.EndDateTime,
-        TimeZoneId = r.TimeZoneId,
-        Comments = r.Comments
-    };
-
-    // TODO: Move to a Automapper profile
-    private static TalkResponse ToResponse(Talk t) => new()
-    {
-        Id = t.Id,
-        Name = t.Name,
-        UrlForConferenceTalk = t.UrlForConferenceTalk,
-        UrlForTalk = t.UrlForTalk,
-        StartDateTime = t.StartDateTime,
-        EndDateTime = t.EndDateTime,
-        TalkLocation = t.TalkLocation,
-        Comments = t.Comments,
-        EngagementId = t.EngagementId
-    };
-
-    // TODO: Move to a Automapper profile
-    private static Talk ToModel(TalkRequest r, int engagementId, int id = 0) => new()
-    {
-        Id = id,
-        Name = r.Name,
-        UrlForConferenceTalk = r.UrlForConferenceTalk,
-        UrlForTalk = r.UrlForTalk,
-        StartDateTime = r.StartDateTime,
-        EndDateTime = r.EndDateTime,
-        TalkLocation = r.TalkLocation,
-        Comments = r.Comments,
-        EngagementId = engagementId
-    };
 }

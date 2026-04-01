@@ -1,3 +1,4 @@
+using AutoMapper;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -19,16 +20,19 @@ public class SchedulesController: ControllerBase
 {
     private readonly IScheduledItemManager _scheduledItemManager;
     private readonly ILogger<SchedulesController> _logger;
+    private readonly IMapper _mapper;
 
     /// <summary>
     /// The constructor
     /// </summary>
     /// <param name="scheduledItemManager">The scheduled item manager</param>
     /// <param name="logger">The logger to use</param>
-    public SchedulesController(IScheduledItemManager scheduledItemManager, ILogger<SchedulesController> logger)
+    /// <param name="mapper">The AutoMapper instance</param>
+    public SchedulesController(IScheduledItemManager scheduledItemManager, ILogger<SchedulesController> logger, IMapper mapper)
     {
         _scheduledItemManager = scheduledItemManager;
         _logger = logger;
+        _mapper = mapper;
     }
     
     /// <summary>
@@ -50,7 +54,7 @@ public class SchedulesController: ControllerBase
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         var result = await _scheduledItemManager.GetAllAsync(page, pageSize);
-        var items = result.Items.Select(ToResponse).ToList();
+        var items = _mapper.Map<List<ScheduledItemResponse>>(result.Items);
         
         return new PagedResponse<ScheduledItemResponse>
         {
@@ -83,7 +87,7 @@ public class SchedulesController: ControllerBase
         var item = await _scheduledItemManager.GetAsync(scheduledItemId);
         if (item is null)
             return NotFound();
-        return Ok(ToResponse(item));
+        return Ok(_mapper.Map<ScheduledItemResponse>(item));
     }
 
     /// <summary>
@@ -108,13 +112,13 @@ public class SchedulesController: ControllerBase
             return BadRequest(ModelState);
         }
 
-        var scheduledItem = ToModel(request);
+        var scheduledItem = _mapper.Map<ScheduledItem>(request);
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (savedScheduledItem != null)
         {
             _logger.LogInformation("ScheduledItem created with Id {ScheduledItemId}", savedScheduledItem.Id);
             return CreatedAtAction(nameof(GetScheduledItemAsync), new { scheduledItemId = savedScheduledItem.Id },
-                ToResponse(savedScheduledItem));
+                _mapper.Map<ScheduledItemResponse>(savedScheduledItem));
         }
 
         return Problem("Failed to create the scheduled item");
@@ -143,12 +147,13 @@ public class SchedulesController: ControllerBase
             return BadRequest(ModelState);
         }
 
-        var scheduledItem = ToModel(request, scheduledItemId);
+        var scheduledItem = _mapper.Map<ScheduledItem>(request);
+        scheduledItem.Id = scheduledItemId;
         var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (savedScheduledItem != null)
         {
             _logger.LogInformation("ScheduledItem updated with Id {ScheduledItemId}", savedScheduledItem.Id);
-            return Ok(ToResponse(savedScheduledItem));
+            return Ok(_mapper.Map<ScheduledItemResponse>(savedScheduledItem));
         }
 
         return Problem("Failed to update the scheduled item");
@@ -208,7 +213,7 @@ public class SchedulesController: ControllerBase
             return NotFound();
         }
 
-        var items = result.Items.Select(ToResponse).ToList();
+        var items = _mapper.Map<List<ScheduledItemResponse>>(result.Items);
         
         return new PagedResponse<ScheduledItemResponse>
         {
@@ -245,7 +250,7 @@ public class SchedulesController: ControllerBase
             return NotFound();
         }
 
-        var items = result.Items.Select(ToResponse).ToList();
+        var items = _mapper.Map<List<ScheduledItemResponse>>(result.Items);
         
         return new PagedResponse<ScheduledItemResponse>
         {
@@ -284,7 +289,7 @@ public class SchedulesController: ControllerBase
             return NotFound();
         }
 
-        var items = result.Items.Select(ToResponse).ToList();
+        var items = _mapper.Map<List<ScheduledItemResponse>>(result.Items);
         
         return new PagedResponse<ScheduledItemResponse>
         {
@@ -321,7 +326,7 @@ public class SchedulesController: ControllerBase
             return NotFound();
         }
 
-        var items = result.Items.Select(ToResponse).ToList();
+        var items = _mapper.Map<List<ScheduledItemResponse>>(result.Items);
         
         return new PagedResponse<ScheduledItemResponse>
         {
@@ -331,29 +336,4 @@ public class SchedulesController: ControllerBase
             TotalCount = result.TotalCount
         };
     }
-
-    // TODO: Move to a Automapper profile
-    private static ScheduledItemResponse ToResponse(ScheduledItem s) => new()
-    {
-        Id = s.Id,
-        ItemType = s.ItemType,
-        ItemTableName = s.ItemTableName,
-        ItemPrimaryKey = s.ItemPrimaryKey,
-        Message = s.Message,
-        ImageUrl = s.ImageUrl,
-        MessageSentOn = s.MessageSentOn,
-        MessageSent = s.MessageSent,
-        SendOnDateTime = s.SendOnDateTime
-    };
-
-    // TODO: Move to a Automapper profile
-    private static ScheduledItem ToModel(ScheduledItemRequest r, int id = 0) => new()
-    {
-        Id = id,
-        ItemType = r.ItemType,
-        ItemPrimaryKey = r.ItemPrimaryKey,
-        Message = r.Message,
-        ImageUrl = r.ImageUrl,
-        SendOnDateTime = r.SendOnDateTime
-    };
 }

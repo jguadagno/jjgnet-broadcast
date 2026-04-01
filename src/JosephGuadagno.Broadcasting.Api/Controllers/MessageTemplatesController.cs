@@ -1,3 +1,4 @@
+using AutoMapper;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Models;
 using JosephGuadagno.Broadcasting.Domain.Constants;
@@ -20,17 +21,20 @@ public class MessageTemplatesController : ControllerBase
 {
     private readonly IMessageTemplateDataStore _messageTemplateDataStore;
     private readonly ILogger<MessageTemplatesController> _logger;
+    private readonly IMapper _mapper;
 
     /// <summary>
     /// Handles the interactions with Message Templates
     /// </summary>
     /// <param name="messageTemplateDataStore">The message template data store</param>
     /// <param name="logger">The logger</param>
+    /// <param name="mapper">The AutoMapper instance</param>
     public MessageTemplatesController(IMessageTemplateDataStore messageTemplateDataStore,
-        ILogger<MessageTemplatesController> logger)
+        ILogger<MessageTemplatesController> logger, IMapper mapper)
     {
         _messageTemplateDataStore = messageTemplateDataStore;
         _logger = logger;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -52,7 +56,7 @@ public class MessageTemplatesController : ControllerBase
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.List, Domain.Scopes.MessageTemplates.All);
         var result = await _messageTemplateDataStore.GetAllAsync(page, pageSize);
-        var items = result.Items.Select(ToResponse).ToList();
+        var items = _mapper.Map<List<MessageTemplateResponse>>(result.Items);
         
         return new PagedResponse<MessageTemplateResponse>
         {
@@ -85,7 +89,7 @@ public class MessageTemplatesController : ControllerBase
             _logger.LogWarning("MessageTemplate not found for Platform={Platform}, MessageType={MessageType}", platform, messageType);
             return NotFound();
         }
-        return ToResponse(template);
+        return _mapper.Map<MessageTemplateResponse>(template);
     }
 
     /// <summary>
@@ -115,7 +119,9 @@ public class MessageTemplatesController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var messageTemplate = ToModel(request, platform, messageType);
+        var messageTemplate = _mapper.Map<MessageTemplate>(request);
+        messageTemplate.Platform = platform;
+        messageTemplate.MessageType = messageType;
         var updated = await _messageTemplateDataStore.UpdateAsync(messageTemplate);
         if (updated is null)
         {
@@ -124,24 +130,6 @@ public class MessageTemplatesController : ControllerBase
         }
 
         _logger.LogInformation("MessageTemplate updated for Platform={Platform}, MessageType={MessageType}", platform, messageType);
-        return ToResponse(updated);
+        return _mapper.Map<MessageTemplateResponse>(updated);
     }
-
-    // TODO: Move to a Automapper profile
-    private static MessageTemplateResponse ToResponse(MessageTemplate t) => new()
-    {
-        Platform = t.Platform,
-        MessageType = t.MessageType,
-        Template = t.Template,
-        Description = t.Description
-    };
-
-    // TODO: Move to a Automapper profile
-    private static MessageTemplate ToModel(MessageTemplateRequest r, string platform, string messageType) => new()
-    {
-        Platform = platform,
-        MessageType = messageType,
-        Template = r.Template,
-        Description = r.Description
-    };
 }
