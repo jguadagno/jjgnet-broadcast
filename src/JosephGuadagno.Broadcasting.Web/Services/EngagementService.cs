@@ -1,4 +1,5 @@
 using System.Net;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 
@@ -20,7 +21,7 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="Engagement"/>&gt;s</returns>
-    public async Task<List<Engagement>> GetEngagementsAsync(int? page = 1, int? pageSize = 25)
+    public async Task<List<Engagement>> GetEngagementsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         var pagedResponse  = await apiClient.GetForUserAsync<PagedResponse<Engagement>>(ApiServiceName, options =>
         {
@@ -82,7 +83,7 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="Talk"/>&gt;s</returns>
-    public async Task<List<Talk>> GetEngagementTalksAsync(int engagementId, int? page = 1, int? pageSize = 25)
+    public async Task<List<Talk>> GetEngagementTalksAsync(int engagementId, int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<Talk>>(ApiServiceName, options =>
         {

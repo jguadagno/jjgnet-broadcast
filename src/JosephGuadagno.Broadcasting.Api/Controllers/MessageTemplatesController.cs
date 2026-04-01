@@ -1,5 +1,6 @@
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Models;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -43,11 +44,11 @@ public class MessageTemplatesController : ControllerBase
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<MessageTemplateResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PagedResponse<MessageTemplateResponse>>> GetAllAsync(int page = 1, int pageSize = 25)
+    public async Task<ActionResult<PagedResponse<MessageTemplateResponse>>> GetAllAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
     {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 1;
-        if (pageSize > 100) pageSize = 100;
+        if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.List, Domain.Scopes.MessageTemplates.All);
         var result = await _messageTemplateDataStore.GetAllAsync(page, pageSize);
