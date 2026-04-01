@@ -68,7 +68,8 @@ public class EngagementsControllerTests
             new() { Id = 1, Name = "Conference A", Url = "https://conf-a.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(2), TimeZoneId = "UTC" },
             new() { Id = 2, Name = "Conference B", Url = "https://conf-b.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(3), TimeZoneId = "UTC" }
         };
-        _engagementManagerMock.Setup(m => m.GetAllAsync()).ReturnsAsync(engagements);
+        _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<Engagement> { Items = engagements, TotalCount = engagements.Count });
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
 
@@ -79,14 +80,16 @@ public class EngagementsControllerTests
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().HaveCount(2);
         result.Value!.Items.Should().BeEquivalentTo(engagements, opts => opts.ExcludingMissingMembers());
-        _engagementManagerMock.Verify(m => m.GetAllAsync(), Times.Once);
+        result.Value!.TotalCount.Should().Be(2);
+        _engagementManagerMock.Verify(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     [Fact]
     public async Task GetEngagementsAsync_WhenNoEngagementsExist_ReturnsEmptyList()
     {
         // Arrange
-        _engagementManagerMock.Setup(m => m.GetAllAsync()).ReturnsAsync(new List<Engagement>());
+        _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<Engagement> { Items = new List<Engagement>(), TotalCount = 0 });
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
 
@@ -96,7 +99,8 @@ public class EngagementsControllerTests
         // Assert
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().BeEmpty();
-        _engagementManagerMock.Verify(m => m.GetAllAsync(), Times.Once);
+        result.Value!.TotalCount.Should().Be(0);
+        _engagementManagerMock.Verify(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------
@@ -354,7 +358,8 @@ public class EngagementsControllerTests
             new() { Id = 1, EngagementId = 10, Name = "Talk 1", UrlForConferenceTalk = "https://conf.example.com/talk1", UrlForTalk = "https://example.com/talk1", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddHours(1) },
             new() { Id = 2, EngagementId = 10, Name = "Talk 2", UrlForConferenceTalk = "https://conf.example.com/talk2", UrlForTalk = "https://example.com/talk2", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddHours(1) }
         };
-        _engagementManagerMock.Setup(m => m.GetTalksForEngagementAsync(10)).ReturnsAsync(talks);
+        _engagementManagerMock.Setup(m => m.GetTalksForEngagementAsync(10, It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<Talk> { Items = talks, TotalCount = talks.Count });
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
 
@@ -365,14 +370,16 @@ public class EngagementsControllerTests
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().HaveCount(2);
         result.Value!.Items.Should().BeEquivalentTo(talks, opts => opts.ExcludingMissingMembers());
-        _engagementManagerMock.Verify(m => m.GetTalksForEngagementAsync(10), Times.Once);
+        result.Value!.TotalCount.Should().Be(2);
+        _engagementManagerMock.Verify(m => m.GetTalksForEngagementAsync(10, It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     [Fact]
     public async Task GetTalksForEngagementAsync_WhenNoTalksExist_ReturnsEmptyList()
     {
         // Arrange
-        _engagementManagerMock.Setup(m => m.GetTalksForEngagementAsync(10)).ReturnsAsync(new List<Talk>());
+        _engagementManagerMock.Setup(m => m.GetTalksForEngagementAsync(10, It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<Talk> { Items = new List<Talk>(), TotalCount = 0 });
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
 
@@ -382,7 +389,8 @@ public class EngagementsControllerTests
         // Assert
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().BeEmpty();
-        _engagementManagerMock.Verify(m => m.GetTalksForEngagementAsync(10), Times.Once);
+        result.Value!.TotalCount.Should().Be(0);
+        _engagementManagerMock.Verify(m => m.GetTalksForEngagementAsync(10, It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------
