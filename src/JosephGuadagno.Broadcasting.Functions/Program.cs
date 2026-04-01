@@ -42,6 +42,7 @@ using Microsoft.Extensions.Logging;
 using OpenTelemetry.Logs;
 
 using Serilog;
+using Serilog.Events;
 using Serilog.Exceptions;
 
 var currentDirectory = Directory.GetCurrentDirectory();
@@ -129,8 +130,12 @@ void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorage
         #if DEBUG
         .MinimumLevel.Debug()
         #else
-        .MinimumLevel.Warning()
+        .MinimumLevel.Information()
         #endif
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+        .MinimumLevel.Override("System", LogEventLevel.Warning)
+        .MinimumLevel.Override("Azure", LogEventLevel.Warning)
         .Enrich.FromLogContext()
         .Enrich.WithMachineName()
         .Enrich.WithThreadId()

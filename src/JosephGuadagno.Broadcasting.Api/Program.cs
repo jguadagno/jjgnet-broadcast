@@ -11,6 +11,7 @@ using Microsoft.Identity.Web;
 using OpenTelemetry.Logs;
 using Scalar.AspNetCore;
 using Serilog;
+using Serilog.Events;
 using Serilog.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -47,6 +48,7 @@ builder.Services.AddAutoMapper(config =>
 {
     config.LicenseKey = autoMapperSettings.LicenseKey;
     config.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
+    config.AddProfile<JosephGuadagno.Broadcasting.Api.MappingProfiles.ApiBroadcastingProfile>();
 }, typeof(Program));
 
 ConfigureApplication(builder.Services);
@@ -106,6 +108,10 @@ app.Run();
 void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorageAccount, string logPath, string applicationName)
 {
     var logger = new LoggerConfiguration()
+        .MinimumLevel.Information()
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+        .MinimumLevel.Override("System", LogEventLevel.Warning)
         .Enrich.FromLogContext()
         .Enrich.WithMachineName()
         .Enrich.WithThreadId()
