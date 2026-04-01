@@ -134,6 +134,48 @@ Integration test projects for social managers follow this pattern:
 **Next:** Ready for social manager integration test expansion (Facebook, LinkedIn, Bluesky)
 
 
+## Session: 2026-05-08T[TIME]Z — Web.Tests PagedResult Mock Fix
+
+**Summary:** Fixed failing Web.Tests on branch `issue-573-web-paging-ui` after service interfaces changed from returning `Task<List<T>>` to `Task<PagedResult<T>>`. Updated all mock setups in EngagementsControllerTests and SchedulesControllerTests to wrap data in PagedResult<T> objects.
+
+**Issue:** PR #597 changed service interfaces (IEngagementService, IScheduledItemService) to return `PagedResult<T>` with pagination support. Test mocks were still using `.ReturnsAsync(List<T>)`, causing CS1929 compiler errors.
+
+**Fix Applied:**
+- Updated 8 test methods across 2 test files
+- EngagementsControllerTests.cs: 1 test (Index)
+- SchedulesControllerTests.cs: 7 tests (Index, Calendar x5, Unsent, Upcoming)
+- Wrapped all list data in `new PagedResult<T> { Items = list, TotalCount = list.Count }`
+- Added mock for `GetOrphanedScheduledItemsAsync` in SchedulesController.Index test (controller calls this internally)
+- Updated `.Setup()` calls to match new interface signatures with pagination parameters: `It.IsAny<int?>()` for page and pageSize
+
+**PagedResult<T> Structure:**
+```csharp
+public class PagedResult<T>
+{
+    public List<T> Items { get; set; } = [];
+    public int TotalCount { get; set; }
+}
+```
+
+**Pattern Established:**
+When service interfaces return PagedResult<T>, test mocks must:
+1. Wrap data in PagedResult<T>: `new PagedResult<Engagement> { Items = engagements, TotalCount = engagements.Count }`
+2. Use `It.IsAny<int?>()` for pagination parameters in Setup: `.Setup(s => s.GetEngagementsAsync(It.IsAny<int?>(), It.IsAny<int?>()))`
+3. Mock ALL service calls in controller action, including internal calls (e.g., GetOrphanedScheduledItemsAsync)
+
+**Verification:**
+- ✅ Build: 0 errors (3 pre-existing NU1903 warnings)
+- ✅ Tests: 52/52 passing
+- ✅ Committed to issue-573-web-paging-ui
+- ✅ Pushed to remote
+
+**Branch & Commit:**
+- Branch: `issue-573-web-paging-ui`
+- Commit: 4fb548a
+- Message: "fix: update Web.Tests mocks to use PagedResult<T> for paging service interfaces (#573)"
+
+---
+
 ## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:
 
