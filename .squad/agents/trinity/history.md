@@ -89,3 +89,18 @@ Sprint 12 tagged with 13 issues.
 - **Issue #575** — AutoMapper migration: replace manual property-by-property mapping in API controllers with AutoMapper profiles. Introduce `ApiBroadcastingProfile`. Route-derived fields (`Id`, `EngagementId`, `Platform`, `MessageType`) must be set manually after mapping (Decision D3).
 - **Issue #574 (API layer)** — Add paged action overloads to API controllers once Morpheus completes data store work. Controllers return `PagedResponse<T>` assembled from `PagedResult<T>`.
 - **Dependency:** #574 API work is blocked on Morpheus completing data store paging (#574 data layer).
+
+---
+
+### 2026-04-01 — Issue #575: AutoMapper Profile Implementation Complete (Trinity)
+
+- **Task:** Create AutoMapper profile to replace manual ToResponse/ToModel helper methods in API controllers
+- **What I Implemented:**
+  - Created MappingProfiles/ApiBroadcastingProfile.cs with 8 bidirectional mappings (Engagement, Talk, ScheduledItem, MessageTemplate ↔ DTOs)
+  - Registered profile in Program.cs via AddAutoMapper()
+  - Injected IMapper into EngagementsController, SchedulesController, MessageTemplatesController
+  - Replaced all 8 private static helper methods with _mapper.Map<T>() calls
+  - Route-param fields (Id, EngagementId, Platform, MessageType) set manually post-map per Decision D3
+- **Build:** ✅ API project compiles cleanly; 0 errors
+- **PR:** #593 created (issue-575-automapper-profile-v2 → main)
+- **Key Learning:** AutoMapper ForMember(..., opt => opt.Ignore()) required for properties that cannot be resolved by convention (e.g., route params, computed properties like ItemTableName). Manual assignment post-map is the correct pattern for route-derived fields.
