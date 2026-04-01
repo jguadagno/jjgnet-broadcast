@@ -46,6 +46,7 @@ builder.Services.AddAutoMapper(config =>
 {
     config.LicenseKey = autoMapperSettings.LicenseKey;
     config.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
+    config.AddProfile<JosephGuadagno.Broadcasting.Api.MappingProfiles.ApiBroadcastingProfile>();
 }, typeof(Program));
 
 ConfigureApplication(builder.Services);

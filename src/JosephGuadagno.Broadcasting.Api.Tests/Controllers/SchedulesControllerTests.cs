@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AutoMapper;
 using FluentAssertions;
 using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
@@ -16,11 +17,19 @@ public class SchedulesControllerTests
 {
     private readonly Mock<IScheduledItemManager> _scheduledItemManagerMock;
     private readonly Mock<ILogger<SchedulesController>> _loggerMock;
+    private readonly IMapper _mapper;
 
     public SchedulesControllerTests()
     {
         _scheduledItemManagerMock = new Mock<IScheduledItemManager>();
         _loggerMock = new Mock<ILogger<SchedulesController>>();
+        
+        // Configure AutoMapper with the API profile
+        var mapperConfig = new MapperConfiguration(cfg =>
+        {
+            cfg.AddProfile<JosephGuadagno.Broadcasting.Api.MappingProfiles.ApiBroadcastingProfile>();
+        }, new LoggerFactory());
+        _mapper = mapperConfig.CreateMapper();
     }
 
     // -------------------------------------------------------------------------
@@ -29,7 +38,7 @@ public class SchedulesControllerTests
 
     private SchedulesController CreateSut(string scopeClaimValue)
     {
-        var controller = new SchedulesController(_scheduledItemManagerMock.Object, _loggerMock.Object)
+        var controller = new SchedulesController(_scheduledItemManagerMock.Object, _loggerMock.Object, _mapper)
         {
             ControllerContext = CreateControllerContext(scopeClaimValue),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
