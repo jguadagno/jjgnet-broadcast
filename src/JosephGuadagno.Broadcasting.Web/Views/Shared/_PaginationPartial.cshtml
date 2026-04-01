@@ -1,0 +1,91 @@
+@* 
+    Pagination partial view that reads from ViewBag:
+    - ViewBag.Page (current page)
+    - ViewBag.TotalPages (total number of pages)
+    - ViewBag.ControllerName (target controller)
+    - ViewBag.ActionName (target action)
+*@
+
+@{
+    int currentPage = ViewBag.Page ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    string controllerName = ViewBag.ControllerName ?? "Home";
+    string actionName = ViewBag.ActionName ?? "Index";
+    
+    // Only render pagination if there is more than one page
+    if (totalPages > 1)
+    {
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                @* Previous button *@
+                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                    @if (currentPage == 1)
+                    {
+                        <span class="page-link">Previous</span>
+                    }
+                    else
+                    {
+                        <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="@(currentPage - 1)">Previous</a>
+                    }
+                </li>
+
+                @* Page numbers *@
+                @{
+                    int startPage = Math.Max(1, currentPage - 2);
+                    int endPage = Math.Min(totalPages, currentPage + 2);
+                    
+                    // Show first page if not in range
+                    if (startPage > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="1">1</a>
+                        </li>
+                        if (startPage > 2)
+                        {
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        }
+                    }
+                    
+                    // Show page numbers in range
+                    for (int i = startPage; i <= endPage; i++)
+                    {
+                        <li class="page-item @(i == currentPage ? "active" : "")">
+                            @if (i == currentPage)
+                            {
+                                <span class="page-link">@i</span>
+                            }
+                            else
+                            {
+                                <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="@i">@i</a>
+                            }
+                        </li>
+                    }
+                    
+                    // Show last page if not in range
+                    if (endPage < totalPages)
+                    {
+                        if (endPage < totalPages - 1)
+                        {
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        }
+                        <li class="page-item">
+                            <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="@totalPages">@totalPages</a>
+                        </li>
+                    }
+                }
+
+                @* Next button *@
+                <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                    @if (currentPage >= totalPages)
+                    {
+                        <span class="page-link">Next</span>
+                    }
+                    else
+                    {
+                        <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="@(currentPage + 1)">Next</a>
+                    }
+                </li>
+            </ul>
+        </nav>
+    }
+}
