@@ -30,3 +30,9 @@
 - **Relevant specs:** `.squad/sessions/issue-specs-591-575-574-573.md`
 - Neo specced four issues. Once implemented, these will generate PRs requiring branch management: #591 (standalone), #575 (independent), #574 (two-phase: Morpheus then Trinity), #573 (depends on #574 Trinity).
 - Recommended ship order: #591 → #574-data → #575 → #574-api → #573.
+
+### 2026-04-01 — PR #594 Rebase After Dependency PR #592 Merged
+- **When a dependency PR merges, branches built on top must rebase onto main**: PR #594 (issue #314 Serilog deduplication) was originally branched from `issue-591-reduce-production-logging`. After PR #592 merged that work into main, the #314 branch needed to be rebased onto `origin/main`.
+- **Git automatically skips already-applied commits during rebase**: The rebase skipped two commits (f814467 and 0975e43) that were already in main via the merged PR #592. This produced a clean linear history with no conflicts.
+- **Shared refactoring absorbs base branch changes**: Because the Serilog deduplication work extracted the logging configuration into a shared `ConfigureSerilog()` method that already incorporated the #591 changes (Information-level logging in production), there were no merge conflicts during the rebase.
+- **Post-rebase checklist**: Force-push with `--force-with-lease`, update PR base branch with `gh pr edit <number> --base main`, and verify build succeeds.
