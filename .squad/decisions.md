@@ -7694,3 +7694,148 @@ Any object mapping work must be done using an AutoMapper profile. Manual mapping
 
 ### Rule 3 - Paging/Sorting/Filtering at the Data Layer
 Paging, sorting, and filtering of data must be performed at the Data Store (database level). It must NOT be done in-memory in managers, API controllers, or code-behind of web pages.
+
+---
+
+## Decision: Web Paging UI Implementation
+**Date:** 2026-04-01
+**Author:** Switch
+**Issue:** #573
+
+## Context
+Web services returned `List<T>`, discarding `TotalCount` from the downstream API's `PagedResponse<T>`. Controllers had no way to populate pagination ViewBag metadata.
+
+## Decisions Made
+
+### D1: Services return `PagedResult<T>`, not `List<T>`
+All paged service methods now return `PagedResult<T> { Items, TotalCount }` instead of `List<T>`, preserving TotalCount for the UI.
+
+### D2: `GetCalendarEvents()` left unpaginated
+`EngagementsController.GetCalendarEvents()` loads all engagements for a JS calendar widget. Per spec, this action must NOT be paginated — updated to use `.Items` from the new return type without adding page params.
+
+### D3: `GetScheduledItemsAsync` URL fixed
+The original `GetScheduledItemsAsync` was calling `/Schedules` without `?page=&pageSize=` query params. Fixed to pass them through to the API for correct server-side paging.
+
+### D4: `GetOrphanedScheduledItemsAsync(1, 1)` for count-only in `Schedules.Index`
+Rather than fetching all orphaned items just to get a count, `Index` calls the service with `pageSize=1` and reads `TotalCount`. This keeps the alert cheap.
+
+### D5: ViewBag contract
+Controllers set: `Page`, `PageSize`, `TotalCount`, `TotalPages`, `ControllerName`, `ActionName`. Sparks' `_PaginationPartial.cshtml` consumes these.
+
+
+---
+
+## Decision (Team Pattern): PagedResult<T> Mock Pattern for Service Interface Tests
+
+**Author:** Tank (Tester)  
+**Date:** 2026-05-08  
+**Status:** Proposed  
+**Context:** Issue #573 - Web paging UI implementation
+
+## Problem
+
+When service interfaces change from returning `Task<List<T>>` to `Task<PagedResult<T>>` for pagination support, existing test mocks fail with CS1929 compiler errors: `'ISetup<IService, Task<PagedResult<T>>>' does not contain a definition for 'ReturnsAsync'` when attempting to return a bare list.
+
+## Decision
+
+**When mocking service methods that return `PagedResult<T>`, tests must:**
+
+1. **Wrap test data in PagedResult<T> objects:**
+   ```csharp
+   var items = new List<Engagement> { new Engagement { Id = 1 } };
+   var pagedResult = new PagedResult<Engagement> 
+   { 
+       Items = items, 
+       TotalCount = items.Count 
+   };
+   ```
+
+2. **Use `It.IsAny<int?>()` for pagination parameters in `.Setup()`:**
+   ```csharp
+   _service.Setup(s => s.GetItemsAsync(It.IsAny<int?>(), It.IsAny<int?>()))
+       .ReturnsAsync(pagedResult);
+   ```
+
+3. **Mock ALL service calls made by the controller action**, including internal/indirect calls:
+   ```csharp
+   // Controller calls GetItemsAsync AND GetOrphanedItemsAsync
+   _service.Setup(s => s.GetItemsAsync(It.IsAny<int?>(), It.IsAny<int?>()))
+       .ReturnsAsync(pagedResult);
+   _service.Setup(s => s.GetOrphanedItemsAsync(It.IsAny<int?>(), It.IsAny<int?>()))
+       .ReturnsAsync(new PagedResult<Item> { Items = [], TotalCount = 0 });
+   ```
+
+## PagedResult<T> Structure
+
+```csharp
+namespace JosephGuadagno.Broadcasting.Domain.Models;
+
+public class PagedResult<T>
+{
+    public List<T> Items { get; set; } = [];
+    public int TotalCount { get; set; }
+}
+```
+
+## Example
+
+**Before (broken after interface change):**
+```csharp
+[Fact]
+public async Task Index_ShouldReturnViewWithEngagementViewModels()
+{
+    var engagements = new List<Engagement> { new Engagement { Id = 1 } };
+    _service.Setup(s => s.GetEngagementsAsync()).ReturnsAsync(engagements); // ❌ CS1929 error
+    
+    var result = await _controller.Index();
+    
+    Assert.IsType<ViewResult>(result);
+}
+```
+
+**After (working):**
+```csharp
+[Fact]
+public async Task Index_ShouldReturnViewWithEngagementViewModels()
+{
+    var engagements = new List<Engagement> { new Engagement { Id = 1 } };
+    var pagedEngagements = new PagedResult<Engagement> 
+    { 
+        Items = engagements, 
+        TotalCount = engagements.Count 
+    };
+    _service.Setup(s => s.GetEngagementsAsync(It.IsAny<int?>(), It.IsAny<int?>()))
+        .ReturnsAsync(pagedEngagements); // ✅ Matches new interface
+    
+    var result = await _controller.Index();
+    
+    var viewResult = Assert.IsType<ViewResult>(result);
+    Assert.Equal(viewModels, viewResult.Model);
+}
+```
+
+## Consequences
+
+**Positive:**
+- Mocks match actual service interface signatures
+- Tests validate pagination behavior (TotalCount, page, pageSize)
+- Pattern is consistent across all paged service calls
+
+**Neutral:**
+- Slightly more verbose test setup (wrapping in PagedResult<T>)
+
+**Negative:**
+- Existing tests must be updated when interfaces change to pagination
+
+## Implementation Notes
+
+- Applied to Web.Tests project (EngagementsControllerTests, SchedulesControllerTests)
+- 8 test methods updated across 2 files
+- All 52 tests passing after fix
+
+## Related
+
+- Issue #573: Web paging UI implementation
+- PR #597: Service interface changes to PagedResult<T>
+- Commit: 4fb548a (fix: update Web.Tests mocks to use PagedResult<T>)
+

@@ -10,6 +10,17 @@
 
 <!-- Append learnings below -->
 
+### Session: Fix Web.Tests PagedResult<T> Mocks (2026-04-01)
+
+- **Work:** Tank test fix session closeout
+  - Created orchestration log for Tank's Web.Tests mock updates
+  - Wrote session log summarizing fix for PagedResult<T> return types
+  - Merged 2 inbox decisions into decisions.md (web-paging context + test pattern)
+  - Cleared inbox files after merge
+  - Staged/unstaged changes for git commit
+
+- **Outcome:** Web.Tests project compiles cleanly, all 52 tests passing. PagedResult<T> mock pattern now documented in decisions.md for team reference.
+
 ### Session Consolidation: Orchestration + Merge Workflow (2026-03-22)
 
 - **Work:** Deployment Approval Gate session closeout

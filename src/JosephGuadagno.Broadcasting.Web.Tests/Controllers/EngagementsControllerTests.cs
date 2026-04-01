@@ -36,8 +36,9 @@ public class EngagementsControllerTests
     {
         // Arrange
         var engagements = new List<Engagement> { new Engagement { Id = 1 } };
+        var pagedEngagements = new PagedResult<Engagement> { Items = engagements, TotalCount = engagements.Count };
         var viewModels = new List<EngagementViewModel> { new EngagementViewModel { Id = 1 } };
-        _engagementService.Setup(s => s.GetEngagementsAsync()).ReturnsAsync(engagements);
+        _engagementService.Setup(s => s.GetEngagementsAsync(It.IsAny<int?>(), It.IsAny<int?>())).ReturnsAsync(pagedEngagements);
         _mapper.Setup(m => m.Map<List<EngagementViewModel>>(It.IsAny<object>())).Returns(viewModels);
 
         // Act
@@ -46,7 +47,7 @@ public class EngagementsControllerTests
         // Assert
         var viewResult = Assert.IsType<ViewResult>(result);
         Assert.Equal(viewModels, viewResult.Model);
-        _engagementService.Verify(s => s.GetEngagementsAsync(), Times.Once);
+        _engagementService.Verify(s => s.GetEngagementsAsync(It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
     }
 
     [Fact]

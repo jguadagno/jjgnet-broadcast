@@ -38,8 +38,11 @@ public class SchedulesControllerTests
     {
         // Arrange
         var scheduledItems = new List<ScheduledItem> { new ScheduledItem { Id = 1 } };
+        var pagedScheduledItems = new PagedResult<ScheduledItem> { Items = scheduledItems, TotalCount = scheduledItems.Count };
+        var orphanedResult = new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 };
         var viewModels = new List<ScheduledItemViewModel> { new ScheduledItemViewModel { Id = 1 } };
-        _scheduledItemService.Setup(s => s.GetScheduledItemsAsync()).ReturnsAsync(scheduledItems);
+        _scheduledItemService.Setup(s => s.GetScheduledItemsAsync(It.IsAny<int?>(), It.IsAny<int?>())).ReturnsAsync(pagedScheduledItems);
+        _scheduledItemService.Setup(s => s.GetOrphanedScheduledItemsAsync(It.IsAny<int?>(), It.IsAny<int?>())).ReturnsAsync(orphanedResult);
         _mapper.Setup(m => m.Map<List<ScheduledItemViewModel>>(It.IsAny<object>())).Returns(viewModels);
 
         // Act
@@ -48,7 +51,7 @@ public class SchedulesControllerTests
         // Assert
         var viewResult = Assert.IsType<ViewResult>(result);
         Assert.Equal(viewModels, viewResult.Model);
-        _scheduledItemService.Verify(s => s.GetScheduledItemsAsync(), Times.Once);
+        _scheduledItemService.Verify(s => s.GetScheduledItemsAsync(It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
     }
 
     [Fact]
@@ -250,9 +253,10 @@ public class SchedulesControllerTests
         var expectedYear = DateTime.Today.Year;
         var expectedMonth = DateTime.Today.Month;
         var viewModels = new List<ScheduledItemViewModel>();
+        var pagedScheduledItems = new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 };
         _scheduledItemService
-            .Setup(s => s.GetScheduledItemsByCalendarMonthAsync(expectedYear, expectedMonth))
-            .ReturnsAsync(new List<ScheduledItem>());
+            .Setup(s => s.GetScheduledItemsByCalendarMonthAsync(expectedYear, expectedMonth, It.IsAny<int?>(), It.IsAny<int?>()))
+            .ReturnsAsync(pagedScheduledItems);
         _mapper.Setup(m => m.Map<List<ScheduledItemViewModel>>(It.IsAny<object>())).Returns(viewModels);
 
         // Act
@@ -262,7 +266,7 @@ public class SchedulesControllerTests
         var viewResult = Assert.IsType<ViewResult>(result);
         Assert.Equal(expectedYear, viewResult.ViewData["Year"]);
         Assert.Equal(expectedMonth, viewResult.ViewData["Month"]);
-        _scheduledItemService.Verify(s => s.GetScheduledItemsByCalendarMonthAsync(expectedYear, expectedMonth), Times.Once);
+        _scheduledItemService.Verify(s => s.GetScheduledItemsByCalendarMonthAsync(expectedYear, expectedMonth, It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
     }
 
     [Fact]
@@ -270,9 +274,10 @@ public class SchedulesControllerTests
     {
         // Arrange
         var viewModels = new List<ScheduledItemViewModel>();
+        var pagedScheduledItems = new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 };
         _scheduledItemService
-            .Setup(s => s.GetScheduledItemsByCalendarMonthAsync(2024, 6))
-            .ReturnsAsync(new List<ScheduledItem>());
+            .Setup(s => s.GetScheduledItemsByCalendarMonthAsync(2024, 6, It.IsAny<int?>(), It.IsAny<int?>()))
+            .ReturnsAsync(pagedScheduledItems);
         _mapper.Setup(m => m.Map<List<ScheduledItemViewModel>>(It.IsAny<object>())).Returns(viewModels);
 
         // Act
@@ -282,7 +287,7 @@ public class SchedulesControllerTests
         var viewResult = Assert.IsType<ViewResult>(result);
         Assert.Equal(2024, viewResult.ViewData["Year"]);
         Assert.Equal(6, viewResult.ViewData["Month"]);
-        _scheduledItemService.Verify(s => s.GetScheduledItemsByCalendarMonthAsync(2024, 6), Times.Once);
+        _scheduledItemService.Verify(s => s.GetScheduledItemsByCalendarMonthAsync(2024, 6, It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
     }
 
     [Fact]
@@ -292,9 +297,10 @@ public class SchedulesControllerTests
         var expectedYear = DateTime.MinValue.Year;
         var expectedMonth = 6;
         var viewModels = new List<ScheduledItemViewModel>();
+        var pagedScheduledItems = new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 };
         _scheduledItemService
-            .Setup(s => s.GetScheduledItemsByCalendarMonthAsync(expectedYear, expectedMonth))
-            .ReturnsAsync(new List<ScheduledItem>());
+            .Setup(s => s.GetScheduledItemsByCalendarMonthAsync(expectedYear, expectedMonth, It.IsAny<int?>(), It.IsAny<int?>()))
+            .ReturnsAsync(pagedScheduledItems);
         _mapper.Setup(m => m.Map<List<ScheduledItemViewModel>>(It.IsAny<object>())).Returns(viewModels);
 
         // Act
@@ -311,9 +317,10 @@ public class SchedulesControllerTests
         // Arrange
         var expectedMonth = DateTime.Today.Month;
         var viewModels = new List<ScheduledItemViewModel>();
+        var pagedScheduledItems = new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 };
         _scheduledItemService
-            .Setup(s => s.GetScheduledItemsByCalendarMonthAsync(It.IsAny<int>(), expectedMonth))
-            .ReturnsAsync(new List<ScheduledItem>());
+            .Setup(s => s.GetScheduledItemsByCalendarMonthAsync(It.IsAny<int>(), expectedMonth, It.IsAny<int?>(), It.IsAny<int?>()))
+            .ReturnsAsync(pagedScheduledItems);
         _mapper.Setup(m => m.Map<List<ScheduledItemViewModel>>(It.IsAny<object>())).Returns(viewModels);
 
         // Act
@@ -329,8 +336,9 @@ public class SchedulesControllerTests
     {
         // Arrange
         var scheduledItems = new List<ScheduledItem> { new ScheduledItem { Id = 1 } };
+        var pagedScheduledItems = new PagedResult<ScheduledItem> { Items = scheduledItems, TotalCount = scheduledItems.Count };
         var viewModels = new List<ScheduledItemViewModel> { new ScheduledItemViewModel { Id = 1 } };
-        _scheduledItemService.Setup(s => s.GetUnsentScheduledItemsAsync()).ReturnsAsync(scheduledItems);
+        _scheduledItemService.Setup(s => s.GetUnsentScheduledItemsAsync(It.IsAny<int?>(), It.IsAny<int?>())).ReturnsAsync(pagedScheduledItems);
         _mapper.Setup(m => m.Map<List<ScheduledItemViewModel>>(It.IsAny<object>())).Returns(viewModels);
 
         // Act
@@ -339,7 +347,7 @@ public class SchedulesControllerTests
         // Assert
         var viewResult = Assert.IsType<ViewResult>(result);
         Assert.Equal(viewModels, viewResult.Model);
-        _scheduledItemService.Verify(s => s.GetUnsentScheduledItemsAsync(), Times.Once);
+        _scheduledItemService.Verify(s => s.GetUnsentScheduledItemsAsync(It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
     }
 
     [Fact]
@@ -347,8 +355,9 @@ public class SchedulesControllerTests
     {
         // Arrange
         var scheduledItems = new List<ScheduledItem> { new ScheduledItem { Id = 2 } };
+        var pagedScheduledItems = new PagedResult<ScheduledItem> { Items = scheduledItems, TotalCount = scheduledItems.Count };
         var viewModels = new List<ScheduledItemViewModel> { new ScheduledItemViewModel { Id = 2 } };
-        _scheduledItemService.Setup(s => s.GetScheduledItemsToSendAsync()).ReturnsAsync(scheduledItems);
+        _scheduledItemService.Setup(s => s.GetScheduledItemsToSendAsync(It.IsAny<int?>(), It.IsAny<int?>())).ReturnsAsync(pagedScheduledItems);
         _mapper.Setup(m => m.Map<List<ScheduledItemViewModel>>(It.IsAny<object>())).Returns(viewModels);
 
         // Act
@@ -357,6 +366,6 @@ public class SchedulesControllerTests
         // Assert
         var viewResult = Assert.IsType<ViewResult>(result);
         Assert.Equal(viewModels, viewResult.Model);
-        _scheduledItemService.Verify(s => s.GetScheduledItemsToSendAsync(), Times.Once);
+        _scheduledItemService.Verify(s => s.GetScheduledItemsToSendAsync(It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
     }
 }

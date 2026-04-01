@@ -21,14 +21,15 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="Engagement"/>&gt;s</returns>
-    public async Task<List<Engagement>> GetEngagementsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
+    public async Task<PagedResult<Engagement>> GetEngagementsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         var pagedResponse  = await apiClient.GetForUserAsync<PagedResponse<Engagement>>(ApiServiceName, options =>
         {
             options.RelativePath = $"{EngagementBaseUrl}?page={page}&pageSize={pageSize}";
         });
 
-        return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+        if (pagedResponse is null) return new PagedResult<Engagement>();
+        return new PagedResult<Engagement> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
     
     /// <summary>
@@ -83,14 +84,15 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="Talk"/>&gt;s</returns>
-    public async Task<List<Talk>> GetEngagementTalksAsync(int engagementId, int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
+    public async Task<PagedResult<Talk>> GetEngagementTalksAsync(int engagementId, int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<Talk>>(ApiServiceName, options =>
         {
             options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/talks?page={page}&pageSize={pageSize}";
         });
 
-        return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+        if (pagedResponse is null) return new PagedResult<Talk>();
+        return new PagedResult<Talk> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
     
     /// <summary>

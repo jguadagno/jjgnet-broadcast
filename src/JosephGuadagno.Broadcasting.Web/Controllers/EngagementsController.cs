@@ -1,6 +1,7 @@
 using AutoMapper;
 
 using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -31,10 +32,18 @@ public class EngagementsController : Controller
     /// Gets the list of engagements. 
     /// </summary>
     /// <returns>Returns a List&lt;<see cref="EngagementViewModel"/>&gt;.</returns>
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int page = Pagination.DefaultPage)
     {
-        var engagements = await _engagementService.GetEngagementsAsync();
-        var viewEngagements = _mapper.Map<List<EngagementViewModel>>(engagements);
+        var result = await _engagementService.GetEngagementsAsync(page, Pagination.DefaultPageSize);
+        var viewEngagements = _mapper.Map<List<EngagementViewModel>>(result.Items);
+
+        ViewBag.Page = page;
+        ViewBag.PageSize = Pagination.DefaultPageSize;
+        ViewBag.TotalCount = result.TotalCount;
+        ViewBag.TotalPages = (int)Math.Ceiling(result.TotalCount / (double)Pagination.DefaultPageSize);
+        ViewBag.ControllerName = "Engagements";
+        ViewBag.ActionName = "Index";
+
         return View(viewEngagements);
     }
 
@@ -139,13 +148,13 @@ public class EngagementsController : Controller
     [HttpGet]
     public async Task<JsonResult> GetCalendarEvents()
     {
-        var engagements = await _engagementService.GetEngagementsAsync();
-        if (engagements == null)
+        var result = await _engagementService.GetEngagementsAsync();
+        if (result.Items.Count == 0)
         {
             return Json(Array.Empty<object>());
         }
 
-        var events = engagements.Select(e => new
+        var events = result.Items.Select(e => new
         {
             id = e.Id.ToString(),
             title = e.Name,

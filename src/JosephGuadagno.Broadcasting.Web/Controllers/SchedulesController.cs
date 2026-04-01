@@ -1,4 +1,5 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -32,13 +33,20 @@ public class SchedulesController : Controller
     /// The list of schedules
     /// </summary>
     /// <returns>A List&lt;<see cref="ScheduledItemViewModel"/>&gt;</returns>
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int page = Pagination.DefaultPage)
     {
-        var scheduledItems = await _scheduledItemService.GetScheduledItemsAsync();
-        var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(scheduledItems);
+        var result = await _scheduledItemService.GetScheduledItemsAsync(page, Pagination.DefaultPageSize);
+        var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(result.Items);
 
-        var orphanedItems = await _scheduledItemService.GetOrphanedScheduledItemsAsync();
-        ViewBag.OrphanedCount = orphanedItems?.Count ?? 0;
+        var orphanedResult = await _scheduledItemService.GetOrphanedScheduledItemsAsync(1, 1);
+        ViewBag.OrphanedCount = orphanedResult.TotalCount;
+
+        ViewBag.Page = page;
+        ViewBag.PageSize = Pagination.DefaultPageSize;
+        ViewBag.TotalCount = result.TotalCount;
+        ViewBag.TotalPages = (int)Math.Ceiling(result.TotalCount / (double)Pagination.DefaultPageSize);
+        ViewBag.ControllerName = "Schedules";
+        ViewBag.ActionName = "Index";
 
         return View(scheduledItemViewModels);
     }
@@ -48,10 +56,18 @@ public class SchedulesController : Controller
     /// </summary>
     /// <returns>A view of orphaned scheduled items</returns>
     [HttpGet]
-    public async Task<IActionResult> Orphaned()
+    public async Task<IActionResult> Orphaned(int page = Pagination.DefaultPage)
     {
-        var orphanedItems = await _scheduledItemService.GetOrphanedScheduledItemsAsync();
-        var orphanedViewModels = _mapper.Map<List<ScheduledItemViewModel>>(orphanedItems);
+        var result = await _scheduledItemService.GetOrphanedScheduledItemsAsync(page, Pagination.DefaultPageSize);
+        var orphanedViewModels = _mapper.Map<List<ScheduledItemViewModel>>(result.Items);
+
+        ViewBag.Page = page;
+        ViewBag.PageSize = Pagination.DefaultPageSize;
+        ViewBag.TotalCount = result.TotalCount;
+        ViewBag.TotalPages = (int)Math.Ceiling(result.TotalCount / (double)Pagination.DefaultPageSize);
+        ViewBag.ControllerName = "Schedules";
+        ViewBag.ActionName = "Orphaned";
+
         return View(orphanedViewModels);
     }
     
@@ -202,7 +218,7 @@ public class SchedulesController : Controller
         ViewData["Year"] = queryYear;
         ViewData["Month"] = queryMonth;
         var scheduledItems = await _scheduledItemService.GetScheduledItemsByCalendarMonthAsync(queryYear, queryMonth);
-        var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(scheduledItems);
+        var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(scheduledItems.Items);
         return View(scheduledItemViewModels);
     }
 
@@ -211,10 +227,18 @@ public class SchedulesController : Controller
     /// </summary>
     /// <returns>A view of unsent scheduled items</returns>
     [HttpGet]
-    public async Task<IActionResult> Unsent()
+    public async Task<IActionResult> Unsent(int page = Pagination.DefaultPage)
     {
-        var scheduledItems = await _scheduledItemService.GetUnsentScheduledItemsAsync();
-        var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(scheduledItems);
+        var result = await _scheduledItemService.GetUnsentScheduledItemsAsync(page, Pagination.DefaultPageSize);
+        var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(result.Items);
+
+        ViewBag.Page = page;
+        ViewBag.PageSize = Pagination.DefaultPageSize;
+        ViewBag.TotalCount = result.TotalCount;
+        ViewBag.TotalPages = (int)Math.Ceiling(result.TotalCount / (double)Pagination.DefaultPageSize);
+        ViewBag.ControllerName = "Schedules";
+        ViewBag.ActionName = "Unsent";
+
         return View(scheduledItemViewModels);
     }
     
@@ -223,10 +247,18 @@ public class SchedulesController : Controller
     /// </summary>
     /// <returns>A view of upcoming scheduled items</returns>
     [HttpGet]
-    public async Task<IActionResult> Upcoming()
+    public async Task<IActionResult> Upcoming(int page = Pagination.DefaultPage)
     {
-        var scheduledItems = await _scheduledItemService.GetScheduledItemsToSendAsync();
-        var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(scheduledItems);
+        var result = await _scheduledItemService.GetScheduledItemsToSendAsync(page, Pagination.DefaultPageSize);
+        var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(result.Items);
+
+        ViewBag.Page = page;
+        ViewBag.PageSize = Pagination.DefaultPageSize;
+        ViewBag.TotalCount = result.TotalCount;
+        ViewBag.TotalPages = (int)Math.Ceiling(result.TotalCount / (double)Pagination.DefaultPageSize);
+        ViewBag.ControllerName = "Schedules";
+        ViewBag.ActionName = "Upcoming";
+
         return View(scheduledItemViewModels);
     }
 }

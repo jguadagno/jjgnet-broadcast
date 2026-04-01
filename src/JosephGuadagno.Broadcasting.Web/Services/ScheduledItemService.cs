@@ -22,13 +22,14 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
-    public async Task<List<ScheduledItem>> GetScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
+    public async Task<PagedResult<ScheduledItem>> GetScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<ScheduledItem>>(ApiServiceName, options =>
         {
-            options.RelativePath = ScheduledItemBaseUrl;
+            options.RelativePath = $"{ScheduledItemBaseUrl}?page={page}&pageSize={pageSize}";
         });
-        return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+        if (pagedResponse is null) return new PagedResult<ScheduledItem>();
+        return new PagedResult<ScheduledItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
     
     /// <summary>
@@ -82,7 +83,7 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
-    public async Task<List<ScheduledItem>> GetUnsentScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
+    public async Task<PagedResult<ScheduledItem>> GetUnsentScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         try
         {
@@ -90,13 +91,14 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
             {
                 options.RelativePath = $"{ScheduledItemBaseUrl}/unsent?page={page}&pageSize={pageSize}";
             });
-            return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+            if (pagedResponse is null) return new PagedResult<ScheduledItem>();
+            return new PagedResult<ScheduledItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
         }
         catch (HttpRequestException exception)
         {
             if (exception.StatusCode == HttpStatusCode.NotFound)
             {
-                return [];
+                return new PagedResult<ScheduledItem>();
             }
 
             logger.LogError(exception, "Error getting unsent scheduled items");
@@ -115,7 +117,7 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
-    public async Task<List<ScheduledItem>> GetScheduledItemsToSendAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
+    public async Task<PagedResult<ScheduledItem>> GetScheduledItemsToSendAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         try
         {
@@ -123,13 +125,14 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
             {
                 options.RelativePath = $"{ScheduledItemBaseUrl}/upcoming?page={page}&pageSize={pageSize}";
             });
-            return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+            if (pagedResponse is null) return new PagedResult<ScheduledItem>();
+            return new PagedResult<ScheduledItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
         }
         catch (HttpRequestException exception)
         {
             if (exception.StatusCode == HttpStatusCode.NotFound)
             {
-                return [];
+                return new PagedResult<ScheduledItem>();
             }
 
             logger.LogError(exception, "Error getting scheduled items to send");
@@ -150,7 +153,7 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt; that are for the month.  If there are no scheduled items, null will be returned</returns>
-    public async Task<List<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
+    public async Task<PagedResult<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         try
         {
@@ -159,13 +162,14 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
                 options.RelativePath =
                     $"{ScheduledItemBaseUrl}/calendar/{year}/{month}?page={page}&pageSize={pageSize}";
             });
-            return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+            if (pagedResponse is null) return new PagedResult<ScheduledItem>();
+            return new PagedResult<ScheduledItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
         }
         catch (HttpRequestException exception)
         {
             if (exception.StatusCode == HttpStatusCode.NotFound)
             {
-                return [];
+                return new PagedResult<ScheduledItem>();
             }
 
             logger.LogError(exception, "Error getting scheduled items by calendar month");
@@ -184,7 +188,7 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
-    public async Task<List<ScheduledItem>> GetOrphanedScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
+    public async Task<PagedResult<ScheduledItem>> GetOrphanedScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         try
         {
@@ -192,13 +196,14 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
             {
                 options.RelativePath = $"{ScheduledItemBaseUrl}/orphaned/?page={page}&pageSize={pageSize}";
             });
-            return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+            if (pagedResponse is null) return new PagedResult<ScheduledItem>();
+            return new PagedResult<ScheduledItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
         }
         catch (HttpRequestException exception)
         {
             if (exception.StatusCode == HttpStatusCode.NotFound)
             {
-                return [];
+                return new PagedResult<ScheduledItem>();
             }
             logger.LogError(exception, "Error getting orphaned scheduled items");
             throw;
