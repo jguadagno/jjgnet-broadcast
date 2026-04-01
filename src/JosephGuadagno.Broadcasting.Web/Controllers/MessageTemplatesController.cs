@@ -1,4 +1,5 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -32,10 +33,18 @@ public class MessageTemplatesController : Controller
     /// <summary>
     /// Lists all message templates grouped by platform.
     /// </summary>
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int page = Pagination.DefaultPage)
     {
-        var templates = await _messageTemplateService.GetAllAsync();
-        var viewModels = _mapper.Map<List<MessageTemplateViewModel>>(templates ?? []);
+        var result = await _messageTemplateService.GetAllAsync(page, Pagination.DefaultPageSize);
+        var viewModels = _mapper.Map<List<MessageTemplateViewModel>>(result?.Items ?? []);
+
+        ViewBag.Page = page;
+        ViewBag.PageSize = Pagination.DefaultPageSize;
+        ViewBag.TotalCount = result?.TotalCount ?? 0;
+        ViewBag.TotalPages = (int)Math.Ceiling((result?.TotalCount ?? 0) / (double)Pagination.DefaultPageSize);
+        ViewBag.ControllerName = "MessageTemplates";
+        ViewBag.ActionName = "Index";
+
         return View(viewModels);
     }
 

@@ -20,13 +20,14 @@ public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplate
     /// </summary>
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
-    public async Task<List<MessageTemplate>?> GetAllAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
+    public async Task<PagedResult<MessageTemplate>?> GetAllAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
     {
         var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<MessageTemplate>>(ApiServiceName, options =>
         {
             options.RelativePath = $"{MessageTemplateBaseUrl}?page={page}&pageSize={pageSize}";
         });
-        return pagedResponse is null ? [] : pagedResponse.Items.ToList();
+        if (pagedResponse is null) return null;
+        return new PagedResult<MessageTemplate> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
 
     /// <summary>
