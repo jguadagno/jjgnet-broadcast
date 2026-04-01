@@ -4,6 +4,7 @@
 
 | Date | Task | Outcome |
 |------|------|---------|
+| 2026-04-01 | **Serilog Configuration Deduplication (#314)** — Extract duplicate Serilog bootstrap from Api/Functions/Web into shared `LoggingExtensions.ConfigureSerilog()` method; Web gains OpenTelemetry sink | ✅ PR #594 opened, targets `issue-591-reduce-production-logging` branch (depends on PR #592). Web/Program.cs now has `WriteTo.OpenTelemetry()` enabled. |
 | 2026-03-20 | **Rebase v2** — Re-rebase PRs #516 and #517 after main advanced again; monitored CI for both | ✅ Both branches rebased (same conflict pattern in `.squad/decisions.md`, resolved by taking origin/main). CI green on both. PRs ready for Neo review — both merged this session. |
 | 2026-03-20 | Rebase PRs #516 and #517 (`squad/319-functions-retry-policies`, `squad/324-sql-size-cap`) onto main to pick up Api.Tests fix from #518 | ✅ Both branches rebased and force-pushed. One conflict each in `.squad/decisions.md` (housekeeping commit `862fd19` vs main's newer decisions) — resolved by taking origin/main's version. Comments posted on both PRs. |
 | 2025-07-14 | Fix PR #511 CI — merge main into `feature/s8-328-wire-application-insights` to pick up PR #513 test renames | ✅ Clean merge, pushed successfully. Also resolved workflow conflict in `feature/s8-315-api-dtos` stash pop (kept origin/main Critical-only vuln gate). |
@@ -36,3 +37,11 @@
 - **Git automatically skips already-applied commits during rebase**: The rebase skipped two commits (f814467 and 0975e43) that were already in main via the merged PR #592. This produced a clean linear history with no conflicts.
 - **Shared refactoring absorbs base branch changes**: Because the Serilog deduplication work extracted the logging configuration into a shared `ConfigureSerilog()` method that already incorporated the #591 changes (Information-level logging in production), there were no merge conflicts during the rebase.
 - **Post-rebase checklist**: Force-push with `--force-with-lease`, update PR base branch with `gh pr edit <number> --base main`, and verify build succeeds.
+
+### Serilog Configuration Deduplication (Issue #314, PR #594)
+- **Serilog project location**: `src/JosephGuadagno.Broadcasting.Serilog/` — contains `SerilogKeyGenerator.cs` and now `LoggingExtensions.cs`
+- **Shared extension pattern**: `LoggingExtensions.ConfigureSerilog(IConfiguration, string applicationName, string logFilePath)` — encapsulates all Serilog bootstrap logic (MinimumLevel, enrichers, sinks)
+- **All three entry points reference Serilog project**: Api, Functions, and Web all had `<ProjectReference Include="..\JosephGuadagno.Broadcasting.Serilog\..." />` before this change
+- **Web was missing OpenTelemetry sink**: `WriteTo.OpenTelemetry()` was commented out in Web/Program.cs; the shared method now enables it for all three projects
+- **Package versions must align**: Api, Functions, and Web all reference specific Serilog package versions (e.g., `Serilog.AspNetCore` 10.0.0, `Serilog.Enrichers.AssemblyName` 2.0.0, `Serilog.Sinks.OpenTelemetry` 4.2.0). The Serilog project must use matching versions to avoid NuGet downgrade errors.
+- **#if DEBUG pattern preserved**: The shared method includes `#if DEBUG .MinimumLevel.Debug() #else .MinimumLevel.Information() #endif` to maintain the behavior established in issue #591

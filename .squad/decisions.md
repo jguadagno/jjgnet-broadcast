@@ -7681,3 +7681,97 @@ Following Sprint 11 closeout, Joseph Guadagno reported that MSAL authentication 
 2. Verify MSAL authentication is restored
 3. Investigate root cause (likely CSP headers from PR #500 interfering with AAD redirect, or middleware ordering conflict)
 4. Re-apply individual PRs with targeted fixes that do not interfere with MSAL
+
+---
+
+## Issue Decisions (2026-04-01)
+
+### Link: Shared Serilog Configuration Extension (Issue #314, PR #594)
+
+**Author:** Link  
+**Date:** 2026-04-01  
+**Status:** Implemented  
+**PR:** #594 (depends on #592)  
+
+**Context:** Api, Functions, and Web all had near-identical Serilog bootstrap blocks copy-pasted in their Program.cs files. The only variation was that Web was missing the WriteTo.OpenTelemetry() sink that the other two had.
+
+**Decision:** Extract the common Serilog configuration into a shared extension method LoggingExtensions.ConfigureSerilog() in the existing JosephGuadagno.Broadcasting.Serilog project.
+
+**Implementation Details:**
+- Location: src/JosephGuadagno.Broadcasting.Serilog/LoggingExtensions.cs
+- Encapsulates: MinimumLevel configuration from #591, all enrichers (FromLogContext, MachineName, ThreadId, EnvironmentName, AssemblyName, AssemblyVersion, ExceptionDetails, Application), all sinks (Console, File, AzureTableStorage, OpenTelemetry)
+- Web now has OpenTelemetry sink enabled (previously commented out)
+- Package versions aligned: Serilog.AspNetCore 10.0.0, Serilog.Enrichers.AssemblyName 2.0.0, Serilog.Enrichers.Thread 4.0.0, Serilog.Sinks.OpenTelemetry 4.2.0
+
+**Rationale:** DRY principle — single source of truth for Serilog configuration. Ensures all three entry points have identical logging behavior. Web gains OpenTelemetry sink completeness.
+
+---
+
+### Morpheus: PagedResult<T> Pattern for SQL-Level Paging (Issue #574, Phase 1)
+
+**Author:** Morpheus  
+**Date:** 2026-04-01  
+**Status:** Implemented  
+**Related Issue:** #574  
+
+**Context:** API controllers were fetching all rows from SQL then doing Skip/Take in memory. This causes performance issues and memory pressure as datasets grow.
+
+**Decision:** Implement two-tier paging pattern with PagedResult<T> (data layer) separate from PagedResponse<T> (API layer).
+
+**PagedResult<T> Model:**
+`csharp
+public class PagedResult<T>
+{
+    public List<T> Items { get; set; } = [];
+    public int TotalCount { get; set; }
+}
+`
+
+**IQueryable-Fork Pattern:** Extract the IQueryable first to avoid executing the query twice — build query with filters, count total matching rows separately, apply ordering and pagination to forked query.
+
+**Sort Orders by Entity:**
+- ScheduledItems: OrderBy(si => si.SendOnDateTime)
+- Engagements: OrderBy(e => e.StartDateTime)
+- MessageTemplates: OrderBy(mt => mt.Platform).ThenBy(mt => mt.MessageType)
+- Talks: OrderBy(t => t.Name)
+
+**Preserve Non-Paged Methods:** Do NOT remove existing GetAllAsync() methods — Azure Functions collectors depend on them. Add paged overloads as new methods.
+
+**Rationale:** Paging now happens in SQL Server via Skip/Take translation — O(pageSize) memory instead of O(totalRows). Controllers calculate totalPages from TotalCount without needing full dataset. Functions continue working — non-paged methods preserved. Separation of concerns: PagedResult<T> is data-layer result, PagedResponse<T> is API-layer contract.
+
+**Implementation:**
+- Files created: src/JosephGuadagno.Broadcasting.Domain/Models/PagedResult.cs
+- Interfaces updated: 5 domain interfaces with paged overloads
+- Data stores updated: 3 Data.Sql classes with 8 total paged methods
+- Branch: issue-574-paging-data-store
+
+---
+
+### Trinity: AutoMapper Profile Location and Route-Param Post-Mapping Pattern (Issue #575, PR #593)
+
+**Author:** Trinity  
+**Date:** 2026-04-01  
+**Context:** Issue #575 — Replace manual API DTO mapping helpers with AutoMapper  
+
+**Decision 1 — Profile Location:**
+- Location: src/JosephGuadagno.Broadcasting.Api/MappingProfiles/ApiBroadcastingProfile.cs
+- Follows existing Data.Sql convention
+- Registered in Program.cs via AddAutoMapper(config => { config.AddProfile<ApiBroadcastingProfile>(); })
+
+**Decision 2 — Route-Param Post-Map Pattern:**
+- Route-derived fields (Id, EngagementId, Platform, MessageType) are **ignored** in mapping profile
+- Values set manually after mapping: ntity.Id = routeParamValue;
+- Computed properties also ignored (AutoMapper cannot map to read-only properties)
+- **Rationale:** AutoMapper cannot resolve route parameters via convention. Manual assignment is one line and self-documenting.
+
+**8 Mappings Created:**
+- Engagement ↔ EngagementRequest/EngagementResponse
+- Talk ↔ TalkRequest/TalkResponse
+- ScheduledItem ↔ ScheduledItemRequest/ScheduledItemResponse
+- MessageTemplate ↔ MessageTemplateRequest/MessageTemplateResponse
+
+**8 Static Helper Methods Removed** from EngagementsController, SchedulesController, MessageTemplatesController.
+
+**Impact:** All API controllers now use IMapper for DTO conversions. Centralized mapping configuration in ApiBroadcastingProfile.cs.
+
+**References:** PR #593, Issue #575

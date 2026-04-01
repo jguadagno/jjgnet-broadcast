@@ -11,8 +11,6 @@ using Microsoft.Identity.Web;
 using OpenTelemetry.Logs;
 using Scalar.AspNetCore;
 using Serilog;
-using Serilog.Events;
-using Serilog.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,7 +46,6 @@ builder.Services.AddAutoMapper(config =>
 {
     config.LicenseKey = autoMapperSettings.LicenseKey;
     config.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
-    config.AddProfile<JosephGuadagno.Broadcasting.Api.MappingProfiles.ApiBroadcastingProfile>();
 }, typeof(Program));
 
 ConfigureApplication(builder.Services);
@@ -108,25 +105,7 @@ app.Run();
 void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorageAccount, string logPath, string applicationName)
 {
     var logger = new LoggerConfiguration()
-        .MinimumLevel.Information()
-        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-        .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
-        .MinimumLevel.Override("System", LogEventLevel.Warning)
-        .Enrich.FromLogContext()
-        .Enrich.WithMachineName()
-        .Enrich.WithThreadId()
-        .Enrich.WithEnvironmentName()
-        .Enrich.WithAssemblyName()
-        .Enrich.WithAssemblyVersion(true)
-        .Enrich.WithExceptionDetails()
-        .Enrich.WithProperty("Application", applicationName)
-        .Destructure.ToMaximumDepth(4)
-        .Destructure.ToMaximumStringLength(100)
-        .Destructure.ToMaximumCollectionCount(10)
-        .WriteTo.Console()
-        .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-        .WriteTo.AzureTableStorage(logStorageAccount, storageTableName:"Logging", keyGenerator:new SerilogKeyGenerator())
-        .WriteTo.OpenTelemetry()
+        .ConfigureSerilog(builder.Configuration, applicationName, logPath)
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {

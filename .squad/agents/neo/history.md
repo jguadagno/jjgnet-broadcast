@@ -270,3 +270,11 @@ Integration test projects for social managers should:
 
 **Next Steps:** Establish similar integration test projects for Facebook, LinkedIn, and Bluesky managers.
 
+
+
+## Team Standing Rules (2026-04-01)
+Established by Joseph Guadagno:
+
+1. **PR Merge Authority**: Only Joseph may merge PRs
+2. **Mapping**: All object mapping must use AutoMapper profiles
+3. **Paging/Sorting/Filtering**: Must be at the data layer only

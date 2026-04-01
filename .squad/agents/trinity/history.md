@@ -52,6 +52,25 @@ Sprint 12 tagged with 13 issues.
 - **PR #531 opened** with full audit table (22 Engagements endpoints, 9 Schedules, 3 MessageTemplates)
 - **Lesson:** Check whether concurrent PRs already fixed the issue before adding new code
 
+### 2026-04-01 — Issue #575: AutoMapper Profile Implementation — PR #593
+
+**Status:** ✅ PR #593 open (`issue-575-automapper-profile-v2` → `main`)
+
+**Orchestration Log:** `.squad/orchestration-log/2026-04-01T13-00-00Z-trinity.md`
+
+**What I Implemented:**
+- Created `MappingProfiles/ApiBroadcastingProfile.cs` with 8 bidirectional mappings (Engagement, Talk, ScheduledItem, MessageTemplate ↔ DTOs)
+- Registered profile in `Program.cs` via `AddAutoMapper()`
+- Injected `IMapper` into EngagementsController, SchedulesController, MessageTemplatesController
+- Replaced all 8 private static helper methods with `_mapper.Map<T>()` calls
+- Route-param fields (Id, EngagementId, Platform, MessageType) set manually post-map per Decision D3
+
+**Build:** ✅ API project compiles cleanly; 0 errors
+
+**Next Steps:** Awaiting Joseph's approval. Unblocks #574 Phase 2 for Trinity (controller paging overloads once Morpheus completes data-store work).
+
+---
+
 ### 2026-03-21: Sprint 11 Branch Cleanup (Trinity)
 
 - **Task:** Delete all 5 sprint 11 local branches after their PRs were squash-merged to main.
