@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AutoMapper;
 using FluentAssertions;
 using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
@@ -16,11 +17,19 @@ public class EngagementsControllerTests
 {
     private readonly Mock<IEngagementManager> _engagementManagerMock;
     private readonly Mock<ILogger<EngagementsController>> _loggerMock;
+    private readonly IMapper _mapper;
 
     public EngagementsControllerTests()
     {
         _engagementManagerMock = new Mock<IEngagementManager>();
         _loggerMock = new Mock<ILogger<EngagementsController>>();
+        
+        // Configure AutoMapper with the API profile
+        var mapperConfig = new MapperConfiguration(cfg =>
+        {
+            cfg.AddProfile<JosephGuadagno.Broadcasting.Api.MappingProfiles.ApiBroadcastingProfile>();
+        }, new LoggerFactory());
+        _mapper = mapperConfig.CreateMapper();
     }
 
     // -------------------------------------------------------------------------
@@ -29,7 +38,7 @@ public class EngagementsControllerTests
 
     private EngagementsController CreateSut(string scopeClaimValue)
     {
-        var controller = new EngagementsController(_engagementManagerMock.Object, _loggerMock.Object)
+        var controller = new EngagementsController(_engagementManagerMock.Object, _loggerMock.Object, _mapper)
         {
             ControllerContext = CreateControllerContext(scopeClaimValue),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
@@ -79,7 +88,9 @@ public class EngagementsControllerTests
         // Assert
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().HaveCount(2);
-        result.Value!.Items.Should().BeEquivalentTo(engagements, opts => opts.ExcludingMissingMembers());
+        result.Value!.Items.Should().BeEquivalentTo(engagements, opts => opts
+            .ExcludingMissingMembers()
+            .Excluding(e => e.Talks));
         result.Value!.TotalCount.Should().Be(2);
         _engagementManagerMock.Verify(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
@@ -129,7 +140,9 @@ public class EngagementsControllerTests
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        okResult.Value.Should().BeEquivalentTo(engagement, opts => opts.ExcludingMissingMembers());
+        okResult.Value.Should().BeEquivalentTo(engagement, opts => opts
+            .ExcludingMissingMembers()
+            .Excluding(e => e.Talks));
         _engagementManagerMock.Verify(m => m.GetAsync(1), Times.Once);
     }
 
@@ -202,7 +215,9 @@ public class EngagementsControllerTests
         createdResult.StatusCode.Should().Be(201);
         createdResult.ActionName.Should().Be(nameof(EngagementsController.GetEngagementAsync));
         createdResult.RouteValues.Should().ContainKey("engagementId").WhoseValue.Should().Be(42);
-        createdResult.Value.Should().BeEquivalentTo(savedEngagement, opts => opts.ExcludingMissingMembers());
+        createdResult.Value.Should().BeEquivalentTo(savedEngagement, opts => opts
+            .ExcludingMissingMembers()
+            .Excluding(e => e.Talks));
         _engagementManagerMock.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Once);
     }
 
@@ -281,7 +296,9 @@ public class EngagementsControllerTests
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.StatusCode.Should().Be(200);
-        okResult.Value.Should().BeEquivalentTo(savedEngagement, opts => opts.ExcludingMissingMembers());
+        okResult.Value.Should().BeEquivalentTo(savedEngagement, opts => opts
+            .ExcludingMissingMembers()
+            .Excluding(e => e.Talks));
         _engagementManagerMock.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Once);
     }
 
