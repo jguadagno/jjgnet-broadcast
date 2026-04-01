@@ -106,4 +106,97 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
 
         return mapper.Map<IEnumerable<Domain.Models.ScheduledItem>>(dbScheduledItems);
     }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetAllAsync(int page, int pageSize)
+    {
+        var totalCount = await broadcastingContext.ScheduledItems.CountAsync();
+        var dbItems = await broadcastingContext.ScheduledItems
+            .OrderBy(si => si.SendOnDateTime)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        return new Domain.Models.PagedResult<Domain.Models.ScheduledItem>
+        {
+            Items = mapper.Map<List<Domain.Models.ScheduledItem>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetUnsentScheduledItemsAsync(int page, int pageSize)
+    {
+        var query = broadcastingContext.ScheduledItems.Where(si => !si.MessageSent);
+        var totalCount = await query.CountAsync();
+        var dbItems = await query
+            .OrderBy(si => si.SendOnDateTime)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        return new Domain.Models.PagedResult<Domain.Models.ScheduledItem>
+        {
+            Items = mapper.Map<List<Domain.Models.ScheduledItem>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetScheduledItemsToSendAsync(int page, int pageSize)
+    {
+        var query = broadcastingContext.ScheduledItems
+            .Where(si => si.MessageSent == false && si.SendOnDateTime <= DateTimeOffset.Now);
+        var totalCount = await query.CountAsync();
+        var dbItems = await query
+            .OrderBy(si => si.SendOnDateTime)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        return new Domain.Models.PagedResult<Domain.Models.ScheduledItem>
+        {
+            Items = mapper.Map<List<Domain.Models.ScheduledItem>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, int page, int pageSize)
+    {
+        var startDate = new DateTime(year, month, 1, 0, 0, 0);
+        var endDate = new DateTime(year, month, DateTime.DaysInMonth(year, month), 11, 59, 59);
+        var query = broadcastingContext.ScheduledItems
+            .Where(si => si.SendOnDateTime >= startDate && si.SendOnDateTime <= endDate);
+        var totalCount = await query.CountAsync();
+        var dbItems = await query
+            .OrderBy(si => si.SendOnDateTime)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        return new Domain.Models.PagedResult<Domain.Models.ScheduledItem>
+        {
+            Items = mapper.Map<List<Domain.Models.ScheduledItem>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetOrphanedScheduledItemsAsync(int page, int pageSize)
+    {
+        var query = broadcastingContext.ScheduledItems
+            .Where(s =>
+                (s.ItemTableName == ScheduledItemType.Engagements.ToString() &&
+                 !broadcastingContext.Engagements.Any(e => e.Id == s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.Talks.ToString() &&
+                 !broadcastingContext.Talks.Any(t => t.Id == s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.SyndicationFeedSources.ToString() &&
+                 !broadcastingContext.SyndicationFeedSources.Any(sf => sf.Id == s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.YouTubeSources.ToString() &&
+                 !broadcastingContext.YouTubeSources.Any(y => y.Id == s.ItemPrimaryKey))
+            );
+        var totalCount = await query.CountAsync();
+        var dbItems = await query
+            .OrderBy(si => si.SendOnDateTime)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        return new Domain.Models.PagedResult<Domain.Models.ScheduledItem>
+        {
+            Items = mapper.Map<List<Domain.Models.ScheduledItem>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
 }

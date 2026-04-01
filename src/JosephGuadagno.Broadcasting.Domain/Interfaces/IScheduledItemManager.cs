@@ -10,4 +10,10 @@ public interface IScheduledItemManager : IManager<ScheduledItem>
     public Task<bool> SentScheduledItemAsync(int primaryKey);
     public Task<bool> SentScheduledItemAsync(int primaryKey, DateTimeOffset sentOn);
     public Task<List<ScheduledItem>> GetOrphanedScheduledItemsAsync();
+    
+    Task<PagedResult<ScheduledItem>> GetAllAsync(int page, int pageSize);
+    Task<PagedResult<ScheduledItem>> GetUnsentScheduledItemsAsync(int page, int pageSize);
+    Task<PagedResult<ScheduledItem>> GetScheduledItemsToSendAsync(int page, int pageSize);
+    Task<PagedResult<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, int page, int pageSize);
+    Task<PagedResult<ScheduledItem>> GetOrphanedScheduledItemsAsync(int page, int pageSize);
 }

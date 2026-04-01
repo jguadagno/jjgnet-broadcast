@@ -10,4 +10,7 @@ public interface IEngagementManager: IManager<Engagement>
     public Task<bool> RemoveTalkFromEngagementAsync(Talk talk);
     public Task<Talk> GetTalkAsync(int talkId);
     public Task<Engagement?> GetByNameAndUrlAndYearAsync(string name, string url, int year);
+    
+    Task<PagedResult<Engagement>> GetAllAsync(int page, int pageSize);
+    Task<PagedResult<Talk>> GetTalksForEngagementAsync(int engagementId, int page, int pageSize);
 }
