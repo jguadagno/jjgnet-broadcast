@@ -9,6 +9,11 @@ public static class ILoggerExtension
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(eventName);
 
+        if (!logger.IsEnabled(LogLevel.Information))
+        {
+            return;
+        }
+
         string message = "{microsoft.custom_event.name} ";
         object[] values;
         if (properties is not null && properties.Count > 0)

@@ -63,7 +63,7 @@ public class LoadAllVideos(
                 var existingItem = await youTubeSourceManager.GetByVideoIdAsync(item.VideoId);
                 if (existingItem != null)
                 {
-                    logger.LogWarning("Skipping duplicate YouTube video with VideoId: '{VideoId}'", item.VideoId);
+                    logger.LogDebug("Skipping duplicate YouTube video with VideoId: '{VideoId}'", item.VideoId);
                     continue;
                 }
 
