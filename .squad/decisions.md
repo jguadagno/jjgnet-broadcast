@@ -8882,3 +8882,1346 @@ https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomment-4174225355
 - `src/JosephGuadagno.Broadcasting.Web/Controllers/AdminController.cs`
 - `src/JosephGuadagno.Broadcasting.Web/Controllers/AccountController.cs`
 
+
+
+---
+
+### 2026-04-02T11-56-58Z: User directive
+**By:** josephguadagno (via Copilot)
+**What:** The 'staging' environment has been removed from deployment. Do not reference, configure, or attempt to restore it. Any workflow, config, or documentation referencing a 'staging' slot or environment should be treated as obsolete.
+**Why:** User request — captured for team memory
+
+
+---
+
+### 2026-04-02T18-05-52Z: User directive
+**By:** Joseph Guadagno (via Copilot)
+**What:** All datetime fields must use datetimeoffset in SQL and DateTimeOffset in C# throughout this project. Never use datetime2 (SQL) or DateTime (C#) for date/time storage.
+**Why:** User request — discovered after runtime exceptions caused by datetime2/DateTimeOffset type mismatches in EF Core. Captured for team memory to prevent recurrence on future schema or entity work.
+
+
+---
+
+### 2026-04-02T18-22-50Z: User directive
+**By:** Joseph Guadagno (via Copilot)
+**What:** The Web project must NOT call data stores directly. All data access must go through Manager classes. Manager classes are responsible for converting SQL/EF entity models to Domain models before returning them to any caller. SQL objects must never be exposed to or used in the Web layer.
+**Why:** User request — architectural boundary enforcement. Captured for team memory.
+
+
+---
+
+# Phase 2 Controller Authorization — HomeController & LinkedInController
+
+**Date:** 2026-04-03  
+**Author:** Ghost (Security & Identity Specialist)  
+**Branch:** `squad/rbac-phase2`  
+**Context:** RBAC Phase 2 implementation, post-PR #610 merge
+
+---
+
+## Summary
+
+Applied page-level authorization policies to **HomeController** and **LinkedInController** as part of Phase 2 RBAC implementation. HomeController public pages remain accessible to anonymous users; LinkedInController is now admin-only.
+
+---
+
+## Changes Applied
+
+### 1. HomeController.cs
+**File:** `src/JosephGuadagno.Broadcasting.Web/Controllers/HomeController.cs`
+
+**Authorization pattern:**
+- **All public actions:** `[AllowAnonymous]` on Index, Privacy, Error, and AuthError
+
+**Changes made:**
+- ✅ Added `[AllowAnonymous]` to `Error()` action (was missing)
+- ✅ Verified Index, Privacy, AuthError already have `[AllowAnonymous]`
+
+**Rationale:**
+- Program.cs has a global `AuthorizeFilter` requiring authentication by default (lines 89-92)
+- HomeController serves public-facing pages that must be accessible without login
+- Error pages MUST be accessible during authentication failures (circular dependency otherwise)
+- Privacy and Index are intentionally public per site design
+
+**Security posture:** ✅ Public pages correctly opt out of global auth requirement
+
+---
+
+### 2. LinkedInController.cs
+**File:** `src/JosephGuadagno.Broadcasting.Web/Controllers/LinkedInController.cs`
+
+**Authorization pattern:**
+- **Class-level:** `[Authorize(Policy = "RequireAdministrator")]`
+- **All actions:** Index, RefreshToken, Callback now require Administrator role
+
+**Changes made:**
+- ✅ Added `[Authorize(Policy = "RequireAdministrator")]` at class level (line 13)
+- ✅ Added `using Microsoft.AspNetCore.Authorization;` (line 5)
+
+**Rationale:**
+- This controller manages LinkedIn OAuth2 token acquisition and refresh
+- Reads/writes LinkedIn access tokens and refresh tokens to Azure Key Vault
+- Contains sensitive operations: token exchange, Key Vault secret updates, OAuth state validation
+- Only system administrators should have access to social media integration credentials
+
+**Security posture:** ✅ Sensitive Key Vault operations correctly gated to Administrator role
+
+---
+
+## Authorization Policy Reference
+
+Policies defined in `Program.cs` (lines 98-106):
+
+| Policy | Role Requirements |
+|--------|------------------|
+| `RequireAdministrator` | Administrator only |
+| `RequireContributor` | Administrator OR Contributor |
+| `RequireViewer` | Administrator OR Contributor OR Viewer |
+
+**LinkedInController uses:** `RequireAdministrator` (most restrictive - correct for Key Vault access)
+
+---
+
+## Testing
+
+**Build verification:**
+```bash
+cd D:\Projects\jjgnet-broadcast\src
+dotnet build JosephGuadagno.Broadcasting.Web --no-restore
+```
+
+**Result:** ✅ Build succeeded (85.1s, 74 warnings)  
+**Warnings:** All CS8618 nullable warnings (expected, documented as acceptable in codebase)
+
+**No compilation errors introduced by authorization attribute changes.**
+
+---
+
+## Security Considerations
+
+### Global Authorization Default
+Program.cs lines 89-92 set a global `AuthorizeFilter`:
+```csharp
+var policy = new AuthorizationPolicyBuilder()
+    .RequireAuthenticatedUser()
+    .Build();
+options.Filters.Add(new AuthorizeFilter(policy));
+```
+
+**Impact:** ALL controllers default to requiring authentication unless explicitly opted out with `[AllowAnonymous]`.
+
+### HomeController Public Access
+- **Index, Privacy, AuthError, Error** must be accessible to anonymous users
+- Error page accessibility is critical: if auth fails and redirects to /Home/Error, the error page itself must not require auth (circular dependency)
+- Pattern matches AccountController public actions (PendingApproval, Rejected)
+
+### LinkedInController Admin-Only Access
+- **OAuth token management** is a privileged operation
+- **Key Vault secret writes** require admin-level permissions
+- Prevents contributors/viewers from accidentally or maliciously modifying social media credentials
+- Aligns with principle of least privilege: only admins manage integrations
+
+---
+
+## Pattern Consistency
+
+### Phase 1 Reference (AccountController)
+AccountController already uses `[AllowAnonymous]` for public actions:
+- `PendingApproval()` - unauthenticated users waiting approval
+- `Rejected()` - rejected users viewing rejection notice
+
+HomeController follows the same pattern for public-facing pages.
+
+### Phase 1 Reference (AdminController)
+AdminController uses `[Authorize(Policy = "RequireAdministrator")]` at class level for:
+- User approval/rejection
+- RBAC management
+
+LinkedInController follows the same pattern for sensitive integration management.
+
+---
+
+## Related Work
+
+**Phase 1 (PR #610 - merged):**
+- EntraClaimsTransformation (role claim injection)
+- UserApprovalMiddleware (approval status gating)
+- Authorization policies defined in Program.cs
+- AccountController and AdminController baseline auth
+
+**Phase 2 (this work):**
+- HomeController public page confirmation
+- LinkedInController admin-only gating
+
+**Phase 2 (Trinity's scope):**
+- EngagementsController, TalksController, SchedulesController, MessageTemplatesController
+- Contributor-level policies + ownership-based delete
+
+---
+
+## Agent File Ownership (Neo's Plan)
+
+**Ghost owns:**
+- ✅ HomeController.cs (completed)
+- ✅ LinkedInController.cs (completed)
+
+**Trinity owns:**
+- AdminController.cs (ManageRoles actions)
+- EngagementsController.cs, TalksController.cs, SchedulesController.cs, MessageTemplatesController.cs
+
+**No file conflicts expected** - clean separation per Neo's architecture plan.
+
+---
+
+## Commit Reference
+
+Branch: `squad/rbac-phase2`  
+Changes: HomeController.cs (1 line), LinkedInController.cs (2 lines)  
+Build: ✅ Passed
+
+---
+
+## Decision
+
+**Approved pattern for Phase 2:**
+1. **Public pages** → `[AllowAnonymous]` on each public action
+2. **Admin-only controllers** → `[Authorize(Policy = "RequireAdministrator")]` at class level
+3. **Contributor controllers** (Trinity's scope) → `[Authorize(Policy = "RequireContributor")]` at class level
+
+**Security validation:** ✅ All changes align with least-privilege principle and Phase 1 RBAC architecture.
+
+
+---
+
+# Decision: Data.Sql Entity Models Must Match Domain Model Nullability
+
+**Date:** 2026-04-03  
+**Author:** Morpheus  
+**Context:** Issue #607 Phase 2 Followup — CreatedByEntraOid nullability mismatch  
+
+## Problem
+
+Domain models had `string? CreatedByEntraOid` (nullable), but Data.Sql entity models had `string CreatedByEntraOid` (non-nullable). This mismatch caused:
+- CS8618 compiler warnings (non-nullable property not initialized)
+- Confusion for EF Core schema inference (property type drives nullability)
+
+## Decision
+
+**Data.Sql entity models MUST match Domain model nullability, even in `#nullable disable` contexts.**
+
+When a Domain model property is nullable (`string?`), the corresponding Data.Sql entity model property MUST also be nullable (`string?`).
+
+## Rationale
+
+1. **EF Core 6+ nullability inference:** EF Core infers SQL column nullability from the C# property type, not from fluent API configuration (unless explicitly overridden with `.IsRequired(true)`).
+2. **Consistency:** Domain models are the source of truth for business logic; Data.Sql models should reflect the same nullability semantics.
+3. **Warning prevention:** Matching nullability eliminates CS8618 warnings at compile time.
+4. **AutoMapper alignment:** AutoMapper conventions work best when both sides of a mapping have matching nullability.
+
+## Implementation Pattern
+
+### ✅ Correct Pattern
+```csharp
+// Domain.Models.Engagement
+public string? CreatedByEntraOid { get; set; }
+
+// Data.Sql.Models.Engagement
+#nullable disable
+public string? CreatedByEntraOid { get; set; }  // nullable even in #nullable disable context
+```
+
+### ❌ Incorrect Pattern
+```csharp
+// Domain.Models.Engagement
+public string? CreatedByEntraOid { get; set; }
+
+// Data.Sql.Models.Engagement
+#nullable disable
+public string CreatedByEntraOid { get; set; }  // mismatch: non-nullable vs nullable
+```
+
+## EF Core Fluent API
+
+- `.HasMaxLength(N)` is sufficient for string columns
+- **Do NOT add** `.IsRequired(false)` when property is `string?` — let EF infer it
+- **Do NOT add** `.IsRequired(true)` when property is `string?` — that overrides nullability
+
+## Affected Files (Issue #607)
+
+- `Data.Sql/Models/Engagement.cs`
+- `Data.Sql/Models/Talk.cs`
+- `Data.Sql/Models/ScheduledItem.cs`
+- `Data.Sql/Models/MessageTemplate.cs`
+
+## Trade-offs
+
+- **CS8669 warnings** may appear in `#nullable disable` contexts about nullable annotations, but these are acceptable and less critical than CS8618 warnings
+- Auto-generated files with `#nullable disable` now mix nullable and non-nullable syntax, but correctness takes precedence over style
+
+## Team Impact
+
+- **Morpheus:** Maintain nullability alignment between Domain and Data.Sql models
+- **Trinity:** API DTOs should also match Domain model nullability
+- **Switch:** Web ViewModels should also match Domain model nullability
+- **Neo:** Code reviews should verify nullability consistency across layers
+
+
+---
+
+# Decision: CreatedByEntraOid Ownership Column Pattern
+
+**Date:** 2026-04-03  
+**Decided by:** Morpheus  
+**Context:** Issue #607, RBAC Phase 2  
+**Branch:** `squad/rbac-phase2`
+
+## Decision
+
+Add `CreatedByEntraOid NVARCHAR(36) NULL` column to all content tables to support ownership-based delete rules.
+
+## Affected Tables
+
+1. **Engagements** — tracks who created each engagement
+2. **Talks** — tracks who created each talk
+3. **ScheduledItems** — tracks who created each scheduled item
+4. **MessageTemplates** — tracks who created each message template
+
+## Column Specification
+
+- **Name:** `CreatedByEntraOid`
+- **Type:** `NVARCHAR(36)`
+- **Nullable:** `NULL` (yes)
+- **Purpose:** Stores the Entra Object ID (oid claim) from the authenticated user who created the record
+
+## Nullable Decision Rationale
+
+The column is nullable for backward compatibility:
+
+- **Existing records:** Have no owner, remain NULL
+- **New records:** Capture CreatedByEntraOid from authenticated user's oid claim
+- **Delete rules:**
+  - Contributors can delete only records where `CreatedByEntraOid = <their oid>`
+  - Contributors **cannot** delete records where `CreatedByEntraOid IS NULL` (unowned = not their content)
+  - Administrators can delete any content (owned or unowned)
+
+## Migration Pattern
+
+Migration script: `scripts/database/migrations/2026-04-02-rbac-ownership.sql`
+
+Idempotent with IF NOT EXISTS guard:
+
+```sql
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE object_id = OBJECT_ID(N'[dbo].[Engagements]')
+      AND name = 'CreatedByEntraOid')
+BEGIN
+    ALTER TABLE [dbo].[Engagements]
+        ADD [CreatedByEntraOid] NVARCHAR(36) NULL;
+END
+GO
+```
+
+## Implementation Layers
+
+1. **SQL migration:** `2026-04-02-rbac-ownership.sql`
+2. **Base schema:** `table-create.sql` updated inline with table definitions
+3. **Domain models:** `public string? CreatedByEntraOid { get; set; }`
+4. **EF Core entity models:** `public string CreatedByEntraOid { get; set; }` (#nullable disable)
+5. **BroadcastingContext.cs:** `.HasMaxLength(36)` for all four properties
+6. **AutoMapper:** BroadcastingProfile ReverseMap() and explicit mappings auto-handle via convention
+
+## Future Considerations
+
+A Phase 2.5 migration could backfill ownership for existing records if audit logs or historical metadata are available. This would require:
+
+1. Identifying creation user from alternate sources
+2. SQL UPDATE statement to populate CreatedByEntraOid
+3. Decision on whether to make column NOT NULL after backfill
+
+## Verification
+
+Build passed with exit code 0 after all changes applied.
+
+
+---
+
+# Issue Triage Results — 2026-04-02
+
+**Conducted by:** Neo (Lead)  
+**Date:** 2026-04-02  
+**Repository:** jguadagno/jjgnet-broadcast  
+**Context:** Post-RBAC Phase 1 & 2 (PRs #610, #611) issue cleanup
+
+---
+
+## Summary
+
+Reviewed all 34 open issues in the repository to determine which were resolved by recent work:
+- **PRs reviewed:** #610 (RBAC Phase 1), #611 (RBAC Phase 2)
+- **Recent commits reviewed:** Last 40 commits on main branch
+- **Issues closed:** 0 (all RBAC-related issues #602-607 were already closed by previous PR merges)
+- **Issues remaining open:** 34 (all still valid)
+
+---
+
+## Key Findings
+
+### 1. RBAC Issues Already Closed
+
+All six RBAC-related issues were already properly closed when PRs #610 and #611 merged:
+
+| Issue | Title | Closed by |
+|-------|-------|-----------|
+| #602 | feat: Add database schema for user approval and RBAC (Phase 1) | PR #610 |
+| #603 | feat: Implement EntraClaimsTransformation and UserApprovalMiddleware (Phase 1) | PR #610 |
+| #604 | feat: Add UserApprovalManager and RoleManager with SQL repositories (Phase 1) | PR #610 |
+| #605 | feat: Add AccountController and AdminController for user approval UI (Phase 1) | PR #610 |
+| #606 | test: Unit tests for RBAC Phase 1 (claims transformation, middleware, managers) | PR #610 |
+| #607 | feat: Role assignment UI and page-level authorization policies (Phase 2) | PR #611 |
+
+**No action needed** — GitHub automatically closed these when PRs merged with "Closes #XXX" syntax in PR body.
+
+---
+
+### 2. Staging-Related Issues
+
+**Finding:** No open issues are specifically about staging deployment problems.
+
+**Context:** User noted that staging environment has been removed (confirmed by commit `8d783f7 feat(workflows): remove staging slots and deploy directly to production (#583)`).
+
+**Conclusion:** No staging-related issues to close.
+
+---
+
+### 3. MSAL Exception Handling (Issue #85)
+
+**Status:** OPEN (correctly)
+
+**Background:**
+- Sub-issues #544-548 were created to address MSAL exception handling
+- PRs #551-555 implemented these fixes
+- **All PRs were REVERTED** by PR #572 due to "MSAL auth broken"
+- Current state: Original problem in #85 remains unresolved
+
+**Recommendation:** Leave #85 open. The issue is still valid and awaiting a corrected implementation.
+
+---
+
+### 4. AutoMapper and Paging Issues
+
+**Status:** CLOSED (already)
+
+- #575 (AutoMapper migration) — closed by PR #598
+- #574 (SQL-level paging) — closed by PR #595
+- #573 (Web controller paging) — closed by PR #597
+- #314 (Serilog deduplication) — closed by PR #594
+- #591 (Reduce production logging) — closed by PR #592
+
+**All already properly closed.**
+
+---
+
+### 5. Social Handle Fields (Issues #53, #54, #536, #537)
+
+**Status:** All OPEN (correctly)
+
+**Analysis:**
+- #53: "Add Twitter handle for engagements" — partially addressed (ConferenceTwitterHandle exists in Engagement model)
+- #54: "Add Twitter handle for talks" — NOT resolved (Talk model has no Twitter handle field)
+- #536: "Add conference Bluesky handle to Engagement" — NOT resolved (only BlueSkyHandle exists, not ConferenceBlueskyHandle)
+- #537: "Add conference LinkedIn page to Engagement" — NOT resolved (ConferenceLinkedInHandle does not exist)
+
+**Current state (confirmed in Domain models):**
+- Engagement has: `BlueSkyHandle`, `ConferenceTwitterHandle`, `ConferenceHashtag`
+- Talk has: `BlueSkyHandle`
+
+**Missing fields:**
+- Talk: no Twitter handle
+- Engagement: no `ConferenceBlueskyHandle` (distinct from personal BlueSkyHandle)
+- Engagement: no `ConferenceLinkedInHandle`
+
+**Note:** PR #611 added `BlueSkyHandle` to `TalkViewModel` but this was a mapping bug fix, not adding the field to the Talk domain model (it already existed).
+
+---
+
+## Open Issues — All Remaining Valid (34 issues)
+
+### Epic & Phase 3
+- **#609** — epic: Multi-tenancy (strategic, not actionable yet)
+- **#608** — feat: Email notifications for user approval via Azure Storage Queue (Phase 3)
+
+### Validation & Testing Needs
+- **#582** — Validate the saving of new Syndication Items works
+- **#581** — Use the database/scriban templating for actually messages
+- **#580** — Validate all event grid topics run
+- **#579** — Validate posting works for each social media platform
+
+### Social Media Features
+- **#537** — Add conference LinkedIn page to the Engagement
+- **#536** — Add conference Bluesky handle to the Engagement
+- **#54** — For a scheduled talk, we should add the twitter handle
+- **#53** — For scheduled engagements, add twitter handle
+
+### Data Architecture
+- **#323** — feat(data): normalize Tags column from delimited string to junction table
+- **#322** — fix(sql): replace NVARCHAR(MAX) with bounded lengths on filterable columns
+
+### Infrastructure & Cross-Cutting Concerns
+- **#313** — feat: add health checks for external dependencies (Bitly, social APIs, EventGrid)
+- **#312** — feat: introduce Result<T> operation result pattern in Managers
+- **#311** — feat: add CancellationToken propagation through manager and datastore stack
+- **#310** — refactor: fix EventPublisher failure semantics (throw typed exception instead of bool)
+- **#309** — refactor: adopt IOptions<T> instead of singleton-bound settings snapshots
+- **#307** — feat(web): implement real calendar widget in Schedules/Calendar.cshtml
+- **#304** — feat(api): add rate limiting to the API
+- **#78** — Add caching to WebApi
+
+### Refactoring & Code Quality
+- **#102** — Refactor out LinkedIn Message composition from Azure Function
+- **#94** — Create a custom FacebookPostException
+- **#89** — Refactor the scheduled items feature
+- **#69** — For social publishers, allow for the messages to be customized
+- **#67** — UI: Schedule Add/Edit: Add feature to validate and/or select the item that is being scheduled
+- **#55** — For a scheduled engagement, add custom image with alt text
+- **#46** — Refactor out Facebook Status composition
+- **#45** — Refactor out Tweet composition to Manager
+- **#9** — Rename the 'social media' plugins as 'publishers'
+
+### Auth & UI Issues
+- **#85** — Handle Exceptions with Microsoft Entra (Microsoft Identity) login (MSAL exception handling — reverted, needs re-implementation)
+- **#81** — Web UI, might not reload if user is already signed in
+
+### Documentation
+- **#14** — Create documentation for getting Facebook credentials
+- **#13** — Create documentation for getting Bitly Credentials
+- **#12** — Create documentation for getting Twitter Credentials
+
+### Feature Requests
+- **#8** — Add GitHub as a collector source
+
+---
+
+## Recommendations
+
+1. **No issues to close** — All 34 open issues are legitimate open work items.
+
+2. **Issue #85 (MSAL exception handling)** — Remains critical. Sprint 11 work was reverted. Needs careful re-implementation with thorough testing before merge.
+
+3. **Social handle fields (#53, #54, #536, #537)** — Consider grouping these into a single PR to add all missing social handle fields consistently:
+   - Add `TwitterHandle` to Talk
+   - Add `ConferenceBlueskyHandle` to Engagement
+   - Add `ConferenceLinkedInHandle` to Engagement
+   - Update all layers (Domain, EF entities, DTOs, ViewModels, Controllers, Views)
+
+4. **Epic #609 (Multi-tenancy)** — Strategic placeholder. Should not be "closed" but may need sub-issues created when work begins.
+
+5. **Phase 3 (#608)** — Blocked on Phase 2 completion. PR #611 completed Phase 2, so #608 is now ready to be worked.
+
+---
+
+## Patterns Observed
+
+### Good Practices Maintained
+- PRs consistently use "Closes #XXX" syntax, ensuring automatic issue closure
+- Issues are well-labeled with squad assignments
+- No orphaned issues from recent RBAC work
+
+### Areas for Improvement
+- Issue #85 went through sub-issue decomposition (#544-548) but all PRs were reverted as a block. Consider more granular testing/rollback next time.
+- Several very old issues (#8, #9, #12-14, #45-46, #53-55, #67, #69, #78, #81, #89, #94, #102) from 2022 remain open. Consider backlog grooming session to close stale issues or refresh descriptions.
+
+---
+
+**Next Actions:**
+- None — triage complete
+- All open issues are valid and require implementation work
+- No issues resolved by recent PRs that need closing
+
+---
+
+**Triage conducted:** 2026-04-02  
+**Reviewed by:** Neo (Lead)  
+**Total issues reviewed:** 34 open + 6 recently closed RBAC issues  
+**Issues closed:** 0  
+**Issues remaining open:** 34
+
+
+---
+
+# RBAC Phase 2 — Architecture Plan
+**Date:** 2026-04-03  
+**Author:** Neo  
+**Branch:** `squad/rbac-phase2` (created from `main` post-PR #610 merge)
+
+---
+
+## 1. Branch Status
+
+`squad/rbac-phase2` created from `main`. PR #610 (RBAC Phase 1) is fully merged. Build is clean.
+
+---
+
+## 2. Controller Inventory (Web Project)
+
+Controllers found in `src/JosephGuadagno.Broadcasting.Web/Controllers/`:
+
+| File | Current Auth | Phase 2 Work |
+|------|-------------|--------------|
+| AccountController.cs | [Authorize] / [AllowAnonymous] per action | No change |
+| AdminController.cs | [Authorize(Policy="RequireAdministrator")] | Add ManageRoles / AssignRole / RemoveRole actions |
+| EngagementsController.cs | Unknown | Add [Authorize(RequireContributor)] + ownership delete |
+| HomeController.cs | Unknown | Add [Authorize] only |
+| LinkedInController.cs | Unknown | Add [Authorize] only |
+| MessageTemplatesController.cs | Unknown | Add [Authorize(RequireContributor)] + ownership delete |
+| SchedulesController.cs | Unknown | Add [Authorize(RequireContributor)] + ownership delete |
+| TalksController.cs | Unknown | Add [Authorize(RequireContributor)] + ownership delete |
+
+⚠️ **IMPORTANT DISCREPANCY:** The original task listed `TwitterController.cs`, `FacebookController.cs`, and `BlueskyController.cs` for Ghost — **these files do NOT exist** in the current codebase. Ghost's scope reduces to `HomeController.cs` and `LinkedInController.cs` only unless these are new files to be created.
+
+⚠️ **NAMING:** The task referenced `ScheduledItemsController.cs` — the actual file is `SchedulesController.cs`. Trinity must use the correct filename.
+
+---
+
+## 3. Domain Model Ownership Fields
+
+Checked: `Engagement.cs`, `Talk.cs`, `ScheduledItem.cs`, `MessageTemplate.cs`
+
+**Result: NONE of these models currently have any `CreatedBy`, `OwnedBy`, `Owner`, `CreatorId`, or `UserId` field.**
+
+This confirms Phase 2 must add ownership tracking from scratch.
+
+---
+
+## 4. Ownership Column Decision
+
+**Approach: Option 1 from issue #607**
+
+Add `CreatedByEntraOid NVARCHAR(36)` column to each owned table:
+- `Engagements`
+- `Talks`
+- `ScheduledItems` (if applicable)
+- `MessageTemplates` (if applicable)
+
+**Rationale:**
+- Entra OID (object ID) is the stable, immutable identifier for a user in Azure AD
+- NVARCHAR(36) fits the standard GUID format (e.g., `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)
+- Avoids FK to ApplicationUsers for simplicity (Phase 2 scope); can be enforced in Phase 3 if needed
+- Nullable initially to handle existing rows gracefully during migration
+
+**Morpheus owns the migration SQL script.**
+
+---
+
+## 5. AdminController Current State
+
+Existing actions (all under `[Authorize(Policy="RequireAdministrator")]`):
+- `Users()` — lists pending/approved/rejected users
+- `ApproveUser(int userId)` — POST, approves user
+- `RejectUser(int userId, string rejectionNotes)` — POST, rejects user
+- `GetCurrentUserIdAsync()` — private helper
+
+Phase 2 additions (Trinity):
+- `ManageRoles()` — GET, view/assign roles to approved users
+- `AssignRole(int userId, string roleName)` — POST
+- `RemoveRole(int userId, string roleName)` — POST
+
+---
+
+## 6. Agent File Ownership Split
+
+To prevent merge conflicts, each agent owns specific files exclusively:
+
+### Ghost
+- `HomeController.cs` — add `[Authorize]` only
+- `LinkedInController.cs` — add `[Authorize]` only
+- ~~TwitterController.cs, FacebookController.cs, BlueskyController.cs~~ — **DO NOT EXIST, skip**
+
+### Trinity
+- `AdminController.cs` — add ManageRoles/AssignRole/RemoveRole actions
+- `EngagementsController.cs` — add `[Authorize(Policy="RequireContributor")]` + ownership-based delete
+- `SchedulesController.cs` — (not ScheduledItemsController!) — same pattern
+- `MessageTemplatesController.cs` — same pattern
+- `TalksController.cs` — same pattern
+- **Clean up `RejectUserViewModel.cs`** — confirmed dead code (flagged in Phase 1 review, file exists at `src/JosephGuadagno.Broadcasting.Web/Models/RejectUserViewModel.cs`)
+
+### Switch
+- `Views/Admin/ManageRoles.cshtml` — new view for role management UI
+- `Views/Admin/Users.cshtml` (or Index) — add "Manage Roles" link
+- Any new ViewModels (ManageRolesViewModel, etc.)
+
+### Morpheus
+- DB migration SQL script — add `CreatedByEntraOid NVARCHAR(36) NULL` to owned tables
+- Update Aspire AppHost SQL initialization if needed
+
+### Tank
+- New test files only — no ownership of source files
+
+---
+
+## 7. Dead Code Cleanup
+
+`RejectUserViewModel.cs` — flagged Phase 1, confirmed present. Trinity to delete on Phase 2 branch.
+Check for any usages before delete: `grep -r "RejectUserViewModel" src/`
+
+---
+
+## 8. Open Questions
+
+1. **Ghost scope**: Confirm whether TwitterController, FacebookController, BlueskyController are planned new files or were mistakenly listed. If new, Ghost should create them as stubs with `[Authorize]`.
+2. **ScheduledItems vs Schedules**: Is `SchedulesController.cs` the correct controller for scheduled items, or is a rename planned?
+3. **Nullable vs Required**: Should `CreatedByEntraOid` be nullable (safe migration) or required (enforced from day 1)? Recommend nullable with a Phase 2.5 backfill.
+
+
+---
+
+# Neo Decision: PR #612 — RBAC Phase 2 Follow-up Review
+
+**Date:** 2026-07-15
+**Author:** Neo
+**PR:** [#612](https://github.com/jguadagno/jjgnet-broadcast/pull/612) — `feat(rbac): post-merge improvements — nullability, RoleViewModel, self-demotion guard, auth fix`
+**Branch:** `squad/rbac-phase2-followup` → `main`
+**Follows:** PR #611 (RBAC Phase 2), PR #610 (RBAC Phase 1)
+
+## Verdict: APPROVE ✅
+
+Build: 0 errors. All 101 Web tests passing.
+
+## What Was Reviewed
+
+4 items from the post-Phase-2 findings list, all resolved:
+
+### Item 1 — CreatedByEntraOid nullability ✅
+`string` → `string?` in 4 Data.Sql entity models (Engagement, Talk, ScheduledItem, MessageTemplate). Correct — aligns EF entity types with Domain models and the actual nullable SQL column. EF Core derives nullability from C# type, no context file changes needed.
+
+### Item 2 — RoleViewModel ✅
+Clean ViewModel (`Id`, `Name`, `Description?`) that maps by convention from `Domain.Models.Role`. `ManageRolesViewModel` no longer references Domain model. `using` directive correctly removed. AutoMapper profile registration correct.
+
+### Item 3 — Self-demotion guard ✅
+Guard in `AdminController.RemoveRole`:
+- Only triggers for `userId == adminUserId.Value` (self)
+- Uses `RoleNames.Administrator` constant (not magic string)
+- Null-safe: if role not found in user's roles, guard no-ops and `RemoveRoleAsync` handles it
+- Cross-user Admin removal unaffected
+
+Three tests cover all three paths (block own-Admin, allow own non-Admin, allow other-user Admin).
+
+### Item 4 — GetCalendarEvents auth ✅
+Class-level downgraded to `RequireViewer`; POST Edit, POST Add, DeleteConfirmed explicitly elevated to `RequireContributor`. Security sound — no write operation accessible below Contributor.
+
+## Non-Blocking Observations
+
+1. **GET Add/Edit/Delete forms visible to Viewers** — Viewers can navigate to these forms but get a 403 on submit. Poor UX, not a security issue. Recommend adding `[Authorize(Policy = "RequireContributor")]` to GET Add, GET Edit, GET Delete in a follow-up.
+2. **3-space indent on `AvailableRoles`** in `ManageRolesViewModel.cs` line 21. Cosmetic only.
+
+## Test Results
+
+101/101 Web tests passing. 4 new + 1 updated test.
+
+## Decision
+
+PR #612 is correct and complete. All four post-Phase-2 items are resolved. Merge when ready.
+
+Follow-up recommended: add `RequireContributor` to GET forms in `EngagementsController` (and other write controllers) to prevent Viewers from seeing forms they cannot submit.
+
+
+---
+
+# Switch Decision: ManageRoles UI Pattern
+
+**Date:** 2026-04-03  
+**Agent:** Switch (Frontend Engineer)  
+**Branch:** squad/rbac-phase2  
+**Task:** RBAC Phase 2 — ManageRoles view + Admin Users view update
+
+---
+
+## Context
+
+Phase 2 of RBAC implementation requires a UI for administrators to assign and remove roles from approved users. This extends the existing Admin/Users view (from Phase 1) with role management capabilities.
+
+---
+
+## Files Created/Modified
+
+### Created
+- `src/JosephGuadagno.Broadcasting.Web/Views/Admin/ManageRoles.cshtml`
+
+### Modified
+- `src/JosephGuadagno.Broadcasting.Web/Views/Admin/Users.cshtml`
+
+---
+
+## UI Design Decisions
+
+### 1. ManageRoles View Structure
+
+**Decision:** Three-card layout with distinct color-coded sections
+
+**Cards:**
+1. **User Information** (bg-primary) — Display name, email, approval status
+2. **Current Roles** (bg-success) — List of assigned roles with Remove button
+3. **Available Roles** (bg-info) — List of unassigned roles with Assign button
+
+**Rationale:**
+- Follows existing Admin/Users.cshtml pattern (three-section card layout)
+- Color coding provides instant visual categorization
+- Badge counts in headers show role counts at a glance
+- Consistent with Bootstrap 5 card/table conventions used throughout the app
+
+### 2. Form Actions
+
+**Decision:** Separate POST forms for each role assignment/removal action
+
+**Pattern:**
+```razor
+<form asp-action="AssignRole" method="post" class="d-inline">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="userId" value="@Model.User.Id" />
+    <input type="hidden" name="roleId" value="@role.Id" />
+    <button type="submit" class="btn btn-sm btn-success"
+            onclick="return confirm('...')">
+        <i class="bi bi-check-circle me-1"></i>Assign
+    </button>
+</form>
+```
+
+**Rationale:**
+- CSRF protection on every POST action (security requirement)
+- No JavaScript dependencies (works with JS disabled)
+- JavaScript confirm() provides UX confirmation without modal complexity
+- Consistent with Phase 1 ApproveUser/RejectUser pattern
+
+### 3. Empty States
+
+**Decision:** Show informative empty state messages with icons
+
+**Examples:**
+- "This user has no roles assigned." (Current Roles empty)
+- "All available roles have been assigned to this user." (Available Roles empty)
+
+**Rationale:**
+- Avoids confusing empty tables
+- Provides clear explanation of state
+- Consistent with existing Admin/Users view empty states
+
+### 4. Action Column Addition to Users View
+
+**Decision:** Add "Actions" column to Approved Users table with "Manage Roles" button
+
+**Pattern:**
+```razor
+<a asp-action="ManageRoles" asp-route-userId="@user.Id" 
+   class="btn btn-sm btn-primary" 
+   title="Manage user roles">
+    <i class="bi bi-person-badge me-1"></i>Manage Roles
+</a>
+```
+
+**Rationale:**
+- Only appears for approved users (Pending/Rejected don't need role management)
+- Uses btn-primary to distinguish from Approve (success) / Reject (danger) buttons
+- Bootstrap icon `bi-person-badge` clearly indicates role management
+- Minimal visual disruption to existing layout
+
+### 5. Bootstrap Icons Selected
+
+| Icon | Usage | Rationale |
+|------|-------|-----------|
+| `bi-person-badge` | ManageRoles action, User header | Standard role/permission icon |
+| `bi-shield-check` | Current Roles section | Indicates active security permissions |
+| `bi-plus-circle` | Available Roles section | Add/assign action |
+| `bi-check-circle` | Assign button | Positive action (add) |
+| `bi-x-circle` | Remove button | Negative action (delete) |
+| `bi-arrow-left` | Back to Users link | Navigation back |
+
+**Rationale:**
+- Consistent with existing Admin/Users view icon usage
+- Bootstrap Icons already loaded in _Layout.cshtml
+- Semantic meaning clear from icon shape/name
+
+### 6. ApprovalStatus Badge Display
+
+**Decision:** Use color-coded badges matching domain enum values
+
+**Colors:**
+- Approved: `badge bg-success` (green)
+- Pending: `badge bg-warning text-dark` (yellow with dark text)
+- Rejected: `badge bg-danger` (red)
+- Unknown: `badge bg-secondary` (gray)
+
+**Rationale:**
+- Matches Phase 1 pattern (badge counts in headers)
+- Standard Bootstrap semantic colors
+- Accessible contrast (text-dark on warning background)
+
+---
+
+## Technical Decisions
+
+### 1. ViewModel Namespace
+
+**Decision:** 
+- ManageRolesViewModel: `JosephGuadagno.Broadcasting.Web.Models`
+- Role model: `JosephGuadagno.Broadcasting.Domain.Models`
+
+**Rationale:**
+- Follows project namespace conventions
+- Web.Models for presentation layer ViewModels
+- Domain.Models for shared business entities
+
+### 2. Navigation Flow
+
+**Decision:** 
+- Admin/Users → ManageRoles (link with userId)
+- ManageRoles → Admin/Users (back button)
+
+**Rationale:**
+- Single-level drill-down (no deep nesting)
+- Clear entry/exit points
+- Consistent with existing controller navigation patterns
+
+### 3. Role Identification
+
+**Decision:** Pass both `userId` and `roleId` in POST forms
+
+**Rationale:**
+- Explicit over implicit (no ambiguity)
+- Allows backend to validate both IDs
+- Consistent with Phase 1 ApproveUser/RejectUser pattern
+
+---
+
+## Dependencies
+
+- **Trinity:** Must implement `ManageRolesViewModel`, `AdminController.ManageRoles()`, `AdminController.AssignRole()`, `AdminController.RemoveRole()`
+- **Neo:** Phase 2 plan defines controller action signatures
+- **Phase 1 baseline:** Admin/Users view and AdminController from PR #610
+
+---
+
+## Testing Recommendations (for Tank)
+
+1. **Empty states:** User with no roles, user with all roles
+2. **Role assignment:** Confirm dialog, successful assignment, feedback message
+3. **Role removal:** Confirm dialog, successful removal, feedback message
+4. **Navigation:** Back to Users link preserves state (tab selection)
+5. **CSRF protection:** POST without token should fail (403 Forbidden)
+6. **Accessibility:** Screen reader compatibility, keyboard navigation
+
+---
+
+## Future Enhancements (Out of Scope for Phase 2)
+
+1. **Bulk role assignment:** Checkbox selection + assign to multiple users
+2. **Role descriptions on hover:** Tooltip for longer descriptions
+3. **Audit trail:** Show who assigned/removed roles and when
+4. **Search/filter:** For users with many roles
+5. **Role grouping:** Categorize roles (e.g., Content, Admin, System)
+
+---
+
+## Outcome
+
+- **Status:** Frontend implementation complete
+- **Build:** Not yet validated (awaiting Trinity's controller/ViewModel work)
+- **Next step:** Trinity implements backend actions, then Tank writes tests
+
+
+---
+
+# RBAC Phase 2 Followup: RoleViewModel & Authorization Fixes
+
+**Date:** 2026-04-01  
+**Agent:** Switch (Frontend Engineer)  
+**Branch:** squad/rbac-phase2-followup  
+**Commit:** fc000a3  
+
+## Context
+
+RBAC Phase 2 followup work to address three architectural issues:
+1. Web layer directly referencing Domain.Models.Role in ViewModels
+2. Missing self-demotion guard in AdminController
+3. GetCalendarEvents requiring Contributor when it should allow Viewer access
+
+## Decisions Made
+
+### 1. Created RoleViewModel in Web Layer
+
+**Decision:** Created `src/JosephGuadagno.Broadcasting.Web/Models/RoleViewModel.cs` with properties matching Domain.Models.Role (Id, Name, Description).
+
+**Rationale:**
+- Web layer should never directly reference Domain models in ViewModels
+- Follows established pattern from ApplicationUserViewModel (RBAC Phase 1)
+- Provides clean separation of concerns
+- Web layer owns its own view models
+
+**Impact:**
+- ManageRolesViewModel now uses IList<RoleViewModel> instead of IList<Role>
+- Removed `using JosephGuadagno.Broadcasting.Domain.Models;` from ManageRolesViewModel
+- AutoMapper mapping added: Domain.Models.Role → RoleViewModel
+- Razor views don't need changes (property names match)
+
+### 2. Added Self-Demotion Guard in AdminController.RemoveRole
+
+**Decision:** Added guard logic to prevent admins from removing their own Administrator role.
+
+**Implementation:**
+```csharp
+// Guard: prevent self-demotion from Administrator role
+if (userId == adminUserId.Value)
+{
+    var userRoles = await _userApprovalManager.GetUserRolesAsync(userId);
+    var roleToRemove = userRoles.FirstOrDefault(r => r.Id == roleId);
+    if (roleToRemove?.Name == RoleNames.Administrator)
+    {
+        TempData["ErrorMessage"] = "You cannot remove the Administrator role from yourself.";
+        return RedirectToAction("ManageRoles", new { userId });
+    }
+}
+```
+
+**Rationale:**
+- Prevents accidental lockouts
+- Admin users should not be able to demote themselves
+- Business rule enforcement at controller level
+- Uses RoleNames.Administrator constant from Domain.Constants
+
+**UX:** Error message via TempData, redirect back to ManageRoles page
+
+### 3. Fixed EngagementsController Authorization
+
+**Decision:** Changed class-level authorization from `RequireContributor` to `RequireViewer`, added `RequireContributor` to write actions.
+
+**Changes:**
+- Class-level: `[Authorize(Policy = "RequireViewer")]`
+- Added `[Authorize(Policy = "RequireContributor")]` to:
+  - Edit POST
+  - Add POST
+  - DeleteConfirmed
+
+**Rationale:**
+- GetCalendarEvents is a read-only API endpoint (returns JSON for FullCalendar)
+- Viewers should be able to see engagement calendars
+- Write operations (Edit, Add, Delete) still require Contributor or higher
+- Read operations (Index, Details, Edit GET, Add GET, GetCalendarEvents) accessible to Viewers
+
+**Authorization Hierarchy:**
+- RequireViewer: Administrator OR Contributor OR Viewer
+- RequireContributor: Administrator OR Contributor
+- RequireAdministrator: Administrator only
+
+## Files Changed
+
+1. **Created:**
+   - `src/JosephGuadagno.Broadcasting.Web/Models/RoleViewModel.cs`
+
+2. **Modified:**
+   - `src/JosephGuadagno.Broadcasting.Web/Models/ManageRolesViewModel.cs`
+   - `src/JosephGuadagno.Broadcasting.Web/MappingProfiles/WebMappingProfile.cs`
+   - `src/JosephGuadagno.Broadcasting.Web/Controllers/AdminController.cs`
+   - `src/JosephGuadagno.Broadcasting.Web/Controllers/EngagementsController.cs`
+
+## Build Status
+
+✅ Build succeeded with 27 warnings (expected baseline)
+✅ No new errors introduced
+
+## Patterns Established
+
+1. **Web Layer ViewModels:** Web layer must create its own ViewModels for Domain models, never reference Domain models directly in Web-layer ViewModels
+2. **Self-Demotion Guards:** Controllers should prevent users from removing critical permissions from themselves
+3. **Layered Authorization:** Class-level for read operations, method-level for write operations
+4. **Read-Only API Endpoints:** JSON API endpoints that don't modify data should be accessible to Viewer role
+
+## Testing Considerations
+
+- Verify Viewers can access GetCalendarEvents
+- Verify Viewers cannot Edit/Add/Delete engagements
+- Verify Contributors can Edit/Add/Delete engagements
+- Verify admin cannot remove Administrator role from themselves
+- Verify admin can remove other roles from themselves
+- Verify role list displays correctly in ManageRoles view
+
+## Related Issues
+
+- Part of RBAC Phase 2 followup work
+- Dependencies: Trinity's IUserApprovalManager (completed)
+- Dependencies: Ghost's authorization policies in Program.cs (completed)
+
+
+---
+
+# Decision: Phase 2 RBAC Tests - Incomplete Status
+
+**Date:** 2026-04-02  
+**Author:** Tank  
+**Issue:** #606 (RBAC Phase 2)  
+**Branch:** squad/rbac-phase2  
+**Status:** ⚠️ INCOMPLETE - DO NOT MERGE
+
+## Summary
+
+Started writing Phase 2 unit tests for role management (AdminController) and ownership-based authorization (Engagements/Schedules/Talks). Added 11 new tests but 13 existing tests now failing due to incomplete updates for ownership check pattern.
+
+## Tests Written (11 new)
+
+### AdminControllerTests.cs (6 new tests)
+- ManageRoles with valid/invalid user
+- AssignRole with valid admin / missing admin
+- RemoveRole with valid admin / missing admin
+
+### EngagementsControllerTests.cs (5 new tests)
+- DeleteConfirmed: Administrator can delete any, Owner can delete own, Non-owner returns Forbid
+- Add_Post_SetsCreatedByEntraOid
+
+### Attribute Tests (2 new tests)
+- HomeController.Error has [AllowAnonymous]
+- LinkedInController has class-level [Authorize(Policy = "RequireAdministrator")]
+
+## Problem
+
+Controllers now call GetEngagementAsync/GetScheduledItemAsync/GetEngagementTalkAsync FIRST (for ownership check). Old tests didn't set up these mocks → NotFoundResult. Updated 12 existing tests to add:
+- User context (ClaimsPrincipal with oid + role claims)
+- Get*Async mock setup
+
+But 13 tests still failing (likely incomplete mock setups or missing GetEntityAsync calls).
+
+## Test Results
+
+- ✅ Compilation: Clean
+- ❌ Tests: 71 passed, 13 failed
+- ⚠️ MappingProfile_IsValid also failing (unrelated)
+
+## Test Patterns Established
+
+### Ownership Authorization Testing
+```csharp
+var claims = new List<Claim>
+{
+    new Claim("oid", "user-oid"),
+    new Claim(ClaimTypes.Role, RoleNames.Administrator)
+};
+var identity = new ClaimsIdentity(claims, "TestAuth");
+_controller.ControllerContext = new ControllerContext
+{
+    HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+};
+```
+
+### Attribute Verification
+```csharp
+var method = typeof(HomeController).GetMethod("Error");
+method!.GetCustomAttributes<AllowAnonymousAttribute>().Should().HaveCount(1);
+```
+
+### CreatedByEntraOid Capture
+```csharp
+Engagement? capturedEngagement = null;
+_engagementService
+    .Setup(s => s.SaveEngagementAsync(It.IsAny<Engagement>()))
+    .Callback<Engagement>(e => capturedEngagement = e)
+    .ReturnsAsync(savedEngagement);
+Assert.Equal(userOid, capturedEngagement!.CreatedByEntraOid);
+```
+
+## Next Steps
+
+1. ✅ Fix 13 failing tests (complete Get*Async mock setups)
+2. ✅ Verify all 84 Web.Tests pass
+3. ⚠️ Investigate MappingProfile_IsValid failure
+4. ✅ Update history.md with completion status
+5. ✅ Create final decision/inbox entry with test count
+
+## Decision
+
+**DO NOT MERGE until all tests pass.** This session established the correct patterns but didn't complete the test fixes for all controllers (Schedules, Talks).
+
+## Key Learning
+
+When controllers add ownership checks via GetEntityAsync before operations, ALL related tests must update:
+1. Set up Get*Async mocks returning entities with CreatedByEntraOid
+2. Set up ControllerContext with User (oid + role claims)
+3. Test both Admin (can do anything) and Contributor (only own content) scenarios
+
+
+---
+
+# Tank: RBAC Phase 2 Followup Tests — Complete
+
+**Date:** 2026-04-02  
+**Branch:** squad/rbac-phase2-followup  
+**Commit:** 66d5ba4
+
+## Summary
+
+Added 4 new tests for AdminController to cover:
+1. Self-demotion guard (prevents admin from removing own Administrator role)
+2. RoleViewModel mapping (verifies Switch's refactor from Domain.Models.Role to RoleViewModel)
+
+Updated 1 existing test to support RoleViewModel mapping.
+
+**Result:** All 101 Web.Tests passing.
+
+## Tests Added
+
+### 1. RemoveRole_WhenAdminRemovesOwnAdministratorRole_ReturnsRedirectWithError
+- **Scenario:** Admin user (ID=5) attempts to remove their own Administrator role (ID=1)
+- **Expected:** Redirects to ManageRoles with ErrorMessage in TempData, RemoveRoleAsync NOT called
+- **Verified:** GetUserRolesAsync called to check role name, guard blocks removal
+
+### 2. RemoveRole_WhenAdminRemovesOwnNonAdministratorRole_ProceedsNormally
+- **Scenario:** Admin user (ID=5) removes their own Contributor role (ID=2)
+- **Expected:** RemoveRoleAsync called successfully, no guard triggered
+- **Verified:** GetUserRolesAsync called, but role is not "Administrator" so removal proceeds
+
+### 3. RemoveRole_WhenAdminRemovesDifferentUsersAdministratorRole_ProceedsNormally
+- **Scenario:** Admin user (ID=5) removes another user's (ID=10) Administrator role (ID=1)
+- **Expected:** RemoveRoleAsync called successfully, GetUserRolesAsync NOT called (guard only for self)
+- **Verified:** Guard logic short-circuits when userId != adminUserId
+
+### 4. ManageRoles_MapsRolesToRoleViewModel
+- **Scenario:** ManageRoles action returns view with model containing RoleViewModel lists
+- **Expected:** CurrentRoles and AvailableRoles are List<RoleViewModel>, not List<Role>
+- **Verified:** AutoMapper called for both CurrentRoles and AvailableRoles mapping
+
+## Tests Updated
+
+### ManageRoles_WithValidUser_ReturnsViewWithViewModel
+- **Change:** Added AutoMapper mocks for `Map<List<RoleViewModel>>` calls
+- **Reason:** Switch's refactor changed ManageRolesViewModel to use RoleViewModel instead of Role
+- **Mocks added:**
+  - `_mockMapper.Setup(x => x.Map<List<RoleViewModel>>(currentRoles)).Returns(currentRoleViewModels)`
+  - `_mockMapper.Setup(x => x.Map<List<RoleViewModel>>(availableRoles)).Returns(availableRoleViewModels)`
+
+## Design Observations
+
+✅ **Self-demotion guard is well-designed:**
+- Only checks roles when userId == adminUserId (performance optimization)
+- Checks role name == "Administrator" using RoleNames.Administrator constant
+- Returns clear error message to user
+
+✅ **RoleViewModel refactor is clean:**
+- Maintains same properties as Domain.Models.Role (Id, Name, Description)
+- AutoMapper handles conversion transparently
+- Tests confirm proper mapping
+
+## No Issues Found
+
+All tests pass. Implementation is correct. No design concerns.
+
+
+---
+
+# Trinity Phase 2 Backend — Implementation Decisions
+
+**Date:** 2026-04-03  
+**Author:** Trinity  
+**Branch:** squad/rbac-phase2
+
+---
+
+## Decision 1: Ownership Check Pattern
+
+**Context:** Phase 2 requires ownership-based delete for CRUD operations. Contributors should only delete their own items; Administrators can delete anything.
+
+**Decision:**
+Implemented a two-tier authorization check in all DELETE actions:
+1. Load the item first (to verify existence and check ownership)
+2. If user is NOT Administrator, check if `CreatedByEntraOid` matches current user's `"oid"` claim
+3. Return `Forbid()` if unauthorized
+4. Proceed with delete if authorized
+
+**Rationale:**
+- Consistent pattern across all controllers (Engagements, Schedules, Talks, MessageTemplates)
+- Administrator role gets unrestricted delete (policy-based override)
+- Contributors get ownership-scoped delete (claim-based check)
+- Early return with `Forbid()` provides clear HTTP 403 response
+- Uses stable `"oid"` claim (Entra Object ID) rather than mutable user properties
+
+**Pattern:**
+```csharp
+var item = await _service.GetAsync(id);
+if (item == null) return NotFound();
+
+if (!User.IsInRole(RoleNames.Administrator))
+{
+    var currentUserOid = User.FindFirstValue("oid");
+    if (item.CreatedByEntraOid != currentUserOid)
+    {
+        return Forbid();
+    }
+}
+
+await _service.DeleteAsync(id);
+```
+
+---
+
+## Decision 2: GetUserByIdAsync Addition to IUserApprovalManager
+
+**Context:** `AdminController.ManageRoles(int userId)` needs to retrieve user by integer ID, but `IUserApprovalManager` only exposed `GetUserAsync(string entraObjectId)`.
+
+**Decision:**
+Added `GetUserByIdAsync(int userId)` to the manager interface and implementation, delegating to `applicationUserDataStore.GetByIdAsync(userId)` (which already existed).
+
+**Rationale:**
+- Avoids exposing `IApplicationUserDataStore` directly to controllers (violates clean architecture)
+- Manager layer is correct place for business logic and data access coordination
+- Consistent with existing pattern (e.g., `ApproveUserAsync` already uses `GetByIdAsync` internally)
+
+---
+
+## Decision 3: Dead Code Removal
+
+**File Deleted:** `RejectUserViewModel.cs`
+
+**Rationale:**
+- Flagged in Phase 1 code review as dead code
+- Neo confirmed file exists and should be deleted
+- AdminController's `RejectUser` action accepts simple parameters (`int userId, string rejectionNotes`), not a ViewModel
+- No usages found in codebase
+
+---
+
+## Decision 4: CreatedByEntraOid Assumed Present
+
+**Context:** Domain models (Engagement, Talk, ScheduledItem, MessageTemplate) do not currently have `CreatedByEntraOid` property. Morpheus is adding this in parallel.
+
+**Decision:**
+Implemented all ownership checks and creation assignments assuming `public string? CreatedByEntraOid { get; set; }` exists on each model.
+
+**Rationale:**
+- Task instructions explicitly stated: "The `CreatedByEntraOid` property is being added to domain models by Morpheus. Assume it exists."
+- Backend logic can proceed independently; compilation will succeed once Morpheus's changes are merged
+- Reduces coordination overhead (no blocking waits)
+
+---
+
+## Implementation Summary
+
+**Files Created:**
+- `ManageRolesViewModel.cs`
+
+**Files Modified:**
+- `IUserApprovalManager.cs` — added `GetUserByIdAsync`
+- `UserApprovalManager.cs` — implemented `GetUserByIdAsync`
+- `AdminController.cs` — added ManageRoles/AssignRole/RemoveRole actions
+- `EngagementsController.cs` — policy + ownership
+- `SchedulesController.cs` — policy + ownership
+- `MessageTemplatesController.cs` — policy only (no Create/Delete)
+- `TalksController.cs` — policy + ownership
+
+**Files Deleted:**
+- `RejectUserViewModel.cs`
+
+**Key Patterns:**
+- Class-level `[Authorize(Policy = "RequireContributor")]` gates all CRUD controllers
+- `User.FindFirstValue("oid")` extracts Entra Object ID for ownership checks
+- `User.IsInRole(RoleNames.Administrator)` bypasses ownership restrictions
+- `CreatedByEntraOid` set on Create, checked on Delete
+- No ownership check on Edit (deferred to Phase 3 if needed)
+
+
+---
+

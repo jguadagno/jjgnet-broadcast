@@ -10,6 +10,31 @@
 
 <!-- Append learnings below -->
 
+### Session: RBAC Phase 2 Followup — Complete & Merged (2026-04-02)
+
+- **Work:** Final consolidation and documentation for PR #612 (RBAC Phase 2 Followup)
+  - Created 4 orchestration logs (Morpheus nullability, Switch RoleViewModel+Auth, Tank tests, Neo triage+review)
+  - Wrote session log consolidating all 4 work packages (ebc5ba8, fc000a3, 66d5ba4 commits)
+  - Merged 14 inbox decisions into decisions.md (nullability pattern, RoleViewModel pattern, self-demotion guard, auth layering, issue triage)
+  - Cleared inbox files after merge (14 files deleted)
+  - Documented follow-up (issue #613 — Viewer UX gap, Phase 3 readiness)
+  - Prepared git commit (staged .squad/ directory)
+
+- **Outcome:** All Phase 2 Followup items merged to main. 5 key patterns documented for team:
+  1. Data.Sql nullability alignment with Domain models
+  2. Web layer ViewModels don't reference Domain models
+  3. Controllers guard against user self-demotion from critical roles
+  4. Read-only operations use class-level auth, writes use method-level
+  5. Read-only API endpoints accessible to Viewer role
+
+- **Decisions Consolidated:**
+  - morpheus-nullability-fix.md (pattern for nullability consistency across layers)
+  - switch-role-viewmodel-and-auth-fixes.md (3 patterns: ViewModel abstraction, self-demotion guard, layered auth)
+  - tank-rbac-phase2-followup-tests.md (test coverage for guard and ViewModel mapping)
+  - neo-issue-triage-2026-04-02.md (34 issues triaged, all valid, no closes)
+  - neo-pr-review-rbac-phase2-followup.md (PR #612 APPROVED)
+  - 9 other copilot directives and phase decisions
+
 ### Session: Fix Web.Tests PagedResult<T> Mocks (2026-04-01)
 
 - **Work:** Tank test fix session closeout
