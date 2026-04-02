@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Mail;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
@@ -13,7 +15,10 @@ namespace JosephGuadagno.Broadcasting.Managers;
 public class UserApprovalManager(
     IApplicationUserDataStore applicationUserDataStore,
     IRoleDataStore roleDataStore,
-    IUserApprovalLogDataStore userApprovalLogDataStore) : IUserApprovalManager
+    IUserApprovalLogDataStore userApprovalLogDataStore,
+    IEmailTemplateManager emailTemplateManager,
+    IEmailSender emailSender,
+    ILogger<UserApprovalManager> logger) : IUserApprovalManager
 {
     public async Task<ApplicationUser> GetOrCreateUserAsync(string entraObjectId, string displayName, string email)
     {
@@ -113,6 +118,8 @@ public class UserApprovalManager(
             CreatedAt = DateTimeOffset.UtcNow
         });
 
+        await TrySendEmailNotificationAsync(updatedUser, "UserApproved");
+
         return updatedUser;
     }
 
@@ -151,6 +158,8 @@ public class UserApprovalManager(
             Notes = rejectionNotes,
             CreatedAt = DateTimeOffset.UtcNow
         });
+
+        await TrySendEmailNotificationAsync(updatedUser, "UserRejected");
 
         return updatedUser;
     }
@@ -276,5 +285,31 @@ public class UserApprovalManager(
         }
 
         return await userApprovalLogDataStore.GetByUserIdAsync(userId);
+    }
+
+    private async Task TrySendEmailNotificationAsync(ApplicationUser user, string templateName)
+    {
+        if (string.IsNullOrWhiteSpace(user.Email))
+        {
+            logger.LogWarning("Cannot send '{TemplateName}' email: user {UserId} has no email address.", templateName, user.Id);
+            return;
+        }
+
+        var template = await emailTemplateManager.GetTemplateAsync(templateName);
+        if (template is null)
+        {
+            logger.LogWarning("Email template '{TemplateName}' not found. Skipping notification email for user {UserId}.", templateName, user.Id);
+            return;
+        }
+
+        try
+        {
+            var toAddress = new MailAddress(user.Email, user.DisplayName ?? user.Email);
+            await emailSender.QueueEmail(toAddress, template.Subject, template.Body);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to queue '{TemplateName}' email for user {UserId}. The approval action was still processed.", templateName, user.Id);
+        }
     }
 }

@@ -1,5 +1,6 @@
 using System.Reflection;
 
+using Azure.Communication.Email;
 using JosephGuadagno.AzureHelpers.Storage;
 using JosephGuadagno.AzureHelpers.Storage.Interfaces;
 using JosephGuadagno.Broadcasting.Data;
@@ -203,6 +204,11 @@ void ConfigureFunction(IServiceCollection services)
     });
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
+    services.TryAddSingleton(sp =>
+    {
+        var emailSettings = sp.GetRequiredService<IEmailSettings>();
+        return new EmailClient(emailSettings.AzureCommunicationsConnectionString);
+    });
 }
 
 void ConfigureBitly(IServiceCollection services, IConfiguration config)

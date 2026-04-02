@@ -38,6 +38,10 @@ public static class ConfigurationFunctionNames
     public const string BlueskyProcessNewYouTubeDataFired = "BlueskyProcessNewYouTubeDataFired";
     public const string BlueskyProcessScheduledItemFired = "BlueskyProcessScheduledItemFired";
 
+    // Email
+    public const string EmailSendEmail = "EmailSendEmail";
+    public const string EmailSendEmailPoison = "EmailSendEmailPoison";
+
     // Maintenance
     public const string FacebookTokenRefresh = "FacebookTokenRefresh";
     public const string MaintenanceClearOldLogs = "MaintenanceClearOldLogs";

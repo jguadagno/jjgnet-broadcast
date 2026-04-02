@@ -1,7 +1,9 @@
+using System.Net.Mail;
 using FluentAssertions;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace JosephGuadagno.Broadcasting.Managers.Tests;
@@ -11,6 +13,9 @@ public class UserApprovalManagerTests
     private readonly Mock<IApplicationUserDataStore> _mockApplicationUserDataStore;
     private readonly Mock<IRoleDataStore> _mockRoleDataStore;
     private readonly Mock<IUserApprovalLogDataStore> _mockUserApprovalLogDataStore;
+    private readonly Mock<IEmailTemplateManager> _mockEmailTemplateManager;
+    private readonly Mock<IEmailSender> _mockEmailSender;
+    private readonly Mock<ILogger<UserApprovalManager>> _mockLogger;
     private readonly UserApprovalManager _sut;
 
     public UserApprovalManagerTests()
@@ -18,10 +23,16 @@ public class UserApprovalManagerTests
         _mockApplicationUserDataStore = new Mock<IApplicationUserDataStore>();
         _mockRoleDataStore = new Mock<IRoleDataStore>();
         _mockUserApprovalLogDataStore = new Mock<IUserApprovalLogDataStore>();
+        _mockEmailTemplateManager = new Mock<IEmailTemplateManager>();
+        _mockEmailSender = new Mock<IEmailSender>();
+        _mockLogger = new Mock<ILogger<UserApprovalManager>>();
         _sut = new UserApprovalManager(
             _mockApplicationUserDataStore.Object,
             _mockRoleDataStore.Object,
-            _mockUserApprovalLogDataStore.Object);
+            _mockUserApprovalLogDataStore.Object,
+            _mockEmailTemplateManager.Object,
+            _mockEmailSender.Object,
+            _mockLogger.Object);
     }
 
     [Fact]
@@ -456,5 +467,165 @@ public class UserApprovalManagerTests
             .WithParameterName("userId");
         
         _mockRoleDataStore.Verify(x => x.GetRolesForUserAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    // ── Issue #619: email wiring ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task ApproveUserAsync_ValidUser_QueuesApprovalEmail()
+    {
+        // Arrange
+        var userId = 1;
+        var adminUserId = 5;
+        const string userEmail = "approved.user@example.com";
+        var user = new ApplicationUser
+        {
+            Id = userId,
+            EntraObjectId = "test-oid",
+            DisplayName = "Test User",
+            Email = userEmail,
+            ApprovalStatus = ApprovalStatus.Pending.ToString(),
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+        var approvedUser = new ApplicationUser { Id = userId, Email = userEmail, ApprovalStatus = ApprovalStatus.Approved.ToString() };
+        var template = new EmailTemplate { Id = 1, Name = "UserApproved", Subject = "Your account has been approved", Body = "<p>Welcome!</p>" };
+
+        _mockApplicationUserDataStore.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
+        _mockApplicationUserDataStore.Setup(x => x.UpdateAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(approvedUser);
+        _mockUserApprovalLogDataStore.Setup(x => x.CreateAsync(It.IsAny<UserApprovalLog>())).ReturnsAsync(new UserApprovalLog { Id = 1 });
+        _mockEmailTemplateManager.Setup(x => x.GetTemplateAsync("UserApproved")).ReturnsAsync(template);
+        _mockEmailSender.Setup(x => x.QueueEmail(It.IsAny<MailAddress>(), It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _sut.ApproveUserAsync(userId, adminUserId);
+
+        // Assert
+        result.Should().NotBeNull();
+        _mockEmailTemplateManager.Verify(x => x.GetTemplateAsync("UserApproved"), Times.Once);
+        _mockEmailSender.Verify(
+            x => x.QueueEmail(
+                It.Is<MailAddress>(a => a.Address == userEmail),
+                template.Subject,
+                template.Body),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ApproveUserAsync_TemplateNotFound_DoesNotThrow()
+    {
+        // Arrange
+        var userId = 1;
+        var adminUserId = 5;
+        var user = new ApplicationUser
+        {
+            Id = userId, EntraObjectId = "test-oid", DisplayName = "Test User",
+            Email = "user@example.com", ApprovalStatus = ApprovalStatus.Pending.ToString(),
+            CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow
+        };
+        var approvedUser = new ApplicationUser { Id = userId, ApprovalStatus = ApprovalStatus.Approved.ToString() };
+
+        _mockApplicationUserDataStore.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
+        _mockApplicationUserDataStore.Setup(x => x.UpdateAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(approvedUser);
+        _mockUserApprovalLogDataStore.Setup(x => x.CreateAsync(It.IsAny<UserApprovalLog>())).ReturnsAsync(new UserApprovalLog { Id = 1 });
+        _mockEmailTemplateManager.Setup(x => x.GetTemplateAsync("UserApproved")).ReturnsAsync((EmailTemplate?)null);
+
+        // Act
+        Func<Task> act = async () => await _sut.ApproveUserAsync(userId, adminUserId);
+
+        // Assert — null template must log a warning, not throw
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task ApproveUserAsync_TemplateNotFound_DoesNotCallEmailSender()
+    {
+        // Arrange
+        var userId = 1;
+        var adminUserId = 5;
+        var user = new ApplicationUser
+        {
+            Id = userId, EntraObjectId = "test-oid", DisplayName = "Test User",
+            Email = "user@example.com", ApprovalStatus = ApprovalStatus.Pending.ToString(),
+            CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow
+        };
+        var approvedUser = new ApplicationUser { Id = userId, ApprovalStatus = ApprovalStatus.Approved.ToString() };
+
+        _mockApplicationUserDataStore.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
+        _mockApplicationUserDataStore.Setup(x => x.UpdateAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(approvedUser);
+        _mockUserApprovalLogDataStore.Setup(x => x.CreateAsync(It.IsAny<UserApprovalLog>())).ReturnsAsync(new UserApprovalLog { Id = 1 });
+        _mockEmailTemplateManager.Setup(x => x.GetTemplateAsync("UserApproved")).ReturnsAsync((EmailTemplate?)null);
+
+        // Act
+        await _sut.ApproveUserAsync(userId, adminUserId);
+
+        // Assert
+        _mockEmailSender.Verify(
+            x => x.QueueEmail(It.IsAny<MailAddress>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task RejectUserAsync_ValidUser_QueuesRejectionEmail()
+    {
+        // Arrange
+        var userId = 1;
+        var adminUserId = 5;
+        const string rejectionNotes = "Does not meet requirements";
+        const string userEmail = "rejected.user@example.com";
+        var user = new ApplicationUser
+        {
+            Id = userId, EntraObjectId = "test-oid", DisplayName = "Test User",
+            Email = userEmail, ApprovalStatus = ApprovalStatus.Pending.ToString(),
+            CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow
+        };
+        var rejectedUser = new ApplicationUser { Id = userId, Email = userEmail, ApprovalStatus = ApprovalStatus.Rejected.ToString(), ApprovalNotes = rejectionNotes };
+        var template = new EmailTemplate { Id = 2, Name = "UserRejected", Subject = "Your account request was not approved", Body = "<p>Sorry.</p>" };
+
+        _mockApplicationUserDataStore.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
+        _mockApplicationUserDataStore.Setup(x => x.UpdateAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(rejectedUser);
+        _mockUserApprovalLogDataStore.Setup(x => x.CreateAsync(It.IsAny<UserApprovalLog>())).ReturnsAsync(new UserApprovalLog { Id = 2 });
+        _mockEmailTemplateManager.Setup(x => x.GetTemplateAsync("UserRejected")).ReturnsAsync(template);
+        _mockEmailSender.Setup(x => x.QueueEmail(It.IsAny<MailAddress>(), It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _sut.RejectUserAsync(userId, adminUserId, rejectionNotes);
+
+        // Assert
+        result.Should().NotBeNull();
+        _mockEmailTemplateManager.Verify(x => x.GetTemplateAsync("UserRejected"), Times.Once);
+        _mockEmailSender.Verify(
+            x => x.QueueEmail(
+                It.Is<MailAddress>(a => a.Address == userEmail),
+                template.Subject,
+                template.Body),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RejectUserAsync_TemplateNotFound_DoesNotThrow()
+    {
+        // Arrange
+        var userId = 1;
+        var adminUserId = 5;
+        const string rejectionNotes = "Does not meet requirements";
+        var user = new ApplicationUser
+        {
+            Id = userId, EntraObjectId = "test-oid", DisplayName = "Test User",
+            Email = "user@example.com", ApprovalStatus = ApprovalStatus.Pending.ToString(),
+            CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow
+        };
+        var rejectedUser = new ApplicationUser { Id = userId, ApprovalStatus = ApprovalStatus.Rejected.ToString(), ApprovalNotes = rejectionNotes };
+
+        _mockApplicationUserDataStore.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
+        _mockApplicationUserDataStore.Setup(x => x.UpdateAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(rejectedUser);
+        _mockUserApprovalLogDataStore.Setup(x => x.CreateAsync(It.IsAny<UserApprovalLog>())).ReturnsAsync(new UserApprovalLog { Id = 2 });
+        _mockEmailTemplateManager.Setup(x => x.GetTemplateAsync("UserRejected")).ReturnsAsync((EmailTemplate?)null);
+
+        // Act
+        Func<Task> act = async () => await _sut.RejectUserAsync(userId, adminUserId, rejectionNotes);
+
+        // Assert — null template must log a warning, not throw
+        await act.Should().NotThrowAsync();
     }
 }
