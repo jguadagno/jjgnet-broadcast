@@ -340,6 +340,60 @@ When controllers use AutoMapper for DTO mapping:
 
 ---
 
+## Session: 2026-05-[DATE]T[TIME]Z — PR #610 RBAC Test Review & Updates
+
+**Summary:** Reviewed Trinity's 5 RBAC test fixes for PR #610 (Issue #606). Verified all changes correct, added 3 missing GetUserRolesAsync tests to UserApprovalManagerTests, updated AdminControllerTests to reflect DB-level filtering changes. All 44 RBAC tests passing, full test suite: 685 total (634 passed, 51 skipped).
+
+**Trinity's Changes Reviewed:**
+1. ✅ **EntraClaimsTransformationTests.cs** - Added GetUserRolesAsync mock (lines 60-61, 76, 113), new test for rejected users with approval_notes claim (lines 184-234)
+2. ✅ **UserApprovalMiddlewareTests.cs** - No changes needed (uses approval_status claim only)
+3. ⚠️ **UserApprovalManagerTests.cs** - MISSING tests for GetUserRolesAsync method (implementation lines 250-258)
+4. ✅ **AccountControllerTests.cs** - Tests Rejected() action with/without approval_notes claim (lines 31-58, 60-87)
+5. ⚠️ **AdminControllerTests.cs** - Mock setup needed update for Trinity's DB-level filtering (GetUsersByStatusAsync x3 instead of GetAllUsersAsync)
+
+**Tests Added:**
+1. `GetUserRolesAsync_WithExistingUser_ReturnsRoles` - Verifies role list returned for user with roles
+2. `GetUserRolesAsync_WithUserWithNoRoles_ReturnsEmptyList` - Verifies empty list for user without roles
+3. `GetUserRolesAsync_WithInvalidUserId_ThrowsArgumentException` - Verifies userId validation (userId <= 0)
+
+**AdminController Mock Fix:**
+- Changed from: `.Setup(x => x.GetAllUsersAsync()).ReturnsAsync(allUsers)` (in-memory filtering)
+- Changed to: Three separate setups for `.GetUsersByStatusAsync(ApprovalStatus.Pending/Approved/Rejected)` (DB-level filtering)
+- Reflects Trinity's performance improvement: filtering at database layer instead of LINQ client-side
+
+**Verification Results:**
+- ✅ Build: succeeded in 203.6s (310 warnings, baseline unchanged)
+- ✅ Full test suite: 685 total, 634 passed, 51 skipped (integration/network tests), 0 failed
+- ✅ RBAC tests specifically: 44 total, 44 passed, 0 failed
+- ✅ GetUserRolesAsync tests: 3 total, 3 passed
+
+**Files Modified:**
+- `UserApprovalManagerTests.cs`: Added 3 tests for GetUserRolesAsync (63 LOC added)
+- `AdminControllerTests.cs`: Updated Users() test to verify DB-level filtering (29 LOC changed)
+
+**Branch & Commit:**
+- Branch: `squad/rbac-phase1`
+- Commit: 06fbb77
+- Message: "test: update RBAC tests for PR #610 review fixes - GetUserRolesAsync, approval_notes claim, DB-level filtering (#606)"
+- Status: ✅ Pushed to origin
+
+**Trinity's RBAC Implementation Changes (from PR #610):**
+1. Added `GetUserRolesAsync(int userId)` to UserApprovalManager (returns List<Role>)
+2. EntraClaimsTransformation now calls GetUserRolesAsync and adds role claims for approved users
+3. EntraClaimsTransformation adds approval_notes claim for rejected users (displayed on /Account/Rejected)
+4. AdminController.Users() now uses GetUsersByStatusAsync(status) three times instead of GetAllUsersAsync() (DB-level filtering)
+5. All changes backed by unit tests with correct mock setups
+
+**Key Patterns Validated:**
+- GetUserRolesAsync follows manager pattern: validates input (userId > 0), delegates to data store, returns domain model
+- Mock setup for status-specific calls requires separate .Setup() for each status value
+- Approval notes claim read from User.Claims in controller, passed via ViewBag to view
+- DB-level filtering reduces data transfer and improves performance vs client-side LINQ
+
+**Next:** Ready for Joseph to review PR #610 and merge to main.
+
+---
+
 ## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:
 
