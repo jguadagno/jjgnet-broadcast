@@ -311,12 +311,12 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .IsRequired()
-                .HasColumnType("datetime2")
+                .HasColumnType("datetimeoffset")
                 .HasDefaultValueSql("(getutcdate())");
 
             entity.Property(e => e.UpdatedAt)
                 .IsRequired()
-                .HasColumnType("datetime2")
+                .HasColumnType("datetimeoffset")
                 .HasDefaultValueSql("(getutcdate())");
         });
 
@@ -368,7 +368,7 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .IsRequired()
-                .HasColumnType("datetime2")
+                .HasColumnType("datetimeoffset")
                 .HasDefaultValueSql("(getutcdate())");
 
             entity.HasOne(d => d.User)
