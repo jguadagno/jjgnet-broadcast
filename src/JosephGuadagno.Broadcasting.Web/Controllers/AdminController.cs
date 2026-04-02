@@ -171,8 +171,8 @@ public class AdminController : Controller
         var viewModel = new ManageRolesViewModel
         {
             User = _mapper.Map<ApplicationUserViewModel>(user),
-            CurrentRoles = currentRoles,
-            AvailableRoles = allRoles.Where(r => !currentRoleIds.Contains(r.Id)).ToList()
+            CurrentRoles = _mapper.Map<List<RoleViewModel>>(currentRoles),
+            AvailableRoles = _mapper.Map<List<RoleViewModel>>(allRoles.Where(r => !currentRoleIds.Contains(r.Id)).ToList())
         };
 
         return View(viewModel);
@@ -226,6 +226,18 @@ public class AdminController : Controller
             {
                 TempData["ErrorMessage"] = "Could not identify current administrator.";
                 return RedirectToAction("Users");
+            }
+
+            // Guard: prevent self-demotion from Administrator role
+            if (userId == adminUserId.Value)
+            {
+                var userRoles = await _userApprovalManager.GetUserRolesAsync(userId);
+                var roleToRemove = userRoles.FirstOrDefault(r => r.Id == roleId);
+                if (roleToRemove?.Name == RoleNames.Administrator)
+                {
+                    TempData["ErrorMessage"] = "You cannot remove the Administrator role from yourself.";
+                    return RedirectToAction("ManageRoles", new { userId });
+                }
             }
 
             await _userApprovalManager.RemoveRoleAsync(userId, roleId, adminUserId.Value);

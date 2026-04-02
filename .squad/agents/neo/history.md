@@ -297,6 +297,22 @@ Sprint 12 tagged with 13 issues.
 
 ## Learnings
 
+### 2026-07-15: PR #612 — RBAC Phase 2 Follow-up Review
+
+**PR:** [#612](https://github.com/jguadagno/jjgnet-broadcast/pull/612)
+**Verdict: APPROVE ✅** (posted as comment — GitHub blocks self-approval on owner account)
+**Branch:** `squad/rbac-phase2-followup` → `main`
+
+All 4 post-Phase-2 items correctly resolved. Build: 0 errors. 101/101 Web tests passing.
+
+**Non-blocking observations flagged:**
+1. GET Add/Edit/Delete forms in `EngagementsController` are accessible to Viewers — UX issue (form visible but POST blocked). Recommend adding `RequireContributor` to GET forms in a follow-up.
+2. 3-space indent on `AvailableRoles` in `ManageRolesViewModel.cs` line 21 — cosmetic only.
+
+**Pattern reinforced:** Self-demotion guards should use the constant (`RoleNames.Administrator`), not a magic string. Guard should be a no-op (not an error) when the target role isn't in the user's current roles — let the underlying service handle that case.
+
+---
+
 ### 2026-07-15: Issue Specs Batch — #591 #575 #574 #573
 
 Full specs written to `.squad/sessions/issue-specs-591-575-574-573.md`.
@@ -437,6 +453,40 @@ Integration test projects for social managers should:
 **Next Steps:** Establish similar integration test projects for Facebook, LinkedIn, and Bluesky managers.
 
 
+
+---
+
+### 2026-04-02: Post-RBAC Issue Triage
+
+**Task:** Review all open GitHub issues to determine which were resolved by PRs #610 (RBAC Phase 1) and #611 (RBAC Phase 2).
+
+**Scope:** 34 open issues reviewed, plus confirmed closure status of 6 RBAC issues (#602-607).
+
+**Key findings:**
+
+1. **RBAC issues properly closed** — All six issues (#602-607) were automatically closed by GitHub when PRs #610 and #611 merged (using "Closes #XXX" syntax in PR bodies). No manual action needed.
+
+2. **No open issues resolved by recent work** — None of the 34 remaining open issues were addressed by PRs #610, #611, or other recent commits. All remain valid open work items.
+
+3. **Staging issues** — No open issues reference staging deployment. User noted staging environment was removed by PR #583; confirmed no cleanup needed.
+
+4. **MSAL exception handling (#85) — still open (correctly)** — Sub-issues #544-548 were implemented in PRs #551-555, but all were reverted by PR #572 due to "MSAL auth broken". Original problem remains unresolved.
+
+5. **AutoMapper and paging issues — all already closed** — Issues #575, #574, #573, #314, #591 were resolved by PRs #598, #595, #597, #594, #592 respectively. Already properly closed.
+
+6. **Social handle fields (#53, #54, #536, #537) — all open (correctly)** — Partial implementation exists:
+   - Engagement model has: `BlueSkyHandle`, `ConferenceTwitterHandle`, `ConferenceHashtag`
+   - Talk model has: `BlueSkyHandle`
+   - **Missing:** Talk `TwitterHandle`, Engagement `ConferenceBlueskyHandle`, Engagement `ConferenceLinkedInHandle`
+   - Note: PR #611 fixed a TalkViewModel mapping bug for BlueSkyHandle but did not add new fields.
+
+**Issues closed by this triage:** 0
+
+**Recommendation:** Group social handle work (#53, #54, #536, #537) into a single PR adding all missing fields consistently across all layers (Domain, EF entities, DTOs, ViewModels, Controllers, Views).
+
+**Detailed report:** `.squad/decisions/inbox/neo-issue-triage-2026-04-02.md`
+
+---
 
 ## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:

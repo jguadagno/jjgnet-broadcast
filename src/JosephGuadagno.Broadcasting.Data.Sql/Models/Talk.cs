@@ -27,7 +27,7 @@ public partial class Talk
 
     public string BlueSkyHandle { get; set; }
 
-    public string CreatedByEntraOid { get; set; }
+    public string? CreatedByEntraOid { get; set; }
 
     public virtual Engagement Engagement { get; set; }
 }
