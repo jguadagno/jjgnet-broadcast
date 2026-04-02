@@ -1,4 +1,5 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
@@ -16,7 +17,7 @@ public class AdminController : Controller
     private readonly IUserApprovalManager _userApprovalManager;
     private readonly IMapper _mapper;
     private readonly ILogger<AdminController> _logger;
-    private const string EntraObjectIdClaimType = "http://schemas.microsoft.com/identity/claims/objectidentifier";
+    private const string EntraObjectIdClaimType = ApplicationClaimTypes.EntraObjectId;
 
     /// <summary>
     /// Constructor for the AdminController
@@ -42,16 +43,14 @@ public class AdminController : Controller
     {
         try
         {
-            var allUsers = await _userApprovalManager.GetAllUsersAsync();
-            
             var viewModel = new UserListViewModel
             {
                 PendingUsers = _mapper.Map<List<ApplicationUserViewModel>>(
-                    allUsers.Where(u => u.ApprovalStatus == ApprovalStatus.Pending.ToString()).ToList()),
+                    await _userApprovalManager.GetUsersByStatusAsync(ApprovalStatus.Pending)),
                 ApprovedUsers = _mapper.Map<List<ApplicationUserViewModel>>(
-                    allUsers.Where(u => u.ApprovalStatus == ApprovalStatus.Approved.ToString()).ToList()),
+                    await _userApprovalManager.GetUsersByStatusAsync(ApprovalStatus.Approved)),
                 RejectedUsers = _mapper.Map<List<ApplicationUserViewModel>>(
-                    allUsers.Where(u => u.ApprovalStatus == ApprovalStatus.Rejected.ToString()).ToList())
+                    await _userApprovalManager.GetUsersByStatusAsync(ApprovalStatus.Rejected))
             };
 
             return View(viewModel);

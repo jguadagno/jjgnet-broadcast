@@ -2,22 +2,106 @@
 
 ## Summary
 
-Backend dev. Primary domain: API layer, pagination, DTOs, message templates, scope audits.
+Backend dev. Primary domain: API layer, pagination, DTOs, message templates, scope audits, RBAC backend implementation.
 
-**Current focus:** Pagination implementation (#316) and scope audit regression tests (#527).
+**Current focus:** RBAC Phase 1 backend (#604) complete and pushed.
 
 **Key learnings:**
 - Always use feature branch + PR workflow; never commit directly to main
 - Check if concurrent PRs already fixed issue before implementing
 - Scriban templates are database-backed via MessageTemplates table
 - Sealed 3rd-party types require typed null in tests, not Mock.Of<T>()
+- NO EF migrations — SQL schema managed by raw scripts in `scripts/database/migrations/`
+- ALL mapping uses AutoMapper profiles (registered in Program.cs)
+- Paging/sorting/filtering at DB level only (not in managers/controllers)
 
 **Implementation summary:**
 - Pagination: 8 list endpoints updated with page/pageSize params (defaults: 1, 25)
 - Message templates: 20 templates seeded (5 per platform) matching existing fallback logic
 - Scope audit: All 34 endpoints verified for fine-grained scope support (Talks.View/All dual pattern)
+- RBAC Phase 1: 24 files created (domain models, repositories, managers, AutoMapper profiles, service registrations)
 
 ## Recent Work
+
+### 2026-04-02 — PR #610 Review Fixes (Issues #602–#605)
+
+**Status:** ✅ COMPLETE | Branch squad/rbac-phase1
+
+**What I Fixed:**
+
+**Fix #1 — Middleware Ordering (HIGH):**
+- Moved `UseUserApprovalGate()` in `Program.cs` to run AFTER `UseAuthentication()` but BEFORE `UseAuthorization()`. Previously placed after auth, so pending/rejected users hit 403 instead of redirect.
+
+**Fix #2 — DB-level Filtering (MEDIUM):**
+- Added `GetUsersByStatusAsync(ApprovalStatus status)` to `IUserApprovalManager` and `UserApprovalManager` (delegates to `applicationUserDataStore.GetByApprovalStatusAsync()` — DB-level `.Where()`)
+- Removed in-memory `.Where()` filtering from `AdminController.Users()`. Now makes 3 separate DB calls (one per status).
+
+**Fix #3 — Clean Architecture (MEDIUM):**
+- Removed `IRoleDataStore` direct injection from `EntraClaimsTransformation`
+- Now uses `userApprovalManager.GetUserRolesAsync(user.Id)` — proper Manager layer call
+- Updated tests accordingly
+
+**Fix #4 — Dead Code / approval_notes (LOW):**
+- Added `approval_notes` claim injection in `EntraClaimsTransformation` for rejected users (reads `user.ApprovalNotes`). `AccountController.Rejected()` now works correctly.
+
+**Fix #5 — Duplicated Constant (LOW):**
+- Created `Domain/Constants/ApplicationClaimTypes.cs` with `EntraObjectId`, `ApprovalStatus`, `ApprovalNotes` constants
+- Replaced all hardcoded claim type strings in `EntraClaimsTransformation`, `AdminController`, `AccountController`
+
+**Build:** ✅ 0 errors
+**Tests:** ✅ EntraClaimsTransformationTests updated — removed `IRoleDataStore` mock, added `approval_notes` assertion for rejected user test
+
+---
+
+### 2026-04-01 — Issue #604: RBAC Phase 1 Backend Implementation Complete (Trinity)
+
+**Status:** ✅ COMPLETE | Branch pushed to origin/squad/rbac-phase1
+
+**What I Implemented:**
+
+**Domain Layer (7 files):**
+- Created ApplicationUser, Role, UserRole, UserApprovalLog models in Domain/Models
+- Created ApprovalStatus, ApprovalAction enums in Domain/Enums
+- Created RoleNames constants in Domain/Constants (Administrator, Contributor, Viewer)
+- Created IApplicationUserDataStore, IRoleDataStore, IUserApprovalLogDataStore interfaces
+- Created IUserApprovalManager interface with approve/reject/role-assign operations
+
+**Data Layer (8 files):**
+- Created EF entities (Models/ApplicationUser, Role, UserRole, UserApprovalLog)
+- Added DbSets to BroadcastingContext (ApplicationUsers, Roles, UserRoles, UserApprovalLogs)
+- Configured entity relationships in OnModelCreating (composite PKs, FKs, unique indexes)
+- Created ApplicationUserDataStore, RoleDataStore, UserApprovalLogDataStore implementations
+- Created RbacProfile AutoMapper profile with custom role mapping logic
+
+**Manager Layer (1 file):**
+- Created UserApprovalManager with full business logic:
+  - GetOrCreateUserAsync: idempotent user registration with auto-logging
+  - ApproveUserAsync/RejectUserAsync: status updates with audit trail
+  - AssignRoleAsync/RemoveRoleAsync: role management with validation and logging
+  - GetUserRolesAsync, GetAllRolesAsync, GetUserAuditLogAsync: query methods
+
+**Service Registrations (3 files):**
+- Added Scoped registrations in Api/Program.cs, Functions/Program.cs, Web/Program.cs
+- All RBAC services follow existing DI patterns
+
+**Build Status:** ✅ 0 errors, only expected CS8618 nullable warnings
+
+**Key Patterns Matched:**
+- NO EF migrations (schema by Morpheus in SQL scripts)
+- Primary constructor pattern: `ClassName(Dep1 dep1, Dep2 dep2)`
+- Repository naming: `I[Entity]DataStore` (not IRepository)
+- Enum-to-string conversion in manager layer
+- Navigation properties in EF entities, ignored in AutoMapper reverse mappings
+- Non-clustered PKs, unique indexes, SQL default values in DbContext
+- Full audit logging for all user actions (Registered, Approved, Rejected, RoleAssigned, RoleRemoved)
+
+**Decision Document:** `.squad/decisions/inbox/trinity-rbac-phase1-decisions.md`
+
+**Branch:** squad/rbac-phase1 (commit a61d223)
+
+**Next Phase:** API endpoints and Web UI (issues #605, #606 — not in this PR)
+
+---
 
 ### 2026-03-21: Sprint 11 Closeout — All PRs Merged
 

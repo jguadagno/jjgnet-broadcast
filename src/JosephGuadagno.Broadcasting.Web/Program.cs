@@ -143,10 +143,8 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthentication();
-app.UseAuthorization();
-
-// User approval gate - must be after authentication/authorization
 app.UseUserApprovalGate();
+app.UseAuthorization();
 
 app.UseSession();
 

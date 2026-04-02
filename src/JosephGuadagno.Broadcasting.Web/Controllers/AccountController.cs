@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,7 +27,7 @@ public class AccountController : Controller
     public IActionResult Rejected()
     {
         // Try to get approval notes from the user's claims
-        var approvalNotesClaim = User.FindFirst("approval_notes");
+        var approvalNotesClaim = User.FindFirst(ApplicationClaimTypes.ApprovalNotes);
         if (approvalNotesClaim != null)
         {
             ViewBag.ApprovalNotes = approvalNotesClaim.Value;

@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
 namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -34,6 +35,13 @@ public interface IUserApprovalManager
     /// </summary>
     /// <returns>List of all users</returns>
     Task<List<ApplicationUser>> GetAllUsersAsync();
+
+    /// <summary>
+    /// Gets users filtered by approval status at the database level
+    /// </summary>
+    /// <param name="status">The approval status to filter by</param>
+    /// <returns>List of users with the specified status</returns>
+    Task<List<ApplicationUser>> GetUsersByStatusAsync(ApprovalStatus status);
 
     /// <summary>
     /// Approves a user

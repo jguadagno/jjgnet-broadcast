@@ -31,6 +31,30 @@
 - **Dependency:** Blocked on Trinity completing #574 API layer work.
 
 
+### 2026-04-01 — Issue #605 (RBAC Phase 1 UI)
+- **Task:** Implement user approval UI for RBAC Phase 1
+- **Created:**
+  - AccountController: PendingApproval and Rejected pages (AllowAnonymous)
+  - AdminController: Users list, ApproveUser, RejectUser actions (RequireAdministrator)
+  - ViewModels: UserListViewModel, ApplicationUserViewModel, RejectUserViewModel
+  - Views: Account/PendingApproval, Account/Rejected, Admin/Users
+  - AutoMapper mapping: ApplicationUser → ApplicationUserViewModel
+  - Admin nav link in _Layout.cshtml (visible to Administrator role only)
+- **Patterns learned:**
+  - AllowAnonymous required on Account pages accessed by Pending/Rejected users (before approval gate)
+  - Bootstrap collapse component for inline forms (rejection notes)
+  - Get current user ID from Entra oid claim via IUserApprovalManager.GetUserAsync()
+  - Server-side validation of required fields (rejection notes) before calling manager
+  - CSRF protection on all POST forms with @Html.AntiForgeryToken()
+  - Three-section layout for categorized lists (Pending/Approved/Rejected)
+  - Badge counts in card headers for quick overview
+  - Consistent use of `<local-time>` component for date display
+- **Build status:** Clean build, 0 errors (322 warnings expected baseline)
+- **Commit:** 0e43b09 on squad/rbac-phase1 branch
+- **Decision log:** `.squad/decisions/inbox/switch-rbac-ui-decisions.md`
+- **Dependencies:** Trinity (#604 - IUserApprovalManager), Ghost (#603 - UserApprovalMiddleware, policies)
+
+
 ## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:
 

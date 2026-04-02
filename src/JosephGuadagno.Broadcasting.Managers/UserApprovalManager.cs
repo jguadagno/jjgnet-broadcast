@@ -69,6 +69,11 @@ public class UserApprovalManager(
         return await applicationUserDataStore.GetAllAsync();
     }
 
+    public async Task<List<ApplicationUser>> GetUsersByStatusAsync(ApprovalStatus status)
+    {
+        return await applicationUserDataStore.GetByApprovalStatusAsync(status.ToString());
+    }
+
     public async Task<ApplicationUser> ApproveUserAsync(int userId, int adminUserId)
     {
         if (userId <= 0)

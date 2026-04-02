@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using FluentAssertions;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -11,20 +12,15 @@ namespace JosephGuadagno.Broadcasting.Web.Tests;
 public class EntraClaimsTransformationTests
 {
     private readonly Mock<IUserApprovalManager> _mockUserApprovalManager;
-    private readonly Mock<IRoleDataStore> _mockRoleDataStore;
     private readonly Mock<ILogger<EntraClaimsTransformation>> _mockLogger;
     private readonly EntraClaimsTransformation _sut;
-    private const string EntraObjectIdClaimType = "http://schemas.microsoft.com/identity/claims/objectidentifier";
-    private const string ApprovalStatusClaimType = "approval_status";
 
     public EntraClaimsTransformationTests()
     {
         _mockUserApprovalManager = new Mock<IUserApprovalManager>();
-        _mockRoleDataStore = new Mock<IRoleDataStore>();
         _mockLogger = new Mock<ILogger<EntraClaimsTransformation>>();
         _sut = new EntraClaimsTransformation(
             _mockUserApprovalManager.Object,
-            _mockRoleDataStore.Object,
             _mockLogger.Object);
     }
 
@@ -38,7 +34,7 @@ public class EntraClaimsTransformationTests
         
         var claims = new List<Claim>
         {
-            new Claim(EntraObjectIdClaimType, entraObjectId),
+            new Claim(ApplicationClaimTypes.EntraObjectId, entraObjectId),
             new Claim(ClaimTypes.Name, displayName),
             new Claim(ClaimTypes.Email, email)
         };
@@ -60,8 +56,8 @@ public class EntraClaimsTransformationTests
             .Setup(x => x.GetOrCreateUserAsync(entraObjectId, displayName, email))
             .ReturnsAsync(newUser);
 
-        _mockRoleDataStore
-            .Setup(x => x.GetRolesForUserAsync(newUser.Id))
+        _mockUserApprovalManager
+            .Setup(x => x.GetUserRolesAsync(newUser.Id))
             .ReturnsAsync(new List<Role>());
 
         // Act
@@ -72,12 +68,12 @@ public class EntraClaimsTransformationTests
         result.Identity.Should().NotBeNull();
         result.Identity!.IsAuthenticated.Should().BeTrue();
         
-        var approvalStatusClaim = result.FindFirst(ApprovalStatusClaimType);
+        var approvalStatusClaim = result.FindFirst(ApplicationClaimTypes.ApprovalStatus);
         approvalStatusClaim.Should().NotBeNull();
         approvalStatusClaim!.Value.Should().Be(ApprovalStatus.Pending.ToString());
         
         _mockUserApprovalManager.Verify(x => x.GetOrCreateUserAsync(entraObjectId, displayName, email), Times.Once);
-        _mockRoleDataStore.Verify(x => x.GetRolesForUserAsync(newUser.Id), Times.Once);
+        _mockUserApprovalManager.Verify(x => x.GetUserRolesAsync(newUser.Id), Times.Once);
     }
 
     [Fact]
@@ -90,7 +86,7 @@ public class EntraClaimsTransformationTests
         
         var claims = new List<Claim>
         {
-            new Claim(EntraObjectIdClaimType, entraObjectId),
+            new Claim(ApplicationClaimTypes.EntraObjectId, entraObjectId),
             new Claim(ClaimTypes.Name, displayName),
             new Claim(ClaimTypes.Email, email)
         };
@@ -112,8 +108,8 @@ public class EntraClaimsTransformationTests
             .Setup(x => x.GetOrCreateUserAsync(entraObjectId, displayName, email))
             .ReturnsAsync(pendingUser);
 
-        _mockRoleDataStore
-            .Setup(x => x.GetRolesForUserAsync(pendingUser.Id))
+        _mockUserApprovalManager
+            .Setup(x => x.GetUserRolesAsync(pendingUser.Id))
             .ReturnsAsync(new List<Role>());
 
         // Act
@@ -121,7 +117,7 @@ public class EntraClaimsTransformationTests
 
         // Assert
         result.Should().NotBeNull();
-        var approvalStatusClaim = result.FindFirst(ApprovalStatusClaimType);
+        var approvalStatusClaim = result.FindFirst(ApplicationClaimTypes.ApprovalStatus);
         approvalStatusClaim.Should().NotBeNull();
         approvalStatusClaim!.Value.Should().Be(ApprovalStatus.Pending.ToString());
     }
@@ -136,7 +132,7 @@ public class EntraClaimsTransformationTests
         
         var claims = new List<Claim>
         {
-            new Claim(EntraObjectIdClaimType, entraObjectId),
+            new Claim(ApplicationClaimTypes.EntraObjectId, entraObjectId),
             new Claim(ClaimTypes.Name, displayName),
             new Claim(ClaimTypes.Email, email)
         };
@@ -164,8 +160,8 @@ public class EntraClaimsTransformationTests
             .Setup(x => x.GetOrCreateUserAsync(entraObjectId, displayName, email))
             .ReturnsAsync(approvedUser);
 
-        _mockRoleDataStore
-            .Setup(x => x.GetRolesForUserAsync(approvedUser.Id))
+        _mockUserApprovalManager
+            .Setup(x => x.GetUserRolesAsync(approvedUser.Id))
             .ReturnsAsync(roles);
 
         // Act
@@ -174,7 +170,7 @@ public class EntraClaimsTransformationTests
         // Assert
         result.Should().NotBeNull();
         
-        var approvalStatusClaim = result.FindFirst(ApprovalStatusClaimType);
+        var approvalStatusClaim = result.FindFirst(ApplicationClaimTypes.ApprovalStatus);
         approvalStatusClaim.Should().NotBeNull();
         approvalStatusClaim!.Value.Should().Be(ApprovalStatus.Approved.ToString());
         
@@ -185,16 +181,17 @@ public class EntraClaimsTransformationTests
     }
 
     [Fact]
-    public async Task TransformAsync_WithRejectedUser_AddsRejectedStatusClaim()
+    public async Task TransformAsync_WithRejectedUser_AddsRejectedStatusAndApprovalNotesClaims()
     {
         // Arrange
         var entraObjectId = "rejected-oid-22222";
         var displayName = "Rejected User";
         var email = "rejected@example.com";
+        var rejectionNotes = "Does not meet requirements";
         
         var claims = new List<Claim>
         {
-            new Claim(EntraObjectIdClaimType, entraObjectId),
+            new Claim(ApplicationClaimTypes.EntraObjectId, entraObjectId),
             new Claim(ClaimTypes.Name, displayName),
             new Claim(ClaimTypes.Email, email)
         };
@@ -208,7 +205,7 @@ public class EntraClaimsTransformationTests
             DisplayName = displayName,
             Email = email,
             ApprovalStatus = ApprovalStatus.Rejected.ToString(),
-            ApprovalNotes = "Does not meet requirements",
+            ApprovalNotes = rejectionNotes,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };
@@ -217,8 +214,8 @@ public class EntraClaimsTransformationTests
             .Setup(x => x.GetOrCreateUserAsync(entraObjectId, displayName, email))
             .ReturnsAsync(rejectedUser);
 
-        _mockRoleDataStore
-            .Setup(x => x.GetRolesForUserAsync(rejectedUser.Id))
+        _mockUserApprovalManager
+            .Setup(x => x.GetUserRolesAsync(rejectedUser.Id))
             .ReturnsAsync(new List<Role>());
 
         // Act
@@ -227,9 +224,13 @@ public class EntraClaimsTransformationTests
         // Assert
         result.Should().NotBeNull();
         
-        var approvalStatusClaim = result.FindFirst(ApprovalStatusClaimType);
+        var approvalStatusClaim = result.FindFirst(ApplicationClaimTypes.ApprovalStatus);
         approvalStatusClaim.Should().NotBeNull();
         approvalStatusClaim!.Value.Should().Be(ApprovalStatus.Rejected.ToString());
+
+        var approvalNotesClaim = result.FindFirst(ApplicationClaimTypes.ApprovalNotes);
+        approvalNotesClaim.Should().NotBeNull();
+        approvalNotesClaim!.Value.Should().Be(rejectionNotes);
     }
 
     [Fact]
@@ -249,7 +250,7 @@ public class EntraClaimsTransformationTests
 
         // Assert
         result.Should().BeSameAs(principal);
-        result.FindFirst(ApprovalStatusClaimType).Should().BeNull();
+        result.FindFirst(ApplicationClaimTypes.ApprovalStatus).Should().BeNull();
         
         _mockUserApprovalManager.Verify(x => x.GetOrCreateUserAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -279,10 +280,10 @@ public class EntraClaimsTransformationTests
         var entraObjectId = "test-oid-33333";
         var claims = new List<Claim>
         {
-            new Claim(EntraObjectIdClaimType, entraObjectId),
+            new Claim(ApplicationClaimTypes.EntraObjectId, entraObjectId),
             new Claim(ClaimTypes.Name, "Test User"),
             new Claim(ClaimTypes.Email, "test@example.com"),
-            new Claim(ApprovalStatusClaimType, ApprovalStatus.Approved.ToString()) // Already transformed
+            new Claim(ApplicationClaimTypes.ApprovalStatus, ApprovalStatus.Approved.ToString()) // Already transformed
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         var principal = new ClaimsPrincipal(identity);
@@ -307,7 +308,7 @@ public class EntraClaimsTransformationTests
         
         var claims = new List<Claim>
         {
-            new Claim(EntraObjectIdClaimType, entraObjectId),
+            new Claim(ApplicationClaimTypes.EntraObjectId, entraObjectId),
             new Claim(ClaimTypes.Name, displayName),
             new Claim(ClaimTypes.Email, email)
         };
@@ -323,7 +324,7 @@ public class EntraClaimsTransformationTests
 
         // Assert
         result.Should().BeSameAs(principal);
-        result.FindFirst(ApprovalStatusClaimType).Should().BeNull();
+        result.FindFirst(ApplicationClaimTypes.ApprovalStatus).Should().BeNull();
         
         _mockUserApprovalManager.Verify(x => x.GetOrCreateUserAsync(entraObjectId, displayName, email), Times.Once);
     }

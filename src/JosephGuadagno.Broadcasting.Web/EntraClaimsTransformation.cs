@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 
@@ -10,12 +11,8 @@ namespace JosephGuadagno.Broadcasting.Web;
 /// </summary>
 public class EntraClaimsTransformation(
     IUserApprovalManager userApprovalManager,
-    IRoleDataStore roleDataStore,
     ILogger<EntraClaimsTransformation> logger) : IClaimsTransformation
 {
-    private const string EntraObjectIdClaimType = "http://schemas.microsoft.com/identity/claims/objectidentifier";
-    private const string ApprovalStatusClaimType = "approval_status";
-
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
         // Only process authenticated users
@@ -25,13 +22,13 @@ public class EntraClaimsTransformation(
         }
 
         // Check if we've already transformed this principal (avoid duplicate processing)
-        if (principal.HasClaim(c => c.Type == ApprovalStatusClaimType))
+        if (principal.HasClaim(c => c.Type == ApplicationClaimTypes.ApprovalStatus))
         {
             return principal;
         }
 
         // Extract Entra object ID
-        var objectIdClaim = principal.FindFirst(EntraObjectIdClaimType);
+        var objectIdClaim = principal.FindFirst(ApplicationClaimTypes.EntraObjectId);
         if (objectIdClaim is null)
         {
             logger.LogWarning("Entra object ID claim not found for authenticated user. Identity: {IdentityName}", 
@@ -60,10 +57,17 @@ public class EntraClaimsTransformation(
             var claimsIdentity = new ClaimsIdentity(principal.Identity);
 
             // Add approval status claim
-            claimsIdentity.AddClaim(new Claim(ApprovalStatusClaimType, user.ApprovalStatus));
+            claimsIdentity.AddClaim(new Claim(ApplicationClaimTypes.ApprovalStatus, user.ApprovalStatus));
 
-            // Load and add role claims
-            var roles = await roleDataStore.GetRolesForUserAsync(user.Id);
+            // Add approval notes for rejected users so the rejection page can display them
+            if (user.ApprovalStatus == ApprovalStatus.Rejected.ToString() &&
+                !string.IsNullOrWhiteSpace(user.ApprovalNotes))
+            {
+                claimsIdentity.AddClaim(new Claim(ApplicationClaimTypes.ApprovalNotes, user.ApprovalNotes));
+            }
+
+            // Load and add role claims via manager (not data store directly)
+            var roles = await userApprovalManager.GetUserRolesAsync(user.Id);
             foreach (var role in roles)
             {
                 claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, role.Name));
@@ -85,3 +89,4 @@ public class EntraClaimsTransformation(
         }
     }
 }
+
