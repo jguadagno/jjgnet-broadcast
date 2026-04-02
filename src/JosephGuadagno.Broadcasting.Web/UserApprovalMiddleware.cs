@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 
 namespace JosephGuadagno.Broadcasting.Web;
@@ -8,7 +9,6 @@ namespace JosephGuadagno.Broadcasting.Web;
 /// </summary>
 public class UserApprovalMiddleware(RequestDelegate next, ILogger<UserApprovalMiddleware> logger)
 {
-    private const string ApprovalStatusClaimType = "approval_status";
     private const string PendingApprovalPath = "/Account/PendingApproval";
     private const string RejectedPath = "/Account/Rejected";
 
@@ -46,7 +46,7 @@ public class UserApprovalMiddleware(RequestDelegate next, ILogger<UserApprovalMi
         }
 
         // Extract approval status claim
-        var approvalStatusClaim = context.User.FindFirst(ApprovalStatusClaimType);
+        var approvalStatusClaim = context.User.FindFirst(ApplicationClaimTypes.ApprovalStatus);
         if (approvalStatusClaim is null)
         {
             // No approval status claim yet - might be during initial login

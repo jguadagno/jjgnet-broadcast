@@ -89,6 +89,31 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[Roles] WHERE [Name] = 'Viewer')
 GO
 
 -- ============================================================
+-- CHECK constraints (enforce enum values at DB level)
+-- ============================================================
+IF NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE name = 'CK_ApplicationUsers_ApprovalStatus'
+      AND parent_object_id = OBJECT_ID('dbo.ApplicationUsers'))
+BEGIN
+    ALTER TABLE [dbo].[ApplicationUsers]
+        ADD CONSTRAINT [CK_ApplicationUsers_ApprovalStatus]
+            CHECK ([ApprovalStatus] IN ('Pending', 'Approved', 'Rejected'));
+END
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE name = 'CK_UserApprovalLog_Action'
+      AND parent_object_id = OBJECT_ID('dbo.UserApprovalLog'))
+BEGIN
+    ALTER TABLE [dbo].[UserApprovalLog]
+        ADD CONSTRAINT [CK_UserApprovalLog_Action]
+            CHECK ([Action] IN ('Registered', 'Approved', 'Rejected', 'RoleAssigned', 'RoleRemoved'));
+END
+GO
+
+-- ============================================================
 -- ADMINISTRATOR SEED (manual step — DO NOT automate)
 -- ============================================================
 -- After running this migration, seed the initial Administrator

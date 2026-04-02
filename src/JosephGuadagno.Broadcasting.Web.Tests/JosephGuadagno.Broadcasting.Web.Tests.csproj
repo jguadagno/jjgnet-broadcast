@@ -55,6 +55,7 @@
     <Using Include="Xunit" />
   </ItemGroup>  
   <ItemGroup>
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Web\JosephGuadagno.Broadcasting.Web.csproj" />
   </ItemGroup>
   <ItemGroup>

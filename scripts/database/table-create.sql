@@ -191,7 +191,9 @@ create table dbo.ApplicationUsers
     Email          nvarchar(200) null,
     ApprovalStatus nvarchar(20)  not null
         constraint DF_ApplicationUsers_ApprovalStatus
-            default ('Pending'),
+            default ('Pending')
+        constraint CK_ApplicationUsers_ApprovalStatus
+            check (ApprovalStatus in ('Pending', 'Approved', 'Rejected')),
     ApprovalNotes  nvarchar(500) null,
     CreatedAt      datetime2     not null
         constraint DF_ApplicationUsers_CreatedAt
@@ -228,7 +230,9 @@ create table dbo.UserApprovalLog
     AdminUserId int           null
         constraint FK_UserApprovalLog_Admin
             references ApplicationUsers,
-    Action      nvarchar(20)  not null,
+    Action      nvarchar(20)  not null
+        constraint CK_UserApprovalLog_Action
+            check (Action in ('Registered', 'Approved', 'Rejected', 'RoleAssigned', 'RoleRemoved')),
     Notes       nvarchar(500) null,
     CreatedAt   datetime2     not null
         constraint DF_UserApprovalLog_CreatedAt

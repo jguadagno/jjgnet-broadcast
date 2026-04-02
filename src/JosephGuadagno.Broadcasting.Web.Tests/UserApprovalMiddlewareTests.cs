@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using FluentAssertions;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -12,7 +13,6 @@ public class UserApprovalMiddlewareTests
     private readonly Mock<ILogger<UserApprovalMiddleware>> _mockLogger;
     private readonly Mock<RequestDelegate> _mockNext;
     private readonly UserApprovalMiddleware _sut;
-    private const string ApprovalStatusClaimType = "approval_status";
 
     public UserApprovalMiddlewareTests()
     {
@@ -49,7 +49,7 @@ public class UserApprovalMiddlewareTests
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, "Test User"),
-            new Claim(ApprovalStatusClaimType, ApprovalStatus.Approved.ToString())
+            new Claim(ApplicationClaimTypes.ApprovalStatus, ApprovalStatus.Approved.ToString())
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         context.User = new ClaimsPrincipal(identity);
@@ -72,7 +72,7 @@ public class UserApprovalMiddlewareTests
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, "Pending User"),
-            new Claim(ApprovalStatusClaimType, ApprovalStatus.Pending.ToString())
+            new Claim(ApplicationClaimTypes.ApprovalStatus, ApprovalStatus.Pending.ToString())
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         context.User = new ClaimsPrincipal(identity);
@@ -97,7 +97,7 @@ public class UserApprovalMiddlewareTests
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, "Rejected User"),
-            new Claim(ApprovalStatusClaimType, ApprovalStatus.Rejected.ToString())
+            new Claim(ApplicationClaimTypes.ApprovalStatus, ApprovalStatus.Rejected.ToString())
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         context.User = new ClaimsPrincipal(identity);
@@ -121,7 +121,7 @@ public class UserApprovalMiddlewareTests
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, "Pending User"),
-            new Claim(ApprovalStatusClaimType, ApprovalStatus.Pending.ToString())
+            new Claim(ApplicationClaimTypes.ApprovalStatus, ApprovalStatus.Pending.ToString())
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         context.User = new ClaimsPrincipal(identity);
@@ -143,7 +143,7 @@ public class UserApprovalMiddlewareTests
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, "Rejected User"),
-            new Claim(ApprovalStatusClaimType, ApprovalStatus.Rejected.ToString())
+            new Claim(ApplicationClaimTypes.ApprovalStatus, ApprovalStatus.Rejected.ToString())
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         context.User = new ClaimsPrincipal(identity);
@@ -172,7 +172,7 @@ public class UserApprovalMiddlewareTests
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, "Pending User"),
-            new Claim(ApprovalStatusClaimType, ApprovalStatus.Pending.ToString())
+            new Claim(ApplicationClaimTypes.ApprovalStatus, ApprovalStatus.Pending.ToString())
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         context.User = new ClaimsPrincipal(identity);
@@ -194,7 +194,7 @@ public class UserApprovalMiddlewareTests
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, "Pending User"),
-            new Claim(ApprovalStatusClaimType, ApprovalStatus.Pending.ToString())
+            new Claim(ApplicationClaimTypes.ApprovalStatus, ApprovalStatus.Pending.ToString())
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         context.User = new ClaimsPrincipal(identity);

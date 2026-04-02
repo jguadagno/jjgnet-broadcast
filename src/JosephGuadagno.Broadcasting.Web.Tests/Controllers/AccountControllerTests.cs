@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using FluentAssertions;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -34,7 +35,7 @@ public class AccountControllerTests
         var approvalNotes = "Your registration does not meet our requirements";
         var claims = new List<Claim>
         {
-            new Claim("approval_notes", approvalNotes)
+            new Claim(ApplicationClaimTypes.ApprovalNotes, approvalNotes)
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         var principal = new ClaimsPrincipal(identity);
