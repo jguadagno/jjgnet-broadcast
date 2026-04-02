@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
@@ -51,7 +52,7 @@ public class FacebookManager : IFacebookManager
                 .Replace("{link}", link)
                 .Replace("{access_token}", _facebookApplicationSettings.PageAccessToken);
         
-            _logger.LogTrace("Url: `{Url}`", url);
+            _logger.LogTrace("Url: `{Url}`", RedactSensitiveQueryParams(url));
             var response = await _httpClient.PostAsync(url,null);
 
             if (response.IsSuccessStatusCode)
@@ -127,7 +128,7 @@ public class FacebookManager : IFacebookManager
                 .Replace("{picture}", System.Web.HttpUtility.UrlEncode(picture))
                 .Replace("{access_token}", _facebookApplicationSettings.PageAccessToken);
 
-            _logger.LogTrace("Url: `{Url}`", url);
+            _logger.LogTrace("Url: `{Url}`", RedactSensitiveQueryParams(url));
             var response = await _httpClient.PostAsync(url, null);
 
             if (response.IsSuccessStatusCode)
@@ -181,7 +182,7 @@ public class FacebookManager : IFacebookManager
                 .Replace("{client_secret}", _facebookApplicationSettings.AppSecret)
                 .Replace("{fb_exchange_token}", tokenToRefresh);
 
-            _logger.LogTrace("Url: `{Url}`", url);
+            _logger.LogTrace("Url: `{Url}`", RedactSensitiveQueryParams(url));
             var response = await _httpClient.GetAsync(url);
             
             if (response.IsSuccessStatusCode)
@@ -218,4 +219,10 @@ public class FacebookManager : IFacebookManager
             throw;
         }
     }
+
+    private static readonly Regex SensitiveQueryParamPattern =
+        new(@"(access_token|client_secret|fb_exchange_token)=[^&]*", RegexOptions.Compiled);
+
+    private static string RedactSensitiveQueryParams(string url) =>
+        SensitiveQueryParamPattern.Replace(url, "$1=***REDACTED***");
 }
