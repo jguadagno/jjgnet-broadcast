@@ -23,6 +23,21 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 
 ## Recent Work
 
+### 2026-04-02 — Fix: Register BroadcastingContext in Web DI Container (#603 #604)
+
+**Status:** ✅ COMPLETE | Branch squad/rbac-phase1
+
+**Problem:** Web project crashed at startup with DI validation errors:
+`Unable to resolve service for type 'BroadcastingContext' while attempting to activate 'ApplicationUserDataStore'`
+
+**Root cause:** Web's `Program.cs` registered RBAC data stores and managers (which depend on `BroadcastingContext`) but never registered `BroadcastingContext` itself. The API project did this via `builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer")`.
+
+**Fix:** Added `builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer");` to Web `Program.cs` directly before `ConfigureApplication(builder.Services)`. No new packages or project references needed — `Aspire.Microsoft.EntityFrameworkCore.SqlServer` and the `Data.Sql` project reference were already present, and AppHost already injected `ConnectionStrings__JJGNetDatabaseSqlServer` into the Web project.
+
+**Build:** ✅ 0 errors
+
+---
+
 ### 2026-04-02 — PR #610 Review Fixes (Issues #602–#605)
 
 **Status:** ✅ COMPLETE | Branch squad/rbac-phase1

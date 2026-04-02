@@ -57,6 +57,9 @@ builder.Services.AddSession(options =>
 var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
 ConfigureTelemetryAndLogging(builder.Services, settings.LoggingStorageAccount, fullyQualifiedLogFile, "Web");
 
+// Register BroadcastingContext for RBAC data stores
+builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer");
+
 // Register DI services
 ConfigureApplication(builder.Services);
 
