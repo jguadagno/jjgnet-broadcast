@@ -26,7 +26,7 @@ var sqlText = string.Concat(
     " ",
     File.ReadAllText(Path.Combine(path, @"../../scripts/database/table-create.sql")),
     " ",
-    File.ReadAllText(Path.Combine(path, @"../../scripts/database/data-create.sql")));
+    File.ReadAllText(Path.Combine(path, @"../../scripts/database/data-seed.sql")));
 
 var db = sql.AddDatabase("JJGNet")
     .WithCreationScript(sqlText);
