@@ -1,5 +1,6 @@
 using System.Reflection;
 
+using Azure.Storage.Queues;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
@@ -60,10 +61,14 @@ builder.Configuration.AddEnvironmentVariables();
 var settings =
     new JosephGuadagno.Broadcasting.Functions.Models.Settings
     {
-        LoggingStorageAccount = null!, ShortenedDomainToUse = null!
+        LoggingStorageAccount = null!, ShortenedDomainToUse = null!,
+        FromAddress = null!, FromDisplayName = null!,
+        ReplyToAddress = null!, ReplyToDisplayName = null!,
+        AzureCommunicationsConnectionString = null!
     };
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
+builder.Services.TryAddSingleton<IEmailSettings>(settings);
 
 var randomPostSettings = new RandomPostSettings
 {
@@ -186,6 +191,16 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();
     services.TryAddScoped<IEmailTemplateDataStore, EmailTemplateDataStore>();
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
+
+    // Email
+    services.TryAddSingleton(s =>
+    {
+        var configuration = s.GetRequiredService<IConfiguration>();
+        var connectionString = configuration.GetConnectionString("QueueStorage") ?? "UseDevelopmentStorage=true";
+        return new QueueServiceClient(connectionString);
+    });
+    services.TryAddScoped<IEmailSender, EmailSender>();
+    services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
 }
 
 void ConfigureBitly(IServiceCollection services, IConfiguration config)

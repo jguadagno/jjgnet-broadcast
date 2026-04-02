@@ -11,6 +11,7 @@ using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
+using Azure.Storage.Queues;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -33,10 +34,16 @@ builder.AddServiceDefaults();
 var settings = new Settings
 {
     StaticContentRootUrl = null!,
-    LoggingStorageAccount = null!
+    LoggingStorageAccount = null!,
+    FromAddress = null!,
+    FromDisplayName = null!,
+    ReplyToAddress = null!,
+    ReplyToDisplayName = null!,
+    AzureCommunicationsConnectionString = null!
 };
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
+builder.Services.TryAddSingleton<IEmailSettings>(settings);
 
 var linkedInSettings = new LinkedInSettings();
 builder.Configuration.Bind("LinkedIn", linkedInSettings);
@@ -188,6 +195,16 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();
     services.TryAddScoped<IEmailTemplateDataStore, EmailTemplateDataStore>();
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
+
+    // Email
+    services.TryAddSingleton(s =>
+    {
+        var configuration = s.GetRequiredService<IConfiguration>();
+        var connectionString = configuration.GetConnectionString("QueueStorage") ?? "UseDevelopmentStorage=true";
+        return new QueueServiceClient(connectionString);
+    });
+    services.TryAddScoped<IEmailSender, EmailSender>();
+    services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
 
     ConfigureKeyVault(services);
 }
