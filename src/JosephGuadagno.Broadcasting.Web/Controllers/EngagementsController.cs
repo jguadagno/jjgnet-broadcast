@@ -4,14 +4,17 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Web;
+using System.Security.Claims;
 
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
 
 /// <summary>
 /// This is the controller for managing the engagements.
 /// </summary>
+[Authorize(Policy = "RequireContributor")]
 public class EngagementsController : Controller
 {
     private readonly IEngagementService _engagementService;
@@ -128,6 +131,16 @@ public class EngagementsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
+        var engagement = await _engagementService.GetEngagementAsync(id);
+        if (engagement == null) return NotFound();
+
+        if (!User.IsInRole(RoleNames.Administrator))
+        {
+            var currentUserOid = User.FindFirstValue("oid");
+            if (engagement.CreatedByEntraOid != currentUserOid)
+                return Forbid();
+        }
+
         var result = await _engagementService.DeleteEngagementAsync(id);
         if (result)
         {
@@ -135,8 +148,7 @@ public class EngagementsController : Controller
             return RedirectToAction("Index");
         }
 
-        var engagement = await _engagementService.GetEngagementAsync(id);
-        var engagementViewModel = engagement != null ? _mapper.Map<EngagementViewModel>(engagement) : null;
+        var engagementViewModel = _mapper.Map<EngagementViewModel>(engagement);
         ModelState.AddModelError(string.Empty, "Failed to delete the engagement.");
         return View(engagementViewModel);
     }
@@ -185,6 +197,7 @@ public class EngagementsController : Controller
     public async Task<RedirectToActionResult> Add(EngagementViewModel engagementViewModel)
     {
         var engagementToAdd = _mapper.Map<Domain.Models.Engagement>(engagementViewModel);
+        engagementToAdd.CreatedByEntraOid = User.FindFirstValue("oid");
         var savedEngagement = await _engagementService.SaveEngagementAsync(engagementToAdd);
         if (savedEngagement == null)
         {

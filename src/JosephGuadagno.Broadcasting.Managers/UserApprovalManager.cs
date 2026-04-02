@@ -59,6 +59,12 @@ public class UserApprovalManager(
         return await applicationUserDataStore.GetByEntraObjectIdAsync(entraObjectId);
     }
 
+    public async Task<ApplicationUser?> GetUserByIdAsync(int userId)
+    {
+        if (userId <= 0) throw new ArgumentException("User ID must be greater than 0", nameof(userId));
+        return await applicationUserDataStore.GetByIdAsync(userId);
+    }
+
     public async Task<List<ApplicationUser>> GetPendingUsersAsync()
     {
         return await applicationUserDataStore.GetByApprovalStatusAsync(ApprovalStatus.Pending.ToString());

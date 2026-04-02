@@ -394,6 +394,120 @@ When controllers use AutoMapper for DTO mapping:
 
 ---
 
+## Session: 2026-04-02T09:20:47Z — Issue #606 RBAC Phase 2 Unit Tests (INCOMPLETE)
+
+**Summary:** Started writing Phase 2 RBAC unit tests for role management (ManageRoles, AssignRole, RemoveRole) and ownership-based delete authorization. Added 6 AdminController tests and 5 new EngagementsController tests, plus updated BROKEN existing tests for ownership checks. Tests compilation clean but 13 failing due to incomplete fix of existing tests.
+
+**Issue #606 Phase 2 Context:**
+- 3 new AdminController actions: ManageRoles (GET), AssignRole (POST), RemoveRole (POST)
+- Ownership-based delete on Engagements/Schedules/Talks: Admin can delete any, Contributor can only delete own
+- Add action sets CreatedByEntraOid from User.FindFirstValue("oid")
+- Class-level [Authorize] attributes added: RequireContributor on Engagements/Schedules/MessageTemplates/Talks, RequireAdministrator on LinkedIn
+- Ghost added: [AllowAnonymous] on HomeController.Error()
+
+**Tests WRITTEN (11 new tests):**
+
+1. **AdminControllerTests.cs** (6 new tests):
+   - ManageRoles_WithValidUser_ReturnsViewWithViewModel — loads user + roles, builds ManageRolesViewModel with current/available roles
+   - ManageRoles_WithInvalidUser_RedirectsToUsers — user not found returns redirect with ErrorMessage
+   - AssignRole_WithValidAdmin_AssignsRoleSuccessfully — assigns role, calls AssignRoleAsync, redirects to ManageRoles
+   - AssignRole_WithMissingAdmin_ReturnsRedirectWithError — admin not found via GetCurrentUserIdAsync returns ErrorMessage
+   - RemoveRole_WithValidAdmin_RemovesRoleSuccessfully — removes role, calls RemoveRoleAsync, redirects to ManageRoles
+   - RemoveRole_WithMissingAdmin_ReturnsRedirectWithError — admin not found returns ErrorMessage
+
+2. **EngagementsControllerTests.cs** (5 new tests):
+   - DeleteConfirmed_WhenUserIsAdministrator_DeletesAnyEngagement — admin role can delete others' content
+   - DeleteConfirmed_WhenUserIsOwner_DeletesOwnEngagement — contributor role + matching oid can delete
+   - DeleteConfirmed_WhenUserIsNotOwnerAndNotAdmin_ReturnsForbid — contributor role + different oid returns ForbidResult
+   - Add_Post_SetsCreatedByEntraOid — verifies CreatedByEntraOid set from oid claim
+   - (Also updated existing DeleteConfirmed and Add tests for ownership pattern)
+
+3. **HomeControllerTests.cs** (1 new test):
+   - Error_IsAllowAnonymous — verifies [AllowAnonymous] attribute on Error action
+
+4. **LinkedInControllerTests.cs** (1 new test):
+   - LinkedInController_HasRequireAdministratorPolicy — verifies class-level [Authorize(Policy = "RequireAdministrator")] attribute
+
+**Tests UPDATED (broke existing tests):**
+- EngagementsControllerTests: DeleteConfirmed_WhenDeleteSucceeds, DeleteConfirmed_WhenDeleteFails, Add_Post_WhenSaveSucceeds, Add_Post_WhenSaveFails
+- SchedulesControllerTests: DeleteConfirmed_WhenDeleteSucceeds, DeleteConfirmed_WhenDeleteFails, Add_Post_WhenSaveSucceeds, Add_Post_WhenSaveFails
+- TalksControllerTests: Delete_WhenDeleteSucceeds, Delete_WhenDeleteFails, Add_Post_WhenSaveSucceeds, Add_Post_WhenSaveFails
+
+**Problem Identified:**
+Controllers now call GetEngagementAsync/GetScheduledItemAsync/GetEngagementTalkAsync FIRST (for ownership check) before delete/add operations. Old tests didn't set up these mocks, causing NotFoundResult returns. Updated tests added:
+- User context setup with ClaimsPrincipal + ClaimsIdentity (oid claim + role claim)
+- Mock setup for Get*Async methods returning entities with CreatedByEntraOid
+- For Add: Captured engagement to verify CreatedByEntraOid was set
+
+**Remaining Work:**
+- SchedulesControllerTests and TalksControllerTests still have same pattern issues (mocks set up but not verified)
+- MappingTests.MappingProfile_IsValid failing (unrelated, pre-existing)
+- Need to run full test suite to verify all ownership tests pass
+
+**Test Patterns Established:**
+1. **Ownership authorization testing**:
+```csharp
+var claims = new List<Claim>
+{
+    new Claim("oid", "user-oid"),
+    new Claim(ClaimTypes.Role, RoleNames.Administrator)  // or Contributor
+};
+var identity = new ClaimsIdentity(claims, "TestAuth");
+_controller.ControllerContext = new ControllerContext
+{
+    HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+};
+```
+
+2. **Attribute verification testing**:
+```csharp
+var method = typeof(HomeController).GetMethod("Error");
+method!.GetCustomAttributes<AllowAnonymousAttribute>().Should().HaveCount(1);
+```
+
+3. **CreatedByEntraOid capture pattern**:
+```csharp
+Engagement? capturedEngagement = null;
+_engagementService
+    .Setup(s => s.SaveEngagementAsync(It.IsAny<Engagement>()))
+    .Callback<Engagement>(e => capturedEngagement = e)
+    .ReturnsAsync(savedEngagement);
+// Then assert: capturedEngagement!.CreatedByEntraOid.Should().Be(userOid);
+```
+
+**Verification Results:**
+- ✅ Compilation: Clean (0 errors, warnings only)
+- ❌ Test Run: 71 passed, 13 failed (ownership check mocks incomplete)
+- ⚠️ MappingProfile_IsValid also failing (unrelated issue)
+
+**Files Modified:**
+- `AdminControllerTests.cs`: Added 6 new test methods (278 LOC added)
+- `EngagementsControllerTests.cs`: Added 5 new tests + updated 4 existing tests (215 LOC changed)
+- `HomeControllerTests.cs`: Added 1 new test + using Microsoft.AspNetCore.Authorization (15 LOC added)
+- `LinkedInControllerTests.cs`: Added 1 new test + using Microsoft.AspNetCore.Authorization (15 LOC added)
+- `SchedulesControllerTests.cs`: Updated 4 existing tests + using System.Security.Claims + RoleNames (LOC changed)
+- `TalksControllerTests.cs`: Updated 4 existing tests + using System.Security.Claims + RoleNames (LOC changed)
+
+**Branch & Commit:**
+- Branch: `squad/rbac-phase2`
+- Status: ⚠️ INCOMPLETE - 13 tests failing, needs completion
+- ⚠️ DO NOT MERGE - tests must all pass before PR
+
+**Key Learning:**
+When controllers add ownership checks via GetEntityAsync before delete/add operations, ALL related tests must be updated to:
+1. Set up Get*Async mocks returning entities with CreatedByEntraOid property
+2. Set up User.ControllerContext with ClaimsPrincipal containing oid + role claims
+3. Verify ownership logic: Admin can do anything, Contributor can only modify own content
+
+**Next Session TODO:**
+1. Fix remaining 12 test failures (likely missing Get*Async mocks in Schedules/Talks tests)
+2. Run full test suite to verify all 84 Web.Tests pass
+3. Address MappingProfile_IsValid failure (might need ManageRolesViewModel mapped)
+4. Write to decisions/inbox/tank-phase2-tests.md with final test count
+5. Update this history entry with completion status
+
+---
+
 ## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:
 

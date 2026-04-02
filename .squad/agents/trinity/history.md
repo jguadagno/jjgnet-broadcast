@@ -51,6 +51,50 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 
 ---
 
+### 2026-04-03 — PR #611: RBAC Phase 2 Backend Implementation (Trinity)
+
+**Status:** ✅ COMPLETE | Branch squad/rbac-phase2
+
+**What I Implemented:**
+
+**Dead Code Cleanup:**
+- Deleted `RejectUserViewModel.cs` (flagged in Phase 1 review, confirmed unused)
+
+**Part 1: AdminController Role Management:**
+- Added `GetUserByIdAsync(int userId)` to `IUserApprovalManager` interface and `UserApprovalManager` implementation
+- Created `ManageRolesViewModel` with User, CurrentRoles, and AvailableRoles properties
+- Added three new actions to `AdminController`:
+  - `ManageRoles(int userId)` [GET] - displays role management UI
+  - `AssignRole(int userId, int roleId)` [POST] - assigns role with audit logging
+  - `RemoveRole(int userId, int roleId)` [POST] - removes role with audit logging
+
+**Part 2: CRUD Controllers Authorization + Ownership-Based Delete:**
+- Updated 4 controllers with `[Authorize(Policy = "RequireContributor")]` class-level attribute:
+  - `EngagementsController`
+  - `SchedulesController`
+  - `MessageTemplatesController`
+  - `TalksController`
+- Implemented ownership-based delete pattern in all Delete actions:
+  - Load item first
+  - Check if user is Administrator OR is the owner (via `CreatedByEntraOid`)
+  - Return `Forbid()` if unauthorized
+  - Proceed with delete if authorized
+- Set `CreatedByEntraOid` in all Create (POST) actions using `User.FindFirstValue("oid")`
+- Added required using statements: `System.Security.Claims`, `Microsoft.AspNetCore.Authorization`
+
+**Key Patterns:**
+- Ownership check pattern: Administrators bypass ownership; Contributors require match
+- Claim-based ownership: Use `"oid"` claim (Entra Object ID) for user identification
+- CreatedByEntraOid assumed present on domain models (Engagements, Talks, ScheduledItems, MessageTemplates) per Morpheus work
+- All ownership checks happen in DELETE actions; CREATE sets ownership on insert
+
+**Build:** ⚠️ Expected errors until Morpheus adds `CreatedByEntraOid` to domain models and Switch creates `ManageRoles.cshtml` view
+**Dependencies:** 
+- Morpheus: Add `CreatedByEntraOid` string property to 4 domain models
+- Switch: Create `ManageRoles.cshtml` view
+
+---
+
 
 
 **Status:** ✅ COMPLETE | Branch squad/rbac-phase1

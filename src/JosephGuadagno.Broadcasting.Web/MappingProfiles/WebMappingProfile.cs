@@ -13,13 +13,17 @@ public class WebMappingProfile: Profile
     /// </summary>
     public WebMappingProfile()
     {
-        CreateMap<Models.EngagementViewModel, Domain.Models.Engagement>();
-        CreateMap<Models.TalkViewModel, Domain.Models.Talk>();
+        CreateMap<Models.EngagementViewModel, Domain.Models.Engagement>()
+            .ForMember(destination => destination.CreatedByEntraOid, options => options.Ignore());
+        CreateMap<Models.TalkViewModel, Domain.Models.Talk>()
+            .ForMember(destination => destination.CreatedByEntraOid, options => options.Ignore());
         CreateMap<Models.ScheduledItemViewModel, Domain.Models.ScheduledItem>()
             .ForMember(
                 destination => destination.ItemType,
-                options => options.MapFrom(source => Enum.Parse<ScheduledItemType>(source.ItemTableName)));
-        CreateMap<Models.MessageTemplateViewModel, Domain.Models.MessageTemplate>();
+                options => options.MapFrom(source => Enum.Parse<ScheduledItemType>(source.ItemTableName)))
+            .ForMember(destination => destination.CreatedByEntraOid, options => options.Ignore());
+        CreateMap<Models.MessageTemplateViewModel, Domain.Models.MessageTemplate>()
+            .ForMember(destination => destination.CreatedByEntraOid, options => options.Ignore());
 
         CreateMap<Domain.Models.Engagement, Models.EngagementViewModel>()
             .ForMember(destination => destination.TimeZones, options => options.Ignore());

@@ -2,6 +2,7 @@
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models.LinkedIn;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
@@ -9,6 +10,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// Handles the LinkedIn OAuth2 flow
 /// </summary>
+[Authorize(Policy = "RequireAdministrator")]
 public class LinkedInController : Controller
 {
     private readonly HttpClient _httpClient;

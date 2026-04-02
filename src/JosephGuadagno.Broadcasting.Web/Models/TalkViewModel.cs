@@ -60,4 +60,9 @@ public class TalkViewModel
     /// </summary>
     public int? EngagementId { get; set; }
 
+    /// <summary>
+    /// The Bluesky handle associated with this talk
+    /// </summary>
+    public string? BlueSkyHandle { get; set; }
+
 }

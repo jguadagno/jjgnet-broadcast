@@ -116,6 +116,7 @@
                                 <th>Display Name</th>
                                 <th>Email</th>
                                 <th>Registered On</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -125,6 +126,13 @@
                                     <td>@user.DisplayName</td>
                                     <td>@user.Email</td>
                                     <td><local-time value="@user.CreatedAt" /></td>
+                                    <td>
+                                        <a asp-action="ManageRoles" asp-route-userId="@user.Id" 
+                                           class="btn btn-sm btn-primary" 
+                                           title="Manage user roles">
+                                            <i class="bi bi-person-badge me-1"></i>Manage Roles
+                                        </a>
+                                    </td>
                                 </tr>
                             }
                         </tbody>

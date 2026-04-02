@@ -1,0 +1,170 @@
+@model JosephGuadagno.Broadcasting.Web.Models.ManageRolesViewModel
+
+@{
+    ViewData["Title"] = "Manage User Roles";
+}
+
+<h1>
+    <i class="bi bi-person-badge me-2"></i>Manage User Roles
+</h1>
+
+<!-- User Information Card -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">
+            <i class="bi bi-person me-2"></i>User Information
+        </h3>
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Display Name:</dt>
+            <dd class="col-sm-9">@Model.User.DisplayName</dd>
+            
+            <dt class="col-sm-3">Email:</dt>
+            <dd class="col-sm-9">@Model.User.Email</dd>
+            
+            <dt class="col-sm-3">Status:</dt>
+            <dd class="col-sm-9">
+                @switch (Model.User.ApprovalStatus)
+                {
+                    case "Approved":
+                        <span class="badge bg-success">Approved</span>
+                        break;
+                    case "Pending":
+                        <span class="badge bg-warning text-dark">Pending</span>
+                        break;
+                    case "Rejected":
+                        <span class="badge bg-danger">Rejected</span>
+                        break;
+                    default:
+                        <span class="badge bg-secondary">Unknown</span>
+                        break;
+                }
+            </dd>
+        </dl>
+    </div>
+</div>
+
+<!-- Current Roles Section -->
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        <h3 class="mb-0">
+            <i class="bi bi-shield-check me-2"></i>Current Roles 
+            <span class="badge bg-dark">@Model.CurrentRoles.Count</span>
+        </h3>
+    </div>
+    <div class="card-body">
+        @if (Model.CurrentRoles.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Role Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var role in Model.CurrentRoles)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@role.Name</strong>
+                                </td>
+                                <td>
+                                    <form asp-action="RemoveRole" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="userId" value="@Model.User.Id" />
+                                        <input type="hidden" name="roleId" value="@role.Id" />
+                                        <button type="submit" class="btn btn-sm btn-danger" 
+                                                onclick="return confirm('Are you sure you want to remove the @role.Name role from @Model.User.DisplayName?');"
+                                                title="Remove this role from user">
+                                            <i class="bi bi-x-circle me-1"></i>Remove
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="text-muted mb-0">
+                <i class="bi bi-info-circle me-2"></i>This user has no roles assigned.
+            </p>
+        }
+    </div>
+</div>
+
+<!-- Available Roles Section -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h3 class="mb-0">
+            <i class="bi bi-plus-circle me-2"></i>Available Roles 
+            <span class="badge bg-dark">@Model.AvailableRoles.Count</span>
+        </h3>
+    </div>
+    <div class="card-body">
+        @if (Model.AvailableRoles.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Role Name</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var role in Model.AvailableRoles)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@role.Name</strong>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(role.Description))
+                                    {
+                                        <span>@role.Description</span>
+                                    }
+                                    else
+                                    {
+                                        <em class="text-muted">No description</em>
+                                    }
+                                </td>
+                                <td>
+                                    <form asp-action="AssignRole" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="userId" value="@Model.User.Id" />
+                                        <input type="hidden" name="roleId" value="@role.Id" />
+                                        <button type="submit" class="btn btn-sm btn-success" 
+                                                onclick="return confirm('Are you sure you want to assign the @role.Name role to @Model.User.DisplayName?');"
+                                                title="Assign this role to user">
+                                            <i class="bi bi-check-circle me-1"></i>Assign
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="text-muted mb-0">
+                <i class="bi bi-info-circle me-2"></i>All available roles have been assigned to this user.
+            </p>
+        }
+    </div>
+</div>
+
+<!-- Back to Users List -->
+<div class="mb-4">
+    <a asp-action="Users" class="btn btn-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back to Users
+    </a>
+</div>

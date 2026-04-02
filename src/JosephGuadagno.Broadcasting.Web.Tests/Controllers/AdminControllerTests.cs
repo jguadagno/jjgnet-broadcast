@@ -360,4 +360,290 @@ public class AdminControllerTests
         _mockUserApprovalManager.Verify(x => x.GetUserAsync(adminEntraOid), Times.Once);
         _mockUserApprovalManager.Verify(x => x.ApproveUserAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
+
+    [Fact]
+    public async Task ManageRoles_WithValidUser_ReturnsViewWithViewModel()
+    {
+        // Arrange
+        var userId = 1;
+        var user = new ApplicationUser
+        {
+            Id = userId,
+            EntraObjectId = "user-oid",
+            DisplayName = "Test User",
+            Email = "test@example.com",
+            ApprovalStatus = ApprovalStatus.Approved.ToString(),
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        var currentRoles = new List<Role>
+        {
+            new Role { Id = 1, Name = "Contributor", Description = "Can contribute" }
+        };
+
+        var allRoles = new List<Role>
+        {
+            new Role { Id = 1, Name = "Contributor", Description = "Can contribute" },
+            new Role { Id = 2, Name = "Administrator", Description = "Full access" }
+        };
+
+        var userViewModel = new ApplicationUserViewModel { Id = userId, DisplayName = "Test User" };
+
+        _mockUserApprovalManager
+            .Setup(x => x.GetUserByIdAsync(userId))
+            .ReturnsAsync(user);
+
+        _mockUserApprovalManager
+            .Setup(x => x.GetUserRolesAsync(userId))
+            .ReturnsAsync(currentRoles);
+
+        _mockUserApprovalManager
+            .Setup(x => x.GetAllRolesAsync())
+            .ReturnsAsync(allRoles);
+
+        _mockMapper
+            .Setup(x => x.Map<ApplicationUserViewModel>(user))
+            .Returns(userViewModel);
+
+        // Act
+        var result = await _sut.ManageRoles(userId);
+
+        // Assert
+        result.Should().BeOfType<ViewResult>();
+        var viewResult = result as ViewResult;
+        viewResult.Should().NotBeNull();
+
+        var model = viewResult!.Model as ManageRolesViewModel;
+        model.Should().NotBeNull();
+        model!.User.Should().Be(userViewModel);
+        model.CurrentRoles.Should().HaveCount(1);
+        model.AvailableRoles.Should().HaveCount(1);
+        model.AvailableRoles.First().Id.Should().Be(2);
+
+        _mockUserApprovalManager.Verify(x => x.GetUserByIdAsync(userId), Times.Once);
+        _mockUserApprovalManager.Verify(x => x.GetUserRolesAsync(userId), Times.Once);
+        _mockUserApprovalManager.Verify(x => x.GetAllRolesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task ManageRoles_WithInvalidUser_RedirectsToUsers()
+    {
+        // Arrange
+        var userId = 999;
+
+        _mockUserApprovalManager
+            .Setup(x => x.GetUserByIdAsync(userId))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        // Act
+        var result = await _sut.ManageRoles(userId);
+
+        // Assert
+        result.Should().BeOfType<RedirectToActionResult>();
+        var redirectResult = result as RedirectToActionResult;
+        redirectResult.Should().NotBeNull();
+        redirectResult!.ActionName.Should().Be("Users");
+
+        _sut.TempData["ErrorMessage"].Should().Be("User not found.");
+
+        _mockUserApprovalManager.Verify(x => x.GetUserByIdAsync(userId), Times.Once);
+        _mockUserApprovalManager.Verify(x => x.GetUserRolesAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AssignRole_WithValidAdmin_AssignsRoleSuccessfully()
+    {
+        // Arrange
+        var userId = 1;
+        var roleId = 2;
+        var adminUserId = 5;
+        var adminEntraOid = "admin-oid-12345";
+
+        var adminUser = new ApplicationUser
+        {
+            Id = adminUserId,
+            EntraObjectId = adminEntraOid,
+            DisplayName = "Admin User",
+            Email = "admin@example.com",
+            ApprovalStatus = ApprovalStatus.Approved.ToString(),
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        var claims = new List<Claim>
+        {
+            new Claim(EntraObjectIdClaimType, adminEntraOid)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(identity)
+            }
+        };
+
+        _mockUserApprovalManager
+            .Setup(x => x.GetUserAsync(adminEntraOid))
+            .ReturnsAsync(adminUser);
+
+        _mockUserApprovalManager
+            .Setup(x => x.AssignRoleAsync(userId, roleId, adminUserId))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _sut.AssignRole(userId, roleId);
+
+        // Assert
+        result.Should().BeOfType<RedirectToActionResult>();
+        var redirectResult = result as RedirectToActionResult;
+        redirectResult.Should().NotBeNull();
+        redirectResult!.ActionName.Should().Be("ManageRoles");
+        redirectResult.RouteValues.Should().ContainKey("userId");
+        redirectResult.RouteValues!["userId"].Should().Be(userId);
+
+        _sut.TempData["SuccessMessage"].Should().Be("Role assigned successfully.");
+
+        _mockUserApprovalManager.Verify(x => x.GetUserAsync(adminEntraOid), Times.Once);
+        _mockUserApprovalManager.Verify(x => x.AssignRoleAsync(userId, roleId, adminUserId), Times.Once);
+    }
+
+    [Fact]
+    public async Task AssignRole_WithMissingAdmin_ReturnsRedirectWithError()
+    {
+        // Arrange
+        var userId = 1;
+        var roleId = 2;
+        var adminEntraOid = "missing-admin-oid";
+
+        var claims = new List<Claim>
+        {
+            new Claim(EntraObjectIdClaimType, adminEntraOid)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(identity)
+            }
+        };
+
+        _mockUserApprovalManager
+            .Setup(x => x.GetUserAsync(adminEntraOid))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        // Act
+        var result = await _sut.AssignRole(userId, roleId);
+
+        // Assert
+        result.Should().BeOfType<RedirectToActionResult>();
+        var redirectResult = result as RedirectToActionResult;
+        redirectResult.Should().NotBeNull();
+        redirectResult!.ActionName.Should().Be("Users");
+
+        _sut.TempData["ErrorMessage"].Should().Be("Could not identify current administrator.");
+
+        _mockUserApprovalManager.Verify(x => x.GetUserAsync(adminEntraOid), Times.Once);
+        _mockUserApprovalManager.Verify(x => x.AssignRoleAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RemoveRole_WithValidAdmin_RemovesRoleSuccessfully()
+    {
+        // Arrange
+        var userId = 1;
+        var roleId = 2;
+        var adminUserId = 5;
+        var adminEntraOid = "admin-oid-67890";
+
+        var adminUser = new ApplicationUser
+        {
+            Id = adminUserId,
+            EntraObjectId = adminEntraOid,
+            DisplayName = "Admin User",
+            Email = "admin@example.com",
+            ApprovalStatus = ApprovalStatus.Approved.ToString(),
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        var claims = new List<Claim>
+        {
+            new Claim(EntraObjectIdClaimType, adminEntraOid)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(identity)
+            }
+        };
+
+        _mockUserApprovalManager
+            .Setup(x => x.GetUserAsync(adminEntraOid))
+            .ReturnsAsync(adminUser);
+
+        _mockUserApprovalManager
+            .Setup(x => x.RemoveRoleAsync(userId, roleId, adminUserId))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _sut.RemoveRole(userId, roleId);
+
+        // Assert
+        result.Should().BeOfType<RedirectToActionResult>();
+        var redirectResult = result as RedirectToActionResult;
+        redirectResult.Should().NotBeNull();
+        redirectResult!.ActionName.Should().Be("ManageRoles");
+        redirectResult.RouteValues.Should().ContainKey("userId");
+        redirectResult.RouteValues!["userId"].Should().Be(userId);
+
+        _sut.TempData["SuccessMessage"].Should().Be("Role removed successfully.");
+
+        _mockUserApprovalManager.Verify(x => x.GetUserAsync(adminEntraOid), Times.Once);
+        _mockUserApprovalManager.Verify(x => x.RemoveRoleAsync(userId, roleId, adminUserId), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemoveRole_WithMissingAdmin_ReturnsRedirectWithError()
+    {
+        // Arrange
+        var userId = 1;
+        var roleId = 2;
+        var adminEntraOid = "missing-admin-oid";
+
+        var claims = new List<Claim>
+        {
+            new Claim(EntraObjectIdClaimType, adminEntraOid)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(identity)
+            }
+        };
+
+        _mockUserApprovalManager
+            .Setup(x => x.GetUserAsync(adminEntraOid))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        // Act
+        var result = await _sut.RemoveRole(userId, roleId);
+
+        // Assert
+        result.Should().BeOfType<RedirectToActionResult>();
+        var redirectResult = result as RedirectToActionResult;
+        redirectResult.Should().NotBeNull();
+        redirectResult!.ActionName.Should().Be("Users");
+
+        _sut.TempData["ErrorMessage"].Should().Be("Could not identify current administrator.");
+
+        _mockUserApprovalManager.Verify(x => x.GetUserAsync(adminEntraOid), Times.Once);
+        _mockUserApprovalManager.Verify(x => x.RemoveRoleAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
 }

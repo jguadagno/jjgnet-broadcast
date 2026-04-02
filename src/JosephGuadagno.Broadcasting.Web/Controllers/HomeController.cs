@@ -54,6 +54,7 @@ public class HomeController(ILogger<HomeController> logger) : Controller
     /// Returns the error page
     /// </summary>
     /// <returns></returns>
+    [AllowAnonymous]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

@@ -1,14 +1,18 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Web;
+using System.Security.Claims;
 
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
 
 /// <summary>
 /// The controller for the talks.
 /// </summary>
+[Authorize(Policy = "RequireContributor")]
 [Route("engagements/{engagementId:int}/[controller]/[action]")]
 public class TalksController : Controller
 {
@@ -93,6 +97,22 @@ public class TalksController : Controller
     [Route("{talkId:int}")]
     public async Task<IActionResult> Delete(int engagementId, int talkId)
     {
+        var talk = await _engagementService.GetEngagementTalkAsync(engagementId, talkId);
+        if (talk == null)
+        {
+            return NotFound();
+        }
+
+        // Ownership check: Administrators can delete anything, Contributors only their own
+        if (!User.IsInRole(RoleNames.Administrator))
+        {
+            var currentUserOid = User.FindFirstValue("oid");
+            if (talk.CreatedByEntraOid != currentUserOid)
+            {
+                return Forbid();
+            }
+        }
+
         var result = await _engagementService.DeleteEngagementTalkAsync(engagementId, talkId);
 
         if (result)
@@ -128,6 +148,7 @@ public class TalksController : Controller
     public async Task<RedirectToActionResult> Add(TalkViewModel talkViewModel)
     {
         var talkToAdd = _mapper.Map<Domain.Models.Talk>(talkViewModel);
+        talkToAdd.CreatedByEntraOid = User.FindFirstValue("oid");
         var savedTalk = await _engagementService.SaveEngagementTalkAsync(talkToAdd);
         if (savedTalk == null)
         {

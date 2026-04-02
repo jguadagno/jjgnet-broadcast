@@ -81,4 +81,9 @@ public class Engagement
     /// The date and time the item was last updated
     /// </summary>
     public DateTimeOffset LastUpdatedOn { get; set; }
+
+    /// <summary>
+    /// The Entra Object ID of the user who created this engagement
+    /// </summary>
+    public string? CreatedByEntraOid { get; set; }
 }

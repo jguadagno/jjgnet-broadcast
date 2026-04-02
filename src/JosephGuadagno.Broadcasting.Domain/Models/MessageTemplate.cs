@@ -24,4 +24,9 @@ public class MessageTemplate
     /// Human-readable description of what the template is for.
     /// </summary>
     public string? Description { get; set; }
+
+    /// <summary>
+    /// The Entra Object ID of the user who created this message template
+    /// </summary>
+    public string? CreatedByEntraOid { get; set; }
 }
