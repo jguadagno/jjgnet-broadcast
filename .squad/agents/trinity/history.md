@@ -23,7 +23,35 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 
 ## Recent Work
 
-### 2026-04-02 — Fix: Register BroadcastingContext in Web DI Container (#603 #604)
+### 2026-04-02 — PR #610 Round 2: ApplicationClaimTypes constants + SQL CHECK constraints (#603 #606)
+
+**Status:** ✅ COMPLETE | Branch squad/rbac-phase1 | Commit d0aa61a
+
+**What I Fixed (blocking):**
+
+**Fix — UserApprovalMiddleware hardcoded constant (HIGH):**
+- Removed `private const string ApprovalStatusClaimType = "approval_status"` from `UserApprovalMiddleware`
+- Added `using JosephGuadagno.Broadcasting.Domain.Constants;`
+- All usages now reference `ApplicationClaimTypes.ApprovalStatus`
+
+**What I Fixed (non-blocking):**
+
+**Fix — Test files hardcoded claim strings (Finding #2):**
+- `UserApprovalMiddlewareTests.cs`: Removed local `ApprovalStatusClaimType` const; all usages replaced with `ApplicationClaimTypes.ApprovalStatus`; added `using` for Domain.Constants
+- `AccountControllerTests.cs`: Replaced `"approval_notes"` literal with `ApplicationClaimTypes.ApprovalNotes`; added `using` for Domain.Constants
+- `EntraClaimsTransformationTests.cs`: Already used `ApplicationClaimTypes.*` — no changes needed
+- Added explicit `ProjectReference` to Domain in `Web.Tests.csproj`
+
+**Fix — SQL CHECK constraints (Finding #3):**
+- `table-create.sql`: Added `CK_ApplicationUsers_ApprovalStatus` CHECK (`'Pending', 'Approved', 'Rejected'`) and `CK_UserApprovalLog_Action` CHECK (`'Registered', 'Approved', 'Rejected', 'RoleAssigned', 'RoleRemoved'`)
+- `migrations/2026-04-02-rbac-user-approval.sql`: Added idempotent `ALTER TABLE ... ADD CONSTRAINT` blocks for both CHECK constraints (guarded with `IF NOT EXISTS` on `sys.check_constraints`)
+
+**Build:** ✅ 0 errors (279 pre-existing warnings)
+**Tests:** ✅ 84/84 Web.Tests passing
+
+---
+
+
 
 **Status:** ✅ COMPLETE | Branch squad/rbac-phase1
 
