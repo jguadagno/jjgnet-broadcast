@@ -201,9 +201,9 @@ public class FacebookManager : IFacebookManager
                     return tokenInfo;
                 }
                 
-                _logger.LogError("Failed to refresh the token. Could not deserialized the response. Response: {Response}", content);
+                _logger.LogError("Failed to refresh the token. Could not deserialize the response. Response length: {Length} bytes.", content?.Length ?? 0);
                 throw new FacebookPostException(
-                    $"Failed to refresh the token. Could not deserialized the response. Response {content}");
+                    $"Failed to refresh the token. Could not deserialize the response. Response length: {content?.Length ?? 0} bytes.");
             }
             
             _logger.LogError(

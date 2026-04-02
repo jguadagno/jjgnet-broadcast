@@ -180,7 +180,7 @@ public class FacebookManagerUnitTests
         // Act & Assert
         var exception = await Assert.ThrowsAsync<FacebookPostException>(
             () => sut.RefreshToken("old_token"));
-        Assert.Contains("Failed to refresh the token. Could not deserialized the response.", exception.Message);
+        Assert.Contains("Failed to refresh the token. Could not deserialize the response.", exception.Message);
     }
 
     [Fact]
