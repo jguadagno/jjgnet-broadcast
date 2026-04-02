@@ -1,5 +1,27 @@
 # Neo — History
 
+## Core Context
+
+**Role:** Lead Reviewer & Architect  
+**Specialty:** Architecture, code reviews, issue triage, sprint planning, patterns, CI/CD  
+**Key Responsibilities:**
+- Pull request review authority (architecture, security, patterns)
+- Issue decomposition and squad assignment
+- Pattern establishment and enforcement
+- Sprint planning and closure
+
+**Established patterns:**
+- DTO/API: request DTOs exclude route params, return Task<ActionResult<T>>, null guard before ToResponse
+- Pagination: guard divide-by-zero, clamp page≥1, pageSize 1–100
+- Database: SaveChangesAsync override covers both variants
+- Testing: sealed types use typed null, never Mock.Of<SealedType>()
+- PR review: always verify diff against body, check issue status before review
+- Authorization: GET form actions must match POST action auth level (fail-fast UX)
+
+**Active issues:** #608 (email notifications), #613 (auth UX fix), RBAC Phase 1/2
+
+**Backlog:** 32 issues triaged across 6 squads. Sprint 11 closure complete.
+
 ## Summary
 
 Lead reviewer and sprint planner. Primary domain: architecture, CI/CD, patterns, code reviews, issue triage.

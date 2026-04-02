@@ -1,5 +1,23 @@
 # Trinity — History
 
+## Core Context
+
+**Role:** Backend Domain Architect  
+**Specialty:** API design, data models, RBAC, database integration, AutoMapper patterns  
+**Key Projects:**
+- RBAC Phase 1 backend (#604) — 24 files, all scopes audited
+- Pagination (#575) — 8 endpoints with paging/sorting at DB level
+- Message templates — 20 seeded templates per platform
+
+**Critical patterns:**
+- NO EF Core migrations — all schema via raw SQL scripts in `scripts/database/migrations/`
+- AutoMapper for all DTOs/models (registered in Program.cs)
+- Paging at DB level only (not in managers/controllers)
+- Message content: database-backed (MessageTemplates table), not hardcoded
+- Sealed 3rd-party types in tests: use typed null, not Mock.Of<T>()
+
+**Active issues:** #615, #616 (email notifications domain layer)
+
 ## Summary
 
 Backend dev. Primary domain: API layer, pagination, DTOs, message templates, scope audits, RBAC backend implementation.
