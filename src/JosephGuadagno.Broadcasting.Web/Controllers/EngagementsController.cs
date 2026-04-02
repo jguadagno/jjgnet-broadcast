@@ -136,8 +136,8 @@ public class EngagementsController : Controller
 
         if (!User.IsInRole(RoleNames.Administrator))
         {
-            var currentUserOid = User.FindFirstValue("oid");
-            if (engagement.CreatedByEntraOid != currentUserOid)
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || engagement.CreatedByEntraOid == null || engagement.CreatedByEntraOid != currentUserOid)
                 return Forbid();
         }
 
@@ -197,7 +197,7 @@ public class EngagementsController : Controller
     public async Task<RedirectToActionResult> Add(EngagementViewModel engagementViewModel)
     {
         var engagementToAdd = _mapper.Map<Domain.Models.Engagement>(engagementViewModel);
-        engagementToAdd.CreatedByEntraOid = User.FindFirstValue("oid");
+        engagementToAdd.CreatedByEntraOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
         var savedEngagement = await _engagementService.SaveEngagementAsync(engagementToAdd);
         if (savedEngagement == null)
         {

@@ -178,7 +178,7 @@ public class SchedulesControllerTests
 
         var claims = new List<Claim>
         {
-            new Claim("oid", "user-oid"),
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid"),
             new Claim(ClaimTypes.Role, RoleNames.Administrator)
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
@@ -208,7 +208,7 @@ public class SchedulesControllerTests
 
         var claims = new List<Claim>
         {
-            new Claim("oid", "user-oid"),
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid"),
             new Claim(ClaimTypes.Role, RoleNames.Administrator)
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
@@ -249,7 +249,7 @@ public class SchedulesControllerTests
 
         var claims = new List<Claim>
         {
-            new Claim("oid", "user-oid")
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid")
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         _controller.ControllerContext = new ControllerContext
@@ -277,7 +277,7 @@ public class SchedulesControllerTests
 
         var claims = new List<Claim>
         {
-            new Claim("oid", "user-oid")
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid")
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         _controller.ControllerContext = new ControllerContext

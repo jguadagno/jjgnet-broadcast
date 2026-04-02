@@ -158,8 +158,8 @@ public class SchedulesController : Controller
 
         if (!User.IsInRole(RoleNames.Administrator))
         {
-            var currentUserOid = User.FindFirstValue("oid");
-            if (scheduledItem.CreatedByEntraOid != currentUserOid)
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || scheduledItem.CreatedByEntraOid == null || scheduledItem.CreatedByEntraOid != currentUserOid)
                 return Forbid();
         }
 
@@ -193,7 +193,7 @@ public class SchedulesController : Controller
     public async Task<RedirectToActionResult> Add(ScheduledItemViewModel scheduledItemViewModel)
     {
         var scheduledItemToAdd = _mapper.Map<Domain.Models.ScheduledItem>(scheduledItemViewModel);
-        scheduledItemToAdd.CreatedByEntraOid = User.FindFirstValue("oid");
+        scheduledItemToAdd.CreatedByEntraOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
         var savedScheduledItem = await _scheduledItemService.SaveScheduledItemAsync(scheduledItemToAdd);
         if (savedScheduledItem == null)
         {

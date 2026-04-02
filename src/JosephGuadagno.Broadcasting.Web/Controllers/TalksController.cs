@@ -88,11 +88,11 @@ public class TalksController : Controller
     }
 
     /// <summary>
-    /// Deletes a talk.
+    /// Shows the delete confirmation page for a talk.
     /// </summary>
     /// <param name="engagementId">The id of the engagement</param>
     /// <param name="talkId">The id of the talk to delete</param>
-    /// <returns>Upon success, redirects to the <see cref="Edit(int,int)"/> view.</returns>
+    /// <returns>The delete confirmation view.</returns>
     [HttpGet]
     [Route("{talkId:int}")]
     public async Task<IActionResult> Delete(int engagementId, int talkId)
@@ -106,8 +106,40 @@ public class TalksController : Controller
         // Ownership check: Administrators can delete anything, Contributors only their own
         if (!User.IsInRole(RoleNames.Administrator))
         {
-            var currentUserOid = User.FindFirstValue("oid");
-            if (talk.CreatedByEntraOid != currentUserOid)
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || talk.CreatedByEntraOid == null || talk.CreatedByEntraOid != currentUserOid)
+            {
+                return Forbid();
+            }
+        }
+
+        var talkViewModel = _mapper.Map<TalkViewModel>(talk);
+        return View(talkViewModel);
+    }
+
+    /// <summary>
+    /// Deletes a talk after confirmation.
+    /// </summary>
+    /// <param name="engagementId">The id of the engagement</param>
+    /// <param name="talkId">The id of the talk to delete</param>
+    /// <returns>Upon success, redirects to the <see cref="Edit(int,int)"/> view.</returns>
+    [HttpPost]
+    [ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    [Route("{talkId:int}")]
+    public async Task<IActionResult> DeleteConfirmed(int engagementId, int talkId)
+    {
+        var talk = await _engagementService.GetEngagementTalkAsync(engagementId, talkId);
+        if (talk == null)
+        {
+            return NotFound();
+        }
+
+        // Ownership check: Administrators can delete anything, Contributors only their own
+        if (!User.IsInRole(RoleNames.Administrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || talk.CreatedByEntraOid == null || talk.CreatedByEntraOid != currentUserOid)
             {
                 return Forbid();
             }
@@ -118,10 +150,13 @@ public class TalksController : Controller
         if (result)
         {
             TempData["SuccessMessage"] = "Talk deleted successfully.";
-            return RedirectToAction("Edit", "Engagements", new {id = engagementId});
+            return RedirectToAction("Edit", "Engagements", new { id = engagementId });
         }
+
         TempData["ErrorMessage"] = "Failed to delete the talk.";
-        return View();
+        var talkViewModel = _mapper.Map<TalkViewModel>(talk);
+        ModelState.AddModelError(string.Empty, "Failed to delete the talk.");
+        return View(talkViewModel);
     }
     
     /// <summary>
@@ -148,7 +183,7 @@ public class TalksController : Controller
     public async Task<RedirectToActionResult> Add(TalkViewModel talkViewModel)
     {
         var talkToAdd = _mapper.Map<Domain.Models.Talk>(talkViewModel);
-        talkToAdd.CreatedByEntraOid = User.FindFirstValue("oid");
+        talkToAdd.CreatedByEntraOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
         var savedTalk = await _engagementService.SaveEngagementTalkAsync(talkToAdd);
         if (savedTalk == null)
         {

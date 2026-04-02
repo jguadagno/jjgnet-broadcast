@@ -174,7 +174,7 @@ public class EngagementsControllerTests
         
         var claims = new List<Claim>
         {
-            new Claim("oid", "user-oid"),
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid"),
             new Claim(ClaimTypes.Role, RoleNames.Administrator)
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
@@ -204,7 +204,7 @@ public class EngagementsControllerTests
 
         var claims = new List<Claim>
         {
-            new Claim("oid", "user-oid"),
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid"),
             new Claim(ClaimTypes.Role, RoleNames.Administrator)
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
@@ -245,7 +245,7 @@ public class EngagementsControllerTests
 
         var claims = new List<Claim>
         {
-            new Claim("oid", "user-oid")
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid")
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         _controller.ControllerContext = new ControllerContext
@@ -273,7 +273,7 @@ public class EngagementsControllerTests
 
         var claims = new List<Claim>
         {
-            new Claim("oid", "user-oid")
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid")
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         _controller.ControllerContext = new ControllerContext
@@ -305,7 +305,7 @@ public class EngagementsControllerTests
 
         var claims = new List<Claim>
         {
-            new Claim("oid", "admin-oid"),
+            new Claim(ApplicationClaimTypes.EntraObjectId, "admin-oid"),
             new Claim(ClaimTypes.Role, RoleNames.Administrator)
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
@@ -340,7 +340,7 @@ public class EngagementsControllerTests
 
         var claims = new List<Claim>
         {
-            new Claim("oid", userOid),
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
             new Claim(ClaimTypes.Role, RoleNames.Contributor)
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
@@ -375,7 +375,7 @@ public class EngagementsControllerTests
 
         var claims = new List<Claim>
         {
-            new Claim("oid", userOid),
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
             new Claim(ClaimTypes.Role, RoleNames.Contributor)
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
@@ -404,7 +404,7 @@ public class EngagementsControllerTests
 
         var claims = new List<Claim>
         {
-            new Claim("oid", userOid)
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid)
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         _controller.ControllerContext = new ControllerContext
