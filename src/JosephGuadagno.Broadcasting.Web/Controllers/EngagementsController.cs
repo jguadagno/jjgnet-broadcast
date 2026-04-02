@@ -72,6 +72,7 @@ public class EngagementsController : Controller
     /// </summary>
     /// <param name="id">The id of the engagement</param>
     /// <returns>An <see cref="EngagementViewModel"/></returns>
+    [Authorize(Policy = "RequireContributor")]
     public async Task<IActionResult> Edit(int id)
     {
         var engagement = await _engagementService.GetEngagementAsync(id);
@@ -110,6 +111,7 @@ public class EngagementsController : Controller
     /// <param name="id">The identity of an engagement</param>
     /// <returns>The delete confirmation view.</returns>
     [HttpGet]
+    [Authorize(Policy = "RequireContributor")]
     public async Task<IActionResult> Delete(int id)
     {
         var engagement = await _engagementService.GetEngagementAsync(id);
@@ -184,6 +186,7 @@ public class EngagementsController : Controller
     /// Adds a new engagement.
     /// </summary>
     /// <returns>The add new engagement view.</returns>
+    [Authorize(Policy = "RequireContributor")]
     public IActionResult Add()
     {
         return View(new EngagementViewModel

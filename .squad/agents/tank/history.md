@@ -560,6 +560,66 @@ When controllers add ownership checks via GetEntityAsync before delete/add opera
 
 ---
 
+## Session: 2026-05-[DATE]T[TIME]Z — Issue #613 EngagementsController Auth Attribute Tests
+
+**Summary:** Added auth attribute reflection tests for EngagementsController GET actions after Switch applied RequireContributor policy to Add, Edit, and Delete actions. All 4 new tests passing.
+
+**Issue #613 Context:**
+- Switch added `[Authorize(Policy = "RequireContributor")]` to GET Add(), Edit(int id), and Delete(int id) actions on EngagementsController
+- Class-level `[Authorize(Policy = "RequireViewer")]` remains unchanged (read-only access)
+- Goal: Verify auth attributes are correctly applied using reflection tests
+
+**Tests Added:**
+1. `EngagementsController_HasRequireViewerPolicy` - Verifies class-level `[Authorize(Policy = "RequireViewer")]` attribute exists
+2. `GetAdd_Action_HasRequireContributorPolicy` - Verifies GET Add() has `[Authorize(Policy = "RequireContributor")]`
+3. `GetEdit_Action_HasRequireContributorPolicy` - Verifies GET Edit(int id) has `[Authorize(Policy = "RequireContributor")]`
+4. `GetDelete_Action_HasRequireContributorPolicy` - Verifies GET Delete(int id) has `[Authorize(Policy = "RequireContributor")]`
+
+**Test Pattern Used:**
+```csharp
+// Class-level attribute check
+var controllerType = typeof(EngagementsController);
+var attributes = controllerType.GetCustomAttributes(typeof(AuthorizeAttribute), false);
+
+// Method-level attribute check (parameterless method)
+var method = typeof(Controller).GetMethod("Add", Type.EmptyTypes);
+var attributes = method!.GetCustomAttributes(typeof(AuthorizeAttribute), false);
+
+// Method-level attribute check (method with parameters)
+var method = typeof(Controller).GetMethod("Edit", new[] { typeof(int) });
+var attributes = method!.GetCustomAttributes(typeof(AuthorizeAttribute), false);
+
+// Assertion pattern
+Assert.NotEmpty(attributes);
+var authorizeAttribute = attributes.First() as AuthorizeAttribute;
+Assert.NotNull(authorizeAttribute);
+Assert.Equal("RequireContributor", authorizeAttribute!.Policy);
+```
+
+**Files Modified:**
+- `EngagementsControllerTests.cs`: Added using for Microsoft.AspNetCore.Authorization, added 4 auth attribute tests (71 LOC)
+
+**Verification:**
+- ✅ Build: succeeded in 50s (expected warnings only)
+- ✅ Tests: 4/4 new auth tests passing
+- ✅ Committed: 8d6ea91
+- ✅ Pushed to issue-613 branch
+
+**Branch & Commit:**
+- Branch: `issue-613`
+- Commit: 8d6ea91
+- Message: "test(#613): add auth attribute tests for EngagementsController GET actions"
+
+**Key Learnings:**
+1. **Auth attribute test pattern established**: Use reflection to verify `[Authorize(Policy = "...")]` attributes at both class and method level
+2. **GetMethod signature for overloads**: Use `Type.EmptyTypes` for parameterless methods, `new[] { typeof(int) }` for methods with parameters
+3. **Pattern source**: Followed existing pattern from LinkedInControllerTests and HomeControllerTests (AllowAnonymous check)
+4. **Naming convention**: `Get{Action}_Action_HasRequire{Role}Policy` for method-level tests, `{Controller}_HasRequire{Role}Policy` for class-level tests
+
+**Next:** Ready for PR review and merge to main.
+
+---
+
 ## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:
 
