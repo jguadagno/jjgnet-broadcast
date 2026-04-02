@@ -60,23 +60,28 @@ INSERT INTO JJGNet.dbo.TokenRefreshes (Name, Expires, LastChecked, LastRefreshed
 INSERT INTO JJGNet.dbo.TokenRefreshes (Name, Expires, LastChecked, LastRefreshed, LastUpdatedOn) VALUES ('page', '2026-02-06 01:00:02.8047779 -07:00', '2025-12-08 01:00:03.5324031 -07:00', '2025-12-08 01:00:03.5324031 -07:00', '2026-01-28 04:07:47.4046875 -07:00');
 
 -- Seed the Roles table (Issue #602)
-INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES ('Administrator', 'Full access; can approve users, manage roles, and delete any content')
-INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES ('Contributor', 'Can create, edit, and delete their own content')
-INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES ('Viewer', 'Read-only access to content')
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.Roles WHERE Name = N'Administrator')
+    INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES (N'Administrator', N'Full access; can approve users, manage roles, and delete any content')
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.Roles WHERE Name = N'Contributor')
+    INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES (N'Contributor', N'Can create, edit, and delete their own content')
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.Roles WHERE Name = N'Viewer')
+    INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES (N'Viewer', N'Read-only access to content')
 -- NOTE: The initial Administrator ApplicationUser seed is a manual step (requires the admin Entra Object ID from config).
 --       See scripts/database/migrations/2026-04-02-rbac-user-approval.sql for the template SQL.
 
 -- Seed the EmailTemplates table (Issue #615)
-INSERT INTO JJGNet.dbo.EmailTemplates (Name, Subject, Body) VALUES (
-    N'UserApproved',
-    N'Your account has been approved',
-    N'<!DOCTYPE html><html><body><p>Hello,</p><p>Great news! Your account has been approved and you now have access to the JJGNet Broadcasting application.</p><p>You can log in at any time using your Microsoft account.</p><p>If you have any questions, please reach out to the administrator.</p><p>Welcome aboard!</p><p>The JJGNet Broadcasting Team</p></body></html>'
-)
-INSERT INTO JJGNet.dbo.EmailTemplates (Name, Subject, Body) VALUES (
-    N'UserRejected',
-    N'Your account access request',
-    N'<!DOCTYPE html><html><body><p>Hello,</p><p>Thank you for your interest in the JJGNet Broadcasting application.</p><p>After review, we are unable to approve your access request at this time.</p><p>If you believe this is an error or would like more information, please contact the administrator.</p><p>The JJGNet Broadcasting Team</p></body></html>'
-)
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.EmailTemplates WHERE Name = N'UserApproved')
+    INSERT INTO JJGNet.dbo.EmailTemplates (Name, Subject, Body) VALUES (
+        N'UserApproved',
+        N'Your account has been approved',
+        N'<!DOCTYPE html><html><body><p>Hello,</p><p>Great news! Your account has been approved and you now have access to the JJGNet Broadcasting application.</p><p>You can log in at any time using your Microsoft account.</p><p>If you have any questions, please reach out to the administrator.</p><p>Welcome aboard!</p><p>The JJGNet Broadcasting Team</p></body></html>'
+    )
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.EmailTemplates WHERE Name = N'UserRejected')
+    INSERT INTO JJGNet.dbo.EmailTemplates (Name, Subject, Body) VALUES (
+        N'UserRejected',
+        N'Your account access request',
+        N'<!DOCTYPE html><html><body><p>Hello,</p><p>Thank you for your interest in the JJGNet Broadcasting application.</p><p>After review, we are unable to approve your access request at this time.</p><p>If you believe this is an error or would like more information, please contact the administrator.</p><p>The JJGNet Broadcasting Team</p></body></html>'
+    )
 
 
 -- Seed the SyndicationFeedSource table
