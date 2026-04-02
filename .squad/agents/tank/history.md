@@ -69,6 +69,9 @@
 
 4. **Build warning count is not fixed:** Expected ~322 but got 280 in this run. Warning counts vary slightly across sessions/machines. Treat "0 errors" as the pass criterion, not exact warning count.
 5. **51 skipped tests are stable baseline:** All skips are infrastructure/credential integration tests marked with [SKIP] and "Manually run only" reasons. Zero unexpected skips.
+6. **IQueue is testable; QueueServiceClient chain is not:** `JosephGuadagno.AzureHelpers.Storage.IQueue` is an interface that can be mocked with Moq. Classes that inject `QueueServiceClient` directly and create `Queue` internally (using `AddMessageWithBase64EncodingAsync`) are not unit-testable because Moq's `QueueServiceClient.GetQueueClient()` mock doesn't correctly propagate to the inner `QueueClient`. Always inject `IQueue` for classes that send queue messages.
+7. **Parallel branch coordination:** When working on the same branch as another agent, always check `git log --oneline` and `git status` immediately after checkout — the branch may already have commits from teammates. This avoids duplicate work and overwriting committed files.
+8. **Azure SDK sealed types — extended rule:** `Azure.Storage.Queues.Models.SendReceipt` is sealed and cannot be mocked. When a method returns `Task<SendReceipt>`, use `(SendReceipt?)null!` as the typed null. The caller (EmailSender) ignores the return, so null is safe.
 
 ---
 

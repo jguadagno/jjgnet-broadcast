@@ -6,6 +6,9 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
+using JosephGuadagno.AzureHelpers.Storage;
+using JosephGuadagno.AzureHelpers.Storage.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
 using OpenTelemetry.Logs;
@@ -22,10 +25,16 @@ var settings = new Settings
 {
     ApiScopeUrl = null!,
     LoggingStorageAccount = null!,
-    ScalarClientId = null!
+    ScalarClientId = null!,
+    FromAddress = null!,
+    FromDisplayName = null!,
+    ReplyToAddress = null!,
+    ReplyToDisplayName = null!,
+    AzureCommunicationsConnectionString = null!
 };
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
+builder.Services.TryAddSingleton<IEmailSettings>(settings);
 var autoMapperSettings = new AutoMapperSettings();
 builder.Configuration.Bind("AutoMapper", autoMapperSettings);
 builder.Services.AddSingleton<IAutoMapperSettings>(autoMapperSettings);
@@ -150,4 +159,14 @@ void ConfigureRepositories(IServiceCollection services)
     services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();
     services.TryAddScoped<IEmailTemplateDataStore, EmailTemplateDataStore>();
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
+
+    // Email
+    services.TryAddSingleton<IQueue>(s =>
+    {
+        var configuration = s.GetRequiredService<IConfiguration>();
+        var connectionString = configuration.GetConnectionString("QueueStorage") ?? "UseDevelopmentStorage=true";
+        return new Queue(connectionString, JosephGuadagno.Broadcasting.Domain.Constants.Queues.SendEmail);
+    });
+    services.TryAddScoped<IEmailSender, EmailSender>();
+    services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
 }

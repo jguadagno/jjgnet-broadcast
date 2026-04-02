@@ -1,6 +1,8 @@
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+
 namespace JosephGuadagno.Broadcasting.Web.Interfaces;
 
-public interface ISettings
+public interface ISettings : IEmailSettings
 {
     /// <summary>
     /// The storage account connection string used for logging.
@@ -11,5 +13,4 @@ public interface ISettings
     /// The root URL for serving static content in the Web application.
     /// </summary>
     public string StaticContentRootUrl { get; set; }
-
 }

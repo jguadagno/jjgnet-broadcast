@@ -1,5 +1,23 @@
 # Trinity — History
 
+## Core Context
+
+**Role:** Backend Domain Architect  
+**Specialty:** API design, data models, RBAC, database integration, AutoMapper patterns  
+**Key Projects:**
+- RBAC Phase 1 backend (#604) — 24 files, all scopes audited
+- Pagination (#575) — 8 endpoints with paging/sorting at DB level
+- Message templates — 20 seeded templates per platform
+
+**Critical patterns:**
+- NO EF Core migrations — all schema via raw SQL scripts in `scripts/database/migrations/`
+- AutoMapper for all DTOs/models (registered in Program.cs)
+- Paging at DB level only (not in managers/controllers)
+- Message content: database-backed (MessageTemplates table), not hardcoded
+- Sealed 3rd-party types in tests: use typed null, not Mock.Of<T>()
+
+**Active issues:** #615, #616 (email notifications domain layer)
+
 ## Summary
 
 Backend dev. Primary domain: API layer, pagination, DTOs, message templates, scope audits, RBAC backend implementation.
@@ -354,3 +372,27 @@ Established by Joseph Guadagno:
 
 **Dependencies:**
 - Issue #617 (EmailSender manager implementation) depends on this PR
+
+---
+
+### 2026-04-05 — Issue #617: EmailSender and EmailTemplateManager
+
+**Status:** COMPLETE | Branch issue-617 | PR #623
+
+**What I built:**
+- `EmailSender.cs` — partial class, `QueueServiceClient` + `JosephGuadagno.AzureHelpers.Storage.Queue`, enqueues `Email` as Base64 JSON for Azure Functions compatibility
+- `EmailSender.logger.cs` — `[LoggerMessage]` source-generated structured logging (EventId 3000/3001)
+- `EmailTemplateManager.cs` — implements `IEmailTemplateManager`, delegates to `IEmailTemplateDataStore`
+- `IEmailTemplateManager.cs` in Domain/Interfaces (was already present from prior work; kept existing `GetTemplateAsync(int id)` overload)
+- `JosephGuadagno.AzureHelpers.Storage` 1.1.9 + `Microsoft.Extensions.Logging.Abstractions` added to Managers.csproj
+- Each project's `ISettings` now extends `IEmailSettings` (adds FromAddress, FromDisplayName, ReplyToAddress, ReplyToDisplayName, AzureCommunicationsConnectionString)
+- DI: `QueueServiceClient` registered via factory reading `ConnectionStrings:QueueStorage`; `IEmailSettings`, `IEmailSender`, `IEmailTemplateManager` registered in all 3 projects
+- AppHost: added `WithReference(queueStorage)` to Api and Web projects
+- Fixed `EmailSenderTests.cs` duplicate class, updated for `QueueServiceClient` constructor pattern
+
+## Learnings
+- `JosephGuadagno.AzureHelpers.Storage.Queues` type creates a naming conflict with `Domain.Constants.Queues` — use fully qualified `JosephGuadagno.Broadcasting.Domain.Constants.Queues.SendEmail` in EmailSender.cs
+- `[LoggerMessage]` source gen requires `Microsoft.Extensions.Logging.Abstractions` as a DIRECT (not transitive) package reference in the project; it does NOT flow transitively
+- `QueueServiceClient` registration pattern: use `TryAddSingleton` with factory lambda reading `ConnectionStrings:QueueStorage` — works for all three project types
+- Each project's `Settings` class implements both the project-specific `ISettings` AND (via interface inheritance) `IEmailSettings` from Domain — register both in DI from the same settings instance
+- When test files have duplicate class declarations, the compiler reports errors at confusing line numbers — always rewrite the entire file cleanly

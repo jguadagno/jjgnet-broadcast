@@ -45,7 +45,12 @@
   },
   "Settings": {
     "LoggingStorageAccount": "UseDevelopmentStorage=true",
-    "ShortenedDomainToUse": "jjg.me"
+    "ShortenedDomainToUse": "jjg.me",
+    "FromAddress": "",
+    "FromDisplayName": "",
+    "ReplyToAddress": "",
+    "ReplyToDisplayName": "",
+    "AzureCommunicationsConnectionString": ""
   },
   "AutoMapper": {
     "LicenseKey": "Set in Users Secrets/Azure App Service Settings"
