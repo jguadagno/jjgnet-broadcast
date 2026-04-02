@@ -172,6 +172,22 @@
 - **Verification:** Build passed with exit code 0 (expected NU1510, NU1903 warnings)
 - **Future work:** Phase 2.5 could backfill ownership for existing records if audit logs are available.
 
+### 2026-04-03 — Issue #607: RBAC Phase 2 Followup - CreatedByEntraOid Nullability Fix
+- **Task:** Fix nullability mismatch between Domain models and Data.Sql entity models for `CreatedByEntraOid` property
+- **Branch:** `squad/rbac-phase2-followup`
+- **Files changed:**
+  - `Data.Sql/Models/Engagement.cs` — line 34
+  - `Data.Sql/Models/Talk.cs` — line 30
+  - `Data.Sql/Models/ScheduledItem.cs` — line 26
+  - `Data.Sql/Models/MessageTemplate.cs` — line 18
+- **Change:** `public string CreatedByEntraOid` → `public string? CreatedByEntraOid` in all four entity models
+- **Root cause:** Domain models already had `string? CreatedByEntraOid` (nullable), but Data.Sql entity models had non-nullable `string`, causing CS8618 warnings and confusing EF Core schema inference
+- **EF Core config:** BroadcastingContext.cs already had `.HasMaxLength(36)` without `.IsRequired()` — EF Core 6+ infers nullability from C# property type, so no fluent API changes needed
+- **New warnings:** CS8669 warnings appeared about nullable reference types in `#nullable disable` context — these are expected and less critical than the CS8618 warnings that were fixed
+- **Verification:** Build passed with exit code 0
+- **Pattern established:** When Domain models have nullable reference types, Data.Sql entity models must match, even when `#nullable disable` is present. EF Core will infer the correct nullability from the C# property type.
+- **Commit:** `fix(data): align CreatedByEntraOid to string? in Data.Sql entity models` (ebc5ba8)
+
 Established by Joseph Guadagno:
 
 1. **PR Merge Authority**: Only Joseph may merge PRs

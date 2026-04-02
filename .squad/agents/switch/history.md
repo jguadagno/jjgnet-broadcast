@@ -55,6 +55,28 @@
 - **Dependencies:** Trinity (#604 - IUserApprovalManager), Ghost (#603 - UserApprovalMiddleware, policies)
 
 
+### 2026-04-01 — RBAC Phase 2 Followup
+- **Task:** Implement RoleViewModel, self-demotion guard, fix GetCalendarEvents authorization
+- **Created:**
+  - RoleViewModel: Web-layer ViewModel for Domain.Models.Role (eliminates Domain reference from Web layer)
+  - AutoMapper mapping: Domain.Models.Role → RoleViewModel
+- **Updated:**
+  - ManageRolesViewModel: Changed IList<Role> → IList<RoleViewModel> (removed Domain.Models reference)
+  - AdminController.ManageRoles: Map roles through AutoMapper before assigning to viewmodel
+  - AdminController.RemoveRole: Added self-demotion guard (prevents admin from removing their own Administrator role)
+  - EngagementsController: Changed class-level auth from RequireContributor → RequireViewer
+  - EngagementsController write actions: Added RequireContributor attribute to Edit POST, Add POST, DeleteConfirmed
+- **Patterns learned:**
+  - Web layer should never directly reference Domain models in ViewModels - always create Web-layer ViewModels
+  - Self-demotion guards prevent accidental lockouts (check if user is removing their own critical role)
+  - Controller authorization can be layered: class-level for read, method-level for write
+  - GetCalendarEvents is a read-only API endpoint, should be accessible to Viewers
+  - Razor views don't need changes if ViewModel property names match
+- **Build status:** Clean build, 27 warnings (expected baseline)
+- **Commit:** fc000a3 on squad/rbac-phase2-followup branch
+- **Decision log:** `.squad/decisions/inbox/switch-role-viewmodel-and-auth-fixes.md`
+
+
 ## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:
 

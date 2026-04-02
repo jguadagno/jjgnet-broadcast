@@ -438,6 +438,40 @@ Integration test projects for social managers should:
 
 
 
+---
+
+### 2026-04-02: Post-RBAC Issue Triage
+
+**Task:** Review all open GitHub issues to determine which were resolved by PRs #610 (RBAC Phase 1) and #611 (RBAC Phase 2).
+
+**Scope:** 34 open issues reviewed, plus confirmed closure status of 6 RBAC issues (#602-607).
+
+**Key findings:**
+
+1. **RBAC issues properly closed** — All six issues (#602-607) were automatically closed by GitHub when PRs #610 and #611 merged (using "Closes #XXX" syntax in PR bodies). No manual action needed.
+
+2. **No open issues resolved by recent work** — None of the 34 remaining open issues were addressed by PRs #610, #611, or other recent commits. All remain valid open work items.
+
+3. **Staging issues** — No open issues reference staging deployment. User noted staging environment was removed by PR #583; confirmed no cleanup needed.
+
+4. **MSAL exception handling (#85) — still open (correctly)** — Sub-issues #544-548 were implemented in PRs #551-555, but all were reverted by PR #572 due to "MSAL auth broken". Original problem remains unresolved.
+
+5. **AutoMapper and paging issues — all already closed** — Issues #575, #574, #573, #314, #591 were resolved by PRs #598, #595, #597, #594, #592 respectively. Already properly closed.
+
+6. **Social handle fields (#53, #54, #536, #537) — all open (correctly)** — Partial implementation exists:
+   - Engagement model has: `BlueSkyHandle`, `ConferenceTwitterHandle`, `ConferenceHashtag`
+   - Talk model has: `BlueSkyHandle`
+   - **Missing:** Talk `TwitterHandle`, Engagement `ConferenceBlueskyHandle`, Engagement `ConferenceLinkedInHandle`
+   - Note: PR #611 fixed a TalkViewModel mapping bug for BlueSkyHandle but did not add new fields.
+
+**Issues closed by this triage:** 0
+
+**Recommendation:** Group social handle work (#53, #54, #536, #537) into a single PR adding all missing fields consistently across all layers (Domain, EF entities, DTOs, ViewModels, Controllers, Views).
+
+**Detailed report:** `.squad/decisions/inbox/neo-issue-triage-2026-04-02.md`
+
+---
+
 ## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:
 
