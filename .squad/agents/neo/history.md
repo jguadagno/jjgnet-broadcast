@@ -4,7 +4,7 @@
 
 Lead reviewer and sprint planner. Primary domain: architecture, CI/CD, patterns, code reviews, issue triage.
 
-**Current focus:** RBAC Phase 1 — PR #610 Round 2 review complete. CHANGES REQUESTED — 1 new blocking finding (UserApprovalMiddleware hardcoded claim string, incomplete fix of Finding #5). All 5 original findings resolved. Awaiting Trinity's 2-line fix before Joseph merges.
+**Current focus:** RBAC Phase 1 — PR #610 Round 3 review complete. APPROVED — all Round 2 findings resolved. Ready for @jguadagno merge.
 
 **Key patterns established:**
 - DTO/API: request DTOs exclude route params, return Task<ActionResult<T>>, null guard before ToResponse
@@ -91,6 +91,34 @@ Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomme
 | NEW 3 | 🟡 Low (non-blocking) | `table-create.sql` + migration | Missing SQL CHECK constraints on `ApprovalStatus` and `Action` columns |
 
 **Approved once NEW #1 is fixed. Ready for @jguadagno review and merge.**
+
+---
+
+### 2026-04-02: RBAC Phase 1 — PR #610 Round 3 Final Sign-off
+
+**Head commit reviewed:** `d0aa61a` (Trinity: all 3 Round 2 findings fixed)
+
+**Round 2 findings — all verified resolved:**
+
+| # | Finding | Verified |
+|---|---------|---------|
+| NEW 1 (BLOCKING) | `UserApprovalMiddleware.cs` — `ApplicationClaimTypes.ApprovalStatus` used (line 49), local const gone | ✅ |
+| NEW 2 (non-blocking) | Test files — `ApplicationClaimTypes.*` constants throughout (0 hardcoded strings) | ✅ |
+| NEW 3 (non-blocking) | `table-create.sql` lines 196, 235 + migration lines 94–113 — idempotent CHECK constraints | ✅ |
+
+**Sanity pass — clean:**
+- Middleware order: `UseAuthentication` → `UseUserApprovalGate` → `UseAuthorization` ✅
+- `EntraClaimsTransformation`: IUserApprovalManager only, ApprovalNotes populated for rejected users ✅
+- `UserApprovalManager`: all 8 ops, full arg validation, audit trail ✅
+- `AdminController`: `[Authorize(Policy="RequireAdministrator")]`, `[ValidateAntiForgeryToken]`, DB-level filtering ✅
+- `ApplicationClaimTypes.cs`: single source of truth ✅
+
+**New non-blocking observation (Phase 2):**
+- `RejectUserViewModel.cs` is dead code — `AdminController.RejectUser()` binds to plain parameters, not to the ViewModel. Validation still correct via server-side null guard + HTML `required` attr. No security impact.
+
+**Round 3 Verdict: ✅ APPROVED**
+
+Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomment-4174260374
 
 ---
 

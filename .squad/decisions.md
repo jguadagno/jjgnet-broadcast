@@ -8742,3 +8742,143 @@ All implementation and test changes are correct, complete, and consistent with p
 - ✅ Review comment posted: https://github.com/jguadagno/jjgnet-broadcast/pull/601#issuecomment-4173852518
 - ✅ PR marked ready for review
 - ⏳ Awaiting merge by Joseph Guadagno
+
+---
+
+# Decision: Base Schema Scripts Must Stay in Sync with Migrations
+
+**Author:** Morpheus  
+**Date:** 2026-04-02  
+**Related Issue:** #602
+
+## Decision
+
+Whenever a database migration script is created under `scripts/database/migrations/`, the two base schema scripts must also be updated in the same commit or PR:
+
+1. `scripts/database/table-create.sql` — add any new table definitions
+2. `scripts/database/data-create.sql` — add any new seed data
+
+## Rationale
+
+The migration scripts are idempotent ALTER-based scripts for existing environments. The base scripts (`table-create.sql`, `data-create.sql`) are used to provision a fresh database from scratch (e.g., new developer environments, CI, staging resets). If base scripts are not kept in sync, fresh environments will be missing tables and seed data that production already has, causing runtime failures and inconsistent developer experience.
+
+## Context
+
+This was identified after the RBAC Phase 1 migration (`2026-04-02-rbac-user-approval.sql`) was committed without updating the base scripts. The fix was applied in commit for issue #602.
+
+## Rule
+
+> A migration is not complete until `table-create.sql` and `data-create.sql` are updated to reflect the same schema state.
+
+
+---
+
+# Decision: RBAC Phase 1 PR #610 — Round 2 Review (Neo)
+
+**Date:** 2026-04-02
+**Reviewer:** Neo
+**PR:** #610 squad/rbac-phase1
+**Round:** 2 (follow-up to CHANGES REQUESTED round 1)
+
+## Round 1 Findings — All Resolved ✅
+
+| # | Finding | Resolution |
+|---|---------|-----------|
+| 1 | `UseUserApprovalGate` after `UseAuthorization` | Moved to before `UseAuthorization` (Program.cs lines 149–150) |
+| 2 | In-memory filtering in `AdminController.Users()` | Now uses `GetUsersByStatusAsync()` — 3 DB-level calls |
+| 3 | `IRoleDataStore` direct dependency from Web | `EntraClaimsTransformation` now uses `IUserApprovalManager.GetUserRolesAsync()` |
+| 4 | `approval_notes` claim never populated | Now populated in `EntraClaimsTransformation` lines 63–67 |
+| 5 | Hardcoded claim type strings | `ApplicationClaimTypes` constants class added to Domain; used in `EntraClaimsTransformation` and `AdminController` |
+
+## New Additions — All Verified ✅
+
+- `table-create.sql`: RBAC tables (Roles, ApplicationUsers, UserRoles, UserApprovalLog) added
+- `data-create.sql`: 3 role seeds (Administrator, Contributor, Viewer) added  
+- `BroadcastingContext` registered in Web `Program.cs` via `builder.AddSqlServerDbContext<BroadcastingContext>`
+- Test results: 84 Web + 76 Managers = 160 tests, 0 failures
+
+## Round 2 New Findings
+
+### BLOCKING (1)
+- **`UserApprovalMiddleware.cs` line 11** — `private const string ApprovalStatusClaimType = "approval_status"` is a local duplicate of `ApplicationClaimTypes.ApprovalStatus`. Finding #5 was not applied to the middleware itself. Latent functional bug: if `ApplicationClaimTypes.ApprovalStatus` changes, the security gate silently breaks. Fix: use `ApplicationClaimTypes.ApprovalStatus`.
+
+### NON-BLOCKING (2)
+- Test files (3) use hardcoded claim strings instead of `ApplicationClaimTypes` constants
+- `table-create.sql` and migration lack SQL CHECK constraints on `ApprovalStatus` and `Action` columns
+
+## Verdict
+**CHANGES REQUESTED** — pending fix of `UserApprovalMiddleware.cs` local const (2-line change).
+Once resolved: ready for @jguadagno review and merge.
+
+## Review Comment URL
+https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomment-4174225355
+
+
+---
+
+# Trinity PR Fixes — PR #610 Review Findings
+
+**Date:** 2026-04-02  
+**Branch:** squad/rbac-phase1  
+**Commit:** address PR #610 review findings  
+**Requested by:** Joseph Guadagno (via Neo's review on PR #610)
+
+---
+
+## Fix #1 — Middleware Ordering (HIGH, #602)
+
+**Problem:** `UseUserApprovalGate()` was placed AFTER `UseAuthorization()` in `Program.cs`. Entra auth checks ran before the approval gate, so pending/rejected users received a 403 instead of being redirected.
+
+**Decision:** Move `UseUserApprovalGate()` to between `UseAuthentication()` and `UseAuthorization()`. Middleware must run after identity is established but before authorization policies are enforced.
+
+**Files changed:** `src/JosephGuadagno.Broadcasting.Web/Program.cs`
+
+---
+
+## Fix #2 — DB-level Filtering (MEDIUM, #603)
+
+**Problem:** `AdminController.Users()` called `GetAllUsersAsync()` and then filtered with `.Where()` in C# — in-memory filtering violates the project convention (all filtering at DB level only).
+
+**Decision:** Add `GetUsersByStatusAsync(ApprovalStatus status)` to `IUserApprovalManager` and implement via delegation to `IApplicationUserDataStore.GetByApprovalStatusAsync()` (which already did DB-level `.Where()`). `AdminController.Users()` now makes 3 parallel DB calls — one for Pending, Approved, Rejected — instead of loading all users and filtering in memory.
+
+**Files changed:**
+- `src/JosephGuadagno.Broadcasting.Domain/Interfaces/IUserApprovalManager.cs`
+- `src/JosephGuadagno.Broadcasting.Managers/UserApprovalManager.cs`
+- `src/JosephGuadagno.Broadcasting.Web/Controllers/AdminController.cs`
+
+---
+
+## Fix #3 — Clean Architecture (MEDIUM, #604)
+
+**Problem:** `EntraClaimsTransformation` (Web layer) directly injected `IRoleDataStore` (Data layer), bypassing the Manager layer — a clean architecture violation.
+
+**Decision:** Remove `IRoleDataStore` from `EntraClaimsTransformation` and replace `roleDataStore.GetRolesForUserAsync(user.Id)` with `userApprovalManager.GetUserRolesAsync(user.Id)`. `IUserApprovalManager.GetUserRolesAsync` already existed and provides the same data. Web layer now correctly communicates only through the Manager layer.
+
+**Files changed:**
+- `src/JosephGuadagno.Broadcasting.Web/EntraClaimsTransformation.cs`
+- `src/JosephGuadagno.Broadcasting.Web.Tests/EntraClaimsTransformationTests.cs`
+
+---
+
+## Fix #4 — Dead approval_notes Claim (LOW, #605)
+
+**Problem:** `AccountController.Rejected()` read an `approval_notes` claim that was never populated anywhere, so rejection notes were never displayed to rejected users.
+
+**Decision:** Populate the `approval_notes` claim in `EntraClaimsTransformation.TransformAsync()` for rejected users (when `user.ApprovalStatus == Rejected` and `user.ApprovalNotes` is non-empty). Claim approach is simpler than TempData or direct controller DB access since the user object is already loaded during claims transformation.
+
+**Files changed:** `src/JosephGuadagno.Broadcasting.Web/EntraClaimsTransformation.cs`
+
+---
+
+## Fix #5 — Duplicated Claim Type Constant (LOW)
+
+**Problem:** The Entra OID claim type string `"http://schemas.microsoft.com/identity/claims/objectidentifier"` was duplicated in `AdminController.cs` and `EntraClaimsTransformation.cs`. The `approval_status` and `approval_notes` strings were also duplicated/scattered.
+
+**Decision:** Create `ApplicationClaimTypes` static class in `Domain/Constants/` with three constants: `EntraObjectId`, `ApprovalStatus`, `ApprovalNotes`. Named `ApplicationClaimTypes` (not `ClaimTypes`) to avoid naming collision with `System.Security.Claims.ClaimTypes` which is used in the same files.
+
+**Files changed:**
+- `src/JosephGuadagno.Broadcasting.Domain/Constants/ApplicationClaimTypes.cs` (new)
+- `src/JosephGuadagno.Broadcasting.Web/EntraClaimsTransformation.cs`
+- `src/JosephGuadagno.Broadcasting.Web/Controllers/AdminController.cs`
+- `src/JosephGuadagno.Broadcasting.Web/Controllers/AccountController.cs`
+
