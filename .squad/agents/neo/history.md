@@ -297,6 +297,22 @@ Sprint 12 tagged with 13 issues.
 
 ## Learnings
 
+### 2026-07-15: PR #612 — RBAC Phase 2 Follow-up Review
+
+**PR:** [#612](https://github.com/jguadagno/jjgnet-broadcast/pull/612)
+**Verdict: APPROVE ✅** (posted as comment — GitHub blocks self-approval on owner account)
+**Branch:** `squad/rbac-phase2-followup` → `main`
+
+All 4 post-Phase-2 items correctly resolved. Build: 0 errors. 101/101 Web tests passing.
+
+**Non-blocking observations flagged:**
+1. GET Add/Edit/Delete forms in `EngagementsController` are accessible to Viewers — UX issue (form visible but POST blocked). Recommend adding `RequireContributor` to GET forms in a follow-up.
+2. 3-space indent on `AvailableRoles` in `ManageRolesViewModel.cs` line 21 — cosmetic only.
+
+**Pattern reinforced:** Self-demotion guards should use the constant (`RoleNames.Administrator`), not a magic string. Guard should be a no-op (not an error) when the target role isn't in the user's current roles — let the underlying service handle that case.
+
+---
+
 ### 2026-07-15: Issue Specs Batch — #591 #575 #574 #573
 
 Full specs written to `.squad/sessions/issue-specs-591-575-574-573.md`.

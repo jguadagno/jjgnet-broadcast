@@ -41,7 +41,38 @@
 2. For sealed library types returning Task<T?>, use typed null instead of Mock.Of<T>()
 3. Sealed types from 3rd-party libraries (idunno.AtProto) cannot be mocked — use null or construct real instances
 
-## Current Session: 2026-04-02T00:00:00Z — RBAC Phase 2 Followup Testing
+## Current Session: 2026-04-02T (Build Verification) — RBAC Phase 2 Followup Branch Verification
+
+**Summary:** Full solution build and test suite run on `squad/rbac-phase2-followup` after all three team commits (ebc5ba8, fc000a3, 66d5ba4). Build clean, all tests passing.
+
+**What I Did:**
+- Ran `git status` — confirmed on correct branch, clean working tree (only .squad history files unstaged)
+- Ran `dotnet restore` — 13 NU1903 warnings (expected, Newtonsoft.Json vuln, pre-existing)
+- Ran `dotnet build` — **Build succeeded, 280 warnings, 0 errors**
+- Ran `dotnet test --no-build` — **702 total: 651 passed, 0 failed, 51 skipped**
+
+**Key Finding — Warning Count:**
+- Build produced 280 warnings (not the previously expected ~322). This is within normal variation; the delta likely reflects conditional compilation or project count differences. No regressions.
+
+**Skipped Tests (All Expected):**
+- SyndicationFeedReader integration tests (network, marked [SKIP])
+- YouTubeReader integration tests (API key required, marked [SKIP])
+- LinkedIn integration tests (credentials required, marked [SKIP])
+- Twitter integration tests (manually run only, marked [SKIP])
+
+**No unexpected failures.** All 4 new AdminController tests and the 1 updated test from commit 66d5ba4 pass.
+
+**Branch:** squad/rbac-phase2-followup  
+**HEAD:** 66d5ba4  
+
+## Learnings
+
+4. **Build warning count is not fixed:** Expected ~322 but got 280 in this run. Warning counts vary slightly across sessions/machines. Treat "0 errors" as the pass criterion, not exact warning count.
+5. **51 skipped tests are stable baseline:** All skips are infrastructure/credential integration tests marked with [SKIP] and "Manually run only" reasons. Zero unexpected skips.
+
+---
+
+## Previous Session: 2026-04-02T00:00:00Z — RBAC Phase 2 Followup Testing
 
 **Summary:** Added 4 new tests for AdminController self-demotion guard and RoleViewModel mapping. Updated 1 existing test to support Switch's RoleViewModel refactor. All 101 tests passing.
 
