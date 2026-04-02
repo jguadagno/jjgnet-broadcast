@@ -143,7 +143,16 @@
 - **Pattern:** Self-referencing FKs are valid when nullable (AdminUserId → ApplicationUsers.Id for audit trail)
 - **Coordination:** Trinity working on EF Core models in parallel; SQL-only changes avoid conflicts
 
-## Team Standing Rules (2026-04-01)
+### 2026-04-02 — Issue #602: Sync RBAC Tables to Base Schema Scripts
+- **Task:** Update `table-create.sql` and `data-create.sql` to include the RBAC tables created by migration `2026-04-02-rbac-user-approval.sql`
+- **Files changed:**
+  - `scripts/database/table-create.sql` — appended 4 RBAC tables (Roles, ApplicationUsers, UserRoles, UserApprovalLog) after MessageTemplates, matching existing lowercase style with PK_/UQ_/FK_/DF_ constraint naming
+  - `scripts/database/data-create.sql` — appended seed data for 3 default Roles (Administrator, Contributor, Viewer) with comment noting admin user seed is a manual step
+  - `.squad/decisions/inbox/morpheus-base-scripts.md` — new decision: base scripts must always be updated alongside migrations
+- **Key pattern established:** A migration is not complete until `table-create.sql` and `data-create.sql` are updated to the same schema state. Fresh environments provision from base scripts, not migrations.
+- **Style note:** Base script uses lowercase SQL and inline constraint syntax (not separate ALTER TABLE). Migration uses UPPERCASE with brackets — both are valid; match the style of the file you're editing.
+- **Branch:** `squad/rbac-phase1`
+
 Established by Joseph Guadagno:
 
 1. **PR Merge Authority**: Only Joseph may merge PRs
