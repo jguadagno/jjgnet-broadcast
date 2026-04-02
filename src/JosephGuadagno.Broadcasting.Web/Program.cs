@@ -11,7 +11,8 @@ using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
-using Azure.Storage.Queues;
+using JosephGuadagno.AzureHelpers.Storage;
+using JosephGuadagno.AzureHelpers.Storage.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -197,11 +198,11 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
 
     // Email
-    services.TryAddSingleton(s =>
+    services.TryAddSingleton<IQueue>(s =>
     {
         var configuration = s.GetRequiredService<IConfiguration>();
         var connectionString = configuration.GetConnectionString("QueueStorage") ?? "UseDevelopmentStorage=true";
-        return new QueueServiceClient(connectionString);
+        return new Queue(connectionString, JosephGuadagno.Broadcasting.Domain.Constants.Queues.SendEmail);
     });
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();

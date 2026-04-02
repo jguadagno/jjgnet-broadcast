@@ -1,10 +1,12 @@
 using System.Reflection;
 
-using Azure.Storage.Queues;
+using JosephGuadagno.AzureHelpers.Storage;
+using JosephGuadagno.AzureHelpers.Storage.Interfaces;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Data.Sql;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
@@ -193,11 +195,11 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
 
     // Email
-    services.TryAddSingleton(s =>
+    services.TryAddSingleton<IQueue>(s =>
     {
         var configuration = s.GetRequiredService<IConfiguration>();
         var connectionString = configuration.GetConnectionString("QueueStorage") ?? "UseDevelopmentStorage=true";
-        return new QueueServiceClient(connectionString);
+        return new Queue(connectionString, JosephGuadagno.Broadcasting.Domain.Constants.Queues.SendEmail);
     });
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();

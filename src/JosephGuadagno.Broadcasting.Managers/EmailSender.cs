@@ -1,8 +1,7 @@
 using System;
 using System.Net.Mail;
 using System.Threading.Tasks;
-using Azure.Storage.Queues;
-using JosephGuadagno.AzureHelpers.Storage;
+using JosephGuadagno.AzureHelpers.Storage.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using Microsoft.Extensions.Logging;
@@ -10,12 +9,10 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Managers;
 
 public partial class EmailSender(
-    QueueServiceClient queueServiceClient,
+    IQueue emailQueue,
     IEmailSettings settings,
     ILogger<EmailSender> logger) : IEmailSender
 {
-    private readonly Queue _queue = new(queueServiceClient, JosephGuadagno.Broadcasting.Domain.Constants.Queues.SendEmail);
-
     public async Task QueueEmail(MailAddress toAddress, string subject, string body)
     {
         ArgumentNullException.ThrowIfNull(toAddress);
@@ -48,7 +45,7 @@ public partial class EmailSender(
 
         try
         {
-            await _queue.AddMessageWithBase64EncodingAsync(email);
+            await emailQueue.AddMessageAsync(email);
             LogEmailQueued(toAddress.Address, subject);
         }
         catch (Exception ex)

@@ -17,6 +17,8 @@
 - Testing: sealed types use typed null, never Mock.Of<SealedType>()
 - PR review: always verify diff against body, check issue status before review
 - Authorization: GET form actions must match POST action auth level (fail-fast UX)
+- Email queue: `AddMessageWithBase64EncodingAsync` (not plain `AddMessageAsync`) — Azure Functions queue triggers expect Base64
+- Manager pattern: if a manager is a pure thin delegator with no logging, omit ILogger entirely to avoid CS0414 warning
 
 **Active issues:** #608 (email notifications), #613 (auth UX fix), RBAC Phase 1/2
 
@@ -40,6 +42,25 @@ Lead reviewer and sprint planner. Primary domain: architecture, CI/CD, patterns,
 **Sprint closure:** Sprint 9 (7 issues) complete via PRs #516–#526, all merged. Sprint 11 (5 issues) complete via PRs #551–#555, all merged. Three-layer auth exception defence live on main.
 
 ## Recent Work
+
+### 2026-04-05: Email Managers — PR #623 Review (Issue #617)
+
+**PR:** #623 — `feat: EmailSender and EmailTemplateManager for #608 email notification system`
+**Branch:** `issue-617`
+**Author:** Trinity
+**Verdict: ⚠️ APPROVED WITH NOTES**
+
+**What was built:** `EmailSender` (partial class + `.logger.cs`), `EmailTemplateManager`, all 3 `ISettings` extended with `IEmailSettings`, DI registration across Api/Web/Functions, AppHost wiring.
+
+**Findings:**
+- ✅ All core patterns correct: Base64 via `AddMessageWithBase64EncodingAsync`, queue constant used, `[LoggerMessage]` pattern, DI scoping, AppHost `WithReference`
+- ⚠️ `EmailTemplateManager._logger` injected but never used → CS0414 warning. Recommend removing the logger or adding logging calls.
+- ⚠️ `EmailTemplateManager` uses old-style constructor (not primary), inconsistent with `EmailSender`. Not a blocker.
+- ⚠️ `AzureCommunicationsConnectionString` in settings unused by this PR — forward-looking for #618.
+
+**Inbox:** `.squad/decisions/inbox/neo-617-review.md`
+
+---
 
 ### 2026-04-02: RBAC Phase 2 — Pre-PR Code Review (Issue #607)
 
