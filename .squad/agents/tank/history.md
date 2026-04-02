@@ -253,6 +253,147 @@ When controllers use AutoMapper for DTO mapping:
 
 ---
 
+## Session: 2026-04-01T[TIME]Z — Issue #606 RBAC Phase 1 Unit Tests
+
+**Summary:** Authored comprehensive unit tests for RBAC Phase 1 implementation. Created 5 test files covering EntraClaimsTransformation, UserApprovalMiddleware, UserApprovalManager, AccountController, and AdminController. All tests passing (682 total across solution).
+
+**Issue #606 Context:**
+- Phase 1 implementation includes user approval workflow, claims transformation, middleware gating, and admin UI
+- Key components: EntraClaimsTransformation, UserApprovalMiddleware, UserApprovalManager, AccountController, AdminController
+- Supporting domain: ApplicationUser, Role, UserRole, UserApprovalLog, ApprovalStatus enum, ApprovalAction enum
+
+**Test Coverage Delivered:**
+
+1. **EntraClaimsTransformation Tests** (Web.Tests):
+   - 8 test methods covering authenticated/unauthenticated users, new/pending/approved/rejected users
+   - Key scenarios: user registration on first login, approval status claim addition, role claims loading
+   - Edge cases: missing OID claim, already-transformed principal, exception handling
+   - Entra OID claim type: `http://schemas.microsoft.com/identity/claims/objectidentifier`
+
+2. **UserApprovalMiddleware Tests** (Web.Tests):
+   - 10 test methods covering middleware gating logic
+   - Key scenarios: unauthenticated users pass through, approved users pass through, pending/rejected users redirected
+   - Bypass logic: approval pages, static files (/.well-known, /favicon.ico, /css, /js, /lib, /images), /MicrosoftIdentity paths
+   - Edge case: users without approval status claim pass through (initial login)
+
+3. **UserApprovalManager Tests** (Managers.Tests):
+   - 9 test methods covering business logic for user approval operations
+   - GetOrCreateUserAsync: existing user returns, new user creates with Pending status + audit log
+   - ApproveUserAsync: updates status to Approved, creates audit log, throws on non-existent user
+   - RejectUserAsync: updates status to Rejected with notes, creates audit log, throws on null notes
+   - AssignRoleAsync: assigns role, creates audit log, validates user and role existence
+   - Pattern: all manager methods create UserApprovalLog entries for audit trail
+
+4. **AccountController Tests** (Web.Tests):
+   - 3 test methods covering public approval status pages
+   - PendingApproval: returns view (no auth required)
+   - Rejected: returns view, reads approval notes from claims if present
+   - Key: uses ViewBag for approval notes display
+
+5. **AdminController Tests** (Web.Tests):
+   - 7 test methods covering admin user management UI
+   - Users: retrieves all users, categorizes by status (Pending/Approved/Rejected), maps to ViewModels
+   - ApproveUser: approves user, logs action, redirects to Users with success message
+   - RejectUser: validates rejection notes (required), rejects user, logs action, redirects to Users
+   - Error handling: missing admin user, empty/whitespace rejection notes
+   - TempData used for success/error messages
+
+**Files Created:**
+- `UserApprovalManagerTests.cs` (Managers.Tests): 9 tests, 439 LOC
+- `EntraClaimsTransformationTests.cs` (Web.Tests): 8 tests, 349 LOC
+- `UserApprovalMiddlewareTests.cs` (Web.Tests): 10 tests, 216 LOC
+- `AccountControllerTests.cs` (Web.Tests): 3 tests, 75 LOC
+- `AdminControllerTests.cs` (Web.Tests): 7 tests, 357 LOC
+
+**Package Added:**
+- FluentAssertions 8.9.0 to Web.Tests (already existed in Managers.Tests)
+
+**Verification:**
+- ✅ Build: 0 errors (266 warnings, baseline unchanged)
+- ✅ Tests: 682 total, 631 passed, 51 skipped (integration tests), 0 failed
+- ✅ Committed: ef9654e
+- ✅ Pushed to squad/rbac-phase1 branch
+
+**Test Patterns Used:**
+1. **Moq for dependencies**: All external dependencies mocked (IUserApprovalManager, IRoleDataStore, ILogger, IMapper)
+2. **FluentAssertions syntax**: `.Should().NotBeNull()`, `.Should().Be()`, `.Should().Contain()`
+3. **Method_Scenario_ExpectedResult naming**: e.g., `TransformAsync_WithNewUser_RegistersUserAndAddsClaims`
+4. **Arrange-Act-Assert structure**: Clear separation in all test methods
+5. **ClaimsPrincipal/ClaimsIdentity construction**: For authentication testing in middleware/controllers
+6. **HttpContext mocking**: DefaultHttpContext with User/Request/Response for ASP.NET testing
+7. **TempData setup**: Mock ITempDataProvider for controller TempData usage
+8. **Verify calls**: `Times.Once`, `Times.Never`, `It.Is<T>(predicate)` for precise mock verification
+
+**Key Learnings:**
+- EntraClaimsTransformation must handle exceptions gracefully (return original principal)
+- UserApprovalMiddleware bypass logic critical for avoiding redirect loops and enabling static content
+- UserApprovalManager creates audit logs for ALL approval actions (registered, approved, rejected, role assigned/removed)
+- AccountController uses ViewBag for passing approval notes (read from claims)
+- AdminController uses TempData for success/error messages (PRG pattern)
+- FluentAssertions provides cleaner test assertions than xUnit Assert
+
+**Branch & PR:**
+- Branch: `squad/rbac-phase1`
+- Commit: ef9654e
+- Message: "test: add RBAC Phase 1 unit tests for EntraClaimsTransformation, UserApprovalMiddleware, UserApprovalManager, AccountController, and AdminController (#606)"
+- Status: Ready for review/merge
+
+---
+
+## Session: 2026-05-[DATE]T[TIME]Z — PR #610 RBAC Test Review & Updates
+
+**Summary:** Reviewed Trinity's 5 RBAC test fixes for PR #610 (Issue #606). Verified all changes correct, added 3 missing GetUserRolesAsync tests to UserApprovalManagerTests, updated AdminControllerTests to reflect DB-level filtering changes. All 44 RBAC tests passing, full test suite: 685 total (634 passed, 51 skipped).
+
+**Trinity's Changes Reviewed:**
+1. ✅ **EntraClaimsTransformationTests.cs** - Added GetUserRolesAsync mock (lines 60-61, 76, 113), new test for rejected users with approval_notes claim (lines 184-234)
+2. ✅ **UserApprovalMiddlewareTests.cs** - No changes needed (uses approval_status claim only)
+3. ⚠️ **UserApprovalManagerTests.cs** - MISSING tests for GetUserRolesAsync method (implementation lines 250-258)
+4. ✅ **AccountControllerTests.cs** - Tests Rejected() action with/without approval_notes claim (lines 31-58, 60-87)
+5. ⚠️ **AdminControllerTests.cs** - Mock setup needed update for Trinity's DB-level filtering (GetUsersByStatusAsync x3 instead of GetAllUsersAsync)
+
+**Tests Added:**
+1. `GetUserRolesAsync_WithExistingUser_ReturnsRoles` - Verifies role list returned for user with roles
+2. `GetUserRolesAsync_WithUserWithNoRoles_ReturnsEmptyList` - Verifies empty list for user without roles
+3. `GetUserRolesAsync_WithInvalidUserId_ThrowsArgumentException` - Verifies userId validation (userId <= 0)
+
+**AdminController Mock Fix:**
+- Changed from: `.Setup(x => x.GetAllUsersAsync()).ReturnsAsync(allUsers)` (in-memory filtering)
+- Changed to: Three separate setups for `.GetUsersByStatusAsync(ApprovalStatus.Pending/Approved/Rejected)` (DB-level filtering)
+- Reflects Trinity's performance improvement: filtering at database layer instead of LINQ client-side
+
+**Verification Results:**
+- ✅ Build: succeeded in 203.6s (310 warnings, baseline unchanged)
+- ✅ Full test suite: 685 total, 634 passed, 51 skipped (integration/network tests), 0 failed
+- ✅ RBAC tests specifically: 44 total, 44 passed, 0 failed
+- ✅ GetUserRolesAsync tests: 3 total, 3 passed
+
+**Files Modified:**
+- `UserApprovalManagerTests.cs`: Added 3 tests for GetUserRolesAsync (63 LOC added)
+- `AdminControllerTests.cs`: Updated Users() test to verify DB-level filtering (29 LOC changed)
+
+**Branch & Commit:**
+- Branch: `squad/rbac-phase1`
+- Commit: 06fbb77
+- Message: "test: update RBAC tests for PR #610 review fixes - GetUserRolesAsync, approval_notes claim, DB-level filtering (#606)"
+- Status: ✅ Pushed to origin
+
+**Trinity's RBAC Implementation Changes (from PR #610):**
+1. Added `GetUserRolesAsync(int userId)` to UserApprovalManager (returns List<Role>)
+2. EntraClaimsTransformation now calls GetUserRolesAsync and adds role claims for approved users
+3. EntraClaimsTransformation adds approval_notes claim for rejected users (displayed on /Account/Rejected)
+4. AdminController.Users() now uses GetUsersByStatusAsync(status) three times instead of GetAllUsersAsync() (DB-level filtering)
+5. All changes backed by unit tests with correct mock setups
+
+**Key Patterns Validated:**
+- GetUserRolesAsync follows manager pattern: validates input (userId > 0), delegates to data store, returns domain model
+- Mock setup for status-specific calls requires separate .Setup() for each status value
+- Approval notes claim read from User.Claims in controller, passed via ViewBag to view
+- DB-level filtering reduces data transfer and improves performance vs client-side LINQ
+
+**Next:** Ready for Joseph to review PR #610 and merge to main.
+
+---
+
 ## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:
 

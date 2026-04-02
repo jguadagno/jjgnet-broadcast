@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Registration Pending";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h2 class="mb-0">
+                        <i class="bi bi-hourglass-split me-2"></i>Registration Pending
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" role="alert">
+                        <h4 class="alert-heading">
+                            <i class="bi bi-info-circle me-2"></i>Your Account Is Under Review
+                        </h4>
+                        <p>
+                            Your account registration is pending administrator approval. 
+                            You will be notified when your account has been reviewed.
+                        </p>
+                        <hr>
+                        <p class="mb-0">
+                            Please check back later or contact the system administrator if you have questions.
+                        </p>
+                    </div>
+                    <div class="d-grid gap-2 mt-3">
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+                            <i class="bi bi-house-door me-2"></i>Return to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

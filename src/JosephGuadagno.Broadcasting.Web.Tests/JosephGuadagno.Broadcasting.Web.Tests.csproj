@@ -36,6 +36,7 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.2.1" />
     <PackageReference Include="AutoMapper" Version="16.1.1" />
+    <PackageReference Include="FluentAssertions" Version="8.9.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="NodaTime" Version="3.3.1" />
@@ -54,6 +55,7 @@
     <Using Include="Xunit" />
   </ItemGroup>  
   <ItemGroup>
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Web\JosephGuadagno.Broadcasting.Web.csproj" />
   </ItemGroup>
   <ItemGroup>

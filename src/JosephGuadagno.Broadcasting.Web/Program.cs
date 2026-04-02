@@ -1,13 +1,17 @@
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
+using JosephGuadagno.Broadcasting.Data.Sql;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.Broadcasting.Web;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -53,6 +57,9 @@ builder.Services.AddSession(options =>
 var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
 ConfigureTelemetryAndLogging(builder.Services, settings.LoggingStorageAccount, fullyQualifiedLogFile, "Web");
 
+// Register BroadcastingContext for RBAC data stores
+builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer");
+
 // Register DI services
 ConfigureApplication(builder.Services);
 
@@ -74,6 +81,9 @@ builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
     .AddDistributedTokenCaches();
 builder.Services.AddDownstreamApis(builder.Configuration.GetSection("DownstreamApis"));
 
+// Register claims transformation for RBAC
+builder.Services.AddScoped<IClaimsTransformation, EntraClaimsTransformation>();
+
 builder.Services.AddControllersWithViews(options =>
 {
     var policy = new AuthorizationPolicyBuilder()
@@ -81,6 +91,19 @@ builder.Services.AddControllersWithViews(options =>
         .Build();
     options.Filters.Add(new AuthorizeFilter(policy));
 }).AddMicrosoftIdentityUI();
+
+// Configure authorization policies
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdministrator", policy =>
+        policy.RequireRole(RoleNames.Administrator));
+    
+    options.AddPolicy("RequireContributor", policy =>
+        policy.RequireRole(RoleNames.Administrator, RoleNames.Contributor));
+    
+    options.AddPolicy("RequireViewer", policy =>
+        policy.RequireRole(RoleNames.Administrator, RoleNames.Contributor, RoleNames.Viewer));
+});
 
 builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme,
     options =>
@@ -123,7 +146,9 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthentication();
+app.UseUserApprovalGate();
 app.UseAuthorization();
+
 app.UseSession();
 
 app.MapControllerRoute(
@@ -153,6 +178,13 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
     services.TryAddScoped<IMessageTemplateService, MessageTemplateService>();
+
+    // RBAC Phase 1
+    services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
+    services.TryAddScoped<IRoleDataStore, RoleDataStore>();
+    services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();
+    services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
+
     ConfigureKeyVault(services);
 }
 

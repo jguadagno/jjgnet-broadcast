@@ -29,5 +29,8 @@ public class WebMappingProfile: Profile
                 destination => destination.ItemTableName,
                 options => options.MapFrom(source => source.ItemType.ToString()));
         CreateMap<Domain.Models.MessageTemplate, Models.MessageTemplateViewModel>();
+        
+        // RBAC Phase 1 mappings
+        CreateMap<Domain.Models.ApplicationUser, Models.ApplicationUserViewModel>();
     }
 }

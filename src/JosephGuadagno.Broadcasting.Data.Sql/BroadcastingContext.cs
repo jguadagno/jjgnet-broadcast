@@ -38,6 +38,10 @@ public partial class BroadcastingContext : DbContext
     public virtual DbSet<SyndicationFeedSource> SyndicationFeedSources { get; set; } = null!;
     public virtual DbSet<YouTubeSource> YouTubeSources { get; set; } = null!;
     public virtual DbSet<MessageTemplate> MessageTemplates { get; set; } = null!;
+    public virtual DbSet<ApplicationUser> ApplicationUsers { get; set; } = null!;
+    public virtual DbSet<Role> Roles { get; set; } = null!;
+    public virtual DbSet<UserRole> UserRoles { get; set; } = null!;
+    public virtual DbSet<UserApprovalLog> UserApprovalLogs { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -262,6 +266,107 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.Description)
                 .HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<ApplicationUser>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("ApplicationUsers_pk")
+                .IsClustered(false);
+
+            entity.HasIndex(e => e.EntraObjectId, "ApplicationUsers_Unique_EntraObjectId")
+                .IsUnique();
+
+            entity.Property(e => e.EntraObjectId)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.DisplayName)
+                .HasMaxLength(200);
+
+            entity.Property(e => e.Email)
+                .HasMaxLength(200);
+
+            entity.Property(e => e.ApprovalStatus)
+                .HasMaxLength(20)
+                .IsRequired()
+                .HasDefaultValueSql("'Pending'");
+
+            entity.Property(e => e.ApprovalNotes)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired()
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.Property(e => e.UpdatedAt)
+                .IsRequired()
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("(getutcdate())");
+        });
+
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("Roles_pk")
+                .IsClustered(false);
+
+            entity.HasIndex(e => e.Name, "Roles_Unique_Name")
+                .IsUnique();
+
+            entity.Property(e => e.Name)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(200);
+        });
+
+        modelBuilder.Entity<UserRole>(entity =>
+        {
+            entity.HasKey(e => new { e.UserId, e.RoleId })
+                .HasName("UserRoles_pk");
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.UserRoles)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("UserRoles_ApplicationUsers_Id");
+
+            entity.HasOne(d => d.Role)
+                .WithMany(p => p.UserRoles)
+                .HasForeignKey(d => d.RoleId)
+                .HasConstraintName("UserRoles_Roles_Id");
+        });
+
+        modelBuilder.Entity<UserApprovalLog>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("UserApprovalLog_pk")
+                .IsClustered(false);
+
+            entity.Property(e => e.Action)
+                .HasMaxLength(20)
+                .IsRequired();
+
+            entity.Property(e => e.Notes)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired()
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.UserApprovalLogs)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("UserApprovalLog_ApplicationUsers_UserId");
+
+            entity.HasOne(d => d.AdminUser)
+                .WithMany(p => p.AdminUserApprovalLogs)
+                .HasForeignKey(d => d.AdminUserId)
+                .HasConstraintName("UserApprovalLog_ApplicationUsers_AdminUserId")
+                .IsRequired(false);
         });
 
         OnModelCreatingPartial(modelBuilder);

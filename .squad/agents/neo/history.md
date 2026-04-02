@@ -4,7 +4,7 @@
 
 Lead reviewer and sprint planner. Primary domain: architecture, CI/CD, patterns, code reviews, issue triage.
 
-**Current focus:** Sprint 12 planning. Sprint 11 complete — all 5 PRs (#551–#555) merged to main, all 5 issues (#544–#548) closed. Three-layer auth exception defence for issue #85 fully delivered. Sprint 12 tagged with 13 issues.
+**Current focus:** RBAC Phase 1 — PR #610 Round 3 review complete. APPROVED — all Round 2 findings resolved. Ready for @jguadagno merge.
 
 **Key patterns established:**
 - DTO/API: request DTOs exclude route params, return Task<ActionResult<T>>, null guard before ToResponse
@@ -18,6 +18,109 @@ Lead reviewer and sprint planner. Primary domain: architecture, CI/CD, patterns,
 **Sprint closure:** Sprint 9 (7 issues) complete via PRs #516–#526, all merged. Sprint 11 (5 issues) complete via PRs #551–#555, all merged. Three-layer auth exception defence live on main.
 
 ## Recent Work
+
+### 2026-04-02: RBAC Phase 1 — PR #610 Created and Reviewed
+
+**PR:** [#610](https://github.com/jguadagno/jjgnet-broadcast/pull/610) — `feat: RBAC Phase 1 - User Approval & Role-Based Access Control`
+**Branch:** `squad/rbac-phase1` → `main`
+**Closes:** #602, #603, #604, #605, #606
+
+**What was delivered (46 files, 3,646 insertions):**
+- DB migration: `ApplicationUsers`, `Roles`, `UserRoles`, `UserApprovalLog` tables + 3 role seeds
+- Domain: models, enums, constants, interfaces for the full approval workflow
+- Data.Sql: EF Core repositories + `RbacProfile` AutoMapper mappings
+- Managers: `UserApprovalManager` with approve/reject/role-assign audit trail
+- Web Auth Pipeline: `EntraClaimsTransformation` (IClaimsTransformation) + `UserApprovalMiddleware`
+- Web UI: `AccountController`, `AdminController`, 3 views, 3 ViewModels
+- Tests: 37 new tests (5 classes); 631 total passing, 0 failing
+
+**Round 1 Review Verdict: ⚠️ CHANGES REQUESTED**
+
+Review posted as comment (GitHub blocks self-review): https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomment-4174117340
+
+**Blocking findings:**
+
+| # | Severity | File | Issue |
+|---|----------|------|-------|
+| 1 | 🔴 HIGH | `Program.cs` | `UseUserApprovalGate()` placed AFTER `UseAuthorization` — pending users hit 403 before approval gate fires. Fix: move gate before `UseAuthorization`. |
+| 2 | 🟠 MEDIUM | `AdminController.cs` | `GetAllUsersAsync()` loads all users into memory, then filters in C# — violates DB-layer filtering convention. Fix: add `GetUsersByStatusAsync` to manager/data store. |
+| 3 | 🟠 MEDIUM | `EntraClaimsTransformation.cs` | Takes `IRoleDataStore` directly — Web layer calling Data layer, bypassing Managers. Fix: expose `GetRolesForUserAsync` on `IUserApprovalManager`. |
+
+**Non-blocking findings:**
+- Dead code: `approval_notes` claim read in `AccountController.Rejected()` but never populated by `EntraClaimsTransformation`
+- `EntraObjectIdClaimType` constant duplicated in 2 files — should be in `Domain/Constants/`
+
+**Scribe tasks completed:** `.squad/decisions/inbox/` (8 files) merged into `decisions.md`, committed.
+
+---
+
+### 2026-04-02: RBAC Phase 1 — PR #610 Round 2 Re-Review
+
+**Commits reviewed (in order):**
+- `22ad9a7` — Trinity: all 5 Round 1 findings fixed
+- `06fbb77` — Tank: updated RBAC tests (GetUserRolesAsync, approval_notes claim, DB-level filtering mock)
+- `c77d9d3` — Morpheus: base schema scripts updated (table-create.sql, data-create.sql)
+- `56ab6be` — Tank: history update
+- `5f3eeb3` — Trinity: BroadcastingContext DI fix in Web Program.cs
+
+**Test results:** 84/84 Web tests pass, 76/76 Managers tests pass (0 failures)
+
+**All 5 Round 1 findings verified resolved:**
+
+| # | Finding | Verified |
+|---|---------|---------|
+| 1 | `UseUserApprovalGate()` before `UseAuthorization()` | ✅ Program.cs lines 149–150 |
+| 2 | `AdminController.Users()` uses `GetUsersByStatusAsync()` | ✅ 3 DB-level calls |
+| 3 | `EntraClaimsTransformation` uses `IUserApprovalManager` only | ✅ `GetUserRolesAsync()` |
+| 4 | `approval_notes` claim populated for rejected users | ✅ Lines 63–67 |
+| 5 | `ApplicationClaimTypes` constants in Domain | ✅ Partial — middleware missed |
+
+**New additions verified:**
+- `table-create.sql` RBAC tables ✅
+- `data-create.sql` 3 role seeds ✅
+- `BroadcastingContext` DI in Web Program.cs line 61 ✅
+
+**Round 2 Review Verdict: ⚠️ CHANGES REQUESTED**
+
+Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomment-4174225355
+
+| # | Severity | File | Issue |
+|---|----------|------|-------|
+| NEW 1 | 🟠 MEDIUM (BLOCKING) | `UserApprovalMiddleware.cs` line 11 | Local `"approval_status"` const — not updated when finding #5 was fixed. Latent gate-bypass bug if `ApplicationClaimTypes.ApprovalStatus` changes. Fix: use `ApplicationClaimTypes.ApprovalStatus`. |
+| NEW 2 | 🟡 Low (non-blocking) | Test files (3) | Hardcoded claim strings instead of `ApplicationClaimTypes` constants |
+| NEW 3 | 🟡 Low (non-blocking) | `table-create.sql` + migration | Missing SQL CHECK constraints on `ApprovalStatus` and `Action` columns |
+
+**Approved once NEW #1 is fixed. Ready for @jguadagno review and merge.**
+
+---
+
+### 2026-04-02: RBAC Phase 1 — PR #610 Round 3 Final Sign-off
+
+**Head commit reviewed:** `d0aa61a` (Trinity: all 3 Round 2 findings fixed)
+
+**Round 2 findings — all verified resolved:**
+
+| # | Finding | Verified |
+|---|---------|---------|
+| NEW 1 (BLOCKING) | `UserApprovalMiddleware.cs` — `ApplicationClaimTypes.ApprovalStatus` used (line 49), local const gone | ✅ |
+| NEW 2 (non-blocking) | Test files — `ApplicationClaimTypes.*` constants throughout (0 hardcoded strings) | ✅ |
+| NEW 3 (non-blocking) | `table-create.sql` lines 196, 235 + migration lines 94–113 — idempotent CHECK constraints | ✅ |
+
+**Sanity pass — clean:**
+- Middleware order: `UseAuthentication` → `UseUserApprovalGate` → `UseAuthorization` ✅
+- `EntraClaimsTransformation`: IUserApprovalManager only, ApprovalNotes populated for rejected users ✅
+- `UserApprovalManager`: all 8 ops, full arg validation, audit trail ✅
+- `AdminController`: `[Authorize(Policy="RequireAdministrator")]`, `[ValidateAntiForgeryToken]`, DB-level filtering ✅
+- `ApplicationClaimTypes.cs`: single source of truth ✅
+
+**New non-blocking observation (Phase 2):**
+- `RejectUserViewModel.cs` is dead code — `AdminController.RejectUser()` binds to plain parameters, not to the ViewModel. Validation still correct via server-side null guard + HTML `required` attr. No security impact.
+
+**Round 3 Verdict: ✅ APPROVED**
+
+Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomment-4174260374
+
+---
 
 ### 2026-03-21: Sprint 11 Closeout — All PRs Merged
 

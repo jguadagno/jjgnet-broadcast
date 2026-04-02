@@ -120,9 +120,39 @@
 - **Blocked:** Build fails with Manager interface errors — expected, Trinity will implement Manager + Controller paged methods in Phase 2
 - **Pattern reinforced:** Two-count SQL for pagination — total count for response metadata, filtered count for current page
 
+### 2026-04-02 — Issue #602: RBAC Phase 1 Database Schema Migration
+- **Task:** Create database schema for user approval workflow and role-based access control
+- **Migration:** `scripts/database/migrations/2026-04-02-rbac-user-approval.sql`
+- **Branch:** `squad/rbac-phase1`
+- **Tables created:**
+  1. `Roles` — lookup table (Administrator, Contributor, Viewer) with UNIQUE constraint on Name
+  2. `ApplicationUsers` — keyed on Entra Object ID (oid claim) for multi-tenancy support
+  3. `UserRoles` — many-to-many join with composite PK on (UserId, RoleId)
+  4. `UserApprovalLog` — audit trail with self-referencing FK to ApplicationUsers for admin actions
+- **Key decisions:**
+  - Used Entra `oid` claim (NVARCHAR(36)) as stable user identifier instead of email/UPN
+  - ApprovalStatus as NVARCHAR(20) string values ('Pending', 'Approved', 'Rejected') with DEFAULT 'Pending'
+  - DATETIME2 for audit timestamps (CreatedAt, UpdatedAt) per codebase convention
+  - Admin user seed left as manual step with commented SQL template (OID from config, not hardcoded)
+- **SQL conventions learned:**
+  - Migration header: `-- Migration:`, `-- Issue:`, `-- Date:`, `-- Description:`
+  - `USE JJGNet; GO` at start
+  - Section headers with `-- ============================================================`
+  - GO statements after each DDL block (CREATE TABLE, INSERT)
+  - Idempotent seed data with `IF NOT EXISTS` guards
+- **Pattern:** Self-referencing FKs are valid when nullable (AdminUserId → ApplicationUsers.Id for audit trail)
+- **Coordination:** Trinity working on EF Core models in parallel; SQL-only changes avoid conflicts
 
+### 2026-04-02 — Issue #602: Sync RBAC Tables to Base Schema Scripts
+- **Task:** Update `table-create.sql` and `data-create.sql` to include the RBAC tables created by migration `2026-04-02-rbac-user-approval.sql`
+- **Files changed:**
+  - `scripts/database/table-create.sql` — appended 4 RBAC tables (Roles, ApplicationUsers, UserRoles, UserApprovalLog) after MessageTemplates, matching existing lowercase style with PK_/UQ_/FK_/DF_ constraint naming
+  - `scripts/database/data-create.sql` — appended seed data for 3 default Roles (Administrator, Contributor, Viewer) with comment noting admin user seed is a manual step
+  - `.squad/decisions/inbox/morpheus-base-scripts.md` — new decision: base scripts must always be updated alongside migrations
+- **Key pattern established:** A migration is not complete until `table-create.sql` and `data-create.sql` are updated to the same schema state. Fresh environments provision from base scripts, not migrations.
+- **Style note:** Base script uses lowercase SQL and inline constraint syntax (not separate ALTER TABLE). Migration uses UPPERCASE with brackets — both are valid; match the style of the file you're editing.
+- **Branch:** `squad/rbac-phase1`
 
-## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:
 
 1. **PR Merge Authority**: Only Joseph may merge PRs

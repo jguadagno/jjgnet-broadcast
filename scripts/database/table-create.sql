@@ -163,3 +163,79 @@ create table dbo.MessageTemplates
     constraint PK_MessageTemplates primary key ([Platform], [MessageType])
 )
 go
+
+-- Create the RBAC tables (Issue #602)
+create table dbo.Roles
+(
+    Id          int identity
+        constraint PK_Roles
+            primary key clustered,
+    Name        nvarchar(50)  not null
+        constraint UQ_Roles_Name
+            unique,
+    Description nvarchar(200) null
+)
+go
+
+-- NOTE: EntraObjectId stores the Entra ID oid claim — a stable per-user GUID that never changes.
+--       ApprovalStatus valid values: 'Pending', 'Approved', 'Rejected'
+create table dbo.ApplicationUsers
+(
+    Id             int identity
+        constraint PK_ApplicationUsers
+            primary key clustered,
+    EntraObjectId  nvarchar(36)  not null
+        constraint UQ_ApplicationUsers_EntraObjectId
+            unique,
+    DisplayName    nvarchar(200) null,
+    Email          nvarchar(200) null,
+    ApprovalStatus nvarchar(20)  not null
+        constraint DF_ApplicationUsers_ApprovalStatus
+            default ('Pending')
+        constraint CK_ApplicationUsers_ApprovalStatus
+            check (ApprovalStatus in ('Pending', 'Approved', 'Rejected')),
+    ApprovalNotes  nvarchar(500) null,
+    CreatedAt      datetime2     not null
+        constraint DF_ApplicationUsers_CreatedAt
+            default (getutcdate()),
+    UpdatedAt      datetime2     not null
+        constraint DF_ApplicationUsers_UpdatedAt
+            default (getutcdate())
+)
+go
+
+create table dbo.UserRoles
+(
+    UserId int not null
+        constraint FK_UserRoles_Users
+            references ApplicationUsers,
+    RoleId int not null
+        constraint FK_UserRoles_Roles
+            references Roles,
+    constraint PK_UserRoles
+        primary key clustered (UserId asc, RoleId asc)
+)
+go
+
+-- Action valid values: 'Registered', 'Approved', 'Rejected', 'RoleAssigned', 'RoleRemoved'
+-- AdminUserId is NULL for system-generated entries
+create table dbo.UserApprovalLog
+(
+    Id          int identity
+        constraint PK_UserApprovalLog
+            primary key clustered,
+    UserId      int           not null
+        constraint FK_UserApprovalLog_User
+            references ApplicationUsers,
+    AdminUserId int           null
+        constraint FK_UserApprovalLog_Admin
+            references ApplicationUsers,
+    Action      nvarchar(20)  not null
+        constraint CK_UserApprovalLog_Action
+            check (Action in ('Registered', 'Approved', 'Rejected', 'RoleAssigned', 'RoleRemoved')),
+    Notes       nvarchar(500) null,
+    CreatedAt   datetime2     not null
+        constraint DF_UserApprovalLog_CreatedAt
+            default (getutcdate())
+)
+go

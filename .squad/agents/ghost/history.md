@@ -4,6 +4,7 @@
 
 | Date | Task | Outcome |
 |------|------|---------|
+| 2026-04-01 | Issue #603 — Implement EntraClaimsTransformation and UserApprovalMiddleware (RBAC Phase 1) | ✅ Commit a046eb0 pushed to squad/rbac-phase1 |
 | 2026-03-19 | Sprint 8 #336 — Explicit cookie security options (HttpOnly, Secure, SameSite) in Web/Program.cs | ✅ PR #510 opened, merged to Sprint 8 milestone |
 | 2026-03-20 | Issue #170 — Fine-grained permission scopes on all API endpoints | ✅ PR #526 opened targeting main |
 | 2026-03-21 | Issue #528 — MsalUiRequiredException on token cache eviction (Web → API calls) | ✅ PR #532 opened targeting main |
@@ -93,3 +94,73 @@ Established by Joseph Guadagno:
 1. **PR Merge Authority**: Only Joseph may merge PRs
 2. **Mapping**: All object mapping must use AutoMapper profiles
 3. **Paging/Sorting/Filtering**: Must be at the data layer only
+
+## RBAC Phase 1 Implementation (Issue #603)
+
+**Context:** Multi-agent collaboration with Trinity (data layer), Neo (specs), and Ghost (auth pipeline).
+
+**Trinity built (already on branch):**
+- Domain models: `ApplicationUser`, `Role`, `UserApprovalLog`
+- Enums: `ApprovalStatus`, `ApprovalAction`
+- Constants: `RoleNames`
+- Interfaces: `IApplicationUserDataStore`, `IRoleDataStore`, `IUserApprovalLogDataStore`, `IUserApprovalManager`
+- Data.Sql implementations: `ApplicationUserDataStore`, `RoleDataStore`, `UserApprovalLogDataStore`
+- Managers implementation: `UserApprovalManager`
+
+**Issue found:** Trinity's `UserApprovalManager.cs` was missing using statements:
+- `using System;`
+- `using System.Collections.Generic;`
+- `using System.Threading.Tasks;`
+
+Added these to unblock the build - this is directly related to the RBAC Phase 1 feature and required for my auth pipeline components to compile.
+
+**Ghost delivered:**
+
+1. **EntraClaimsTransformation** (`src/JosephGuadagno.Broadcasting.Web/EntraClaimsTransformation.cs`)
+   - Implements `IClaimsTransformation`
+   - Auto-registers new users on first Entra login (calls `IUserApprovalManager.GetOrCreateUserAsync()`)
+   - Adds `approval_status` claim from user's database record
+   - Adds role claims (`ClaimTypes.Role`) for all assigned roles
+   - Entra oid claim type confirmed: `"http://schemas.microsoft.com/identity/claims/objectidentifier"`
+   - Includes idempotency check to avoid duplicate processing
+   - Graceful error handling - returns original principal on failure
+
+2. **UserApprovalMiddleware** (`src/JosephGuadagno.Broadcasting.Web/UserApprovalMiddleware.cs`)
+   - Gates access based on `approval_status` claim
+   - Redirects `Pending` users to `/Account/PendingApproval`
+   - Redirects `Rejected` users to `/Account/Rejected`
+   - Bypasses: static files, identity endpoints, approval pages themselves
+   - Prevents redirect loops with comprehensive bypass logic
+
+3. **Program.cs integration:**
+   - Registered `IClaimsTransformation` as scoped service
+   - Added middleware to pipeline (after auth/authz, before routing)
+   - Added authorization policies: `RequireAdministrator`, `RequireContributor`, `RequireViewer`
+   - Added project references to `Data.Sql` and `Managers`
+   - Added required using statements
+
+**Middleware ordering confirmed:**
+```
+UseRouting()
+UseAuthentication()
+UseAuthorization()
+UseUserApprovalGate()  ← Critical placement
+UseSession()
+MapControllerRoute()
+```
+
+**Security findings:**
+- Entra object ID claim type is the long form: `"http://schemas.microsoft.com/identity/claims/objectidentifier"`
+- Claims transformation runs on every authenticated request - idempotency check is critical for performance
+- Middleware bypass logic prevents redirect loops for rejected users trying to sign out
+- New users are auto-registered as `Pending` on first login (no manual registration flow needed)
+
+**Build status:** ✅ 0 errors, 4 warnings (known Newtonsoft.Json vulnerability warnings)
+
+**Commit:** `a046eb0` on branch `squad/rbac-phase1`
+
+**Next steps (not in this PR):**
+- Phase 2: Admin UI for user approval/rejection and role assignment
+- Phase 2: `/Account/PendingApproval` and `/Account/Rejected` views
+- Phase 3: Apply `[Authorize(Policy = "RequireXxx")]` to controllers/actions
+- Database migrations for new tables (Trinity's scope)

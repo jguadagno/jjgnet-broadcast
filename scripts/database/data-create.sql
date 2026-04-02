@@ -59,6 +59,13 @@ INSERT INTO JJGNet.dbo.FeedChecks (Name, LastCheckedFeed, LastItemAddedOrUpdated
 INSERT INTO JJGNet.dbo.TokenRefreshes (Name, Expires, LastChecked, LastRefreshed, LastUpdatedOn) VALUES ('long-lived', '2026-02-06 01:00:00.4204227 -07:00', '2025-12-08 01:00:02.4382065 -07:00', '2025-12-08 01:00:02.4382065 -07:00', '2026-01-28 04:07:47.4046874 -07:00');
 INSERT INTO JJGNet.dbo.TokenRefreshes (Name, Expires, LastChecked, LastRefreshed, LastUpdatedOn) VALUES ('page', '2026-02-06 01:00:02.8047779 -07:00', '2025-12-08 01:00:03.5324031 -07:00', '2025-12-08 01:00:03.5324031 -07:00', '2026-01-28 04:07:47.4046875 -07:00');
 
+-- Seed the Roles table (Issue #602)
+INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES ('Administrator', 'Full access; can approve users, manage roles, and delete any content')
+INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES ('Contributor', 'Can create, edit, and delete their own content')
+INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES ('Viewer', 'Read-only access to content')
+-- NOTE: The initial Administrator ApplicationUser seed is a manual step (requires the admin Entra Object ID from config).
+--       See scripts/database/migrations/2026-04-02-rbac-user-approval.sql for the template SQL.
+
 
 -- Seed the SyndicationFeedSource table
 INSERT INTO JJGNet.dbo.SyndicationFeedSources (FeedIdentifier, Author, Title, ShortenedUrl, Tags, Url, PublicationDate, AddedOn, ItemLastUpdatedOn, LastUpdatedOn) VALUES (	'https://www.josephguadagno.net/2007/08/02/developing-microsoft-asp-net-server-controls-and-components/','Joseph Guadagno','Developing Microsoft ASP.NET Server Controls and Components','https://jjg.me/3zBGp3K','Books,Book Reviews','https://www.josephguadagno.net/2007/08/02/developing-microsoft-asp-net-server-controls-and-components/','2007-08-02 00:12:56.0000000 +07:00','2025-09-06 01:18:54.8588384 +07:00','2007-08-02 00:12:56.0000000 +07:00','2026-01-28 04:07:56.6219101 +07:00')
