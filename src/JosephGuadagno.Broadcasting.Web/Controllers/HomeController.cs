@@ -18,6 +18,7 @@ public class HomeController(ILogger<HomeController> logger) : Controller
     /// Returns the home page
     /// </summary>
     /// <returns>Returns the home page</returns>
+    [AllowAnonymous]
     public IActionResult Index()
     {
         return View();
@@ -27,6 +28,7 @@ public class HomeController(ILogger<HomeController> logger) : Controller
     /// Returns the privacy page
     /// </summary>
     /// <returns></returns>
+    [AllowAnonymous]
     public IActionResult Privacy()
     {
         return View();
