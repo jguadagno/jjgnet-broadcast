@@ -69,6 +69,8 @@ builder.Services.AddAutoMapper(config =>
     config.LicenseKey = autoMapperSettings.LicenseKey;
     config.AddProfile<WebMappingProfile>();
     config.AddProfile<NodaTimeProfile>();
+    config.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
+    config.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.RbacProfile>();
 }, typeof(Program));
 
 // Configure Microsoft Identity
