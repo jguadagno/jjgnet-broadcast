@@ -199,10 +199,10 @@ create table dbo.ApplicationUsers
         constraint CK_ApplicationUsers_ApprovalStatus
             check (ApprovalStatus in ('Pending', 'Approved', 'Rejected')),
     ApprovalNotes  nvarchar(500) null,
-    CreatedAt      datetime2     not null
+    CreatedAt      datetimeoffset not null
         constraint DF_ApplicationUsers_CreatedAt
             default (getutcdate()),
-    UpdatedAt      datetime2     not null
+    UpdatedAt      datetimeoffset not null
         constraint DF_ApplicationUsers_UpdatedAt
             default (getutcdate())
 )
@@ -238,7 +238,7 @@ create table dbo.UserApprovalLog
         constraint CK_UserApprovalLog_Action
             check (Action in ('Registered', 'Approved', 'Rejected', 'RoleAssigned', 'RoleRemoved')),
     Notes       nvarchar(500) null,
-    CreatedAt   datetime2     not null
+    CreatedAt   datetimeoffset not null
         constraint DF_UserApprovalLog_CreatedAt
             default (getutcdate())
 )
