@@ -334,3 +334,23 @@ Established by Joseph Guadagno:
 - **Build & Test:** ✅ API project compiles cleanly; all 43 API controller tests passing
 - **Branch:** `issue-575-complete-automapper-migration` → pushed to origin
 - **Lesson:** PR #593 was incomplete — profile created but not registered, controllers not refactored. Always verify end-to-end integration when completing AutoMapper migrations.
+
+### 2026-04-02 — Issue #616: Email domain models, IEmailSender, IEmailSettings, queue constants
+
+**Status:** COMPLETE | Branch issue-616 | PR #620 | Commit eb01c8a
+
+**What I built:**
+- Models/Messages/Email.cs — queue message model (To, From, ReplyTo, Subject, Body)
+- Interfaces/IEmailSender.cs — queues emails to Azure Storage Queue (not ACS directly)
+- Interfaces/IEmailSettings.cs — ACS config interface (FromAddress, ReplyToAddress, ConnectionString)
+- Constants/Queues.cs — added SendEmail = "send-email" and SendEmailPoison = "send-email-poison"
+- Note: EmailTemplate.cs was already present from prior work
+
+**Learnings:**
+- git stash + checkout race condition can land commits on wrong local branch — always verify HEAD before committing
+- EmailTemplate.cs was already created by prior squad work; always check before creating new files
+- IEmailSender does NOT inherit from ASP.NET Identity IEmailSender (this project uses Entra ID)
+- Email delivery is queue-first: IEmailSender → Azure Storage Queue → Azure Function → ACS
+
+**Dependencies:**
+- Issue #617 (EmailSender manager implementation) depends on this PR

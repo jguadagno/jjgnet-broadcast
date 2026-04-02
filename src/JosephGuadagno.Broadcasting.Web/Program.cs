@@ -186,6 +186,7 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
     services.TryAddScoped<IRoleDataStore, RoleDataStore>();
     services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();
+    services.TryAddScoped<IEmailTemplateDataStore, EmailTemplateDataStore>();
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
 
     ConfigureKeyVault(services);

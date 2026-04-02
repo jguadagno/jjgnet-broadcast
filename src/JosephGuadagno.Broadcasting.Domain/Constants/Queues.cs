@@ -8,4 +8,6 @@ public static class Queues
     public const string LinkedInPostText = "linkedin-post-text";
     public const string LinkedInPostImage = "linkedin-post-image";
     public const string BlueskyPostToSend = "bluesky-post-to-send";
+    public const string SendEmail = "send-email";
+    public const string SendEmailPoison = "send-email-poison";
 }
