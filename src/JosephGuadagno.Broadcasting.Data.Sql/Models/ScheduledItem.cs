@@ -22,4 +22,6 @@ public partial class ScheduledItem
     public DateTimeOffset? MessageSentOn { get; set; }
 
     public string ImageUrl { get; set; }
+
+    public string CreatedByEntraOid { get; set; }
 }

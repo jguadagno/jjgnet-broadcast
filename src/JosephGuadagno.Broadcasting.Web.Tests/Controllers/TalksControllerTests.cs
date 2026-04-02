@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Controllers;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
@@ -131,13 +133,56 @@ public class TalksControllerTests
     }
 
     [Fact]
-    public async Task Delete_WhenDeleteSucceeds_ShouldRedirectToEngagementsEdit()
+    public async Task Delete_Get_WhenUserIsAuthorized_ShouldReturnConfirmationView()
     {
         // Arrange
-        _engagementService.Setup(s => s.DeleteEngagementTalkAsync(1, 10)).ReturnsAsync(true);
+        var talk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "user-oid" };
+        var viewModel = new TalkViewModel { Id = 10, EngagementId = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid"),
+            new Claim(ClaimTypes.Role, RoleNames.Administrator)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(talk);
+        _mapper.Setup(m => m.Map<TalkViewModel>(It.IsAny<object>())).Returns(viewModel);
 
         // Act
         var result = await _controller.Delete(1, 10);
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        Assert.Equal(viewModel, viewResult.Model);
+    }
+
+    [Fact]
+    public async Task DeleteConfirmed_WhenDeleteSucceeds_ShouldRedirectToEngagementsEdit()
+    {
+        // Arrange
+        var talk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "user-oid" };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid"),
+            new Claim(ClaimTypes.Role, RoleNames.Administrator)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(talk);
+        _engagementService.Setup(s => s.DeleteEngagementTalkAsync(1, 10)).ReturnsAsync(true);
+
+        // Act
+        var result = await _controller.DeleteConfirmed(1, 10);
 
         // Assert
         var redirectResult = Assert.IsType<RedirectToActionResult>(result);
@@ -148,13 +193,29 @@ public class TalksControllerTests
     }
 
     [Fact]
-    public async Task Delete_WhenDeleteFails_ShouldReturnView()
+    public async Task DeleteConfirmed_WhenDeleteFails_ShouldReturnView()
     {
         // Arrange
+        var talk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "user-oid" };
+        var viewModel = new TalkViewModel { Id = 10, EngagementId = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid"),
+            new Claim(ClaimTypes.Role, RoleNames.Administrator)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(talk);
         _engagementService.Setup(s => s.DeleteEngagementTalkAsync(1, 10)).ReturnsAsync(false);
+        _mapper.Setup(m => m.Map<TalkViewModel>(It.IsAny<object>())).Returns(viewModel);
 
         // Act
-        var result = await _controller.Delete(1, 10);
+        var result = await _controller.DeleteConfirmed(1, 10);
 
         // Assert
         Assert.IsType<ViewResult>(result);
@@ -178,6 +239,17 @@ public class TalksControllerTests
         // Arrange
         var viewModel = new TalkViewModel { Id = 0, EngagementId = 1 };
         var savedTalk = new Talk { Id = 10, EngagementId = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid")
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _mapper.Setup(m => m.Map<Talk>(It.IsAny<object>())).Returns(new Talk());
         _engagementService.Setup(s => s.SaveEngagementTalkAsync(It.IsAny<Talk>())).ReturnsAsync(savedTalk);
 
@@ -196,6 +268,17 @@ public class TalksControllerTests
     {
         // Arrange
         var viewModel = new TalkViewModel { Id = 0, EngagementId = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid")
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _mapper.Setup(m => m.Map<Talk>(It.IsAny<object>())).Returns(new Talk());
         _engagementService.Setup(s => s.SaveEngagementTalkAsync(It.IsAny<Talk>())).ReturnsAsync((Talk?)null);
 

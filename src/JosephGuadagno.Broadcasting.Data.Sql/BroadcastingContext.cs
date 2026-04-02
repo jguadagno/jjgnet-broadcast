@@ -1,4 +1,4 @@
-﻿using JosephGuadagno.Broadcasting.Data.Sql.Models;
+using JosephGuadagno.Broadcasting.Data.Sql.Models;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -86,6 +86,9 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.ConferenceTwitterHandle)
                 .HasMaxLength(255);
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36);
         });
 
         modelBuilder.Entity<ScheduledItem>(entity =>
@@ -113,6 +116,9 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.ImageUrl)
                 .HasMaxLength(2048);
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36);
         });
 
         modelBuilder.Entity<Talk>(entity =>
@@ -126,6 +132,11 @@ public partial class BroadcastingContext : DbContext
                 .HasForeignKey(d => d.EngagementId)
                 .HasConstraintName("Talks_Engagements_Id");
 
+            entity.Property(e => e.BlueSkyHandle)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36);
 
         });
 
@@ -266,6 +277,9 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.Description)
                 .HasMaxLength(500);
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36);
         });
 
         modelBuilder.Entity<ApplicationUser>(entity =>
@@ -297,12 +311,12 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .IsRequired()
-                .HasColumnType("datetime2")
+                .HasColumnType("datetimeoffset")
                 .HasDefaultValueSql("(getutcdate())");
 
             entity.Property(e => e.UpdatedAt)
                 .IsRequired()
-                .HasColumnType("datetime2")
+                .HasColumnType("datetimeoffset")
                 .HasDefaultValueSql("(getutcdate())");
         });
 
@@ -354,7 +368,7 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .IsRequired()
-                .HasColumnType("datetime2")
+                .HasColumnType("datetimeoffset")
                 .HasDefaultValueSql("(getutcdate())");
 
             entity.HasOne(d => d.User)

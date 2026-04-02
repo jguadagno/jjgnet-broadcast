@@ -11,6 +11,7 @@ using Azure.Security.KeyVault.Secrets;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
@@ -240,5 +241,19 @@ public class LinkedInControllerTests
             "jjg-net-linkedin-access-token",
             "new-access-token",
             It.IsAny<DateTime>()), Times.Once);
+    }
+
+    [Fact]
+    public void LinkedInController_HasRequireAdministratorPolicy()
+    {
+        // Arrange & Act
+        var controllerType = typeof(LinkedInController);
+        var attributes = controllerType.GetCustomAttributes(typeof(AuthorizeAttribute), false);
+
+        // Assert
+        Assert.NotEmpty(attributes);
+        var authorizeAttribute = attributes.First() as AuthorizeAttribute;
+        Assert.NotNull(authorizeAttribute);
+        Assert.Equal("RequireAdministrator", authorizeAttribute!.Policy);
     }
 }

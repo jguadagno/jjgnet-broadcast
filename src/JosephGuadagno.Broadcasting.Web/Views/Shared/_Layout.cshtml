@@ -76,8 +76,19 @@
                         </li>
                         @if (User.IsInRole("Administrator"))
                         {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Admin" asp-action="Users">Admin</a>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
+                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-shield-lock me-1"></i>Admin
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                    <li>
+                                        <h6 class="dropdown-header">Account Management</h6>
+                                    </li>
+                                    <li><a class="dropdown-item" asp-area="" asp-controller="Admin" asp-action="Users">
+                                        <i class="bi bi-people me-2"></i>Users
+                                    </a></li>
+                                </ul>
                             </li>
                         }
                     }

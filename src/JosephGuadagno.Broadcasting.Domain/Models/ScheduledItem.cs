@@ -59,6 +59,11 @@ public class ScheduledItem
     [Required]
     public DateTimeOffset SendOnDateTime { get; set; }
 
+    /// <summary>
+    /// The Entra Object ID of the user who created this scheduled item
+    /// </summary>
+    public string? CreatedByEntraOid { get; set; }
+
     public Dictionary<string, string> ToDictionary()
     {
         return new Dictionary<string, string>

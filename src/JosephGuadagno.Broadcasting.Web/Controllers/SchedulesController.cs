@@ -2,14 +2,17 @@ using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Web;
+using System.Security.Claims;
 
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
 
 /// <summary>
 /// The controller for the schedules
 /// </summary>
+[Authorize(Policy = "RequireContributor")]
 public class SchedulesController : Controller
 {
     private readonly IScheduledItemService _scheduledItemService;
@@ -150,6 +153,16 @@ public class SchedulesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
+        var scheduledItem = await _scheduledItemService.GetScheduledItemAsync(id);
+        if (scheduledItem == null) return NotFound();
+
+        if (!User.IsInRole(RoleNames.Administrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || scheduledItem.CreatedByEntraOid == null || scheduledItem.CreatedByEntraOid != currentUserOid)
+                return Forbid();
+        }
+
         var result = await _scheduledItemService.DeleteScheduledItemAsync(id);
         if (result)
         {
@@ -157,8 +170,7 @@ public class SchedulesController : Controller
             return RedirectToAction("Index");
         }
 
-        var scheduledItem = await _scheduledItemService.GetScheduledItemAsync(id);
-        var scheduledItemViewModel = scheduledItem != null ? _mapper.Map<ScheduledItemViewModel>(scheduledItem) : null;
+        var scheduledItemViewModel = _mapper.Map<ScheduledItemViewModel>(scheduledItem);
         ModelState.AddModelError(string.Empty, "Failed to delete the scheduled item.");
         return View(scheduledItemViewModel);
     }
@@ -181,6 +193,7 @@ public class SchedulesController : Controller
     public async Task<RedirectToActionResult> Add(ScheduledItemViewModel scheduledItemViewModel)
     {
         var scheduledItemToAdd = _mapper.Map<Domain.Models.ScheduledItem>(scheduledItemViewModel);
+        scheduledItemToAdd.CreatedByEntraOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
         var savedScheduledItem = await _scheduledItemService.SaveScheduledItemAsync(scheduledItemToAdd);
         if (savedScheduledItem == null)
         {

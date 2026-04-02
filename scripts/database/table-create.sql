@@ -16,7 +16,8 @@ create table dbo.Engagements
     ConferenceTwitterHandle nvarchar(255) null,
     TimeZoneId    nvarchar(50) default 'America/Phoenix' not null,
     CreatedOn datetimeoffset default getutcdate() NOT NULL,
-    LastUpdatedOn datetimeoffset default getutcdate() NOT NULL
+    LastUpdatedOn datetimeoffset default getutcdate() NOT NULL,
+    CreatedByEntraOid nvarchar(36) null
 )
 go
 
@@ -35,7 +36,8 @@ create table dbo.Talks
     EndDateTime          datetimeoffset not null,
     TalkLocation         nvarchar(max),
     Comments             nvarchar(max),
-    BlueSkyHandle        nvarchar(255)  null
+    BlueSkyHandle        nvarchar(255)  null,
+    CreatedByEntraOid    nvarchar(36)   null
 )
 go
 
@@ -52,7 +54,8 @@ create table dbo.ScheduledItems
     SendOnDateTime   datetimeoffset not null,
     MessageSent      bit default 0  not null,
     MessageSentOn    datetimeoffset,
-    ImageUrl         nvarchar(2048)
+    ImageUrl         nvarchar(2048),
+    CreatedByEntraOid nvarchar(36)  null
 )
 go
 
@@ -160,6 +163,7 @@ create table dbo.MessageTemplates
     MessageType   nvarchar(50)  not null,
     Template      nvarchar(max) not null,
     Description   nvarchar(500) null,
+    CreatedByEntraOid nvarchar(36) null,
     constraint PK_MessageTemplates primary key ([Platform], [MessageType])
 )
 go
@@ -195,10 +199,10 @@ create table dbo.ApplicationUsers
         constraint CK_ApplicationUsers_ApprovalStatus
             check (ApprovalStatus in ('Pending', 'Approved', 'Rejected')),
     ApprovalNotes  nvarchar(500) null,
-    CreatedAt      datetime2     not null
+    CreatedAt      datetimeoffset not null
         constraint DF_ApplicationUsers_CreatedAt
             default (getutcdate()),
-    UpdatedAt      datetime2     not null
+    UpdatedAt      datetimeoffset not null
         constraint DF_ApplicationUsers_UpdatedAt
             default (getutcdate())
 )
@@ -234,7 +238,7 @@ create table dbo.UserApprovalLog
         constraint CK_UserApprovalLog_Action
             check (Action in ('Registered', 'Approved', 'Rejected', 'RoleAssigned', 'RoleRemoved')),
     Notes       nvarchar(500) null,
-    CreatedAt   datetime2     not null
+    CreatedAt   datetimeoffset not null
         constraint DF_UserApprovalLog_CreatedAt
             default (getutcdate())
 )

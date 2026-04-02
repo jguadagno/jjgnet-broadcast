@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
 
@@ -146,5 +147,96 @@ public class AdminController : Controller
 
         var user = await _userApprovalManager.GetUserAsync(objectIdClaim.Value);
         return user?.Id;
+    }
+
+    /// <summary>
+    /// Displays the role management page for a user
+    /// </summary>
+    /// <param name="userId">The ID of the user</param>
+    /// <returns>The role management view</returns>
+    [HttpGet]
+    public async Task<IActionResult> ManageRoles(int userId)
+    {
+        var user = await _userApprovalManager.GetUserByIdAsync(userId);
+        if (user == null)
+        {
+            TempData["ErrorMessage"] = "User not found.";
+            return RedirectToAction("Users");
+        }
+
+        var currentRoles = await _userApprovalManager.GetUserRolesAsync(userId);
+        var allRoles = await _userApprovalManager.GetAllRolesAsync();
+        var currentRoleIds = currentRoles.Select(r => r.Id).ToHashSet();
+
+        var viewModel = new ManageRolesViewModel
+        {
+            User = _mapper.Map<ApplicationUserViewModel>(user),
+            CurrentRoles = currentRoles,
+            AvailableRoles = allRoles.Where(r => !currentRoleIds.Contains(r.Id)).ToList()
+        };
+
+        return View(viewModel);
+    }
+
+    /// <summary>
+    /// Assigns a role to a user
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <param name="roleId">The role ID to assign</param>
+    /// <returns>Redirects to ManageRoles</returns>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AssignRole(int userId, int roleId)
+    {
+        try
+        {
+            var adminUserId = await GetCurrentUserIdAsync();
+            if (adminUserId == null)
+            {
+                TempData["ErrorMessage"] = "Could not identify current administrator.";
+                return RedirectToAction("Users");
+            }
+
+            await _userApprovalManager.AssignRoleAsync(userId, roleId, adminUserId.Value);
+            TempData["SuccessMessage"] = "Role assigned successfully.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error assigning role {RoleId} to user {UserId}", roleId, userId);
+            TempData["ErrorMessage"] = "Failed to assign role.";
+        }
+
+        return RedirectToAction("ManageRoles", new { userId });
+    }
+
+    /// <summary>
+    /// Removes a role from a user
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <param name="roleId">The role ID to remove</param>
+    /// <returns>Redirects to ManageRoles</returns>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveRole(int userId, int roleId)
+    {
+        try
+        {
+            var adminUserId = await GetCurrentUserIdAsync();
+            if (adminUserId == null)
+            {
+                TempData["ErrorMessage"] = "Could not identify current administrator.";
+                return RedirectToAction("Users");
+            }
+
+            await _userApprovalManager.RemoveRoleAsync(userId, roleId, adminUserId.Value);
+            TempData["SuccessMessage"] = "Role removed successfully.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing role {RoleId} from user {UserId}", roleId, userId);
+            TempData["ErrorMessage"] = "Failed to remove role.";
+        }
+
+        return RedirectToAction("ManageRoles", new { userId });
     }
 }

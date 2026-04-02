@@ -69,6 +69,8 @@ builder.Services.AddAutoMapper(config =>
     config.LicenseKey = autoMapperSettings.LicenseKey;
     config.AddProfile<WebMappingProfile>();
     config.AddProfile<NodaTimeProfile>();
+    config.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
+    config.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.RbacProfile>();
 }, typeof(Program));
 
 // Configure Microsoft Identity
@@ -112,6 +114,7 @@ builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefa
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.AccessDeniedPath = "/Account/AccessDenied";
     });
 
 builder.Services.AddDistributedSqlServerCache(options =>

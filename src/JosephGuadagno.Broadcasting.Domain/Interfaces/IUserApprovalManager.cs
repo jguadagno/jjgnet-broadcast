@@ -25,6 +25,13 @@ public interface IUserApprovalManager
     Task<ApplicationUser?> GetUserAsync(string entraObjectId);
 
     /// <summary>
+    /// Gets a user by their integer ID
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <returns>The user if found, otherwise null</returns>
+    Task<ApplicationUser?> GetUserByIdAsync(int userId);
+
+    /// <summary>
     /// Gets all users pending approval
     /// </summary>
     /// <returns>List of pending users</returns>

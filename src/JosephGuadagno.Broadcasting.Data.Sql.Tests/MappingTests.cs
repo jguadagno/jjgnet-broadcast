@@ -12,7 +12,11 @@ public class MappingTests
     public void MappingProfile_IsValid()
     {
         var configuration = new MapperConfiguration(cfg
-            => cfg.AddProfile<MappingProfiles.BroadcastingProfile>(), new LoggerFactory());
+            =>
+        {
+            cfg.AddProfile<MappingProfiles.BroadcastingProfile>();
+            cfg.AddProfile<MappingProfiles.RbacProfile>();
+        }, new LoggerFactory());
 
         try
         {

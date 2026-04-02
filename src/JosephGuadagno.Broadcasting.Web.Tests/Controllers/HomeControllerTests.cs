@@ -1,6 +1,7 @@
 using Moq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 
 using JosephGuadagno.Broadcasting.Web.Controllers;
@@ -58,5 +59,17 @@ public class HomeControllerTests
         // TraceIdentifier is set by DefaultHttpContext (Activity.Current is null in tests,
         // so RequestId falls back to HttpContext.TraceIdentifier)
         Assert.NotNull(model.RequestId);
+    }
+
+    [Fact]
+    public void Error_IsAllowAnonymous()
+    {
+        // Arrange & Act
+        var method = typeof(HomeController).GetMethod("Error");
+
+        // Assert
+        Assert.NotNull(method);
+        var attributes = method!.GetCustomAttributes(typeof(AllowAnonymousAttribute), false);
+        Assert.Single(attributes);
     }
 }

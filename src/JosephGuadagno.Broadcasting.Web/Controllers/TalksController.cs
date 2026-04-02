@@ -1,14 +1,18 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Web;
+using System.Security.Claims;
 
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
 
 /// <summary>
 /// The controller for the talks.
 /// </summary>
+[Authorize(Policy = "RequireContributor")]
 [Route("engagements/{engagementId:int}/[controller]/[action]")]
 public class TalksController : Controller
 {
@@ -84,24 +88,75 @@ public class TalksController : Controller
     }
 
     /// <summary>
-    /// Deletes a talk.
+    /// Shows the delete confirmation page for a talk.
     /// </summary>
     /// <param name="engagementId">The id of the engagement</param>
     /// <param name="talkId">The id of the talk to delete</param>
-    /// <returns>Upon success, redirects to the <see cref="Edit(int,int)"/> view.</returns>
+    /// <returns>The delete confirmation view.</returns>
     [HttpGet]
     [Route("{talkId:int}")]
     public async Task<IActionResult> Delete(int engagementId, int talkId)
     {
+        var talk = await _engagementService.GetEngagementTalkAsync(engagementId, talkId);
+        if (talk == null)
+        {
+            return NotFound();
+        }
+
+        // Ownership check: Administrators can delete anything, Contributors only their own
+        if (!User.IsInRole(RoleNames.Administrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || talk.CreatedByEntraOid == null || talk.CreatedByEntraOid != currentUserOid)
+            {
+                return Forbid();
+            }
+        }
+
+        var talkViewModel = _mapper.Map<TalkViewModel>(talk);
+        return View(talkViewModel);
+    }
+
+    /// <summary>
+    /// Deletes a talk after confirmation.
+    /// </summary>
+    /// <param name="engagementId">The id of the engagement</param>
+    /// <param name="talkId">The id of the talk to delete</param>
+    /// <returns>Upon success, redirects to the <see cref="Edit(int,int)"/> view.</returns>
+    [HttpPost]
+    [ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    [Route("{talkId:int}")]
+    public async Task<IActionResult> DeleteConfirmed(int engagementId, int talkId)
+    {
+        var talk = await _engagementService.GetEngagementTalkAsync(engagementId, talkId);
+        if (talk == null)
+        {
+            return NotFound();
+        }
+
+        // Ownership check: Administrators can delete anything, Contributors only their own
+        if (!User.IsInRole(RoleNames.Administrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || talk.CreatedByEntraOid == null || talk.CreatedByEntraOid != currentUserOid)
+            {
+                return Forbid();
+            }
+        }
+
         var result = await _engagementService.DeleteEngagementTalkAsync(engagementId, talkId);
 
         if (result)
         {
             TempData["SuccessMessage"] = "Talk deleted successfully.";
-            return RedirectToAction("Edit", "Engagements", new {id = engagementId});
+            return RedirectToAction("Edit", "Engagements", new { id = engagementId });
         }
+
         TempData["ErrorMessage"] = "Failed to delete the talk.";
-        return View();
+        var talkViewModel = _mapper.Map<TalkViewModel>(talk);
+        ModelState.AddModelError(string.Empty, "Failed to delete the talk.");
+        return View(talkViewModel);
     }
     
     /// <summary>
@@ -128,6 +183,7 @@ public class TalksController : Controller
     public async Task<RedirectToActionResult> Add(TalkViewModel talkViewModel)
     {
         var talkToAdd = _mapper.Map<Domain.Models.Talk>(talkViewModel);
+        talkToAdd.CreatedByEntraOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
         var savedTalk = await _engagementService.SaveEngagementTalkAsync(talkToAdd);
         if (savedTalk == null)
         {

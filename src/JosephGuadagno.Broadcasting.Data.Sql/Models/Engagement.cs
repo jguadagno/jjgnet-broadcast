@@ -31,5 +31,7 @@ public partial class Engagement
 
     public string BlueSkyHandle { get; set; }
 
+    public string CreatedByEntraOid { get; set; }
+
     public virtual ICollection<Talk> Talks { get; set; } = new List<Talk>();
 }

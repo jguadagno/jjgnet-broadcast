@@ -1,7 +1,43 @@
+@model JosephGuadagno.Broadcasting.Web.Models.TalkViewModel
+
 @{
     ViewData["Title"] = "Delete Talk";
 }
-<div class="alert alert-danger" role="alert">
-    <h4 class="alert-heading">Error!</h4>
-    <i class="bi bi-exclamation-circle-fill text-danger me-2"></i>Failed to delete the requested talk!
+
+<h1>Delete Talk</h1>
+<div class="alert alert-warning" role="alert">
+    <h4 class="alert-heading">Are you sure?</h4>
+    <p>You are about to permanently delete the following talk. This action cannot be undone.</p>
 </div>
+
+@if (Model != null)
+{
+    <dl class="row">
+        <dt class="col-sm-3">Id</dt>
+        <dd class="col-sm-9">@Model.Id</dd>
+        <dt class="col-sm-3">Name</dt>
+        <dd class="col-sm-9">@Model.Name</dd>
+        <dt class="col-sm-3">Start Date/Time</dt>
+        <dd class="col-sm-9"><local-time value="@Model.StartDateTime" /></dd>
+        <dt class="col-sm-3">End Date/Time</dt>
+        <dd class="col-sm-9"><local-time value="@Model.EndDateTime" /></dd>
+    </dl>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-circle-fill text-danger"></i>
+            Failed to delete the talk. Please try again.
+        </div>
+    }
+
+    <form asp-action="Delete" asp-route-engagementId="@Model.EngagementId" asp-route-talkId="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash me-2"></i>Confirm Delete
+        </button>
+        <a asp-action="Details" asp-route-engagementId="@Model.EngagementId" asp-route-talkId="@Model.Id" class="btn btn-secondary">
+            <i class="bi bi-x me-2"></i>Cancel
+        </a>
+    </form>
+}

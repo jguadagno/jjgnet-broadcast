@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Controllers;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
@@ -172,6 +174,20 @@ public class SchedulesControllerTests
     public async Task DeleteConfirmed_WhenDeleteSucceeds_ShouldRedirectToIndex()
     {
         // Arrange
+        var scheduledItem = new ScheduledItem { Id = 1, CreatedByEntraOid = "user-oid" };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid"),
+            new Claim(ClaimTypes.Role, RoleNames.Administrator)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(scheduledItem);
         _scheduledItemService.Setup(s => s.DeleteScheduledItemAsync(1)).ReturnsAsync(true);
 
         // Act
@@ -187,10 +203,22 @@ public class SchedulesControllerTests
     public async Task DeleteConfirmed_WhenDeleteFails_ShouldReturnView()
     {
         // Arrange
-        var scheduledItem = new ScheduledItem { Id = 1 };
+        var scheduledItem = new ScheduledItem { Id = 1, CreatedByEntraOid = "user-oid" };
         var viewModel = new ScheduledItemViewModel { Id = 1 };
-        _scheduledItemService.Setup(s => s.DeleteScheduledItemAsync(1)).ReturnsAsync(false);
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid"),
+            new Claim(ClaimTypes.Role, RoleNames.Administrator)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(scheduledItem);
+        _scheduledItemService.Setup(s => s.DeleteScheduledItemAsync(1)).ReturnsAsync(false);
         _mapper.Setup(m => m.Map<ScheduledItemViewModel>(It.IsAny<object>())).Returns(viewModel);
 
         // Act
@@ -218,6 +246,17 @@ public class SchedulesControllerTests
         // Arrange
         var viewModel = new ScheduledItemViewModel { Id = 0 };
         var savedItem = new ScheduledItem { Id = 55 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid")
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _mapper.Setup(m => m.Map<ScheduledItem>(It.IsAny<object>())).Returns(new ScheduledItem());
         _scheduledItemService.Setup(s => s.SaveScheduledItemAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(savedItem);
 
@@ -235,6 +274,17 @@ public class SchedulesControllerTests
     {
         // Arrange
         var viewModel = new ScheduledItemViewModel { Id = 0 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid")
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _mapper.Setup(m => m.Map<ScheduledItem>(It.IsAny<object>())).Returns(new ScheduledItem());
         _scheduledItemService.Setup(s => s.SaveScheduledItemAsync(It.IsAny<ScheduledItem>())).ReturnsAsync((ScheduledItem?)null);
 

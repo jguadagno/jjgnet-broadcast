@@ -2,6 +2,7 @@ using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Web;
 
@@ -10,6 +11,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// The controller for managing message templates.
 /// </summary>
+[Authorize(Policy = "RequireContributor")]
 public class MessageTemplatesController : Controller
 {
     private readonly IMessageTemplateService _messageTemplateService;

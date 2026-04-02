@@ -59,4 +59,14 @@ public class Talk
     /// The identifier of the engagement
     /// </summary>
     public int EngagementId { get; set; }
+
+    /// <summary>
+    /// The BlueSky handle for the talk (e.g. the speaker's BlueSky account)
+    /// </summary>
+    public string? BlueSkyHandle { get; set; }
+
+    /// <summary>
+    /// The Entra Object ID of the user who created this talk
+    /// </summary>
+    public string? CreatedByEntraOid { get; set; }
 }

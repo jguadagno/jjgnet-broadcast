@@ -153,6 +153,25 @@
 - **Style note:** Base script uses lowercase SQL and inline constraint syntax (not separate ALTER TABLE). Migration uses UPPERCASE with brackets — both are valid; match the style of the file you're editing.
 - **Branch:** `squad/rbac-phase1`
 
+### 2026-04-03 — Issue #607: RBAC Phase 2 Ownership Columns
+- **Task:** Add CreatedByEntraOid ownership tracking to content tables for ownership-based delete rules
+- **Branch:** `squad/rbac-phase2`
+- **Migration:** `scripts/database/migrations/2026-04-02-rbac-ownership.sql`
+- **Tables updated:**
+  1. `Engagements` — added `CreatedByEntraOid NVARCHAR(36) NULL`
+  2. `Talks` — added `CreatedByEntraOid NVARCHAR(36) NULL`
+  3. `ScheduledItems` — added `CreatedByEntraOid NVARCHAR(36) NULL`
+  4. `MessageTemplates` — added `CreatedByEntraOid NVARCHAR(36) NULL`
+- **Domain models updated:** Added `public string? CreatedByEntraOid { get; set; }` to all four domain models
+- **EF Core entity models updated:** Added `public string CreatedByEntraOid { get; set; }` (#nullable disable context)
+- **BroadcastingContext.cs:** Added `.HasMaxLength(36)` configuration for all four CreatedByEntraOid properties
+- **Base schema updated:** `table-create.sql` synchronized with migration state
+- **Column nullable decision:** Nullable to support existing records without ownership. Contributors cannot delete unowned records (no owner = not their content), Administrators can delete any content.
+- **AutoMapper:** BroadcastingProfile uses `ReverseMap()` for Engagement and MessageTemplate, explicit mappings for Talk and ScheduledItem — all automatically pick up the new property via convention.
+- **Pattern:** Ownership column pattern established: `CreatedByEntraOid NVARCHAR(36) NULL` stores Entra Object ID (oid claim) from authenticated user at creation time.
+- **Verification:** Build passed with exit code 0 (expected NU1510, NU1903 warnings)
+- **Future work:** Phase 2.5 could backfill ownership for existing records if audit logs are available.
+
 Established by Joseph Guadagno:
 
 1. **PR Merge Authority**: Only Joseph may merge PRs

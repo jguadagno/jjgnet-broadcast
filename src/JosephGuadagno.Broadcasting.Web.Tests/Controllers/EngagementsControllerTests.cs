@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Controllers;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
@@ -168,6 +170,20 @@ public class EngagementsControllerTests
     public async Task DeleteConfirmed_WhenDeleteSucceeds_ShouldRedirectToIndex()
     {
         // Arrange
+        var engagement = new Engagement { Id = 1, CreatedByEntraOid = "user-oid" };
+        
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid"),
+            new Claim(ClaimTypes.Role, RoleNames.Administrator)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(engagement);
         _engagementService.Setup(s => s.DeleteEngagementAsync(1)).ReturnsAsync(true);
 
         // Act
@@ -183,10 +199,22 @@ public class EngagementsControllerTests
     public async Task DeleteConfirmed_WhenDeleteFails_ShouldReturnView()
     {
         // Arrange
-        var engagement = new Engagement { Id = 1 };
+        var engagement = new Engagement { Id = 1, CreatedByEntraOid = "user-oid" };
         var viewModel = new EngagementViewModel { Id = 1 };
-        _engagementService.Setup(s => s.DeleteEngagementAsync(1)).ReturnsAsync(false);
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid"),
+            new Claim(ClaimTypes.Role, RoleNames.Administrator)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(engagement);
+        _engagementService.Setup(s => s.DeleteEngagementAsync(1)).ReturnsAsync(false);
         _mapper.Setup(m => m.Map<EngagementViewModel>(It.IsAny<object>())).Returns(viewModel);
 
         // Act
@@ -214,6 +242,17 @@ public class EngagementsControllerTests
         // Arrange
         var viewModel = new EngagementViewModel { Id = 0 };
         var savedEngagement = new Engagement { Id = 42 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid")
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _mapper.Setup(m => m.Map<Engagement>(It.IsAny<object>())).Returns(new Engagement());
         _engagementService.Setup(s => s.SaveEngagementAsync(It.IsAny<Engagement>())).ReturnsAsync(savedEngagement);
 
@@ -231,6 +270,17 @@ public class EngagementsControllerTests
     {
         // Arrange
         var viewModel = new EngagementViewModel { Id = 0 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid")
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _mapper.Setup(m => m.Map<Engagement>(It.IsAny<object>())).Returns(new Engagement());
         _engagementService.Setup(s => s.SaveEngagementAsync(It.IsAny<Engagement>())).ReturnsAsync((Engagement?)null);
 
@@ -240,5 +290,142 @@ public class EngagementsControllerTests
         // Assert
         var redirectResult = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Add", redirectResult.ActionName);
+    }
+
+    [Fact]
+    public async Task DeleteConfirmed_WhenUserIsAdministrator_DeletesAnyEngagement()
+    {
+        // Arrange
+        var engagementId = 1;
+        var engagement = new Engagement
+        {
+            Id = engagementId,
+            CreatedByEntraOid = "other-user-oid"
+        };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "admin-oid"),
+            new Claim(ClaimTypes.Role, RoleNames.Administrator)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementAsync(engagementId)).ReturnsAsync(engagement);
+        _engagementService.Setup(s => s.DeleteEngagementAsync(engagementId)).ReturnsAsync(true);
+
+        // Act
+        var result = await _controller.DeleteConfirmed(engagementId);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        _engagementService.Verify(s => s.DeleteEngagementAsync(engagementId), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteConfirmed_WhenUserIsOwner_DeletesOwnEngagement()
+    {
+        // Arrange
+        var engagementId = 1;
+        var userOid = "user-oid-12345";
+        var engagement = new Engagement
+        {
+            Id = engagementId,
+            CreatedByEntraOid = userOid
+        };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementAsync(engagementId)).ReturnsAsync(engagement);
+        _engagementService.Setup(s => s.DeleteEngagementAsync(engagementId)).ReturnsAsync(true);
+
+        // Act
+        var result = await _controller.DeleteConfirmed(engagementId);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        _engagementService.Verify(s => s.DeleteEngagementAsync(engagementId), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteConfirmed_WhenUserIsNotOwnerAndNotAdmin_ReturnsForbid()
+    {
+        // Arrange
+        var engagementId = 1;
+        var userOid = "user-oid-12345";
+        var engagement = new Engagement
+        {
+            Id = engagementId,
+            CreatedByEntraOid = "different-user-oid"
+        };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementAsync(engagementId)).ReturnsAsync(engagement);
+
+        // Act
+        var result = await _controller.DeleteConfirmed(engagementId);
+
+        // Assert
+        Assert.IsType<ForbidResult>(result);
+        _engagementService.Verify(s => s.DeleteEngagementAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Add_Post_SetsCreatedByEntraOid()
+    {
+        // Arrange
+        var userOid = "user-oid-67890";
+        var viewModel = new EngagementViewModel { Id = 0, Name = "Test Engagement" };
+        var savedEngagement = new Engagement { Id = 42, CreatedByEntraOid = userOid };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        Engagement? capturedEngagement = null;
+        _mapper.Setup(m => m.Map<Engagement>(It.IsAny<object>())).Returns(new Engagement());
+        _engagementService
+            .Setup(s => s.SaveEngagementAsync(It.IsAny<Engagement>()))
+            .Callback<Engagement>(e => capturedEngagement = e)
+            .ReturnsAsync(savedEngagement);
+
+        // Act
+        var result = await _controller.Add(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Details", redirectResult.ActionName);
+        Assert.NotNull(capturedEngagement);
+        Assert.Equal(userOid, capturedEngagement!.CreatedByEntraOid);
     }
 }

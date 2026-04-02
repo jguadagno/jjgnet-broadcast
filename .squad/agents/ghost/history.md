@@ -164,3 +164,35 @@ MapControllerRoute()
 - Phase 2: `/Account/PendingApproval` and `/Account/Rejected` views
 - Phase 3: Apply `[Authorize(Policy = "RequireXxx")]` to controllers/actions
 - Database migrations for new tables (Trinity's scope)
+
+## RBAC Phase 2 Implementation (Branch: squad/rbac-phase2)
+
+**Context:** Phase 1 (PR #610) merged. Applying page-level authorization policies to controllers.
+
+**Ghost delivered:**
+
+1. **HomeController.cs** - Ensured public pages remain accessible:
+   - Added `[AllowAnonymous]` to `Error()` action (Index, Privacy, AuthError already had it)
+   - All public-facing pages now bypass the global `AuthorizeFilter` set in Program.cs
+   - Rationale: Error pages must be accessible to anonymous users and during auth failures
+
+2. **LinkedInController.cs** - Applied administrator-only policy:
+   - Added `[Authorize(Policy = "RequireAdministrator")]` at class level
+   - Added `using Microsoft.AspNetCore.Authorization;`
+   - All actions (Index, RefreshToken, Callback) now require Administrator role
+   - Rationale: This controller manages LinkedIn OAuth tokens in Key Vault - sensitive admin-only operations
+
+**Security rationale:**
+- Program.cs has a global `AuthorizeFilter` requiring authentication by default (line 89-92)
+- HomeController public pages (Index, Privacy, Error, AuthError) must explicitly opt out with `[AllowAnonymous]`
+- LinkedInController manages OAuth tokens and Key Vault secrets - strictly admin-only access required
+- Policy strings match Phase 1 pattern: inline literals referencing policies defined in Program.cs
+
+**Build status:** ✅ Build succeeded (85.1s, 74 warnings - all expected CS8618 nullable warnings)
+
+**Branch:** `squad/rbac-phase2`
+
+**Learnings:**
+- Global `AuthorizeFilter` in Program.cs means ALL controllers default to requiring authentication unless explicitly opted out
+- The Error action in HomeController was missing `[AllowAnonymous]` - critical gap since error pages must be accessible during auth failures
+- LinkedIn OAuth flow controller handles sensitive Key Vault operations - correct admin-only gating prevents unauthorized token access
