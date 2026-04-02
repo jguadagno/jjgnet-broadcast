@@ -15,5 +15,5 @@ public partial class MessageTemplate
 
     public string Description { get; set; }
 
-    public string CreatedByEntraOid { get; set; }
+    public string? CreatedByEntraOid { get; set; }
 }

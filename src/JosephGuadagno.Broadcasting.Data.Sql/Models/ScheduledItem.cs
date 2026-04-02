@@ -23,5 +23,5 @@ public partial class ScheduledItem
 
     public string ImageUrl { get; set; }
 
-    public string CreatedByEntraOid { get; set; }
+    public string? CreatedByEntraOid { get; set; }
 }
