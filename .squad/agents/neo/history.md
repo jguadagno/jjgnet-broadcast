@@ -4,7 +4,7 @@
 
 Lead reviewer and sprint planner. Primary domain: architecture, CI/CD, patterns, code reviews, issue triage.
 
-**Current focus:** RBAC Phase 1 — PR #610 open, CHANGES REQUESTED pending fixes to middleware ordering, in-memory filtering, and Clean Architecture violation. Sprint 12 planning in progress.
+**Current focus:** RBAC Phase 1 — PR #610 Round 2 review complete. CHANGES REQUESTED — 1 new blocking finding (UserApprovalMiddleware hardcoded claim string, incomplete fix of Finding #5). All 5 original findings resolved. Awaiting Trinity's 2-line fix before Joseph merges.
 
 **Key patterns established:**
 - DTO/API: request DTOs exclude route params, return Task<ActionResult<T>>, null guard before ToResponse
@@ -34,7 +34,7 @@ Lead reviewer and sprint planner. Primary domain: architecture, CI/CD, patterns,
 - Web UI: `AccountController`, `AdminController`, 3 views, 3 ViewModels
 - Tests: 37 new tests (5 classes); 631 total passing, 0 failing
 
-**Review Verdict: ⚠️ CHANGES REQUESTED**
+**Round 1 Review Verdict: ⚠️ CHANGES REQUESTED**
 
 Review posted as comment (GitHub blocks self-review): https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomment-4174117340
 
@@ -50,16 +50,47 @@ Review posted as comment (GitHub blocks self-review): https://github.com/jguadag
 - Dead code: `approval_notes` claim read in `AccountController.Rejected()` but never populated by `EntraClaimsTransformation`
 - `EntraObjectIdClaimType` constant duplicated in 2 files — should be in `Domain/Constants/`
 
-**What passed review cleanly:**
-- CSRF tokens + `[ValidateAntiForgeryToken]` on all POST actions ✅
-- `[AllowAnonymous]` on approval pages prevents redirect loops ✅
-- `/MicrosoftIdentity/*` correctly excluded from approval middleware ✅
-- AutoMapper via profiles only ✅
-- Idempotent role seed in migration ✅
-- `IClaimsTransformation` registered as Scoped ✅
-- Idempotency guard in `TransformAsync` ✅
-
 **Scribe tasks completed:** `.squad/decisions/inbox/` (8 files) merged into `decisions.md`, committed.
+
+---
+
+### 2026-04-02: RBAC Phase 1 — PR #610 Round 2 Re-Review
+
+**Commits reviewed (in order):**
+- `22ad9a7` — Trinity: all 5 Round 1 findings fixed
+- `06fbb77` — Tank: updated RBAC tests (GetUserRolesAsync, approval_notes claim, DB-level filtering mock)
+- `c77d9d3` — Morpheus: base schema scripts updated (table-create.sql, data-create.sql)
+- `56ab6be` — Tank: history update
+- `5f3eeb3` — Trinity: BroadcastingContext DI fix in Web Program.cs
+
+**Test results:** 84/84 Web tests pass, 76/76 Managers tests pass (0 failures)
+
+**All 5 Round 1 findings verified resolved:**
+
+| # | Finding | Verified |
+|---|---------|---------|
+| 1 | `UseUserApprovalGate()` before `UseAuthorization()` | ✅ Program.cs lines 149–150 |
+| 2 | `AdminController.Users()` uses `GetUsersByStatusAsync()` | ✅ 3 DB-level calls |
+| 3 | `EntraClaimsTransformation` uses `IUserApprovalManager` only | ✅ `GetUserRolesAsync()` |
+| 4 | `approval_notes` claim populated for rejected users | ✅ Lines 63–67 |
+| 5 | `ApplicationClaimTypes` constants in Domain | ✅ Partial — middleware missed |
+
+**New additions verified:**
+- `table-create.sql` RBAC tables ✅
+- `data-create.sql` 3 role seeds ✅
+- `BroadcastingContext` DI in Web Program.cs line 61 ✅
+
+**Round 2 Review Verdict: ⚠️ CHANGES REQUESTED**
+
+Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomment-4174225355
+
+| # | Severity | File | Issue |
+|---|----------|------|-------|
+| NEW 1 | 🟠 MEDIUM (BLOCKING) | `UserApprovalMiddleware.cs` line 11 | Local `"approval_status"` const — not updated when finding #5 was fixed. Latent gate-bypass bug if `ApplicationClaimTypes.ApprovalStatus` changes. Fix: use `ApplicationClaimTypes.ApprovalStatus`. |
+| NEW 2 | 🟡 Low (non-blocking) | Test files (3) | Hardcoded claim strings instead of `ApplicationClaimTypes` constants |
+| NEW 3 | 🟡 Low (non-blocking) | `table-create.sql` + migration | Missing SQL CHECK constraints on `ApprovalStatus` and `Action` columns |
+
+**Approved once NEW #1 is fixed. Ready for @jguadagno review and merge.**
 
 ---
 
