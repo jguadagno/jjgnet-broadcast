@@ -1,34 +1,24 @@
-# Team Status: RBAC Phase 2 Followup — COMPLETE & MERGED
+# Team Status: Cleanup Sprint Complete — Ready for Next Sprint
 
-**Updated:** 2026-04-02T19-36-15Z  
-**Status:** ✅ Phase 2 Followup merged to main  
+**Updated:** 2026-04-02T22-36-13Z  
+**Status:** All 3 cleanup PRs merged (#632, #633, #634). Phase 3 epic #608 closed. Main is up to date. No active work items.
 
 ## Current Focus
 
-**RBAC Phase 2 Followup (PR #612)** is complete and merged to main branch.
+**Cleanup sprint complete.** All post-#631 improvements merged and verified:
+1. ✅ Seed data idempotency (#622, PR #632)
+2. ✅ Facebook token redaction security (#629, PR #633)
+3. ✅ Logging & prod-config batch (#625-#630, PR #634)
+4. ✅ Phase 3 epic #608 closed (all sub-issues #615-#619 verified)
 
-All 4 post-Phase-2 improvements implemented, tested, reviewed, and approved:
-1. ✅ CreatedByEntraOid nullability alignment (Morpheus)
-2. ✅ RoleViewModel creation + ManageRolesViewModel refactor (Switch)
-3. ✅ Self-demotion guard in AdminController.RemoveRole (Switch)
-4. ✅ EngagementsController authorization: class-level RequireViewer + method-level RequireContributor (Switch)
+**Build Status:** Clean. All tests passing.  
+**Branch Status:** Main up to date. Feature branches deleted.
 
-**Test Coverage:** All 101 Web tests passing (4 new + 1 updated)  
-**Build Status:** 0 errors, 27 warnings (baseline, all expected)  
+## Ready for Next Phase
 
-## Next Phase Options
-
-### Option 1: Phase 3 (#608 — Email Notifications)
-- **Status:** Ready to start (Phase 2 blocking items resolved)
-- **Description:** Email notifications for user approval via Azure Storage Queue
-- **Owner:** TBD
-
-### Option 2: Viewer UX Gap Follow-up (#613)
-- **Status:** Open (non-blocking observation from PR #612 review)
-- **Description:** Viewers can navigate to Add/Edit/Delete forms but receive 403 on submit. Recommend adding `[Authorize(Policy = "RequireContributor")]` to GET Add, GET Edit, GET Delete to prevent form navigation.
-- **Estimated Effort:** Small (5-10 minutes per controller, test coverage exists)
-- **Related Controllers:** EngagementsController, ScheduledItemsController (and others)
-- **Owner:** TBD
+Team can now proceed with:
+- **Option 1:** Phase 3 — Email notifications (#608 was epic, now ready for implementation)
+- **Option 2:** UX gap follow-up (#613) — Viewers can navigate to restricted forms
 
 ## Key Patterns Established
 

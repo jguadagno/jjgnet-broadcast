@@ -10225,3 +10225,148 @@ Implemented all ownership checks and creation assignments assuming `public strin
 
 ---
 
+
+
+---
+
+## Decision: data-seed.sql — All INSERTs must be idempotent
+
+**Date:** 2026-04-03  
+**Author:** Morpheus  
+**Issue:** #622  
+
+Every INSERT statement in `scripts/database/data-seed.sql` **must** be wrapped with an `IF NOT EXISTS` guard (or equivalent MERGE pattern) to ensure idempotency.
+
+`data-seed.sql` is provisioned by .NET Aspire on fresh environments. If the script is run a second time, bare INSERTs will fail on UNIQUE constraints or insert duplicates in tables without them. The MessageTemplates seed block already follows this pattern correctly. Roles and EmailTemplates seed data added in Issues #602 and #615 did not — fixed in Issue #622.
+
+**Pattern:**
+`sql
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.TableName WHERE UniqueColumn = N'Value')
+    INSERT INTO JJGNet.dbo.TableName (Col1, Col2) VALUES (N'Value', N'...')
+`
+
+Applies to ALL INSERT statements in `data-seed.sql`, including future additions.
+
+---
+
+## Decision: Redact Sensitive Query Parameters Before Logging URLs
+
+**Author:** Oracle  
+**Date:** 2026-04-02  
+**Issue:** #629  
+
+All HTTP URLs that contain OAuth credentials or secrets as query parameters **must** be redacted before being passed to any logging call, including `LogTrace`.
+
+Facebook's Graph API (and similar OAuth flows) embed secrets in query strings: `access_token`, `client_secret`, `fb_exchange_token`. Even `LogTrace`-level calls flow to Application Insights in production.
+
+**Rule:**
+1. Never log a raw URL that contains credential query parameters. Apply redaction first.
+2. Use `RedactSensitiveQueryParams(url)` (or equivalent) before any log call involving a URL.
+3. The helper uses a compiled regex replacing known sensitive param values with `***REDACTED***`.
+4. Known sensitive parameters: `access_token`, `client_secret`, `fb_exchange_token`, and analogous tokens in other social platform managers.
+
+**Reference Implementation:**
+`csharp
+private static readonly Regex SensitiveQueryParamPattern =
+    new(@"(access_token|client_secret|fb_exchange_token)=[^&]*", RegexOptions.Compiled);
+
+private static string RedactSensitiveQueryParams(string url) =>
+    SensitiveQueryParamPattern.Replace(url, "$1=***REDACTED***");
+`
+
+This pattern should be audited and applied across all social platform managers (LinkedIn, Twitter/X, Bluesky) that construct URLs with credentials.
+
+---
+
+## Decision: Tests for Issues #618 and #619 (Tank)
+
+**Date:** 2026-04-02  
+**Author:** Tank  
+**Branch:** issue-618-619  
+
+### EmailClient mocked directly — no IEmailClient wrapper needed
+
+`EmailClient` has a `protected EmailClient()` constructor and virtual `SendAsync`, making it mockable via Moq without a wrapper.
+
+### Return type is EmailSendOperation
+
+`SendAsync` returns `Task<EmailSendOperation>`, NOT `Task<Operation<EmailSendResult>>`. Mock with `new Mock<EmailSendOperation>()`.
+
+### Run_InvalidBase64_DoesNotCallEmailClient
+
+Trinity's implementation catches deserialization failures, logs, and returns early (prevents infinite retries). Test renamed accordingly.
+
+### FluentAssertions added to Functions.Tests.csproj
+
+Version 8.9.0, matching Managers.Tests.
+
+### UserApprovalManagerTests updated for new dependencies
+
+`UserApprovalManager` gained two new constructor params (`IEmailTemplateManager`, `IEmailSender`) plus `ILogger<UserApprovalManager>`. Test class constructor updated to inject all six dependencies.
+
+### IEmailTemplateManager.GetTemplateAsync (not GetByNameAsync)
+
+Always verify method names from the interface file, not the spec narrative.
+
+**Test Coverage:**
+- `SendEmailTests`: 4 tests (happy path, from address, invalid Base64 dropped, ACS failure propagates)
+- `UserApprovalManagerTests`: 5 new email tests (approve queues email, null template → no exception, null template → no sender call, reject queues email, reject null template → no exception)
+- Results: Managers.Tests 89/89, Functions.Tests 4/4
+
+---
+
+## Decision: Issues #618 + #619 — SendEmail Function and Email Wiring (Trinity)
+
+**Date:** 2026-04-07  
+**Author:** Trinity  
+**Branch:** issue-618-619 → PR #631  
+
+### Dual-decode strategy for queue messages
+
+SendEmail tries Base64→JSON first, falls back to raw JSON. `Azure.Storage.Queues` v12 defaults `QueueMessageEncoding.None`; the fallback ensures forward-compatibility. Any team member adding queue-consuming functions should be aware of this pattern.
+
+### EmailClient registered as Singleton
+
+`EmailClient` (Azure.Communication.Email) is a thread-safe singleton in Functions `Program.cs`. Api and Web projects do NOT register `EmailClient` — they only queue via `IEmailSender`.
+
+### Email failures must never block approval/rejection
+
+In `UserApprovalManager`, null templates and queue errors are logged at `Warning` and silently skipped. The approval/rejection DB write and audit log always complete. Email is best-effort notification, not a hard dependency.
+
+### Template names convention
+
+Template names: `"UserApproved"` and `"UserRejected"`. Must match entries in the `EmailTemplates` DB table seeded via `data-seed.sql`.
+
+### EmailSendOperation is mockable
+
+`EmailSendOperation` has a `protected` default constructor for unit testing with Moq. Use `Mock<EmailSendOperation>()` — do NOT use `Mock<Operation<EmailSendResult>>()`.
+
+---
+
+## Decision: Logging Fixes (PR #634) — Trinity
+
+**Date:** 2026-04-02  
+**Author:** Trinity  
+**PR:** #634 | Branch: issue-625-626-627-628-624-630  
+
+### Adaptive Sampling: Remove excludedTypes entirely
+
+Removed `excludedTypes: "Request;Exception"` from `host.json` `samplingSettings`. Excluded types bypass adaptive sampling and log at full rate. Adaptive sampling (`maxTelemetryItemsPerSecond: 10`) handles throttling correctly without exclusions.
+
+### Per-item LogWarning → LogDebug in collectors
+
+Inside foreach loops, use `LogDebug` for per-item state. Use `LogInformation` for post-loop summaries only. Only genuine errors or unexpected conditions warrant `LogWarning` or higher.
+
+### IsEnabled guard on LogCustomEvent
+
+Added `if (!logger.IsEnabled(LogLevel.Information)) return;` at the top of `LogCustomEvent` in `ILoggerExtension`. Avoids formatting overhead when the JosephGuadagno namespace is suppressed.
+
+### Retry policy already present — no change for #624
+
+`host.json` already has `exponentialBackoff` retry policy. No change needed.
+
+### appsettings.Production.json pattern
+
+Added to both Api and Web: `Default: Warning`, `Microsoft: Warning`, `Microsoft.Hosting.Lifetime: Information`, `JosephGuadagno: Information`. Environment-specific files are the ASP.NET Core standard for production log level overrides.
+
+---
