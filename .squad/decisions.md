@@ -7839,3 +7839,906 @@ public async Task Index_ShouldReturnViewWithEngagementViewModels()
 - PR #597: Service interface changes to PagedResult<T>
 - Commit: 4fb548a (fix: update Web.Tests mocks to use PagedResult<T>)
 
+
+
+---
+
+## RBAC Phase 1 — Squad Decisions (2026-04-02)
+
+> Merged from .squad/decisions/inbox/ by Scribe/Neo — 2026-04-02
+> Covers: issues #600, #601, #602, #603, #604, #605, #606 (RBAC Phase 1 + anonymous home page)
+
+---
+# Architectural Decisions: User Approval & RBAC
+
+**Date:** 2026-07-15
+**Author:** Neo
+**Status:** Draft — Awaiting Joseph Review
+
+---
+
+## Decision 1: No ASP.NET Core Identity
+
+**Decision:** Do NOT introduce ASP.NET Core Identity.
+
+**Rationale:** The app authenticates via Microsoft Entra ID (`Microsoft.Identity.Web`). Adding Identity would require a full schema overhaul (AspNetUsers, AspNetRoles, etc.), conflict with the existing MSAL token pipeline, and add ~20 new EF-managed tables. The existing external auth provider already handles credential validation, MFA, and session management.
+
+**Instead:** Lightweight custom tables (`ApplicationUsers`, `Roles`, `UserRoles`, `UserApprovalLog`) keyed on the Entra `oid` claim. Mapping is done in a custom `IClaimsTransformation` implementation.
+
+---
+
+## Decision 2: Entra `oid` Claim as Local User Key
+
+**Decision:** Use the Entra ID Object ID (`oid` claim) as the primary key for `ApplicationUsers`.
+
+**Rationale:** Stable, immutable, globally unique across the tenant. Does not change if the user updates their display name or UPN. Store as `nvarchar(36)` (GUID string, no `uniqueidentifier` to keep consistent with the rest of the schema which uses `int` for synthetic keys — but `oid` is inherently a GUID so string storage is appropriate here).
+
+---
+
+## Decision 3: Policy-Based Authorization (not `[Authorize(Roles = "...")]`)
+
+**Decision:** Use `AddAuthorization` policies and `[Authorize(Policy = "...")]` throughout.
+
+**Rationale:** Policies compose (e.g. `RequireContributor` can include both Contributor and Administrator without duplicating attributes). Policies decouple the role string from the attribute, making future refactoring less risky. Role strings are still the backing mechanism but expressed once in `Program.cs`.
+
+**Defined policies:**
+- `RequireAdministrator` — role: `Administrator`
+- `RequireContributor` — roles: `Administrator` OR `Contributor`
+- `RequireViewer` — roles: `Administrator` OR `Contributor` OR `Viewer`
+
+---
+
+## Decision 4: Claim Transformation for Role Injection
+
+**Decision:** Implement `IClaimsTransformation` (registered as scoped in DI) to load local roles and approval status from `ApplicationUsers` + `UserRoles` after Entra authentication succeeds.
+
+**Rationale:** Keeps Entra as the identity source (not the role source). Local roles are a product concern, not an Entra tenant concern. Transformation runs once per request (cached after first load via claims in the authenticated principal).
+
+---
+
+## Decision 5: Approval Middleware (not a policy)
+
+**Decision:** Approval status check is done via a dedicated `UserApprovalMiddleware`, placed after `UseAuthentication` and `UseAuthorization` in the pipeline.
+
+**Rationale:** Approval is a pre-authorization concern. An unapproved user is authenticated but must be blocked from all protected pages before role checks are evaluated. A middleware redirect is simpler than a custom authorization requirement handler for this use case.
+
+**Exception:** `/Account/PendingApproval`, `/Account/AccessDenied`, and the MicrosoftIdentity UI routes must be excluded from the middleware check to avoid redirect loops.
+
+---
+
+## Decision 6: Raw SQL Migration Script (not EF Migrations)
+
+**Decision:** New tables are added via a raw SQL migration script in `scripts/database/migrations/`, following the established convention. The script is loaded by the Aspire AppHost's `WithCreationScript`.
+
+**Rationale:** The team already established this pattern (11 prior migrations). EF Migrations are NOT used in this codebase.
+
+---
+
+## Decision 7: Notification Strategy — In-App Dashboard First, Queue Second
+
+**Decision:** Phase 1 notification is a pending-user count badge on the admin dashboard (simple DB count query). Phase 3 adds an Azure Storage Queue message (`user-approval-pending`) to allow future notification consumers (email, SMS) via Functions.
+
+**Rationale:** No email infrastructure (SendGrid, ACS) is currently provisioned. Azure Queue storage IS already provisioned. Adding a write to a queue in Phase 3 is a 5-line change. Building the admin dashboard count first gives immediate value without new infrastructure.
+
+
+---
+
+# Ghost Decision: RBAC Phase 1 Auth Pipeline
+
+**Date:** 2026-04-01  
+**Author:** Ghost  
+**Issue:** #603  
+**PR:** (pending)  
+**Branch:** squad/rbac-phase1
+
+## Summary
+
+Implemented EntraClaimsTransformation and UserApprovalMiddleware for Phase 1 of the RBAC system. These components provide the authentication pipeline foundation for user approval gating and role-based access control.
+
+## Components Delivered
+
+### 1. EntraClaimsTransformation
+
+**Location:** `src/JosephGuadagno.Broadcasting.Web/EntraClaimsTransformation.cs`
+
+**Purpose:** Transforms Entra ID claims on every authenticated request by:
+- Auto-registering new users on first login (creates ApplicationUser with `Pending` status)
+- Adding `approval_status` claim from the user's database record
+- Adding role claims (`ClaimTypes.Role`) for all assigned roles
+
+**Key implementation details:**
+- Entra object ID claim type: `"http://schemas.microsoft.com/identity/claims/objectidentifier"`
+- Approval status claim type: `"approval_status"` (custom)
+- Implements `IClaimsTransformation` from `Microsoft.AspNetCore.Authentication`
+- Registered as scoped service in DI
+- Creates new `ClaimsPrincipal` with transformed identity (does not mutate existing principal)
+- Includes idempotency check to avoid duplicate processing
+- Graceful error handling - returns original principal if transformation fails
+
+**User creation logic:**
+- Extracts display name from `ClaimTypes.Name` or `"name"` claim
+- Extracts email from `ClaimTypes.Email`, `"email"`, or `"preferred_username"` claim
+- Calls `IUserApprovalManager.GetOrCreateUserAsync()` which sets `ApprovalStatus = Pending` for new users
+
+### 2. UserApprovalMiddleware
+
+**Location:** `src/JosephGuadagno.Broadcasting.Web/UserApprovalMiddleware.cs`
+
+**Purpose:** Gates access based on user approval status. Redirects:
+- `Pending` users → `/Account/PendingApproval`
+- `Rejected` users → `/Account/Rejected`
+- `Approved` users → pass through
+
+**Bypass rules (no redirect):**
+- Unauthenticated users
+- Requests to approval pages themselves (prevents redirect loops)
+- Static files: `/.well-known`, `/favicon.ico`, `/robots.txt`, `/css/`, `/js/`, `/lib/`, `/images/`
+- Identity endpoints: `/MicrosoftIdentity/*` (sign-in, sign-out, etc.)
+- Requests without `approval_status` claim (initial login flow)
+
+**Middleware placement:** After `UseAuthentication()` and `UseAuthorization()`, before route mapping.
+
+### 3. Program.cs Changes
+
+**Service registration:**
+```csharp
+builder.Services.AddScoped<IClaimsTransformation, EntraClaimsTransformation>();
+```
+
+**Authorization policies:**
+```csharp
+options.AddPolicy("RequireAdministrator", policy =>
+    policy.RequireRole(RoleNames.Administrator));
+
+options.AddPolicy("RequireContributor", policy =>
+    policy.RequireRole(RoleNames.Administrator, RoleNames.Contributor));
+
+options.AddPolicy("RequireViewer", policy =>
+    policy.RequireRole(RoleNames.Administrator, RoleNames.Contributor, RoleNames.Viewer));
+```
+
+**Middleware pipeline:**
+```csharp
+app.UseUserApprovalGate();
+```
+
+**Added using statements:**
+- `Microsoft.AspNetCore.Authentication`
+- `JosephGuadagno.Broadcasting.Domain.Constants`
+- `JosephGuadagno.Broadcasting.Data.Sql`
+- `JosephGuadagno.Broadcasting.Managers`
+
+**Added project references:**
+- `JosephGuadagno.Broadcasting.Data.Sql.csproj`
+- `JosephGuadagno.Broadcasting.Managers.csproj`
+
+## Dependencies on Trinity's Work
+
+The implementation depends on Trinity's Phase 1 data layer:
+- `ApplicationUser` model with `EntraObjectId`, `ApprovalStatus`, `DisplayName`, `Email`
+- `Role` model with `Name`
+- `ApprovalStatus` enum with `Pending`, `Approved`, `Rejected`
+- `RoleNames` constants with `Administrator`, `Contributor`, `Viewer`
+- `IUserApprovalManager.GetOrCreateUserAsync()`
+- `IRoleDataStore.GetRolesForUserAsync()`
+- `ApplicationUserDataStore`, `RoleDataStore`, `UserApprovalLogDataStore` (Data.Sql)
+- `UserApprovalManager` (Managers)
+
+## Bug Fix: UserApprovalManager Missing Using Statements
+
+**Issue:** Trinity's `UserApprovalManager.cs` was missing required using statements causing compilation errors:
+- `using System;`
+- `using System.Collections.Generic;`
+- `using System.Threading.Tasks;`
+
+**Fix:** Added missing using statements to `src/JosephGuadagno.Broadcasting.Managers/UserApprovalManager.cs`
+
+This was required to unblock the Web project build and is directly related to the RBAC Phase 1 feature.
+
+## Security Considerations
+
+### Claim Type Discovery
+
+**Entra oid claim:** Confirmed that this app uses the long-form claim type:
+```csharp
+"http://schemas.microsoft.com/identity/claims/objectidentifier"
+```
+
+This matches the pattern found in existing test code for scope claims. The short form `"oid"` is not used in this codebase.
+
+### Middleware Ordering
+
+The approval gate middleware MUST run after authentication and authorization:
+```
+UseRouting()
+UseAuthentication()
+UseAuthorization()
+UseUserApprovalGate()  ← Critical placement
+UseSession()
+MapControllerRoute()
+```
+
+If placed before `UseAuthentication()`, `context.User` will not be populated and all users will bypass the gate.
+
+If placed before `UseAuthorization()`, role-based policies cannot be enforced before the gate runs.
+
+### Redirect Loop Prevention
+
+The middleware includes comprehensive bypass logic to prevent redirect loops:
+1. Checks if already on approval pages
+2. Checks for static file paths
+3. Checks for identity endpoints
+4. Checks if approval status claim is present
+
+Without these checks, rejected users would be unable to sign out.
+
+### Principal Transformation Idempotency
+
+The transformation includes a check for existing `approval_status` claim to avoid duplicate processing:
+```csharp
+if (principal.HasClaim(c => c.Type == ApprovalStatusClaimType))
+{
+    return principal;
+}
+```
+
+This is critical because `IClaimsTransformation.TransformAsync()` is called on every authenticated request. Without this check, the system would repeatedly query the database for user info and roles.
+
+## Future Work (Not in This PR)
+
+These components provide the foundation. Still needed for complete RBAC:
+- `/Account/PendingApproval` and `/Account/Rejected` views (Phase 2)
+- Admin UI for approving/rejecting users (Phase 2)
+- Admin UI for assigning roles (Phase 2)
+- Applying `[Authorize(Policy = "RequireXxx")]` attributes to controllers/actions (Phase 3)
+- Database migrations for ApplicationUser, Role, UserRole, UserApprovalLog tables (Trinity's scope)
+
+## Testing Recommendations
+
+Before this can be fully tested, Trinity's data layer implementations must:
+1. Have working database schema
+2. Have EF Core migrations applied
+3. Have seed data for at least one Administrator user
+
+**Manual testing scenarios:**
+1. **New user first login:** Should create ApplicationUser with Pending status, redirect to `/Account/PendingApproval`
+2. **Pending user subsequent login:** Should still redirect to pending page
+3. **Admin approves user:** User should be able to access the app on next login
+4. **Rejected user:** Should redirect to `/Account/Rejected`
+5. **Static files:** Should load for pending/rejected users (CSS, JS, images)
+6. **Sign out:** Pending/rejected users should be able to sign out via `/MicrosoftIdentity/Account/SignOut`
+
+## Build Status
+
+✅ Build succeeded with 0 errors, 4 warnings (known Newtonsoft.Json vulnerability warnings)
+
+## Commit
+
+```
+feat: Add EntraClaimsTransformation and UserApprovalMiddleware (Phase 1)
+
+- EntraClaimsTransformation: auto-registers users on first Entra login,
+  injects approval_status and role claims into ClaimsPrincipal
+- UserApprovalMiddleware: gates access based on approval_status claim,
+  redirects Pending users to /Account/PendingApproval,
+  redirects Rejected users to /Account/Rejected
+- Program.cs: registered IClaimsTransformation, UseUserApprovalGate(),
+  and RequireAdministrator/RequireContributor/RequireViewer policies
+- Static files and identity endpoints bypass the gate (no redirect loops)
+- Added missing using statements to UserApprovalManager
+- Added project references to Data.Sql and Managers in Web.csproj
+
+Closes #603
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+Commit hash: `a046eb0`
+
+
+---
+
+# RBAC Phase 1 Database Schema Decisions
+
+**Date:** 2026-04-02  
+**Issue:** #602  
+**Author:** Morpheus (Data Engineer)  
+**Branch:** squad/rbac-phase1  
+**Migration:** `scripts/database/migrations/2026-04-02-rbac-user-approval.sql`
+
+## Schema Decisions
+
+### 1. User Identity Key: Entra Object ID (oid claim)
+
+**Decision:** Use Entra ID's `oid` claim as the unique user identifier in `ApplicationUsers.EntraObjectId`.
+
+**Rationale:**
+- The `oid` claim is a stable GUID that never changes for a user, even if email or UPN changes
+- Supports future multi-tenancy (different tenants can have same email, but `oid` is globally unique)
+- Aligns with Microsoft identity platform best practices
+- NVARCHAR(36) accommodates GUID string format with hyphens
+
+**Alternative considered:** Using email or UPN - rejected because these can change and are not guaranteed unique across tenants.
+
+### 2. ApprovalStatus Column Design
+
+**Decision:** NVARCHAR(20) with string values ('Pending', 'Approved', 'Rejected') and default of 'Pending'.
+
+**Rationale:**
+- String-based for readability in queries and logs
+- NVARCHAR(20) sized to accommodate longest value ('Rejected' = 8 chars) with headroom
+- DEFAULT constraint ensures new users start in pending state
+- Simpler than a separate lookup table for only 3 fixed values
+
+**Alternative considered:** INT with lookup table - rejected as overkill for three static values that will never change.
+
+### 3. Audit Log Action Types
+
+**Decision:** NVARCHAR(20) storing values: 'Registered', 'Approved', 'Rejected', 'RoleAssigned', 'RoleRemoved'.
+
+**Rationale:**
+- Self-documenting audit trail
+- Extensible for future action types without schema changes
+- 20 characters accommodates longest value ('RoleAssigned' = 12 chars) with headroom
+
+### 4. Self-Referencing FK: AdminUserId
+
+**Decision:** `UserApprovalLog.AdminUserId` references `ApplicationUsers.Id` and is nullable.
+
+**Rationale:**
+- Tracks WHO performed admin actions (approval, rejection, role changes)
+- NULL for system-generated entries (e.g., initial registration, automated processes)
+- Self-referencing FK is valid in SQL Server when nullable
+
+### 5. Composite Primary Key on UserRoles
+
+**Decision:** Composite PK on (UserId, RoleId) for the many-to-many join table.
+
+**Rationale:**
+- Prevents duplicate role assignments to the same user
+- No need for synthetic ID column - the natural key is the relationship itself
+- Standard pattern for junction tables
+
+### 6. DateTime vs DateTime2
+
+**Decision:** Use DATETIME2 for `CreatedAt` and `UpdatedAt` columns.
+
+**Rationale:**
+- Consistent with existing codebase pattern (Engagements, Talks use DATETIMEOFFSET, but simpler audit columns use DATETIME2)
+- DATETIME2 has higher precision and smaller storage than legacy DATETIME
+- No timezone offset needed for audit timestamps (UTC stored via GETUTCDATE())
+
+### 7. Admin User Seed: Manual Step
+
+**Decision:** Do NOT hardcode admin Entra Object ID in migration script. Provide commented SQL template instead.
+
+**Rationale:**
+- Entra Object ID is environment-specific (dev vs staging vs prod)
+- Hardcoding would require separate migrations per environment
+- Safer to pull from appsettings.json or Key Vault and run manual seed
+- Commented template provides exact syntax to prevent errors
+
+**Alternative considered:** Adding a post-migration step in Aspire AppHost - rejected as mixing concerns (DB schema vs app initialization).
+
+### 8. Migration File Naming Convention
+
+**Decision:** `2026-04-02-rbac-user-approval.sql` following YYYY-MM-DD-description pattern.
+
+**Rationale:**
+- Matches existing convention (2026-03-21-add-bluesky-handle.sql, 2026-03-21-increase-database-size-limits.sql)
+- Chronological sorting by filename
+- Descriptive suffix for human readability
+
+## Integration Notes
+
+**Trinity's work:** Will create EF Core models for these tables (ApplicationUser, Role, UserRole, UserApprovalLog) and register DbSets in BroadcastingContext.
+
+**No conflicts:** SQL-only changes. Trinity is working on C# models in parallel on same branch.
+
+## Verification
+
+Migration is idempotent via:
+- `IF NOT EXISTS` guards on role seed data
+- Fresh tables created (no ALTER TABLE conflicts)
+
+Can be run multiple times safely.
+
+---
+
+# Trinity — RBAC Phase 1 Implementation Decisions
+
+**Date:** 2026-04-01  
+**Issue:** #604 — feat: Add UserApprovalManager and RoleManager with SQL repositories (Phase 1)  
+**Branch:** squad/rbac-phase1  
+**Status:** Complete — Ready for Review
+
+## Architecture Decisions
+
+### 1. Enum vs. String Storage
+**Decision:** Use string storage in database, enum representation in domain layer.
+
+**Rationale:**
+- ApprovalStatus and ApprovalAction stored as NVARCHAR(20) in DB
+- Domain models use string properties to match EF entity patterns
+- Enums defined in Domain.Enums for type-safe constants
+- Manager layer performs enum-to-string conversion: `ApprovalStatus.Pending.ToString()`
+
+**Pattern:**
+```csharp
+// Domain model
+public string ApprovalStatus { get; set; }  // "Pending", "Approved", "Rejected"
+
+// Manager usage
+user.ApprovalStatus = ApprovalStatus.Pending.ToString();
+```
+
+This matches existing codebase patterns (e.g., ScheduledItemType enum with string storage).
+
+### 2. Role Assignment Audit Trail
+**Decision:** All role assignments/removals logged to UserApprovalLog.
+
+**Implementation:**
+- UserApprovalManager logs every action (Registered, Approved, Rejected, RoleAssigned, RoleRemoved)
+- AdminUserId captured for all admin actions (nullable for system actions like registration)
+- Notes field provides context (e.g., rejection reason, role name)
+
+**Example:**
+```csharp
+await userApprovalLogDataStore.CreateAsync(new UserApprovalLog
+{
+    UserId = userId,
+    AdminUserId = adminUserId,
+    Action = ApprovalAction.RoleAssigned.ToString(),
+    Notes = $"Role '{role.Name}' assigned",
+    CreatedAt = DateTimeOffset.UtcNow
+});
+```
+
+### 3. Navigation Properties in EF Entities
+**Decision:** Include navigation properties but ignore them in AutoMapper reverse mappings.
+
+**Rationale:**
+- EF entities include UserRoles, UserApprovalLogs collections for eager loading
+- AutoMapper reverse mappings ignore navigation properties to prevent circular references
+- Domain models use simplified structure (Roles list populated via custom mapping)
+
+**Pattern:**
+```csharp
+// AutoMapper profile
+CreateMap<Models.ApplicationUser, Domain.Models.ApplicationUser>()
+    .ForMember(
+        destination => destination.Roles,
+        options => options.MapFrom(source => 
+            source.UserRoles.Select(ur => ur.Role).ToList()))
+    .ReverseMap()
+    .ForMember(destination => destination.UserRoles, options => options.Ignore());
+```
+
+### 4. Service Lifetime: Scoped
+**Decision:** All repositories and managers registered as Scoped.
+
+**Rationale:**
+- Matches existing pattern (IEngagementDataStore, IScheduledItemDataStore all Scoped)
+- DbContext is Scoped by default
+- Supports per-request isolation for web applications
+
+**Registration:**
+```csharp
+services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
+services.TryAddScoped<IRoleDataStore, RoleDataStore>();
+services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();
+services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
+```
+
+### 5. Rejection Notes Requirement
+**Decision:** Rejection notes are required; approval notes are optional.
+
+**Business Logic:**
+```csharp
+public async Task<ApplicationUser> RejectUserAsync(int userId, int adminUserId, string rejectionNotes)
+{
+    ArgumentException.ThrowIfNullOrWhiteSpace(rejectionNotes, nameof(rejectionNotes));
+    // ... rejection logic
+}
+```
+
+**Rationale:**
+- Transparency: rejected users deserve explanation
+- Audit trail: rejection reason recorded in log
+- Approval notes remain optional (approval is default-positive)
+
+### 6. Get-or-Create Pattern
+**Decision:** `GetOrCreateUserAsync` ensures idempotency for first login.
+
+**Flow:**
+1. Check if user exists by EntraObjectId
+2. If exists, return existing user
+3. If not, create with status=Pending and log "Registered"
+4. Return new user
+
+**Usage:** Middleware/auth handler calls this on every authenticated request. No duplicate users created.
+
+## Implementation Summary
+
+### Files Created (24)
+**Domain Models (4):**
+- ApplicationUser.cs, Role.cs, UserRole.cs, UserApprovalLog.cs
+
+**Enums/Constants (3):**
+- ApprovalStatus.cs, ApprovalAction.cs, RoleNames.cs
+
+**Repository Interfaces (4):**
+- IApplicationUserDataStore.cs, IRoleDataStore.cs, IUserApprovalLogDataStore.cs, IUserApprovalManager.cs
+
+**EF Entities (4):**
+- Models/ApplicationUser.cs, Models/Role.cs, Models/UserRole.cs, Models/UserApprovalLog.cs
+
+**Repository Implementations (3):**
+- ApplicationUserDataStore.cs, RoleDataStore.cs, UserApprovalLogDataStore.cs
+
+**Manager Implementation (1):**
+- UserApprovalManager.cs
+
+**AutoMapper Profile (1):**
+- MappingProfiles/RbacProfile.cs
+
+**Files Modified (4):**
+- BroadcastingContext.cs (DbSets + entity configurations)
+- Api/Program.cs, Functions/Program.cs, Web/Program.cs (service registrations)
+
+### Build Status
+✅ **SUCCESS** — 0 errors, only expected CS8618 nullable warnings
+
+### Database Schema
+**Handled by Morpheus** — No EF migrations created per team decision. SQL scripts in `scripts/database/migrations/`.
+
+## Patterns Observed & Matched
+
+1. **Namespace conventions:**
+   - Domain models: `JosephGuadagno.Broadcasting.Domain.Models`
+   - Enums: `JosephGuadagno.Broadcasting.Domain.Enums`
+   - Interfaces: `JosephGuadagno.Broadcasting.Domain.Interfaces`
+   - SQL entities: `JosephGuadagno.Broadcasting.Data.Sql.Models`
+   - Repositories: `JosephGuadagno.Broadcasting.Data.Sql`
+   - Managers: `JosephGuadagno.Broadcasting.Managers`
+
+2. **Naming conventions:**
+   - Repository interface: `I[Entity]DataStore` (not IRepository)
+   - Repository class: `[Entity]DataStore`
+   - Manager interface: `I[Entity]Manager`
+   - Manager class: `[Entity]Manager`
+
+3. **Constructor injection:**
+   - Primary constructor pattern: `public ClassName(Dep1 dep1, Dep2 dep2)`
+   - Repositories inject: `BroadcastingContext, IMapper`
+   - Managers inject: `I[Entity]DataStore` interfaces
+
+4. **AutoMapper patterns:**
+   - Profile class inherits `Profile`
+   - Configuration in constructor
+   - `.ReverseMap()` for bidirectional mappings
+   - `.ForMember(..., opt => opt.Ignore())` for navigation properties
+
+5. **DbContext patterns:**
+   - Non-clustered primary keys: `.IsClustered(false)`
+   - Unique indexes: `.HasIndex(...).IsUnique()`
+   - Default SQL values: `.HasDefaultValueSql("(getutcdate())")`
+   - DateTime columns: `.HasColumnType("datetime2")`
+
+## Next Steps (Phase 2 — Not in this PR)
+
+1. **Web UI:** Admin pages for user approval and role management
+2. **API Endpoints:** RESTful endpoints for RBAC operations
+3. **Authorization Policies:** RequireAdministrator, RequireContributor, RequireViewer
+4. **Middleware:** Auto-register users on first login
+5. **Testing:** Unit tests for manager and repository layers
+
+## Related Issues
+- **Closes:** #604 (RBAC Phase 1 backend)
+- **Unblocks:** #605 (RBAC Phase 2 API endpoints), #606 (RBAC Phase 3 Web UI)
+
+---
+
+**Reviewed by:** Trinity (Backend Dev)  
+**Commit:** a61d223  
+**Branch:** squad/rbac-phase1
+
+
+---
+
+# Switch Decision: RBAC Phase 1 UI/UX Decisions
+
+**Date:** 2026-04-01  
+**Author:** Switch (Frontend Engineer)  
+**Issue:** #605 - Add AccountController and AdminController for user approval UI (Phase 1)  
+**Status:** Implementation Complete
+
+---
+
+## Context
+
+Implemented the frontend UI for user approval flow as part of RBAC Phase 1. This includes pages for pending/rejected users and an admin panel for managing user approvals.
+
+## UI/UX Decisions Made
+
+### 1. Account Status Pages (AllowAnonymous)
+
+**PendingApproval page:**
+- Used warning theme (bg-warning) to indicate "in progress" status
+- Clear messaging: "Your account is under review"
+- Single CTA: Return to Home
+- Bootstrap card layout for professional appearance
+- Icons: hourglass-split for pending state
+
+**Rejected page:**
+- Used danger theme (bg-danger) to indicate rejection
+- Displays rejection notes if available (from ViewBag)
+- Separated concern: rejection reason vs. contact info
+- Two alert boxes: one for rejection, one for next steps
+- Icons: x-circle for rejection state
+
+**Pattern justification:** Both pages use AllowAnonymous since users in Pending/Rejected states cannot access authenticated pages (UserApprovalMiddleware gates them). Must be reachable BEFORE approval.
+
+### 2. Admin Users Page
+
+**Three-section layout:**
+- Pending Users (warning theme): Primary action area
+- Approved Users (success theme): Read-only list
+- Rejected Users (danger theme): Read-only with notes
+
+**Pending Users table:**
+- Inline approve button (one-click with CSRF token)
+- Collapsible reject form (Bootstrap collapse component)
+- Required rejection notes textarea with placeholder text
+- Cancel button to hide rejection form
+- Badge count in section headers
+
+**Approved/Rejected Users tables:**
+- Read-only for Phase 1 (role assignment comes in later phase)
+- Rejected table shows ApprovalNotes column
+- Consistent use of `<local-time>` component for date display
+
+**Pattern justification:**
+- Collapse for rejection form avoids UI clutter when not needed
+- Required textarea prevents accidental empty rejections (server-side validated in controller)
+- Bootstrap btn-group for approve/reject keeps actions together
+- Table-responsive wrapper for mobile compatibility
+
+### 3. Navigation
+
+**Admin link placement:**
+- Added inside `@if (User.Identity?.IsAuthenticated == true)` block
+- Role check: `@if (User.IsInRole("Administrator"))`
+- Placed after Message Templates, before closing authenticated block
+- Simple nav-link, not dropdown (Phase 1 has only one admin page)
+
+**Pattern justification:** Role check ensures non-admins never see the link. Uses role claim added by EntraClaimsTransformation.
+
+### 4. Form Patterns
+
+**CSRF Protection:**
+- All POST forms use `@Html.AntiForgeryToken()`
+- `[ValidateAntiForgeryToken]` on all POST actions
+
+**Error/Success Messaging:**
+- Used existing TempData pattern from EngagementsController
+- Messages displayed via _Layout.cshtml alert blocks
+- Success: green dismissible alert
+- Error: red dismissible alert
+
+**Pattern justification:** Consistent with existing codebase patterns (see EngagementsController.cs lines 96-99).
+
+### 5. ViewModels
+
+**ApplicationUserViewModel:**
+- Subset of ApplicationUser domain model
+- Only includes UI-relevant fields
+- CreatedAt for display, no UpdatedAt (not shown in Phase 1)
+
+**UserListViewModel:**
+- Three lists for three states (Pending, Approved, Rejected)
+- Avoids nested ViewBag data
+- Type-safe model binding
+
+**RejectUserViewModel:**
+- Separate ViewModel for rejection action
+- DataAnnotations validation ([Required])
+- Server-side validation in AdminController before calling manager
+
+**Pattern justification:** AutoMapper handles ApplicationUser → ApplicationUserViewModel. RejectUserViewModel enforces required notes at the model level (defense in depth with controller validation).
+
+### 6. Bootstrap Components Used
+
+- Cards (card, card-header, card-body)
+- Tables (table, table-striped, table-hover, table-responsive)
+- Buttons (btn, btn-sm, btn-success, btn-danger, btn-secondary)
+- Collapse (data-bs-toggle="collapse", data-bs-target)
+- Badges (badge, bg-dark)
+- Icons (Bootstrap Icons: bi-*)
+
+**Pattern justification:** Matches existing views (see Engagements/Details.cshtml, Engagements/Edit.cshtml). Uses Bootstrap 5.3.8 (from _Layout.cshtml).
+
+## Accessibility Considerations
+
+- Semantic HTML (proper heading hierarchy)
+- ARIA attributes on form controls (aria-describedby for validation spans - pattern from Edit.cshtml)
+- Button roles and labels (role="button", title attributes)
+- Alert roles on status messages
+
+## Security Considerations
+
+- AllowAnonymous only on Account pages (Pending/Rejected) where users MUST reach before approval
+- AdminController gated by [Authorize(Policy = "RequireAdministrator")]
+- CSRF tokens on all forms
+- Server-side validation of rejection notes (no reliance on client-side `required` attribute alone)
+- Current admin user ID fetched from Entra claims (not from form data)
+
+## Future Enhancements (Not in Phase 1)
+
+- Role assignment UI (will be added in a later phase)
+- User edit/delete functionality
+- Pagination for large user lists
+- Search/filter capabilities
+- Bulk approve/reject actions
+- Audit log viewer
+
+## Files Created
+
+### Controllers:
+- `Controllers/AccountController.cs` (37 lines)
+- `Controllers/AdminController.cs` (153 lines)
+
+### ViewModels:
+- `Models/UserListViewModel.cs`
+- `Models/ApplicationUserViewModel.cs`
+- `Models/RejectUserViewModel.cs`
+
+### Views:
+- `Views/Account/PendingApproval.cshtml`
+- `Views/Account/Rejected.cshtml`
+- `Views/Admin/Users.cshtml`
+
+### Modified:
+- `MappingProfiles/WebMappingProfile.cs` (added ApplicationUser → ApplicationUserViewModel mapping)
+- `Views/Shared/_Layout.cshtml` (added Admin nav link)
+
+## Build Status
+
+✅ Build succeeded with 0 errors  
+✅ Warnings: 322 (expected baseline, all safe to ignore per developer-getting-started.md)
+
+## Testing Recommendations
+
+1. **Pending User Flow:**
+   - New user logs in → redirected to /Account/PendingApproval
+   - User cannot access any other page until approved
+
+2. **Rejected User Flow:**
+   - Admin rejects user with notes → user redirected to /Account/Rejected
+   - Rejection notes displayed (if added to claims)
+
+3. **Admin Approval Flow:**
+   - Admin navigates to /Admin/Users
+   - Sees pending user in table
+   - Clicks Approve → user moves to Approved section
+   - User can now access application
+
+4. **Admin Rejection Flow:**
+   - Admin clicks Reject → form expands
+   - Admin enters notes and submits → user moves to Rejected section
+   - Admin tries to submit without notes → validation error
+
+## Dependencies
+
+- Trinity (#604): IUserApprovalManager interface and implementations
+- Ghost (#603): UserApprovalMiddleware and authorization policies
+- EntraClaimsTransformation: Adds role claims for User.IsInRole() checks
+
+## Impact
+
+- Users: Clear status pages when awaiting approval or rejected
+- Admins: Centralized user management interface
+- No breaking changes to existing controllers/views
+- New routes: /Account/PendingApproval, /Account/Rejected, /Admin/Users
+
+
+---
+
+# Switch — Issue #600 Implementation
+
+**Date:** 2026-04-01  
+**Branch:** `squad/600-allow-anonymous-home`  
+**PR:** #601 (Draft)  
+**Issue:** #600 — Allow unauthenticated users to access the Home page
+
+## Changes Made
+
+### 1. `src/JosephGuadagno.Broadcasting.Web/Controllers/HomeController.cs`
+Added `[AllowAnonymous]` attribute to:
+- `Index()` action
+- `Privacy()` action
+
+The project uses a global `RequireAuthenticatedUser` authorization policy in `Program.cs`. These two actions now explicitly opt out of that policy so unauthenticated users can reach them. The `AuthError()` action already had `[AllowAnonymous]` — this follows the same pattern.
+
+### 2. `src/JosephGuadagno.Broadcasting.Web/Views/Shared/_Layout.cshtml`
+Wrapped the following nav items inside `@if (User.Identity?.IsAuthenticated == true)`:
+- **Engagements** (`/Engagements/Index`)
+- **Schedules** dropdown (All, Calendar, Upcoming, Unsent)
+- **Message Templates** (`/MessageTemplates/Index`)
+
+**Home** and **Privacy** nav links remain always visible (outside the auth block).
+
+## Build Result
+- 0 errors
+- 25 warnings (all pre-existing CS8618 nullable and CS9113 unused param warnings)
+
+## Notes for Review (Neo)
+- The two `[AllowAnonymous]` actions are the minimal surface for public access — no other routes are affected.
+- The nav conditional uses `User.Identity?.IsAuthenticated == true` (null-safe), consistent with Razor best practices.
+
+
+---
+
+# Decision: Issue #600 Triage — Conditional Nav / Public Home Page
+
+**Author:** Neo (Lead)  
+**Date:** 2026-04-02  
+**Issue:** [#600](https://github.com/jguadagno/jjgnet-broadcast/issues/600)
+
+---
+
+## Decision
+
+Issue #600 is a self-contained Web-layer change. **No sub-issues created.** Assigned to Switch + Tank in a single PR.
+
+## Rationale
+
+The two work items (controller `[AllowAnonymous]` + `_Layout.cshtml` conditional nav) are tightly coupled — unauthenticated users need both controller access and a sensible nav bar simultaneously. Splitting them into separate sub-issues and PRs would create an intermediate broken state. Total scope: 2 files changed, 1 test file updated.
+
+## Assignment
+
+| Member | Work |
+|---|---|
+| **Switch** | `HomeController.cs` — `[AllowAnonymous]` on `Index()` and `Privacy()` |
+| **Switch** | `Views/Shared/_Layout.cshtml` — wrap Engagements, Schedules, Message Templates in `@if (User.Identity?.IsAuthenticated == true)` |
+| **Tank** | `Web.Tests/Controllers/HomeControllerTests.cs` — two reflection tests verifying `[AllowAnonymous]` attribute presence |
+
+## Architectural Ruling
+
+**Public pages under a global auth filter must use `[AllowAnonymous]` at the action level.** Never remove the global policy — it is the security baseline. Nav items linking to authenticated-only controllers must be gated in `_Layout.cshtml` using `User.Identity?.IsAuthenticated`. This is a view-layer concern only; no Domain/Data/Manager/Api/Functions changes are appropriate for auth-conditional UI.
+
+
+---
+
+# Neo Review Decision — PR #601
+
+**Date:** 2026-04-01
+**PR:** #601 — `fix: allow anonymous access to home page (#600)`
+**Branch:** `squad/600-allow-anonymous-home`
+**Authors:** Switch (impl) + Tank (tests)
+
+## Verdict: ✅ APPROVED
+
+Review posted as comment on PR #601 (GitHub blocks self-approval on owner account). PR marked as ready for review.
+
+## Rationale
+
+All implementation and test changes are correct, complete, and consistent with project conventions.
+
+### What was verified
+
+1. **Correctness** — `[AllowAnonymous]` on `Index()`, `Privacy()`, `AuthError()` correctly overrides the global `AuthorizeFilter(RequireAuthenticatedUser)` configured in `Program.cs`. Standard ASP.NET Core pattern.
+
+2. **Nav rendering** — `@if (User.Identity?.IsAuthenticated == true)` is idiomatic and functionally correct. All three authenticated-only nav sections (Engagements, Schedules, Message Templates) are gated.
+
+3. **Tests** — 5 reflection-based tests covering attribute presence on public actions and absence at class-level. All 57 Web.Tests pass.
+
+4. **Security** — No unintended exposure. `Error()` intentionally stays behind global policy (pre-existing behavior).
+
+5. **Code quality** — Two non-blocking observations (duplicate Xunit Using, ProductVersion typo) — no action required for merge.
+
+## Action
+
+- ✅ Review comment posted: https://github.com/jguadagno/jjgnet-broadcast/pull/601#issuecomment-4173852518
+- ✅ PR marked ready for review
+- ⏳ Awaiting merge by Joseph Guadagno

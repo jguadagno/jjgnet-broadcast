@@ -4,7 +4,7 @@
 
 Lead reviewer and sprint planner. Primary domain: architecture, CI/CD, patterns, code reviews, issue triage.
 
-**Current focus:** Sprint 12 planning. Sprint 11 complete — all 5 PRs (#551–#555) merged to main, all 5 issues (#544–#548) closed. Three-layer auth exception defence for issue #85 fully delivered. Sprint 12 tagged with 13 issues.
+**Current focus:** RBAC Phase 1 — PR #610 open, CHANGES REQUESTED pending fixes to middleware ordering, in-memory filtering, and Clean Architecture violation. Sprint 12 planning in progress.
 
 **Key patterns established:**
 - DTO/API: request DTOs exclude route params, return Task<ActionResult<T>>, null guard before ToResponse
@@ -18,6 +18,50 @@ Lead reviewer and sprint planner. Primary domain: architecture, CI/CD, patterns,
 **Sprint closure:** Sprint 9 (7 issues) complete via PRs #516–#526, all merged. Sprint 11 (5 issues) complete via PRs #551–#555, all merged. Three-layer auth exception defence live on main.
 
 ## Recent Work
+
+### 2026-04-02: RBAC Phase 1 — PR #610 Created and Reviewed
+
+**PR:** [#610](https://github.com/jguadagno/jjgnet-broadcast/pull/610) — `feat: RBAC Phase 1 - User Approval & Role-Based Access Control`
+**Branch:** `squad/rbac-phase1` → `main`
+**Closes:** #602, #603, #604, #605, #606
+
+**What was delivered (46 files, 3,646 insertions):**
+- DB migration: `ApplicationUsers`, `Roles`, `UserRoles`, `UserApprovalLog` tables + 3 role seeds
+- Domain: models, enums, constants, interfaces for the full approval workflow
+- Data.Sql: EF Core repositories + `RbacProfile` AutoMapper mappings
+- Managers: `UserApprovalManager` with approve/reject/role-assign audit trail
+- Web Auth Pipeline: `EntraClaimsTransformation` (IClaimsTransformation) + `UserApprovalMiddleware`
+- Web UI: `AccountController`, `AdminController`, 3 views, 3 ViewModels
+- Tests: 37 new tests (5 classes); 631 total passing, 0 failing
+
+**Review Verdict: ⚠️ CHANGES REQUESTED**
+
+Review posted as comment (GitHub blocks self-review): https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomment-4174117340
+
+**Blocking findings:**
+
+| # | Severity | File | Issue |
+|---|----------|------|-------|
+| 1 | 🔴 HIGH | `Program.cs` | `UseUserApprovalGate()` placed AFTER `UseAuthorization` — pending users hit 403 before approval gate fires. Fix: move gate before `UseAuthorization`. |
+| 2 | 🟠 MEDIUM | `AdminController.cs` | `GetAllUsersAsync()` loads all users into memory, then filters in C# — violates DB-layer filtering convention. Fix: add `GetUsersByStatusAsync` to manager/data store. |
+| 3 | 🟠 MEDIUM | `EntraClaimsTransformation.cs` | Takes `IRoleDataStore` directly — Web layer calling Data layer, bypassing Managers. Fix: expose `GetRolesForUserAsync` on `IUserApprovalManager`. |
+
+**Non-blocking findings:**
+- Dead code: `approval_notes` claim read in `AccountController.Rejected()` but never populated by `EntraClaimsTransformation`
+- `EntraObjectIdClaimType` constant duplicated in 2 files — should be in `Domain/Constants/`
+
+**What passed review cleanly:**
+- CSRF tokens + `[ValidateAntiForgeryToken]` on all POST actions ✅
+- `[AllowAnonymous]` on approval pages prevents redirect loops ✅
+- `/MicrosoftIdentity/*` correctly excluded from approval middleware ✅
+- AutoMapper via profiles only ✅
+- Idempotent role seed in migration ✅
+- `IClaimsTransformation` registered as Scoped ✅
+- Idempotency guard in `TransformAsync` ✅
+
+**Scribe tasks completed:** `.squad/decisions/inbox/` (8 files) merged into `decisions.md`, committed.
+
+---
 
 ### 2026-03-21: Sprint 11 Closeout — All PRs Merged
 
