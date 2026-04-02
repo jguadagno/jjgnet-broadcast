@@ -72,6 +72,11 @@
 6. **IQueue is testable; QueueServiceClient chain is not:** `JosephGuadagno.AzureHelpers.Storage.IQueue` is an interface that can be mocked with Moq. Classes that inject `QueueServiceClient` directly and create `Queue` internally (using `AddMessageWithBase64EncodingAsync`) are not unit-testable because Moq's `QueueServiceClient.GetQueueClient()` mock doesn't correctly propagate to the inner `QueueClient`. Always inject `IQueue` for classes that send queue messages.
 7. **Parallel branch coordination:** When working on the same branch as another agent, always check `git log --oneline` and `git status` immediately after checkout — the branch may already have commits from teammates. This avoids duplicate work and overwriting committed files.
 8. **Azure SDK sealed types — extended rule:** `Azure.Storage.Queues.Models.SendReceipt` is sealed and cannot be mocked. When a method returns `Task<SendReceipt>`, use `(SendReceipt?)null!` as the typed null. The caller (EmailSender) ignores the return, so null is safe.
+9. **Azure.Communication.Email.EmailClient is mockable (virtual methods, protected ctor):** Unlike some sealed Azure SDK types, `EmailClient` has a `protected EmailClient() {}` constructor and virtual `SendAsync`. Mock it with `new Mock<EmailClient>()`. The return type is `Task<EmailSendOperation>` (NOT `Task<Operation<EmailSendResult>>`). Always check the exact SDK return type — inheriting from `Operation<T>` does not mean the mock type is `Operation<T>`.
+10. **`FluentAssertions` must be added explicitly to Functions.Tests.csproj:** The project previously only used xUnit-native assertions. When writing new tests with FluentAssertions, add `<PackageReference Include="FluentAssertions" Version="8.9.0" />` to `Functions.Tests.csproj`.
+11. **`IEmailTemplateManager.GetTemplateAsync(string name)` — NOT `GetByNameAsync`:** The issue spec described `GetByNameAsync` but the actual interface method is `GetTemplateAsync(string name)`. Always verify method names from the interface file, not the spec narrative.
+12. **`FunctionContext` required as second parameter in queue trigger Run methods:** Trinity's `SendEmail.Run` takes `(string message, FunctionContext context)`. Always check the actual function signature; queue triggers can include `FunctionContext` as second arg. Mock it with `new Mock<FunctionContext>().Object`.
+
 
 ---
 
