@@ -42,7 +42,7 @@ public class AdminControllerTests
     public async Task Users_ReturnsViewWithUserList()
     {
         // Arrange
-        var allUsers = new List<ApplicationUser>
+        var pendingUsers = new List<ApplicationUser>
         {
             new ApplicationUser
             {
@@ -53,7 +53,11 @@ public class AdminControllerTests
                 ApprovalStatus = ApprovalStatus.Pending.ToString(),
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
-            },
+            }
+        };
+
+        var approvedUsers = new List<ApplicationUser>
+        {
             new ApplicationUser
             {
                 Id = 2,
@@ -63,7 +67,11 @@ public class AdminControllerTests
                 ApprovalStatus = ApprovalStatus.Approved.ToString(),
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
-            },
+            }
+        };
+
+        var rejectedUsers = new List<ApplicationUser>
+        {
             new ApplicationUser
             {
                 Id = 3,
@@ -91,23 +99,29 @@ public class AdminControllerTests
             new ApplicationUserViewModel { Id = 3, DisplayName = "Rejected User", ApprovalStatus = ApprovalStatus.Rejected.ToString() }
         };
 
+        // Mock the status-specific methods (DB-level filtering)
         _mockUserApprovalManager
-            .Setup(x => x.GetAllUsersAsync())
-            .ReturnsAsync(allUsers);
+            .Setup(x => x.GetUsersByStatusAsync(ApprovalStatus.Pending))
+            .ReturnsAsync(pendingUsers);
+
+        _mockUserApprovalManager
+            .Setup(x => x.GetUsersByStatusAsync(ApprovalStatus.Approved))
+            .ReturnsAsync(approvedUsers);
+
+        _mockUserApprovalManager
+            .Setup(x => x.GetUsersByStatusAsync(ApprovalStatus.Rejected))
+            .ReturnsAsync(rejectedUsers);
 
         _mockMapper
-            .Setup(x => x.Map<List<ApplicationUserViewModel>>(It.Is<List<ApplicationUser>>(
-                list => list.All(u => u.ApprovalStatus == ApprovalStatus.Pending.ToString()))))
+            .Setup(x => x.Map<List<ApplicationUserViewModel>>(pendingUsers))
             .Returns(pendingViewModels);
 
         _mockMapper
-            .Setup(x => x.Map<List<ApplicationUserViewModel>>(It.Is<List<ApplicationUser>>(
-                list => list.All(u => u.ApprovalStatus == ApprovalStatus.Approved.ToString()))))
+            .Setup(x => x.Map<List<ApplicationUserViewModel>>(approvedUsers))
             .Returns(approvedViewModels);
 
         _mockMapper
-            .Setup(x => x.Map<List<ApplicationUserViewModel>>(It.Is<List<ApplicationUser>>(
-                list => list.All(u => u.ApprovalStatus == ApprovalStatus.Rejected.ToString()))))
+            .Setup(x => x.Map<List<ApplicationUserViewModel>>(rejectedUsers))
             .Returns(rejectedViewModels);
 
         // Act
@@ -124,7 +138,10 @@ public class AdminControllerTests
         model.ApprovedUsers.Should().HaveCount(1);
         model.RejectedUsers.Should().HaveCount(1);
         
-        _mockUserApprovalManager.Verify(x => x.GetAllUsersAsync(), Times.Once);
+        // Verify DB-level filtering is used
+        _mockUserApprovalManager.Verify(x => x.GetUsersByStatusAsync(ApprovalStatus.Pending), Times.Once);
+        _mockUserApprovalManager.Verify(x => x.GetUsersByStatusAsync(ApprovalStatus.Approved), Times.Once);
+        _mockUserApprovalManager.Verify(x => x.GetUsersByStatusAsync(ApprovalStatus.Rejected), Times.Once);
     }
 
     [Fact]

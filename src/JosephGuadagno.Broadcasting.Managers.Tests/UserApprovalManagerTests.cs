@@ -394,4 +394,67 @@ public class UserApprovalManagerTests
         _mockRoleDataStore.Verify(x => x.GetByIdAsync(roleId), Times.Once);
         _mockRoleDataStore.Verify(x => x.AssignRoleToUserAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
+
+    [Fact]
+    public async Task GetUserRolesAsync_WithExistingUser_ReturnsRoles()
+    {
+        // Arrange
+        var userId = 1;
+        var roles = new List<Role>
+        {
+            new Role { Id = 1, Name = "Administrator", Description = "Full access" },
+            new Role { Id = 2, Name = "Editor", Description = "Can edit content" }
+        };
+
+        _mockRoleDataStore
+            .Setup(x => x.GetRolesForUserAsync(userId))
+            .ReturnsAsync(roles);
+
+        // Act
+        var result = await _sut.GetUserRolesAsync(userId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().HaveCount(2);
+        result.Should().Contain(r => r.Name == "Administrator");
+        result.Should().Contain(r => r.Name == "Editor");
+        
+        _mockRoleDataStore.Verify(x => x.GetRolesForUserAsync(userId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetUserRolesAsync_WithUserWithNoRoles_ReturnsEmptyList()
+    {
+        // Arrange
+        var userId = 1;
+
+        _mockRoleDataStore
+            .Setup(x => x.GetRolesForUserAsync(userId))
+            .ReturnsAsync(new List<Role>());
+
+        // Act
+        var result = await _sut.GetUserRolesAsync(userId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().BeEmpty();
+        
+        _mockRoleDataStore.Verify(x => x.GetRolesForUserAsync(userId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetUserRolesAsync_WithInvalidUserId_ThrowsArgumentException()
+    {
+        // Arrange
+        var userId = 0;
+
+        // Act
+        Func<Task> act = async () => await _sut.GetUserRolesAsync(userId);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("userId");
+        
+        _mockRoleDataStore.Verify(x => x.GetRolesForUserAsync(It.IsAny<int>()), Times.Never);
+    }
 }
