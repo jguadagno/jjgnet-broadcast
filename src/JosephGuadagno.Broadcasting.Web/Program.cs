@@ -1,13 +1,17 @@
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
+using JosephGuadagno.Broadcasting.Data.Sql;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.Broadcasting.Web;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -74,6 +78,9 @@ builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
     .AddDistributedTokenCaches();
 builder.Services.AddDownstreamApis(builder.Configuration.GetSection("DownstreamApis"));
 
+// Register claims transformation for RBAC
+builder.Services.AddScoped<IClaimsTransformation, EntraClaimsTransformation>();
+
 builder.Services.AddControllersWithViews(options =>
 {
     var policy = new AuthorizationPolicyBuilder()
@@ -81,6 +88,19 @@ builder.Services.AddControllersWithViews(options =>
         .Build();
     options.Filters.Add(new AuthorizeFilter(policy));
 }).AddMicrosoftIdentityUI();
+
+// Configure authorization policies
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdministrator", policy =>
+        policy.RequireRole(RoleNames.Administrator));
+    
+    options.AddPolicy("RequireContributor", policy =>
+        policy.RequireRole(RoleNames.Administrator, RoleNames.Contributor));
+    
+    options.AddPolicy("RequireViewer", policy =>
+        policy.RequireRole(RoleNames.Administrator, RoleNames.Contributor, RoleNames.Viewer));
+});
 
 builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme,
     options =>
@@ -124,6 +144,10 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// User approval gate - must be after authentication/authorization
+app.UseUserApprovalGate();
+
 app.UseSession();
 
 app.MapControllerRoute(
