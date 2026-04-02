@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel.Syndication;
@@ -81,7 +81,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
     public List<SyndicationFeedSource> GetSyndicationItems(DateTimeOffset sinceWhen, List<string> excludeCategories = null)
     {
         _logger.LogDebug("Checking syndication feed '{FeedUrl}' for posts since '{SinceWhen:u}'",
-            _syndicationFeedReaderSettings, sinceWhen);
+            _syndicationFeedReaderSettings.FeedUrl, sinceWhen);
 
         DateTimeOffset currentTime = DateTimeOffset.UtcNow;
         List<SyndicationItem> syndicationItems = [];
@@ -106,7 +106,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
         catch (Exception e)
         {
             _logger.LogError(e, "Error parsing the syndication feed for: {FeedUrl}",
-                _syndicationFeedReaderSettings);
+                _syndicationFeedReaderSettings.FeedUrl);
             throw;
         }
             
