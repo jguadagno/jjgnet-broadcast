@@ -1,5 +1,6 @@
 using Moq;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
@@ -427,5 +428,64 @@ public class EngagementsControllerTests
         Assert.Equal("Details", redirectResult.ActionName);
         Assert.NotNull(capturedEngagement);
         Assert.Equal(userOid, capturedEngagement!.CreatedByEntraOid);
+    }
+
+    [Fact]
+    public void EngagementsController_HasRequireViewerPolicy()
+    {
+        // Arrange & Act
+        var controllerType = typeof(EngagementsController);
+        var attributes = controllerType.GetCustomAttributes(typeof(AuthorizeAttribute), false);
+
+        // Assert
+        Assert.NotEmpty(attributes);
+        var authorizeAttribute = attributes.First() as AuthorizeAttribute;
+        Assert.NotNull(authorizeAttribute);
+        Assert.Equal("RequireViewer", authorizeAttribute!.Policy);
+    }
+
+    [Fact]
+    public void GetAdd_Action_HasRequireContributorPolicy()
+    {
+        // Arrange & Act
+        var method = typeof(EngagementsController).GetMethod("Add", Type.EmptyTypes);
+
+        // Assert
+        Assert.NotNull(method);
+        var attributes = method!.GetCustomAttributes(typeof(AuthorizeAttribute), false);
+        Assert.NotEmpty(attributes);
+        var authorizeAttribute = attributes.First() as AuthorizeAttribute;
+        Assert.NotNull(authorizeAttribute);
+        Assert.Equal("RequireContributor", authorizeAttribute!.Policy);
+    }
+
+    [Fact]
+    public void GetEdit_Action_HasRequireContributorPolicy()
+    {
+        // Arrange & Act
+        var method = typeof(EngagementsController).GetMethod("Edit", new[] { typeof(int) });
+
+        // Assert
+        Assert.NotNull(method);
+        var attributes = method!.GetCustomAttributes(typeof(AuthorizeAttribute), false);
+        Assert.NotEmpty(attributes);
+        var authorizeAttribute = attributes.First() as AuthorizeAttribute;
+        Assert.NotNull(authorizeAttribute);
+        Assert.Equal("RequireContributor", authorizeAttribute!.Policy);
+    }
+
+    [Fact]
+    public void GetDelete_Action_HasRequireContributorPolicy()
+    {
+        // Arrange & Act
+        var method = typeof(EngagementsController).GetMethod("Delete", new[] { typeof(int) });
+
+        // Assert
+        Assert.NotNull(method);
+        var attributes = method!.GetCustomAttributes(typeof(AuthorizeAttribute), false);
+        Assert.NotEmpty(attributes);
+        var authorizeAttribute = attributes.First() as AuthorizeAttribute;
+        Assert.NotNull(authorizeAttribute);
+        Assert.Equal("RequireContributor", authorizeAttribute!.Policy);
     }
 }
