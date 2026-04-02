@@ -77,6 +77,21 @@
 - **Decision log:** `.squad/decisions/inbox/switch-role-viewmodel-and-auth-fixes.md`
 
 
+### 2026-04-01 — Issue #613 (Authorization UX Gap Fix)
+- **Task:** Fix UX gap where Viewers could access Add/Edit/Delete forms but get 403 on submit
+- **Changed:** Added `[Authorize(Policy = "RequireContributor")]` to GET actions in EngagementsController:
+  - GET `Add()` action (line 189)
+  - GET `Edit(int id)` action (line 75)
+  - GET `Delete(int id)` action (line 114)
+- **Pattern learned:**
+  - Authorization can be layered: class-level for general access (RequireViewer), method-level for elevated access (RequireContributor)
+  - GET form actions should enforce the same authorization as their corresponding POST actions to prevent confusing UX
+  - Stack multiple attributes on same action (e.g., `[HttpGet]` + `[Authorize(Policy = "RequireContributor")]`)
+  - POST actions already had RequireContributor from PR #612 - verified and left unchanged
+- **Build status:** Clean build, 0 errors (exit code 0)
+- **Branch:** issue-613 (pushed, ready for Tank to add tests)
+- **Commit:** f794764
+
 ## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:
 
