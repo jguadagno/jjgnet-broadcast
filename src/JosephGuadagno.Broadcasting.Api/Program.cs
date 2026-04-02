@@ -143,4 +143,10 @@ void ConfigureRepositories(IServiceCollection services)
 
     // MessageTemplate
     services.TryAddScoped<IMessageTemplateDataStore, MessageTemplateDataStore>();
+
+    // RBAC Phase 1
+    services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
+    services.TryAddScoped<IRoleDataStore, RoleDataStore>();
+    services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();
+    services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
 }

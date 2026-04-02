@@ -153,6 +153,13 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
     services.TryAddScoped<IMessageTemplateService, MessageTemplateService>();
+
+    // RBAC Phase 1
+    services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
+    services.TryAddScoped<IRoleDataStore, RoleDataStore>();
+    services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();
+    services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
+
     ConfigureKeyVault(services);
 }
 
