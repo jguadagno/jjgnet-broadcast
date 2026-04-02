@@ -66,6 +66,18 @@ INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES ('Viewer', 'Read-only ac
 -- NOTE: The initial Administrator ApplicationUser seed is a manual step (requires the admin Entra Object ID from config).
 --       See scripts/database/migrations/2026-04-02-rbac-user-approval.sql for the template SQL.
 
+-- Seed the EmailTemplates table (Issue #615)
+INSERT INTO JJGNet.dbo.EmailTemplates (Name, Subject, Body) VALUES (
+    N'UserApproved',
+    N'Your account has been approved',
+    N'<!DOCTYPE html><html><body><p>Hello,</p><p>Great news! Your account has been approved and you now have access to the JJGNet Broadcasting application.</p><p>You can log in at any time using your Microsoft account.</p><p>If you have any questions, please reach out to the administrator.</p><p>Welcome aboard!</p><p>The JJGNet Broadcasting Team</p></body></html>'
+)
+INSERT INTO JJGNet.dbo.EmailTemplates (Name, Subject, Body) VALUES (
+    N'UserRejected',
+    N'Your account access request',
+    N'<!DOCTYPE html><html><body><p>Hello,</p><p>Thank you for your interest in the JJGNet Broadcasting application.</p><p>After review, we are unable to approve your access request at this time.</p><p>If you believe this is an error or would like more information, please contact the administrator.</p><p>The JJGNet Broadcasting Team</p></body></html>'
+)
+
 
 -- Seed the SyndicationFeedSource table
 INSERT INTO JJGNet.dbo.SyndicationFeedSources (FeedIdentifier, Author, Title, ShortenedUrl, Tags, Url, PublicationDate, AddedOn, ItemLastUpdatedOn, LastUpdatedOn) VALUES (	'https://www.josephguadagno.net/2007/08/02/developing-microsoft-asp-net-server-controls-and-components/','Joseph Guadagno','Developing Microsoft ASP.NET Server Controls and Components','https://jjg.me/3zBGp3K','Books,Book Reviews','https://www.josephguadagno.net/2007/08/02/developing-microsoft-asp-net-server-controls-and-components/','2007-08-02 00:12:56.0000000 +07:00','2025-09-06 01:18:54.8588384 +07:00','2007-08-02 00:12:56.0000000 +07:00','2026-01-28 04:07:56.6219101 +07:00')

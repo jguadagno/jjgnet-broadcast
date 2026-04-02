@@ -42,6 +42,7 @@ public partial class BroadcastingContext : DbContext
     public virtual DbSet<Role> Roles { get; set; } = null!;
     public virtual DbSet<UserRole> UserRoles { get; set; } = null!;
     public virtual DbSet<UserApprovalLog> UserApprovalLogs { get; set; } = null!;
+    public virtual DbSet<EmailTemplate> EmailTemplates { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -381,6 +382,37 @@ public partial class BroadcastingContext : DbContext
                 .HasForeignKey(d => d.AdminUserId)
                 .HasConstraintName("UserApprovalLog_ApplicationUsers_AdminUserId")
                 .IsRequired(false);
+        });
+
+        modelBuilder.Entity<EmailTemplate>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_EmailTemplates")
+                .IsClustered();
+
+            entity.HasIndex(e => e.Name, "UQ_EmailTemplates_Name")
+                .IsUnique();
+
+            entity.Property(e => e.Name)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.Subject)
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(e => e.Body)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedDate)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(SYSDATETIMEOFFSET())");
+
+            entity.Property(e => e.UpdatedDate)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(SYSDATETIMEOFFSET())");
         });
 
         OnModelCreatingPartial(modelBuilder);

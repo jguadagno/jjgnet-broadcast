@@ -243,3 +243,23 @@ create table dbo.UserApprovalLog
             default (getutcdate())
 )
 go
+
+-- Create the EmailTemplates table (Issue #615)
+create table dbo.EmailTemplates
+(
+    Id          int identity
+        constraint PK_EmailTemplates
+            primary key clustered,
+    Name        nvarchar(100)  not null
+        constraint UQ_EmailTemplates_Name
+            unique,
+    Subject     nvarchar(500)  not null,
+    Body        nvarchar(max)  not null,
+    CreatedDate datetimeoffset not null
+        constraint DF_EmailTemplates_CreatedDate
+            default (SYSDATETIMEOFFSET()),
+    UpdatedDate datetimeoffset not null
+        constraint DF_EmailTemplates_UpdatedDate
+            default (SYSDATETIMEOFFSET())
+)
+go
