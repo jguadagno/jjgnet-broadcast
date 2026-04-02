@@ -120,7 +120,28 @@
 - **Blocked:** Build fails with Manager interface errors — expected, Trinity will implement Manager + Controller paged methods in Phase 2
 - **Pattern reinforced:** Two-count SQL for pagination — total count for response metadata, filtered count for current page
 
-
+### 2026-04-02 — Issue #602: RBAC Phase 1 Database Schema Migration
+- **Task:** Create database schema for user approval workflow and role-based access control
+- **Migration:** `scripts/database/migrations/2026-04-02-rbac-user-approval.sql`
+- **Branch:** `squad/rbac-phase1`
+- **Tables created:**
+  1. `Roles` — lookup table (Administrator, Contributor, Viewer) with UNIQUE constraint on Name
+  2. `ApplicationUsers` — keyed on Entra Object ID (oid claim) for multi-tenancy support
+  3. `UserRoles` — many-to-many join with composite PK on (UserId, RoleId)
+  4. `UserApprovalLog` — audit trail with self-referencing FK to ApplicationUsers for admin actions
+- **Key decisions:**
+  - Used Entra `oid` claim (NVARCHAR(36)) as stable user identifier instead of email/UPN
+  - ApprovalStatus as NVARCHAR(20) string values ('Pending', 'Approved', 'Rejected') with DEFAULT 'Pending'
+  - DATETIME2 for audit timestamps (CreatedAt, UpdatedAt) per codebase convention
+  - Admin user seed left as manual step with commented SQL template (OID from config, not hardcoded)
+- **SQL conventions learned:**
+  - Migration header: `-- Migration:`, `-- Issue:`, `-- Date:`, `-- Description:`
+  - `USE JJGNet; GO` at start
+  - Section headers with `-- ============================================================`
+  - GO statements after each DDL block (CREATE TABLE, INSERT)
+  - Idempotent seed data with `IF NOT EXISTS` guards
+- **Pattern:** Self-referencing FKs are valid when nullable (AdminUserId → ApplicationUsers.Id for audit trail)
+- **Coordination:** Trinity working on EF Core models in parallel; SQL-only changes avoid conflicts
 
 ## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:
