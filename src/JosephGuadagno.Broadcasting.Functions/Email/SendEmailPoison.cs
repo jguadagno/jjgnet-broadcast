@@ -17,8 +17,8 @@ public class SendEmailPoison(ILogger<SendEmailPoison> logger)
         FunctionContext context)
     {
         logger.LogError(
-            "SendEmail poison message received. This message failed after maximum retries and will not be retried. Message: '{Message}'",
-            message[..Math.Min(500, message.Length)]);
+            "SendEmail poison message received (length: {Length} chars). This message failed after maximum retries and will not be retried.",
+            message.Length);
 
         return Task.CompletedTask;
     }

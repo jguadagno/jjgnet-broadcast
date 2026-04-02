@@ -169,4 +169,50 @@ public class SendEmailTests
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("ACS service unavailable");
     }
+
+    [Fact]
+    public async Task Run_MessageMissingRequiredFields_DoesNotCallEmailClient()
+    {
+        // Arrange: a valid JSON/Base64 message but with missing required fields
+        var email = new EmailModel
+        {
+            FromMailAddress = "",
+            ToMailAddress = "recipient@example.com",
+            Subject = "",
+            Body = "<p>Body</p>"
+        };
+        var message = BuildBase64JsonMessage(email);
+        var sut = BuildSut();
+
+        // Act
+        var exception = await Record.ExceptionAsync(
+            () => sut.Run(message, _mockFunctionContext.Object));
+
+        // Assert
+        exception.Should().BeNull();
+        _mockEmailClient.Verify(
+            c => c.SendAsync(
+                It.IsAny<WaitUntil>(),
+                It.IsAny<EmailMessage>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+}
+
+public class SendEmailPoisonTests
+{
+    [Fact]
+    public async Task Run_PoisonMessage_LogsAndDoesNotThrow()
+    {
+        // Arrange
+        const string message = "poison-message-content";
+        var sut = new Functions.Email.SendEmailPoison(Microsoft.Extensions.Logging.Abstractions.NullLogger<Functions.Email.SendEmailPoison>.Instance);
+
+        // Act
+        var exception = await Record.ExceptionAsync(
+            () => sut.Run(message, new Mock<FunctionContext>().Object));
+
+        // Assert
+        exception.Should().BeNull();
+    }
 }

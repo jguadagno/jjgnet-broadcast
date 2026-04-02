@@ -25,6 +25,17 @@ public partial class SendEmail(EmailClient emailClient, ILogger<SendEmail> logge
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(email.FromMailAddress) ||
+            string.IsNullOrWhiteSpace(email.ToMailAddress) ||
+            string.IsNullOrWhiteSpace(email.Subject))
+        {
+            LogRequiredFieldsMissing(
+                email.FromMailAddress ?? "(empty)",
+                email.ToMailAddress ?? "(empty)",
+                email.Subject ?? "(empty)");
+            return;
+        }
+
         try
         {
             var emailContent = new EmailContent(email.Subject)

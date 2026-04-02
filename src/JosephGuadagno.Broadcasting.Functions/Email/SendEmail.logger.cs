@@ -15,4 +15,8 @@ public partial class SendEmail
     [LoggerMessage(EventId = 4002, Level = LogLevel.Error,
         Message = "Failed to deserialize email queue message. Message preview: '{MessagePreview}'")]
     private partial void LogDeserializationFailed(string messagePreview);
+
+    [LoggerMessage(EventId = 4003, Level = LogLevel.Error,
+        Message = "Email queue message is missing required fields. From: '{From}', To: '{To}', Subject: '{Subject}'")]
+    private partial void LogRequiredFieldsMissing(string from, string to, string subject);
 }
