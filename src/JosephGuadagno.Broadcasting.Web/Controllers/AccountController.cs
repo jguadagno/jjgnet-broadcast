@@ -20,6 +20,16 @@ public class AccountController : Controller
     }
 
     /// <summary>
+    /// Displays the access denied page when a user lacks the required role or permission
+    /// </summary>
+    /// <returns>The access denied view</returns>
+    [AllowAnonymous]
+    public IActionResult AccessDenied()
+    {
+        return View();
+    }
+
+    /// <summary>
     /// Displays the rejection page for users whose registration was rejected
     /// </summary>
     /// <returns>The rejected view</returns>

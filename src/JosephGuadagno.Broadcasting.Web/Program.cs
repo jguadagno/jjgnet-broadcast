@@ -112,6 +112,7 @@ builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefa
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.AccessDeniedPath = "/Account/AccessDenied";
     });
 
 builder.Services.AddDistributedSqlServerCache(options =>
