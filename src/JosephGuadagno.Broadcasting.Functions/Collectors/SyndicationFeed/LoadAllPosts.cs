@@ -63,7 +63,7 @@ public class LoadAllPosts(
                 var existingItem = await syndicationFeedSourceManager.GetByFeedIdentifierAsync(item.FeedIdentifier);
                 if (existingItem != null)
                 {
-                    logger.LogWarning("Skipping duplicate syndication feed item with FeedIdentifier: '{FeedIdentifier}'", item.FeedIdentifier);
+                    logger.LogDebug("Skipping duplicate syndication feed item with FeedIdentifier: '{FeedIdentifier}'", item.FeedIdentifier);
                     continue;
                 }
 
