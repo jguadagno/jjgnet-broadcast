@@ -14,7 +14,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// This is the controller for managing the engagements.
 /// </summary>
-[Authorize(Policy = "RequireContributor")]
+[Authorize(Policy = "RequireViewer")]
 public class EngagementsController : Controller
 {
     private readonly IEngagementService _engagementService;
@@ -90,6 +90,7 @@ public class EngagementsController : Controller
     /// <param name="engagementViewModel">The <see cref="EngagementViewModel"/> to edit.</param>
     /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, redirects to the <see cref="Edit(int)"/> page.</returns>
     [HttpPost]
+    [Authorize(Policy = "RequireContributor")]
     public async Task<IActionResult> Edit(EngagementViewModel engagementViewModel)
     {
         var engagementToEdit = _mapper.Map<Domain.Models.Engagement>(engagementViewModel);
@@ -129,6 +130,7 @@ public class EngagementsController : Controller
     [HttpPost]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = "RequireContributor")]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var engagement = await _engagementService.GetEngagementAsync(id);
@@ -194,6 +196,7 @@ public class EngagementsController : Controller
     /// <param name="engagementViewModel">The <see cref="EngagementViewModel"/></param>
     /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, redirects to the <see cref="Edit(int)"/> page.</returns>
     [HttpPost]
+    [Authorize(Policy = "RequireContributor")]
     public async Task<RedirectToActionResult> Add(EngagementViewModel engagementViewModel)
     {
         var engagementToAdd = _mapper.Map<Domain.Models.Engagement>(engagementViewModel);

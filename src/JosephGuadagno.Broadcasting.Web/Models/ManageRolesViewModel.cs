@@ -1,5 +1,3 @@
-using JosephGuadagno.Broadcasting.Domain.Models;
-
 namespace JosephGuadagno.Broadcasting.Web.Models;
 
 /// <summary>
@@ -15,10 +13,10 @@ public class ManageRolesViewModel
     /// <summary>
     /// Roles currently assigned to the user
     /// </summary>
-    public IList<Role> CurrentRoles { get; set; } = new List<Role>();
+    public IList<RoleViewModel> CurrentRoles { get; set; } = new List<RoleViewModel>();
 
     /// <summary>
     /// All available roles in the system
     /// </summary>
-    public IList<Role> AvailableRoles { get; set; } = new List<Role>();
+    public IList<RoleViewModel> AvailableRoles { get; set; } = new List<RoleViewModel>();
 }

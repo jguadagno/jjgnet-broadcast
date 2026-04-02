@@ -36,5 +36,8 @@ public class WebMappingProfile: Profile
         
         // RBAC Phase 1 mappings
         CreateMap<Domain.Models.ApplicationUser, Models.ApplicationUserViewModel>();
+        
+        // RBAC Phase 2 mappings
+        CreateMap<Domain.Models.Role, Models.RoleViewModel>();
     }
 }
