@@ -1,4 +1,4 @@
-﻿using JosephGuadagno.Broadcasting.Data.Sql.Models;
+using JosephGuadagno.Broadcasting.Data.Sql.Models;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
