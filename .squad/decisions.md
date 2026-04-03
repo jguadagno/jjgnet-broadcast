@@ -11159,3 +11159,46 @@ builder.Configuration.GetConnectionString("KeyName")
 - PR: https://github.com/jguadagno/jjgnet-broadcast/pull/641
 - AspNetCore.HealthChecks: https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks
 
+
+---
+
+# PR Review Verdicts: #640 and #641
+
+**Date:** 2026-04-06  
+**Reviewer:** Neo (Lead)  
+**Requested by:** Joseph Guadagno
+
+## PR #640 — Fix EF Core MessageSent warning (issue #639)
+
+**Branch:** squad/639-fix-messagesentt-ef-warning  
+**Author:** Trinity (via jguadagno account)  
+**Status:** ✅ **APPROVED**  
+**Review:** https://github.com/jguadagno/jjgnet-broadcast/pull/640#issuecomment-4185615885
+
+### Summary
+Removes the redundant .HasDefaultValueSql("0") from ScheduledItem.MessageSent bool property configuration in BroadcastingContext.cs.
+
+### Pattern Established
+**Never use .HasDefaultValueSql() on non-nullable value types** — EF Core always inserts the C# value, making the DB default redundant. Removes sentinel value warnings introduced in EF Core 8+.
+
+---
+
+## PR #641 — Add health checks for Api and Web (issue #635)
+
+**Branch:** squad/635-health-checks-api-web  
+**Author:** Sparks (via jguadagno account)  
+**Status:** ✅ **APPROVED**  
+**Review:** https://github.com/jguadagno/jjgnet-broadcast/pull/641#issuecomment-4185616633
+
+### Summary
+Adds SQL Server and Azure Storage dependency health checks to Api and Web applications via ServiceDefaults.
+
+### Pattern Established
+**Health checks in ServiceDefaults must be conditionally registered** — check for connection string presence before calling .AddSqlServer() or .AddAzureQueueStorage(). Allows safe sharing across Api, Web, and Functions.
+
+### Non-blocking Suggestions for Future
+- Upgrade AspNetCore.HealthChecks.AzureStorage from 7.0.0 to 8.0.1
+- Add Table and Blob Storage checks for complete coverage
+- Add Web-specific checks (Key Vault, Communication Services) in future issue
+
+**Decision:** Both PRs approved. Ready for merge. Joseph can merge at his discretion.
