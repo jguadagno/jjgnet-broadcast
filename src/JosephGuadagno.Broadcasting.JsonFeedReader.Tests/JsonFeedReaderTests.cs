@@ -1,5 +1,5 @@
 using FluentAssertions;
-using JosephGuadagno.Broadcasting.JsonFeedReader.Interfaces;
+
 using JosephGuadagno.Broadcasting.JsonFeedReader.Models;
 using Microsoft.Extensions.Logging;
 using Moq;

@@ -1,6 +1,6 @@
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Data.Sql.Models;
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Xunit;

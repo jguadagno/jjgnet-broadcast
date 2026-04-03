@@ -1,8 +1,6 @@
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
-
 namespace JosephGuadagno.Broadcasting.Api.Interfaces;
 
-public interface ISettings : IEmailSettings
+public interface ISettings
 {
     /// <summary>
     /// The URL of the API scope used for authentication and authorization purposes.

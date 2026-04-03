@@ -1,6 +1,5 @@
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Api.Dtos;
-using JosephGuadagno.Broadcasting.Api.Models;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;

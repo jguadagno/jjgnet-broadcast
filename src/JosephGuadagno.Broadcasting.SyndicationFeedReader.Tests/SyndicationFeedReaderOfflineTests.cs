@@ -1,7 +1,5 @@
-using System.ServiceModel.Syndication;
-using System.Xml;
 using FluentAssertions;
-using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
+
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
 using Microsoft.Extensions.Logging;
 

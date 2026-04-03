@@ -47,12 +47,14 @@
   },
   "Settings": {
     "LoggingStorageAccount": "UseDevelopmentStorage=true",
-    "ShortenedDomainToUse": "jjg.me",
-    "FromAddress": "",
-    "FromDisplayName": "",
-    "ReplyToAddress": "",
-    "ReplyToDisplayName": "",
-    "AzureCommunicationsConnectionString": ""
+    "ShortenedDomainToUse": "jjg.me"
+  },
+  "Email": {
+    "FromAddress": "noreply@broadcasting.josephguadagno.net",
+    "FromDisplayName": "JosephGuadagno.NET Broadcasting",
+    "ReplyToAddress": "jguadagno@hotmail.com",
+    "ReplyToDisplayName": "Joseph Guadagno",
+    "AzureCommunicationsConnectionString": "Set in Users Secrets/Azure App Service Settings"
   },
   "AutoMapper": {
     "LicenseKey": "Set in Users Secrets/Azure App Service Settings"

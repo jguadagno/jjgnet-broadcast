@@ -13,6 +13,7 @@ using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
 using JosephGuadagno.AzureHelpers.Storage;
 using JosephGuadagno.AzureHelpers.Storage.Interfaces;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -36,15 +37,19 @@ var settings = new Settings
 {
     StaticContentRootUrl = null!,
     LoggingStorageAccount = null!,
+};
+builder.Configuration.Bind("Settings", settings);
+builder.Services.TryAddSingleton<ISettings>(settings);
+var emailSettings = new EmailSettings
+{
     FromAddress = null!,
     FromDisplayName = null!,
     ReplyToAddress = null!,
     ReplyToDisplayName = null!,
     AzureCommunicationsConnectionString = null!
 };
-builder.Configuration.Bind("Settings", settings);
-builder.Services.TryAddSingleton<ISettings>(settings);
-builder.Services.TryAddSingleton<IEmailSettings>(settings);
+builder.Configuration.Bind("Email", emailSettings);
+builder.Services.TryAddSingleton<IEmailSettings>(emailSettings);
 
 var linkedInSettings = new LinkedInSettings();
 builder.Configuration.Bind("LinkedIn", linkedInSettings);
@@ -63,7 +68,7 @@ builder.Services.AddSession(options =>
 
 // Configure the logger
 var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
-ConfigureTelemetryAndLogging(builder.Services, settings.LoggingStorageAccount, fullyQualifiedLogFile, "Web");
+ConfigureTelemetryAndLogging(builder.Services, fullyQualifiedLogFile, "Web");
 
 // Register BroadcastingContext for RBAC data stores
 builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer");
@@ -168,7 +173,7 @@ app.MapControllerRoute(
 
 app.Run();
 
-void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorageAccount, string logPath, string applicationName)
+void ConfigureTelemetryAndLogging(IServiceCollection services, string logPath, string applicationName)
 {
     var logger = new LoggerConfiguration()
         .ConfigureSerilog(builder.Configuration, applicationName, logPath)

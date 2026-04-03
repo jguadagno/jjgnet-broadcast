@@ -1,5 +1,4 @@
 using JosephGuadagno.Broadcasting.Domain;
-using JosephGuadagno.Broadcasting.Managers.Facebook;
 
 namespace JosephGuadagno.Broadcasting.Managers.Facebook.Tests;
 
