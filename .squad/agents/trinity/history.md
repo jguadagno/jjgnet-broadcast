@@ -257,3 +257,20 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 - `QueueServiceClient` registration pattern: use `TryAddSingleton` with factory lambda reading `ConnectionStrings:QueueStorage` — works for all three project types
 - Each project's `Settings` class implements both the project-specific `ISettings` AND (via interface inheritance) `IEmailSettings` from Domain — register both in DI from the same settings instance
 - When test files have duplicate class declarations, the compiler reports errors at confusing line numbers — always rewrite the entire file cleanly
+- **EF Core bool defaults**: Never use `.HasDefaultValueSql()` on non-nullable `bool` properties. EF Core 8+ cannot distinguish explicit `false` from CLR default, causing startup warnings. The DB default is always redundant for value types — EF Core inserts the C# value directly.
+- `BroadcastingContext.cs` location: `src/JosephGuadagno.Broadcasting.Data.Sql/BroadcastingContext.cs` — all entity configurations are in `OnModelCreating()` method starting at line 47
+
+---
+
+### 2026-04-06 — Issue #639: Fix EF Core MessageSent warning
+
+**Status:** ✅ COMPLETE | Branch squad/639-fix-messagesentt-ef-warning | PR #640 | Commit 2bbeb2f
+
+**What I Fixed:**
+- Removed `.HasDefaultValueSql("0")` from `ScheduledItem.MessageSent` property configuration in `BroadcastingContext.cs` (line 115-116)
+- Root cause: EF Core 8+ cannot distinguish explicit `false` from CLR default for non-nullable `bool` properties with database-generated defaults
+- The `.HasDefaultValueSql("0")` call was entirely redundant — EF Core inserts the C# value directly for value types
+
+**Build:** ✅ 0 errors (59 pre-existing warnings)
+
+**Key Pattern:** Never use `.HasDefaultValueSql()` on non-nullable value types — it serves no purpose and triggers warnings in modern EF Core

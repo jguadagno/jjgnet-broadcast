@@ -303,6 +303,18 @@ Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomme
 - **PR #557 ✅ APPROVED:** CI deployment approval gate + staging slot stop. Non-blocking: step ordering in API/Web (stop should precede get-URL step). Functions workflow had correct order.
 - **PR #559 ✅ APPROVED:** Twitter integration tests — all 11 scope items verified. Joseph merged, issue #558 closed.
 
+## Learnings
+
+### 2026-04-05: Issue #639 — EF Core bool/HasDefaultValueSql Warning
+
+- **Key finding:** `BroadcastingContext.cs` configures `ScheduledItem.MessageSent` with `.HasDefaultValueSql("0")`. EF Core 8+ warns on non-nullable `bool` + DB default because it cannot distinguish explicit `false` from CLR default `false`.
+- **Fix:** Remove `.HasDefaultValueSql("0")` from the `MessageSent` property configuration — it is redundant since EF Core always inserts the explicit C# value for all mapped properties. No behavioural regression.
+- **Pattern:** When a `bool` property has a DB default of `0`/`false`, the `.HasDefaultValueSql()` call is redundant and should be omitted to silence EF Core sentinel warnings.
+- **Assigned:** Trinity (EF Core data layer). XS effort.
+- **Key files:** `src/JosephGuadagno.Broadcasting.Data.Sql/BroadcastingContext.cs`, `src/JosephGuadagno.Broadcasting.Data.Sql/Models/ScheduledItem.cs`
+
+---
+
 ## Team Standing Rules (2026-04-01)
 Established by Joseph Guadagno:
 

@@ -10946,3 +10946,106 @@ This significantly simplifies the health monitoring implementation — no specia
 - [Correction comment](https://github.com/jguadagno/jjgnet-broadcast/issues/635#issuecomment-4184423317)
 - [Azure App Service Health Check documentation](https://learn.microsoft.com/en-us/azure/app-service/monitor-instances-health-check)
 
+
+
+---
+
+# Neo Triage Decision — Issue #639
+
+**Date:** 2026-04-05  
+**Issue:** [#639 — (bug) Warning in Application Insights log](https://github.com/jguadagno/jjgnet-broadcast/issues/639)  
+**Labels applied:** `bug`, `priority: low`, `squad:trinity`
+
+## What Was Found
+
+`BroadcastingContext.cs` (EF Core Fluent API config) configures the `MessageSent` property on `ScheduledItem` with:
+
+```csharp
+entity.Property(e => e.MessageSent)
+    .HasDefaultValueSql("0");
+```
+
+The EF entity (`Data.Sql/Models/ScheduledItem.cs`) declares `MessageSent` as non-nullable `bool`. EF Core 8+ warns because `false` is simultaneously the CLR default and the trigger value that causes EF to defer to the DB-generated default on INSERT — it cannot distinguish intent.
+
+## Decision: Fix Approach
+
+**Remove `.HasDefaultValueSql("0")` from the `MessageSent` property configuration.**
+
+Rationale:
+- The DB default `0` is redundant — EF Core always includes all mapped columns in INSERT statements, so `false` will be inserted as `0` directly from C#.
+- No behavioural regression.
+- Least invasive fix — single line removal.
+- Alternatives (nullable `bool?`, `.HasSentinel()`) are more invasive or obscure without benefit.
+
+## Assignment
+
+**Assigned to: Trinity** (Backend Dev — EF Core data layer)
+
+This is a pure EF Core Fluent API configuration fix, squarely in Trinity's domain.
+
+## Files to Change
+
+- `src/JosephGuadagno.Broadcasting.Data.Sql/BroadcastingContext.cs` — remove the `.HasDefaultValueSql("0")` line from the `MessageSent` property block
+- `src/JosephGuadagno.Broadcasting.Data.Sql.Tests/ScheduledItemDataStoreTests.cs` — verify no test relies on DB-default fallback behaviour for this property
+
+## Effort
+
+XS — single-line removal + test pass.
+
+
+---
+
+# Decision: EF Core bool Property Configuration Pattern
+
+**Date:** 2026-04-06  
+**Agent:** Trinity  
+**Issue:** #639  
+**PR:** #640
+
+## Context
+
+The `ScheduledItem.MessageSent` non-nullable `bool` property had `.HasDefaultValueSql("0")` configured in `BroadcastingContext`. This caused EF Core 8+ to log warnings in Application Insights on every startup because it cannot distinguish an explicit `false` value from the CLR default.
+
+## Decision
+
+**NEVER use `.HasDefaultValueSql()` on non-nullable value types (bool, int, DateTime, etc.).**
+
+The database default is entirely redundant for value types. EF Core always inserts the C# property value directly — it never defers to the database default for value types.
+
+## Fix Applied
+
+Removed the `.HasDefaultValueSql("0")` call from the `ScheduledItem.MessageSent` property configuration:
+
+**Before:**
+```csharp
+entity.Property(e => e.MessageSent)
+    .HasDefaultValueSql("0");
+```
+
+**After:**
+```csharp
+entity.Property(e => e.MessageSent);
+```
+
+## Rationale
+
+1. **No behavior change:** EF Core was already inserting the C# value, not the DB default
+2. **Eliminates warning:** Removes the EF Core startup warning about ambiguous value/default detection
+3. **Cleaner config:** Removes redundant configuration that serves no purpose
+
+## Pattern to Follow
+
+- **Non-nullable value types** (bool, int, etc.): No `.HasDefaultValueSql()` needed
+- **Nullable value types** (bool?, int?, etc.): No `.HasDefaultValueSql()` needed (null is explicit)
+- **Reference types with DB defaults** (strings, DateTimeOffset): `.HasDefaultValueSql()` is appropriate when you want DB-generated values
+
+## Location
+
+All entity configurations: `src/JosephGuadagno.Broadcasting.Data.Sql/BroadcastingContext.cs`
+
+## Testing
+
+- ✅ Build passes with 0 errors
+- ✅ No behavioral change (EF was already using C# value)
+- ✅ Warning eliminated at startup
+
