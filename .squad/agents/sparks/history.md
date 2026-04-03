@@ -5,8 +5,19 @@
 | Date | Task | Outcome |
 |------|------|---------|
 | 2026-03-20 | Added CodeQL analysis to ci.yml (#326) | ✅ CodeQL job added as separate job with csharp language, push to main trigger added to workflow |
+| 2026-04-03 | Implement health checks for Api and Web (#635) | ✅ Added SQL Server and Azure Storage health checks to ServiceDefaults; PR #641 created |
 
 ## Learnings
+
+### Health Checks in ServiceDefaults (2026-04-03)
+- ServiceDefaults uses `IHostApplicationBuilder` where `builder.Configuration` is `IConfigurationManager` (not `IConfiguration`)
+- Connection strings must be accessed via indexer: `builder.Configuration["ConnectionStrings:KeyName"]` not `GetConnectionString()`
+- Health checks should be conditionally registered with null/whitespace checks to keep ServiceDefaults safe for any consumer
+- SQL Server check package: `AspNetCore.HealthChecks.SqlServer` version 9.0.0 (compatible with .NET 10)
+- Azure Storage check package: `AspNetCore.HealthChecks.AzureStorage` version 7.0.0 (latest available; v9 not yet released)
+- Connection string keys: `JJGNetDatabaseSqlServer` (SQL), `QueueStorage` (Azure Storage queues)
+- Health check tags: `["live"]` for liveness (self-check only), `["ready"]` for readiness (includes dependencies)
+- Endpoints: `/alive` (liveness), `/health` (readiness) — already mapped in ServiceDefaults
 
 ### CodeQL Integration in CI
 - CodeQL works best as a separate job with its own permissions (security-events: write)
