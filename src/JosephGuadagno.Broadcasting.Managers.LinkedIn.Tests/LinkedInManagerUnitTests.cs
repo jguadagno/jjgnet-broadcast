@@ -1,6 +1,5 @@
 using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Exceptions;
-using JosephGuadagno.Broadcasting.Managers.LinkedIn;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Exceptions;
 using Microsoft.Extensions.Logging;
 using Moq;

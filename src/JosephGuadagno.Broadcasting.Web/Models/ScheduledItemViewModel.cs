@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using JosephGuadagno.Broadcasting.Domain.Models;
 
 namespace JosephGuadagno.Broadcasting.Web.Models;
 

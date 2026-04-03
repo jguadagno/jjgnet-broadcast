@@ -1,6 +1,6 @@
 using Azure;
 using Azure.Security.KeyVault.Secrets;
-using JosephGuadagno.Broadcasting.Data.KeyVault;
+
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;

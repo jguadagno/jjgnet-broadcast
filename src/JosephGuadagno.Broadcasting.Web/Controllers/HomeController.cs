@@ -1,7 +1,5 @@
 ﻿using System.Diagnostics;
 
-using JosephGuadagno.Broadcasting.Domain;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using JosephGuadagno.Broadcasting.Web.Models;

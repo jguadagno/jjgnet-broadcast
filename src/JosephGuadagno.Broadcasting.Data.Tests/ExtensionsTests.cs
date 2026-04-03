@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using JosephGuadagno.Broadcasting.Domain;
-using Xunit;
 
 namespace JosephGuadagno.Broadcasting.Data.Tests;
 

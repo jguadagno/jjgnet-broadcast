@@ -4,7 +4,7 @@ using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Identity.Web;
+
 using System.Security.Claims;
 
 namespace JosephGuadagno.Broadcasting.Web.Controllers;

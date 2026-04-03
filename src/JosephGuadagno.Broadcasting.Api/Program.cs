@@ -8,7 +8,7 @@ using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.AzureHelpers.Storage;
 using JosephGuadagno.AzureHelpers.Storage.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Constants;
+
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
 using OpenTelemetry.Logs;
@@ -25,16 +25,20 @@ var settings = new Settings
 {
     ApiScopeUrl = null!,
     LoggingStorageAccount = null!,
-    ScalarClientId = null!,
+    ScalarClientId = null!
+};
+builder.Configuration.Bind("Settings", settings);
+builder.Services.TryAddSingleton<ISettings>(settings);
+var emailSettings = new EmailSettings
+{
     FromAddress = null!,
     FromDisplayName = null!,
     ReplyToAddress = null!,
     ReplyToDisplayName = null!,
     AzureCommunicationsConnectionString = null!
 };
-builder.Configuration.Bind("Settings", settings);
-builder.Services.TryAddSingleton<ISettings>(settings);
-builder.Services.TryAddSingleton<IEmailSettings>(settings);
+builder.Configuration.Bind("Email", emailSettings);
+builder.Services.TryAddSingleton<IEmailSettings>(emailSettings);
 var autoMapperSettings = new AutoMapperSettings();
 builder.Configuration.Bind("AutoMapper", autoMapperSettings);
 builder.Services.AddSingleton<IAutoMapperSettings>(autoMapperSettings);

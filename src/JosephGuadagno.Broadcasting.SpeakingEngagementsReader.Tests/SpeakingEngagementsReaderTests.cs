@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
-using JosephGuadagno.Broadcasting.Domain.Models;
+
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
 using Microsoft.Extensions.Logging;
 using Moq;

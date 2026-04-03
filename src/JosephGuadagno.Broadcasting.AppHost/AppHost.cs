@@ -1,5 +1,3 @@
-using Azure.Provisioning;
-using Azure.Provisioning.EventGrid;
 using Azure.Provisioning.Storage;
 
 using Projects;

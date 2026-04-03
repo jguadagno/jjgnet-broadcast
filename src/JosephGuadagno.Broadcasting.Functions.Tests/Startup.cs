@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net.Http;
 using System.Reflection;
 
@@ -50,14 +49,11 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests;
 
 public class Startup
 {
-    private readonly string _currentDirectory = Directory.GetCurrentDirectory();
-    
     public void ConfigureHost(IHostBuilder hostBuilder)
     {
         hostBuilder.ConfigureHostConfiguration(configurationBuilder =>
         {
             configurationBuilder
-                //.SetBasePath(_currentDirectory)
                 .AddJsonFile("appsettings.json", true)
                 .AddJsonFile("appsettings.Development.json", true)
                 .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
@@ -73,10 +69,7 @@ public class Startup
         var settings =
             new JosephGuadagno.Broadcasting.Functions.Models.Settings
             {
-                LoggingStorageAccount = null!, ShortenedDomainToUse = null!,
-                FromAddress = null!, FromDisplayName = null!,
-                ReplyToAddress = null!, ReplyToDisplayName = null!,
-                AzureCommunicationsConnectionString = null!
+                LoggingStorageAccount = null!, ShortenedDomainToUse = null!
             };
         config.Bind("Settings", settings);
         services.TryAddSingleton<ISettings>(settings);
@@ -102,7 +95,6 @@ public class Startup
 
         // Configure the logger
         // Removed since logging is not required for tests and won't work on CI servers
-        // string loggerFile = Path.Combine(_currentDirectory, $"logs{Path.DirectorySeparatorChar}logs.txt");
         // ConfigureTelemetryAndLogging(services, settings.LoggingStorageAccount, loggerFile,"Functions");
 
         // Add in AutoMapper
