@@ -10370,3 +10370,579 @@ Added `if (!logger.IsEnabled(LogLevel.Information)) return;` at the top of `LogC
 Added to both Api and Web: `Default: Warning`, `Microsoft: Warning`, `Microsoft.Hosting.Lifetime: Information`, `JosephGuadagno: Information`. Environment-specific files are the ASP.NET Core standard for production log level overrides.
 
 ---
+
+---
+
+# Decision: Infrastructure Issue Triage — Health Checks & Exception Alerting
+
+**Date:** 2026-04-05  
+**Author:** Neo (Lead)  
+**Issues:** #635 (Health Checks), #636 (Exception Alerting)  
+**Status:** Triaged — awaiting sprint assignment
+
+---
+
+## Context
+
+Joseph requested triage and level-of-effort estimates for two infrastructure enhancement issues:
+- #635: Add health checks for Api, Web applications
+- #636: Setup alerting for repeated exceptions in Application Insights
+
+Both issues are labeled `enhancement` and `Infrastructure`. Issue #636 also has `telemetry` label.
+
+---
+
+## Analysis Summary
+
+### Issue #635: Health Checks
+
+**Current state discovered:**
+- Health check infrastructure **already exists** via ServiceDefaults project
+- Endpoints `/health` (readiness) and `/alive` (liveness) are mapped in both Api and Web
+- Only a basic "self" check configured (always returns healthy)
+- No service-specific dependency health checks
+
+**Key files:**
+- `src/JosephGuadagno.Broadcasting.ServiceDefaults/Extensions.cs` — health check configuration
+- Both Api and Web `Program.cs` call `builder.AddServiceDefaults()` which registers health checks
+
+**Dependencies requiring health checks:**
+- SQL Server (`JJGNetDatabaseSqlServer`)
+- Azure Storage (Tables, Queues, Blobs)
+- Azure Key Vault (Web project only)
+- Azure Communication Services (email)
+
+**Recommendation:** Add `AspNetCore.HealthChecks.*` NuGet packages and configure dependency-specific checks in ServiceDefaults.
+
+### Issue #636: Exception Alerting
+
+**Current state discovered:**
+- **Comprehensive telemetry stack in place:**
+  - Application Insights fully configured (Api, Web, Functions)
+  - OpenTelemetry metrics, tracing, and logging
+  - Serilog multi-sink: Console, File, Azure Table Storage, OpenTelemetry
+  - `GlobalExceptionHandler` logs all unhandled exceptions
+- **NO alerting configured:**
+  - No Azure Monitor Alert Rules
+  - No Action Groups for notifications
+  - No Smart Detection customization
+  - No Infrastructure-as-Code (Bicep/ARM) for alerts
+
+**Key files:**
+- `src/JosephGuadagno.Broadcasting.ServiceDefaults/Extensions.cs` — OpenTelemetry configuration
+- `src/JosephGuadagno.Broadcasting.Serilog/LoggingExtensions.cs` — Serilog setup
+- `src/JosephGuadagno.Broadcasting.Api/Infrastructure/GlobalExceptionHandler.cs` — exception logging
+
+**Infrastructure gap:** All Azure resources are manually provisioned — no Bicep or ARM templates found.
+
+**Recommendation:** Create Azure Monitor Alert Rules + Action Groups, ideally via Bicep templates for version control.
+
+---
+
+## Decisions
+
+### Issue #635 Routing
+
+**Assigned to:** `squad:sparks` (DevOps & Infrastructure Engineer)
+
+**Level of effort:** **Small** — 2 story points (Fibonacci)
+
+**Justification:**
+- Infrastructure already exists — only adding service checks
+- Well-documented NuGet packages
+- Low risk, straightforward configuration
+- Estimated 2-3 hours including testing
+
+**Scope:**
+1. Add NuGet packages: `AspNetCore.HealthChecks.SqlServer`, `AspNetCore.HealthChecks.AzureStorage`, `AspNetCore.HealthChecks.AzureKeyVault`
+2. Configure health checks in ServiceDefaults `Extensions.cs`
+3. Add JSON response writer for detailed health status
+4. Write tests for health check endpoints
+5. Document health probe configuration
+
+### Issue #636 Routing
+
+**Assigned to:** `squad:sparks` (primary), `squad:neo` (Bicep template review)
+
+**Level of effort:** **Medium** — 3 story points (Fibonacci)
+
+**Justification:**
+- Infrastructure work (Azure Monitor configuration)
+- **IF using Bicep IaC (recommended):** 4-6 hours
+  - Learning/reviewing Bicep syntax for Monitor resources
+  - Defining parameterized templates
+  - Creating deployment workflow
+  - Testing and documentation
+- **IF using Portal-only (fast-track):** 1-2 hours
+  - But not repeatable or version-controlled
+  - Team recommends Bicep for long-term maintainability
+
+**Scope:**
+1. Create Action Group for notifications (email, Teams, SMS, etc.)
+2. Define Alert Rules for repeated exceptions (metric or KQL-based)
+3. Enable Smart Detection routing
+4. Create Bicep templates for IaC (recommended)
+5. Test alert firing and notification delivery
+6. Document monitoring runbook and alert response procedures
+
+**Blocked on:** Joseph's decisions:
+- Notification recipients (email addresses, webhook URLs)
+- Alert threshold (current recommendation: >5 exceptions in 15 minutes)
+- Exception filtering (exclude certain exception types?)
+- IaC approach preference (Bicep templates vs. Portal-only)
+- Multi-environment alerting (Production only, or staging too?)
+
+---
+
+## Architecture Patterns Identified
+
+### ServiceDefaults as Cross-Cutting Concern Hub
+
+The `JosephGuadagno.Broadcasting.ServiceDefaults` project serves as the central location for:
+- Health check configuration
+- OpenTelemetry setup (metrics, tracing, logging)
+- Azure Monitor integration
+- Resilience patterns (future: Polly retry policies)
+
+**Pattern:** All cross-cutting infrastructure concerns should be configured in ServiceDefaults and inherited via `builder.AddServiceDefaults()` rather than duplicated in each project.
+
+### Health Check Tagging Strategy
+
+Health checks use tags to control which checks run for which endpoint:
+- **No tag:** Required for readiness (checked by `/health`)
+- **`["live"]` tag:** Optional checks for liveness only (checked by `/alive`)
+
+**Pattern:** Tag critical dependencies (SQL, Storage) with no tag (required). Tag optional services with `["live"]`.
+
+### OpenTelemetry Filtering
+
+Health check requests are explicitly excluded from OpenTelemetry tracing:
+```csharp
+filter.AddHttpClientInstrumentation()
+    .EnrichWithHttpRequest((activity, request) => {
+        if (request.RequestUri?.PathAndQuery.StartsWith("/health") == true ||
+            request.RequestUri?.PathAndQuery.StartsWith("/alive") == true)
+        {
+            activity.IsAllDataRequested = false;
+        }
+    });
+```
+
+**Pattern:** Exclude high-frequency, low-value requests (health checks, metrics endpoints) from tracing to reduce noise and cost.
+
+---
+
+## Follow-up Actions
+
+**For #635:**
+- Sparks to implement health checks
+- No blockers — ready to start
+
+**For #636:**
+- Joseph to answer 7 open questions (see issue triage comment)
+- Once decisions made, Sparks to implement
+- Neo to review Bicep templates if IaC approach chosen
+
+**Team backlog:** Now 34 issues triaged (was 32).
+
+---
+
+## Learnings for Future Triage
+
+1. **ServiceDefaults project is key** — always check this project first for cross-cutting infrastructure concerns
+2. **Aspire auto-configures dependencies** — health checks can integrate with Aspire's resource tracking
+3. **IaC gap** — no Bicep/ARM templates exist for Azure infrastructure. Alerting work is an opportunity to start IaC adoption.
+4. **Telemetry is comprehensive** — logging infrastructure is solid, just missing the alerting layer
+5. **Health checks already mapped** — issue #635 is enhancement, not greenfield work
+
+---
+
+**Status:** Both issues triaged, labeled `squad:sparks`, and blocked on sprint planning. Issue #636 additionally blocked on Joseph's configuration decisions.
+
+---
+
+# Decision: Azure Health Monitoring Strategy for Api, Web, and Functions
+
+**Date:** 2026-04-05  
+**Author:** Cypher (DevOps Engineer)  
+**Related Issue:** #635  
+**Status:** Proposed for team review
+
+---
+
+## Context
+
+Issue #635 adds health check endpoints (`/health`, `/alive`) to Api and Web applications. This raises the question: how should we configure Azure's native health monitoring to leverage these endpoints across all three services (Api, Web, Functions)?
+
+## Decision
+
+**Recommended Azure health monitoring configuration:**
+
+### 1. App Service Health Check (Api & Web Only)
+
+**Use:** Azure App Service's built-in Health Check feature for `api-jjgnet-broadcast` and `web-jjgnet-broadcast`
+
+**Configuration:**
+- **Path:** `/health` (validates SQL Server, Azure Storage, Key Vault dependencies)
+- **Unhealthy threshold:** 3 consecutive failures (~3 minutes)
+- **Behavior:** Unhealthy instances removed from load balancer (multi-instance) or restarted (single-instance)
+
+**Why `/health` over `/alive`?**
+- `/health` validates all dependencies — catches database outages, storage failures
+- `/alive` only checks app responsiveness — useful for liveness probes but insufficient for production readiness
+- App Service Health Check is a readiness check (should instances serve traffic?), not a liveness check
+
+**Platform limitation:** Azure Functions on **Consumption plan does NOT support App Service Health Check** (only Premium/Dedicated plans)
+
+### 2. Azure Monitor Availability Tests (All Services)
+
+**Use:** External uptime monitoring via Application Insights URL ping tests
+
+**Configuration:**
+- **Frequency:** 5 minutes
+- **Test locations:** 5+ geographically distributed Azure regions
+- **Alert threshold:** 3+ locations fail
+- **Target endpoints:**
+  - Api: `https://api-jjgnet-broadcast.azurewebsites.net/health`
+  - Web: `https://web-jjgnet-broadcast.azurewebsites.net/health`
+  - Functions: `https://jjgnet-broadcast.azurewebsites.net/api/health` (requires HTTP trigger)
+
+**Why both internal (Health Check) + external (Availability Tests)?**
+- **Defense in depth:** Health Check catches instance-level issues; Availability Tests catch DNS, gateway, routing, and external connectivity issues
+- **User perspective:** Availability Tests validate the app is reachable from the internet, not just healthy within Azure's network
+
+### 3. Azure Functions Health Endpoint
+
+**Requirement:** Add HTTP-triggered function at `/api/health` that exposes ASP.NET Core health check results
+
+**Why needed:**
+- Consumption plan lacks App Service Health Check feature
+- Enables Azure Monitor Availability Tests to monitor Functions health
+- Functions v4 isolated worker supports health checks via `Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore` (already installed)
+
+**Implementation:** See runbook in [issue #635 comment](https://github.com/jguadagno/jjgnet-broadcast/issues/635#issuecomment-4184410295)
+
+---
+
+## Alternatives Considered
+
+### Alternative 1: Use `/alive` for App Service Health Check
+**Rejected:** `/alive` only validates app responsiveness (basic liveness). Doesn't detect dependency failures (SQL Server down, storage unavailable). App Service Health Check is a readiness probe, not a liveness probe — should validate dependencies.
+
+### Alternative 2: Skip Availability Tests (rely on Health Check only)
+**Rejected:** Health Check is internal to Azure platform — doesn't detect external connectivity issues (DNS, Application Gateway, CDN failures). Availability Tests provide user-perspective validation.
+
+### Alternative 3: Upgrade Functions to Premium plan for Health Check support
+**Rejected for now:** Adds cost (~$150/month minimum vs. Consumption pay-per-execution). Availability Tests provide sufficient monitoring for Functions on Consumption. Can revisit if we need warm instances or VNET integration.
+
+---
+
+## Implications
+
+**For Api & Web:**
+- Joseph (or ops team) must configure App Service Health Check in Azure Portal after #635 deploys
+- Availability Tests provide additional monitoring layer (optional but recommended)
+
+**For Functions:**
+- Developer must add HTTP health trigger (example provided in runbook)
+- Availability Tests are the only monitoring option (no platform health check on Consumption)
+
+**Cost:**
+- **App Service Health Check:** Free (included in App Service)
+- **Availability Tests:** ~$1.00 per test per month (3 tests × 5 locations = $3/month)
+
+**Monitoring failures:**
+- **Health Check failures:** Logged to App Service Logs + Metrics; auto-remediation (restart/replace instances)
+- **Availability Test failures:** Alerts via action groups (email, SMS, webhooks)
+
+---
+
+## Follow-up Actions
+
+1. ✅ **Cypher:** Post comprehensive runbook to #635 (completed)
+2. 🔲 **Joseph/Ops:** Configure App Service Health Check for Api & Web (after #635 deploys)
+3. 🔲 **Developer (Sparks):** Add HTTP health trigger to Functions project (if Functions monitoring desired)
+4. 🔲 **Joseph/Ops:** Set up Availability Tests in Application Insights (optional, recommended)
+
+---
+
+## References
+
+- Runbook: https://github.com/jguadagno/jjgnet-broadcast/issues/635#issuecomment-4184410295
+- ServiceDefaults implementation: `src/JosephGuadagno.Broadcasting.ServiceDefaults/Extensions.cs`
+- Deployment workflows: `.github/workflows/main_*-jjgnet-broadcast.yml`
+- [App Service Health Check docs](https://learn.microsoft.com/en-us/azure/app-service/monitor-instances-health-check)
+- [Availability Tests docs](https://learn.microsoft.com/en-us/azure/azure-monitor/app/availability-overview)
+
+---
+
+**Questions or objections?** Discuss in #635 or tag @Cypher in Slack.
+
+---
+
+# Decision: Issue #636 Exception Alerting — Finalized Specification
+
+**Date:** 2026-04-05  
+**Decided by:** Joseph Guadagno (Product Owner)  
+**Triaged by:** Neo (Lead)  
+**Issue:** #636 — Setup alerting for repeated exceptions in Application Insights  
+**Related Issue:** #637 — Bicep scripts for entire Azure environment (IaC initiative)
+
+---
+
+## Context
+
+Issue #636 required 5 blocking decisions before implementation could begin. Neo posted initial triage analysis identifying the gaps and open questions. Joseph has now answered all questions, finalizing the specification.
+
+---
+
+## Decisions Made
+
+### 1. Alert Threshold
+**Decision:** **>5 exceptions in 15 minutes**
+
+**Rationale:** Neo's recommended threshold accepted by Joseph. Balances sensitivity (catches real issues quickly) with noise reduction (prevents alert fatigue from transient spikes).
+
+**Implementation:** Configure Azure Monitor Alert Rule with:
+- Signal: Application Insights `exceptions` metric
+- Condition: Count > 5 in 15-minute window
+- Evaluation frequency: Every 5 minutes
+
+---
+
+### 2. Notification Target
+**Decision:** **Email**
+
+**Rationale:** Joseph chose email as the notification channel for exception alerts.
+
+**Implementation:** Create Azure Monitor Action Group with email receiver. Email address to be provided in Bicep parameters file (not hardcoded in template).
+
+**Future enhancement:** Teams/Slack webhooks, Logic Apps, or Automation runbooks can be added later via additional Action Group receivers.
+
+---
+
+### 3. Exception Filtering
+**Decision:** **Yes — exclude ValidationException, NotFoundException, and similar non-critical exceptions**
+
+**Rationale:** Not all exceptions are equal. Validation errors and 404s are expected for invalid user input and should not trigger production alerts. Only **unexpected** exceptions (server errors, dependencies failing, etc.) should alert.
+
+**Implementation:** Use KQL-based alert (not simple metric alert) with dimension filtering:
+
+```kusto
+exceptions
+| where timestamp > ago(15m)
+| where customDimensions['exceptionType'] !in ('ValidationException', 'NotFoundException')
+| summarize ExceptionCount = count()
+| where ExceptionCount > 5
+```
+
+**Future refinement:** Expand exclusion list as needed based on production telemetry patterns.
+
+---
+
+### 4. Environments
+**Decision:** **Production only** (staging no longer exists)
+
+**Rationale:** Alerting in non-prod environments generates noise from testing activity. Production is the only environment that requires proactive incident response.
+
+**Implementation:** Bicep parameters file (`main.parameters.prod.json`) targets Production Application Insights resource only. No staging/dev alert rules needed.
+
+---
+
+### 5. Infrastructure-as-Code Approach
+**Decision:** **BOTH — Create Bicep templates AND Portal step-by-step instructions**
+
+**Rationale:** Joseph wants IaC for repeatability and version control, but also wants Portal documentation for manual setup/verification and understanding.
+
+**Implementation:**
+- **Bicep templates:** Modular, parameterized, version-controlled in `infrastructure/bicep/monitoring/`
+  - `action-group.bicep` — Email Action Group
+  - `alert-rule-exceptions.bicep` — Exception alert rule with KQL filtering
+  - `main.bicep` — Orchestrator
+  - `main.parameters.prod.json` — Production parameters
+- **Portal documentation:** Step-by-step guide with screenshots in `docs/azure-portal-alerting-setup.md`
+
+**Long-term benefit:** Bicep templates enable disaster recovery, multi-region deployment, and infrastructure peer review via PR process.
+
+---
+
+### 6. Broader IaC Initiative
+**Decision:** **Create separate issue #637 for "Bicep scripts for the entire Azure environment"**
+
+**Rationale:** Joseph wants **all** Azure infrastructure eventually defined as IaC, not just alerting. Issue #636 is the **first deliverable** in this broader initiative.
+
+**Implementation:**
+- **Issue #637 created** — Epic-level issue (8 story points, multi-sprint effort)
+- **Phased approach:**
+  - Phase 0 (Issue #636): Alert Rules + Action Groups ✅ **FIRST DELIVERABLE**
+  - Phase 1: Application Insights + Log Analytics Workspace
+  - Phase 2: Azure Storage Account (Tables, Queues, Blobs)
+  - Phase 3: Azure Key Vault + Managed Identities
+  - Phase 4: Azure SQL Server + Database
+  - Phase 5: Azure App Services (Api + Web)
+  - Phase 6: Azure Functions
+  - Phase 7: CI/CD workflow for Bicep deployment
+- **Incremental delivery:** One resource type per sprint, not big-bang deployment
+
+**Assigned to:** `squad:cypher` (DevOps & Database Architect — Bicep specialist)
+
+---
+
+## Routing Changes
+
+**Original routing:** `squad:sparks` (DevOps/Infrastructure)  
+**New routing:** `squad:cypher` (DevOps/Infrastructure — Bicep specialist)
+
+**Rationale:** Issue #636 now requires Bicep template development, which is Cypher's domain. Cypher will deliver both the Bicep templates and Portal documentation.
+
+**Label updated:** `squad:sparks` → `squad:cypher`
+
+---
+
+## Affected Issues
+
+- **#636** — Exception alerting (finalized, ready for implementation by Cypher)
+- **#637** — Bicep IaC for entire Azure environment (epic created, triaged, routed to Cypher)
+
+---
+
+## Implementation Notes
+
+**For Cypher (implementing #636):**
+
+1. **Directory structure:**
+   ```
+   infrastructure/
+   └── bicep/
+       └── monitoring/
+           ├── action-group.bicep
+           ├── alert-rule-exceptions.bicep
+           ├── main.bicep
+           └── main.parameters.prod.json
+   ```
+
+2. **Parameters to expose:**
+   - `emailAddress` (string, required) — alert recipient
+   - `applicationInsightsId` (string, required) — Production App Insights resource ID
+   - `location` (string, default: `resourceGroup().location`)
+
+3. **Exception filtering:** Use KQL-based alert with `customDimensions['exceptionType']` filtering
+
+4. **Testing:** Deploy to test resource group first, trigger test exceptions, verify alert fires and email received
+
+5. **Documentation:** Create `docs/azure-portal-alerting-setup.md` with step-by-step Portal instructions + screenshots
+
+**For broader IaC initiative (#637):**
+- Build incrementally, one resource type per sprint
+- Each resource type gets its own sub-issue
+- Create next sub-issue only after previous phase merges (prevents backlog clutter)
+- Neo to review all Bicep templates for consistency and best practices
+
+---
+
+## Related Decisions
+
+- **Alert threshold:** >5 exceptions in 15 minutes (balances sensitivity vs. noise)
+- **Notification:** Email (simple, reliable, no external integrations required)
+- **Exception filters:** Exclude ValidationException, NotFoundException (focus on unexpected errors)
+- **Environments:** Production only (avoid alert fatigue from dev/test activity)
+- **IaC approach:** Bicep, modular, incremental (not big-bang)
+
+---
+
+## Future Enhancements (Out of Scope for #636)
+
+- Smart Detection configuration (ML-based anomaly detection)
+- Performance degradation alerts (slow response times)
+- Dependency failure alerts (SQL, Storage, Key Vault)
+- Auto-remediation runbooks (restart App Service, scale out)
+- Teams/Slack webhook integration
+- CI/CD workflow for automated Bicep deployment
+
+---
+
+**Status:** ✅ All decisions finalized, specification complete, ready for implementation.
+
+**Next Steps:**
+1. Cypher implements #636 (Bicep templates + Portal docs)
+2. PR created and reviewed by Neo
+3. Deploy to Production
+4. After #636 merges, create first sub-issue for #637 (Phase 1: App Insights + Log Analytics)
+
+
+
+---
+
+
+# Decision Record: Azure Functions Hosting Plan Correction
+
+**Date:** 2026-04-05  
+**Author:** @Cypher (DevOps Engineer)  
+**Related Issue:** #635  
+**Status:** ✅ Confirmed
+
+---
+
+## Context
+
+During initial analysis of issue #635 (health check endpoint implementation), I incorrectly assumed the Azure Functions app (`jjgnet-broadcast`) was hosted on a **Consumption plan** based on common Azure Functions deployment patterns.
+
+## Correction
+
+**Joseph Guadagno confirmed:** The Azure Functions app (`jjgnet-broadcast`) is **hosted on an App Service plan**, NOT a Consumption plan.
+
+## Impact
+
+### What Changed
+
+**All three production apps share the same App Service plan:**
+
+1. **API:** `api-jjgnet-broadcast` (App Service)
+2. **Web:** `web-jjgnet-broadcast` (App Service)
+3. **Functions:** `jjgnet-broadcast` (App Service plan, NOT Consumption)
+
+### Technical Implications
+
+**✅ App Service Health Check feature IS available for Functions:**
+- No need for custom HTTP trigger health endpoint workaround
+- The platform `/health` endpoint (provided by ServiceDefaults) works out of the box
+- Same configuration steps as Api and Web apps
+
+**Simplified health monitoring architecture:**
+- All three services use the same health check approach
+- Consistent Azure Portal configuration (`Monitoring → Health check → path: /health`)
+- No special workarounds or code changes needed for Functions
+
+### Documentation Updated
+
+**Corrected in:**
+1. `.squad/agents/cypher/history.md` — Updated learnings section for #635
+2. GitHub issue #635 — [Posted correction comment](https://github.com/jguadagno/jjgnet-broadcast/issues/635#issuecomment-4184423317)
+
+**Original incorrect guidance:** Section B of my initial comment suggested:
+- Functions on Consumption plan cannot use App Service Health Check
+- Workaround: implement custom HTTP trigger at `/api/health`
+- Reliance on Azure Monitor Availability Tests only
+
+**Corrected guidance:** Section B now states:
+- Functions app is on App Service plan (same as Api/Web)
+- App Service Health Check feature fully available
+- Configure exactly like Api and Web: `Monitoring → Health check → path: /health`
+- Custom HTTP trigger is optional/nice-to-have, not required
+
+---
+
+## Key Takeaway
+
+**All three jjgnet-broadcast production apps (api-jjgnet-broadcast, web-jjgnet-broadcast, jjgnet-broadcast) are deployed on App Service plans and support the full App Service Health Check feature.**
+
+This significantly simplifies the health monitoring implementation — no special cases or workarounds needed.
+
+---
+
+## References
+
+- [Initial guide (contains incorrect Consumption plan assumption)](https://github.com/jguadagno/jjgnet-broadcast/issues/635#issuecomment-4184410295)
+- [Correction comment](https://github.com/jguadagno/jjgnet-broadcast/issues/635#issuecomment-4184423317)
+- [Azure App Service Health Check documentation](https://learn.microsoft.com/en-us/azure/app-service/monitor-instances-health-check)
+

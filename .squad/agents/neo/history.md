@@ -43,6 +43,75 @@ Lead reviewer and sprint planner. Primary domain: architecture, CI/CD, patterns,
 
 ## Recent Work
 
+### 2026-04-05: Infrastructure Issues Triage — #635 and #636
+
+**Issues triaged:**
+- #635: Add health checks for Api, Web applications
+- #636: Setup alerting for repeated exceptions in Application Insights
+
+**Triage outcomes:**
+
+**Issue #635 (Health Checks):**
+- **Current state:** Basic `/health` and `/alive` endpoints exist via ServiceDefaults, but only have a "self" check (always healthy)
+- **Gap:** No service-specific health checks for SQL Server, Azure Storage, Key Vault, Communication Services
+- **Scope:** Add AspNetCore.HealthChecks.* NuGet packages, configure dependency health checks in ServiceDefaults
+- **Level of effort:** Small (2 story points, 2-3 hours)
+- **Routing:** `squad:sparks` (DevOps/Infrastructure)
+- **Key finding:** Infrastructure already in place — just need to add dependency-specific checks
+
+**Issue #636 (Exception Alerting):**
+- **Current state:** Comprehensive telemetry via Application Insights + OpenTelemetry + Serilog, but NO alerting configured
+- **Gap:** No Azure Monitor Alert Rules, Action Groups, or Smart Detection routing
+- **Scope:** Create Action Group + Alert Rules for repeated exceptions (>5 in 15 min threshold)
+- **Decision point:** Bicep IaC (recommended, 3 story points) vs. Portal-only (fast-track, 1-2 hours)
+- **Level of effort:** Medium (3 story points if using Bicep, ~4-6 hours)
+- **Routing:** `squad:sparks` primary, `squad:neo` for Bicep review
+- **Blocked on:** Joseph's decision on IaC approach and notification recipients
+
+**Actions taken:**
+- Posted comprehensive triage comments to both issues on GitHub
+- Applied `squad:sparks` labels to both issues
+- Identified 5 open questions for #636 requiring Joseph's input
+
+**Learnings:**
+- ServiceDefaults project is the central location for cross-cutting concerns (health checks, telemetry, observability)
+- Health check endpoints automatically exclude from OpenTelemetry tracing to reduce noise
+- No IaC exists for Azure infrastructure — all resources manually provisioned (opportunity for improvement)
+- Serilog multi-sink pattern: Console + File + Azure Table Storage + OpenTelemetry
+- GlobalExceptionHandler in Api logs all unhandled exceptions with full context
+
+**UPDATE (2026-04-05): Issue #636 Finalized**
+
+Joseph answered all 5 blocking questions:
+1. **Notification recipients:** Email
+2. **Alert threshold:** >5 exceptions in 15 minutes (Neo's recommendation accepted)
+3. **Exception filtering:** Yes — exclude ValidationException, NotFoundException, and similar non-critical exceptions
+4. **IaC approach:** **BOTH** — Create Bicep templates AND Portal step-by-step instructions
+5. **Environments:** Production only (staging no longer exists)
+
+**Additional decision:** Joseph wants a separate issue created for "Bicep scripts for the whole environment" — he eventually wants all Azure infrastructure as IaC.
+
+**Actions taken:**
+- Posted finalized implementation spec to issue #636 (complete, actionable)
+- Updated label from `squad:sparks` to `squad:cypher` (Bicep/IaC work belongs to Cypher)
+- Created **new issue #637**: "Create Bicep scripts for the entire Azure environment (Infrastructure as Code)" — epic-level initiative
+- Posted triage comment on #637 with phased approach (Phase 0 = #636, then App Insights, Storage, Key Vault, SQL, App Services, Functions, etc.)
+- Applied `squad:cypher` label to #637
+
+**Key decisions recorded:**
+- Alert threshold: >5 exceptions in 15 minutes (production only)
+- Notification: email
+- Exception filters: yes (exclude ValidationException, NotFoundException)
+- IaC approach: Bicep, modular, incremental by resource type
+- Environments: production only (staging decommissioned)
+- Broader IaC initiative: build incrementally, issue-by-issue (not big-bang)
+
+**New issue:** #637 — Bicep IaC for entire Azure environment (8 story points, multi-sprint epic)
+
+**Status:** ✅ All decisions recorded and posted to GitHub. Issue #637 created and triaged. Ready for Cypher to implement #636.
+
+---
+
 ### 2026-04-05: Email Managers — PR #623 Review (Issue #617)
 
 **PR:** #623 — `feat: EmailSender and EmailTemplateManager for #608 email notification system`
