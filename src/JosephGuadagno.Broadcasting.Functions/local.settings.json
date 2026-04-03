@@ -41,7 +41,9 @@
     "AzureWebJobs.LinkedInProcessScheduledItemFired.Disabled": true,
     "AzureWebJobs.BlueskyPostMessage.Disabled": true,
     "AzureWebJobs.BlueskyProcessRandomPostFired.Disabled": true,
-    "AzureWebJobs.BlueskyProcessNewSourceDataFired.Disabled": true
+    "AzureWebJobs.BlueskyProcessNewSourceDataFired.Disabled": true,
+    "AzureWebJobs.EmailSendEmail.Disabled": true,
+    "AzureWebJobs.EmailSendEmailPoison.Disabled": true
   },
   "Settings": {
     "LoggingStorageAccount": "UseDevelopmentStorage=true",

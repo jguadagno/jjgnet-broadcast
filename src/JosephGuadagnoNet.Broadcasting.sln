@@ -124,7 +124,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".junie", ".junie", "{CEDA8D
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{DEF4C9D9-8FF0-497B-A76D-EE256EADD7D1}"
 	ProjectSection(SolutionItems) = preProject
-		..\scripts\database\data-create.sql = ..\scripts\database\data-create.sql
+		..\scripts\database\data-seed.sql = ..\scripts\database\data-seed.sql
 		..\scripts\database\database-create.sql = ..\scripts\database\database-create.sql
 		..\scripts\database\reset-feed-check-data-tests-scripts.sql = ..\scripts\database\reset-feed-check-data-tests-scripts.sql
 		..\scripts\database\table-create.sql = ..\scripts\database\table-create.sql

@@ -60,7 +60,7 @@ public class EntraClaimsTransformation(
             claimsIdentity.AddClaim(new Claim(ApplicationClaimTypes.ApprovalStatus, user.ApprovalStatus));
 
             // Add approval notes for rejected users so the rejection page can display them
-            if (user.ApprovalStatus == ApprovalStatus.Rejected.ToString() &&
+            if (user.ApprovalStatus == nameof(ApprovalStatus.Rejected) &&
                 !string.IsNullOrWhiteSpace(user.ApprovalNotes))
             {
                 claimsIdentity.AddClaim(new Claim(ApplicationClaimTypes.ApprovalNotes, user.ApprovalNotes));
@@ -83,10 +83,9 @@ public class EntraClaimsTransformation(
         catch (Exception ex)
         {
             logger.LogError(ex, 
-                "Failed to transform claims for Entra object ID {EntraObjectId}. Returning original principal.",
+                "Failed to transform claims for Entra object ID {EntraObjectId}. Returning original principal",
                 entraObjectId);
             return principal;
         }
     }
 }
-
