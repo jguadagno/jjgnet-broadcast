@@ -6,7 +6,6 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.SpeakingEngagement;
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 

@@ -1,8 +1,6 @@
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
-
 namespace JosephGuadagno.Broadcasting.Functions.Interfaces;
 
-public interface ISettings : IEmailSettings
+public interface ISettings
 {
     /// <summary>
     /// The storage account connection string used for logging.

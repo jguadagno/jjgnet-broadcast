@@ -3,7 +3,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Microsoft.Extensions.Logging;
+
 using System.Security.Claims;
 
 using JosephGuadagno.Broadcasting.Domain.Models;

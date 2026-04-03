@@ -1,5 +1,5 @@
 using Azure.Messaging.EventGrid;
-using JosephGuadagno.Broadcasting.Data;
+
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;

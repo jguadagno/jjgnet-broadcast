@@ -1,11 +1,11 @@
-using System;
 using System.Net.Mail;
-using System.Threading.Tasks;
+
 using Azure.Storage.Queues.Models;
 using FluentAssertions;
 using JosephGuadagno.AzureHelpers.Storage.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
+
 using Microsoft.Extensions.Logging;
 using Moq;
 

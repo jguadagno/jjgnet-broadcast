@@ -1,5 +1,4 @@
 using AutoMapper;
-using JosephGuadagno.Broadcasting.Domain.Enums;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles;
 

@@ -7,7 +7,6 @@ using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Data.Sql;
-using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
@@ -65,13 +64,17 @@ var settings =
     new JosephGuadagno.Broadcasting.Functions.Models.Settings
     {
         LoggingStorageAccount = null!, ShortenedDomainToUse = null!,
-        FromAddress = null!, FromDisplayName = null!,
-        ReplyToAddress = null!, ReplyToDisplayName = null!,
-        AzureCommunicationsConnectionString = null!
     };
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
-builder.Services.TryAddSingleton<IEmailSettings>(settings);
+var emailSettings = new EmailSettings
+{
+    FromAddress = null!, FromDisplayName = null!,
+    ReplyToAddress = null!, ReplyToDisplayName = null!,
+    AzureCommunicationsConnectionString = null!
+};
+builder.Configuration.Bind("Email", emailSettings);
+builder.Services.TryAddSingleton<IEmailSettings>(emailSettings);
 
 var randomPostSettings = new RandomPostSettings
 {
@@ -206,8 +209,8 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
     services.TryAddSingleton(sp =>
     {
-        var emailSettings = sp.GetRequiredService<IEmailSettings>();
-        return new EmailClient(emailSettings.AzureCommunicationsConnectionString);
+        var emailSettingsService = sp.GetRequiredService<IEmailSettings>();
+        return new EmailClient(emailSettingsService.AzureCommunicationsConnectionString);
     });
 }
 
