@@ -98,9 +98,31 @@ public static class Extensions
 
     public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
-        builder.Services.AddHealthChecks()
+        var hcBuilder = builder.Services.AddHealthChecks()
             // Add a default liveness check to ensure app is responsive
             .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
+
+        // Conditionally add SQL Server health check
+        var sqlConn = builder.Configuration["ConnectionStrings:JJGNetDatabaseSqlServer"];
+        if (!string.IsNullOrWhiteSpace(sqlConn))
+        {
+            hcBuilder.AddSqlServer(
+                connectionString: sqlConn,
+                name: "sqlserver",
+                failureStatus: HealthStatus.Unhealthy,
+                tags: ["db", "ready"]);
+        }
+
+        // Conditionally add Azure Storage health check (queue storage)
+        var storageConn = builder.Configuration["ConnectionStrings:QueueStorage"];
+        if (!string.IsNullOrWhiteSpace(storageConn))
+        {
+            hcBuilder.AddAzureQueueStorage(
+                connectionString: storageConn,
+                name: "azurestorage",
+                failureStatus: HealthStatus.Unhealthy,
+                tags: ["storage", "ready"]);
+        }
 
         return builder;
     }
