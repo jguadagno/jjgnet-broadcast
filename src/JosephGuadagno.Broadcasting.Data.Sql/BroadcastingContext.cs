@@ -112,8 +112,7 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.Message);
 
-            entity.Property(e => e.MessageSent)
-                .HasDefaultValueSql("0");
+            entity.Property(e => e.MessageSent);
 
             entity.Property(e => e.ImageUrl)
                 .HasMaxLength(2048);
