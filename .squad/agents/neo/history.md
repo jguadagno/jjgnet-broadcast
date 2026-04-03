@@ -313,6 +313,71 @@ Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomme
 - **Assigned:** Trinity (EF Core data layer). XS effort.
 - **Key files:** `src/JosephGuadagno.Broadcasting.Data.Sql/BroadcastingContext.cs`, `src/JosephGuadagno.Broadcasting.Data.Sql/Models/ScheduledItem.cs`
 
+### 2026-04-05: PR #640 Review — MessageSent HasDefaultValueSql Fix (Issue #639)
+
+**PR:** #640 — `fix: remove redundant HasDefaultValueSql on MessageSent bool property`
+**Branch:** `squad/639-fix-messagesentt-ef-warning` → `main`
+**Author:** Joseph Guadagno (Trinity)
+**Verdict:** ✅ **APPROVED**
+
+**What was changed:** Removed `.HasDefaultValueSql("0")` from `ScheduledItem.MessageSent` non-nullable bool property configuration in `BroadcastingContext.cs`.
+
+**Review findings:**
+- ✅ Correct fix — `.HasDefaultValueSql("0")` is entirely redundant for value types (EF Core always inserts C# value)
+- ✅ EF Core 8+ sentinel warning eliminated (cannot distinguish explicit `false` from CLR default when DB default is configured)
+- ✅ No behavior change — INSERT behavior for `MessageSent = false` remains unchanged
+- ✅ All 4 CI checks passing (build, test, CodeQL, GitGuardian)
+- ✅ Existing tests cover both `MessageSent = true/false` scenarios (ScheduledItemMappingTests.cs)
+- ✅ Only occurrence of this pattern in BroadcastingContext.cs (grep verified no other bool properties affected)
+- ✅ All other `.HasDefaultValueSql()` calls in file are on `string`/`datetimeoffset` properties (no sentinel warning)
+
+**Recommendation:** Ready to merge.
+
+**Review posted:** https://github.com/jguadagno/jjgnet-broadcast/pull/640 (comment review, cannot approve own PR via API)
+
+---
+
+### 2026-04-06: PR #641 Review — Health Checks for Api/Web (Issue #635)
+
+**PR:** [#641](https://github.com/jguadagno/jjgnet-broadcast/pull/641) — `feat: add dependency health checks for Api and Web`  
+**Author:** Sparks (DevOps/Infrastructure)  
+**Verdict:** ✅ APPROVED
+
+**What was delivered:**
+- Added `AspNetCore.HealthChecks.SqlServer` (9.0.0) and `AspNetCore.HealthChecks.AzureStorage` (7.0.0) to ServiceDefaults
+- Conditional registration in `AddDefaultHealthChecks()` based on connection strings
+- SQL Server check: registered when `ConnectionStrings:JJGNetDatabaseSqlServer` is present
+- Azure Queue Storage check: registered when `ConnectionStrings:QueueStorage` is present
+- Tag filtering: `["live"]` for liveness (app responsive), `["ready"]` for readiness (dependencies healthy)
+
+**Key patterns established:**
+- Health checks in ServiceDefaults apply to ALL consumers (Api, Web, Functions) via `AddServiceDefaults()`
+- Conditional registration pattern: `if (!string.IsNullOrWhiteSpace(builder.Configuration["ConnectionStrings:X"])) { ... }`
+- Connection string names from Aspire AppHost: `JJGNetDatabaseSqlServer` (DB reference), `QueueStorage` (queue reference)
+- Endpoint behavior: `/health` checks all (readiness), `/alive` checks only `["live"]` tagged checks (liveness)
+
+**Library choice:**
+- Xabaril/AspNetCore.Diagnostics.HealthChecks is the standard for ASP.NET Core health checks
+- SqlServer package 9.0.0 targets net8.0 (compatible with .NET 10)
+- AzureStorage package 7.0.0 targets netstandard2.0 (compatible with .NET 10)
+- Extension methods live in `Microsoft.Extensions.DependencyInjection` namespace
+
+**Local dev compatibility:**
+- Azurite emulator fully supports health checks via `UseDevelopmentStorage=true` connection strings
+- No special handling needed for local vs production environments
+
+**Non-blocking suggestions for future:**
+- Upgrade `AspNetCore.HealthChecks.AzureStorage` from 7.0.0 to 8.0.1 (latest, Nov 2024)
+- Add Table Storage and Blob Storage checks for complete coverage (current scope: queue storage only)
+- Consider explicit timeout: `timeout: TimeSpan.FromSeconds(5)` for faster failure detection
+- Future issue: add Web-specific checks (Key Vault, Communication Services)
+
+**Files changed:**
+- `src/JosephGuadagno.Broadcasting.ServiceDefaults/Extensions.cs` — added SQL + Queue health checks
+- `src/JosephGuadagno.Broadcasting.ServiceDefaults/JosephGuadagno.Broadcasting.ServiceDefaults.csproj` — added 2 packages
+
+**Review posted:** https://github.com/jguadagno/jjgnet-broadcast/pull/641#issuecomment-4185617224
+
 ---
 
 ## Team Standing Rules (2026-04-01)
