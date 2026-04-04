@@ -7,6 +7,7 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.Broadcasting.Web;
+using JosephGuadagno.Broadcasting.Web.HealthChecks;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
@@ -20,6 +21,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 
@@ -32,6 +34,19 @@ using ISettings = JosephGuadagno.Broadcasting.Web.Interfaces.ISettings;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+
+// Conditionally add Azure Key Vault health check (Web only — Key Vault is not used by the API)
+var keyVaultUri = builder.Configuration["KeyVault:vaultUri"];
+if (!string.IsNullOrWhiteSpace(keyVaultUri))
+{
+    builder.Services.AddHealthChecks()
+        .Add(new HealthCheckRegistration(
+            "azure-key-vault",
+            sp => new AzureKeyVaultHealthCheck(sp.GetRequiredService<Azure.Security.KeyVault.Secrets.SecretClient>()),
+            failureStatus: HealthStatus.Unhealthy,
+            tags: ["ready"],
+            timeout: TimeSpan.FromSeconds(5)));
+}
 
 var settings = new Settings
 {

@@ -11049,3 +11049,156 @@ All entity configurations: `src/JosephGuadagno.Broadcasting.Data.Sql/Broadcastin
 - ✅ No behavioral change (EF was already using C# value)
 - ✅ Warning eliminated at startup
 
+
+---
+
+# Decision: Health Check Implementation for Api and Web
+
+**Date:** 2026-04-03  
+**Agent:** Sparks  
+**Issue:** #635  
+**PR:** #641  
+**Status:** Implemented, awaiting review
+
+## Context
+
+The Api and Web applications had `/health` (readiness) and `/alive` (liveness) endpoints mapped but only performed a self-check. Real dependency health monitoring was missing for:
+- SQL Server database (`JJGNetDatabaseSqlServer`)
+- Azure Storage (queues/tables)
+- Azure Key Vault (Web only)
+
+## Decision
+
+Implemented dependency health checks in `ServiceDefaults` using the AspNetCore.HealthChecks library ecosystem:
+
+### Packages Added
+1. **AspNetCore.HealthChecks.SqlServer** v9.0.0 — SQL Server connectivity check
+2. **AspNetCore.HealthChecks.AzureStorage** v7.0.0 — Azure Storage queue check (v9 not yet available)
+
+### Implementation Approach
+
+**Location:** `JosephGuadagno.Broadcasting.ServiceDefaults/Extensions.cs`
+
+**Pattern:** Conditional registration based on configuration
+```csharp
+// Only register if connection string is configured
+var sqlConn = builder.Configuration["ConnectionStrings:JJGNetDatabaseSqlServer"];
+if (!string.IsNullOrWhiteSpace(sqlConn))
+{
+    hcBuilder.AddSqlServer(sqlConn, name: "sqlserver", 
+        failureStatus: HealthStatus.Unhealthy, 
+        tags: ["db", "ready"]);
+}
+```
+
+**Why conditional?** Keeps ServiceDefaults safe for any consumer. If a consuming app doesn't use SQL or Storage, the checks aren't registered and won't fail.
+
+### Health Check Tags
+- `["live"]` — Liveness checks (self-check only). Endpoint: `/alive`
+- `["ready"]` — Readiness checks (includes all dependencies). Endpoint: `/health`
+
+### Connection Strings Used
+- **SQL Server:** `ConnectionStrings:JJGNetDatabaseSqlServer`
+- **Azure Storage:** `ConnectionStrings:QueueStorage`
+
+### Key Vault Decision
+**Not implemented** — Web project uses Azure Key Vault but adding a health check would require:
+- Additional NuGet package (`AspNetCore.HealthChecks.AzureKeyVault`)
+- Configuring `DefaultAzureCredential` in ServiceDefaults
+- Complex setup for environment-specific authentication
+
+Key Vault health check deferred to future enhancement if needed.
+
+## Technical Notes
+
+### IConfigurationManager vs IConfiguration
+ServiceDefaults uses `IHostApplicationBuilder.Configuration` which returns `IConfigurationManager`, not `IConfiguration`. The `GetConnectionString()` extension method is not available. Must use indexer access:
+```csharp
+// ✅ Correct
+builder.Configuration["ConnectionStrings:KeyName"]
+
+// ❌ Doesn't compile
+builder.Configuration.GetConnectionString("KeyName")
+```
+
+### Build Result
+- Build succeeded (exit code 0)
+- 322 warnings (expected, all safe to ignore per repository guidelines)
+- 0 errors
+
+## Alternatives Considered
+
+1. **Add checks in Api/Web Program.cs directly**
+   - Rejected: Would require duplicating logic across applications
+   - ServiceDefaults is the proper centralized location
+
+2. **Use unconditional registration**
+   - Rejected: Would break apps that don't use all dependencies
+   - Conditional registration keeps ServiceDefaults flexible
+
+3. **Add Key Vault health check**
+   - Deferred: Adds complexity, not critical for initial implementation
+
+## Impact
+
+- **Api application:** Automatically gets SQL and Storage health checks
+- **Web application:** Automatically gets SQL and Storage health checks
+- **Functions:** No change (doesn't use ServiceDefaults)
+- **Deployment:** No config changes required; checks are opt-in via connection string presence
+
+## Next Steps
+
+1. Joseph to review PR #641
+2. If approved, merge to main
+3. Deploy to Azure — health endpoints will immediately start monitoring dependencies
+4. Consider adding Key Vault health check in future if monitoring shows need
+
+## References
+
+- Issue: https://github.com/jguadagno/jjgnet-broadcast/issues/635
+- PR: https://github.com/jguadagno/jjgnet-broadcast/pull/641
+- AspNetCore.HealthChecks: https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks
+
+
+---
+
+# PR Review Verdicts: #640 and #641
+
+**Date:** 2026-04-06  
+**Reviewer:** Neo (Lead)  
+**Requested by:** Joseph Guadagno
+
+## PR #640 — Fix EF Core MessageSent warning (issue #639)
+
+**Branch:** squad/639-fix-messagesentt-ef-warning  
+**Author:** Trinity (via jguadagno account)  
+**Status:** ✅ **APPROVED**  
+**Review:** https://github.com/jguadagno/jjgnet-broadcast/pull/640#issuecomment-4185615885
+
+### Summary
+Removes the redundant .HasDefaultValueSql("0") from ScheduledItem.MessageSent bool property configuration in BroadcastingContext.cs.
+
+### Pattern Established
+**Never use .HasDefaultValueSql() on non-nullable value types** — EF Core always inserts the C# value, making the DB default redundant. Removes sentinel value warnings introduced in EF Core 8+.
+
+---
+
+## PR #641 — Add health checks for Api and Web (issue #635)
+
+**Branch:** squad/635-health-checks-api-web  
+**Author:** Sparks (via jguadagno account)  
+**Status:** ✅ **APPROVED**  
+**Review:** https://github.com/jguadagno/jjgnet-broadcast/pull/641#issuecomment-4185616633
+
+### Summary
+Adds SQL Server and Azure Storage dependency health checks to Api and Web applications via ServiceDefaults.
+
+### Pattern Established
+**Health checks in ServiceDefaults must be conditionally registered** — check for connection string presence before calling .AddSqlServer() or .AddAzureQueueStorage(). Allows safe sharing across Api, Web, and Functions.
+
+### Non-blocking Suggestions for Future
+- Upgrade AspNetCore.HealthChecks.AzureStorage from 7.0.0 to 8.0.1
+- Add Table and Blob Storage checks for complete coverage
+- Add Web-specific checks (Key Vault, Communication Services) in future issue
+
+**Decision:** Both PRs approved. Ready for merge. Joseph can merge at his discretion.

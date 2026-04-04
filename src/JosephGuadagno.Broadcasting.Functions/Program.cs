@@ -198,6 +198,19 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IEmailTemplateDataStore, EmailTemplateDataStore>();
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
 
+    services.TryAddSingleton(sp =>
+    {
+        var configuration = sp.GetRequiredService<IConfiguration>();
+        var connectionString = configuration.GetConnectionString("QueueStorage") ?? "UseDevelopmentStorage=true";
+        return new Azure.Storage.Queues.QueueServiceClient(connectionString);
+    });
+    services.TryAddSingleton(sp =>
+    {
+        var configuration = sp.GetRequiredService<IConfiguration>();
+        var connectionString = configuration["Settings:LoggingStorageAccount"] ?? "UseDevelopmentStorage=true";
+        return new Azure.Data.Tables.TableServiceClient(connectionString);
+    });
+
     // Email
     services.TryAddSingleton<IQueue>(s =>
     {
