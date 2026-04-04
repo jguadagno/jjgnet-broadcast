@@ -24,7 +24,6 @@ builder.Services.AddHttpLogging(
 var settings = new Settings
 {
     ApiScopeUrl = null!,
-    LoggingStorageAccount = null!,
     ScalarClientId = null!
 };
 builder.Configuration.Bind("Settings", settings);
@@ -50,10 +49,10 @@ builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration)
 
 // Configure the telemetry and logging
 var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
-ConfigureTelemetryAndLogging(builder.Services, settings.LoggingStorageAccount, fullyQualifiedLogFile, "Api");
+ConfigureTelemetryAndLogging(builder.Services, fullyQualifiedLogFile, "Api");
 
 // Register DI services
-builder.AddAzureQueueServiceClient("Settings:LoggingStorageAccount");
+builder.AddAzureQueueServiceClient("QueueAccount");
 
 // Add in AutoMapper
 builder.Services.AddAutoMapper(config =>
@@ -117,10 +116,10 @@ app.MapControllers();
 
 app.Run();
 
-void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorageAccount, string logPath, string applicationName)
+void ConfigureTelemetryAndLogging(IServiceCollection services, string logPath, string applicationName)
 {
     var logger = new LoggerConfiguration()
-        .ConfigureSerilog(builder.Configuration, applicationName, logPath)
+        .ConfigureSerilog(applicationName, logPath)
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {

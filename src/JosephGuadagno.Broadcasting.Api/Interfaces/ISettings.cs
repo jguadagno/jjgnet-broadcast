@@ -11,9 +11,4 @@ public interface ISettings
     /// The Client Id for the Azure AD Scalar App.
     /// </summary>
     public string ScalarClientId { get; set; }
-
-    /// <summary>
-    /// The storage account connection string used for logging.
-    /// </summary>
-    public string LoggingStorageAccount { get; set; }
 }

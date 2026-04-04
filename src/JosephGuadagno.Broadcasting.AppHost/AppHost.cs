@@ -31,7 +31,9 @@ var db = sql.AddDatabase("JJGNet")
 
 var api = builder.AddProject<JosephGuadagno_Broadcasting_Api>("josephguadagno-broadcasting-api")
     .WithEnvironment("ConnectionStrings__JJGNetDatabaseSqlServer", db)
-    .WithEnvironment("Settings__LoggingStorageAccount", tableStorage)
+    .WithEnvironment("ConnectionStrings__BlobAccount", blobStorage)
+    .WithEnvironment("ConnectionStrings__TableAccount", tableStorage)
+    .WithEnvironment("ConnectionStrings__QueueAccount", queueStorage)
     .WithReference(queueStorage)
     .WaitFor(blobStorage)
     .WaitFor(queueStorage)
@@ -54,11 +56,15 @@ var functions = builder.AddAzureFunctionsProject<JosephGuadagno_Broadcasting_Fun
     .WaitFor(blobStorage)
     .WaitFor(queueStorage)
     .WithEnvironment("ConnectionStrings__JJGNetDatabaseSqlServer", db)
-    .WithEnvironment("Settings__LoggingStorageAccount", tableStorage);
+    .WithEnvironment("ConnectionStrings__BlobAccount", blobStorage)
+    .WithEnvironment("ConnectionStrings__TableAccount", tableStorage)
+    .WithEnvironment("ConnectionStrings__QueueAccount", queueStorage);
 
 builder.AddProject<JosephGuadagno_Broadcasting_Web>("josephguadagno-broadcasting-web")
     .WithEnvironment("ConnectionStrings__JJGNetDatabaseSqlServer", db)
-    .WithEnvironment("Settings__LoggingStorageAccount", tableStorage)
+    .WithEnvironment("ConnectionStrings__BlobAccount", blobStorage)
+    .WithEnvironment("ConnectionStrings__TableAccount", tableStorage)
+    .WithEnvironment("ConnectionStrings__QueueAccount", queueStorage)
     .WithReference(queueStorage)
     .WaitFor(queueStorage)
     .WithReference(api)

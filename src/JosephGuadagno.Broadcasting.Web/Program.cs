@@ -12,8 +12,6 @@ using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
-using JosephGuadagno.AzureHelpers.Storage;
-using JosephGuadagno.AzureHelpers.Storage.Interfaces;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -51,7 +49,6 @@ if (!string.IsNullOrWhiteSpace(keyVaultUri))
 var settings = new Settings
 {
     StaticContentRootUrl = null!,
-    LoggingStorageAccount = null!,
 };
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
@@ -89,7 +86,7 @@ ConfigureTelemetryAndLogging(builder.Services, fullyQualifiedLogFile, "Web");
 builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer");
 
 // Register DI services
-builder.AddAzureQueueServiceClient("Settings:LoggingStorageAccount");
+builder.AddAzureQueueServiceClient("QueueAccount");
 ConfigureApplication(builder.Services);
 
 // Add in AutoMapper
@@ -192,7 +189,7 @@ app.Run();
 void ConfigureTelemetryAndLogging(IServiceCollection services, string logPath, string applicationName)
 {
     var logger = new LoggerConfiguration()
-        .ConfigureSerilog(builder.Configuration, applicationName, logPath)
+        .ConfigureSerilog(applicationName, logPath)
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {

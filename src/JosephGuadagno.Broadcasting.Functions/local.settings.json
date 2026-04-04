@@ -45,8 +45,13 @@
     "AzureWebJobs.EmailSendEmail.Disabled": true,
     "AzureWebJobs.EmailSendEmailPoison.Disabled": true
   },
+  "ConnectionStrings": {
+    "JJGNetDatabaseSqlServer": "",
+    "BlobAccount": "UseDevelopmentStorage=true",
+    "TableAccount": "UseDevelopmentStorage=true",
+    "QueueAccount": "UseDevelopmentStorage=true"
+  },
   "Settings": {
-    "LoggingStorageAccount": "UseDevelopmentStorage=true",
     "ShortenedDomainToUse": "jjg.me"
   },
   "Email": {

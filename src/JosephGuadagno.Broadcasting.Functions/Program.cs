@@ -1,8 +1,6 @@
 using System.Reflection;
 
 using Azure.Communication.Email;
-using JosephGuadagno.AzureHelpers.Storage;
-using JosephGuadagno.AzureHelpers.Storage.Interfaces;
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
@@ -63,7 +61,7 @@ builder.Configuration.AddEnvironmentVariables();
 var settings =
     new JosephGuadagno.Broadcasting.Functions.Models.Settings
     {
-        LoggingStorageAccount = null!, ShortenedDomainToUse = null!,
+        ShortenedDomainToUse = null!,
     };
 builder.Configuration.Bind("Settings", settings);
 builder.Services.TryAddSingleton<ISettings>(settings);
@@ -103,7 +101,7 @@ builder.Services.TryAddSingleton<IEventPublisherSettings>(eventPublisherSettings
 
 // Configure the telemetry and logging
 string loggerFile = Path.Combine(currentDirectory, $"logs{Path.DirectorySeparatorChar}logs.txt");
-ConfigureTelemetryAndLogging(builder.Services, settings.LoggingStorageAccount, loggerFile, "Functions");
+ConfigureTelemetryAndLogging(builder.Services,loggerFile, "Functions");
 
 // Add in AutoMapper
 var autoMapperSettings = new AutoMapperSettings();
@@ -115,9 +113,9 @@ builder.Services.AddAutoMapper(mapperConfig =>
 }, typeof(Program));
     
 // Configure all the services
-builder.AddAzureQueueServiceClient("AzureWebJobsStorage");
-builder.AddAzureBlobServiceClient("AzureWebJobsStorage");
-builder.AddAzureTableServiceClient("Settings:LoggingStorageAccount");
+builder.AddAzureQueueServiceClient("QueueAccount");
+builder.AddAzureBlobServiceClient("BlobAccount");
+builder.AddAzureTableServiceClient("TableAccount");
 
 ConfigureKeyVault(builder.Services);
 ConfigureFunction(builder.Services);
@@ -133,14 +131,13 @@ builder.Services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader
 
 builder.Build().Run();
 
-void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorageAccount, string logPath, string applicationName)
+void ConfigureTelemetryAndLogging(IServiceCollection services, string logPath, string applicationName)
 {
-
     services.AddOpenTelemetry()
         .UseFunctionsWorkerDefaults();
 
     var logger = new LoggerConfiguration()
-        .ConfigureSerilog(builder.Configuration, applicationName, logPath)
+        .ConfigureSerilog(applicationName, logPath)
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {
@@ -203,12 +200,6 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
 
     // Email
-    services.TryAddSingleton<IQueue>(s =>
-    {
-        var configuration = s.GetRequiredService<IConfiguration>();
-        var connectionString = configuration.GetConnectionString("QueueStorage") ?? "UseDevelopmentStorage=true";
-        return new Queue(connectionString, JosephGuadagno.Broadcasting.Domain.Constants.Queues.SendEmail);
-    });
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
     services.TryAddSingleton(sp =>
