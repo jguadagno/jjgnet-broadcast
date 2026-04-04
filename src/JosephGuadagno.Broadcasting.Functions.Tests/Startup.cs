@@ -69,7 +69,7 @@ public class Startup
         var settings =
             new JosephGuadagno.Broadcasting.Functions.Models.Settings
             {
-                LoggingStorageAccount = null!, ShortenedDomainToUse = null!
+                ShortenedDomainToUse = null!
             };
         config.Bind("Settings", settings);
         services.TryAddSingleton<ISettings>(settings);

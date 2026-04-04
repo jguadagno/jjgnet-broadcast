@@ -1,7 +1,6 @@
-using Microsoft.Extensions.Configuration;
-
 using Serilog;
-using Serilog.Events;
+// ReSharper disable once RedundantUsingDirective
+using Serilog.Events; // This is needed for non-debug builds
 using Serilog.Exceptions;
 
 namespace JosephGuadagno.Broadcasting.Serilog;
@@ -10,22 +9,20 @@ public static class LoggingExtensions
 {
     public static LoggerConfiguration ConfigureSerilog(
         this LoggerConfiguration loggerConfiguration,
-        IConfiguration configuration,
         string applicationName,
         string logFilePath)
     {
-        var loggingStorageAccount = configuration["Settings:LoggingStorageAccount"];
-        
+
         return loggerConfiguration
 #if DEBUG
             .MinimumLevel.Debug()
 #else
             .MinimumLevel.Information()
-#endif
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
             .MinimumLevel.Override("System", LogEventLevel.Warning)
             .MinimumLevel.Override("Azure", LogEventLevel.Warning)
+#endif
             .Enrich.FromLogContext()
             .Enrich.WithMachineName()
             .Enrich.WithThreadId()
@@ -39,7 +36,7 @@ public static class LoggingExtensions
             .Destructure.ToMaximumCollectionCount(10)
             .WriteTo.Console()
             .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
-            .WriteTo.AzureTableStorage(loggingStorageAccount!, storageTableName: "Logging", keyGenerator: new SerilogKeyGenerator())
+            .WriteTo.AzureTableStorage("TableAccount", storageTableName: "Logging", keyGenerator: new SerilogKeyGenerator())
             .WriteTo.OpenTelemetry();
     }
 }
