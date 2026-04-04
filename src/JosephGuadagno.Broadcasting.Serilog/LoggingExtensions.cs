@@ -1,4 +1,6 @@
 using Serilog;
+// ReSharper disable once RedundantUsingDirective
+using Serilog.Events; // This is needed for non-debug builds
 using Serilog.Exceptions;
 
 namespace JosephGuadagno.Broadcasting.Serilog;
