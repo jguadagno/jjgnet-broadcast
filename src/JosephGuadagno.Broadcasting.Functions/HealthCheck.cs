@@ -4,7 +4,6 @@ using Azure.Storage.Queues;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions;
@@ -14,7 +13,10 @@ namespace JosephGuadagno.Broadcasting.Functions;
 /// Route: GET /api/health
 /// Returns HTTP 200 with JSON body on success, HTTP 503 on any storage connectivity failure.
 /// </summary>
-public class HealthCheck(IConfiguration configuration, ILogger<HealthCheck> logger)
+public class HealthCheck(
+    QueueServiceClient queueServiceClient,
+    TableServiceClient tableServiceClient,
+    ILogger<HealthCheck> logger)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
 
@@ -28,12 +30,10 @@ public class HealthCheck(IConfiguration configuration, ILogger<HealthCheck> logg
         var checks = new List<(string Name, bool Healthy, string? Message)>();
 
         // Check queue storage connectivity
-        var queueConnStr = configuration.GetConnectionString("QueueStorage");
-        checks.Add(await CheckQueueStorageAsync(queueConnStr, cancellationToken));
+        checks.Add(await CheckQueueStorageAsync(cancellationToken));
 
         // Check table storage connectivity (Serilog logging sink)
-        var tableConnStr = configuration["Settings:LoggingStorageAccount"];
-        checks.Add(await CheckTableStorageAsync(tableConnStr, cancellationToken));
+        checks.Add(await CheckTableStorageAsync(cancellationToken));
 
         var allHealthy = checks.All(c => c.Healthy);
         var timestamp = DateTimeOffset.UtcNow;
@@ -70,27 +70,27 @@ public class HealthCheck(IConfiguration configuration, ILogger<HealthCheck> logg
         };
     }
 
-    private static async Task<(string Name, bool Healthy, string? Message)> CheckQueueStorageAsync(
-        string? connectionString,
+    private async Task<(string Name, bool Healthy, string? Message)> CheckQueueStorageAsync(
         CancellationToken cancellationToken)
     {
         const string name = "queue-storage";
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            return (name, false, "Connection string 'QueueStorage' is not configured.");
-        }
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(5));
 
         try
         {
-            var serviceClient = new QueueServiceClient(connectionString);
             // List one queue to verify connectivity — does not modify any data.
-            await foreach (var _ in serviceClient.GetQueuesAsync(cancellationToken: cancellationToken)
-                               .AsPages(pageSizeHint: 1).WithCancellation(cancellationToken))
+            await foreach (var _ in queueServiceClient.GetQueuesAsync(cancellationToken: cts.Token)
+                               .AsPages(pageSizeHint: 1).WithCancellation(cts.Token))
             {
                 break;
             }
 
             return (name, true, null);
+        }
+        catch (OperationCanceledException)
+        {
+            return (name, false, "Queue storage probe timed out.");
         }
         catch (Exception ex)
         {
@@ -98,27 +98,27 @@ public class HealthCheck(IConfiguration configuration, ILogger<HealthCheck> logg
         }
     }
 
-    private static async Task<(string Name, bool Healthy, string? Message)> CheckTableStorageAsync(
-        string? connectionString,
+    private async Task<(string Name, bool Healthy, string? Message)> CheckTableStorageAsync(
         CancellationToken cancellationToken)
     {
         const string name = "table-storage";
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            return (name, false, "Configuration key 'Settings:LoggingStorageAccount' is not configured.");
-        }
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(5));
 
         try
         {
-            var serviceClient = new TableServiceClient(connectionString);
             // List one table to verify connectivity — does not modify any data.
-            await foreach (var _ in serviceClient.QueryAsync(cancellationToken: cancellationToken)
-                               .AsPages(pageSizeHint: 1).WithCancellation(cancellationToken))
+            await foreach (var _ in tableServiceClient.QueryAsync(cancellationToken: cts.Token)
+                               .AsPages(pageSizeHint: 1).WithCancellation(cts.Token))
             {
                 break;
             }
 
             return (name, true, null);
+        }
+        catch (OperationCanceledException)
+        {
+            return (name, false, "Table storage probe timed out.");
         }
         catch (Exception ex)
         {

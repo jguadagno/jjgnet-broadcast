@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 
@@ -39,10 +40,10 @@ var keyVaultUri = builder.Configuration["KeyVault:vaultUri"];
 if (!string.IsNullOrWhiteSpace(keyVaultUri))
 {
     builder.Services.AddHealthChecks()
-        .Add(new Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration(
+        .Add(new HealthCheckRegistration(
             "azure-key-vault",
             sp => new AzureKeyVaultHealthCheck(sp.GetRequiredService<Azure.Security.KeyVault.Secrets.SecretClient>()),
-            failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy,
+            failureStatus: HealthStatus.Unhealthy,
             tags: ["ready"],
             timeout: TimeSpan.FromSeconds(5)));
 }

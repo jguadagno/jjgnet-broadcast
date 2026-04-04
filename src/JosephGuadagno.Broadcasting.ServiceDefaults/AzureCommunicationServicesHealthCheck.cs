@@ -33,7 +33,7 @@ internal sealed class AzureCommunicationServicesHealthCheck : IHealthCheck
             // This does NOT send any email — it only parses the connection string and creates the client object.
             _ = new EmailClient(_connectionString);
 
-            return Task.FromResult(HealthCheckResult.Healthy("Azure Communication Services is reachable."));
+            return Task.FromResult(HealthCheckResult.Healthy("Azure Communication Services connection string is valid."));
         }
         catch (Exception ex)
         {
