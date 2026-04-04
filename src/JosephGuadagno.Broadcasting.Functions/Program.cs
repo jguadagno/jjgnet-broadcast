@@ -115,6 +115,10 @@ builder.Services.AddAutoMapper(mapperConfig =>
 }, typeof(Program));
     
 // Configure all the services
+builder.AddAzureQueueServiceClient("AzureWebJobsStorage");
+builder.AddAzureBlobServiceClient("AzureWebJobsStorage");
+builder.AddAzureTableServiceClient("Settings:LoggingStorageAccount");
+
 ConfigureKeyVault(builder.Services);
 ConfigureFunction(builder.Services);
 ConfigureBitly(builder.Services, builder.Configuration);
@@ -197,19 +201,6 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();
     services.TryAddScoped<IEmailTemplateDataStore, EmailTemplateDataStore>();
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
-
-    services.TryAddSingleton(sp =>
-    {
-        var configuration = sp.GetRequiredService<IConfiguration>();
-        var connectionString = configuration.GetConnectionString("QueueStorage") ?? "UseDevelopmentStorage=true";
-        return new Azure.Storage.Queues.QueueServiceClient(connectionString);
-    });
-    services.TryAddSingleton(sp =>
-    {
-        var configuration = sp.GetRequiredService<IConfiguration>();
-        var connectionString = configuration["Settings:LoggingStorageAccount"] ?? "UseDevelopmentStorage=true";
-        return new Azure.Data.Tables.TableServiceClient(connectionString);
-    });
 
     // Email
     services.TryAddSingleton<IQueue>(s =>

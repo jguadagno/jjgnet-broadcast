@@ -39,6 +39,9 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Aspire.Azure.Data.Tables" Version="13.2.1" />
+    <PackageReference Include="Aspire.Azure.Storage.Blobs" Version="13.2.1" />
+    <PackageReference Include="Aspire.Azure.Storage.Queues" Version="13.2.1" />
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.2.1" />
     <PackageReference Include="Azure.Communication.Email" Version="1.1.0" />
     <PackageReference Include="Azure.Data.Tables" Version="12.11.0" />

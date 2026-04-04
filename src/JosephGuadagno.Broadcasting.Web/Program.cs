@@ -89,6 +89,7 @@ ConfigureTelemetryAndLogging(builder.Services, fullyQualifiedLogFile, "Web");
 builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer");
 
 // Register DI services
+builder.AddAzureQueueServiceClient("Settings:LoggingStorageAccount");
 ConfigureApplication(builder.Services);
 
 // Add in AutoMapper
@@ -218,12 +219,6 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
 
     // Email
-    services.TryAddSingleton<IQueue>(s =>
-    {
-        var configuration = s.GetRequiredService<IConfiguration>();
-        var connectionString = configuration.GetConnectionString("QueueStorage") ?? "UseDevelopmentStorage=true";
-        return new Queue(connectionString, JosephGuadagno.Broadcasting.Domain.Constants.Queues.SendEmail);
-    });
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
 

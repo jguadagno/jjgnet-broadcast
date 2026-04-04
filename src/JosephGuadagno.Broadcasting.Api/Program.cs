@@ -53,6 +53,7 @@ var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "l
 ConfigureTelemetryAndLogging(builder.Services, settings.LoggingStorageAccount, fullyQualifiedLogFile, "Api");
 
 // Register DI services
+builder.AddAzureQueueServiceClient("Settings:LoggingStorageAccount");
 
 // Add in AutoMapper
 builder.Services.AddAutoMapper(config =>
@@ -165,12 +166,6 @@ void ConfigureRepositories(IServiceCollection services)
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
 
     // Email
-    services.TryAddSingleton<IQueue>(s =>
-    {
-        var configuration = s.GetRequiredService<IConfiguration>();
-        var connectionString = configuration.GetConnectionString("QueueStorage") ?? "UseDevelopmentStorage=true";
-        return new Queue(connectionString, JosephGuadagno.Broadcasting.Domain.Constants.Queues.SendEmail);
-    });
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
 }

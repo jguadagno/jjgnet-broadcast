@@ -1,5 +1,6 @@
 using System.Net.Mail;
 
+using Azure.Storage.Queues;
 using Azure.Storage.Queues.Models;
 using FluentAssertions;
 using JosephGuadagno.AzureHelpers.Storage.Interfaces;
@@ -13,27 +14,36 @@ namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
 public class EmailSenderTests
 {
-    private readonly Mock<IQueue> _mockEmailQueue;
-    private readonly Mock<IEmailSettings> _mockEmailSettings;
-    private readonly Mock<ILogger<EmailSender>> _mockLogger;
-    private readonly EmailSender _sut;
+    private readonly Mock<IQueue> _mockQueue;
+    private readonly TestableEmailSender _sut;
+
+    private class TestableEmailSender(
+        QueueServiceClient queueServiceClient,
+        IEmailSettings settings,
+        ILogger<EmailSender> logger,
+        IQueue queue)
+        : EmailSender(queueServiceClient, settings, logger)
+    {
+        protected override IQueue GetQueue() => queue;
+    }
 
     public EmailSenderTests()
     {
-        _mockEmailQueue = new Mock<IQueue>();
-        _mockEmailSettings = new Mock<IEmailSettings>();
-        _mockLogger = new Mock<ILogger<EmailSender>>();
+        Mock<QueueServiceClient> mockQueueServiceClient = new();
+        Mock<IEmailSettings> mockEmailSettings = new();
+        Mock<ILogger<EmailSender>> mockLogger = new();
+        _mockQueue = new Mock<IQueue>();
 
-        _mockEmailSettings.Setup(x => x.FromAddress).Returns("noreply@example.com");
-        _mockEmailSettings.Setup(x => x.FromDisplayName).Returns("Default Sender");
-        _mockEmailSettings.Setup(x => x.ReplyToAddress).Returns("replyto@example.com");
-        _mockEmailSettings.Setup(x => x.ReplyToDisplayName).Returns("Default ReplyTo");
+        mockEmailSettings.Setup(x => x.FromAddress).Returns("noreply@example.com");
+        mockEmailSettings.Setup(x => x.FromDisplayName).Returns("Default Sender");
+        mockEmailSettings.Setup(x => x.ReplyToAddress).Returns("replyto@example.com");
+        mockEmailSettings.Setup(x => x.ReplyToDisplayName).Returns("Default ReplyTo");
 
-        _mockEmailQueue
+        _mockQueue
             .Setup(x => x.AddMessageAsync(It.IsAny<Email>()))
             .ReturnsAsync((SendReceipt?)null!);
 
-        _sut = new EmailSender(_mockEmailQueue.Object, _mockEmailSettings.Object, _mockLogger.Object);
+        _sut = new TestableEmailSender(mockQueueServiceClient.Object, mockEmailSettings.Object, mockLogger.Object, _mockQueue.Object);
     }
 
     [Fact]
@@ -45,7 +55,7 @@ public class EmailSenderTests
         var body = "<p>Test body</p>";
         Email? capturedEmail = null;
 
-        _mockEmailQueue
+        _mockQueue
             .Setup(x => x.AddMessageAsync(It.IsAny<Email>()))
             .Callback<Email>(email => capturedEmail = email)
             .ReturnsAsync((SendReceipt?)null!);
@@ -54,7 +64,7 @@ public class EmailSenderTests
         await _sut.QueueEmail(toAddress, subject, body);
 
         // Assert
-        _mockEmailQueue.Verify(x => x.AddMessageAsync(It.IsAny<Email>()), Times.Once);
+        _mockQueue.Verify(x => x.AddMessageAsync(It.IsAny<Email>()), Times.Once);
         capturedEmail.Should().NotBeNull();
         capturedEmail!.ToMailAddress.Should().Be("user@example.com");
         capturedEmail.Subject.Should().Be("Test Subject");
@@ -69,7 +79,7 @@ public class EmailSenderTests
         var replyToAddress = new MailAddress("custom-reply@sender.com", "Custom ReplyTo");
         Email? capturedEmail = null;
 
-        _mockEmailQueue
+        _mockQueue
             .Setup(x => x.AddMessageAsync(It.IsAny<Email>()))
             .Callback<Email>(email => capturedEmail = email)
             .ReturnsAsync((SendReceipt?)null!);
@@ -92,7 +102,7 @@ public class EmailSenderTests
         var toAddress = new MailAddress("user@example.com", "Test User");
         Email? capturedEmail = null;
 
-        _mockEmailQueue
+        _mockQueue
             .Setup(x => x.AddMessageAsync(It.IsAny<Email>()))
             .Callback<Email>(email => capturedEmail = email)
             .ReturnsAsync((SendReceipt?)null!);
@@ -120,7 +130,7 @@ public class EmailSenderTests
         await _sut.SendEmailAsync(emailAddress, subject, htmlMessage);
 
         // Assert
-        _mockEmailQueue.Verify(
+        _mockQueue.Verify(
             x => x.AddMessageAsync(It.Is<Email>(e => e.ToMailAddress == emailAddress && e.Subject == subject)),
             Times.Once);
     }
@@ -131,7 +141,7 @@ public class EmailSenderTests
         // Arrange
         var toAddress = new MailAddress("user@example.com", "Test User");
 
-        _mockEmailQueue
+        _mockQueue
             .Setup(x => x.AddMessageAsync(It.IsAny<Email>()))
             .ThrowsAsync(new InvalidOperationException("Queue unavailable"));
 

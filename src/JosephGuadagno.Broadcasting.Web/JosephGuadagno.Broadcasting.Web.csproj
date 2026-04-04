@@ -40,6 +40,7 @@
         <DocumentationFile>bin\Release\JosephGuadagno.Broadcasting.Web.xml</DocumentationFile>
     </PropertyGroup>
     <ItemGroup>
+        <PackageReference Include="Aspire.Azure.Storage.Queues" Version="13.2.1" />
         <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.2.1" />
         <PackageReference Include="AutoMapper" Version="16.1.1" />
         <PackageReference Include="Azure.Identity" Version="1.20.0" />
