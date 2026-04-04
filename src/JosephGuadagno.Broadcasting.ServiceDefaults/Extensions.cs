@@ -1,3 +1,4 @@
+using Azure.Data.Tables;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using JosephGuadagno.Broadcasting.ServiceDefaults;
 
 namespace Microsoft.Extensions.Hosting;
 
@@ -122,6 +124,27 @@ public static class Extensions
                 name: "azurestorage",
                 failureStatus: HealthStatus.Unhealthy,
                 tags: ["storage", "ready"]);
+        }
+
+        // Conditionally add Azure Table Storage health check (Serilog logging sink)
+        var tableStorageConn = builder.Configuration["Settings:LoggingStorageAccount"];
+        if (!string.IsNullOrWhiteSpace(tableStorageConn))
+        {
+            hcBuilder.AddAzureTable(
+                clientFactory: _ => new TableServiceClient(tableStorageConn),
+                name: "table-storage",
+                tags: ["ready"]);
+        }
+
+        // Conditionally add Azure Communication Services health check
+        var acsConnectionString = builder.Configuration["Email:AzureCommunicationsConnectionString"];
+        if (!string.IsNullOrWhiteSpace(acsConnectionString))
+        {
+            hcBuilder.Add(new HealthCheckRegistration(
+                "azure-communication-services",
+                sp => new AzureCommunicationServicesHealthCheck(acsConnectionString),
+                failureStatus: HealthStatus.Degraded,
+                tags: ["ready"]));
         }
 
         return builder;

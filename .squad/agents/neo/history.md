@@ -208,4 +208,13 @@ Review posted as comment (GitHub blocks self-review): https://github.com/jguadag
 
 **PR #641 (2026-04-06) — ServiceDefaults health checks:** Use conditional registration based on connection string presence. Allows safe sharing across Api, Web, Functions. Endpoint semantics: `/health` = readiness (all deps), `/alive` = liveness (self only).
 
+**Issue #642 (2026-04-06) — Health check scope rules:**
+- Table Storage and ACS go in ServiceDefaults (both Api and Web reference them).
+- Key Vault goes in Web/Program.cs only (Api has no Key Vault SDK or config section).
+- No official NuGet package exists for ACS health checks — always write a custom `IHealthCheck`.
+- ACS health check must return `Degraded` (not `Unhealthy`) — email is non-critical for readiness.
+- Key Vault health check should include `timeout: TimeSpan.FromSeconds(5)` — Key Vault calls average ~200ms.
+- Config key for Table Storage logging: `Settings:LoggingStorageAccount`. Config key for ACS: `Email:AzureCommunicationsConnectionString`. Key Vault section: `KeyVault` (key `KeyVault:vaultUri`).
+- `AspNetCore.HealthChecks.AzureStorage` 7.0.0 already installed in ServiceDefaults from PR #641 — no new package needed for Table Storage check.
+
 
