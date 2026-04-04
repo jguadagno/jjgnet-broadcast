@@ -131,14 +131,66 @@ Joseph answered all 5 blocking questions:
 
 ---
 
-### 2026-04-02: RBAC Phase 2 — Pre-PR Code Review (Summary)
+### 2026-04-02: RBAC Phase 2 — Pre-PR Code Review (Issue #607)
 
-**Branch:** squad/rbac-phase2 — 96 tests passing  
-**Verdict:** REQUEST CHANGES — 2 critical security issues:
-1. OID claim type inconsistency (`"oid"` vs URI form) — ownership check bypass on legacy records
-2. TalksController.Delete uses GET without CSRF protection
+**Branch:** `squad/rbac-phase2`
+**Scope:** Role management UI, ownership-based delete, CreatedByEntraOid flow end-to-end
+**Test count:** 96 — all passing
 
-7 additional minor issues flagged (entity/Domain nullable mismatch, ViewModel leak, self-demotion guard, etc.). Requires fixes before merge.
+**Verdict: REQUEST CHANGES — 2 critical issues must be fixed before merge.**
+
+---
+
+#### 🔴 Critical Issues (Block Merge)
+
+**1. OID claim type inconsistency — security bypass on pre-Phase-2 records**
+
+All three content controllers (`EngagementsController`, `SchedulesController`, `TalksController`) use `User.FindFirstValue("oid")` (short JWT claim name) for the ownership check. The project's own constant `ApplicationClaimTypes.EntraObjectId` is `"http://schemas.microsoft.com/identity/claims/objectidentifier"` (URI form). The `AdminController` uses this constant correctly.
+
+- If the JWT middleware maps `oid` → URI form (standard .NET behavior), `currentUserOid` is `null` at runtime.
+- When `currentUserOid == null` AND `record.CreatedByEntraOid == null` (all pre-Phase-2 records): `null != null` evaluates to `false` → `Forbid()` is **never called** → any Contributor can delete **all legacy records**.
+- When `currentUserOid == null` AND record has a real OID: `null != "some-oid"` is `true` → Forbid() always fires → Contributor can **never** delete their own new records.
+
+Fix required: Replace `User.FindFirstValue("oid")` with `User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)` in all three controllers. Also add an explicit null guard: if `currentUserOid` is null or `record.CreatedByEntraOid` is null, return `Forbid()`.
+
+Files: `EngagementsController.cs:139,200`, `SchedulesController.cs:161,196`, `TalksController.cs:109,151`
+
+**2. TalksController.Delete performs deletion on HTTP GET — no CSRF protection, no confirmation**
+
+`TalksController.Delete` is decorated `[HttpGet]` and immediately executes `DeleteEngagementTalkAsync`. Both `EngagementsController` and `SchedulesController` correctly use `[HttpGet]` for the confirmation view and `[HttpPost][ValidateAntiForgeryToken][ActionName("Delete")]` for `DeleteConfirmed`. `TalksController` skips this entirely — a crafted GET link on any page can silently delete a talk without user confirmation or CSRF token.
+
+Fix required: Separate into GET (confirmation view) + POST `DeleteConfirmed` with `[ValidateAntiForgeryToken]`, matching the pattern of the other controllers.
+
+File: `TalksController.cs:96–125`
+
+---
+
+#### 🟡 Minor Issues (Non-blocking)
+
+**3. Tests use short `"oid"` claim form; AdminControllerTests uses URI form** — inconsistency means ownership tests pass in a way that may not reflect production behavior. After the critical fix above, tests should also be updated to use `ApplicationClaimTypes.EntraObjectId` for the `"oid"` claims.
+
+**4. EF entity vs Domain nullable inconsistency (pre-flagged)** — `Data.Sql/Models/*.cs` use `string` (non-nullable, `#nullable disable`) while Domain models use `string?`. The DB column IS nullable. EF Core honors `#nullable disable` so this works at runtime, but creates misleading type signals for developers.
+
+**5. ManageRolesViewModel leaks Domain model** — `CurrentRoles` and `AvailableRoles` are `IList<Role>` where `Role` is from `Broadcasting.Domain.Models`. Web layer convention is to use ViewModels throughout; a `RoleViewModel` should be introduced.
+
+**6. No self-demotion guard in RemoveRole** — an Administrator can inadvertently remove their own Administrator role with no confirmation or prevention. CSRF is protected by `[ValidateAntiForgeryToken]`, but no business-rule guard exists.
+
+**7. GetCalendarEvents() now requires auth (pre-flagged)** — class-level `[Authorize(RequireContributor)]` on `EngagementsController` gates this endpoint. If any public calendar widget or unauthenticated consumer called this endpoint pre-Phase-2, it will silently break.
+
+**8. Add endpoints don't null-guard OID** — If `FindFirstValue(...)` returns null, `CreatedByEntraOid` is silently stored as null, making the record immediately un-deletable by Contributors. Should log a warning or fail fast.
+
+---
+
+#### 💡 Suggestions for Future Work
+
+- **Centralize ownership checks** into a resource-based `IAuthorizationHandler<ContentOwnershipRequirement>` rather than repeating the pattern in each controller.
+- **Introduce `RoleViewModel`** to keep the Web project's dependency graph clean.
+- **Add migration idempotency test** — wire the SQL migration file into the CI pipeline's integration test run to catch regressions.
+- **Phase 2.5 backfill** (already noted in migration SQL) — once historical data is available, backfill `CreatedByEntraOid` on existing records so Contributors can manage their pre-Phase-2 content.
+
+---
+
+**Files reviewed:** migration SQL, `BroadcastingContext.cs`, all 4 domain + EF entity models, `IUserApprovalManager`, `UserApprovalManager`, 6 controllers, `WebMappingProfile.cs`, `ManageRolesViewModel.cs`, `TalkViewModel.cs`, both Admin views, all 6 controller test files.
 
 ---
 
@@ -177,20 +229,71 @@ Review posted as comment (GitHub blocks self-review): https://github.com/jguadag
 
 ---
 
-### 2026-04-02: RBAC Phase 1 — PR #610 Complete (Summary)
+### 2026-04-02: RBAC Phase 1 — PR #610 Round 2 Re-Review
 
-**PR:** #610 — User Approval & Role-Based Access Control (RBAC Phase 1)  
-**Branch:** squad/rbac-phase1 (merged to main)  
-**Test count:** 128 total, all passing after fixes
+**Commits reviewed (in order):**
+- `22ad9a7` — Trinity: all 5 Round 1 findings fixed
+- `06fbb77` — Tank: updated RBAC tests (GetUserRolesAsync, approval_notes claim, DB-level filtering mock)
+- `c77d9d3` — Morpheus: base schema scripts updated (table-create.sql, data-create.sql)
+- `56ab6be` — Tank: history update
+- `5f3eeb3` — Trinity: BroadcastingContext DI fix in Web Program.cs
 
-**Review summary (3 rounds):**
-- **Round 1:** 5 findings (middleware order, manager methods, claim population) — all fixed
-- **Round 2:** 3 new findings (1 BLOCKING: middleware const, 2 non-blocking: tests, CHECK constraints) — all fixed
-- **Round 3:** Final sign-off confirmed. Dead code identified (`RejectUserViewModel`) deferred to Phase 2.
+**Test results:** 84/84 Web tests pass, 76/76 Managers tests pass (0 failures)
 
-**Key learnings:** Middleware ordering (`Auth` → `UserApprovalGate` → `Authorization`), claim constant naming, idempotent SQL constraints, test consistency.
+**All 5 Round 1 findings verified resolved:**
 
-**Final verdict:** ✅ APPROVED — PR #610 merged.
+| # | Finding | Verified |
+|---|---------|---------|
+| 1 | `UseUserApprovalGate()` before `UseAuthorization()` | ✅ Program.cs lines 149–150 |
+| 2 | `AdminController.Users()` uses `GetUsersByStatusAsync()` | ✅ 3 DB-level calls |
+| 3 | `EntraClaimsTransformation` uses `IUserApprovalManager` only | ✅ `GetUserRolesAsync()` |
+| 4 | `approval_notes` claim populated for rejected users | ✅ Lines 63–67 |
+| 5 | `ApplicationClaimTypes` constants in Domain | ✅ Partial — middleware missed |
+
+**New additions verified:**
+- `table-create.sql` RBAC tables ✅
+- `data-create.sql` 3 role seeds ✅
+- `BroadcastingContext` DI in Web Program.cs line 61 ✅
+
+**Round 2 Review Verdict: ⚠️ CHANGES REQUESTED**
+
+Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomment-4174225355
+
+| # | Severity | File | Issue |
+|---|----------|------|-------|
+| NEW 1 | 🟠 MEDIUM (BLOCKING) | `UserApprovalMiddleware.cs` line 11 | Local `"approval_status"` const — not updated when finding #5 was fixed. Latent gate-bypass bug if `ApplicationClaimTypes.ApprovalStatus` changes. Fix: use `ApplicationClaimTypes.ApprovalStatus`. |
+| NEW 2 | 🟡 Low (non-blocking) | Test files (3) | Hardcoded claim strings instead of `ApplicationClaimTypes` constants |
+| NEW 3 | 🟡 Low (non-blocking) | `table-create.sql` + migration | Missing SQL CHECK constraints on `ApprovalStatus` and `Action` columns |
+
+**Approved once NEW #1 is fixed. Ready for @jguadagno review and merge.**
+
+---
+
+### 2026-04-02: RBAC Phase 1 — PR #610 Round 3 Final Sign-off
+
+**Head commit reviewed:** `d0aa61a` (Trinity: all 3 Round 2 findings fixed)
+
+**Round 2 findings — all verified resolved:**
+
+| # | Finding | Verified |
+|---|---------|---------|
+| NEW 1 (BLOCKING) | `UserApprovalMiddleware.cs` — `ApplicationClaimTypes.ApprovalStatus` used (line 49), local const gone | ✅ |
+| NEW 2 (non-blocking) | Test files — `ApplicationClaimTypes.*` constants throughout (0 hardcoded strings) | ✅ |
+| NEW 3 (non-blocking) | `table-create.sql` lines 196, 235 + migration lines 94–113 — idempotent CHECK constraints | ✅ |
+
+**Sanity pass — clean:**
+- Middleware order: `UseAuthentication` → `UseUserApprovalGate` → `UseAuthorization` ✅
+- `EntraClaimsTransformation`: IUserApprovalManager only, ApprovalNotes populated for rejected users ✅
+- `UserApprovalManager`: all 8 ops, full arg validation, audit trail ✅
+- `AdminController`: `[Authorize(Policy="RequireAdministrator")]`, `[ValidateAntiForgeryToken]`, DB-level filtering ✅
+- `ApplicationClaimTypes.cs`: single source of truth ✅
+
+**New non-blocking observation (Phase 2):**
+- `RejectUserViewModel.cs` is dead code — `AdminController.RejectUser()` binds to plain parameters, not to the ViewModel. Validation still correct via server-side null guard + HTML `required` attr. No security impact.
+
+**Round 3 Verdict: ✅ APPROVED**
+
+Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomment-4174260374
 
 ---
 
@@ -202,10 +305,19 @@ Review posted as comment (GitHub blocks self-review): https://github.com/jguadag
 
 ## Learnings
 
-## Recent Learnings
+### 2026-04-05: Issue #639 — EF Core bool/HasDefaultValueSql Warning
 
-**PR #640 (2026-04-06) — EF Core value type defaults:** Never use `.HasDefaultValueSql()` on non-nullable value types — redundant and triggers EF Core 8+ warnings. EF Core always inserts the C# value.
+- **Key finding:** `BroadcastingContext.cs` configures `ScheduledItem.MessageSent` with `.HasDefaultValueSql("0")`. EF Core 8+ warns on non-nullable `bool` + DB default because it cannot distinguish explicit `false` from CLR default `false`.
+- **Fix:** Remove `.HasDefaultValueSql("0")` from the `MessageSent` property configuration — it is redundant since EF Core always inserts the explicit C# value for all mapped properties. No behavioural regression.
+- **Pattern:** When a `bool` property has a DB default of `0`/`false`, the `.HasDefaultValueSql()` call is redundant and should be omitted to silence EF Core sentinel warnings.
+- **Assigned:** Trinity (EF Core data layer). XS effort.
+- **Key files:** `src/JosephGuadagno.Broadcasting.Data.Sql/BroadcastingContext.cs`, `src/JosephGuadagno.Broadcasting.Data.Sql/Models/ScheduledItem.cs`
 
-**PR #641 (2026-04-06) — ServiceDefaults health checks:** Use conditional registration based on connection string presence. Allows safe sharing across Api, Web, Functions. Endpoint semantics: `/health` = readiness (all deps), `/alive` = liveness (self only).
+---
 
+## Team Standing Rules (2026-04-01)
+Established by Joseph Guadagno:
 
+1. **PR Merge Authority**: Only Joseph may merge PRs
+2. **Mapping**: All object mapping must use AutoMapper profiles
+3. **Paging/Sorting/Filtering**: Must be at the data layer only
