@@ -22,7 +22,7 @@
 - **EF Core value type defaults:** Never use `.HasDefaultValueSql()` on non-nullable value types (bool, int, DateTime) — redundant and triggers EF Core 8+ warnings
 - **Health checks in ServiceDefaults:** Use conditional registration based on connection string presence — allows safe sharing across Api, Web, Functions
 
-**Current focus:** API and Web health check implementation complete. PRs #640 (EF Core fix) and #641 (health checks) both approved.
+**Current focus:** PR #645 (Bicep IaC scaffold for #637) reviewed. REQUEST CHANGES issued — showstopper circular dependency found in module wiring.
 
 ## Summary
 
@@ -305,6 +305,13 @@ Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomme
 
 ## Learnings
 
+### 2026-04-05: Issue #637 — Bicep IaC Azure Access Assessment
+
+- **Key finding:** ~40% of Azure resource names are documented (App Service names, Function app name, region, SKU, queue names, topic names, SQL DB name). ~60% are NOT (resource group name, SQL Server FQDN, Storage Account name, Key Vault name, App Insights workspace, Managed Identity names).
+- **Pattern:** `infrastructure.md` + `.github/workflows/*.yml` give you logical resource names but NOT the physical Azure identifiers needed for Bicep parameterization.
+- **Recommendation:** Azure **Reader** role on the production resource group is the minimum needed to avoid drift. `az group export` + Bicep decompiler is the fastest path to accurate templates.
+- **Safe access level:** Reader cannot read Key Vault secret values or storage keys — safe to grant without exposing secrets.
+
 ### 2026-04-05: Issue #639 — EF Core bool/HasDefaultValueSql Warning
 
 - **Key finding:** `BroadcastingContext.cs` configures `ScheduledItem.MessageSent` with `.HasDefaultValueSql("0")`. EF Core 8+ warns on non-nullable `bool` + DB default because it cannot distinguish explicit `false` from CLR default `false`.
@@ -321,3 +328,16 @@ Established by Joseph Guadagno:
 1. **PR Merge Authority**: Only Joseph may merge PRs
 2. **Mapping**: All object mapping must use AutoMapper profiles
 3. **Paging/Sorting/Filtering**: Must be at the data layer only
+
+---
+
+## Learnings — Bicep IaC (from PR #645 review, 2026-04-05)
+
+- **Circular dependency pattern to avoid:** Never wire Module A → Module B where Module B also → Module A. The most common trap: App Services needing Key Vault URI *and* Key Vault needing App Service principal IDs. Solve by splitting into two passes: deploy compute first (without Key Vault URI in settings), then grant RBAC, then update settings in a second deployment.
+- **Bicep module outputs cannot be `@secure()`**: Any `listKeys()` / connection string built in a module output is exposed in ARM deployment history. Keep secret assembly inside the module or push to Key Vault immediately. Only pass Key Vault secret references (`@Microsoft.KeyVault(...)`) through app settings.
+- **Detect dead parameters before review:** If a module declares a parameter but never references it in any resource property, it is dead code AND potentially the root of false dependencies (e.g. `keyVaultUri` in app-service.bicep).
+- **API version hygiene:** Always prefer GA over `-preview` for production Bicep templates. Preview APIs can have breaking changes without notice.
+- **`allowBlobPublicAccess`**: Default should be `false` for all storage accounts unless there is an explicit public content requirement (e.g., CDN-served static files). Queue/table-only workloads should always be `false`.
+- **`instrumentationKey` is deprecated:** App Insights connection string is the correct output; iKey should not be propagated or stored.
+- **`kind: 'Storage'` for functions runtime storage is legacy:** Use `StorageV2` unless you have a specific reason for v1 blob-only storage.
+- **Hardcoded email in IaC:** Alert notification addresses belong in parameters (per-environment), not hardcoded in `main.bicep`.

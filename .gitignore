@@ -731,6 +731,10 @@ startup.ps1
 ### Agent working files ###
 **/sessions/
 
+### Infrastructure discovery artifacts (may contain sensitive resource names) ###
+infrastructure/discovery/*.json
+infrastructure/discovery/*.bicep
+
 # Squad runtime state (local diagnostic artifacts — not committed)
 .squad/orchestration-log/
 .squad/log/
