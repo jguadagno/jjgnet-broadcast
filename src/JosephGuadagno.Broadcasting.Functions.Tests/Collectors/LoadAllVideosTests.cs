@@ -5,10 +5,12 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.YouTube;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
+using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Moq;
 
@@ -17,7 +19,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Collectors;
 public class LoadAllVideosTests
 {
     private readonly Mock<IYouTubeReader> _youTubeReader;
-    private readonly Mock<ISettings> _settings;
     private readonly Mock<IYouTubeSourceManager> _youTubeSourceManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly Mock<IUrlShortener> _urlShortener;
@@ -26,16 +27,13 @@ public class LoadAllVideosTests
     public LoadAllVideosTests()
     {
         _youTubeReader = new Mock<IYouTubeReader>();
-        _settings = new Mock<ISettings>();
         _youTubeSourceManager = new Mock<IYouTubeSourceManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
         _urlShortener = new Mock<IUrlShortener>();
 
-        _settings.Setup(s => s.ShortenedDomainToUse).Returns("short.example.com");
-
         _sut = new LoadAllVideos(
             _youTubeReader.Object,
-            _settings.Object,
+            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com" }),
             _youTubeSourceManager.Object,
             _feedCheckManager.Object,
             _urlShortener.Object,

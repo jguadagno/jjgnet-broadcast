@@ -1,9 +1,10 @@
 ﻿using System.Text.Json;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
-using JosephGuadagno.Broadcasting.Web.Interfaces;
+using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Models.LinkedIn;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
 
@@ -15,7 +16,7 @@ public class LinkedInController : Controller
 {
     private readonly HttpClient _httpClient;
     private readonly IKeyVault _keyVault;
-    private readonly ILinkedInSettings _linkedInSettings;
+    private readonly LinkedInSettings _linkedInSettings;
     private readonly ILogger<LinkedInController> _logger;
     
     const string KeyVaultSecretName = "jjg-net-linkedin-access-token";
@@ -27,13 +28,13 @@ public class LinkedInController : Controller
     /// </summary>
     /// <param name="httpClient"></param>
     /// <param name="keyVault"></param>
-    /// <param name="linkedInSettings"></param>
+    /// <param name="linkedInSettingsOptions"></param>
     /// <param name="logger"></param>
-    public LinkedInController(HttpClient httpClient, IKeyVault keyVault, ILinkedInSettings linkedInSettings, ILogger<LinkedInController> logger)
+    public LinkedInController(HttpClient httpClient, IKeyVault keyVault, IOptions<LinkedInSettings> linkedInSettingsOptions, ILogger<LinkedInController> logger)
     {
         _httpClient = httpClient;
         _keyVault = keyVault;
-        _linkedInSettings = linkedInSettings;
+        _linkedInSettings = linkedInSettingsOptions.Value;
         _logger = logger;
     }
     

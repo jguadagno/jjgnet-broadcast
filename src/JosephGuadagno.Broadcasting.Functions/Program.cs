@@ -7,8 +7,7 @@ using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.Functions.Interfaces;
-using JosephGuadagno.Broadcasting.Managers;
+using JosephGuadagno.Broadcasting.Functions.Interfaces;using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Managers.Bluesky;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
@@ -58,21 +57,20 @@ builder.Configuration.SetBasePath(currentDirectory);
 #endif
 builder.Configuration.AddEnvironmentVariables();
 
-var settings =
-    new JosephGuadagno.Broadcasting.Functions.Models.Settings
-    {
-        ShortenedDomainToUse = null!,
-    };
-builder.Configuration.Bind("Settings", settings);
-builder.Services.TryAddSingleton<ISettings>(settings);
+// Register Settings via IOptions
+builder.Services.Configure<JosephGuadagno.Broadcasting.Functions.Models.Settings>(builder.Configuration.GetSection("Settings"));
+builder.Services.AddOptions<JosephGuadagno.Broadcasting.Functions.Models.Settings>().ValidateDataAnnotations().ValidateOnStart();
+
 var emailSettings = new EmailSettings
 {
-    FromAddress = null!, FromDisplayName = null!,
-    ReplyToAddress = null!, ReplyToDisplayName = null!,
-    AzureCommunicationsConnectionString = null!
+    FromAddress = string.Empty, FromDisplayName = string.Empty,
+    ReplyToAddress = string.Empty, ReplyToDisplayName = string.Empty,
+    AzureCommunicationsConnectionString = string.Empty
 };
 builder.Configuration.Bind("Email", emailSettings);
 builder.Services.TryAddSingleton<IEmailSettings>(emailSettings);
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddOptions<EmailSettings>().ValidateDataAnnotations().ValidateOnStart();
 
 var randomPostSettings = new RandomPostSettings
 {
@@ -80,6 +78,8 @@ var randomPostSettings = new RandomPostSettings
 };
 builder.Configuration.Bind("RandomPost", randomPostSettings);
 builder.Services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
+builder.Services.Configure<RandomPostSettings>(builder.Configuration.GetSection("RandomPost"));
+builder.Services.AddOptions<RandomPostSettings>().ValidateDataAnnotations().ValidateOnStart();
 
 var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings
 {
@@ -87,6 +87,8 @@ var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings
 };
 builder.Configuration.Bind("SpeakingEngagementsReader", speakerEngagementsSettings);
 builder.Services.TryAddSingleton<ISpeakingEngagementsReaderSettings>(speakerEngagementsSettings);
+builder.Services.Configure<SpeakingEngagementsReaderSettings>(builder.Configuration.GetSection("SpeakingEngagementsReader"));
+builder.Services.AddOptions<SpeakingEngagementsReaderSettings>().ValidateDataAnnotations().ValidateOnStart();
 
 var eventPublisherSettings = new EventPublisherSettings { TopicEndpointSettings = [] };
 var endpoints = builder.Configuration.GetSection("EventGridTopics:TopicEndpointSettings").Get<List<TopicEndpointSettings>>();
@@ -98,6 +100,8 @@ if (endpoints != null)
     }
 }
 builder.Services.TryAddSingleton<IEventPublisherSettings>(eventPublisherSettings);
+builder.Services.Configure<EventPublisherSettings>(builder.Configuration.GetSection("EventGridTopics"));
+builder.Services.AddOptions<EventPublisherSettings>().ValidateDataAnnotations().ValidateOnStart();
 
 // Configure the telemetry and logging
 string loggerFile = Path.Combine(currentDirectory, $"logs{Path.DirectorySeparatorChar}logs.txt");

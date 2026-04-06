@@ -5,9 +5,11 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.SyndicationFeed;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
+using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests.Collectors;
@@ -15,7 +17,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Collectors;
 public class LoadNewPostsTests
 {
     private readonly Mock<ISyndicationFeedReader> _feedReader;
-    private readonly Mock<ISettings> _settings;
     private readonly Mock<ISyndicationFeedSourceManager> _feedSourceManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly Mock<IUrlShortener> _urlShortener;
@@ -25,19 +26,17 @@ public class LoadNewPostsTests
     public LoadNewPostsTests()
     {
         _feedReader = new Mock<ISyndicationFeedReader>();
-        _settings = new Mock<ISettings>();
         _feedSourceManager = new Mock<ISyndicationFeedSourceManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
         _urlShortener = new Mock<IUrlShortener>();
         _eventPublisher = new Mock<IEventPublisher>();
 
-        _settings.Setup(s => s.ShortenedDomainToUse).Returns("short.example.com");
         _eventPublisher.Setup(e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<SyndicationFeedSource>>()))
             .ReturnsAsync(true);
 
         _sut = new LoadNewPosts(
             _feedReader.Object,
-            _settings.Object,
+            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com" }),
             _feedSourceManager.Object,
             _feedCheckManager.Object,
             _urlShortener.Object,

@@ -1,5 +1,4 @@
 using JosephGuadagno.Broadcasting.Api.Infrastructure;
-using JosephGuadagno.Broadcasting.Api.Interfaces;
 using JosephGuadagno.Broadcasting.Api.Models;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -21,29 +20,36 @@ builder.AddServiceDefaults();
 builder.Services.AddHttpLogging(
     options => { options.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.All; });
 
-var settings = new Settings
-{
-    ApiScopeUrl = null!,
-    ScalarClientId = null!
-};
-builder.Configuration.Bind("Settings", settings);
-builder.Services.TryAddSingleton<ISettings>(settings);
+// Read for inline startup use
+var settings = builder.Configuration.GetSection("Settings").Get<Settings>()
+    ?? new Settings { ApiScopeUrl = string.Empty, ScalarClientId = string.Empty };
+var autoMapperSettings = builder.Configuration.GetSection("AutoMapper").Get<AutoMapperSettings>()
+    ?? new AutoMapperSettings();
+
+// Register via IOptions
+builder.Services.Configure<Settings>(builder.Configuration.GetSection("Settings"));
+builder.Services.AddOptions<Settings>().ValidateDataAnnotations().ValidateOnStart();
+
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddOptions<EmailSettings>().ValidateDataAnnotations().ValidateOnStart();
+// Keep IEmailSettings singleton for EmailSender compatibility
 var emailSettings = new EmailSettings
 {
-    FromAddress = null!,
-    FromDisplayName = null!,
-    ReplyToAddress = null!,
-    ReplyToDisplayName = null!,
-    AzureCommunicationsConnectionString = null!
+    FromAddress = string.Empty,
+    FromDisplayName = string.Empty,
+    ReplyToAddress = string.Empty,
+    ReplyToDisplayName = string.Empty,
+    AzureCommunicationsConnectionString = string.Empty
 };
 builder.Configuration.Bind("Email", emailSettings);
 builder.Services.TryAddSingleton<IEmailSettings>(emailSettings);
-var autoMapperSettings = new AutoMapperSettings();
-builder.Configuration.Bind("AutoMapper", autoMapperSettings);
+
+builder.Services.Configure<AutoMapperSettings>(builder.Configuration.GetSection("AutoMapper"));
+builder.Services.AddOptions<AutoMapperSettings>().ValidateDataAnnotations().ValidateOnStart();
 builder.Services.AddSingleton<IAutoMapperSettings>(autoMapperSettings);
-var azureAdSettings = new AzureAdSettings();
-builder.Configuration.Bind("AzureAd", azureAdSettings);
-builder.Services.TryAddSingleton<IAzureAdSettings>(azureAdSettings);
+
+builder.Services.Configure<AzureAdSettings>(builder.Configuration.GetSection("AzureAd"));
+builder.Services.AddOptions<AzureAdSettings>().ValidateDataAnnotations().ValidateOnStart();
 
 builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
 

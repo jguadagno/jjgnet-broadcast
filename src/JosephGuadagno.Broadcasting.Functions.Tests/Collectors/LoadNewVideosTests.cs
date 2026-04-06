@@ -5,9 +5,11 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.YouTube;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
+using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests.Collectors;
@@ -15,7 +17,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Collectors;
 public class LoadNewVideosTests
 {
     private readonly Mock<IYouTubeReader> _youTubeReader;
-    private readonly Mock<ISettings> _settings;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly Mock<IYouTubeSourceManager> _youTubeSourceManager;
     private readonly Mock<IUrlShortener> _urlShortener;
@@ -25,19 +26,17 @@ public class LoadNewVideosTests
     public LoadNewVideosTests()
     {
         _youTubeReader = new Mock<IYouTubeReader>();
-        _settings = new Mock<ISettings>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
         _youTubeSourceManager = new Mock<IYouTubeSourceManager>();
         _urlShortener = new Mock<IUrlShortener>();
         _eventPublisher = new Mock<IEventPublisher>();
 
-        _settings.Setup(s => s.ShortenedDomainToUse).Returns("short.example.com");
         _eventPublisher.Setup(e => e.PublishYouTubeEventsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<YouTubeSource>>()))
             .ReturnsAsync(true);
 
         _sut = new LoadNewVideos(
             _youTubeReader.Object,
-            _settings.Object,
+            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com" }),
             _feedCheckManager.Object,
             _youTubeSourceManager.Object,
             _urlShortener.Object,

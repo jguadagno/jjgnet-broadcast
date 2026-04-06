@@ -3,11 +3,13 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
+using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using Polly;
 using Polly.Retry;
@@ -16,7 +18,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube;
 
 public class LoadNewVideos(
     IYouTubeReader youTubeReader,
-    ISettings settings,
+    IOptions<Settings> settingsOptions,
     IFeedCheckManager feedCheckManager,
     IYouTubeSourceManager youTubeSourceManager,
     IUrlShortener urlShortener,
@@ -75,7 +77,7 @@ public class LoadNewVideos(
                 }
 
                 // shorten the url
-                item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settings.ShortenedDomainToUse);
+                item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settingsOptions.Value.ShortenedDomainToUse);
 
                 // attempt to save the item
                 try

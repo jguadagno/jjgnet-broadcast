@@ -1,7 +1,8 @@
-using JosephGuadagno.Broadcasting.Api.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Api.Models;
+using JosephGuadagno.Broadcasting.Domain.Models;
 
 using Microsoft.AspNetCore.OpenApi;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 
 namespace JosephGuadagno.Broadcasting.Api;
@@ -9,10 +10,12 @@ namespace JosephGuadagno.Broadcasting.Api;
 /// <summary>
 /// Transforms OpenAPI document to include XML documentation comments.
 /// </summary>
-public sealed class XmlDocumentTransformer(ISettings settings, IAzureAdSettings azureAdSettings) : IOpenApiDocumentTransformer
+public sealed class XmlDocumentTransformer(IOptions<Settings> settingsOptions, IOptions<AzureAdSettings> azureAdSettingsOptions) : IOpenApiDocumentTransformer
 {
     public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
+        var settings = settingsOptions.Value;
+        var azureAdSettings = azureAdSettingsOptions.Value;
         // Set document metadata
         document.Info = new OpenApiInfo()
         {
