@@ -362,3 +362,14 @@ Established by Joseph Guadagno:
 **Next:** Sparks can start on #45, #46, #94, #102 (depend on stable manager interfaces).
 
 ## Learnings
+### 2026-04-06: Functions DI Startup Failure (PR #649 Regression)
+- **Root cause:** .ValidateOnStart() on AddOptions<T>() causes eager resolution of IOptions<T> during application startup
+- **Symptom:** System.InvalidOperationException: A suitable constructor for type '_functionActivator' could not be located in Azure Functions isolated worker process
+- **Why it breaks:** Azure Functions DI container setup happens in phases. ValidateOnStart() forces immediate service resolution before all dependencies are fully wired, causing activation failures
+- **When it's safe:** ValidateOnStart() works when:
+  1. The settings class has DataAnnotation attributes ([Required], [StringLength], etc.) that need validation
+  2. You're NOT in an Azure Functions isolated worker (Api/Web projects can use it safely)
+  3. The settings have no external dependencies (e.g., not using IConfiguration lookups that might not be ready)
+- **Fix:** Remove .ValidateOnStart() from Functions project. Keep ValidateDataAnnotations() for runtime validation on first access
+- **Prevention:** When refactoring DI registrations, test in the actual deployment target (Azure Functions runtime), not just local builds. Eager validation (ValidateOnStart) should only be used when you have actual DataAnnotations AND can guarantee the DI container is fully initialized
+
