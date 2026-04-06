@@ -355,7 +355,8 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
             PublicationDate = DateTimeOffset.UtcNow
         };
 
-        await Assert.ThrowsAsync<ApplicationException>(() => store.SaveAsync(entity));
+        var result = await store.SaveAsync(entity);
+        Assert.False(result.IsSuccess);
     }
 }
 

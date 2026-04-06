@@ -346,11 +346,13 @@ public class EngagementDataStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveTalkAsync_NullTalk_ThrowsArgumentNullException()
+    public async Task SaveTalkAsync_NullTalk_ReturnsFailure()
     {
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _dataStore.SaveTalkAsync(null!));
+        // Act
+        var result = await _dataStore.SaveTalkAsync(null!);
+
+        // Assert
+        Assert.False(result.IsSuccess);
     }
 
     [Fact]
