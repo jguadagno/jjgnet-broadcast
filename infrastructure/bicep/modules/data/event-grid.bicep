@@ -11,7 +11,7 @@ param tags object = {}
 //   - new-youtube-item
 //   - scheduled-item-fired
 
-resource topicNewRandomPost 'Microsoft.EventGrid/topics@2023-12-15-preview' = {
+resource topicNewRandomPost 'Microsoft.EventGrid/topics@2022-06-15' = {
   name: 'new-random-post'
   location: location
   tags: tags
@@ -21,7 +21,7 @@ resource topicNewRandomPost 'Microsoft.EventGrid/topics@2023-12-15-preview' = {
   }
 }
 
-resource topicNewSpeakingEngagement 'Microsoft.EventGrid/topics@2023-12-15-preview' = {
+resource topicNewSpeakingEngagement 'Microsoft.EventGrid/topics@2022-06-15' = {
   name: 'new-speaking-engagement'
   location: location
   tags: tags
@@ -31,7 +31,7 @@ resource topicNewSpeakingEngagement 'Microsoft.EventGrid/topics@2023-12-15-previ
   }
 }
 
-resource topicNewSyndicationFeedItem 'Microsoft.EventGrid/topics@2023-12-15-preview' = {
+resource topicNewSyndicationFeedItem 'Microsoft.EventGrid/topics@2022-06-15' = {
   name: 'new-syndication-feed-item'
   location: location
   tags: tags
@@ -41,7 +41,7 @@ resource topicNewSyndicationFeedItem 'Microsoft.EventGrid/topics@2023-12-15-prev
   }
 }
 
-resource topicNewYouTubeItem 'Microsoft.EventGrid/topics@2023-12-15-preview' = {
+resource topicNewYouTubeItem 'Microsoft.EventGrid/topics@2022-06-15' = {
   name: 'new-youtube-item'
   location: location
   tags: tags
@@ -51,7 +51,7 @@ resource topicNewYouTubeItem 'Microsoft.EventGrid/topics@2023-12-15-preview' = {
   }
 }
 
-resource topicScheduledItemFired 'Microsoft.EventGrid/topics@2023-12-15-preview' = {
+resource topicScheduledItemFired 'Microsoft.EventGrid/topics@2022-06-15' = {
   name: 'scheduled-item-fired'
   location: location
   tags: tags

@@ -37,7 +37,7 @@ param tags object = {}
 //   SQL Server version        = 12.0
 //   location                  = 'westus'
 
-resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
+resource sqlServer 'Microsoft.Sql/servers@2021-11-01' = {
   name: sqlServerName
   location: location
   tags: tags
@@ -50,7 +50,7 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
   }
 }
 
-resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
+resource sqlDatabase 'Microsoft.Sql/servers/databases@2021-11-01' = {
   parent: sqlServer
   name: databaseName
   location: location
@@ -65,7 +65,7 @@ resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
 }
 
 // Allow Azure services to access SQL Server
-resource sqlFirewallRuleAzureServices 'Microsoft.Sql/servers/firewallRules@2023-08-01-preview' = {
+resource sqlFirewallRuleAzureServices 'Microsoft.Sql/servers/firewallRules@2021-11-01' = {
   parent: sqlServer
   name: 'AllowAllWindowsAzureIps'
   properties: {

@@ -10,19 +10,19 @@ param tags object = {}
 //   - 'jjgnet-broadcast-id-8d7d'   (westus)
 // Note: All three app services also have SystemAssigned identities (managed by the platform).
 
-resource apiManagedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-07-31-preview' = {
+resource apiManagedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: 'api-jjgnet-broad-id-8130'
   location: location
   tags: tags
 }
 
-resource webManagedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-07-31-preview' = {
+resource webManagedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: 'web-jjgnet-broad-id-8f0f'
   location: location
   tags: tags
 }
 
-resource functionsManagedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-07-31-preview' = {
+resource functionsManagedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: 'jjgnet-broadcast-id-8d7d'
   location: location
   tags: tags
