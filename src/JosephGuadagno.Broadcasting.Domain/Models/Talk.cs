@@ -17,6 +17,7 @@ public class Talk
     /// The name of the talk
     /// </summary>
     [Required]
+    [MaxLength(500)]
     public string Name { get; set; }
         
     /// <summary>
@@ -48,6 +49,7 @@ public class Talk
     /// <summary>
     /// The room/channel/url for the talk
     /// </summary>
+    [MaxLength(500)]
     public string TalkLocation { get; set; }
         
     /// <summary>
