@@ -23,16 +23,10 @@ internal sealed class AzureKeyVaultHealthCheck : IHealthCheck
     {
         try
         {
-            // Enumerate the first page of secret properties only — does NOT fetch secret values.
-            await foreach (var _ in _secretClient.GetPropertiesOfSecretsAsync(cancellationToken)
-                               .AsPages(pageSizeHint: 1)
-                               .WithCancellation(cancellationToken))
-            {
-                // One page is enough to confirm connectivity.
-                break;
-            }
-
-            return HealthCheckResult.Healthy("Azure Key Vault is reachable.");
+            var secret = await _secretClient.GetSecretAsync("AzureKeyVaultSecretsHealthCheck", null, cancellationToken);
+            return secret is null
+                ? HealthCheckResult.Unhealthy("Azure Key Vault health check failed: Secret not found.")
+                : HealthCheckResult.Healthy("Azure Key Vault is reachable.");
         }
         catch (RequestFailedException ex)
         {
