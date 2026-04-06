@@ -148,6 +148,8 @@ builder.Services.AddDistributedSqlServerCache(options =>
     options.ConnectionString = builder.Configuration.GetConnectionString("JJGNetDatabaseSqlServer");
     options.SchemaName = "dbo";
     options.TableName = "TokenCache";
+    options.DefaultSlidingExpiration = TimeSpan.FromDays(14); // Refresh cache entry on access
+    options.ExpiredItemsDeletionInterval = TimeSpan.FromMinutes(30); // Clean up expired entries
 });
 
 builder.Services.AddAntiforgery(options =>
