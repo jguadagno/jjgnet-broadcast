@@ -22,9 +22,6 @@ param webAppName string = 'web-jjgnet-broadcast'
 @description('Application Insights connection string.')
 param appInsightsConnectionString string
 
-@description('Key Vault URI for app settings references.')
-param keyVaultUri string
-
 @description('Resource tags.')
 param tags object = {}
 

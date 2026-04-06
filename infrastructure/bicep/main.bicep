@@ -55,6 +55,9 @@ param appInsightsName string = 'jjgnet'
 @description('Action group name.')
 param actionGroupName string = 'jjgnet_broadcasting'
 
+@description('Email address for alert notifications.')
+param alertEmailAddress string
+
 // =============================================================================
 // Modules
 // =============================================================================
@@ -96,7 +99,7 @@ module actionGroup 'modules/monitoring/action-group.bicep' = {
     emailReceivers: [
       {
         name: 'Notify Joe_-EmailAction-'
-        emailAddress: 'jguadagno@hotmail.com'
+        emailAddress: alertEmailAddress
         useCommonAlertSchema: true
       }
     ]
@@ -171,12 +174,10 @@ module appServices 'modules/compute/app-service.bicep' = {
     apiAppName: 'api-jjgnet-broadcast'
     webAppName: 'web-jjgnet-broadcast'
     appInsightsConnectionString: appInsights.outputs.connectionString
-    keyVaultUri: keyVault.outputs.keyVaultUri
     tags: tags
   }
   dependsOn: [
     appInsights
-    keyVault
   ]
 }
 
@@ -187,7 +188,6 @@ module functionApp 'modules/compute/function-app.bicep' = {
     functionAppName: 'jjgnet-broadcast'
     appServicePlanId: appServices.outputs.appServicePlanId
     functionsStorageAccountName: functionsStorageAccountName
-    functionsStorageConnectionString: storage.outputs.functionsStorageConnectionString
     appInsightsConnectionString: appInsights.outputs.connectionString
     userAssignedIdentityId: managedIdentities.outputs.functionsManagedIdentityId
     tags: tags
@@ -205,11 +205,6 @@ module alertRules 'modules/monitoring/alert-rules.bicep' = {
   params: {
     actionGroupId: actionGroup.outputs.actionGroupId
     appInsightsId: appInsights.outputs.appInsightsId
-    appServiceIds: [
-      appServices.outputs.apiAppId
-      appServices.outputs.webAppId
-      functionApp.outputs.functionAppId
-    ]
     tags: tags
   }
   dependsOn: [
@@ -230,5 +225,5 @@ output webAppUrl string = 'https://${appServices.outputs.webAppDefaultHostname}'
 output functionAppUrl string = 'https://${functionApp.outputs.functionAppDefaultHostname}'
 output keyVaultUri string = keyVault.outputs.keyVaultUri
 output sqlServerFqdn string = sqlServer.outputs.sqlServerFqdn
-output appInsightsInstrumentationKey string = appInsights.outputs.instrumentationKey
+output appInsightsConnectionString string = appInsights.outputs.connectionString
 output logAnalyticsWorkspaceId string = logAnalytics.outputs.workspaceId

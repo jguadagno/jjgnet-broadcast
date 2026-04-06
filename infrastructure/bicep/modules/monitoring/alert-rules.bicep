@@ -4,9 +4,6 @@ param actionGroupId string
 @description('Resource ID of the Application Insights instance to monitor.')
 param appInsightsId string
 
-@description('Resource IDs of the App Service sites to monitor.')
-param appServiceIds array
-
 @description('Resource tags.')
 param tags object = {}
 

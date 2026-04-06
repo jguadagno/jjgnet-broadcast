@@ -16,7 +16,7 @@ param tags object = {}
 // groupShortName  = 'jjgnet'
 // emailReceivers  = [{ name: 'Notify Joe_-EmailAction-', emailAddress: 'jguadagno@hotmail.com', useCommonAlertSchema: true }]
 
-resource actionGroup 'microsoft.insights/actionGroups@2023-09-01-preview' = {
+resource actionGroup 'microsoft.insights/actionGroups@2023-01-01' = {
   name: actionGroupName
   location: 'global'
   tags: tags

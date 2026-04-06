@@ -16,6 +16,7 @@ param locationSecondary = 'westus2'
 param logAnalyticsWorkspaceName = 'jjgnet-log-workspace'
 param appInsightsName = 'jjgnet'
 param actionGroupName = 'jjgnet_broadcasting'
+param alertEmailAddress = '' // TODO: fill in alert notification email address
 
 // --- SQL Server (fully populated from discovery) ---
 param sqlServerName = 'r4bv7wtt6u'

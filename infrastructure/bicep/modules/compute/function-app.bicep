@@ -10,10 +10,6 @@ param appServicePlanId string
 @description('Name of the Functions storage account (AzureWebJobsStorage).')
 param functionsStorageAccountName string
 
-@description('Connection string for the Functions storage account.')
-@secure()
-param functionsStorageConnectionString string
-
 @description('Application Insights connection string.')
 param appInsightsConnectionString string
 
@@ -51,8 +47,8 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
       minTlsVersion: '1.2'
       appSettings: [
         {
-          name: 'AzureWebJobsStorage'
-          value: functionsStorageConnectionString
+          name: 'AzureWebJobsStorage__accountName'
+          value: functionsStorageAccountName
         }
         {
           name: 'FUNCTIONS_EXTENSION_VERSION'
@@ -95,8 +91,8 @@ resource stagingSlot 'Microsoft.Web/sites/slots@2023-12-01' = {
       alwaysOn: false
       appSettings: [
         {
-          name: 'AzureWebJobsStorage'
-          value: functionsStorageConnectionString
+          name: 'AzureWebJobsStorage__accountName'
+          value: functionsStorageAccountName
         }
         {
           name: 'FUNCTIONS_EXTENSION_VERSION'

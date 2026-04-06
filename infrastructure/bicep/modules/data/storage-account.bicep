@@ -39,7 +39,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-04-01' = {
     accessTier: 'Hot'
     supportsHttpsTrafficOnly: true
     minimumTlsVersion: 'TLS1_2'
-    allowBlobPublicAccess: true
+    allowBlobPublicAccess: false
     networkAcls: {
       defaultAction: 'Allow'
       bypass: 'AzureServices'
@@ -91,7 +91,7 @@ resource tableLogging 'Microsoft.Storage/storageAccounts/tableServices/tables@20
 resource functionsStorageAccount 'Microsoft.Storage/storageAccounts@2023-04-01' = {
   name: functionsStorageAccountName
   location: location
-  kind: 'Storage'
+  kind: 'StorageV2'
   tags: tags
   sku: {
     name: functionsStorageSkuName
@@ -100,6 +100,7 @@ resource functionsStorageAccount 'Microsoft.Storage/storageAccounts@2023-04-01' 
     supportsHttpsTrafficOnly: true
     minimumTlsVersion: 'TLS1_2'
     allowBlobPublicAccess: false
+    accessTier: 'Hot'
     networkAcls: {
       defaultAction: 'Allow'
       bypass: 'AzureServices'
@@ -109,7 +110,5 @@ resource functionsStorageAccount 'Microsoft.Storage/storageAccounts@2023-04-01' 
 
 output storageAccountId string = storageAccount.id
 output storageAccountName string = storageAccount.name
-output storageAccountConnectionString string = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
 output functionsStorageAccountId string = functionsStorageAccount.id
 output functionsStorageAccountName string = functionsStorageAccount.name
-output functionsStorageConnectionString string = 'DefaultEndpointsProtocol=https;AccountName=${functionsStorageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${functionsStorageAccount.listKeys().keys[0].value}'
