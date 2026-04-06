@@ -59,7 +59,7 @@ builder.Configuration.AddEnvironmentVariables();
 
 // Register Settings via IOptions
 builder.Services.Configure<JosephGuadagno.Broadcasting.Functions.Models.Settings>(builder.Configuration.GetSection("Settings"));
-builder.Services.AddOptions<JosephGuadagno.Broadcasting.Functions.Models.Settings>().ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddOptions<JosephGuadagno.Broadcasting.Functions.Models.Settings>().ValidateDataAnnotations();
 
 var emailSettings = new EmailSettings
 {
@@ -70,7 +70,7 @@ var emailSettings = new EmailSettings
 builder.Configuration.Bind("Email", emailSettings);
 builder.Services.TryAddSingleton<IEmailSettings>(emailSettings);
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
-builder.Services.AddOptions<EmailSettings>().ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddOptions<EmailSettings>().ValidateDataAnnotations();
 
 var randomPostSettings = new RandomPostSettings
 {
@@ -79,7 +79,7 @@ var randomPostSettings = new RandomPostSettings
 builder.Configuration.Bind("RandomPost", randomPostSettings);
 builder.Services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
 builder.Services.Configure<RandomPostSettings>(builder.Configuration.GetSection("RandomPost"));
-builder.Services.AddOptions<RandomPostSettings>().ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddOptions<RandomPostSettings>().ValidateDataAnnotations();
 
 var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings
 {
@@ -88,7 +88,7 @@ var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings
 builder.Configuration.Bind("SpeakingEngagementsReader", speakerEngagementsSettings);
 builder.Services.TryAddSingleton<ISpeakingEngagementsReaderSettings>(speakerEngagementsSettings);
 builder.Services.Configure<SpeakingEngagementsReaderSettings>(builder.Configuration.GetSection("SpeakingEngagementsReader"));
-builder.Services.AddOptions<SpeakingEngagementsReaderSettings>().ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddOptions<SpeakingEngagementsReaderSettings>().ValidateDataAnnotations();
 
 var eventPublisherSettings = new EventPublisherSettings { TopicEndpointSettings = [] };
 var endpoints = builder.Configuration.GetSection("EventGridTopics:TopicEndpointSettings").Get<List<TopicEndpointSettings>>();
@@ -101,7 +101,7 @@ if (endpoints != null)
 }
 builder.Services.TryAddSingleton<IEventPublisherSettings>(eventPublisherSettings);
 builder.Services.Configure<EventPublisherSettings>(builder.Configuration.GetSection("EventGridTopics"));
-builder.Services.AddOptions<EventPublisherSettings>().ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddOptions<EventPublisherSettings>().ValidateDataAnnotations();
 
 // Configure the telemetry and logging
 string loggerFile = Path.Combine(currentDirectory, $"logs{Path.DirectorySeparatorChar}logs.txt");
