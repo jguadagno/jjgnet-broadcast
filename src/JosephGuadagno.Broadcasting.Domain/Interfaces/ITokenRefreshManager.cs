@@ -4,5 +4,5 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 
 public interface ITokenRefreshManager : IManager<TokenRefresh>
 {
-    public Task<TokenRefresh?> GetByNameAsync(string name);
+    public Task<TokenRefresh?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
 }

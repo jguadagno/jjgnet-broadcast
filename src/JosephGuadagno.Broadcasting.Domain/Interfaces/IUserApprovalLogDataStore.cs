@@ -10,14 +10,10 @@ public interface IUserApprovalLogDataStore
     /// <summary>
     /// Gets all log entries for a user
     /// </summary>
-    /// <param name="userId">The user ID</param>
-    /// <returns>List of log entries for the user</returns>
-    Task<List<UserApprovalLog>> GetByUserIdAsync(int userId);
+    Task<List<UserApprovalLog>> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates a new log entry
     /// </summary>
-    /// <param name="log">The log entry to create</param>
-    /// <returns>The created log entry</returns>
-    Task<UserApprovalLog> CreateAsync(UserApprovalLog log);
+    Task<UserApprovalLog> CreateAsync(UserApprovalLog log, CancellationToken cancellationToken = default);
 }

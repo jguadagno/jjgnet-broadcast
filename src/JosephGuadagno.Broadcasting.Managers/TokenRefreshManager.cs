@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -15,33 +16,33 @@ public class TokenRefreshManager : ITokenRefreshManager
         _tokenRefreshDataStore = tokenRefreshDataStore;
     }
 
-    public async Task<TokenRefresh> GetAsync(int primaryKey)
+    public async Task<TokenRefresh> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        return await _tokenRefreshDataStore.GetAsync(primaryKey);
+        return await _tokenRefreshDataStore.GetAsync(primaryKey, cancellationToken);
     }
 
-    public async Task<TokenRefresh> SaveAsync(TokenRefresh entity)
+    public async Task<TokenRefresh> SaveAsync(TokenRefresh entity, CancellationToken cancellationToken = default)
     {
-        return await _tokenRefreshDataStore.SaveAsync(entity);
+        return await _tokenRefreshDataStore.SaveAsync(entity, cancellationToken);
     }
 
-    public async Task<List<TokenRefresh>> GetAllAsync()
+    public async Task<List<TokenRefresh>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _tokenRefreshDataStore.GetAllAsync();
+        return await _tokenRefreshDataStore.GetAllAsync(cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(TokenRefresh entity)
+    public async Task<bool> DeleteAsync(TokenRefresh entity, CancellationToken cancellationToken = default)
     {
-        return await _tokenRefreshDataStore.DeleteAsync(entity);
+        return await _tokenRefreshDataStore.DeleteAsync(entity, cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(int primaryKey)
+    public async Task<bool> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        return await _tokenRefreshDataStore.DeleteAsync(primaryKey);
+        return await _tokenRefreshDataStore.DeleteAsync(primaryKey, cancellationToken);
     }
 
-    public async Task<TokenRefresh?> GetByNameAsync(string name)
+    public async Task<TokenRefresh?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
     {
-        return await _tokenRefreshDataStore.GetByNameAsync(name);
+        return await _tokenRefreshDataStore.GetByNameAsync(name, cancellationToken);
     }
 }

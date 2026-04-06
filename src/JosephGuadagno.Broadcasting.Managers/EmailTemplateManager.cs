@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -17,18 +18,18 @@ public class EmailTemplateManager : IEmailTemplateManager
         _logger = logger;
     }
 
-    public async Task<EmailTemplate?> GetTemplateAsync(int id)
+    public async Task<EmailTemplate?> GetTemplateAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await _dataStore.GetByIdAsync(id);
+        return await _dataStore.GetByIdAsync(id, cancellationToken);
     }
 
-    public async Task<EmailTemplate?> GetTemplateAsync(string name)
+    public async Task<EmailTemplate?> GetTemplateAsync(string name, CancellationToken cancellationToken = default)
     {
-        return await _dataStore.GetByNameAsync(name);
+        return await _dataStore.GetByNameAsync(name, cancellationToken);
     }
 
-    public async Task<List<EmailTemplate>> GetAllTemplatesAsync()
+    public async Task<List<EmailTemplate>> GetAllTemplatesAsync(CancellationToken cancellationToken = default)
     {
-        return await _dataStore.GetAllAsync();
+        return await _dataStore.GetAllAsync(cancellationToken);
     }
 }

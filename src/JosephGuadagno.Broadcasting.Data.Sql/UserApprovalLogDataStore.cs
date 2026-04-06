@@ -4,27 +4,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
-/// <summary>
-/// Data store implementation for user approval log operations
-/// </summary>
 public class UserApprovalLogDataStore(BroadcastingContext broadcastingContext, IMapper mapper) : IUserApprovalLogDataStore
 {
-    public async Task<List<Domain.Models.UserApprovalLog>> GetByUserIdAsync(int userId)
+    public async Task<List<Domain.Models.UserApprovalLog>> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default)
     {
-        if (userId <= 0)
-        {
-            throw new ArgumentException("User ID must be greater than 0", nameof(userId));
-        }
+        if (userId <= 0) throw new ArgumentException("User ID must be greater than 0", nameof(userId));
 
         var dbLogs = await broadcastingContext.UserApprovalLogs
             .Where(l => l.UserId == userId)
             .OrderByDescending(l => l.CreatedAt)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return mapper.Map<List<Domain.Models.UserApprovalLog>>(dbLogs);
     }
 
-    public async Task<Domain.Models.UserApprovalLog> CreateAsync(Domain.Models.UserApprovalLog log)
+    public async Task<Domain.Models.UserApprovalLog> CreateAsync(Domain.Models.UserApprovalLog log, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(log);
 
@@ -33,7 +27,7 @@ public class UserApprovalLogDataStore(BroadcastingContext broadcastingContext, I
 
         broadcastingContext.UserApprovalLogs.Add(dbLog);
 
-        var result = await broadcastingContext.SaveChangesAsync() != 0;
+        var result = await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
         if (result)
         {
             return mapper.Map<Domain.Models.UserApprovalLog>(dbLog);

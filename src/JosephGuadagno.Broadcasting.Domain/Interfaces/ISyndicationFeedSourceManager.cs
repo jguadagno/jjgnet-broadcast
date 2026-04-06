@@ -4,7 +4,7 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 
 public interface ISyndicationFeedSourceManager : IManager<SyndicationFeedSource>
 {
-    public Task<SyndicationFeedSource?> GetByUrlAsync(string url);
-    Task<SyndicationFeedSource?> GetByFeedIdentifierAsync(string feedIdentifier);
-    Task<SyndicationFeedSource?> GetRandomSyndicationDataAsync(DateTimeOffset cutoffDate, List<string> excludedCategories);
+    public Task<SyndicationFeedSource?> GetByUrlAsync(string url, CancellationToken cancellationToken = default);
+    Task<SyndicationFeedSource?> GetByFeedIdentifierAsync(string feedIdentifier, CancellationToken cancellationToken = default);
+    Task<SyndicationFeedSource?> GetRandomSyndicationDataAsync(DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default);
 }
