@@ -53,8 +53,10 @@ public partial class BroadcastingContext : DbContext
                 .IsClustered(false);
 
             entity.Property(e => e.Name)
-                .IsRequired();
-            entity.Property(e => e.Url);
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.Url)
+                .HasMaxLength(2048);
 
             entity.Property(e => e.StartDateTime)
                 .IsRequired()
@@ -117,6 +119,12 @@ public partial class BroadcastingContext : DbContext
             entity.Property(e => e.ImageUrl)
                 .HasMaxLength(2048);
 
+            entity.Property(e => e.Platform)
+                .HasMaxLength(50);
+
+            entity.Property(e => e.MessageType)
+                .HasMaxLength(50);
+
             entity.Property(e => e.CreatedByEntraOid)
                 .HasMaxLength(36);
         });
@@ -131,6 +139,13 @@ public partial class BroadcastingContext : DbContext
                 .WithMany(p => p.Talks)
                 .HasForeignKey(d => d.EngagementId)
                 .HasConstraintName("Talks_Engagements_Id");
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.TalkLocation)
+                .HasMaxLength(500);
 
             entity.Property(e => e.BlueSkyHandle)
                 .HasMaxLength(255);
