@@ -341,3 +341,24 @@ Established by Joseph Guadagno:
 - **`instrumentationKey` is deprecated:** App Insights connection string is the correct output; iKey should not be propagated or stored.
 - **`kind: 'Storage'` for functions runtime storage is legacy:** Use `StorageV2` unless you have a specific reason for v1 blob-only storage.
 - **Hardcoded email in IaC:** Alert notification addresses belong in parameters (per-environment), not hardcoded in `main.bicep`.
+
+
+### 2026-04-06: .NET Technical Debt Sprint — #309, #311, #312
+
+**Issues completed:**
+- #309: IOptions refactor - Replaced manual Bind()+Singleton pattern with Configure<T>() + ValidateOnStart() across Api, Functions, Web
+- #311: CancellationToken propagation - Added ct = default to all async manager/datastore methods, propagated to EF Core
+- #312: OperationResult pattern - Introduced OperationResult<T> to replace throwing ApplicationException in managers
+
+**PR:** #649 (squad/309-311-312-net-technical-debt → main)
+
+**Key architectural changes:**
+- IOptions pattern enforces early configuration validation via ValidateOnStart()
+- CancellationToken support enables graceful shutdown in Azure Functions timer triggers
+- OperationResult pattern makes success/failure contracts explicit, improves testability
+
+**Testing:** All tests passing (0 failures). SyndicationFeedReader network test failures EXPECTED (external dependency).
+
+**Next:** Sparks can start on #45, #46, #94, #102 (depend on stable manager interfaces).
+
+## Learnings
