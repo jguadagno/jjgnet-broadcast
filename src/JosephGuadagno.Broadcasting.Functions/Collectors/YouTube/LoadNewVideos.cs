@@ -82,9 +82,16 @@ public class LoadNewVideos(
                 // attempt to save the item
                 try
                 {
-                    var savedItem = await SavePipeline.ExecuteAsync(
+                    var saveResult = await SavePipeline.ExecuteAsync(
                         async ct => await youTubeSourceManager.SaveAsync(item));
 
+                    if (!saveResult.IsSuccess || saveResult.Value is null)
+                    {
+                        logger.LogError("Failed to save the video with the VideoId of: '{VideoId}' Url:'{Url}'. Error: {Error}",
+                            item.VideoId, item.Url, saveResult.ErrorMessage);
+                        continue;
+                    }
+                    var savedItem = saveResult.Value;
                     eventsToPublish.Add(savedItem);
                     var properties = new Dictionary<string, string>
                     {

@@ -1,4 +1,5 @@
 using Moq;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using FluentAssertions;
@@ -37,16 +38,17 @@ public class EngagementManagerTests
         // Arrange
         var engagement = new Engagement { Id = 0, Name = "Test", Url = "http://test.com", StartDateTime = new DateTimeOffset(2022, 1, 1, 12, 0, 0, TimeSpan.Zero), TimeZoneId = "UTC" };
         var existingEngagement = new Engagement { Id = 5 };
-        _repository.Setup(r => r.GetByNameAndUrlAndYearAsync("Test", "http://test.com", 2022)).ReturnsAsync(existingEngagement);
-        _repository.Setup(r => r.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync((Engagement e) => e);
+        _repository.Setup(r => r.GetByNameAndUrlAndYearAsync("Test", "http://test.com", 2022, default)).ReturnsAsync(existingEngagement);
+        _repository.Setup(r => r.SaveAsync(It.IsAny<Engagement>(), default)).ReturnsAsync((Engagement e, CancellationToken ct) => OperationResult<Engagement>.Success(e));
 
         // Act
         var result = await _engagementManager.SaveAsync(engagement);
 
         // Assert
-        Assert.Equal(5, result.Id);
-        _repository.Verify(r => r.GetByNameAndUrlAndYearAsync("Test", "http://test.com", 2022), Times.Once);
-        _repository.Verify(r => r.SaveAsync(engagement), Times.Once);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(5, result.Value!.Id);
+        _repository.Verify(r => r.GetByNameAndUrlAndYearAsync("Test", "http://test.com", 2022, default), Times.Once);
+        _repository.Verify(r => r.SaveAsync(engagement, default), Times.Once);
     }
 
     [Fact]
@@ -54,15 +56,16 @@ public class EngagementManagerTests
     {
         // Arrange
         var engagement = new Engagement { Id = 0, Name = "Test", Url = "http://test.com", StartDateTime = new DateTimeOffset(2022, 1, 1, 12, 0, 0, TimeSpan.Zero), TimeZoneId = "UTC" };
-        _repository.Setup(r => r.GetByNameAndUrlAndYearAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>())).ReturnsAsync((Engagement)null);
-        _repository.Setup(r => r.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync((Engagement e) => e);
+        _repository.Setup(r => r.GetByNameAndUrlAndYearAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), default)).ReturnsAsync((Engagement)null);
+        _repository.Setup(r => r.SaveAsync(It.IsAny<Engagement>(), default)).ReturnsAsync((Engagement e, CancellationToken ct) => OperationResult<Engagement>.Success(e));
 
         // Act
         var result = await _engagementManager.SaveAsync(engagement);
 
         // Assert
-        Assert.Equal(0, result.Id);
-        _repository.Verify(r => r.SaveAsync(engagement), Times.Once);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(0, result.Value!.Id);
+        _repository.Verify(r => r.SaveAsync(engagement, default), Times.Once);
     }
 
     [Fact]
@@ -76,15 +79,16 @@ public class EngagementManagerTests
             StartDateTime = new DateTimeOffset(2022, 1, 1, 12, 0, 0, new TimeSpan(-7, 0, 0)),
             EndDateTime = new DateTimeOffset(2022, 1, 1, 13, 0, 0, new TimeSpan(-7, 0, 0))
         };
-        _repository.Setup(r => r.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync((Engagement e) => e);
+        _repository.Setup(r => r.SaveAsync(It.IsAny<Engagement>(), default)).ReturnsAsync((Engagement e, CancellationToken ct) => OperationResult<Engagement>.Success(e));
 
         // Act
         var result = await _engagementManager.SaveAsync(engagement);
 
         // Assert
-        Assert.Equal(new TimeSpan(-5, 0, 0), result.StartDateTime.Offset);
-        Assert.Equal(new TimeSpan(-5, 0, 0), result.EndDateTime.Offset);
-        _repository.Verify(r => r.SaveAsync(engagement), Times.Once);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(new TimeSpan(-5, 0, 0), result.Value!.StartDateTime.Offset);
+        Assert.Equal(new TimeSpan(-5, 0, 0), result.Value!.EndDateTime.Offset);
+        _repository.Verify(r => r.SaveAsync(engagement, default), Times.Once);
     }
 
     [Fact]
@@ -107,28 +111,28 @@ public class EngagementManagerTests
     {
         // Arrange
         var engagement = new Engagement { Id = 1 };
-        _repository.Setup(r => r.DeleteAsync(engagement)).ReturnsAsync(true);
+        _repository.Setup(r => r.DeleteAsync(engagement, default)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         // Act
         var result = await _engagementManager.DeleteAsync(engagement);
 
         // Assert
-        Assert.True(result);
-        _repository.Verify(r => r.DeleteAsync(engagement), Times.Once);
+        Assert.True(result.IsSuccess);
+        _repository.Verify(r => r.DeleteAsync(engagement, default), Times.Once);
     }
 
     [Fact]
     public async Task DeleteAsync_PrimaryKey_ShouldCallRepository()
     {
         // Arrange
-        _repository.Setup(r => r.DeleteAsync(1)).ReturnsAsync(true);
+        _repository.Setup(r => r.DeleteAsync(1, default)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         // Act
         var result = await _engagementManager.DeleteAsync(1);
 
         // Assert
-        Assert.True(result);
-        _repository.Verify(r => r.DeleteAsync(1), Times.Once);
+        Assert.True(result.IsSuccess);
+        _repository.Verify(r => r.DeleteAsync(1, default), Times.Once);
     }
 
     [Fact]
@@ -147,14 +151,17 @@ public class EngagementManagerTests
     }
 
     [Fact]
-    public async Task SaveTalkAsync_ShouldThrowIfEngagementNotFound()
+    public async Task SaveTalkAsync_ShouldReturnFailureIfEngagementNotFound()
     {
         // Arrange
         var talk = new Talk { EngagementId = 1 };
-        _repository.Setup(r => r.GetAsync(1)).ReturnsAsync((Engagement)null);
+        _repository.Setup(r => r.GetAsync(1, default)).ReturnsAsync((Engagement)null);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ApplicationException>(() => _engagementManager.SaveTalkAsync(talk));
+        // Act
+        var result = await _engagementManager.SaveTalkAsync(talk);
+
+        // Assert
+        Assert.False(result.IsSuccess);
     }
 
     [Fact]
@@ -168,30 +175,31 @@ public class EngagementManagerTests
             StartDateTime = new DateTimeOffset(2022, 1, 1, 12, 0, 0, new TimeSpan(-7, 0, 0)),
             EndDateTime = new DateTimeOffset(2022, 1, 1, 13, 0, 0, new TimeSpan(-7, 0, 0))
         };
-        _repository.Setup(r => r.GetAsync(1)).ReturnsAsync(engagement);
-        _repository.Setup(r => r.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync((Talk t) => t);
+        _repository.Setup(r => r.GetAsync(1, default)).ReturnsAsync(engagement);
+        _repository.Setup(r => r.SaveTalkAsync(It.IsAny<Talk>(), default)).ReturnsAsync((Talk t, CancellationToken ct) => OperationResult<Talk>.Success(t));
 
         // Act
         var result = await _engagementManager.SaveTalkAsync(talk);
 
         // Assert
-        Assert.Equal(new TimeSpan(-5, 0, 0), result.StartDateTime.Offset);
-        Assert.Equal(new TimeSpan(-5, 0, 0), result.EndDateTime.Offset);
-        _repository.Verify(r => r.SaveTalkAsync(talk), Times.Once);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(new TimeSpan(-5, 0, 0), result.Value!.StartDateTime.Offset);
+        Assert.Equal(new TimeSpan(-5, 0, 0), result.Value!.EndDateTime.Offset);
+        _repository.Verify(r => r.SaveTalkAsync(talk, default), Times.Once);
     }
 
     [Fact]
     public async Task RemoveTalkFromEngagementAsync_Id_ShouldCallRepository()
     {
         // Arrange
-        _repository.Setup(r => r.RemoveTalkFromEngagementAsync(1)).ReturnsAsync(true);
+        _repository.Setup(r => r.RemoveTalkFromEngagementAsync(1, default)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         // Act
         var result = await _engagementManager.RemoveTalkFromEngagementAsync(1);
 
         // Assert
-        Assert.True(result);
-        _repository.Verify(r => r.RemoveTalkFromEngagementAsync(1), Times.Once);
+        Assert.True(result.IsSuccess);
+        _repository.Verify(r => r.RemoveTalkFromEngagementAsync(1, default), Times.Once);
     }
 
     [Fact]
@@ -199,14 +207,14 @@ public class EngagementManagerTests
     {
         // Arrange
         var talk = new Talk { Id = 1 };
-        _repository.Setup(r => r.RemoveTalkFromEngagementAsync(talk)).ReturnsAsync(true);
+        _repository.Setup(r => r.RemoveTalkFromEngagementAsync(talk, default)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         // Act
         var result = await _engagementManager.RemoveTalkFromEngagementAsync(talk);
 
         // Assert
-        Assert.True(result);
-        _repository.Verify(r => r.RemoveTalkFromEngagementAsync(talk), Times.Once);
+        Assert.True(result.IsSuccess);
+        _repository.Verify(r => r.RemoveTalkFromEngagementAsync(talk, default), Times.Once);
     }
 
     [Fact]
@@ -365,19 +373,20 @@ public class EngagementManagerTests
         };
 
         _repository
-            .Setup(r => r.GetByNameAndUrlAndYearAsync("Tech Conference", "https://techconf.example.com", 2023))
+            .Setup(r => r.GetByNameAndUrlAndYearAsync("Tech Conference", "https://techconf.example.com", 2023, default))
             .ReturnsAsync(existingEngagement);
         _repository
-            .Setup(r => r.SaveAsync(It.IsAny<Engagement>()))
-            .ReturnsAsync((Engagement e) => e);
+            .Setup(r => r.SaveAsync(It.IsAny<Engagement>(), default))
+            .ReturnsAsync((Engagement e, CancellationToken ct) => OperationResult<Engagement>.Success(e));
 
         // Act
         var result = await _engagementManager.SaveAsync(newEngagement);
 
         // Assert
         // Verify that the deduplication logic found the existing engagement
-        result.Id.Should().Be(42, "new engagement should have been assigned the existing engagement's ID");
-        _repository.Verify(r => r.GetByNameAndUrlAndYearAsync("Tech Conference", "https://techconf.example.com", 2023), Times.Once);
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Id.Should().Be(42, "new engagement should have been assigned the existing engagement's ID");
+        _repository.Verify(r => r.GetByNameAndUrlAndYearAsync("Tech Conference", "https://techconf.example.com", 2023, default), Times.Once);
     }
 
     [Fact]
@@ -395,16 +404,17 @@ public class EngagementManagerTests
         };
 
         _repository
-            .Setup(r => r.SaveAsync(It.IsAny<Engagement>()))
-            .ReturnsAsync((Engagement e) => e);
+            .Setup(r => r.SaveAsync(It.IsAny<Engagement>(), default))
+            .ReturnsAsync((Engagement e, CancellationToken ct) => OperationResult<Engagement>.Success(e));
 
         // Act
         var result = await _engagementManager.SaveAsync(existingEngagement);
 
         // Assert
         // Verify that GetByNameAndUrlAndYearAsync was NOT called because Id is non-zero
-        result.Id.Should().Be(15);
-        _repository.Verify(r => r.GetByNameAndUrlAndYearAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Id.Should().Be(15);
+        _repository.Verify(r => r.GetByNameAndUrlAndYearAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), default), Times.Never);
     }
 
     [Fact]
@@ -422,18 +432,19 @@ public class EngagementManagerTests
         };
 
         _repository
-            .Setup(r => r.SaveAsync(It.IsAny<Engagement>()))
-            .ReturnsAsync((Engagement e) => e);
+            .Setup(r => r.SaveAsync(It.IsAny<Engagement>(), default))
+            .ReturnsAsync((Engagement e, CancellationToken ct) => OperationResult<Engagement>.Success(e));
 
         // Act
         var result = await _engagementManager.SaveAsync(engagement);
 
         // Assert
         // June 15, 2022 is during EDT (Eastern Daylight Time, UTC-4)
-        result.StartDateTime.Offset.Should().Be(TimeSpan.FromHours(-4));
-        result.EndDateTime.Offset.Should().Be(TimeSpan.FromHours(-4));
-        result.StartDateTime.Hour.Should().Be(14);
-        result.EndDateTime.Hour.Should().Be(16);
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.StartDateTime.Offset.Should().Be(TimeSpan.FromHours(-4));
+        result.Value!.EndDateTime.Offset.Should().Be(TimeSpan.FromHours(-4));
+        result.Value!.StartDateTime.Hour.Should().Be(14);
+        result.Value!.EndDateTime.Hour.Should().Be(16);
     }
 
     [Fact]

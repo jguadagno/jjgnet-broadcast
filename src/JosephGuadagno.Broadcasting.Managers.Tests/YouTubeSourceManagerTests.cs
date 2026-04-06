@@ -1,4 +1,5 @@
 using Moq;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 
@@ -35,14 +36,15 @@ public class YouTubeSourceManagerTests
     {
         // Arrange
         var source = new YouTubeSource { Id = 1 };
-        _repository.Setup(r => r.SaveAsync(source)).ReturnsAsync(source);
+        _repository.Setup(r => r.SaveAsync(source, default)).ReturnsAsync(OperationResult<YouTubeSource>.Success(source));
 
         // Act
         var result = await _youTubeSourceManager.SaveAsync(source);
 
         // Assert
-        Assert.Equal(source, result);
-        _repository.Verify(r => r.SaveAsync(source), Times.Once);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(source, result.Value);
+        _repository.Verify(r => r.SaveAsync(source, default), Times.Once);
     }
 
     [Fact]
@@ -50,14 +52,14 @@ public class YouTubeSourceManagerTests
     {
         // Arrange
         var sources = new List<YouTubeSource> { new YouTubeSource { Id = 1 } };
-        _repository.Setup(r => r.GetAllAsync()).ReturnsAsync(sources);
+        _repository.Setup(r => r.GetAllAsync(default)).ReturnsAsync(sources);
 
         // Act
         var result = await _youTubeSourceManager.GetAllAsync();
 
         // Assert
         Assert.Equal(sources, result);
-        _repository.Verify(r => r.GetAllAsync(), Times.Once);
+        _repository.Verify(r => r.GetAllAsync(default), Times.Once);
     }
 
     [Fact]
@@ -65,28 +67,28 @@ public class YouTubeSourceManagerTests
     {
         // Arrange
         var source = new YouTubeSource { Id = 1 };
-        _repository.Setup(r => r.DeleteAsync(source)).ReturnsAsync(true);
+        _repository.Setup(r => r.DeleteAsync(source, default)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         // Act
         var result = await _youTubeSourceManager.DeleteAsync(source);
 
         // Assert
-        Assert.True(result);
-        _repository.Verify(r => r.DeleteAsync(source), Times.Once);
+        Assert.True(result.IsSuccess);
+        _repository.Verify(r => r.DeleteAsync(source, default), Times.Once);
     }
 
     [Fact]
     public async Task DeleteAsync_PrimaryKey_ShouldCallRepository()
     {
         // Arrange
-        _repository.Setup(r => r.DeleteAsync(1)).ReturnsAsync(true);
+        _repository.Setup(r => r.DeleteAsync(1, default)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         // Act
         var result = await _youTubeSourceManager.DeleteAsync(1);
 
         // Assert
-        Assert.True(result);
-        _repository.Verify(r => r.DeleteAsync(1), Times.Once);
+        Assert.True(result.IsSuccess);
+        _repository.Verify(r => r.DeleteAsync(1, default), Times.Once);
     }
 
     [Fact]

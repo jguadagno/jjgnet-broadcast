@@ -1,4 +1,5 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,19 +15,25 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         return mapper.Map<Domain.Models.Engagement>(dbEngagement);
     }
 
-    public async Task<Domain.Models.Engagement> SaveAsync(Domain.Models.Engagement engagement, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<Domain.Models.Engagement>> SaveAsync(Domain.Models.Engagement engagement, CancellationToken cancellationToken = default)
     {
-        var dbEngagement = mapper.Map<Models.Engagement>(engagement);
-        broadcastingContext.Entry(dbEngagement).State =
-            dbEngagement.Id == 0 ? EntityState.Added : EntityState.Modified;
-
-        var result = await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
-        if (result)
+        try
         {
-            return mapper.Map<Domain.Models.Engagement>(dbEngagement);
-        }
+            var dbEngagement = mapper.Map<Models.Engagement>(engagement);
+            broadcastingContext.Entry(dbEngagement).State =
+                dbEngagement.Id == 0 ? EntityState.Added : EntityState.Modified;
 
-        throw new ApplicationException("Failed to save engagement");
+            var result = await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
+            if (result)
+            {
+                return OperationResult<Domain.Models.Engagement>.Success(mapper.Map<Domain.Models.Engagement>(dbEngagement));
+            }
+            return OperationResult<Domain.Models.Engagement>.Failure("Failed to save engagement");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<Domain.Models.Engagement>.Failure("An error occurred while saving the engagement", ex);
+        }
     }
 
     public async Task<List<Domain.Models.Engagement>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -35,29 +42,33 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         return mapper.Map<List<Domain.Models.Engagement>>(dbEngagements);
     }
 
-    public async Task<bool> DeleteAsync(Domain.Models.Engagement engagement, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<bool>> DeleteAsync(Domain.Models.Engagement engagement, CancellationToken cancellationToken = default)
     {
         return await DeleteAsync(engagement.Id, cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<bool>> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        var dbEngagement = await broadcastingContext.Engagements
-            .Include(e => e.Talks)
-            .FirstOrDefaultAsync(e => e.Id == primaryKey, cancellationToken);
-
-        if (dbEngagement == null)
+        try
         {
-            return true;
-        }
+            var dbEngagement = await broadcastingContext.Engagements
+                .Include(e => e.Talks)
+                .FirstOrDefaultAsync(e => e.Id == primaryKey, cancellationToken);
 
-        foreach (var talk in dbEngagement.Talks)
+            if (dbEngagement == null) return OperationResult<bool>.Success(true);
+
+            foreach (var talk in dbEngagement.Talks)
+            {
+                broadcastingContext.Talks.Remove(talk);
+            }
+            broadcastingContext.Engagements.Remove(dbEngagement);
+            await broadcastingContext.SaveChangesAsync(cancellationToken);
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception ex)
         {
-            broadcastingContext.Talks.Remove(talk);
+            return OperationResult<bool>.Failure("An error occurred while deleting the engagement", ex);
         }
-        broadcastingContext.Engagements.Remove(dbEngagement);
-
-        return await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
     }
 
     public async Task<List<Domain.Models.Talk>> GetTalksForEngagementAsync(int engagementId, CancellationToken cancellationToken = default)
@@ -113,56 +124,70 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         return await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
     }
 
-    public async Task<Domain.Models.Talk> SaveTalkAsync(Domain.Models.Talk talk, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<Domain.Models.Talk>> SaveTalkAsync(Domain.Models.Talk talk, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(talk);
+        try
+        {
+            ArgumentNullException.ThrowIfNull(talk);
 
-        var dbTalk = await broadcastingContext.Talks.FirstOrDefaultAsync(t => t.Id == talk.Id, cancellationToken) ?? new Models.Talk();
+            var dbTalk = await broadcastingContext.Talks.FirstOrDefaultAsync(t => t.Id == talk.Id, cancellationToken) ?? new Models.Talk();
         
-        if (talk.Id == 0)
-        {
-            dbTalk = mapper.Map<Models.Talk>(talk);
-            broadcastingContext.Talks.Add(dbTalk);
-        }
-        else
-        {
-            broadcastingContext.Entry(dbTalk).CurrentValues.SetValues(talk);
-        }
+            if (talk.Id == 0)
+            {
+                dbTalk = mapper.Map<Models.Talk>(talk);
+                broadcastingContext.Talks.Add(dbTalk);
+            }
+            else
+            {
+                broadcastingContext.Entry(dbTalk).CurrentValues.SetValues(talk);
+            }
         
-        var result = await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
-        if (result)
-        {
-            return mapper.Map<Domain.Models.Talk>(dbTalk);
+            var result = await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
+            if (result)
+            {
+                return OperationResult<Domain.Models.Talk>.Success(mapper.Map<Domain.Models.Talk>(dbTalk));
+            }
+            return OperationResult<Domain.Models.Talk>.Failure("Failed to save talk");
         }
-
-        throw new ApplicationException("Failed to save talk");
+        catch (Exception ex)
+        {
+            return OperationResult<Domain.Models.Talk>.Failure("An error occurred while saving the talk", ex);
+        }
     }
 
-    public async Task<bool> RemoveTalkFromEngagementAsync(int talkId, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<bool>> RemoveTalkFromEngagementAsync(int talkId, CancellationToken cancellationToken = default)
     {
-        if (talkId <= 0)
+        try
         {
-            throw new ApplicationException("The TalkId can not be <=0");
-        }
+            if (talkId <= 0) return OperationResult<bool>.Failure("The TalkId can not be <=0");
 
-        var dbTalk = await broadcastingContext.Talks.FindAsync(new object[] { talkId }, cancellationToken);
-        if (dbTalk is null)
+            var dbTalk = await broadcastingContext.Talks.FindAsync(new object[] { talkId }, cancellationToken);
+            if (dbTalk is null) return OperationResult<bool>.Success(true);
+
+            broadcastingContext.Talks.Remove(dbTalk);
+            await broadcastingContext.SaveChangesAsync(cancellationToken);
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception ex)
         {
-            return true;
+            return OperationResult<bool>.Failure("An error occurred while removing the talk", ex);
         }
-
-        broadcastingContext.Talks.Remove(dbTalk);
-
-        return await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
     }
 
-    public async Task<bool> RemoveTalkFromEngagementAsync(Domain.Models.Talk talk, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<bool>> RemoveTalkFromEngagementAsync(Domain.Models.Talk talk, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(talk);
-
-        var dbTalk = mapper.Map<Models.Talk>(talk);
-        broadcastingContext.Talks.Remove(dbTalk);
-        return await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
+        try
+        {
+            ArgumentNullException.ThrowIfNull(talk);
+            var dbTalk = mapper.Map<Models.Talk>(talk);
+            broadcastingContext.Talks.Remove(dbTalk);
+            await broadcastingContext.SaveChangesAsync(cancellationToken);
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<bool>.Failure("An error occurred while removing the talk", ex);
+        }
     }
 
     public async Task<Domain.Models.Talk?> GetTalkAsync(int talkId, CancellationToken cancellationToken = default)

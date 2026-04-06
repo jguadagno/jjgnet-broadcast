@@ -4,6 +4,7 @@ using FluentAssertions;
 using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -201,7 +202,7 @@ public class SchedulesControllerTests
         };
         var savedItem = BuildScheduledItem(33);
         savedItem.Message = request.Message;
-        _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(savedItem);
+        _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(OperationResult<ScheduledItem>.Success(savedItem));
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -228,7 +229,7 @@ public class SchedulesControllerTests
             Message = "Check out item!",
             SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1)
         };
-        _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).Returns(Task.FromResult<ScheduledItem?>(null));
+        _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(OperationResult<ScheduledItem>.Failure("Save failed"));
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -267,7 +268,7 @@ public class SchedulesControllerTests
         var request = BuildScheduledItemRequest(5);
         var savedItem = BuildScheduledItem(5);
         savedItem.Message = "Updated message";
-        _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(savedItem);
+        _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(OperationResult<ScheduledItem>.Success(savedItem));
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -286,7 +287,7 @@ public class SchedulesControllerTests
     {
         // Arrange
         var request = BuildScheduledItemRequest(5);
-        _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).Returns(Task.FromResult<ScheduledItem?>(null));
+        _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(OperationResult<ScheduledItem>.Failure("Save failed"));
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -306,7 +307,7 @@ public class SchedulesControllerTests
     public async Task DeleteScheduledItemAsync_WhenItemExists_ReturnsNoContent()
     {
         // Arrange
-        _scheduledItemManagerMock.Setup(m => m.DeleteAsync(1)).ReturnsAsync(true);
+        _scheduledItemManagerMock.Setup(m => m.DeleteAsync(1)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -322,7 +323,7 @@ public class SchedulesControllerTests
     public async Task DeleteScheduledItemAsync_WhenItemNotFound_ReturnsNotFound()
     {
         // Arrange
-        _scheduledItemManagerMock.Setup(m => m.DeleteAsync(99)).ReturnsAsync(false);
+        _scheduledItemManagerMock.Setup(m => m.DeleteAsync(99)).ReturnsAsync(OperationResult<bool>.Failure("Not found"));
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 

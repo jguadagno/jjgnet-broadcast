@@ -74,7 +74,14 @@ public class LoadAllPosts(
 
                 try
                 {
-                    var savedItem = await syndicationFeedSourceManager.SaveAsync(item);
+                    var saveResult = await syndicationFeedSourceManager.SaveAsync(item);
+                    if (!saveResult.IsSuccess || saveResult.Value is null)
+                    {
+                        logger.LogError("Failed to save the blog post with the id of: '{Id}' Url:'{Url}'. Error: {Error}",
+                            item.Id, item.Url, saveResult.ErrorMessage);
+                        continue;
+                    }
+                    var savedItem = saveResult.Value;
                     var properties = new Dictionary<string, string>
                     {
                         { "Id", savedItem.Id.ToString() }, { "Url", savedItem.Url }, { "Title", savedItem.Title }

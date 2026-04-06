@@ -1,4 +1,5 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -13,16 +14,22 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
         return mapper.Map<Domain.Models.ScheduledItem>(dbScheduledItem);
     }
 
-    public async Task<Domain.Models.ScheduledItem> SaveAsync(Domain.Models.ScheduledItem scheduledItem, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<Domain.Models.ScheduledItem>> SaveAsync(Domain.Models.ScheduledItem scheduledItem, CancellationToken cancellationToken = default)
     {
-        var dbScheduledItem = mapper.Map<Models.ScheduledItem>(scheduledItem);
-        broadcastingContext.Entry(dbScheduledItem).State =
-            dbScheduledItem.Id == 0 ? EntityState.Added : EntityState.Modified;
+        try
+        {
+            var dbScheduledItem = mapper.Map<Models.ScheduledItem>(scheduledItem);
+            broadcastingContext.Entry(dbScheduledItem).State =
+                dbScheduledItem.Id == 0 ? EntityState.Added : EntityState.Modified;
 
-        var result = await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
-        if (result) return mapper.Map<Domain.Models.ScheduledItem>(dbScheduledItem);
-
-        throw new ApplicationException("Failed to save scheduled item");
+            var result = await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
+            if (result) return OperationResult<Domain.Models.ScheduledItem>.Success(mapper.Map<Domain.Models.ScheduledItem>(dbScheduledItem));
+            return OperationResult<Domain.Models.ScheduledItem>.Failure("Failed to save scheduled item");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<Domain.Models.ScheduledItem>.Failure("An error occurred while saving the scheduled item", ex);
+        }
     }
 
     public async Task<List<Domain.Models.ScheduledItem>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -31,17 +38,25 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
         return mapper.Map<List<Domain.Models.ScheduledItem>>(dbScheduledItems);
     }
 
-    public async Task<bool> DeleteAsync(Domain.Models.ScheduledItem scheduledItem, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<bool>> DeleteAsync(Domain.Models.ScheduledItem scheduledItem, CancellationToken cancellationToken = default)
     {
         return await DeleteAsync(scheduledItem.Id, cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<bool>> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        var dbScheduledItem = await broadcastingContext.ScheduledItems.FindAsync(new object[] { primaryKey }, cancellationToken);
-        if (dbScheduledItem is null) return false;
-        broadcastingContext.ScheduledItems.Remove(dbScheduledItem);
-        return await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
+        try
+        {
+            var dbScheduledItem = await broadcastingContext.ScheduledItems.FindAsync(new object[] { primaryKey }, cancellationToken);
+            if (dbScheduledItem is null) return OperationResult<bool>.Failure("Scheduled item not found");
+            broadcastingContext.ScheduledItems.Remove(dbScheduledItem);
+            await broadcastingContext.SaveChangesAsync(cancellationToken);
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<bool>.Failure("An error occurred while deleting the scheduled item", ex);
+        }
     }
 
     public async Task<List<Domain.Models.ScheduledItem>> GetScheduledItemsToSendAsync(CancellationToken cancellationToken = default)

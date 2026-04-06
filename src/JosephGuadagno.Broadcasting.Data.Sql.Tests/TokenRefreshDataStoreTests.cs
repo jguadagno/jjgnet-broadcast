@@ -106,9 +106,10 @@ public class TokenRefreshDataStoreTests : IDisposable
         var result = await _dataStore.SaveAsync(domainToken);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Id > 0);
-        Assert.Equal("NewToken", result.Name);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.True(result.Value!.Id > 0);
+        Assert.Equal("NewToken", result.Value!.Name);
     }
 
     [Fact]
@@ -134,8 +135,9 @@ public class TokenRefreshDataStoreTests : IDisposable
         var result = await _dataStore.SaveAsync(domainToken);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal("UpdatedToken", result.Name);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal("UpdatedToken", result.Value!.Name);
     }
 
     [Fact]
@@ -152,7 +154,7 @@ public class TokenRefreshDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(domainToken);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         Assert.Empty(_context.TokenRefreshes.ToList());
     }
 
@@ -168,7 +170,7 @@ public class TokenRefreshDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(tokenRefresh.Id);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         Assert.Empty(_context.TokenRefreshes.ToList());
     }
 
@@ -179,7 +181,7 @@ public class TokenRefreshDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(999);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
     }
 
     [Fact]

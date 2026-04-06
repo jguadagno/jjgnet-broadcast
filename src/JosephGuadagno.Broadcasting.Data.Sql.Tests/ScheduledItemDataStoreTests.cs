@@ -109,9 +109,10 @@ public class ScheduledItemDataStoreTests : IDisposable
         var result = await _dataStore.SaveAsync(domainItem);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Id > 0);
-        Assert.Equal("New Message", result.Message);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.True(result.Value!.Id > 0);
+        Assert.Equal("New Message", result.Value!.Message);
     }
 
     [Fact]
@@ -136,8 +137,9 @@ public class ScheduledItemDataStoreTests : IDisposable
         var result = await _dataStore.SaveAsync(domainItem);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal("Updated Message", result.Message);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal("Updated Message", result.Value!.Message);
     }
 
     [Fact]
@@ -154,7 +156,7 @@ public class ScheduledItemDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(domainItem);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         Assert.Empty(_context.ScheduledItems.ToList());
     }
 
@@ -170,18 +172,18 @@ public class ScheduledItemDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(item.Id);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         Assert.Empty(_context.ScheduledItems.ToList());
     }
 
     [Fact]
-    public async Task DeleteAsync_NonExistingId_ReturnsFalse()
+    public async Task DeleteAsync_NonExistingId_ReturnsFailure()
     {
         // Act
         var result = await _dataStore.DeleteAsync(999);
 
         // Assert
-        Assert.False(result);
+        Assert.False(result.IsSuccess);
     }
 
     [Fact]

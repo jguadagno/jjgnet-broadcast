@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
@@ -22,7 +23,7 @@ public class ScheduledItemManager: IScheduledItemManager
         return await _scheduledItemDataStore.GetAsync(primaryKey, cancellationToken);
     }
 
-    public async Task<ScheduledItem> SaveAsync(ScheduledItem entity, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<ScheduledItem>> SaveAsync(ScheduledItem entity, CancellationToken cancellationToken = default)
     {
         return await _scheduledItemDataStore.SaveAsync(entity, cancellationToken);
     }
@@ -32,12 +33,12 @@ public class ScheduledItemManager: IScheduledItemManager
         return await _scheduledItemDataStore.GetAllAsync(cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(ScheduledItem entity, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<bool>> DeleteAsync(ScheduledItem entity, CancellationToken cancellationToken = default)
     {
         return await _scheduledItemDataStore.DeleteAsync(entity, cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<bool>> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
         return await _scheduledItemDataStore.DeleteAsync(primaryKey, cancellationToken);
     }

@@ -257,9 +257,10 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
 
         var result = await _dataStore.SaveAsync(newSource);
 
-        Assert.NotNull(result);
-        Assert.True(result.Id > 0);
-        var dbRecord = await _context.SyndicationFeedSources.FindAsync(result.Id);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.True(result.Value!.Id > 0);
+        var dbRecord = await _context.SyndicationFeedSources.FindAsync(result.Value!.Id);
         Assert.NotNull(dbRecord);
         Assert.Equal("New Post", dbRecord.Title);
     }
@@ -274,9 +275,10 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
 
         var result = await _dataStore.SaveAsync(existing);
 
-        Assert.NotNull(result);
-        Assert.Equal(1, result.Id);
-        Assert.Equal("Updated Title", result.Title);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal(1, result.Value!.Id);
+        Assert.Equal("Updated Title", result.Value!.Title);
         var dbRecord = await _context.SyndicationFeedSources.FindAsync(1);
         Assert.Equal("Updated Title", dbRecord.Title);
     }
@@ -286,7 +288,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
     {
         SeedData();
         var result = await _dataStore.DeleteAsync(1);
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         var dbRecord = await _context.SyndicationFeedSources.FindAsync(1);
         Assert.Null(dbRecord);
     }
@@ -296,7 +298,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
     {
         SeedData();
         var result = await _dataStore.DeleteAsync(999);
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
     }
 
     [Fact]
@@ -305,7 +307,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         SeedData();
         var existing = await _dataStore.GetAsync(1);
         var result = await _dataStore.DeleteAsync(existing);
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         var dbRecord = await _context.SyndicationFeedSources.FindAsync(1);
         Assert.Null(dbRecord);
     }

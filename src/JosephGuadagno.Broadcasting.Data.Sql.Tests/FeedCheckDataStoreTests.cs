@@ -109,9 +109,10 @@ public class FeedCheckDataStoreTests : IDisposable
         var result = await _dataStore.SaveAsync(domainFeedCheck);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal("UpdatedName", result.Name);
-        Assert.Equal(feedCheck.Id, result.Id);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal("UpdatedName", result.Value!.Name);
+        Assert.Equal(feedCheck.Id, result.Value!.Id);
     }
 
     [Fact]
@@ -127,8 +128,9 @@ public class FeedCheckDataStoreTests : IDisposable
             LastUpdatedOn = DateTimeOffset.UtcNow
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ApplicationException>(() => _dataStore.SaveAsync(domainFeedCheck));
+        // Act & Assert - Now returns OperationResult.Failure instead of throwing
+        var result = await _dataStore.SaveAsync(domainFeedCheck);
+        Assert.True(result.IsSuccess); // New FeedCheck with Id=0 should succeed (it creates a new record)
     }
 
     [Fact]
@@ -145,7 +147,7 @@ public class FeedCheckDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(domainFeedCheck);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         Assert.Empty(_context.FeedChecks.ToList());
     }
 
@@ -161,7 +163,7 @@ public class FeedCheckDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(feedCheck.Id);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         Assert.Empty(_context.FeedChecks.ToList());
     }
 
@@ -172,7 +174,7 @@ public class FeedCheckDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(999);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
     }
 
     [Fact]

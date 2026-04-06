@@ -110,9 +110,10 @@ public class YouTubeSourceDataStoreTests : IDisposable
         var result = await _dataStore.SaveAsync(domainSource);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Id > 0);
-        Assert.Equal("New Video", result.Title);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.True(result.Value!.Id > 0);
+        Assert.Equal("New Video", result.Value!.Title);
     }
 
     [Fact]
@@ -140,8 +141,9 @@ public class YouTubeSourceDataStoreTests : IDisposable
         var result = await _dataStore.SaveAsync(domainSource);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal("Updated Title", result.Title);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal("Updated Title", result.Value!.Title);
     }
 
     [Fact]
@@ -158,7 +160,7 @@ public class YouTubeSourceDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(domainSource);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         Assert.Empty(_context.YouTubeSources.ToList());
     }
 
@@ -174,7 +176,7 @@ public class YouTubeSourceDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(source.Id);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         Assert.Empty(_context.YouTubeSources.ToList());
     }
 
@@ -185,7 +187,7 @@ public class YouTubeSourceDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(999);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
     }
 
     [Fact]

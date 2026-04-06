@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
@@ -21,7 +22,7 @@ public class FeedCheckManager : IFeedCheckManager
         return await _feedCheckDataStore.GetAsync(primaryKey, cancellationToken);
     }
 
-    public async Task<FeedCheck> SaveAsync(FeedCheck entity, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<FeedCheck>> SaveAsync(FeedCheck entity, CancellationToken cancellationToken = default)
     {
         return await _feedCheckDataStore.SaveAsync(entity, cancellationToken);
     }
@@ -31,12 +32,12 @@ public class FeedCheckManager : IFeedCheckManager
         return await _feedCheckDataStore.GetAllAsync(cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(FeedCheck entity, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<bool>> DeleteAsync(FeedCheck entity, CancellationToken cancellationToken = default)
     {
         return await _feedCheckDataStore.DeleteAsync(entity, cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<bool>> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
         return await _feedCheckDataStore.DeleteAsync(primaryKey, cancellationToken);
     }

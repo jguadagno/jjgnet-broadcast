@@ -5,9 +5,9 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 public interface IEngagementManager: IManager<Engagement>
 {
     public Task<List<Talk>> GetTalksForEngagementAsync(int engagementId, CancellationToken cancellationToken = default);
-    public Task<Talk> SaveTalkAsync(Talk talk, CancellationToken cancellationToken = default);
-    public Task<bool> RemoveTalkFromEngagementAsync(int talkId, CancellationToken cancellationToken = default);
-    public Task<bool> RemoveTalkFromEngagementAsync(Talk talk, CancellationToken cancellationToken = default);
+    public Task<OperationResult<Talk>> SaveTalkAsync(Talk talk, CancellationToken cancellationToken = default);
+    public Task<OperationResult<bool>> RemoveTalkFromEngagementAsync(int talkId, CancellationToken cancellationToken = default);
+    public Task<OperationResult<bool>> RemoveTalkFromEngagementAsync(Talk talk, CancellationToken cancellationToken = default);
     public Task<Talk> GetTalkAsync(int talkId, CancellationToken cancellationToken = default);
     public Task<Engagement?> GetByNameAndUrlAndYearAsync(string name, string url, int year, CancellationToken cancellationToken = default);
     
