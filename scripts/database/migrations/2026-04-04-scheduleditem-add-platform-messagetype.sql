@@ -48,8 +48,12 @@ GO
 -- Backfill existing records with default values
 -- Existing scheduled items without a platform can be marked as 'Legacy' for identification
 UPDATE dbo.ScheduledItems
-SET Platform = 'Legacy', MessageType = 'Legacy'
-WHERE Platform IS NULL OR MessageType IS NULL;
+SET Platform = 'Legacy'
+WHERE Platform IS NULL;
+
+UPDATE dbo.ScheduledItems
+SET MessageType = 'Legacy'
+WHERE MessageType IS NULL;
 GO
 
 PRINT 'Migration 2026-04-04-scheduleditem-add-platform-messagetype.sql completed successfully';
