@@ -138,6 +138,25 @@
 **References:** PR #645, Neo code review, commit `eb24106`
 
 
+### Bicep Preview API Version Cleanup — PR #645 Final Fix (2026-04-06)
+
+**Context:** Neo's re-review of PR #645 found 3 Bicep modules still using `-preview` API versions after the initial security fixes.
+
+**Files fixed (commit `38fc3de`):**
+- `infrastructure/bicep/modules/data/event-grid.bicep` — 5 `Microsoft.EventGrid/topics@2023-12-15-preview` → `@2022-06-15`
+- `infrastructure/bicep/modules/data/sql-server.bicep` — 3 resources (`servers`, `servers/databases`, `servers/firewallRules`) `@2023-08-01-preview` → `@2021-11-01`
+- `infrastructure/bicep/modules/security/managed-identity.bicep` — 3 `Microsoft.ManagedIdentity/userAssignedIdentities@2023-07-31-preview` → `@2023-01-31`
+
+**Key note:** `event-grid.bicep` is in `modules/data/` not `modules/monitoring/` — confirmed by file search before editing. Always search before assuming paths.
+
+**Verification:** Full scan of all `.bicep` files under `infrastructure/bicep/` returned zero `-preview` matches after fix.
+
+**PR comment posted:** https://github.com/jguadagno/jjgnet-broadcast/pull/645#issuecomment-4193265300
+
+**Status:** ✅ All preview API versions pinned. Awaiting Neo's final re-review.
+
+---
+
 Established by Joseph Guadagno:
 
 1. **PR Merge Authority**: Only Joseph may merge PRs
