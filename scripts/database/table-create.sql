@@ -6,8 +6,8 @@ create table dbo.Engagements
     Id            int identity
         constraint Engagements_pk
         primary key clustered,
-    Name          nvarchar(max)              not null,
-    Url           nvarchar(max),
+    Name          nvarchar(500)              not null,
+    Url           nvarchar(2048),
     StartDateTime datetimeoffset             not null,
     EndDateTime   datetimeoffset             not null,
     Comments      nvarchar(max),
@@ -29,12 +29,12 @@ create table dbo.Talks
     EngagementId         int
         constraint Talks_Engagements_Id
             references Engagements,
-    Name                 nvarchar(max)  not null,
+    Name                 nvarchar(500)  not null,
     UrlForConferenceTalk nvarchar(max),
     UrlForTalk           nvarchar(max),
     StartDateTime        datetimeoffset not null,
     EndDateTime          datetimeoffset not null,
-    TalkLocation         nvarchar(max),
+    TalkLocation         nvarchar(500),
     Comments             nvarchar(max),
     BlueSkyHandle        nvarchar(255)  null,
     CreatedByEntraOid    nvarchar(36)   null
