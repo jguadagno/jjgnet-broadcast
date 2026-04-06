@@ -1,4 +1,5 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -7,89 +8,94 @@ namespace JosephGuadagno.Broadcasting.Data.Sql;
 
 public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMapper mapper) : IScheduledItemDataStore
 {
-    public async Task<Domain.Models.ScheduledItem> GetAsync(int primaryKey)
+    public async Task<Domain.Models.ScheduledItem> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        var dbScheduledItem = await broadcastingContext.ScheduledItems.FindAsync(primaryKey);
+        var dbScheduledItem = await broadcastingContext.ScheduledItems.FindAsync(new object[] { primaryKey }, cancellationToken);
         return mapper.Map<Domain.Models.ScheduledItem>(dbScheduledItem);
     }
 
-    public async Task<Domain.Models.ScheduledItem> SaveAsync(Domain.Models.ScheduledItem scheduledItem)
+    public async Task<OperationResult<Domain.Models.ScheduledItem>> SaveAsync(Domain.Models.ScheduledItem scheduledItem, CancellationToken cancellationToken = default)
     {
-        var dbScheduledItem = mapper.Map<Models.ScheduledItem>(scheduledItem);
-        broadcastingContext.Entry(dbScheduledItem).State =
-            dbScheduledItem.Id == 0 ? EntityState.Added : EntityState.Modified;
-
-        var result = await broadcastingContext.SaveChangesAsync() != 0;
-        if (result)
+        try
         {
-            return mapper.Map<Domain.Models.ScheduledItem>(dbScheduledItem);
-        }
+            var dbScheduledItem = mapper.Map<Models.ScheduledItem>(scheduledItem);
+            broadcastingContext.Entry(dbScheduledItem).State =
+                dbScheduledItem.Id == 0 ? EntityState.Added : EntityState.Modified;
 
-        throw new ApplicationException("Failed to save scheduled item");
+            var result = await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
+            if (result) return OperationResult<Domain.Models.ScheduledItem>.Success(mapper.Map<Domain.Models.ScheduledItem>(dbScheduledItem));
+            return OperationResult<Domain.Models.ScheduledItem>.Failure("Failed to save scheduled item");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<Domain.Models.ScheduledItem>.Failure("An error occurred while saving the scheduled item", ex);
+        }
     }
 
-    public async Task<List<Domain.Models.ScheduledItem>> GetAllAsync()
+    public async Task<List<Domain.Models.ScheduledItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var dbScheduledItems = await broadcastingContext.ScheduledItems.ToListAsync();
+        var dbScheduledItems = await broadcastingContext.ScheduledItems.ToListAsync(cancellationToken);
         return mapper.Map<List<Domain.Models.ScheduledItem>>(dbScheduledItems);
     }
 
-    public async Task<bool> DeleteAsync(Domain.Models.ScheduledItem scheduledItem)
+    public async Task<OperationResult<bool>> DeleteAsync(Domain.Models.ScheduledItem scheduledItem, CancellationToken cancellationToken = default)
     {
-        return await DeleteAsync(scheduledItem.Id);
+        return await DeleteAsync(scheduledItem.Id, cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(int primaryKey)
+    public async Task<OperationResult<bool>> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        var dbScheduledItem = await broadcastingContext.ScheduledItems.FindAsync(primaryKey);
-        if (dbScheduledItem is null)
+        try
         {
-            return false;
+            var dbScheduledItem = await broadcastingContext.ScheduledItems.FindAsync(new object[] { primaryKey }, cancellationToken);
+            if (dbScheduledItem is null) return OperationResult<bool>.Failure("Scheduled item not found");
+            broadcastingContext.ScheduledItems.Remove(dbScheduledItem);
+            await broadcastingContext.SaveChangesAsync(cancellationToken);
+            return OperationResult<bool>.Success(true);
         }
-        broadcastingContext.ScheduledItems.Remove(dbScheduledItem);
-        return await broadcastingContext.SaveChangesAsync() != 0;
+        catch (Exception ex)
+        {
+            return OperationResult<bool>.Failure("An error occurred while deleting the scheduled item", ex);
+        }
     }
 
-    public async Task<List<Domain.Models.ScheduledItem>> GetScheduledItemsToSendAsync()
+    public async Task<List<Domain.Models.ScheduledItem>> GetScheduledItemsToSendAsync(CancellationToken cancellationToken = default)
     {
         var dbScheduledItems = await broadcastingContext.ScheduledItems
             .Where(si => si.MessageSent == false && si.SendOnDateTime <= DateTimeOffset.Now)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         return mapper.Map<List<Domain.Models.ScheduledItem>>(dbScheduledItems);
     }
 
-    public async Task<List<Domain.Models.ScheduledItem>> GetUnsentScheduledItemsAsync()
+    public async Task<List<Domain.Models.ScheduledItem>> GetUnsentScheduledItemsAsync(CancellationToken cancellationToken = default)
     {
         var dbScheduledItems = await broadcastingContext.ScheduledItems
             .Where(si => si.MessageSent == false)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         return mapper.Map<List<Domain.Models.ScheduledItem>>(dbScheduledItems);
     }
 
-    public async Task<List<Domain.Models.ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month)
+    public async Task<List<Domain.Models.ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, CancellationToken cancellationToken = default)
     {
         var startDate = new DateTime(year, month, 1, 0, 0, 0);
         var endDate = new DateTime(year, month, DateTime.DaysInMonth(year, month), 11, 59, 59);
         var dbScheduledItems = await broadcastingContext.ScheduledItems
             .Where(si => si.SendOnDateTime >= startDate && si.SendOnDateTime <= endDate)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         return mapper.Map<List<Domain.Models.ScheduledItem>>(dbScheduledItems);
     }
     
-    public async Task<bool> SentScheduledItemAsync(int primaryKey, DateTimeOffset sentOn)
+    public async Task<bool> SentScheduledItemAsync(int primaryKey, DateTimeOffset sentOn, CancellationToken cancellationToken = default)
     {
-        var dbScheduledItems = await broadcastingContext.ScheduledItems.FindAsync(primaryKey);
-        if (dbScheduledItems is null)
-        {
-            return false;
-        }
+        var dbScheduledItems = await broadcastingContext.ScheduledItems.FindAsync(new object[] { primaryKey }, cancellationToken);
+        if (dbScheduledItems is null) return false;
 
         dbScheduledItems.MessageSentOn = sentOn;
         dbScheduledItems.MessageSent = true;
-        return await broadcastingContext.SaveChangesAsync() != 0;
+        return await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
     }
 
-    public async Task<IEnumerable<Domain.Models.ScheduledItem>> GetOrphanedScheduledItemsAsync()
+    public async Task<IEnumerable<Domain.Models.ScheduledItem>> GetOrphanedScheduledItemsAsync(CancellationToken cancellationToken = default)
     {
         var dbScheduledItems = await broadcastingContext.ScheduledItems
             .Where(s =>
@@ -102,19 +108,19 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
                 (s.ItemTableName == ScheduledItemType.YouTubeSources.ToString() &&
                  !broadcastingContext.YouTubeSources.Any(y => y.Id == s.ItemPrimaryKey))
             )
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return mapper.Map<IEnumerable<Domain.Models.ScheduledItem>>(dbScheduledItems);
     }
 
-    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetAllAsync(int page, int pageSize)
+    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var totalCount = await broadcastingContext.ScheduledItems.CountAsync();
+        var totalCount = await broadcastingContext.ScheduledItems.CountAsync(cancellationToken);
         var dbItems = await broadcastingContext.ScheduledItems
             .OrderBy(si => si.SendOnDateTime)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         return new Domain.Models.PagedResult<Domain.Models.ScheduledItem>
         {
             Items = mapper.Map<List<Domain.Models.ScheduledItem>>(dbItems),
@@ -122,15 +128,15 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
         };
     }
 
-    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetUnsentScheduledItemsAsync(int page, int pageSize)
+    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetUnsentScheduledItemsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var query = broadcastingContext.ScheduledItems.Where(si => !si.MessageSent);
-        var totalCount = await query.CountAsync();
+        var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query
             .OrderBy(si => si.SendOnDateTime)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         return new Domain.Models.PagedResult<Domain.Models.ScheduledItem>
         {
             Items = mapper.Map<List<Domain.Models.ScheduledItem>>(dbItems),
@@ -138,16 +144,16 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
         };
     }
 
-    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetScheduledItemsToSendAsync(int page, int pageSize)
+    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetScheduledItemsToSendAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var query = broadcastingContext.ScheduledItems
             .Where(si => si.MessageSent == false && si.SendOnDateTime <= DateTimeOffset.Now);
-        var totalCount = await query.CountAsync();
+        var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query
             .OrderBy(si => si.SendOnDateTime)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         return new Domain.Models.PagedResult<Domain.Models.ScheduledItem>
         {
             Items = mapper.Map<List<Domain.Models.ScheduledItem>>(dbItems),
@@ -155,18 +161,18 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
         };
     }
 
-    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, int page, int pageSize)
+    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var startDate = new DateTime(year, month, 1, 0, 0, 0);
         var endDate = new DateTime(year, month, DateTime.DaysInMonth(year, month), 11, 59, 59);
         var query = broadcastingContext.ScheduledItems
             .Where(si => si.SendOnDateTime >= startDate && si.SendOnDateTime <= endDate);
-        var totalCount = await query.CountAsync();
+        var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query
             .OrderBy(si => si.SendOnDateTime)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         return new Domain.Models.PagedResult<Domain.Models.ScheduledItem>
         {
             Items = mapper.Map<List<Domain.Models.ScheduledItem>>(dbItems),
@@ -174,7 +180,7 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
         };
     }
 
-    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetOrphanedScheduledItemsAsync(int page, int pageSize)
+    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetOrphanedScheduledItemsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var query = broadcastingContext.ScheduledItems
             .Where(s =>
@@ -187,12 +193,12 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
                 (s.ItemTableName == ScheduledItemType.YouTubeSources.ToString() &&
                  !broadcastingContext.YouTubeSources.Any(y => y.Id == s.ItemPrimaryKey))
             );
-        var totalCount = await query.CountAsync();
+        var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query
             .OrderBy(si => si.SendOnDateTime)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         return new Domain.Models.PagedResult<Domain.Models.ScheduledItem>
         {
             Items = mapper.Map<List<Domain.Models.ScheduledItem>>(dbItems),

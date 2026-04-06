@@ -8,10 +8,10 @@ using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.Broadcasting.Web;
 using JosephGuadagno.Broadcasting.Web.HealthChecks;
-using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
+using JosephGuadagno.Broadcasting.Web.Interfaces;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -27,7 +27,6 @@ using OpenTelemetry.Logs;
 
 using Serilog;
 using Rocket.Surgery.Extensions.AutoMapper.NodaTime;
-using ISettings = JosephGuadagno.Broadcasting.Web.Interfaces.ISettings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,28 +45,33 @@ if (!string.IsNullOrWhiteSpace(keyVaultUri))
             timeout: TimeSpan.FromSeconds(5)));
 }
 
-var settings = new Settings
-{
-    StaticContentRootUrl = null!,
-};
-builder.Configuration.Bind("Settings", settings);
-builder.Services.TryAddSingleton<ISettings>(settings);
+// Read for inline startup use
+var autoMapperSettings = builder.Configuration.GetSection("AutoMapper").Get<AutoMapperSettings>()
+    ?? new AutoMapperSettings();
+
+// Register via IOptions
+builder.Services.Configure<Settings>(builder.Configuration.GetSection("Settings"));
+builder.Services.AddOptions<Settings>().ValidateDataAnnotations().ValidateOnStart();
+
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddOptions<EmailSettings>().ValidateDataAnnotations().ValidateOnStart();
+// Keep IEmailSettings singleton for EmailSender compatibility
 var emailSettings = new EmailSettings
 {
-    FromAddress = null!,
-    FromDisplayName = null!,
-    ReplyToAddress = null!,
-    ReplyToDisplayName = null!,
-    AzureCommunicationsConnectionString = null!
+    FromAddress = string.Empty,
+    FromDisplayName = string.Empty,
+    ReplyToAddress = string.Empty,
+    ReplyToDisplayName = string.Empty,
+    AzureCommunicationsConnectionString = string.Empty
 };
 builder.Configuration.Bind("Email", emailSettings);
 builder.Services.TryAddSingleton<IEmailSettings>(emailSettings);
 
-var linkedInSettings = new LinkedInSettings();
-builder.Configuration.Bind("LinkedIn", linkedInSettings);
-builder.Services.TryAddSingleton<ILinkedInSettings>(linkedInSettings);
-var autoMapperSettings = new AutoMapperSettings();
-builder.Configuration.Bind("AutoMapper", autoMapperSettings);
+builder.Services.Configure<LinkedInSettings>(builder.Configuration.GetSection("LinkedIn"));
+builder.Services.AddOptions<LinkedInSettings>().ValidateDataAnnotations().ValidateOnStart();
+
+builder.Services.Configure<AutoMapperSettings>(builder.Configuration.GetSection("AutoMapper"));
+builder.Services.AddOptions<AutoMapperSettings>().ValidateDataAnnotations().ValidateOnStart();
 builder.Services.AddSingleton<IAutoMapperSettings>(autoMapperSettings);
 
 builder.Services.AddSession(options =>

@@ -4,6 +4,7 @@ using FluentAssertions;
 using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -203,7 +204,7 @@ public class EngagementsControllerTests
             EndDateTime = request.EndDateTime,
             TimeZoneId = request.TimeZoneId
         };
-        _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(savedEngagement);
+        _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(savedEngagement));
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
 
@@ -233,7 +234,7 @@ public class EngagementsControllerTests
             EndDateTime = DateTimeOffset.UtcNow.AddDays(1),
             TimeZoneId = "UTC"
         };
-        _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).Returns(Task.FromResult<Engagement?>(null));
+        _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Failure("Save failed"));
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
 
@@ -244,9 +245,6 @@ public class EngagementsControllerTests
         result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
         _engagementManagerMock.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Once);
     }
-
-    // -------------------------------------------------------------------------
-    // UpdateEngagementAsync
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -286,7 +284,7 @@ public class EngagementsControllerTests
             EndDateTime = request.EndDateTime,
             TimeZoneId = request.TimeZoneId
         };
-        _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(savedEngagement);
+        _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(savedEngagement));
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
 
@@ -314,7 +312,7 @@ public class EngagementsControllerTests
             EndDateTime = DateTimeOffset.UtcNow.AddDays(1),
             TimeZoneId = "UTC"
         };
-        _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).Returns(Task.FromResult<Engagement?>(null));
+        _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Failure("Save failed"));
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
 
@@ -334,7 +332,7 @@ public class EngagementsControllerTests
     public async Task DeleteEngagementAsync_WhenEngagementExists_ReturnsNoContent()
     {
         // Arrange
-        _engagementManagerMock.Setup(m => m.DeleteAsync(1)).ReturnsAsync(true);
+        _engagementManagerMock.Setup(m => m.DeleteAsync(1)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
 
@@ -350,7 +348,7 @@ public class EngagementsControllerTests
     public async Task DeleteEngagementAsync_WhenEngagementNotFound_ReturnsNotFound()
     {
         // Arrange
-        _engagementManagerMock.Setup(m => m.DeleteAsync(99)).ReturnsAsync(false);
+        _engagementManagerMock.Setup(m => m.DeleteAsync(99)).ReturnsAsync(OperationResult<bool>.Failure("Not found"));
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
 
@@ -452,7 +450,7 @@ public class EngagementsControllerTests
             StartDateTime = request.StartDateTime,
             EndDateTime = request.EndDateTime
         };
-        _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(savedTalk);
+        _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(OperationResult<Talk>.Success(savedTalk));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
 
@@ -480,7 +478,7 @@ public class EngagementsControllerTests
             StartDateTime = DateTimeOffset.UtcNow,
             EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
         };
-        _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).Returns(Task.FromResult<Talk?>(null));
+        _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(OperationResult<Talk>.Failure("Save failed"));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
 
@@ -534,7 +532,7 @@ public class EngagementsControllerTests
             StartDateTime = request.StartDateTime,
             EndDateTime = request.EndDateTime
         };
-        _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(savedTalk);
+        _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(OperationResult<Talk>.Success(savedTalk));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
 
@@ -560,7 +558,7 @@ public class EngagementsControllerTests
             StartDateTime = DateTimeOffset.UtcNow,
             EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
         };
-        _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).Returns(Task.FromResult<Talk?>(null));
+        _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(OperationResult<Talk>.Failure("Save failed"));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
 
@@ -653,7 +651,7 @@ public class EngagementsControllerTests
     public async Task DeleteTalkAsync_WhenTalkExists_ReturnsNoContent()
     {
         // Arrange
-        _engagementManagerMock.Setup(m => m.RemoveTalkFromEngagementAsync(5)).ReturnsAsync(true);
+        _engagementManagerMock.Setup(m => m.RemoveTalkFromEngagementAsync(5)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
 
@@ -669,7 +667,7 @@ public class EngagementsControllerTests
     public async Task DeleteTalkAsync_WhenTalkNotFound_ReturnsNotFound()
     {
         // Arrange
-        _engagementManagerMock.Setup(m => m.RemoveTalkFromEngagementAsync(99)).ReturnsAsync(false);
+        _engagementManagerMock.Setup(m => m.RemoveTalkFromEngagementAsync(99)).ReturnsAsync(OperationResult<bool>.Failure("Not found"));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
 

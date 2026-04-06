@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Mail;
+using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -20,13 +21,13 @@ public class UserApprovalManager(
     IEmailSender emailSender,
     ILogger<UserApprovalManager> logger) : IUserApprovalManager
 {
-    public async Task<ApplicationUser> GetOrCreateUserAsync(string entraObjectId, string displayName, string email)
+    public async Task<ApplicationUser> GetOrCreateUserAsync(string entraObjectId, string displayName, string email, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(entraObjectId);
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
 
-        var existingUser = await applicationUserDataStore.GetByEntraObjectIdAsync(entraObjectId);
+        var existingUser = await applicationUserDataStore.GetByEntraObjectIdAsync(entraObjectId, cancellationToken);
         if (existingUser is not null)
         {
             return existingUser;
@@ -43,7 +44,7 @@ public class UserApprovalManager(
             UpdatedAt = DateTimeOffset.UtcNow
         };
 
-        var createdUser = await applicationUserDataStore.CreateAsync(newUser);
+        var createdUser = await applicationUserDataStore.CreateAsync(newUser, cancellationToken);
 
         // Log the registration
         await userApprovalLogDataStore.CreateAsync(new UserApprovalLog
@@ -53,62 +54,51 @@ public class UserApprovalManager(
             Action = ApprovalAction.Registered.ToString(),
             Notes = "User self-registered",
             CreatedAt = DateTimeOffset.UtcNow
-        });
+        }, cancellationToken);
 
         return createdUser;
     }
 
-    public async Task<ApplicationUser?> GetUserAsync(string entraObjectId)
+    public async Task<ApplicationUser?> GetUserAsync(string entraObjectId, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(entraObjectId);
-        return await applicationUserDataStore.GetByEntraObjectIdAsync(entraObjectId);
+        return await applicationUserDataStore.GetByEntraObjectIdAsync(entraObjectId, cancellationToken);
     }
 
-    public async Task<ApplicationUser?> GetUserByIdAsync(int userId)
+    public async Task<ApplicationUser?> GetUserByIdAsync(int userId, CancellationToken cancellationToken = default)
     {
         if (userId <= 0) throw new ArgumentException("User ID must be greater than 0", nameof(userId));
-        return await applicationUserDataStore.GetByIdAsync(userId);
+        return await applicationUserDataStore.GetByIdAsync(userId, cancellationToken);
     }
 
-    public async Task<List<ApplicationUser>> GetPendingUsersAsync()
+    public async Task<List<ApplicationUser>> GetPendingUsersAsync(CancellationToken cancellationToken = default)
     {
-        return await applicationUserDataStore.GetByApprovalStatusAsync(ApprovalStatus.Pending.ToString());
+        return await applicationUserDataStore.GetByApprovalStatusAsync(ApprovalStatus.Pending.ToString(), cancellationToken);
     }
 
-    public async Task<List<ApplicationUser>> GetAllUsersAsync()
+    public async Task<List<ApplicationUser>> GetAllUsersAsync(CancellationToken cancellationToken = default)
     {
-        return await applicationUserDataStore.GetAllAsync();
+        return await applicationUserDataStore.GetAllAsync(cancellationToken);
     }
 
-    public async Task<List<ApplicationUser>> GetUsersByStatusAsync(ApprovalStatus status)
+    public async Task<List<ApplicationUser>> GetUsersByStatusAsync(ApprovalStatus status, CancellationToken cancellationToken = default)
     {
-        return await applicationUserDataStore.GetByApprovalStatusAsync(status.ToString());
+        return await applicationUserDataStore.GetByApprovalStatusAsync(status.ToString(), cancellationToken);
     }
 
-    public async Task<ApplicationUser> ApproveUserAsync(int userId, int adminUserId)
+    public async Task<ApplicationUser> ApproveUserAsync(int userId, int adminUserId, CancellationToken cancellationToken = default)
     {
-        if (userId <= 0)
-        {
-            throw new ArgumentException("User ID must be greater than 0", nameof(userId));
-        }
+        if (userId <= 0) throw new ArgumentException("User ID must be greater than 0", nameof(userId));
+        if (adminUserId <= 0) throw new ArgumentException("Admin user ID must be greater than 0", nameof(adminUserId));
 
-        if (adminUserId <= 0)
-        {
-            throw new ArgumentException("Admin user ID must be greater than 0", nameof(adminUserId));
-        }
-
-        var user = await applicationUserDataStore.GetByIdAsync(userId);
-        if (user is null)
-        {
-            throw new ApplicationException($"User with id '{userId}' not found");
-        }
+        var user = await applicationUserDataStore.GetByIdAsync(userId, cancellationToken);
+        if (user is null) throw new ApplicationException($"User with id '{userId}' not found");
 
         user.ApprovalStatus = ApprovalStatus.Approved.ToString();
         user.UpdatedAt = DateTimeOffset.UtcNow;
 
-        var updatedUser = await applicationUserDataStore.UpdateAsync(user);
+        var updatedUser = await applicationUserDataStore.UpdateAsync(user, cancellationToken);
 
-        // Log the approval
         await userApprovalLogDataStore.CreateAsync(new UserApprovalLog
         {
             UserId = userId,
@@ -116,40 +106,27 @@ public class UserApprovalManager(
             Action = ApprovalAction.Approved.ToString(),
             Notes = "User approved by administrator",
             CreatedAt = DateTimeOffset.UtcNow
-        });
+        }, cancellationToken);
 
-        await TrySendEmailNotificationAsync(updatedUser, "UserApproved");
-
+        await TrySendEmailNotificationAsync(updatedUser, "UserApproved", cancellationToken);
         return updatedUser;
     }
 
-    public async Task<ApplicationUser> RejectUserAsync(int userId, int adminUserId, string rejectionNotes)
+    public async Task<ApplicationUser> RejectUserAsync(int userId, int adminUserId, string rejectionNotes, CancellationToken cancellationToken = default)
     {
-        if (userId <= 0)
-        {
-            throw new ArgumentException("User ID must be greater than 0", nameof(userId));
-        }
-
-        if (adminUserId <= 0)
-        {
-            throw new ArgumentException("Admin user ID must be greater than 0", nameof(adminUserId));
-        }
-
+        if (userId <= 0) throw new ArgumentException("User ID must be greater than 0", nameof(userId));
+        if (adminUserId <= 0) throw new ArgumentException("Admin user ID must be greater than 0", nameof(adminUserId));
         ArgumentException.ThrowIfNullOrWhiteSpace(rejectionNotes, nameof(rejectionNotes));
 
-        var user = await applicationUserDataStore.GetByIdAsync(userId);
-        if (user is null)
-        {
-            throw new ApplicationException($"User with id '{userId}' not found");
-        }
+        var user = await applicationUserDataStore.GetByIdAsync(userId, cancellationToken);
+        if (user is null) throw new ApplicationException($"User with id '{userId}' not found");
 
         user.ApprovalStatus = ApprovalStatus.Rejected.ToString();
         user.ApprovalNotes = rejectionNotes;
         user.UpdatedAt = DateTimeOffset.UtcNow;
 
-        var updatedUser = await applicationUserDataStore.UpdateAsync(user);
+        var updatedUser = await applicationUserDataStore.UpdateAsync(user, cancellationToken);
 
-        // Log the rejection
         await userApprovalLogDataStore.CreateAsync(new UserApprovalLog
         {
             UserId = userId,
@@ -157,49 +134,28 @@ public class UserApprovalManager(
             Action = ApprovalAction.Rejected.ToString(),
             Notes = rejectionNotes,
             CreatedAt = DateTimeOffset.UtcNow
-        });
+        }, cancellationToken);
 
-        await TrySendEmailNotificationAsync(updatedUser, "UserRejected");
-
+        await TrySendEmailNotificationAsync(updatedUser, "UserRejected", cancellationToken);
         return updatedUser;
     }
 
-    public async Task<bool> AssignRoleAsync(int userId, int roleId, int adminUserId)
+    public async Task<bool> AssignRoleAsync(int userId, int roleId, int adminUserId, CancellationToken cancellationToken = default)
     {
-        if (userId <= 0)
-        {
-            throw new ArgumentException("User ID must be greater than 0", nameof(userId));
-        }
+        if (userId <= 0) throw new ArgumentException("User ID must be greater than 0", nameof(userId));
+        if (roleId <= 0) throw new ArgumentException("Role ID must be greater than 0", nameof(roleId));
+        if (adminUserId <= 0) throw new ArgumentException("Admin user ID must be greater than 0", nameof(adminUserId));
 
-        if (roleId <= 0)
-        {
-            throw new ArgumentException("Role ID must be greater than 0", nameof(roleId));
-        }
+        var user = await applicationUserDataStore.GetByIdAsync(userId, cancellationToken);
+        if (user is null) throw new ApplicationException($"User with id '{userId}' not found");
 
-        if (adminUserId <= 0)
-        {
-            throw new ArgumentException("Admin user ID must be greater than 0", nameof(adminUserId));
-        }
+        var role = await roleDataStore.GetByIdAsync(roleId, cancellationToken);
+        if (role is null) throw new ApplicationException($"Role with id '{roleId}' not found");
 
-        // Verify user exists
-        var user = await applicationUserDataStore.GetByIdAsync(userId);
-        if (user is null)
-        {
-            throw new ApplicationException($"User with id '{userId}' not found");
-        }
-
-        // Verify role exists
-        var role = await roleDataStore.GetByIdAsync(roleId);
-        if (role is null)
-        {
-            throw new ApplicationException($"Role with id '{roleId}' not found");
-        }
-
-        var result = await roleDataStore.AssignRoleToUserAsync(userId, roleId);
+        var result = await roleDataStore.AssignRoleToUserAsync(userId, roleId, cancellationToken);
 
         if (result)
         {
-            // Log the role assignment
             await userApprovalLogDataStore.CreateAsync(new UserApprovalLog
             {
                 UserId = userId,
@@ -207,48 +163,28 @@ public class UserApprovalManager(
                 Action = ApprovalAction.RoleAssigned.ToString(),
                 Notes = $"Role '{role.Name}' assigned",
                 CreatedAt = DateTimeOffset.UtcNow
-            });
+            }, cancellationToken);
         }
 
         return result;
     }
 
-    public async Task<bool> RemoveRoleAsync(int userId, int roleId, int adminUserId)
+    public async Task<bool> RemoveRoleAsync(int userId, int roleId, int adminUserId, CancellationToken cancellationToken = default)
     {
-        if (userId <= 0)
-        {
-            throw new ArgumentException("User ID must be greater than 0", nameof(userId));
-        }
+        if (userId <= 0) throw new ArgumentException("User ID must be greater than 0", nameof(userId));
+        if (roleId <= 0) throw new ArgumentException("Role ID must be greater than 0", nameof(roleId));
+        if (adminUserId <= 0) throw new ArgumentException("Admin user ID must be greater than 0", nameof(adminUserId));
 
-        if (roleId <= 0)
-        {
-            throw new ArgumentException("Role ID must be greater than 0", nameof(roleId));
-        }
+        var user = await applicationUserDataStore.GetByIdAsync(userId, cancellationToken);
+        if (user is null) throw new ApplicationException($"User with id '{userId}' not found");
 
-        if (adminUserId <= 0)
-        {
-            throw new ArgumentException("Admin user ID must be greater than 0", nameof(adminUserId));
-        }
+        var role = await roleDataStore.GetByIdAsync(roleId, cancellationToken);
+        if (role is null) throw new ApplicationException($"Role with id '{roleId}' not found");
 
-        // Verify user exists
-        var user = await applicationUserDataStore.GetByIdAsync(userId);
-        if (user is null)
-        {
-            throw new ApplicationException($"User with id '{userId}' not found");
-        }
-
-        // Verify role exists
-        var role = await roleDataStore.GetByIdAsync(roleId);
-        if (role is null)
-        {
-            throw new ApplicationException($"Role with id '{roleId}' not found");
-        }
-
-        var result = await roleDataStore.RemoveRoleFromUserAsync(userId, roleId);
+        var result = await roleDataStore.RemoveRoleFromUserAsync(userId, roleId, cancellationToken);
 
         if (result)
         {
-            // Log the role removal
             await userApprovalLogDataStore.CreateAsync(new UserApprovalLog
             {
                 UserId = userId,
@@ -256,38 +192,30 @@ public class UserApprovalManager(
                 Action = ApprovalAction.RoleRemoved.ToString(),
                 Notes = $"Role '{role.Name}' removed",
                 CreatedAt = DateTimeOffset.UtcNow
-            });
+            }, cancellationToken);
         }
 
         return result;
     }
 
-    public async Task<List<Role>> GetUserRolesAsync(int userId)
+    public async Task<List<Role>> GetUserRolesAsync(int userId, CancellationToken cancellationToken = default)
     {
-        if (userId <= 0)
-        {
-            throw new ArgumentException("User ID must be greater than 0", nameof(userId));
-        }
-
-        return await roleDataStore.GetRolesForUserAsync(userId);
+        if (userId <= 0) throw new ArgumentException("User ID must be greater than 0", nameof(userId));
+        return await roleDataStore.GetRolesForUserAsync(userId, cancellationToken);
     }
 
-    public async Task<List<Role>> GetAllRolesAsync()
+    public async Task<List<Role>> GetAllRolesAsync(CancellationToken cancellationToken = default)
     {
-        return await roleDataStore.GetAllAsync();
+        return await roleDataStore.GetAllAsync(cancellationToken);
     }
 
-    public async Task<List<UserApprovalLog>> GetUserAuditLogAsync(int userId)
+    public async Task<List<UserApprovalLog>> GetUserAuditLogAsync(int userId, CancellationToken cancellationToken = default)
     {
-        if (userId <= 0)
-        {
-            throw new ArgumentException("User ID must be greater than 0", nameof(userId));
-        }
-
-        return await userApprovalLogDataStore.GetByUserIdAsync(userId);
+        if (userId <= 0) throw new ArgumentException("User ID must be greater than 0", nameof(userId));
+        return await userApprovalLogDataStore.GetByUserIdAsync(userId, cancellationToken);
     }
 
-    private async Task TrySendEmailNotificationAsync(ApplicationUser user, string templateName)
+    private async Task TrySendEmailNotificationAsync(ApplicationUser user, string templateName, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(user.Email))
         {
@@ -295,7 +223,7 @@ public class UserApprovalManager(
             return;
         }
 
-        var template = await emailTemplateManager.GetTemplateAsync(templateName);
+        var template = await emailTemplateManager.GetTemplateAsync(templateName, cancellationToken);
         if (template is null)
         {
             logger.LogWarning("Email template '{TemplateName}' not found. Skipping notification email for user {UserId}.", templateName, user.Id);
@@ -305,7 +233,7 @@ public class UserApprovalManager(
         try
         {
             var toAddress = new MailAddress(user.Email, user.DisplayName ?? user.Email);
-            await emailSender.QueueEmail(toAddress, template.Subject, template.Body);
+            await emailSender.QueueEmail(toAddress, template.Subject, template.Body, cancellationToken);
         }
         catch (Exception ex)
         {

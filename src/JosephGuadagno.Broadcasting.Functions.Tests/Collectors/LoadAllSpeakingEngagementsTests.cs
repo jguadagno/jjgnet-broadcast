@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.SpeakingEngagement;
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
@@ -79,9 +81,9 @@ public class LoadAllSpeakingEngagementsTests
         savedItem.Id = 42;
 
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement> { item });
-        _engagementManager.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(savedItem);
+        _engagementManager.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(savedItem));
 
         var request = CreateHttpRequest();
 
@@ -103,9 +105,9 @@ public class LoadAllSpeakingEngagementsTests
         savedItem.Id = 50;
 
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement> { item });
-        _engagementManager.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(savedItem);
+        _engagementManager.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(savedItem));
 
         var request = CreateHttpRequest();
 
@@ -123,7 +125,7 @@ public class LoadAllSpeakingEngagementsTests
     {
         // Arrange
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement>());
 
         var request = CreateHttpRequest();
@@ -143,7 +145,7 @@ public class LoadAllSpeakingEngagementsTests
         // Arrange
         var checkFromDate = "2024-01-15";
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement>());
 
         var request = CreateHttpRequest(checkFromDate);
@@ -162,7 +164,7 @@ public class LoadAllSpeakingEngagementsTests
     {
         // Arrange
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement>());
 
         var request = CreateHttpRequest();
@@ -181,7 +183,7 @@ public class LoadAllSpeakingEngagementsTests
         // Arrange
         var invalidCheckFrom = "not-a-date";
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement>());
 
         var request = CreateHttpRequest(invalidCheckFrom);
@@ -203,7 +205,7 @@ public class LoadAllSpeakingEngagementsTests
         var engagement3 = CreateEngagement("Conf C", "https://c.com", 2024);
 
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement> { engagement1, engagement2, engagement3 });
         
@@ -214,9 +216,9 @@ public class LoadAllSpeakingEngagementsTests
         var saved3 = CreateEngagement("Conf C", "https://c.com", 2024);
         saved3.Id = 3;
         
-        _engagementManager.Setup(m => m.SaveAsync(It.Is<Engagement>(e => e.Name == "Conf A"))).ReturnsAsync(saved1);
-        _engagementManager.Setup(m => m.SaveAsync(It.Is<Engagement>(e => e.Name == "Conf B"))).ReturnsAsync(saved2);
-        _engagementManager.Setup(m => m.SaveAsync(It.Is<Engagement>(e => e.Name == "Conf C"))).ReturnsAsync(saved3);
+        _engagementManager.Setup(m => m.SaveAsync(It.Is<Engagement>(e => e.Name == "Conf A"))).ReturnsAsync(OperationResult<Engagement>.Success(saved1));
+        _engagementManager.Setup(m => m.SaveAsync(It.Is<Engagement>(e => e.Name == "Conf B"))).ReturnsAsync(OperationResult<Engagement>.Success(saved2));
+        _engagementManager.Setup(m => m.SaveAsync(It.Is<Engagement>(e => e.Name == "Conf C"))).ReturnsAsync(OperationResult<Engagement>.Success(saved3));
 
         var request = CreateHttpRequest();
 
@@ -237,7 +239,7 @@ public class LoadAllSpeakingEngagementsTests
         var engagement2 = CreateEngagement("Conf B", "https://b.com", 2024);
 
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement> { engagement1, engagement2 });
         
@@ -248,7 +250,7 @@ public class LoadAllSpeakingEngagementsTests
         // Second engagement saves successfully
         var saved2 = CreateEngagement("Conf B", "https://b.com", 2024);
         saved2.Id = 2;
-        _engagementManager.Setup(m => m.SaveAsync(It.Is<Engagement>(e => e.Name == "Conf B"))).ReturnsAsync(saved2);
+        _engagementManager.Setup(m => m.SaveAsync(It.Is<Engagement>(e => e.Name == "Conf B"))).ReturnsAsync(OperationResult<Engagement>.Success(saved2));
 
         var request = CreateHttpRequest();
 
@@ -285,7 +287,7 @@ public class LoadAllSpeakingEngagementsTests
         // Arrange
         var engagement = CreateEngagement("Test Conf", "https://test.com", 2024);
         _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement> { engagement });
-        _engagementManager.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(engagement);
+        _engagementManager.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(engagement));
         _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>())).ThrowsAsync(new Exception("FeedCheck error"));
 
         var request = CreateHttpRequest();
@@ -303,7 +305,7 @@ public class LoadAllSpeakingEngagementsTests
     {
         // Arrange
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync((List<Engagement>?)null);
 
         var request = CreateHttpRequest();

@@ -3,18 +3,20 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
+using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using JosephGuadagno.Extensions.Types;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube;
 
 public class LoadAllVideos(
     IYouTubeReader youTubeReader,
-    ISettings settings,
+    IOptions<Settings> settingsOptions,
     IYouTubeSourceManager youTubeSourceManager,
     IFeedCheckManager feedCheckManager,
     IUrlShortener urlShortener,
@@ -68,13 +70,20 @@ public class LoadAllVideos(
                 }
 
                 // shorten the url
-                item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settings.ShortenedDomainToUse);
+                item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settingsOptions.Value.ShortenedDomainToUse);
 
                 // attempt to save the item
                 try
                 {
-                    var savedItem = await youTubeSourceManager.SaveAsync(item);
+                    var saveResult = await youTubeSourceManager.SaveAsync(item);
 
+                    if (!saveResult.IsSuccess || saveResult.Value is null)
+                    {
+                        logger.LogError("Failed to save the video with the VideoId of: '{VideoId}' Url:'{Url}'. Error: {Error}",
+                            item.VideoId, item.Url, saveResult.ErrorMessage);
+                        return new BadRequestObjectResult($"Failed to save the video with the id of: '{item.VideoId}' Url:'{item.Url}'");
+                    }
+                    var savedItem = saveResult.Value;
                     var properties = new Dictionary<string, string>
                     {
                         { "Id", savedItem.Id.ToString() }, { "VideoId", savedItem.VideoId },

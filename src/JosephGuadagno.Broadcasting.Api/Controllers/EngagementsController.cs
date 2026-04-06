@@ -116,12 +116,12 @@ public class EngagementsController: ControllerBase
         }
 
         var engagement = _mapper.Map<Engagement>(request);
-        var savedEngagement = await _engagementManager.SaveAsync(engagement);
-        if (savedEngagement != null)
+        var result = await _engagementManager.SaveAsync(engagement);
+        if (result.IsSuccess && result.Value != null)
         {
-            _logger.LogInformation("Engagement created with Id {EngagementId}", savedEngagement.Id);
-            return CreatedAtAction(nameof(GetEngagementAsync), new { engagementId = savedEngagement.Id },
-                _mapper.Map<EngagementResponse>(savedEngagement));
+            _logger.LogInformation("Engagement created with Id {EngagementId}", result.Value.Id);
+            return CreatedAtAction(nameof(GetEngagementAsync), new { engagementId = result.Value.Id },
+                _mapper.Map<EngagementResponse>(result.Value));
         }
 
         return Problem("Failed to create the engagement");
@@ -152,11 +152,11 @@ public class EngagementsController: ControllerBase
 
         var engagement = _mapper.Map<Engagement>(request);
         engagement.Id = engagementId;
-        var savedEngagement = await _engagementManager.SaveAsync(engagement);
-        if (savedEngagement != null)
+        var result = await _engagementManager.SaveAsync(engagement);
+        if (result.IsSuccess && result.Value != null)
         {
-            _logger.LogInformation("Engagement updated with Id {EngagementId}", savedEngagement.Id);
-            return Ok(_mapper.Map<EngagementResponse>(savedEngagement));
+            _logger.LogInformation("Engagement updated with Id {EngagementId}", result.Value.Id);
+            return Ok(_mapper.Map<EngagementResponse>(result.Value));
         }
 
         return Problem("Failed to update the engagement");
@@ -181,7 +181,7 @@ public class EngagementsController: ControllerBase
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Delete, Domain.Scopes.Engagements.All);
         
         var wasDeleted = await _engagementManager.DeleteAsync(engagementId);
-        if (wasDeleted)
+        if (wasDeleted.IsSuccess)
         {
             _logger.LogInformation("Engagement {EngagementId} deleted successfully", engagementId);
             return new NoContentResult();
@@ -246,12 +246,12 @@ public class EngagementsController: ControllerBase
 
         var talk = _mapper.Map<Talk>(request);
         talk.EngagementId = engagementId;
-        var savedTalk = await _engagementManager.SaveTalkAsync(talk);
-        if (savedTalk != null)
+        var result = await _engagementManager.SaveTalkAsync(talk);
+        if (result.IsSuccess && result.Value != null)
         {
-            _logger.LogInformation("Talk created with Id {TalkId} for Engagement {EngagementId}", savedTalk.Id, engagementId);
-            return CreatedAtAction(nameof(GetTalkAsync), new { engagementId = engagementId, talkId = savedTalk.Id },
-                _mapper.Map<TalkResponse>(savedTalk));
+            _logger.LogInformation("Talk created with Id {TalkId} for Engagement {EngagementId}", result.Value.Id, engagementId);
+            return CreatedAtAction(nameof(GetTalkAsync), new { engagementId = engagementId, talkId = result.Value.Id },
+                _mapper.Map<TalkResponse>(result.Value));
         }
 
         return Problem("Failed to create the talk");
@@ -284,11 +284,11 @@ public class EngagementsController: ControllerBase
         var talk = _mapper.Map<Talk>(request);
         talk.EngagementId = engagementId;
         talk.Id = talkId;
-        var savedTalk = await _engagementManager.SaveTalkAsync(talk);
-        if (savedTalk != null)
+        var result = await _engagementManager.SaveTalkAsync(talk);
+        if (result.IsSuccess && result.Value != null)
         {
-            _logger.LogInformation("Talk updated with Id {TalkId} for Engagement {EngagementId}", savedTalk.Id, engagementId);
-            return Ok(_mapper.Map<TalkResponse>(savedTalk));
+            _logger.LogInformation("Talk updated with Id {TalkId} for Engagement {EngagementId}", result.Value.Id, engagementId);
+            return Ok(_mapper.Map<TalkResponse>(result.Value));
         }
 
         return Problem("Failed to update the talk");
@@ -341,7 +341,7 @@ public class EngagementsController: ControllerBase
         
         var wasDeleted =  await _engagementManager.RemoveTalkFromEngagementAsync(talkId);
         
-        if (wasDeleted)
+        if (wasDeleted.IsSuccess)
         {
             _logger.LogInformation("Talk {TalkId} deleted from Engagement {EngagementId}", talkId, engagementId);
             return new NoContentResult();

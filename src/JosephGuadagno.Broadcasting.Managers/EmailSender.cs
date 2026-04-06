@@ -1,5 +1,6 @@
 using System;
 using System.Net.Mail;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Azure.Storage.Queues;
@@ -23,18 +24,18 @@ public partial class EmailSender(
         return new Queue(queueServiceClient, Domain.Constants.Queues.SendEmail);
     }
 
-    public async Task QueueEmail(MailAddress toAddress, string subject, string body)
+    public async Task QueueEmail(MailAddress toAddress, string subject, string body, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(toAddress);
         ArgumentException.ThrowIfNullOrWhiteSpace(subject);
 
         var fromAddress = new MailAddress(settings.FromAddress, settings.FromDisplayName);
         var replyToAddress = new MailAddress(settings.ReplyToAddress, settings.ReplyToDisplayName);
-        await QueueEmail(toAddress, subject, body, fromAddress, replyToAddress);
+        await QueueEmail(toAddress, subject, body, fromAddress, replyToAddress, cancellationToken);
     }
 
     public async Task QueueEmail(MailAddress toAddress, string subject, string body,
-        MailAddress fromAddress, MailAddress replyToAddress)
+        MailAddress fromAddress, MailAddress replyToAddress, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(toAddress);
         ArgumentException.ThrowIfNullOrWhiteSpace(subject);
@@ -66,9 +67,9 @@ public partial class EmailSender(
         }
     }
 
-    public async Task SendEmailAsync(string email, string subject, string htmlMessage)
+    public async Task SendEmailAsync(string email, string subject, string htmlMessage, CancellationToken cancellationToken = default)
     {
         var toAddress = new MailAddress(email);
-        await QueueEmail(toAddress, subject, htmlMessage);
+        await QueueEmail(toAddress, subject, htmlMessage, cancellationToken);
     }
 }

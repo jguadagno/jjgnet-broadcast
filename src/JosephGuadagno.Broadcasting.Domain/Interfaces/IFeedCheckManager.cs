@@ -4,5 +4,5 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 
 public interface IFeedCheckManager : IManager<FeedCheck>
 {
-    public Task<FeedCheck?> GetByNameAsync(string name);
+    public Task<FeedCheck?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
 }

@@ -78,8 +78,15 @@ public class LoadNewSpeakingEngagements(
                 // attempt to save the item
                 try
                 {
-                    var engagement = await SavePipeline.ExecuteAsync(
+                    var saveResult = await SavePipeline.ExecuteAsync(
                         async ct => await engagementManager.SaveAsync(item));
+                    if (!saveResult.IsSuccess || saveResult.Value is null)
+                    {
+                        logger.LogError("Failed to save the engagement with the id of: '{Id}' Url:'{Url}'. Error: {Error}",
+                            item.Id, item.Url, saveResult.ErrorMessage);
+                        continue;
+                    }
+                    var engagement = saveResult.Value;
                     var properties = new Dictionary<string, string>
                     {
                         { "Id", engagement.Id.ToString() },

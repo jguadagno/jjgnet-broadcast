@@ -12,10 +12,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Controllers;
-using JosephGuadagno.Broadcasting.Web.Interfaces;
+using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Models.LinkedIn;
 
 namespace JosephGuadagno.Broadcasting.Web.Tests.Controllers;
@@ -52,27 +53,27 @@ internal class TestSession : ISession
 public class LinkedInControllerTests
 {
     private readonly Mock<IKeyVault> _keyVault;
-    private readonly Mock<ILinkedInSettings> _linkedInSettings;
+    private readonly LinkedInSettings _linkedInSettings;
     private readonly Mock<ILogger<LinkedInController>> _logger;
 
     public LinkedInControllerTests()
     {
         _keyVault = new Mock<IKeyVault>();
-        _linkedInSettings = new Mock<ILinkedInSettings>();
+        _linkedInSettings = new LinkedInSettings
+        {
+            ClientId = "test-client-id",
+            ClientSecret = "test-client-secret",
+            Scopes = "openid profile email",
+            AuthorizationUrl = "https://www.linkedin.com/oauth/v2/authorization",
+            AccessTokenUrl = "https://www.linkedin.com/oauth/v2/accessToken"
+        };
         _logger = new Mock<ILogger<LinkedInController>>();
-
-        // Default LinkedIn settings
-        _linkedInSettings.SetupGet(s => s.ClientId).Returns("test-client-id");
-        _linkedInSettings.SetupGet(s => s.ClientSecret).Returns("test-client-secret");
-        _linkedInSettings.SetupGet(s => s.Scopes).Returns("openid profile email");
-        _linkedInSettings.SetupGet(s => s.AuthorizationUrl).Returns("https://www.linkedin.com/oauth/v2/authorization");
-        _linkedInSettings.SetupGet(s => s.AccessTokenUrl).Returns("https://www.linkedin.com/oauth/v2/accessToken");
     }
 
     private LinkedInController CreateController(HttpClient? httpClient = null)
     {
         httpClient ??= new HttpClient();
-        return new LinkedInController(httpClient, _keyVault.Object, _linkedInSettings.Object, _logger.Object);
+        return new LinkedInController(httpClient, _keyVault.Object, Options.Create(_linkedInSettings), _logger.Object);
     }
 
     [Fact]

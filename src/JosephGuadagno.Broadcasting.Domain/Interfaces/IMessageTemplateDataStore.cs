@@ -4,9 +4,9 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 
 public interface IMessageTemplateDataStore
 {
-    Task<MessageTemplate?> GetAsync(string platform, string messageType);
-    Task<List<MessageTemplate>> GetAllAsync();
-    Task<MessageTemplate?> UpdateAsync(MessageTemplate messageTemplate);
+    Task<MessageTemplate?> GetAsync(string platform, string messageType, CancellationToken cancellationToken = default);
+    Task<List<MessageTemplate>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<MessageTemplate?> UpdateAsync(MessageTemplate messageTemplate, CancellationToken cancellationToken = default);
     
-    Task<PagedResult<MessageTemplate>> GetAllAsync(int page, int pageSize);
+    Task<PagedResult<MessageTemplate>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default);
 }

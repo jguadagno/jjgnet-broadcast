@@ -125,9 +125,10 @@ public class EngagementDataStoreTests : IDisposable
         var result = await _dataStore.SaveAsync(domainEngagement);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Id > 0);
-        Assert.Equal("New Conference", result.Name);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.True(result.Value!.Id > 0);
+        Assert.Equal("New Conference", result.Value!.Name);
     }
 
     [Fact]
@@ -153,8 +154,9 @@ public class EngagementDataStoreTests : IDisposable
         var result = await _dataStore.SaveAsync(domainEngagement);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal("Updated Name", result.Name);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal("Updated Name", result.Value!.Name);
     }
 
     [Fact]
@@ -174,7 +176,7 @@ public class EngagementDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(domainEngagement);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         Assert.Empty(_context.Engagements.ToList());
         Assert.Empty(_context.Talks.ToList());
     }
@@ -194,7 +196,7 @@ public class EngagementDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(engagement.Id);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         Assert.Empty(_context.Engagements.ToList());
         Assert.Empty(_context.Talks.ToList());
     }
@@ -206,7 +208,7 @@ public class EngagementDataStoreTests : IDisposable
         var result = await _dataStore.DeleteAsync(999);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
     }
 
     [Fact]
@@ -344,11 +346,13 @@ public class EngagementDataStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveTalkAsync_NullTalk_ThrowsArgumentNullException()
+    public async Task SaveTalkAsync_NullTalk_ReturnsFailure()
     {
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _dataStore.SaveTalkAsync(null!));
+        // Act
+        var result = await _dataStore.SaveTalkAsync(null!);
+
+        // Assert
+        Assert.False(result.IsSuccess);
     }
 
     [Fact]
@@ -369,9 +373,10 @@ public class EngagementDataStoreTests : IDisposable
         var result = await _dataStore.SaveTalkAsync(domainTalk);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Id > 0);
-        Assert.Equal("Brand New Talk", result.Name);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.True(result.Value!.Id > 0);
+        Assert.Equal("Brand New Talk", result.Value!.Name);
     }
 
     [Fact]
@@ -396,16 +401,19 @@ public class EngagementDataStoreTests : IDisposable
         var result = await _dataStore.SaveTalkAsync(domainTalk);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal("Updated Talk", result.Name);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal("Updated Talk", result.Value!.Name);
     }
 
     [Fact]
-    public async Task RemoveTalkFromEngagementAsync_InvalidTalkId_ThrowsApplicationException()
+    public async Task RemoveTalkFromEngagementAsync_InvalidTalkId_ReturnsFailure()
     {
-        // Act & Assert
-        await Assert.ThrowsAsync<ApplicationException>(() =>
-            _dataStore.RemoveTalkFromEngagementAsync(0));
+        // Act
+        var result = await _dataStore.RemoveTalkFromEngagementAsync(0);
+
+        // Assert
+        Assert.False(result.IsSuccess);
     }
 
     [Fact]
@@ -415,7 +423,7 @@ public class EngagementDataStoreTests : IDisposable
         var result = await _dataStore.RemoveTalkFromEngagementAsync(999);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
     }
 
     [Fact]
@@ -434,16 +442,18 @@ public class EngagementDataStoreTests : IDisposable
         var result = await _dataStore.RemoveTalkFromEngagementAsync(talk.Id);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         Assert.Empty(_context.Talks.ToList());
     }
 
     [Fact]
-    public async Task RemoveTalkFromEngagementAsync_NullTalk_ThrowsArgumentNullException()
+    public async Task RemoveTalkFromEngagementAsync_NullTalk_ReturnsFailure()
     {
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _dataStore.RemoveTalkFromEngagementAsync(null!));
+        // Act
+        var result = await _dataStore.RemoveTalkFromEngagementAsync((Domain.Models.Talk)null!);
+
+        // Assert
+        Assert.False(result.IsSuccess);
     }
 
     [Fact]
@@ -473,7 +483,7 @@ public class EngagementDataStoreTests : IDisposable
         var result = await _dataStore.RemoveTalkFromEngagementAsync(domainTalk);
 
         // Assert
-        Assert.True(result);
+        Assert.True(result.IsSuccess);
         Assert.Empty(_context.Talks.ToList());
     }
 

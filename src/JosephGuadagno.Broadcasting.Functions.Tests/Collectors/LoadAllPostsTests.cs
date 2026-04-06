@@ -1,14 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.SyndicationFeed;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
+using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Moq;
 
@@ -17,7 +21,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Collectors;
 public class LoadAllPostsTests
 {
     private readonly Mock<ISyndicationFeedReader> _syndicationFeedReader;
-    private readonly Mock<ISettings> _settings;
     private readonly Mock<ISyndicationFeedSourceManager> _syndicationFeedSourceManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly Mock<IUrlShortener> _urlShortener;
@@ -26,16 +29,13 @@ public class LoadAllPostsTests
     public LoadAllPostsTests()
     {
         _syndicationFeedReader = new Mock<ISyndicationFeedReader>();
-        _settings = new Mock<ISettings>();
         _syndicationFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
         _urlShortener = new Mock<IUrlShortener>();
 
-        _settings.Setup(s => s.ShortenedDomainToUse).Returns("short.example.com");
-
         _sut = new LoadAllPosts(
             _syndicationFeedReader.Object,
-            _settings.Object,
+            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com" }),
             _syndicationFeedSourceManager.Object,
             _feedCheckManager.Object,
             _urlShortener.Object,
@@ -88,11 +88,11 @@ public class LoadAllPostsTests
         savedItem.Id = 42;
 
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _syndicationFeedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedSource> { item });
         _syndicationFeedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("new-post-123")).ReturnsAsync((SyndicationFeedSource?)null);
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("https://short.example.com/xyz");
-        _syndicationFeedSourceManager.Setup(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>())).ReturnsAsync(savedItem);
+        _syndicationFeedSourceManager.Setup(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>())).ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedItem));
 
         var request = CreateHttpRequest();
 
@@ -114,7 +114,7 @@ public class LoadAllPostsTests
         existingItem.Id = 77;
 
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _syndicationFeedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedSource> { item });
         _syndicationFeedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("duplicate-feed-123")).ReturnsAsync(existingItem);
 
@@ -134,7 +134,7 @@ public class LoadAllPostsTests
     {
         // Arrange
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _syndicationFeedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedSource>());
 
         var request = CreateHttpRequest();
@@ -154,7 +154,7 @@ public class LoadAllPostsTests
         // Arrange
         var checkFromDate = "2024-01-15T12:00:00Z";
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _syndicationFeedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedSource>());
 
         var request = CreateHttpRequest(checkFromDate);
@@ -173,7 +173,7 @@ public class LoadAllPostsTests
     {
         // Arrange
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _syndicationFeedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedSource>());
 
         var request = CreateHttpRequest();
@@ -192,7 +192,7 @@ public class LoadAllPostsTests
         // Arrange
         var invalidCheckFrom = "not-a-date";
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _syndicationFeedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedSource>());
 
         var request = CreateHttpRequest(invalidCheckFrom);
@@ -216,7 +216,7 @@ public class LoadAllPostsTests
         existingPost.Id = 99;
 
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _syndicationFeedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<SyndicationFeedSource> { newPost1, duplicatePost, newPost2 });
         
@@ -231,8 +231,8 @@ public class LoadAllPostsTests
         var savedPost2 = CreateFeedSource("new-2");
         savedPost2.Id = 2;
         
-        _syndicationFeedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "new-1"))).ReturnsAsync(savedPost1);
-        _syndicationFeedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "new-2"))).ReturnsAsync(savedPost2);
+        _syndicationFeedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "new-1"))).ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedPost1));
+        _syndicationFeedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "new-2"))).ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedPost2));
 
         var request = CreateHttpRequest();
 
@@ -254,7 +254,7 @@ public class LoadAllPostsTests
         var post2 = CreateFeedSource("post-2");
 
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _syndicationFeedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<SyndicationFeedSource> { post1, post2 });
         
@@ -270,7 +270,7 @@ public class LoadAllPostsTests
         // Second post saves successfully
         var savedPost2 = CreateFeedSource("post-2");
         savedPost2.Id = 2;
-        _syndicationFeedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "post-2"))).ReturnsAsync(savedPost2);
+        _syndicationFeedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "post-2"))).ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedPost2));
 
         var request = CreateHttpRequest();
 
@@ -310,11 +310,11 @@ public class LoadAllPostsTests
         savedItem.Id = 50;
 
         SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(new FeedCheck());
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _syndicationFeedReader.Setup(r => r.GetAsync(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedSource> { item });
         _syndicationFeedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("post-456")).ReturnsAsync((SyndicationFeedSource?)null);
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(item.Url, "short.example.com")).ReturnsAsync("https://short.example.com/abc");
-        _syndicationFeedSourceManager.Setup(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>())).ReturnsAsync(savedItem);
+        _syndicationFeedSourceManager.Setup(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>())).ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedItem));
 
         var request = CreateHttpRequest();
 

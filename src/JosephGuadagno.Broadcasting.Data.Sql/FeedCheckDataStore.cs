@@ -1,4 +1,5 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,58 +7,72 @@ namespace JosephGuadagno.Broadcasting.Data.Sql;
 
 public class FeedCheckDataStore(BroadcastingContext broadcastingContext, IMapper mapper) : IFeedCheckDataStore
 {
-    public async Task<Domain.Models.FeedCheck> GetAsync(int primaryKey)
+    public async Task<Domain.Models.FeedCheck> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        var dbFeedCheck = await broadcastingContext.FeedChecks.FindAsync(primaryKey);
+        var dbFeedCheck = await broadcastingContext.FeedChecks.FindAsync(new object[] { primaryKey }, cancellationToken);
         return mapper.Map<Domain.Models.FeedCheck>(dbFeedCheck);
     }
 
-    public async Task<Domain.Models.FeedCheck> SaveAsync(Domain.Models.FeedCheck entity)
+    public async Task<OperationResult<Domain.Models.FeedCheck>> SaveAsync(Domain.Models.FeedCheck entity, CancellationToken cancellationToken = default)
     {
-        var dbFeedCheck = broadcastingContext.FeedChecks.FirstOrDefault(c => c.Id == entity.Id);
-        if (dbFeedCheck == null)
+        try
         {
-            dbFeedCheck = mapper.Map<Models.FeedCheck>(entity);
-        }
-        else
-        {
-            dbFeedCheck.Name = entity.Name;
-            dbFeedCheck.LastUpdatedOn = entity.LastUpdatedOn;
-            dbFeedCheck.LastCheckedFeed = entity.LastCheckedFeed;
-            dbFeedCheck.LastItemAddedOrUpdated = entity.LastItemAddedOrUpdated;
-        }
+            var dbFeedCheck = await broadcastingContext.FeedChecks.FirstOrDefaultAsync(c => c.Id == entity.Id, cancellationToken);
+            if (dbFeedCheck == null)
+            {
+                dbFeedCheck = mapper.Map<Models.FeedCheck>(entity);
+                broadcastingContext.FeedChecks.Add(dbFeedCheck);
+            }
+            else
+            {
+                dbFeedCheck.Name = entity.Name;
+                dbFeedCheck.LastUpdatedOn = entity.LastUpdatedOn;
+                dbFeedCheck.LastCheckedFeed = entity.LastCheckedFeed;
+                dbFeedCheck.LastItemAddedOrUpdated = entity.LastItemAddedOrUpdated;
+            }
 
-        var result = await broadcastingContext.SaveChangesAsync() != 0;
-        return result ? mapper.Map<Domain.Models.FeedCheck>(dbFeedCheck) : throw new ApplicationException("Failed to save the FeedCheck");
+            var result = await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
+            if (result) return OperationResult<Domain.Models.FeedCheck>.Success(mapper.Map<Domain.Models.FeedCheck>(dbFeedCheck));
+            return OperationResult<Domain.Models.FeedCheck>.Failure("Failed to save the FeedCheck");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<Domain.Models.FeedCheck>.Failure("An error occurred while saving the FeedCheck", ex);
+        }
     }
 
-    public async Task<List<Domain.Models.FeedCheck>> GetAllAsync()
+    public async Task<List<Domain.Models.FeedCheck>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var dbFeedChecks = await broadcastingContext.FeedChecks.ToListAsync();
+        var dbFeedChecks = await broadcastingContext.FeedChecks.ToListAsync(cancellationToken);
         return mapper.Map<List<Domain.Models.FeedCheck>>(dbFeedChecks);
     }
 
-    public async Task<bool> DeleteAsync(Domain.Models.FeedCheck entity)
+    public async Task<OperationResult<bool>> DeleteAsync(Domain.Models.FeedCheck entity, CancellationToken cancellationToken = default)
     {
-        return await DeleteAsync(entity.Id);
+        return await DeleteAsync(entity.Id, cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(int primaryKey)
+    public async Task<OperationResult<bool>> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        var dbFeedCheck = await broadcastingContext.FeedChecks.FindAsync(primaryKey);
-        if (dbFeedCheck == null)
+        try
         {
-            return true;
-        }
+            var dbFeedCheck = await broadcastingContext.FeedChecks.FindAsync(new object[] { primaryKey }, cancellationToken);
+            if (dbFeedCheck == null) return OperationResult<bool>.Success(true);
 
-        broadcastingContext.FeedChecks.Remove(dbFeedCheck);
-        return await broadcastingContext.SaveChangesAsync() != 0;
+            broadcastingContext.FeedChecks.Remove(dbFeedCheck);
+            await broadcastingContext.SaveChangesAsync(cancellationToken);
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<bool>.Failure("An error occurred while deleting the FeedCheck", ex);
+        }
     }
 
-    public async Task<Domain.Models.FeedCheck?> GetByNameAsync(string name)
+    public async Task<Domain.Models.FeedCheck?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
     {
         var dbFeedCheck = await broadcastingContext.FeedChecks.AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Name == name);
+            .FirstOrDefaultAsync(c => c.Name == name, cancellationToken);
         return dbFeedCheck is null ? null : mapper.Map<Domain.Models.FeedCheck>(dbFeedCheck);
     }
 }

@@ -3,11 +3,13 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
+using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using Polly;
 using Polly.Retry;
@@ -16,7 +18,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.SyndicationFeed;
 
 public class LoadNewPosts(
     ISyndicationFeedReader syndicationFeedReader,
-    ISettings settings,
+    IOptions<Settings> settingsOptions,
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
     IFeedCheckManager feedCheckManager,
     IUrlShortener urlShortener,
@@ -74,13 +76,21 @@ public class LoadNewPosts(
                 }
 
                 // shorten the url
-                item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settings.ShortenedDomainToUse);
+                item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settingsOptions.Value.ShortenedDomainToUse);
 
                 // attempt to save the item
                 try
                 {
-                    var savedItem = await SavePipeline.ExecuteAsync(
+                    var saveResult = await SavePipeline.ExecuteAsync(
                         async ct => await syndicationFeedSourceManager.SaveAsync(item));
+
+                    if (!saveResult.IsSuccess || saveResult.Value is null)
+                    {
+                        logger.LogError("Failed to save the blog post with the id of: '{Id}' Url:'{Url}'. Error: {Error}",
+                            item.Id, item.Url, saveResult.ErrorMessage);
+                        continue;
+                    }
+                    var savedItem = saveResult.Value;
                     eventsToPublish.Add(savedItem);
 
                     var properties = new Dictionary<string, string>

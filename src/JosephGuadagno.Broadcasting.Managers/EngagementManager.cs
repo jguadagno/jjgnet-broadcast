@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using NodaTime;
@@ -16,78 +18,87 @@ public class EngagementManager: IEngagementManager
         _engagementDataStore = engagementDataStore;
     }
     
-    public async Task<Engagement> GetAsync(int primaryKey)
+    public async Task<Engagement> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        return await _engagementDataStore.GetAsync(primaryKey);
+        return await _engagementDataStore.GetAsync(primaryKey, cancellationToken);
     }
 
-    public async Task<Engagement> SaveAsync(Engagement entity)
+    public async Task<OperationResult<Engagement>> SaveAsync(Engagement entity, CancellationToken cancellationToken = default)
     {
-
-        if (entity.Id == 0)
+        try
         {
-            // We need to see if there is an existing record since there is no "id" from the SpeakingEngagementsReaders
-            // We will assume that if the following fields match, we will update the record.
-            //  - Name, Url, StartDateTime (Year)
-            var existingEngagement = await _engagementDataStore.GetByNameAndUrlAndYearAsync(entity.Name, entity.Url, entity.StartDateTime.Year);
-            if (existingEngagement != null)
+            if (entity.Id == 0)
             {
-                entity.Id = existingEngagement.Id;
+                var existingEngagement = await _engagementDataStore.GetByNameAndUrlAndYearAsync(entity.Name, entity.Url, entity.StartDateTime.Year, cancellationToken);
+                if (existingEngagement != null)
+                {
+                    entity.Id = existingEngagement.Id;
+                }
             }
-        }
 
-        // Apply the time zone offset to the hours
-        entity.StartDateTime = UpdateDateTimeOffsetWithTimeZone(entity.TimeZoneId, entity.StartDateTime); 
-        entity.EndDateTime = UpdateDateTimeOffsetWithTimeZone(entity.TimeZoneId, entity.EndDateTime); 
-        return await _engagementDataStore.SaveAsync(entity);
+            entity.StartDateTime = UpdateDateTimeOffsetWithTimeZone(entity.TimeZoneId, entity.StartDateTime); 
+            entity.EndDateTime = UpdateDateTimeOffsetWithTimeZone(entity.TimeZoneId, entity.EndDateTime); 
+            return await _engagementDataStore.SaveAsync(entity, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<Engagement>.Failure("An error occurred while saving the engagement", ex);
+        }
     }
     
-    public async Task<List<Engagement>> GetAllAsync()
+    public async Task<List<Engagement>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _engagementDataStore.GetAllAsync();
+        return await _engagementDataStore.GetAllAsync(cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(Engagement entity)
+    public async Task<OperationResult<bool>> DeleteAsync(Engagement entity, CancellationToken cancellationToken = default)
     {
-        return await _engagementDataStore.DeleteAsync(entity);
+        return await _engagementDataStore.DeleteAsync(entity, cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(int primaryKey)
+    public async Task<OperationResult<bool>> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        return await _engagementDataStore.DeleteAsync(primaryKey);
+        return await _engagementDataStore.DeleteAsync(primaryKey, cancellationToken);
     }
 
-    public async Task<List<Talk>> GetTalksForEngagementAsync(int engagementId)
+    public async Task<List<Talk>> GetTalksForEngagementAsync(int engagementId, CancellationToken cancellationToken = default)
     {
-        return await _engagementDataStore.GetTalksForEngagementAsync(engagementId);
+        return await _engagementDataStore.GetTalksForEngagementAsync(engagementId, cancellationToken);
     }
 
-    public async Task<Talk> SaveTalkAsync(Talk talk)
+    public async Task<OperationResult<Talk>> SaveTalkAsync(Talk talk, CancellationToken cancellationToken = default)
     {
-        var engagement = await _engagementDataStore.GetAsync(talk.EngagementId);
-        if (engagement is null)
+        try
         {
-            throw new ApplicationException(
-                $"Failed to save the talk. Could not find an engagement of id '{talk.EngagementId}");
+            var engagement = await _engagementDataStore.GetAsync(talk.EngagementId, cancellationToken);
+            if (engagement is null)
+            {
+                return OperationResult<Talk>.Failure($"Could not find an engagement of id '{talk.EngagementId}'");
+            }
+
+            talk.StartDateTime = UpdateDateTimeOffsetWithTimeZone(engagement.TimeZoneId, talk.StartDateTime);
+            talk.EndDateTime = UpdateDateTimeOffsetWithTimeZone(engagement.TimeZoneId, talk.EndDateTime);
+            return await _engagementDataStore.SaveTalkAsync(talk, cancellationToken);
         }
-
-        talk.StartDateTime = UpdateDateTimeOffsetWithTimeZone(engagement.TimeZoneId, talk.StartDateTime);
-        talk.EndDateTime = UpdateDateTimeOffsetWithTimeZone(engagement.TimeZoneId, talk.EndDateTime);
-        return await _engagementDataStore.SaveTalkAsync(talk);
+        catch (Exception ex)
+        {
+            return OperationResult<Talk>.Failure("An error occurred while saving the talk", ex);
+        }
     }
 
-    public async Task<bool> RemoveTalkFromEngagementAsync(int talkId)
+    public async Task<OperationResult<bool>> RemoveTalkFromEngagementAsync(int talkId, CancellationToken cancellationToken = default)
     {
-        return await _engagementDataStore.RemoveTalkFromEngagementAsync(talkId);
-    }
-    public async Task<bool> RemoveTalkFromEngagementAsync(Talk talk)
-    {
-        return await _engagementDataStore.RemoveTalkFromEngagementAsync(talk);
+        return await _engagementDataStore.RemoveTalkFromEngagementAsync(talkId, cancellationToken);
     }
 
-    public async Task<Talk> GetTalkAsync(int talkId)
+    public async Task<OperationResult<bool>> RemoveTalkFromEngagementAsync(Talk talk, CancellationToken cancellationToken = default)
     {
-        return await _engagementDataStore.GetTalkAsync(talkId)
+        return await _engagementDataStore.RemoveTalkFromEngagementAsync(talk, cancellationToken);
+    }
+
+    public async Task<Talk> GetTalkAsync(int talkId, CancellationToken cancellationToken = default)
+    {
+        return await _engagementDataStore.GetTalkAsync(talkId, cancellationToken)
             ?? throw new ApplicationException($"Talk with id '{talkId}' not found.");
     }
     
@@ -101,18 +112,18 @@ public class EngagementManager: IEngagementManager
         return zonedDateTime.ToDateTimeOffset();
     }
 
-    public async Task<Engagement?> GetByNameAndUrlAndYearAsync(string name, string url, int year)
+    public async Task<Engagement?> GetByNameAndUrlAndYearAsync(string name, string url, int year, CancellationToken cancellationToken = default)
     {
-        return await _engagementDataStore.GetByNameAndUrlAndYearAsync(name, url, year);
+        return await _engagementDataStore.GetByNameAndUrlAndYearAsync(name, url, year, cancellationToken);
     }
     
-    public async Task<PagedResult<Engagement>> GetAllAsync(int page, int pageSize)
+    public async Task<PagedResult<Engagement>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        return await _engagementDataStore.GetAllAsync(page, pageSize);
+        return await _engagementDataStore.GetAllAsync(page, pageSize, cancellationToken);
     }
     
-    public async Task<PagedResult<Talk>> GetTalksForEngagementAsync(int engagementId, int page, int pageSize)
+    public async Task<PagedResult<Talk>> GetTalksForEngagementAsync(int engagementId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        return await _engagementDataStore.GetTalksForEngagementAsync(engagementId, page, pageSize);
+        return await _engagementDataStore.GetTalksForEngagementAsync(engagementId, page, pageSize, cancellationToken);
     }
 }

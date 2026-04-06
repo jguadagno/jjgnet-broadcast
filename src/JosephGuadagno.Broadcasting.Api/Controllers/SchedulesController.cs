@@ -113,12 +113,12 @@ public class SchedulesController: ControllerBase
         }
 
         var scheduledItem = _mapper.Map<ScheduledItem>(request);
-        var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
-        if (savedScheduledItem != null)
+        var result = await _scheduledItemManager.SaveAsync(scheduledItem);
+        if (result.IsSuccess && result.Value != null)
         {
-            _logger.LogInformation("ScheduledItem created with Id {ScheduledItemId}", savedScheduledItem.Id);
-            return CreatedAtAction(nameof(GetScheduledItemAsync), new { scheduledItemId = savedScheduledItem.Id },
-                _mapper.Map<ScheduledItemResponse>(savedScheduledItem));
+            _logger.LogInformation("ScheduledItem created with Id {ScheduledItemId}", result.Value.Id);
+            return CreatedAtAction(nameof(GetScheduledItemAsync), new { scheduledItemId = result.Value.Id },
+                _mapper.Map<ScheduledItemResponse>(result.Value));
         }
 
         return Problem("Failed to create the scheduled item");
@@ -149,11 +149,11 @@ public class SchedulesController: ControllerBase
 
         var scheduledItem = _mapper.Map<ScheduledItem>(request);
         scheduledItem.Id = scheduledItemId;
-        var savedScheduledItem = await _scheduledItemManager.SaveAsync(scheduledItem);
-        if (savedScheduledItem != null)
+        var result = await _scheduledItemManager.SaveAsync(scheduledItem);
+        if (result.IsSuccess && result.Value != null)
         {
-            _logger.LogInformation("ScheduledItem updated with Id {ScheduledItemId}", savedScheduledItem.Id);
-            return Ok(_mapper.Map<ScheduledItemResponse>(savedScheduledItem));
+            _logger.LogInformation("ScheduledItem updated with Id {ScheduledItemId}", result.Value.Id);
+            return Ok(_mapper.Map<ScheduledItemResponse>(result.Value));
         }
 
         return Problem("Failed to update the scheduled item");
@@ -178,7 +178,7 @@ public class SchedulesController: ControllerBase
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Delete, Domain.Scopes.Schedules.All);
         
         var wasDeleted = await _scheduledItemManager.DeleteAsync(scheduledItemId);
-        if (wasDeleted)
+        if (wasDeleted.IsSuccess)
         {
             _logger.LogInformation("ScheduledItem {ScheduledItemId} deleted successfully", scheduledItemId);
             return new NoContentResult();

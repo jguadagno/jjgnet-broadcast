@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
@@ -16,43 +18,43 @@ public class SyndicationFeedSourceManager : ISyndicationFeedSourceManager
         _syndicationFeedSourceDataStore = syndicationFeedSourceDataStore;
     }
 
-    public async Task<SyndicationFeedSource> GetAsync(int primaryKey)
+    public async Task<SyndicationFeedSource> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        return await _syndicationFeedSourceDataStore.GetAsync(primaryKey);
+        return await _syndicationFeedSourceDataStore.GetAsync(primaryKey, cancellationToken);
     }
 
-    public async Task<SyndicationFeedSource> SaveAsync(SyndicationFeedSource entity)
+    public async Task<OperationResult<SyndicationFeedSource>> SaveAsync(SyndicationFeedSource entity, CancellationToken cancellationToken = default)
     {
-        return await _syndicationFeedSourceDataStore.SaveAsync(entity);
+        return await _syndicationFeedSourceDataStore.SaveAsync(entity, cancellationToken);
     }
 
-    public async Task<List<SyndicationFeedSource>> GetAllAsync()
+    public async Task<List<SyndicationFeedSource>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _syndicationFeedSourceDataStore.GetAllAsync();
+        return await _syndicationFeedSourceDataStore.GetAllAsync(cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(SyndicationFeedSource entity)
+    public async Task<OperationResult<bool>> DeleteAsync(SyndicationFeedSource entity, CancellationToken cancellationToken = default)
     {
-        return await _syndicationFeedSourceDataStore.DeleteAsync(entity);
+        return await _syndicationFeedSourceDataStore.DeleteAsync(entity, cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(int primaryKey)
+    public async Task<OperationResult<bool>> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        return await _syndicationFeedSourceDataStore.DeleteAsync(primaryKey);
+        return await _syndicationFeedSourceDataStore.DeleteAsync(primaryKey, cancellationToken);
     }
 
-    public async Task<SyndicationFeedSource?> GetByUrlAsync(string url)
+    public async Task<SyndicationFeedSource?> GetByUrlAsync(string url, CancellationToken cancellationToken = default)
     {
-        return await _syndicationFeedSourceDataStore.GetByUrlAsync(url);
+        return await _syndicationFeedSourceDataStore.GetByUrlAsync(url, cancellationToken);
     }
 
-    public async Task<SyndicationFeedSource?> GetByFeedIdentifierAsync(string feedIdentifier)
+    public async Task<SyndicationFeedSource?> GetByFeedIdentifierAsync(string feedIdentifier, CancellationToken cancellationToken = default)
     {
-        return await _syndicationFeedSourceDataStore.GetByFeedIdentifierAsync(feedIdentifier);
+        return await _syndicationFeedSourceDataStore.GetByFeedIdentifierAsync(feedIdentifier, cancellationToken);
     }
 
-    public async Task<SyndicationFeedSource?> GetRandomSyndicationDataAsync(DateTimeOffset cutoffDate, List<string> excludedCategories)
+    public async Task<SyndicationFeedSource?> GetRandomSyndicationDataAsync(DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default)
     {
-        return await _syndicationFeedSourceDataStore.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories);
+        return await _syndicationFeedSourceDataStore.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories, cancellationToken);
     }
 }

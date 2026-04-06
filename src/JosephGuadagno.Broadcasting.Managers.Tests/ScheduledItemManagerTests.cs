@@ -1,4 +1,5 @@
 using Moq;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 
@@ -35,14 +36,15 @@ public class ScheduledItemManagerTests
     {
         // Arrange
         var scheduledItem = new ScheduledItem { Id = 1 };
-        _repository.Setup(r => r.SaveAsync(scheduledItem)).ReturnsAsync(scheduledItem);
+        _repository.Setup(r => r.SaveAsync(scheduledItem, default)).ReturnsAsync(OperationResult<ScheduledItem>.Success(scheduledItem));
 
         // Act
         var result = await _scheduledItemManager.SaveAsync(scheduledItem);
 
         // Assert
-        Assert.Equal(scheduledItem, result);
-        _repository.Verify(r => r.SaveAsync(scheduledItem), Times.Once);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(scheduledItem, result.Value);
+        _repository.Verify(r => r.SaveAsync(scheduledItem, default), Times.Once);
     }
 
     [Fact]
@@ -65,28 +67,28 @@ public class ScheduledItemManagerTests
     {
         // Arrange
         var scheduledItem = new ScheduledItem { Id = 1 };
-        _repository.Setup(r => r.DeleteAsync(scheduledItem)).ReturnsAsync(true);
+        _repository.Setup(r => r.DeleteAsync(scheduledItem, default)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         // Act
         var result = await _scheduledItemManager.DeleteAsync(scheduledItem);
 
         // Assert
-        Assert.True(result);
-        _repository.Verify(r => r.DeleteAsync(scheduledItem), Times.Once);
+        Assert.True(result.IsSuccess);
+        _repository.Verify(r => r.DeleteAsync(scheduledItem, default), Times.Once);
     }
 
     [Fact]
     public async Task DeleteAsync_PrimaryKey_ShouldCallRepository()
     {
         // Arrange
-        _repository.Setup(r => r.DeleteAsync(1)).ReturnsAsync(true);
+        _repository.Setup(r => r.DeleteAsync(1, default)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         // Act
         var result = await _scheduledItemManager.DeleteAsync(1);
 
         // Assert
-        Assert.True(result);
-        _repository.Verify(r => r.DeleteAsync(1), Times.Once);
+        Assert.True(result.IsSuccess);
+        _repository.Verify(r => r.DeleteAsync(1, default), Times.Once);
     }
 
     [Fact]
