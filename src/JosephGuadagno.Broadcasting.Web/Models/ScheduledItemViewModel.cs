@@ -63,6 +63,16 @@ public class ScheduledItemViewModel
     public DateTimeOffset SendOnDateTime { get; set; }
 
     /// <summary>
+    /// The target social platform for this scheduled item (e.g., Twitter, Facebook, LinkedIn, Bluesky)
+    /// </summary>
+    public string? Platform { get; set; }
+
+    /// <summary>
+    /// The message type/category (e.g., RandomPost, Speaking90Days, Speaking30Days, NextWeek, Tomorrow, ComingUp)
+    /// </summary>
+    public string? MessageType { get; set; }
+
+    /// <summary>
     /// Returns a Dictionary&lt;string, string&gt; representation of the properties
     /// </summary>
     /// <returns></returns>
