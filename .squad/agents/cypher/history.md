@@ -62,7 +62,82 @@
 **Status:** ✅ Correction posted confirming Functions on App Service plan (NOT Consumption), so Health Check support is available. Strategy remains valid.
 
 
-## Team Standing Rules (2026-04-01)
+### Bicep IaC Discovery — Issue #637 (2026-04-05)
+
+**Context:** Drafted Azure access request and discovery checklist for the IaC initiative (#637). Confirmed with Neo's analysis that ~10 critical resource identifiers cannot be inferred from the codebase.
+
+**Key pattern — `az group export` workflow:**
+1. Joseph grants `Reader` role on production resource group (resource group scope, not subscription)
+2. `az group export --name <rg> --include-parameter-default-values > arm-export.json`
+3. `az bicep decompile --file arm-export.json` → raw monolith Bicep
+4. Refactor into modular structure: `infrastructure/bicep/modules/{compute,data,security,monitoring}/`
+5. `infrastructure/discovery/` is gitignored — raw ARM export artifacts, no secrets
+
+**Why Reader is sufficient (not Contributor):** Reader allows `az group export`, `az resource list`, and reading metadata for App Insights / Key Vault / Storage. It does NOT expose secret values, storage keys, or SQL credentials. Zero security risk for IaC generation.
+
+**Blocker pattern:** Do NOT scaffold Bicep for production resources without Azure access — templates that compile without real resource names/SKUs will require manual substitution on every parameter, creating rework risk across all 7 phases.
+
+**Time estimate:** Discovery + initial scaffold = 6–9 hours once access and resource group name are provided.
+
+**References:**
+- [GitHub comment posted](https://github.com/jguadagno/jjgnet-broadcast/issues/637#issuecomment-4189062098)
+- Neo's analysis: `.squad/decisions/inbox/neo-637-azure-access-for-bicep.md`
+- Cypher decision: `.squad/decisions/inbox/cypher-637-access-checklist.md`
+
+### Bicep IaC Scaffold — Issue #637 (2026-04-05)
+
+**Context:** Created the full modular Bicep scaffold for the JJGNet Broadcasting Azure environment.
+
+**Resource Group / Subscription confirmed:**
+- Resource Group: `jjgnet`
+- Subscription: `4f42033c-3579-4a94-8023-a3561518ae7f` (Visual Studio Ultimate - MSDN MVP)
+- Tenant: `bee716cf-fa94-4610-b72e-5df4bf5ac339`
+
+**All production resource names resolved from `az resource list`:**
+- SQL Server: `r4bv7wtt6u` (westus) — database: `JJGNet`
+- Key Vault: `jjgnet-broadcasting` (westus2)
+- Storage (main): `jjgnet` (westus2, Standard_RAGRS)
+- Storage (functions): `jjgnetbeb6` (westus, Standard_LRS)
+- App Insights: `jjgnet` (westus2)
+- Log Analytics: `jjgnet-log-workspace` (westus2)
+- App Service Plan: `jjgnet-broadcast` (westus, P1v3)
+- Managed Identities: `api-jjgnet-broad-id-8130`, `web-jjgnet-broad-id-8f0f`, `jjgnet-broadcast-id-8d7d`
+
+**Bicep patterns used:**
+- `targetScope = 'resourceGroup'` at main.bicep level
+- Module-per-resource-type under `infrastructure/bicep/modules/{compute,data,security,monitoring}/`
+- RBAC model for Key Vault (`enableRbacAuthorization: true`) — no access policies, use `roleAssignments` instead
+- `guid(keyVault.id, principalId, roleId)` for deterministic role assignment names
+- `listKeys()` inline for storage connection strings in outputs (secure — outputs are marked sensitive by Bicep)
+- `@secure()` on all password/connection string params
+- `dependsOn` explicit on modules that reference outputs from other modules (key vault depends on app services for principalIds)
+- User-assigned identity wired into function app via `userAssignedIdentities: { '${id}': {} }`
+- Staging slots defined as child resources inside compute modules (not separate modules)
+
+**PR:** #645 — https://github.com/jguadagno/jjgnet-broadcast/pull/645
+**Issue comment:** https://github.com/jguadagno/jjgnet-broadcast/issues/637#issuecomment-4192734573
+
+### Bicep Security Patterns — PR #645 Review Fixes (2026-04-06)
+
+**Security patterns to always follow in Bicep:**
+
+1. **Never use `listKeys()` in module outputs** — connection strings built from `listKeys()` flow into ARM deployment history in plaintext. Instead, use identity-based connections (e.g., `AzureWebJobsStorage__accountName` for Azure Functions) and managed identity auth. Only reference account names/IDs in outputs.
+
+2. **Always set `allowBlobPublicAccess: false`** unless there is an explicit public blob requirement (CDN, static website, etc.). Default to locked-down.
+
+3. **Circular dependency anti-pattern** — if module A passes `outputs.X` to module B AND module B passes `outputs.Y` to module A, this is a compile-time circular dependency. Fix by identifying dead params (declared but unused in resource definitions) and removing them to break the cycle.
+
+4. **Never hardcode email addresses or notification targets** — always parameterise them so they can be injected from parameter files or CI secrets.
+
+5. **Pin API versions to GA** — never use `-preview` API versions in production Bicep. The stable GA replacements used in this project: `microsoft.insights/actionGroups@2023-01-01`, `microsoft.insights/components@2020-02-02`, `Microsoft.OperationalInsights/workspaces@2022-10-01`, `microsoft.insights/metricAlerts@2018-03-01`.
+
+6. **Prefer `StorageV2` over `Storage`** — `kind: 'Storage'` is legacy. Always use `kind: 'StorageV2'` with `accessTier: 'Hot'` for new storage accounts.
+
+7. **Prefer `connectionString` over `instrumentationKey`** for Application Insights — `InstrumentationKey` is deprecated; `ConnectionString` is the modern approach.
+
+**References:** PR #645, Neo code review, commit `eb24106`
+
+
 Established by Joseph Guadagno:
 
 1. **PR Merge Authority**: Only Joseph may merge PRs
