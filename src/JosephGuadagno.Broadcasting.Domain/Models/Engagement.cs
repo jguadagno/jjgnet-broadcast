@@ -19,6 +19,7 @@ public class Engagement
     /// The name of the engagement
     /// </summary>
     [Required]
+    [MaxLength(500)]
     public string Name { get; set; }
         
     /// <summary>
@@ -26,6 +27,7 @@ public class Engagement
     /// </summary>
     [Required]
     [Url]
+    [MaxLength(2048)]
     public string Url { get; set; }
         
     /// <summary>
