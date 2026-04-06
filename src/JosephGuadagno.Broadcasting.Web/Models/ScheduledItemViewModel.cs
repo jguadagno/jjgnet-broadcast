@@ -65,11 +65,13 @@ public class ScheduledItemViewModel
     /// <summary>
     /// The target social platform for this scheduled item (e.g., Twitter, Facebook, LinkedIn, Bluesky)
     /// </summary>
+    [MaxLength(50)]
     public string? Platform { get; set; }
 
     /// <summary>
     /// The message type/category (e.g., RandomPost, Speaking90Days, Speaking30Days, NextWeek, Tomorrow, ComingUp)
     /// </summary>
+    [MaxLength(50)]
     public string? MessageType { get; set; }
 
     /// <summary>

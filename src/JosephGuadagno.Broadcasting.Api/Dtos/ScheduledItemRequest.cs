@@ -21,4 +21,8 @@ public class ScheduledItemRequest
 
     [Required]
     public DateTimeOffset SendOnDateTime { get; set; }
+
+    public string? Platform { get; set; }
+
+    public string? MessageType { get; set; }
 }

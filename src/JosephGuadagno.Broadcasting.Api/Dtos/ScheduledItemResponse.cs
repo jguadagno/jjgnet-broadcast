@@ -16,4 +16,6 @@ public class ScheduledItemResponse
     public DateTimeOffset? MessageSentOn { get; set; }
     public bool MessageSent { get; set; }
     public DateTimeOffset SendOnDateTime { get; set; }
+    public string? Platform { get; set; }
+    public string? MessageType { get; set; }
 }
