@@ -34,7 +34,7 @@ public class LoadNewPostsTests
         _eventPublisher = new Mock<IEventPublisher>();
 
         _eventPublisher.Setup(e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<SyndicationFeedSource>>()))
-            .ReturnsAsync(true);
+            .Returns(Task.CompletedTask);
 
         _sut = new LoadNewPosts(
             _feedReader.Object,

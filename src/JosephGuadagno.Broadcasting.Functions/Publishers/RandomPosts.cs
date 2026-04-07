@@ -38,14 +38,9 @@ public class RandomPosts(
             return;
         }
         
-        // Create the event message to post to the topic
-        var eventPublished = await eventPublisher.PublishRandomPostsEventsAsync(ConfigurationFunctionNames.PublishersRandomPosts,
+        // Create the event message to post to the topic -- throws EventPublishException on failure
+        await eventPublisher.PublishRandomPostsEventsAsync(ConfigurationFunctionNames.PublishersRandomPosts,
             syndicationFeedSource.Id);
-        if (!eventPublished)
-        {
-            logger.LogError("Failed to publish the events for the random posts");
-            return;
-        }
         
         logger.LogCustomEvent(Metrics.RandomPostFired, new Dictionary<string, string>
         {

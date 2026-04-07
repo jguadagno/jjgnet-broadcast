@@ -40,29 +40,23 @@ public class ScheduledItems(
             return;
         }
 
-        // Publish the events
-        var eventsPublished = await eventPublisher.PublishScheduledItemFiredEventsAsync(
+        // Publish the events -- throws EventPublishException on failure
+        await eventPublisher.PublishScheduledItemFiredEventsAsync(
             ConfigurationFunctionNames.PublishersScheduledItems, scheduledItems);
-        if (!eventsPublished)
+
+        // Mark the messages as sent
+        foreach (var scheduledItem in scheduledItems)
         {
-            logger.LogError("Failed to publish the events for some scheduled items");
-        }
-        else
-        {
-            // Mark the messages as sent
-            foreach (var scheduledItem in scheduledItems)
+            var wasSent = await scheduledItemManager.SentScheduledItemAsync(scheduledItem.Id);
+            if (wasSent)
             {
-                var wasSent = await scheduledItemManager.SentScheduledItemAsync(scheduledItem.Id);
-                if (wasSent)
-                {
-                    logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
-                }
-                else
-                {
-                    logger.LogWarning(
-                        "Failed to update the sent flag for scheduled items with the id of '{ScheduledItemId}'",
-                        scheduledItem.Id);
-                }
+                logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
+            }
+            else
+            {
+                logger.LogWarning(
+                    "Failed to update the sent flag for scheduled items with the id of '{ScheduledItemId}'",
+                    scheduledItem.Id);
             }
         }
 
