@@ -1,5 +1,7 @@
+using System.Threading.RateLimiting;
 using JosephGuadagno.Broadcasting.Api.Infrastructure;
 using JosephGuadagno.Broadcasting.Api.Models;
+using Microsoft.AspNetCore.RateLimiting;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -75,6 +77,19 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddControllers();
 
+// Rate limiting — 100 requests per minute (fixed window), applied globally
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter(RateLimitingPolicies.FixedWindow, limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 100;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 0;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
 // Configure OpenAPI
 // Learn more about configuring OpenAPI at https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/overview
 // With help from https://hals.app/blog/dotnet-openapi-scalar-oauth2/
@@ -116,9 +131,10 @@ app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers().RequireRateLimiting(RateLimitingPolicies.FixedWindow);
 
 app.Run();
 
