@@ -35,6 +35,7 @@ public static class HashTagLists
             return DefaultHashtags;
         }
 
-        return BuildHashTagList(tags.Split(','));
+        var tagList = tags.Split(',');
+        return BuildHashTagList(tagList);
     }
 }

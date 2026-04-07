@@ -68,3 +68,16 @@
   - `.squad/log/{timestamp}-{feature}.md` — Session summary (brief, issue/PR focused)
   - `.squad/decisions.md` — Authoritative team decisions (merged from inbox)
   - `.squad/agents/{name}/history.md` — Agent's work log + learnings
+
+### 2026-04-07: GitHub Comment Formatting Fix Session (neo-fix-encoding)
+- Orchestration log: .squad/orchestration-log/2026-04-07T15-47-38Z-neo.md
+- Session log: .squad/log/2026-04-07T15-47-38Z-encoding-fix.md
+- Merged 18 inbox decisions into decisions.md (cypher x8, ghost x1, morpheus x1, neo x7, neo-github-comment-formatting x1)
+- Added github-comment-formatting skill note to all 11 agent history.md files (neo, cypher, ghost, morpheus, switch, sparks, ralph, link, oracle, tank, trinity)
+- Deleted 18 inbox files from .squad/decisions/inbox/
+- Skill added: .squad/skills/github-comment-formatting/SKILL.md (canonical reference for GitHub comment formatting)
+
+### 2026-04-07: GitHub Comment Formatting Skill Added
+- Skill: .squad/skills/github-comment-formatting/SKILL.md now exists — canonical reference
+- Rule: Triple backticks for fenced code blocks; single backticks for inline code only
+- Charter updated with enforcement rule

@@ -109,13 +109,9 @@ public class LoadNewPosts(
                 }
             }
 
-            // Publish the events
-            var eventsPublished = await eventPublisher.PublishSyndicationFeedEventsAsync(
+            // Publish the events -- throws EventPublishException on failure
+            await eventPublisher.PublishSyndicationFeedEventsAsync(
                 ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
-            if (!eventsPublished)
-            {
-                logger.LogError("Failed to publish the events for the new or updated blog posts");
-            }
 
             // Save the last checked value
             feedCheck.LastCheckedFeed = startedAt;

@@ -1,5 +1,6 @@
 using Azure;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Azure.Messaging.EventGrid;
@@ -20,7 +21,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
     /// </summary>
     protected TimeSpan InitialRetryDelay { get; init; } = TimeSpan.FromSeconds(1);
 
-    public async Task<bool> PublishSyndicationFeedEventsAsync(string subject,
+    public async Task PublishSyndicationFeedEventsAsync(string subject,
         IReadOnlyCollection<SyndicationFeedSource> syndicationFeedSourceDataItems)
     {
         if (string.IsNullOrEmpty(subject))
@@ -30,7 +31,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
 
         if (syndicationFeedSourceDataItems.Count == 0)
         {
-            return false;
+            return;
         }
 
         var topicSettings = GetTopicEndpointSettings(Topics.NewSyndicationFeedItem);
@@ -52,10 +53,10 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
                 new EventGridEvent(subject, Topics.NewSyndicationFeedItem, "1.1", data));
         }
 
-        return await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewSyndicationFeedItem);
+        await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewSyndicationFeedItem);
     }
 
-    public async Task<bool> PublishYouTubeEventsAsync(string subject, IReadOnlyCollection<YouTubeSource> youTubeSourceDataItems)
+    public async Task PublishYouTubeEventsAsync(string subject, IReadOnlyCollection<YouTubeSource> youTubeSourceDataItems)
     {
         if (string.IsNullOrEmpty(subject))
         {
@@ -64,7 +65,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
 
         if (youTubeSourceDataItems.Count == 0)
         {
-            return false;
+            return;
         }
 
         var topicSettings = GetTopicEndpointSettings(Topics.NewYouTubeItem);
@@ -86,11 +87,11 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
                 new EventGridEvent(subject, Topics.NewYouTubeItem, "1.1", data));
         }
 
-        return await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewYouTubeItem);
+        await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewYouTubeItem);
     }
 
 
-    public async Task<bool> PublishSpeakingEngagementEventsAsync(string subject,
+    public async Task PublishSpeakingEngagementEventsAsync(string subject,
         IReadOnlyCollection<Engagement> engagements)
     {
         if (string.IsNullOrEmpty(subject))
@@ -100,7 +101,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
 
         if (engagements.Count == 0)
         {
-            return false;
+            return;
         }
 
         var topicSettings = GetTopicEndpointSettings(Topics.NewSpeakingEngagement);
@@ -122,10 +123,10 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
                 new EventGridEvent(subject, Topics.NewSpeakingEngagement, "1.1", data));
         }
 
-        return await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewSpeakingEngagement);
+        await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewSpeakingEngagement);
     }
 
-    public async Task<bool> PublishScheduledItemFiredEventsAsync(string subject,
+    public async Task PublishScheduledItemFiredEventsAsync(string subject,
         IReadOnlyCollection<ScheduledItem> scheduledItems)
     {
         if (string.IsNullOrEmpty(subject))
@@ -135,7 +136,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
             
         if (scheduledItems.Count == 0)
         {
-            return false;
+            return;
         }
         
         var topicSettings = GetTopicEndpointSettings(Topics.ScheduledItemFired);
@@ -157,10 +158,10 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
                 new EventGridEvent(subject, Topics.ScheduledItemFired, "1.1", data));
         }
 
-        return await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.ScheduledItemFired);
+        await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.ScheduledItemFired);
     }
 
-    public async Task<bool> PublishRandomPostsEventsAsync(string subject, int randomPostId)
+    public async Task PublishRandomPostsEventsAsync(string subject, int randomPostId)
     {
         if (string.IsNullOrEmpty(subject))
         {
@@ -169,7 +170,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
             
         if (randomPostId <= 0)
         {
-            return false;
+            return;
         }
         
         var topicSettings = GetTopicEndpointSettings(Topics.NewRandomPost);
@@ -184,10 +185,10 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
         var eventList = new List<EventGridEvent>
             { new(subject, Topics.NewRandomPost, "1.0", data) };
 
-        return await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewRandomPost);
+        await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewRandomPost);
     }
 
-    private async Task<bool> SendWithRetryAsync(
+    private async Task SendWithRetryAsync(
         EventGridPublisherClient client,
         IEnumerable<EventGridEvent> events,
         string topicUrl,
@@ -201,7 +202,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
             try
             {
                 await client.SendEventsAsync(events, cancellationToken);
-                return true;
+                return;
             }
             catch (Exception ex) when (attempt < MaxRetryAttempts)
             {
@@ -216,11 +217,11 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
                 logger.LogError(ex,
                     "Event Grid publish failed after {MaxRetries} attempts for event type '{EventType}' to '{TopicUrl}'.",
                     MaxRetryAttempts, eventType, topicUrl);
-                return false;
+                throw new EventPublishException(
+                    $"Failed to publish event type '{eventType}' to '{topicUrl}' after {MaxRetryAttempts} attempts.",
+                    ex);
             }
         }
-
-        return false;
     }
 
     private ITopicEndpointSettings? GetTopicEndpointSettings(string topicName)

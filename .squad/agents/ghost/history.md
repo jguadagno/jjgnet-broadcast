@@ -132,3 +132,10 @@ MapControllerRoute()
 - Global `AuthorizeFilter` in Program.cs means ALL controllers default to requiring authentication unless explicitly opted out
 - The Error action in HomeController was missing `[AllowAnonymous]` - critical gap since error pages must be accessible during auth failures
 - LinkedIn OAuth flow controller handles sensitive Key Vault operations - correct admin-only gating prevents unauthorized token access
+### 2026-04-07: GitHub Comment Formatting Skill Added
+- Skill: .squad/skills/github-comment-formatting/SKILL.md now exists — canonical reference for formatting GitHub comments
+- Rule: Use triple backticks for ALL fenced code blocks in GitHub content (PR reviews, issue comments, PR comments)
+- Single backticks are for inline code only (single variable/method names, one line)
+- Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
+- Charter updated with enforcement rule (## How I Work)
+- Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code

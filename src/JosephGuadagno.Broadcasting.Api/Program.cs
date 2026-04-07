@@ -1,5 +1,8 @@
+using System.Globalization;
+using System.Threading.RateLimiting;
 using JosephGuadagno.Broadcasting.Api.Infrastructure;
 using JosephGuadagno.Broadcasting.Api.Models;
+using Microsoft.AspNetCore.RateLimiting;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -75,6 +78,34 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddControllers();
 
+// Rate limiting — 100 requests per minute (fixed window), applied globally
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter(RateLimitingPolicies.FixedWindow, limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 100;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 0;
+    });
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            context.HttpContext.Response.Headers.RetryAfter =
+                ((int)retryAfter.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
+        }
+        else
+        {
+            context.HttpContext.Response.Headers.RetryAfter =
+                ((int)TimeSpan.FromSeconds(60).TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
+        }
+        await context.HttpContext.Response.WriteAsync(
+            "Too many requests. Please try again later.", cancellationToken);
+    };
+});
+
 // Configure OpenAPI
 // Learn more about configuring OpenAPI at https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/overview
 // With help from https://hals.app/blog/dotnet-openapi-scalar-oauth2/
@@ -117,8 +148,12 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
-app.MapControllers();
+// NOTE: Health check endpoints (e.g., app.MapHealthChecks("/health")) should be exempted
+// from rate limiting via .DisableRateLimiting() when added to this project.
+// MapDefaultEndpoints() (Aspire) handles its own health/liveness endpoints separately.
+app.MapControllers().RequireRateLimiting(RateLimitingPolicies.FixedWindow);
 
 app.Run();
 

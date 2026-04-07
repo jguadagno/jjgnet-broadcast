@@ -293,28 +293,6 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired(false);
         });
 
-        modelBuilder.Entity<SourceTag>(entity =>
-        {
-            entity.HasKey(e => e.Id)
-                .HasName("PK_SourceTags");
-
-            entity.HasIndex(e => e.Tag, "IX_SourceTags_Tag");
-
-            entity.HasIndex(e => new { e.SourceId, e.SourceType }, "IX_SourceTags_SourceId_SourceType");
-
-            entity.HasIndex(e => new { e.SourceId, e.SourceType, e.Tag })
-                .IsUnique()
-                .HasDatabaseName("UX_SourceTags_SourceId_SourceType_Tag");
-
-            entity.Property(e => e.SourceType)
-                .HasMaxLength(50)
-                .IsRequired();
-
-            entity.Property(e => e.Tag)
-                .HasMaxLength(100)
-                .IsRequired();
-        });
-
         modelBuilder.Entity<MessageTemplate>(entity =>
         {
             entity.HasKey(e => new { e.Platform, e.MessageType })
@@ -468,6 +446,28 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired()
                 .HasColumnType("datetimeoffset")
                 .HasDefaultValueSql("(SYSDATETIMEOFFSET())");
+        });
+
+        modelBuilder.Entity<SourceTag>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_SourceTags");
+
+            entity.HasIndex(e => e.Tag, "IX_SourceTags_Tag");
+
+            entity.HasIndex(e => new { e.SourceId, e.SourceType }, "IX_SourceTags_SourceId_SourceType");
+
+            entity.HasIndex(e => new { e.SourceId, e.SourceType, e.Tag })
+                .IsUnique()
+                .HasDatabaseName("UX_SourceTags_SourceId_SourceType_Tag");
+
+            entity.Property(e => e.SourceType)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Tag)
+                .HasMaxLength(100)
+                .IsRequired();
         });
 
         OnModelCreatingPartial(modelBuilder);
