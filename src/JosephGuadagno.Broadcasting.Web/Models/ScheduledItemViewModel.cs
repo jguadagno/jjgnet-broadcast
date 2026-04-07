@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 
 namespace JosephGuadagno.Broadcasting.Web.Models;
 
@@ -12,6 +13,13 @@ public class ScheduledItemViewModel
     /// The identifier of the row
     /// </summary>
     public int Id { get; set; }
+    
+    /// <summary>
+    /// The type of item that is scheduled to be sent out.
+    /// </summary>
+    [Required]
+    [Display(Name = "Item Type")]
+    public ScheduledItemType ItemType { get; set; }
         
     /// <summary>
     /// The table name where the item is stored
@@ -30,6 +38,7 @@ public class ScheduledItemViewModel
     /// For <see cref="EngagementViewModel"/> it is the Id field/>
     /// </remarks>
     [Required]
+    [Display(Name = "Item ID")]
     public int ItemPrimaryKey { get; set; }
         
         
