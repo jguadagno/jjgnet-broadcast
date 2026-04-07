@@ -1,5 +1,6 @@
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
@@ -40,29 +41,36 @@ public class ScheduledItems(
             return;
         }
 
-        // Publish the events
-        var eventsPublished = await eventPublisher.PublishScheduledItemFiredEventsAsync(
-            ConfigurationFunctionNames.PublishersScheduledItems, scheduledItems);
-        if (!eventsPublished)
+        // Publish the events -- throws EventPublishException on failure
+        try
         {
-            logger.LogError("Failed to publish the events for some scheduled items");
+            await eventPublisher.PublishScheduledItemFiredEventsAsync(
+                ConfigurationFunctionNames.PublishersScheduledItems, scheduledItems);
         }
-        else
+        catch (EventPublishException ex)
         {
-            // Mark the messages as sent
+            logger.LogError(ex, "Failed to publish scheduled item events for {Count} item(s)",
+                scheduledItems.Count);
             foreach (var scheduledItem in scheduledItems)
             {
-                var wasSent = await scheduledItemManager.SentScheduledItemAsync(scheduledItem.Id);
-                if (wasSent)
-                {
-                    logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
-                }
-                else
-                {
-                    logger.LogWarning(
-                        "Failed to update the sent flag for scheduled items with the id of '{ScheduledItemId}'",
-                        scheduledItem.Id);
-                }
+                logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
+            }
+            throw;
+        }
+
+        // Mark the messages as sent
+        foreach (var scheduledItem in scheduledItems)
+        {
+            var wasSent = await scheduledItemManager.SentScheduledItemAsync(scheduledItem.Id);
+            if (wasSent)
+            {
+                logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
+            }
+            else
+            {
+                logger.LogWarning(
+                    "Failed to update the sent flag for scheduled items with the id of '{ScheduledItemId}'",
+                    scheduledItem.Id);
             }
         }
 

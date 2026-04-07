@@ -21,9 +21,9 @@
 - Manager pattern: if a manager is a pure thin delegator with no logging, omit ILogger entirely to avoid CS0414 warning
 - **EF Core value type defaults:** Never use `.HasDefaultValueSql()` on non-nullable value types (bool, int, DateTime) — redundant and triggers EF Core 8+ warnings
 - **Health checks in ServiceDefaults:** Use conditional registration based on connection string presence — allows safe sharing across Api, Web, Functions
-- **Health check severity:** Optional/non-critical services (Bitly, social APIs) return `HealthCheckResult.Degraded`, not `Unhealthy`. Reserve `Unhealthy` for core dependencies. `Unhealthy` → HTTP 503 → load-balancer failover risk.
+- **Health check severity:** Optional/non-critical services (Bitly, social APIs) return `HealthCheckResult.Degraded`, not `Unhealthy`. Reserve `Unhealthy` for core dependencies that prevent the app from functioning. `Unhealthy` drives HTTP 503 and may trigger false load-balancer failovers.
 
-**Current focus:** PR #645 (Bicep IaC scaffold for #637) reviewed. REQUEST CHANGES issued — showstopper circular dependency found in module wiring.
+**Current focus:** PR #661 (EventPublisher exception semantics #310) — implemented catch-log-rethrow in RandomPosts.cs and ScheduledItems.cs. Declined [Serializable] per author. AAA test comments preserved.
 
 ## Summary
 
@@ -126,7 +126,7 @@ Joseph answered all 5 blocking questions:
   - Message text clarifies URL shortening will be skipped but content publishing continues
 
 **Commit:** `456df3d` — `fix(functions): use Degraded for optional Bitly health check (#313)`  
-**Status:** ✅ Pushed to origin. PR #660 updated.
+**Status:** ✅ Pushed to `squad/313-external-health-checks`. PR #660 updated.
 
 **Learnings:**
 - Optional enrichment services (Bitly) should return `Degraded` when config is missing — not `Unhealthy`
@@ -136,6 +136,8 @@ Joseph answered all 5 blocking questions:
 - The `.squad/decisions/inbox/` directory is gitignored — inbox files are never committed to git
 
 ---
+
+### 2026-04-05: Email Managers — PR #623 Review (Issue #617)
 
 **PR:** #623 — `feat: EmailSender and EmailTemplateManager for #608 email notification system`
 **Branch:** `issue-617`
@@ -277,6 +279,16 @@ Review posted as comment (GitHub blocks self-review): https://github.com/jguadag
 - `table-create.sql` RBAC tables ✅
 - `data-create.sql` 3 role seeds ✅
 - `BroadcastingContext` DI in Web Program.cs line 61 ✅
+
+## Learnings
+
+### 2026-04-09: PR #661 — Catch-Log-Rethrow in Timer-Triggered Functions (#310)
+
+- Timer-triggered Azure Functions (`RandomPosts`, `ScheduledItems`) must wrap `EventPublisher` calls in `catch (EventPublishException)` blocks — the Functions runtime swallows the raw exception but structured `LogCustomEvent` telemetry is never emitted without explicit catch.
+- In failure paths, always emit `LogError` + structured metrics before rethrowing — this preserves Application Insights observability even when the invocation is marked failed.
+- `[Serializable]` on custom exceptions is a .NET Framework remnant; not required for .NET Core/5+ Azure Functions workloads — safe to decline.
+- `// Arrange / Act / Assert` comments in tests are a team convention — preserve unless explicitly asked to remove.
+- Branch hygiene: always verify `git branch` in the active shell before editing files; edits apply to the file system regardless of what git thinks the HEAD is.
 
 **Round 2 Review Verdict: ⚠️ CHANGES REQUESTED**
 
