@@ -21,9 +21,8 @@
 - Manager pattern: if a manager is a pure thin delegator with no logging, omit ILogger entirely to avoid CS0414 warning
 - **EF Core value type defaults:** Never use `.HasDefaultValueSql()` on non-nullable value types (bool, int, DateTime) — redundant and triggers EF Core 8+ warnings
 - **Health checks in ServiceDefaults:** Use conditional registration based on connection string presence — allows safe sharing across Api, Web, Functions
-- **Health check severity:** Optional/non-critical services (Bitly, social APIs) return `HealthCheckResult.Degraded`, not `Unhealthy`. Reserve `Unhealthy` for core dependencies that prevent the app from functioning. `Unhealthy` drives HTTP 503 and may trigger false load-balancer failovers.
 
-**Current focus:** PR #661 (EventPublisher exception semantics #310) — implemented catch-log-rethrow in RandomPosts.cs and ScheduledItems.cs. Declined [Serializable] per author. AAA test comments preserved.
+**Current focus:** PR #645 (Bicep IaC scaffold for #637) reviewed. REQUEST CHANGES issued — showstopper circular dependency found in module wiring.
 
 ## Summary
 
@@ -110,30 +109,6 @@ Joseph answered all 5 blocking questions:
 **New issue:** #637 — Bicep IaC for entire Azure environment (8 story points, multi-sprint epic)
 
 **Status:** ✅ All decisions recorded and posted to GitHub. Issue #637 created and triaged. Ready for Cypher to implement #636.
-
----
-
-### 2026-04-09: PR #660 — Bitly Degraded Fix (Issue #313)
-
-**PR:** #660 — `feat: add health checks for external dependencies (#313)`  
-**Branch:** `squad/313-external-health-checks`  
-**Task:** Implement S2 suggestion from prior review — change `Unhealthy` → `Degraded` for missing Bitly config.
-
-**Change made:**
-- `src/JosephGuadagno.Broadcasting.Functions/HealthChecks/BitlyHealthCheck.cs`
-  - `HealthCheckResult.Unhealthy(...)` → `HealthCheckResult.Degraded(...)` for missing Token/ApiRootUri
-  - Updated XML doc comment to explain the rationale
-  - Message text clarifies URL shortening will be skipped but content publishing continues
-
-**Commit:** `456df3d` — `fix(functions): use Degraded for optional Bitly health check (#313)`  
-**Status:** ✅ Pushed to `squad/313-external-health-checks`. PR #660 updated.
-
-**Learnings:**
-- Optional enrichment services (Bitly) should return `Degraded` when config is missing — not `Unhealthy`
-- `Unhealthy` → HTTP 503 → load-balancer removes instance → false failover. Never for non-critical services.
-- `Degraded` → HTTP 200 yellow signal → surfaces the issue without operational harm
-- Prior review comment on PR #660 had no encoding issues in the review body — encoding artifacts were only in the PR description table (terminal escape sequences from the PR author), not in Neo's text
-- The `.squad/decisions/inbox/` directory is gitignored — inbox files are never committed to git
 
 ---
 
@@ -280,16 +255,6 @@ Review posted as comment (GitHub blocks self-review): https://github.com/jguadag
 - `data-create.sql` 3 role seeds ✅
 - `BroadcastingContext` DI in Web Program.cs line 61 ✅
 
-## Learnings
-
-### 2026-04-09: PR #661 — Catch-Log-Rethrow in Timer-Triggered Functions (#310)
-
-- Timer-triggered Azure Functions (`RandomPosts`, `ScheduledItems`) must wrap `EventPublisher` calls in `catch (EventPublishException)` blocks — the Functions runtime swallows the raw exception but structured `LogCustomEvent` telemetry is never emitted without explicit catch.
-- In failure paths, always emit `LogError` + structured metrics before rethrowing — this preserves Application Insights observability even when the invocation is marked failed.
-- `[Serializable]` on custom exceptions is a .NET Framework remnant; not required for .NET Core/5+ Azure Functions workloads — safe to decline.
-- `// Arrange / Act / Assert` comments in tests are a team convention — preserve unless explicitly asked to remove.
-- Branch hygiene: always verify `git branch` in the active shell before editing files; edits apply to the file system regardless of what git thinks the HEAD is.
-
 **Round 2 Review Verdict: ⚠️ CHANGES REQUESTED**
 
 Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomment-4174225355
@@ -408,50 +373,31 @@ Established by Joseph Guadagno:
 - **Fix:** Remove .ValidateOnStart() from Functions project. Keep ValidateDataAnnotations() for runtime validation on first access
 - **Prevention:** When refactoring DI registrations, test in the actual deployment target (Azure Functions runtime), not just local builds. Eager validation (ValidateOnStart) should only be used when you have actual DataAnnotations AND can guarantee the DI container is fully initialized
 
+### 2026-04-09: PR #662 Re-Review — Junction Table Normalization (#323)
 
+**Context:** Reviewed PR #662 (feat(data): normalize Tags column to junction table) after Morpheus + Trinity addressed all 6 items from original review (3 critical, 3 suggestions).
 
----
+**Critical issues verified resolved:**
+1. **EF SourceType bleed**: Originally EF navigation properties didn't filter by SourceType — reads would return mixed SyndicationFeed + YouTube tags for same ID. **Fix:** All reads now use direct discriminated queries (`broadcastingContext.SourceTags.Where(st => st.SourceId == id && st.SourceType == type)`). Zero Include(s => s.SourceTags) usage remains. Navigation properties retained for write-only operations (SyncSourceTagsAsync). BroadcastingContext includes WARNING comments on nav property configs.
 
-### 2026-06-??: Issue #313 — External Dependency Health Checks
+2. **Transaction safety**: Originally SaveAsync called SaveChangesAsync twice (entity save + SyncSourceTagsAsync) without transaction wrapper — partial failure risk. **Fix:** Both data stores now wrap in BeginTransactionAsync/CommitAsync. No partial-failure window remains.
 
-**Delivered:** PR #660 (draft) — eat: add health checks for external dependencies (#313)
+3. **EF model ambiguity**: Dual .WithOne() on same FK column risk — resolved via discriminated direct queries. Nav properties no longer used for reads so data integrity preserved.
 
-**Branch:** squad/313-external-health-checks
+**Suggestions verified implemented:**
+- S1: Unique index UX_SourceTags_SourceId_SourceType_Tag added to migration + EF config
+- S2: STRING_SPLIT SQL Server 2016+ compatibility documented
+- S3: Trinity verified all 15 BuildHashTagList callers correct (compiler-enforced)
 
-**What was built:**
-Six IHealthCheck implementations in src/JosephGuadagno.Broadcasting.Functions/HealthChecks/:
+**Verdict:** APPROVED. Posted approval comment to PR #662, marked as ready for review. Ready for Joseph's merge decision.
 
-| Class | Check name | Validates |
-|---|---|---|
-| BitlyHealthCheck | itly | IBitlyConfiguration.Token + ApiRootUri non-empty |
-| TwitterHealthCheck | 	witter | InMemoryCredentialStore: ConsumerKey, ConsumerSecret, OAuthToken, OAuthTokenSecret |
-| FacebookHealthCheck | acebook | IFacebookApplicationSettings: AppId, PageId, PageAccessToken |
-| LinkedInHealthCheck | linkedin | ILinkedInApplicationSettings: ClientId, AccessToken, AuthorId |
-| BlueskyHealthCheck | luesky | IBlueskySettings: BlueskyUserName, BlueskyPassword |
-| EventGridHealthCheck | vent-grid | IEventPublisherSettings: at least one endpoint, each with Endpoint + Key |
+**Pattern learned:** When using discriminated shared junction tables (SourceType column), prefer direct DbSet<JunctionEntity>.Where(filter) queries over navigation properties to enforce discriminator at query time. Navigation properties remain useful for writes (AddRange/RemoveRange operations).
 
-**Registration:** All registered via uilder.Services.AddHealthChecks().AddCheck<T>(name, tags: ["ready"]) in Program.cs after external manager configuration.
+**Files reviewed:**
+- BroadcastingContext.cs (lines 241-248, 286-293, 296-316)
+- SyndicationFeedSourceDataStore.cs (all read methods + SaveAsync)
+- YouTubeSourceDataStore.cs (all read methods + SaveAsync)
+- 2026-04-09-sourcetags-junction.sql (migration script)
 
-**Exposure:** HealthCheck.cs Azure Function (GET /api/health) now injects HealthCheckService and runs all "ready"-tagged checks alongside the existing inline storage checks.
+**Decision document:** `.squad/decisions/inbox/neo-pr662-approved.md`
 
-**Pattern established:**
-- Functions-specific external API health checks live in src/JosephGuadagno.Broadcasting.Functions/HealthChecks/
-- They are **configuration-only checks** (no live HTTP probes) — zero side effects, zero API quota consumption
-- Live probes should only be added when deeper signal is justified and rate-limiting risk is understood
-- Do NOT put Functions-specific dependency checks in ServiceDefaults — that creates unnecessary coupling for Api/Web
-
-**External client locations (for reference):**
-- Bitly: IBitlyConfiguration (from JosephGuadagno.Utilities.Web.Shortener.Models) — configured in ConfigureBitly()
-- Twitter: InMemoryCredentialStore (from LinqToTwitter.OAuth) — configured in ConfigureTwitter()
-- Facebook: IFacebookApplicationSettings — configured in ConfigureFacebookManager()
-- LinkedIn: ILinkedInApplicationSettings — configured in ConfigureLinkedInManager()
-- Bluesky: IBlueskySettings — configured in ConfigureBlueskyManager()
-- EventGrid: IEventPublisherSettings — configured directly from EventGridTopics:TopicEndpointSettings config section
-
-### 2026-04-07: GitHub Comment Formatting Skill Added
-- Skill: .squad/skills/github-comment-formatting/SKILL.md now exists — canonical reference for formatting GitHub comments
-- Rule: Use triple backticks for ALL fenced code blocks in GitHub content (PR reviews, issue comments, PR comments)
-- Single backticks are for inline code only (single variable/method names, one line)
-- Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
-- Charter updated with enforcement rule (## How I Work)
-- Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code

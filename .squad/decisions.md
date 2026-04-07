@@ -11205,176 +11205,666 @@ Adds SQL Server and Azure Storage dependency health checks to Api and Web applic
 
 
 ---
-## Decisions Merged from Inbox — 2026-04-07T15:47:38Z
+
+> Inbox merged by Scribe — 2026-04-07T18:01:00Z
+> Decisions from: morpheus-ef-sourcetype-reads, morpheus-sourcetags-unique-index, neo-catch-log-rethrow, neo-degraded-optional-services, neo-eventpublisher-exceptions, neo-sprint-review-2026-04-09, trinity-hashtag-callers-audit, trinity-ratelimit-middleware-order
+
+--- From: morpheus-ef-sourcetype-reads.md ---
+# Decision: EF Navigation Properties for Discriminated Junction Tables
+
+**Date:** 2026-04-04  
+**Author:** Morpheus (Data Engineer)  
+**Status:** Active  
+**Context:** PR #662, Issue #323 — SourceTags junction table normalization
+
+## Problem
+
+When a junction table uses a discriminator column to support multiple parent entities sharing the same FK column, EF Core's `Include()` navigation property reads do NOT apply the discriminator filter. This causes data bleed across entity types.
+
+### Specific Case: SourceTags
+
+- `dbo.SourceTags` has `SourceId INT` (FK) + `SourceType NVARCHAR(50)` (discriminator: 'SyndicationFeed' | 'YouTube')
+- Both `SyndicationFeedSources` and `YouTubeSources` use IDENTITY(1,1) PKs
+- `SyndicationFeedSources.Id = 1` and `YouTubeSources.Id = 1` can coexist
+- EF's `Include(s => s.SourceTags)` returns tags for BOTH SourceId=1 rows, regardless of SourceType
+
+**Result:** A SyndicationFeedSource entity incorrectly includes tags from a YouTubeSource with the same Id.
+
+## Decision
+
+**NEVER use `Include()` for reads on discriminated junction table navigation properties.**
+
+Instead:
+1. Query the junction table directly with the SourceType filter
+2. Manually populate the EF entity's navigation collection before mapping
+3. Let AutoMapper read from the correctly filtered collection
+
+## Implementation Pattern
+
+### EF Context Configuration
+Keep the navigation property configuration (needed for writes and cascading deletes), but add a warning comment:
+
+```csharp
+// NOTE: Navigation property configured for write operations (SyncSourceTagsAsync).
+// DO NOT use Include(s => s.SourceTags) for reads - it doesn't filter by SourceType.
+// Data stores must query SourceTags directly with SourceType discriminator.
+entity.HasMany(e => e.SourceTags)
+    .WithOne()
+    .HasForeignKey(st => st.SourceId)
+    .HasPrincipalKey(e => e.Id)
+    .IsRequired(false);
+```
+
+### Data Store Read Pattern
+```csharp
+private const string SourceType = "SyndicationFeed"; // or "YouTube"
+
+public async Task<Domain.Models.SyndicationFeedSource> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
+{
+    var dbEntity = await broadcastingContext.SyndicationFeedSources
+        .FirstOrDefaultAsync(s => s.Id == primaryKey, cancellationToken);
+    
+    if (dbEntity is not null)
+    {
+        dbEntity.SourceTags = await broadcastingContext.SourceTags
+            .Where(st => st.SourceId == primaryKey && st.SourceType == SourceType)
+            .ToListAsync(cancellationToken);
+    }
+    
+    return mapper.Map<Domain.Models.SyndicationFeedSource>(dbEntity);
+}
+```
+
+### Transaction Safety for Writes
+Wrap entity save + junction sync in a transaction to prevent partial failures:
+
+```csharp
+await using var tx = await broadcastingContext.Database.BeginTransactionAsync(cancellationToken);
+await broadcastingContext.SaveChangesAsync(cancellationToken);
+await SyncSourceTagsAsync(dbEntity.Id, entity.Tags, cancellationToken);
+await tx.CommitAsync(cancellationToken);
+```
+
+## Consequences
+
+### Positive
+- **Correctness:** Tags are filtered by SourceType; no data bleed
+- **Transaction safety:** Entity and junction rows saved atomically
+- **Clarity:** Code explicitly shows the SourceType filtering requirement
+
+### Negative
+- **Performance:** N+1 queries in GetAll scenarios (fetch all entities, then tags per entity)
+  - **Mitigation:** Can be optimized with a single batch query if GetAll becomes a bottleneck:
+    ```csharp
+    var allTags = await broadcastingContext.SourceTags
+        .Where(st => st.SourceType == SourceType && sourceIds.Contains(st.SourceId))
+        .ToListAsync();
+    // Group by SourceId and assign to entities
+    ```
+- **Verbosity:** Manual population of navigation properties adds boilerplate
+
+## Applicability
+
+This pattern applies to any junction table with:
+1. A discriminator column (e.g., SourceType)
+2. Multiple parent entities sharing the same FK column
+3. Parent entities using overlapping PK values (common with IDENTITY)
+
+## References
+
+- PR #662: https://github.com/jguadagno/jjgnet-broadcast/pull/662
+- Affected files:
+  - `src/JosephGuadagno.Broadcasting.Data.Sql/BroadcastingContext.cs`
+  - `src/JosephGuadagno.Broadcasting.Data.Sql/SyndicationFeedSourceDataStore.cs`
+  - `src/JosephGuadagno.Broadcasting.Data.Sql/YouTubeSourceDataStore.cs`
 
 ---
 
-### Decision: Azure Reader Access Required Before Bicep IaC Can Begin
-Date: 2026-04-05 | Author: Cypher | Issue: #637
+**Reviewed by:** Neo (Lead Architect)  
+**Reviewed on:** 2026-04-04
 
-Bicep IaC generation for issue #637 is blocked until Joseph provides: (1) production resource group name, (2) Reader role assignment on that resource group.
 
-Minimum required: Reader role only (not subscription-wide). Sufficient for az group export, az resource list, Key Vault metadata - does NOT expose secrets or account keys.
+--- From: morpheus-sourcetags-unique-index.md ---
+# Decision: Unique Indexes on Junction Tables with Delete+Re-insert Pattern
 
-Cannot infer without Azure access: Resource group name, SQL Server FQDN, Storage Account name, Key Vault name, App Service Plan resource ID, Application Insights name, Log Analytics workspace, Managed Identity names/client IDs, Event Grid namespace name, all SKUs.
+**Date:** 2026-04-09  
+**Author:** Morpheus (Data Engineer)  
+**Context:** PR #662 (Issue #323) — SourceTags junction table  
+**Status:** Implemented
+
+## Problem
+
+Junction tables using delete+re-insert synchronization patterns are vulnerable to race conditions. If `SyncSourceTagsAsync` is called concurrently for the same source, duplicate tag rows can be inserted between the DELETE and INSERT operations, even within a transaction.
+
+## Decision
+
+**Always add unique constraints to junction tables when using delete+re-insert patterns.**
+
+For `SourceTags` (shared between SyndicationFeedSources and YouTubeSources):
+- Unique index: `(SourceId, SourceType, Tag)`
+- Prevents duplicate tags per source
+- Applied in BOTH migration script AND EF model configuration
+
+## Implementation
+
+**Migration:** `scripts\database\migrations\2026-04-09-sourcetags-junction.sql`
+```sql
+CREATE UNIQUE INDEX UX_SourceTags_SourceId_SourceType_Tag
+    ON dbo.SourceTags (SourceId, SourceType, Tag);
+```
+
+**EF Model:** `BroadcastingContext.cs`
+```csharp
+entity.HasIndex(e => new { e.SourceId, e.SourceType, e.Tag })
+    .IsUnique()
+    .HasDatabaseName("UX_SourceTags_SourceId_SourceType_Tag");
+```
+
+## Consequences
+
+**Positive:**
+- Guarantees data integrity at the database level
+- Prevents duplicate tags from concurrent sync operations
+- Fails fast with clear constraint violation if race condition occurs
+
+**Negative:**
+- Additional index overhead (minimal for junction tables)
+- Concurrent sync attempts will fail with duplicate key error instead of silently succeeding
+
+## Pattern for Future Use
+
+When creating junction tables:
+1. Identify the natural key (columns that define uniqueness)
+2. Add a unique index on those columns
+3. Apply in BOTH migration AND EF model configuration
+4. Consider composite unique indexes for discriminated tables (e.g., SourceType)
+
+## Related Decisions
+
+- **SourceType Discriminator Pattern** — Direct query with SourceType filter instead of EF navigation properties
+- **Transaction Safety** — Wrap entity save + junction sync in BeginTransactionAsync/CommitAsync
+
+
+--- From: neo-catch-log-rethrow.md ---
+# Decision: Timer-triggered Functions must catch-log-rethrow EventPublishException
+
+**Date:** 2026-04-09
+**Issue:** #310
+**PR:** https://github.com/jguadagno/jjgnet-broadcast/pull/661
+
+## Decision
+
+Timer-triggered Functions must catch `EventPublishException`, emit telemetry/metrics, then rethrow — never let exceptions silently skip structured logging.
+
+## Rules
+
+1. Any timer-triggered Function that calls `IEventPublisher` must wrap the call in `try/catch (EventPublishException)`
+2. The catch block must emit `logger.LogError(ex, ...)` with meaningful context before rethrowing
+3. Structured telemetry (`logger.LogCustomEvent(...)`) that follows the publish call must also be emitted in the catch block so Application Insights always captures the event
+4. Always end the catch block with `throw;` — never swallow the exception; the Azure Functions runtime handles retry scheduling
+5. HTTP-triggered Functions (`LoadNewPosts`, `LoadNewVideos`) use outer `catch (Exception)` returning 400 — different pattern, both are valid for their context
+
+## Affected Files
+
+- `src/JosephGuadagno.Broadcasting.Functions/Publishers/RandomPosts.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/Publishers/ScheduledItems.cs`
+
+## Rationale
+
+When `EventPublishException` propagates uncaught from a timer-triggered Function, the Azure Functions runtime marks the invocation failed and logs the raw exception — but structured `LogCustomEvent` telemetry calls that sit after the publish call are never reached. This creates silent gaps in Application Insights metrics dashboards.
+
+
+--- From: neo-degraded-optional-services.md ---
+# Decision: Optional External Services Should Return HealthCheckResult.Degraded
+
+**Date:** 2026-04-09  
+**Author:** Neo  
+**Status:** Decided
+
+## Decision
+
+Optional external services (e.g., Bitly URL shortening) should return `HealthCheckResult.Degraded`, not `HealthCheckResult.Unhealthy`, when their configuration is missing or incomplete.
+
+## Rationale
+
+- `Unhealthy` drives the `/api/health` response to HTTP 503. Load balancers treat 503 as a signal to remove the instance from rotation.
+- If Bitly is not configured, the app still publishes content — just with unshortened URLs. This is degraded functionality, not a hard failure.
+- Returning `Unhealthy` for an optional/non-critical service risks false load-balancer failovers that take down an otherwise healthy app.
+- `Degraded` returns HTTP 200 with a yellow signal, which surfaces the misconfiguration without causing operational harm.
+
+## Rule
+
+> **If the app can operate (possibly with reduced functionality) without an external service, that service's health check should return `Degraded`, not `Unhealthy`.**
+
+Reserve `Unhealthy` for:
+- Core dependencies the app cannot function without (SQL Server, Azure Storage queues, Key Vault)
+- Unexpected exceptions that indicate a systemic problem
+
+## Applied To
+
+- `BitlyHealthCheck` — PR #660, commit `456df3d` on `squad/313-external-health-checks`
+
+## Future Guidance
+
+Review all six health checks in `src/JosephGuadagno.Broadcasting.Functions/HealthChecks/` against this rule when PR #660 is merged. Twitter, Facebook, LinkedIn, Bluesky, and EventGrid should be evaluated: if the app can still run without them posting to a given platform, `Degraded` is appropriate; if a missing EventGrid config breaks the core event pipeline, `Unhealthy` is correct.
+
+
+--- From: neo-eventpublisher-exceptions.md ---
+# Decision: IEventPublisher throws EventPublishException on failure
+
+**Date:** 2026-04-07
+**Issue:** #310
+**PR:** https://github.com/jguadagno/jjgnet-broadcast/pull/661
+
+## Decision
+IEventPublisher methods throw EventPublishException on failure instead of returning bool.
+
+## Rules
+1. All IEventPublisher methods return Task (not Task<bool>)
+2. EventPublishException extends BroadcastingException
+3. Thrown after all retry attempts exhausted, wrapping original exception
+4. Empty collection / invalid ID: silent no-op (not a failure)
+5. ArgumentNullException for null/empty subject: unchanged
+6. InvalidOperationException for missing topic settings: unchanged
+
+
+--- From: neo-pr662-approved.md ---
+# Neo Decision: PR #662 APPROVED — Junction Table Normalization
+
+**Date:** 2026-04-09  
+**PR:** #662 feat(data): normalize Tags column to junction table  
+**Issue:** #323  
+**Author:** Neo (Lead Reviewer)  
+**Status:** APPROVED — Ready for Joseph's merge decision
 
 ---
 
-### Decision: Azure Access Requirement for Issue #637 Bicep IaC
-Date: 2026-04-05 | Author: Neo | Issue: #637
+## Context
 
-Live Azure Reader access strongly recommended before Cypher begins writing Bicep. Scratch-writing viable for ~60% of templates from known names but produces drift-prone templates without it. Creates rework risk across all 7 phases.
+PR #662 normalizes the comma-delimited `Tags` string columns on `SyndicationFeedSources` and `YouTubeSources` into a shared `dbo.SourceTags` junction table, discriminated by `SourceType` varchar column. Domain models change `Tags` from `string?` to `IList<string>`.
 
----
+**Previous review (2026-04-07):** CHANGES REQUESTED — 3 critical issues + 3 suggestions identified.
 
-### Decision: Modular Bicep IaC Structure (#637)
-Date: 2026-04-05 | Author: Cypher | PR: #645
-
-Full modular Bicep scaffold for JJGNet Broadcasting Azure environment. Structure: main.bicep + modules/compute (app-service.bicep, function-app.bicep), modules/data (sql-server.bicep, storage-account.bicep, event-grid.bicep), modules/security (key-vault.bicep, managed-identity.bicep), modules/monitoring (log-analytics.bicep, app-insights.bicep, action-group.bicep, alert-rules.bicep).
-
-Key decisions: RBAC over Access Policies (enableRbacAuthorization: true); two storage accounts (jjgnet app data + jjgnetbeb6 Functions runtime - separation intentional); two regions (westus compute + westus2 storage/monitoring); bicepparam format (Bicep 0.18+); infrastructure/discovery/ gitignored.
+**Re-review scope:** Verify all 6 items were correctly resolved by Morpheus and Trinity.
 
 ---
 
-### Decision: Security Fixes — PR #645 Bicep Review
-Date: 2026-04-06 | Author: Cypher | PR: #645
+## Re-Review Findings
 
-Standing rules for all Bicep work on this project:
-1. No listKeys() in outputs — use identity-based access or Key Vault references
-2. allowBlobPublicAccess: false by default unless explicitly justified
-3. GA API versions only — no -preview in production Bicep
-4. No hardcoded email/notification addresses — always parameterise
-5. StorageV2 kind only — never Storage (legacy)
-6. connectionString not instrumentationKey for App Insights
+### Critical Issues — All Resolved
 
-Circular dependency resolved: removed dead keyVaultUri parameter from app-service.bicep (declared but never referenced). Pattern: when circular dependency identified, audit both modules for unused parameters.
+**Issue 1: EF SourceType bleed (navigation properties don't filter by SourceType)**
 
-Functions storage: use AzureWebJobsStorage__accountName (account name only, identity-based auth) instead of key-based connection strings. Eliminates keys from deployment artifacts.
+**Status:** ✅ RESOLVED
 
----
+**Resolution:**
+- BroadcastingContext.cs now includes NOTE comments on both navigation property configurations (lines 241-248, 286-293) explicitly warning NOT to use `Include()` for reads
+- All read methods in both data stores (`SyndicationFeedSourceDataStore`, `YouTubeSourceDataStore`) directly query `broadcastingContext.SourceTags` with `.Where(st => st.SourceId == ... && st.SourceType == SourceType)`
+- Zero usage of `Include(s => s.SourceTags)` remains in codebase
+- Navigation properties retained ONLY for write operations (SyncSourceTagsAsync)
 
-### Decision: PR #645 Bicep Scaffold — Review Journey and Approval
-Date: 2026-04-06 | Reviewer: Neo | PR: #645 | Final Verdict: APPROVED (3 rounds)
-
-Round 1 (7 issues): circular dependency, preview API versions in monitoring, missing TLS enforcement, Key Vault soft delete + purge protection missing, supportsHttpsTrafficOnly missing, sqlAdminPassword not @secure(), missing README.
-Round 2 (1 remaining): 11 -preview API occurrences in event-grid.bicep, sql-server.bicep, managed-identity.bicep.
-Round 3: All 11 replaced with GA versions. Approved.
-
-GA version reference: EventGrid 2022-06-15, SQL 2021-11-01, ManagedIdentity 2023-01-31, actionGroups 2023-01-01, components 2020-02-02, workspaces 2022-10-01, metricAlerts 2018-03-01.
-
-Security defaults: always enforce minimalTlsVersion: '1.2', supportsHttpsTrafficOnly: true, Key Vault soft delete + purge protection, @secure() on all password params.
+**Verified in:**
+- `SyndicationFeedSourceDataStore.cs`: GetAsync (lines 20-22), GetByFeedIdentifierAsync (112-115), GetByUrlAsync (129-132), GetAllAsync (68-70), GetRandomSyndicationDataAsync (160-163), DeleteAsync (89-91)
+- `YouTubeSourceDataStore.cs`: GetAsync (19-21), GetByUrlAsync (111-114), GetByVideoIdAsync (128-131), GetAllAsync (67-69), DeleteAsync (88-90)
 
 ---
 
-### Decision: Managed Identity Strategy — API, Web, Functions
-Date: 2026-04-06 | Author: Cypher
+**Issue 2: Transaction safety (two SaveChangesAsync without transaction)**
 
-System-assigned identities (named after resource) are the active identities — Key Vault Secrets User role granted to their principal IDs. User-assigned identities for API (api-jjgnet-broad-id-8130) and Web (web-jjgnet-broad-id-8f0f) are orphaned — not attached, no configured role assignments.
+**Status:** ✅ RESOLVED
 
-Recommendation: Delete orphaned user-assigned identities for API and Web. System-assigned identities are sufficient for Key Vault access. Functions user-assigned identity (jjgnet-broadcast-id-8d7d) is attached and used for identity-based storage auth — keep as-is.
+**Resolution:**
+- Both `SyndicationFeedSourceDataStore.SaveAsync` (lines 36-39) and `YouTubeSourceDataStore.SaveAsync` (lines 35-38) now wrap entity save + SyncSourceTagsAsync in `BeginTransactionAsync` / `CommitAsync` block
+- No partial-failure window remains
 
----
-
-### Decision: Azure Functions Identity Consolidation
-Date: 2026-04-06 | Author: Cypher | Status: Implemented (Bicep complete)
-
-Consolidated to single user-assigned managed identity named function-jjgnet-broadcast for Functions app. Chosen over renaming Function App (which requires delete + recreate, breaking hostname and CI/CD).
-
-Files changed: managed-identity.bicep (renamed resource), function-app.bicep (identity type UserAssigned only), main.bicep (updated keyVault module to use new identity's principal ID).
-
-Post-deploy steps required: Grant Blob Data Owner, Queue Data Contributor, Table Data Contributor on jjgnetbeb6 to function-jjgnet-broadcast; remove orphaned Key Vault role assignments; delete old identity jjgnet-broadcast-id-8d7d.
+**Pattern:**
+```csharp
+await using var tx = await broadcastingContext.Database.BeginTransactionAsync(cancellationToken);
+await broadcastingContext.SaveChangesAsync(cancellationToken);
+await SyncSourceTagsAsync(dbEntity.Id, entity.Tags, cancellationToken);
+await tx.CommitAsync(cancellationToken);
+```
 
 ---
 
-### Decision: Functions Storage RBAC Codified in Bicep
-Date: 2026-04-07 | Author: Cypher | PR: #658
+**Issue 3: EF model ambiguity (dual .WithOne() on same FK column)**
 
-Post-PR #657: Functions system-assigned identity had 3 storage role assignments (Blob/Queue/Table Data Contributor on jjgnetbeb6) granted manually in Portal but NOT in Bicep. Gap: fresh deployment would lose Functions storage access.
+**Status:** ✅ RESOLVED (no longer a risk)
 
-Solution: Created infrastructure/bicep/modules/security/storage-rbac.bicep with 3 deterministic role assignments using guid(storageAccount.id, functionsPrincipalId, roleDefId). Called from main.bicep after storage and functionApp modules. Idempotent — existing assignments reconciled by name.
-
----
-
-### Decision: Deployment Identity — Intentionally Manual, Not in Bicep
-Date: 2026-04-07 | Author: Cypher
-
-After PR #657 removed user-assigned managed identities (which were also used for GitHub Actions OIDC), Joseph created Entra app JJGNet-Deployment-Credentials. Workflows use repository secrets (not hardcoded IDs). Recent deployments succeeded.
-
-Decision: Deployment identity should NOT be codified in Bicep. Reasons: tenant-level resource (outside Bicep RG scope), governance separation, Bicep Graph provider immature (preview), one-time setup, security boundary (elevated permissions).
-
-Recommended: Document deployment identity setup in infrastructure/docs/deployment-identity-setup.md for disaster recovery.
+**Resolution:**
+- The dual `.WithOne()` configuration still exists in BroadcastingContext (lines 244-248, 289-293)
+- However, given the new read strategy (no Include reads, only direct discriminated queries), this configuration no longer causes data corruption
+- Navigation properties used ONLY for writes where SourceType is explicitly set
+- The original risk was EF materializing incorrect data via Include queries — but Include is no longer used
+- EF may still emit model validation warnings at startup, but data integrity is preserved by query pattern
 
 ---
 
-### Decision: MSAL Token Cache Collision Handling (Issue #81)
-Date: 2026-04-06 | Author: Ghost | PR: #648
+### Suggestions — All Implemented
 
-Problem: App recycles leave stale SQL cache entries; MSAL throws MsalClientException: multiple tokens in cache; existing handler only handled user_null, not cache collisions.
+**S1: Unique index on (SourceId, SourceType, Tag)**
 
-Solution: Added MsalClientException and MsalServiceException catch blocks using IsTokenCacheCollision() detection. Sign out user + reject principal to force clean re-authentication. Cache config: DefaultSlidingExpiration = 14 days, ExpiredItemsDeletionInterval = 30 minutes.
+**Status:** ✅ IMPLEMENTED
 
-Pattern: Always use MsalError.* constants for MSAL error detection (e.g., MsalError.MultipleTokensMatchedError) — never string-match on .Message or .ErrorCode literals. Constants are stable public API; message text can change across MSAL versions.
-
----
-
-### Decision: Scheduled Items Refactor — Platform/MessageType Columns (Issue #89, PR #646/#650)
-Date: 2026-04-07 | Author: Morpheus | Status: Phase 1 Complete
-
-Phase 1 implemented: Added Platform (NVARCHAR(50), nullable) and MessageType (NVARCHAR(50), nullable) to ScheduledItems. Backward compatible — existing records backfilled with 'Legacy'. Architecture shift from on-the-fly composition at publish time to pre-composed messages stored per platform at creation time.
-
-Conventions: No EF Migrations (raw SQL scripts in scripts/database/migrations/); idempotent migrations with IF NOT EXISTS guards; base schema (table-create.sql) updated alongside migration; AutoMapper reverse map handles new properties automatically.
-
-Phase 2 next: IScheduledItemContentPublisher — generate series of ScheduledItems from Engagement/Talk on creation.
-Phase 3 final: Update Azure Functions publishers to use pre-composed messages.
+- Migration script (lines 22-24): `CREATE UNIQUE INDEX UX_SourceTags_SourceId_SourceType_Tag`
+- BroadcastingContext.cs (lines 305-307): Matching EF configuration with `.IsUnique().HasDatabaseName("UX_SourceTags_SourceId_SourceType_Tag")`
 
 ---
 
-### Decision: .NET Technical Debt Patterns — IOptions, CancellationToken, OperationResult
-Date: 2026-04-07 | Author: Neo | Issues: #309, #311, #312 | PR: #649
+**S2: STRING_SPLIT SQL Server compatibility documentation**
 
-1. IOptions Pattern (#309): Use Configure<T>() + AddOptions<T>().ValidateDataAnnotations().ValidateOnStart(). Inject as IOptions<T>, access via .Value. EXCEPTION: Do NOT use ValidateOnStart() in Azure Functions projects.
+**Status:** ✅ IMPLEMENTED
 
-2. CancellationToken Propagation (#311): Add ct = default to all async interface methods; propagate to EF Core. Default parameter ensures backward compatibility.
-
-3. OperationResult Pattern (#312): Managers return Task<OperationResult<T>>. Static factory methods: OperationResult<T>.Success(value) and OperationResult<T>.Failure(error, ex). Callers check .IsSuccess before accessing .Value.
+- Migration script (line 27): Comment reads `-- STRING_SPLIT without ordinal arg: SQL Server 2016+ compatible (ordering not needed for tag seeding)`
 
 ---
 
-### Decision: Functions DI Startup Failure Hotfix (PR #649 Regression)
-Date: 2026-04-06 | Author: Neo | Status: RESOLVED (commit ed48022)
+**S3: HashTagLists.BuildHashTagList callers verification**
 
-Problem: .ValidateOnStart() causes eager IOptions<T> resolution during Azure Functions startup before DI container fully initialized. Error: System.InvalidOperationException: A suitable constructor for type '_functionActivator' could not be located.
+**Status:** ✅ VERIFIED (Trinity confirmed)
 
-Root cause: Azure Functions isolated worker DI initializes in phases; ValidateOnStart() forces immediate resolution before all dependencies wired. None of the settings classes had actual DataAnnotation attributes, making ValidateOnStart() pointless.
-
-Fix: Removed .ValidateOnStart() from all 5 settings registrations in Functions/Program.cs. Kept ValidateDataAnnotations() (lazy validation on first access — safe).
-
-Rule: Do NOT use ValidateOnStart() in Azure Functions isolated worker projects. Safe to use in Api/Web projects with actual DataAnnotation attributes ([Required], [StringLength], etc.).
+- Trinity verified all 15 callers are compiler-enforced correct
+- No code changes needed
 
 ---
 
-### Decision: GitHub Comment Formatting — Triple Backticks Required
-Date: 2026-04-06 | Author: Neo | Incident: PR #646
+## Verdict: APPROVED
 
-All agents posting GitHub content must use triple backticks for fenced code blocks. Single backticks reserved for inline code only (single variable/method names, one line).
+All critical issues and suggestions have been correctly resolved. The PR demonstrates solid engineering:
 
-Root cause: PR #646 review used single-backtick code fences. GitHub renders them as broken inline code — first character of language hint consumed as delimiter, multi-line content collapses, words truncated. Silent failure.
+**Strengths:**
+- Clean separation of read vs. write strategy for navigation properties
+- Explicit SourceType discriminator on all queries
+- Transaction safety for dual SaveChangesAsync pattern
+- Comprehensive inline documentation (NOTE comments in BroadcastingContext)
+- Backward-compatible migration retains old Tags column
 
-Enforcement: Rule embedded in all 12 agent charters (## How I Work). Canonical reference: .squad/skills/github-comment-formatting/SKILL.md. Neo flags any single-backtick code fence as a formatting defect.
-
-Correct pattern: inline code uses backtick (e.g., Platform), multi-line uses triple backtick with language hint.
+**Ready for:**
+- Joseph's final review
+- Merge to main
+- Deletion of old Tags columns in a future migration (after production verification)
 
 ---
 
-### Decision: Sprint 12 Re-Review Patterns (PRs #647, #648, #650)
-Date: 2026-04-07 | Reviewer: Neo | Outcome: All 3 PRs approved
+## Actions Taken
 
-1. Database Schema Change Checklist: synchronize all four layers — migration script, base schema (table-create.sql), EF Core context (HasMaxLength()), Domain model ([MaxLength]).
+1. Posted approval comment to PR #662 (https://github.com/jguadagno/jjgnet-broadcast/pull/662#issuecomment-4201174829)
+2. Marked PR as "ready for review" (removed draft status)
+3. Created this decision document for squad record
 
-2. MSAL Error Handling: use MsalError.* constants, never string-match on .Message or .ErrorCode literals.
+---
 
-3. ViewModel mirrors Domain annotations: [MaxLength] on Domain → [MaxLength] on ViewModel (client-side validation). API DTOs do NOT need [MaxLength] (data contracts, not validation models).
+_Reviewed by Neo (Lead) — 2026-04-09_
 
-4. Migration backfill: independent UPDATE statements per column (not combined with OR, which risks overwriting existing data).
 
-5. Controversial code: document with PR/issue references in justification comments to preserve historical context.
+--- From: neo-sprint-review-2026-04-09.md ---
+# Neo Decisions Inbox — Sprint Review 2026-04-09
+
+**Date:** 2026-04-09
+**Author:** Neo (Lead Architect)
+**Source:** Sprint draft PR review (PRs #659, #660, #661, #662)
+**Status:** Pending team acknowledgement
+
+---
+
+## Decision 1: Polymorphic junction tables must not use bare EF navigation properties
+
+**Context:**
+PR #662 introduced a shared `dbo.SourceTags` table discriminated by `SourceType` (`'SyndicationFeed'` | `'YouTube'`). Both `SyndicationFeedSource` and `YouTubeSource` EF entities define `.HasMany(e => e.SourceTags).WithOne().HasForeignKey(st => st.SourceId)` without any SourceType filter. Since both parent tables use `IDENTITY(1,1)`, their IDs overlap. `Include(s => s.SourceTags)` generates SQL `WHERE SourceId = @id` with no SourceType filter, causing tag bleed between entity types.
+
+**Decision:**
+When a junction table uses a string discriminator (SourceType) to serve multiple parent entity types sharing overlapping primary key ranges, **do not use EF Core navigation properties for reads**. Instead:
+
+- Query the junction table directly with both `SourceId` and `SourceType` predicates, OR
+- Apply a global query filter (`HasQueryFilter`) on the junction entity that is discriminator-aware.
+
+EF Core's bare `.HasMany().WithOne()` does not support discriminator-based filtering on navigation loads.
+
+**Impact:** PR #662 must be revised before merge to fix read correctness.
+
+---
+
+## Decision 2: ASP.NET Core middleware order — UseRateLimiter must come after UseAuthorization
+
+**Context:**
+PR #659 placed `UseRateLimiter()` between `UseAuthentication()` and `UseAuthorization()`, which diverges from the Microsoft-documented middleware order.
+
+**Decision:**
+The canonical middleware order for the API and Web projects is:
+
+```csharp
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseRateLimiter();      // always last of the auth/authz/ratelimit triad
+```
+
+Rationale: `UseRateLimiter` may reference `httpContext.User` for policy evaluation. If placed before `UseAuthorization`, user identity may not be fully established, silently breaking per-user rate limiting policies added in future.
+
+For PR #659 this is non-breaking (global fixed-window policy uses no user context), but the order should be corrected to prevent a latent bug when per-user policies are added.
+
+**Impact:** PR #659 can merge with the current order; however the suggestion to reorder should be addressed in a follow-up or in the same PR if author is available.
+
+---
+
+## Decision 3: Health checks for optional services should use Degraded, not Unhealthy
+
+**Context:**
+PR #660 registers `BitlyHealthCheck` returning `Unhealthy` when the Bitly token is missing. Bitly is an optional URL-shortening service — the app functions (posts content) without it, just with unshortened URLs.
+
+**Decision:**
+Health checks for **optional/non-critical** dependencies (where the app degrades gracefully but continues to function) should return `HealthCheckResult.Degraded`, not `HealthCheckResult.Unhealthy`. Reserve `Unhealthy` for dependencies whose absence prevents the app from functioning at all (e.g., EventGrid topics, core storage).
+
+This prevents load balancers from routing traffic away from a healthy instance solely because an optional integration is misconfigured.
+
+**Impact:** Low — PR #660 can merge; Bitly (and potentially LinkedIn if access token expires) check severity should be revisited in a follow-up.
+
+---
+
+## Decision 4: EventPublisher callers (timer Functions) should catch-log-rethrow EventPublishException
+
+**Context:**
+PR #661 converts `IEventPublisher` methods to `Task` (throwing `EventPublishException` on failure). HTTP-triggered Function callers (`LoadNewPosts`, `LoadNewVideos`) absorb the exception via existing outer `catch (Exception)` blocks. Timer-triggered Function callers (`RandomPosts`, `ScheduledItems`) have no error boundary, so `EventPublishException` propagates unhandled to the Azure Functions runtime, which logs the raw exception but skips any structured telemetry below the throw point.
+
+**Decision:**
+All Function callers that invoke `IEventPublisher` methods should wrap the call in a catch-log-rethrow pattern:
+
+```csharp
+try
+{
+    await eventPublisher.PublishXxxEventsAsync(...);
+}
+catch (EventPublishException ex)
+{
+    logger.LogError(ex, "Failed to publish {EventType} event for {EntityId}", eventType, entityId);
+    throw;
+}
+```
+
+This preserves structured log context in Application Insights while still failing the invocation (correct behavior for publish failures).
+
+**Impact:** PR #661 can merge; the pattern should be applied as a follow-up or addressed before final merge review if author is available.
+
+
+--- From: trinity-hashtag-callers-audit.md ---
+# HashTagLists.BuildHashTagList Caller Audit
+
+**Date:** 2026-04-07  
+**Issue:** #323 (Tags normalization follow-up)  
+**Reviewer:** Trinity  
+**Context:** Post-PR #662 verification of BuildHashTagList caller migration
+
+## Summary
+
+**Verdict:** ✅ ALL CALLERS CORRECT — No code changes required
+
+All 15 call sites of `HashTagLists.BuildHashTagList` in the Functions project correctly use the `IList<string>?` overload after PR #662 normalized Tags from `string?` to `IList<string>` on domain models. The compiler's type system enforces this migration automatically.
+
+## Audit Results
+
+### HashTagLists Method Signatures
+
+**File:** `src\JosephGuadagno.Broadcasting.Functions\HashTagLists.cs`
+
+```csharp
+// Line 13: New list overload (primary)
+public static string BuildHashTagList(IList<string>? tags)
+
+// Line 31: Legacy string overload (delegates to list version)
+public static string BuildHashTagList(string? tags)
+{
+    return BuildHashTagList(tags.Split(','));
+}
+```
+
+### Call Sites Verified (15 total)
+
+| File | Line | Source | Tags Type | Overload | Status |
+|------|------|--------|-----------|----------|--------|
+| **Bluesky/ProcessScheduledItemFired.cs** | 153 | syndicationFeedSource.Tags | IList<string> | List | ✅ |
+| **Bluesky/ProcessScheduledItemFired.cs** | 175 | youTubeSource.Tags | IList<string> | List | ✅ |
+| **Facebook/ProcessNewRandomPost.cs** | 47 | syndicationFeedSource.Tags | IList<string> | List | ✅ |
+| **Facebook/ProcessNewSyndicationDataFired.cs** | 79 | syndicationFeedSource.Tags | IList<string> | List | ✅ |
+| **Facebook/ProcessNewYouTubeDataFired.cs** | 80 | youTubeSource.Tags | IList<string> | List | ✅ |
+| **Facebook/ProcessScheduledItemFired.cs** | 132 | syndicationFeedSource.Tags | IList<string> | List | ✅ |
+| **Facebook/ProcessScheduledItemFired.cs** | 160 | youTubeSource.Tags | IList<string> | List | ✅ |
+| **LinkedIn/ProcessNewRandomPost.cs** | 51 | syndicationFeedSource.Tags | IList<string> | List | ✅ |
+| **LinkedIn/ProcessNewSyndicationDataFired.cs** | 77 | syndicationFeedSource.Tags | IList<string> | List | ✅ |
+| **LinkedIn/ProcessNewYouTubeDataFired.cs** | 77 | youTubeSource.Tags | IList<string> | List | ✅ |
+| **Twitter/ProcessNewRandomPost.cs** | 43 | syndicationFeedSource.Tags | IList<string> | List | ✅ |
+| **Twitter/ProcessNewSyndicationDataFired.cs** | 83 | syndicationFeedSource.Tags | IList<string> | List | ✅ |
+| **Twitter/ProcessNewYouTubeData.cs** | 82 | youTubeSource.Tags | IList<string> | List | ✅ |
+| **Twitter/ProcessScheduledItemFired.cs** | 126 | syndicationFeedSource.Tags | IList<string> | List | ✅ |
+| **Twitter/ProcessScheduledItemFired.cs** | 147 | youTubeSource.Tags | IList<string> | List | ✅ |
+
+**Pattern:** All callers pass `.Tags` properties directly from domain models (`SyndicationFeedSource`, `YouTubeSource`). Since PR #662 normalized these from `string?` to `IList<string>`, the compiler automatically routes calls to the `IList<string>?` overload.
+
+## Legitimate string.Join Patterns Found
+
+While auditing, I found several `string.Join(",", tags)` patterns. These are **NOT** migration issues — they serve legitimate purposes:
+
+### 1. AutoMapper Mapping (Domain → SQL)
+
+**File:** `src\JosephGuadagno.Broadcasting.Data.Sql\MappingProfiles\BroadcastingProfile.cs` (lines 28, 40)
+
+```csharp
+.ForMember(
+    destination => destination.Tags,
+    options => options.MapFrom(source => source.Tags.Count > 0 ? string.Join(",", source.Tags) : null))
+```
+
+**Purpose:** Converting Domain model `IList<string>` to SQL model `string` (comma-separated) for database persistence.  
+**Status:** ✅ CORRECT — SQL models still store tags as comma-separated strings.
+
+### 2. Scriban Template Variable Conversion
+
+**Files:**
+- `Bluesky/ProcessScheduledItemFired.cs` (lines 248, 254)
+- `Facebook/ProcessScheduledItemFired.cs` (lines 247, 253)
+- `LinkedIn/ProcessScheduledItemFired.cs` (lines 225, 231)
+- `Twitter/ProcessScheduledItemFired.cs` (lines 217, 223)
+
+```csharp
+tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : "";
+```
+
+**Purpose:** Converting `IList<string>` to comma-separated string for Scriban template rendering. Templates expect a string value for the `{{ tags }}` variable in custom message templates.  
+**Status:** ✅ CORRECT — Template engine needs string input.
+
+### 3. Non-Normalized Models
+
+**File:** `src\JosephGuadagno.Broadcasting.JsonFeedReader\JsonFeedReader.cs` (line 75)
+
+```csharp
+Tags = item.Tags is null || item.Tags.Length == 0 ? null : string.Join(",", item.Tags)
+```
+
+**Purpose:** Converting JSON feed's string array to comma-separated string for `JsonFeedSource.Tags` property (which is still `string?`, not yet normalized to `IList<string>`).  
+**Status:** ✅ CORRECT — `JsonFeedSource` model hasn't been normalized yet (out of scope for PR #662).
+
+## Compiler Enforcement
+
+The audit confirms the compiler's type system **automatically enforces** correct overload selection:
+- When `Tags` is `IList<string>`, the compiler MUST call `BuildHashTagList(IList<string>? tags)`
+- When `Tags` is `string?`, the compiler calls `BuildHashTagList(string? tags)`
+
+**Implication:** Manual migration was unnecessary for callers passing domain model `.Tags` properties. The type change in PR #662 automatically routed all calls to the correct overload.
+
+## Build Verification
+
+```powershell
+cd D:\Projects\jjgnet-broadcast\src
+dotnet build --no-incremental
+```
+
+**Result:** ✅ 0 errors, 518 warnings (all pre-existing, unrelated to tags)
+
+## Conclusion
+
+**Neo's Suggestion S3 (PR #662):** "Confirm all Function callers migrated to IList<string>? overload"  
+**Trinity's Verdict:** ✅ VERIFIED — All callers correctly migrated via type system enforcement
+
+**Actions Taken:**
+- Audited 15 BuildHashTagList call sites across Functions project
+- Verified all use IList<string>? overload (compiler-enforced)
+- Confirmed legitimate string.Join patterns serve specific purposes
+- No code changes required
+
+**Recommendation:** Close suggestion S3 as verified. The string overload can remain for backward compatibility with non-normalized models (e.g., JsonFeedSource) and external callers.
+
+
+--- From: trinity-ratelimit-middleware-order.md ---
+# Decision: Rate Limiting Middleware Placement and Rejection Behaviour
+
+**Date:** 2026-04-10  
+**Author:** Trinity  
+**Branch:** squad/304-api-rate-limiting  
+**Related PR:** #659 (Issue #304)
+
+---
+
+## Decision 1 — Middleware Order: `UseRateLimiter()` after `UseAuthorization()`
+
+**Context:** Rate limiting was initially placed between `UseAuthentication()` and `UseAuthorization()`.
+
+**Decision:** Move `UseRateLimiter()` to run **after** `UseAuthorization()`:
+
+```
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseRateLimiter();
+```
+
+**Rationale:** When per-user or per-role rate limiting policies are added in the future, `HttpContext.User` must be fully populated (claims resolved, roles assigned) before the rate limiter evaluates which policy to apply. Placing it before `UseAuthorization()` means the user identity may be incomplete.
+
+---
+
+## Decision 2 — Use `OnRejected` callback instead of `RejectionStatusCode`
+
+**Context:** The initial implementation used `options.RejectionStatusCode = 429` alone.
+
+**Decision:** Replace with a full `OnRejected` async callback that:
+1. Sets `StatusCode` to 429 explicitly.
+2. Reads `MetadataName.RetryAfter` from the lease and writes the `Retry-After` response header.
+3. Falls back to 60 seconds if the metadata is absent.
+4. Writes a human-readable body.
+
+**Rationale:** The `Retry-After` header is required by RFC 6585 for 429 responses and is essential for well-behaved API clients (SDKs, retry libraries). The `OnRejected` callback is the only hook where this header can be set; `RejectionStatusCode` alone cannot set headers.
+
+**Required usings:**
+- `System.Globalization` — for `NumberFormatInfo.InvariantInfo`
+- `System.Threading.RateLimiting` — for `MetadataName` (already present)
+
+---
+
+## Decision 3 — Health endpoints exempt from rate limiting
+
+**Context:** The API uses Aspire's `MapDefaultEndpoints()` for health/liveness probes, not explicit `app.MapHealthChecks(...)` calls.
+
+**Decision:** No code change needed today. Document the pattern:
+
+> Any future explicit `app.MapHealthChecks(...)` call **must** chain `.DisableRateLimiting()` to prevent infrastructure health probers from consuming quota.
+
+`MapDefaultEndpoints()` (Aspire) is handled separately from `MapControllers()` and is not affected by the `RequireRateLimiting(...)` call on the controller route group.
+
+
+

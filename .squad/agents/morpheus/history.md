@@ -56,10 +56,28 @@ Established by Joseph Guadagno:
 2. **Mapping**: All object mapping must use AutoMapper profiles
 3. **Paging/Sorting/Filtering**: Must be at the data layer only
 
-### 2026-04-07: GitHub Comment Formatting Skill Added
-- Skill: .squad/skills/github-comment-formatting/SKILL.md now exists — canonical reference for formatting GitHub comments
-- Rule: Use triple backticks for ALL fenced code blocks in GitHub content (PR reviews, issue comments, PR comments)
-- Single backticks are for inline code only (single variable/method names, one line)
-- Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
-- Charter updated with enforcement rule (## How I Work)
-- Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code
+### 2026-04-04 — PR #662 (Issue #323): Junction Table SourceType Discriminator Pattern
+- Fixed EF navigation property data bleed in `dbo.SourceTags` junction table shared between `SyndicationFeedSources` and `YouTubeSources`
+- **Problem:** Both entities used IDENTITY(1,1) PKs; EF's `Include(s => s.SourceTags)` returned tags for BOTH SourceId=1 rows (wrong SourceType)
+- **Solution:** Direct query pattern with SourceType filter: `broadcastingContext.SourceTags.Where(st => st.SourceId == id && st.SourceType == SourceType).ToListAsync()`
+- **Transaction safety:** Wrapped entity save + junction sync in `BeginTransactionAsync`/`CommitAsync` to prevent partial failures
+- **EF config:** Added warning comments to BroadcastingContext.OnModelCreating — nav properties kept for writes but NEVER use Include for reads
+- Applied to: SyndicationFeedSourceDataStore and YouTubeSourceDataStore (all Get/GetAll/Save/Delete methods)
+- Branch: `squad/323-tags-junction-table` | Commit: `1f59fb4`
+
+### 2026-04-09 — PR #662 (Issue #323): Unique Index on SourceTags Junction Table
+- Added unique constraint `UX_SourceTags_SourceId_SourceType_Tag` to prevent duplicate tag rows during concurrent SyncSourceTagsAsync calls
+- Applied in migration script (2026-04-09-sourcetags-junction.sql) AND EF model (BroadcastingContext.cs) for consistency
+- Documented STRING_SPLIT compatibility: SQL Server 2016+ compatible without ordinal arg since tag ordering is irrelevant for seeding
+- **Pattern:** Junction table unique constraints protect delete+re-insert sync patterns from race conditions
+- Branch: `squad/323-tags-junction-table` | Commit: `8db7dea`
+
+### 2026-04-09 — PR #662 Merge: Resolved merge conflicts with origin/main
+
+- **Conflicts resolved:** 5 code/SQL files + 5 .squad/ files
+- **BroadcastingContext.cs:** Kept our warning comments + integrated main's `HasMany` nav property config. Added our `UX_SourceTags_SourceId_SourceType_Tag` unique index to the SourceTag entity config (main had the SourceTag config at bottom but without unique index).
+- **SyndicationFeedSourceDataStore.cs / YouTubeSourceDataStore.cs:** Kept our direct-query pattern (`Where(st => st.SourceId == id && st.SourceType == SourceType)`) and `BeginTransactionAsync` throughout all methods. Main's version used `Include()` which causes SourceType bleed.
+- **HashTagLists.cs:** Took main's version (intermediate `tagList` variable — functionally identical to our one-liner).
+- **2026-04-09-sourcetags-junction.sql:** Kept our version (includes unique index + STRING_SPLIT compat comment). Main had the same file without the unique index (earlier commit of the same migration).
+- **.squad/ files:** Used `git checkout --ours` for all 5 — Scribe handles these separately.
+- **Build:** 0 errors after resolution. | Commit: `fdc8114`

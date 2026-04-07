@@ -18,7 +18,13 @@ GO
 CREATE INDEX IX_SourceTags_SourceId_SourceType ON dbo.SourceTags (SourceId, SourceType);
 GO
 
+-- Prevent duplicate tags per source
+CREATE UNIQUE INDEX UX_SourceTags_SourceId_SourceType_Tag
+    ON dbo.SourceTags (SourceId, SourceType, Tag);
+GO
+
 -- Migrate existing delimited tag data from SyndicationFeedSources
+-- STRING_SPLIT without ordinal arg: SQL Server 2016+ compatible (ordering not needed for tag seeding)
 INSERT INTO dbo.SourceTags (SourceId, SourceType, Tag)
 SELECT s.Id, 'SyndicationFeed', LTRIM(RTRIM(value))
 FROM dbo.SyndicationFeedSources s
