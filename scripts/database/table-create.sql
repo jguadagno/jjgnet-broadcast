@@ -158,6 +158,25 @@ create table dbo.YouTubeSources
 )
 go
 
+-- Create the SourceTags junction table (Issue #323)
+-- SourceType valid values: 'SyndicationFeed', 'YouTube'
+create table dbo.SourceTags
+(
+    Id         int identity
+        constraint PK_SourceTags
+            primary key clustered,
+    SourceId   int           not null,
+    SourceType nvarchar(50)  not null,
+    Tag        nvarchar(100) not null
+)
+go
+
+create index IX_SourceTags_Tag on dbo.SourceTags (Tag)
+go
+
+create index IX_SourceTags_SourceId_SourceType on dbo.SourceTags (SourceId, SourceType)
+go
+
 -- Create the MessageTemplates table
 create table dbo.MessageTemplates
 (

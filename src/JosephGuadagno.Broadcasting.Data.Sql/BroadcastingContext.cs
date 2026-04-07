@@ -43,6 +43,7 @@ public partial class BroadcastingContext : DbContext
     public virtual DbSet<UserRole> UserRoles { get; set; } = null!;
     public virtual DbSet<UserApprovalLog> UserApprovalLogs { get; set; } = null!;
     public virtual DbSet<EmailTemplate> EmailTemplates { get; set; } = null!;
+    public virtual DbSet<SourceTag> SourceTags { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -236,6 +237,12 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.LastUpdatedOn)
                 .HasDefaultValueSql("(getutcdate())");
+
+            entity.HasMany(e => e.SourceTags)
+                .WithOne()
+                .HasForeignKey(st => st.SourceId)
+                .HasPrincipalKey(e => e.Id)
+                .IsRequired(false);
         });
 
         modelBuilder.Entity<YouTubeSource>(entity =>
@@ -272,6 +279,12 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.LastUpdatedOn)
                 .HasDefaultValueSql("(getutcdate())");
+
+            entity.HasMany(e => e.SourceTags)
+                .WithOne()
+                .HasForeignKey(st => st.SourceId)
+                .HasPrincipalKey(e => e.Id)
+                .IsRequired(false);
         });
 
         modelBuilder.Entity<MessageTemplate>(entity =>
@@ -427,6 +440,24 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired()
                 .HasColumnType("datetimeoffset")
                 .HasDefaultValueSql("(SYSDATETIMEOFFSET())");
+        });
+
+        modelBuilder.Entity<SourceTag>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_SourceTags");
+
+            entity.HasIndex(e => e.Tag, "IX_SourceTags_Tag");
+
+            entity.HasIndex(e => new { e.SourceId, e.SourceType }, "IX_SourceTags_SourceId_SourceType");
+
+            entity.Property(e => e.SourceType)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Tag)
+                .HasMaxLength(100)
+                .IsRequired();
         });
 
         OnModelCreatingPartial(modelBuilder);

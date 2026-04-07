@@ -52,9 +52,9 @@ public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedS
                 Url = sourceData.Url,
                 ShortenedUrl = sourceData.ShortenedUrl
             };
-            if (!string.IsNullOrEmpty(sourceData.Tags))
+            if (sourceData.Tags.Count > 0)
             {
-                blueskyPostMessage.Hashtags = sourceData.Tags.Split(',').ToList();
+                blueskyPostMessage.Hashtags = sourceData.Tags.ToList();
             }
 
             // Return

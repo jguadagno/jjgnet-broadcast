@@ -342,7 +342,7 @@ public class SyndicationFeedReaderOfflineTests
         // This test verifies that the method accepts and processes the exclude list
         result.Should().NotBeNull("result should not be null");
         // Items that don't have "tech" category (case-insensitive) should be included
-        result.Where(r => r.Tags == null || !r.Tags.ToLower().Contains("tech"))
+        result.Where(r => r.Tags.Count == 0 || !r.Tags.Any(t => t.ToLower().Contains("tech")))
             .Should().Contain(r => r.Title.Contains("Another Post"), "Blog item should not be excluded");
 
         // Cleanup

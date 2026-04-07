@@ -28,4 +28,6 @@ public partial class YouTubeSource
     public DateTimeOffset? ItemLastUpdatedOn { get; set; }
 
     public DateTimeOffset LastUpdatedOn { get; set; }
+
+    public virtual ICollection<SourceTag> SourceTags { get; set; } = new List<SourceTag>();
 }

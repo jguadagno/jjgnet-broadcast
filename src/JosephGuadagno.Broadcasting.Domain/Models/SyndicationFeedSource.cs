@@ -20,7 +20,7 @@ public class SyndicationFeedSource
     [StringLength(255)]
     public string? ShortenedUrl { get; set; }
 
-    public string? Tags { get; set; }
+    public IList<string> Tags { get; set; } = [];
 
     [Required]
     [Url]

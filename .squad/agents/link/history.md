@@ -45,3 +45,11 @@
 - **Web was missing OpenTelemetry sink**: `WriteTo.OpenTelemetry()` was commented out in Web/Program.cs; the shared method now enables it for all three projects
 - **Package versions must align**: Api, Functions, and Web all reference specific Serilog package versions (e.g., `Serilog.AspNetCore` 10.0.0, `Serilog.Enrichers.AssemblyName` 2.0.0, `Serilog.Sinks.OpenTelemetry` 4.2.0). The Serilog project must use matching versions to avoid NuGet downgrade errors.
 - **#if DEBUG pattern preserved**: The shared method includes `#if DEBUG .MinimumLevel.Debug() #else .MinimumLevel.Information() #endif` to maintain the behavior established in issue #591
+
+### 2026-04-07: GitHub Comment Formatting Skill Added
+- Skill: .squad/skills/github-comment-formatting/SKILL.md now exists — canonical reference for formatting GitHub comments
+- Rule: Use triple backticks for ALL fenced code blocks in GitHub content (PR reviews, issue comments, PR comments)
+- Single backticks are for inline code only (single variable/method names, one line)
+- Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
+- Charter updated with enforcement rule (## How I Work)
+- Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code

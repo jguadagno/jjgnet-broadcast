@@ -41,6 +41,41 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 
 ## Recent Work
 
+### 2026-04-07 — Issue #304: Fixed Window Rate Limiting (API)
+
+**Status:** ✅ COMPLETE | Branch squad/304-api-rate-limiting | PR #659
+
+**What I Implemented:**
+
+**New file — `Infrastructure/RateLimitingPolicies.cs`:**
+- Static constants class in `JosephGuadagno.Broadcasting.Api.Infrastructure` namespace
+- `FixedWindow = "FixedWindow"` — used everywhere to avoid magic strings
+
+**`Program.cs` changes:**
+- Added `using System.Threading.RateLimiting;` and `using Microsoft.AspNetCore.RateLimiting;`
+- Registered `AddRateLimiter` with a named fixed window policy (100 req/min, QueueLimit=0, RejectionStatusCode=429)
+- Added `app.UseRateLimiter()` between `UseAuthentication()` and `UseAuthorization()` in the middleware pipeline
+- Applied the policy globally via `app.MapControllers().RequireRateLimiting(RateLimitingPolicies.FixedWindow)`
+
+**Middleware order (after change):**
+1. UseExceptionHandler
+2. UseHttpsRedirection
+3. UseDefaultFiles / UseStaticFiles
+4. UseAuthentication
+5. **UseRateLimiter** ← new
+6. UseAuthorization
+7. MapControllers (with RequireRateLimiting)
+
+**Key decisions:**
+- Used named policy + `RequireRateLimiting` on `MapControllers()` (not `GlobalLimiter`) to keep policy name testable/referenceable
+- No NuGet package needed — `Microsoft.AspNetCore.RateLimiting` is built into .NET 7+
+- QueueLimit = 0 means no queuing — 101st request in a window gets immediate 429
+- `RateLimitingPolicies.cs` lives in `Infrastructure/` (not Domain) since rate limiting is API-specific concern
+
+**Build:** ✅ 0 errors
+
+---
+
 ### 2026-04-02 — PR #610 Round 2: ApplicationClaimTypes constants + SQL CHECK constraints (#603 #606)
 
 **Status:** ✅ COMPLETE | Branch squad/rbac-phase1 | Commit d0aa61a
@@ -274,3 +309,11 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 **Build:** ✅ 0 errors (59 pre-existing warnings)
 
 **Key Pattern:** Never use `.HasDefaultValueSql()` on non-nullable value types — it serves no purpose and triggers warnings in modern EF Core
+
+### 2026-04-07: GitHub Comment Formatting Skill Added
+- Skill: .squad/skills/github-comment-formatting/SKILL.md now exists — canonical reference for formatting GitHub comments
+- Rule: Use triple backticks for ALL fenced code blocks in GitHub content (PR reviews, issue comments, PR comments)
+- Single backticks are for inline code only (single variable/method names, one line)
+- Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
+- Charter updated with enforcement rule (## How I Work)
+- Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code
