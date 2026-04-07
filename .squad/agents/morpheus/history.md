@@ -55,3 +55,12 @@ Established by Joseph Guadagno:
 1. **PR Merge Authority**: Only Joseph may merge PRs
 2. **Mapping**: All object mapping must use AutoMapper profiles
 3. **Paging/Sorting/Filtering**: Must be at the data layer only
+
+### 2026-04-04 — PR #662 (Issue #323): Junction Table SourceType Discriminator Pattern
+- Fixed EF navigation property data bleed in `dbo.SourceTags` junction table shared between `SyndicationFeedSources` and `YouTubeSources`
+- **Problem:** Both entities used IDENTITY(1,1) PKs; EF's `Include(s => s.SourceTags)` returned tags for BOTH SourceId=1 rows (wrong SourceType)
+- **Solution:** Direct query pattern with SourceType filter: `broadcastingContext.SourceTags.Where(st => st.SourceId == id && st.SourceType == SourceType).ToListAsync()`
+- **Transaction safety:** Wrapped entity save + junction sync in `BeginTransactionAsync`/`CommitAsync` to prevent partial failures
+- **EF config:** Added warning comments to BroadcastingContext.OnModelCreating — nav properties kept for writes but NEVER use Include for reads
+- Applied to: SyndicationFeedSourceDataStore and YouTubeSourceDataStore (all Get/GetAll/Save/Delete methods)
+- Branch: `squad/323-tags-junction-table` | Commit: `1f59fb4`

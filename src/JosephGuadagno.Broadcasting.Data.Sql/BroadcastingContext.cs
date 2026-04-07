@@ -302,6 +302,10 @@ public partial class BroadcastingContext : DbContext
 
             entity.HasIndex(e => new { e.SourceId, e.SourceType }, "IX_SourceTags_SourceId_SourceType");
 
+            entity.HasIndex(e => new { e.SourceId, e.SourceType, e.Tag })
+                .IsUnique()
+                .HasDatabaseName("UX_SourceTags_SourceId_SourceType_Tag");
+
             entity.Property(e => e.SourceType)
                 .HasMaxLength(50)
                 .IsRequired();
