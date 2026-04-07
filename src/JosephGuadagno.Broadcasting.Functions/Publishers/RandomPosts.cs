@@ -1,5 +1,6 @@
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -39,16 +40,32 @@ public class RandomPosts(
         }
         
         // Create the event message to post to the topic -- throws EventPublishException on failure
-        await eventPublisher.PublishRandomPostsEventsAsync(ConfigurationFunctionNames.PublishersRandomPosts,
-            syndicationFeedSource.Id);
-        
-        logger.LogCustomEvent(Metrics.RandomPostFired, new Dictionary<string, string>
+        try
         {
-            {"title", syndicationFeedSource.Title},
-            {"url", syndicationFeedSource.Url},
-            {"id", syndicationFeedSource.Id.ToString()}
-        });
-        
-        logger.LogDebug("Latest random post '{RandomSyndicationIdTitleText}' has been published", syndicationFeedSource.Title);
+            await eventPublisher.PublishRandomPostsEventsAsync(ConfigurationFunctionNames.PublishersRandomPosts,
+                syndicationFeedSource.Id);
+
+            logger.LogCustomEvent(Metrics.RandomPostFired, new Dictionary<string, string>
+            {
+                {"title", syndicationFeedSource.Title},
+                {"url", syndicationFeedSource.Url},
+                {"id", syndicationFeedSource.Id.ToString()}
+            });
+
+            logger.LogDebug("Latest random post '{RandomSyndicationIdTitleText}' has been published",
+                syndicationFeedSource.Title);
+        }
+        catch (EventPublishException ex)
+        {
+            logger.LogError(ex, "Failed to publish random post event for '{Title}' (Id: {Id})",
+                syndicationFeedSource.Title, syndicationFeedSource.Id);
+            logger.LogCustomEvent(Metrics.RandomPostFired, new Dictionary<string, string>
+            {
+                {"title", syndicationFeedSource.Title},
+                {"url", syndicationFeedSource.Url},
+                {"id", syndicationFeedSource.Id.ToString()}
+            });
+            throw;
+        }
     }
 }
