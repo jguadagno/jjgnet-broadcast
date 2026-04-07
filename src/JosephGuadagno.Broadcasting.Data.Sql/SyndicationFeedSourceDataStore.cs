@@ -33,10 +33,11 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
             broadcastingContext.Entry(dbSyndicationFeedSource).State =
                 dbSyndicationFeedSource.Id == 0 ? EntityState.Added : EntityState.Modified;
 
-            await using var tx = await broadcastingContext.Database.BeginTransactionAsync(cancellationToken);
-            await broadcastingContext.SaveChangesAsync(cancellationToken);
-            await SyncSourceTagsAsync(dbSyndicationFeedSource.Id, entity.Tags, cancellationToken);
-            await tx.CommitAsync(cancellationToken);
+            await ExecuteWithOptionalTransactionAsync(async () =>
+            {
+                await broadcastingContext.SaveChangesAsync(cancellationToken);
+                await SyncSourceTagsAsync(dbSyndicationFeedSource.Id, entity.Tags, cancellationToken);
+            }, cancellationToken);
 
             var saved = await broadcastingContext.SyndicationFeedSources
                 .FirstOrDefaultAsync(s => s.Id == dbSyndicationFeedSource.Id, cancellationToken);
@@ -164,6 +165,19 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
         }
 
         return dbSyndicationFeedSource is null ? null : mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
+    }
+
+    private async Task ExecuteWithOptionalTransactionAsync(Func<Task> operation, CancellationToken cancellationToken)
+    {
+        if (broadcastingContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            await operation();
+            return;
+        }
+
+        await using var tx = await broadcastingContext.Database.BeginTransactionAsync(cancellationToken);
+        await operation();
+        await tx.CommitAsync(cancellationToken);
     }
 
     private async Task SyncSourceTagsAsync(int sourceId, IList<string> tags, CancellationToken cancellationToken)

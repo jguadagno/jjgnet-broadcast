@@ -32,10 +32,11 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
             broadcastingContext.Entry(dbYouTubeSource).State =
                 dbYouTubeSource.Id == 0 ? EntityState.Added : EntityState.Modified;
 
-            await using var tx = await broadcastingContext.Database.BeginTransactionAsync(cancellationToken);
-            await broadcastingContext.SaveChangesAsync(cancellationToken);
-            await SyncSourceTagsAsync(dbYouTubeSource.Id, entity.Tags, cancellationToken);
-            await tx.CommitAsync(cancellationToken);
+            await ExecuteWithOptionalTransactionAsync(async () =>
+            {
+                await broadcastingContext.SaveChangesAsync(cancellationToken);
+                await SyncSourceTagsAsync(dbYouTubeSource.Id, entity.Tags, cancellationToken);
+            }, cancellationToken);
 
             var saved = await broadcastingContext.YouTubeSources
                 .FirstOrDefaultAsync(y => y.Id == dbYouTubeSource.Id, cancellationToken);
@@ -132,6 +133,19 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
         }
         
         return dbYouTubeSource is null ? null : mapper.Map<Domain.Models.YouTubeSource>(dbYouTubeSource);
+    }
+
+    private async Task ExecuteWithOptionalTransactionAsync(Func<Task> operation, CancellationToken cancellationToken)
+    {
+        if (broadcastingContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            await operation();
+            return;
+        }
+
+        await using var tx = await broadcastingContext.Database.BeginTransactionAsync(cancellationToken);
+        await operation();
+        await tx.CommitAsync(cancellationToken);
     }
 
     private async Task SyncSourceTagsAsync(int sourceId, IList<string> tags, CancellationToken cancellationToken)
