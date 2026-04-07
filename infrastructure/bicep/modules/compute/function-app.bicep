@@ -13,9 +13,6 @@ param functionsStorageAccountName string
 @description('Application Insights connection string.')
 param appInsightsConnectionString string
 
-@description('Resource ID of the user-assigned managed identity for the Function App.')
-param userAssignedIdentityId string
-
 @description('Resource tags.')
 param tags object = {}
 
@@ -23,7 +20,7 @@ param tags object = {}
 //   functionAppName  = 'jjgnet-broadcast'
 //   location         = 'westus'
 //   kind             = 'functionapp,linux'
-//   identity         = SystemAssigned + UserAssigned ('jjgnet-broadcast-id-8d7d')
+//   identity         = SystemAssigned
 //   httpsOnly        = true
 
 resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
@@ -32,10 +29,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
   tags: tags
   kind: 'functionapp,linux'
   identity: {
-    type: 'SystemAssigned, UserAssigned'
-    userAssignedIdentities: {
-      '${userAssignedIdentityId}': {}
-    }
+    type: 'SystemAssigned'
   }
   properties: {
     serverFarmId: appServicePlanId
