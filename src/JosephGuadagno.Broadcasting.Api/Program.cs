@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Threading.RateLimiting;
 using JosephGuadagno.Broadcasting.Api.Infrastructure;
 using JosephGuadagno.Broadcasting.Api.Models;
@@ -87,7 +88,22 @@ builder.Services.AddRateLimiter(options =>
         limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         limiterOptions.QueueLimit = 0;
     });
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            context.HttpContext.Response.Headers.RetryAfter =
+                ((int)retryAfter.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
+        }
+        else
+        {
+            context.HttpContext.Response.Headers.RetryAfter =
+                ((int)TimeSpan.FromSeconds(60).TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
+        }
+        await context.HttpContext.Response.WriteAsync(
+            "Too many requests. Please try again later.", cancellationToken);
+    };
 });
 
 // Configure OpenAPI
@@ -131,9 +147,12 @@ app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
-app.UseRateLimiter();
 app.UseAuthorization();
+app.UseRateLimiter();
 
+// NOTE: Health check endpoints (e.g., app.MapHealthChecks("/health")) should be exempted
+// from rate limiting via .DisableRateLimiting() when added to this project.
+// MapDefaultEndpoints() (Aspire) handles its own health/liveness endpoints separately.
 app.MapControllers().RequireRateLimiting(RateLimitingPolicies.FixedWindow);
 
 app.Run();
