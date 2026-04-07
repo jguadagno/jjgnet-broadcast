@@ -238,6 +238,9 @@ public partial class BroadcastingContext : DbContext
             entity.Property(e => e.LastUpdatedOn)
                 .HasDefaultValueSql("(getutcdate())");
 
+            // NOTE: Navigation property configured for write operations (SyncSourceTagsAsync).
+            // DO NOT use Include(s => s.SourceTags) for reads - it doesn't filter by SourceType.
+            // Data stores must query SourceTags directly with SourceType discriminator.
             entity.HasMany(e => e.SourceTags)
                 .WithOne()
                 .HasForeignKey(st => st.SourceId)
@@ -280,6 +283,9 @@ public partial class BroadcastingContext : DbContext
             entity.Property(e => e.LastUpdatedOn)
                 .HasDefaultValueSql("(getutcdate())");
 
+            // NOTE: Navigation property configured for write operations (SyncSourceTagsAsync).
+            // DO NOT use Include(y => y.SourceTags) for reads - it doesn't filter by SourceType.
+            // Data stores must query SourceTags directly with SourceType discriminator.
             entity.HasMany(e => e.SourceTags)
                 .WithOne()
                 .HasForeignKey(st => st.SourceId)

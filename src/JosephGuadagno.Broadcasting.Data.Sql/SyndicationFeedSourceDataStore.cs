@@ -13,8 +13,15 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
     public async Task<Domain.Models.SyndicationFeedSource> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
         var dbSyndicationFeedSource = await broadcastingContext.SyndicationFeedSources
-            .Include(s => s.SourceTags)
             .FirstOrDefaultAsync(s => s.Id == primaryKey, cancellationToken);
+        
+        if (dbSyndicationFeedSource is not null)
+        {
+            dbSyndicationFeedSource.SourceTags = await broadcastingContext.SourceTags
+                .Where(st => st.SourceId == primaryKey && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+        }
+        
         return mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
     }
 
@@ -26,13 +33,20 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
             broadcastingContext.Entry(dbSyndicationFeedSource).State =
                 dbSyndicationFeedSource.Id == 0 ? EntityState.Added : EntityState.Modified;
 
+            await using var tx = await broadcastingContext.Database.BeginTransactionAsync(cancellationToken);
             await broadcastingContext.SaveChangesAsync(cancellationToken);
-
             await SyncSourceTagsAsync(dbSyndicationFeedSource.Id, entity.Tags, cancellationToken);
+            await tx.CommitAsync(cancellationToken);
 
             var saved = await broadcastingContext.SyndicationFeedSources
-                .Include(s => s.SourceTags)
                 .FirstOrDefaultAsync(s => s.Id == dbSyndicationFeedSource.Id, cancellationToken);
+
+            if (saved is not null)
+            {
+                saved.SourceTags = await broadcastingContext.SourceTags
+                    .Where(st => st.SourceId == saved.Id && st.SourceType == SourceType)
+                    .ToListAsync(cancellationToken);
+            }
 
             return saved is not null
                 ? OperationResult<Domain.Models.SyndicationFeedSource>.Success(mapper.Map<Domain.Models.SyndicationFeedSource>(saved))
@@ -47,8 +61,15 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
     public async Task<List<Domain.Models.SyndicationFeedSource>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var dbSyndicationFeedSources = await broadcastingContext.SyndicationFeedSources
-            .Include(s => s.SourceTags)
             .ToListAsync(cancellationToken);
+        
+        foreach (var source in dbSyndicationFeedSources)
+        {
+            source.SourceTags = await broadcastingContext.SourceTags
+                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+        }
+        
         return mapper.Map<List<Domain.Models.SyndicationFeedSource>>(dbSyndicationFeedSources);
     }
 
@@ -62,11 +83,14 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
         try
         {
             var dbSyndicationFeedSource = await broadcastingContext.SyndicationFeedSources
-                .Include(s => s.SourceTags)
                 .FirstOrDefaultAsync(s => s.Id == primaryKey, cancellationToken);
             if (dbSyndicationFeedSource == null) return OperationResult<bool>.Success(true);
 
-            broadcastingContext.SourceTags.RemoveRange(dbSyndicationFeedSource.SourceTags);
+            var sourceTags = await broadcastingContext.SourceTags
+                .Where(st => st.SourceId == primaryKey && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+            
+            broadcastingContext.SourceTags.RemoveRange(sourceTags);
             broadcastingContext.SyndicationFeedSources.Remove(dbSyndicationFeedSource);
             await broadcastingContext.SaveChangesAsync(cancellationToken);
             return OperationResult<bool>.Success(true);
@@ -80,35 +104,64 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
     public async Task<Domain.Models.SyndicationFeedSource?> GetByFeedIdentifierAsync(string feedIdentifier, CancellationToken cancellationToken = default)
     {
         var dbSyndicationFeedSource = await broadcastingContext.SyndicationFeedSources
-            .Include(s => s.SourceTags)
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.FeedIdentifier == feedIdentifier, cancellationToken);
+        
+        if (dbSyndicationFeedSource is not null)
+        {
+            dbSyndicationFeedSource.SourceTags = await broadcastingContext.SourceTags
+                .AsNoTracking()
+                .Where(st => st.SourceId == dbSyndicationFeedSource.Id && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+        }
+        
         return dbSyndicationFeedSource is null ? null : mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
     }
 
     public async Task<Domain.Models.SyndicationFeedSource?> GetByUrlAsync(string url, CancellationToken cancellationToken = default)
     {
         var dbSyndicationFeedSource = await broadcastingContext.SyndicationFeedSources
-            .Include(s => s.SourceTags)
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Url == url, cancellationToken);
+        
+        if (dbSyndicationFeedSource is not null)
+        {
+            dbSyndicationFeedSource.SourceTags = await broadcastingContext.SourceTags
+                .AsNoTracking()
+                .Where(st => st.SourceId == dbSyndicationFeedSource.Id && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+        }
+        
         return dbSyndicationFeedSource is null ? null : mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
     }
 
     public async Task<Domain.Models.SyndicationFeedSource?> GetRandomSyndicationDataAsync(DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default)
     {
         var query = broadcastingContext.SyndicationFeedSources
-            .Include(s => s.SourceTags)
             .AsNoTracking()
             .Where(s => s.PublicationDate >= cutoffDate || s.ItemLastUpdatedOn >= cutoffDate);
 
-        foreach (var excludedCategory in excludedCategories)
+        if (excludedCategories.Count > 0)
         {
-            query = query.Where(s => !s.SourceTags.Any(st => st.Tag == excludedCategory));
+            var excludedSourceIds = await broadcastingContext.SourceTags
+                .Where(st => st.SourceType == SourceType && excludedCategories.Contains(st.Tag))
+                .Select(st => st.SourceId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            query = query.Where(s => !excludedSourceIds.Contains(s.Id));
         }
 
         var dbSyndicationFeedSource = await query.OrderBy(u => Guid.NewGuid())
             .FirstOrDefaultAsync(cancellationToken);
+
+        if (dbSyndicationFeedSource is not null)
+        {
+            dbSyndicationFeedSource.SourceTags = await broadcastingContext.SourceTags
+                .AsNoTracking()
+                .Where(st => st.SourceId == dbSyndicationFeedSource.Id && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+        }
 
         return dbSyndicationFeedSource is null ? null : mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
     }
