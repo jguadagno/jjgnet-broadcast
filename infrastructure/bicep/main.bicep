@@ -62,14 +62,6 @@ param alertEmailAddress string
 // Modules
 // =============================================================================
 
-module managedIdentities 'modules/security/managed-identity.bicep' = {
-  name: 'deploy-managed-identities'
-  params: {
-    location: locationPrimary
-    tags: tags
-  }
-}
-
 module logAnalytics 'modules/monitoring/log-analytics.bicep' = {
   name: 'deploy-log-analytics'
   params: {
@@ -189,14 +181,12 @@ module functionApp 'modules/compute/function-app.bicep' = {
     appServicePlanId: appServices.outputs.appServicePlanId
     functionsStorageAccountName: functionsStorageAccountName
     appInsightsConnectionString: appInsights.outputs.connectionString
-    userAssignedIdentityId: managedIdentities.outputs.functionsManagedIdentityId
     tags: tags
   }
   dependsOn: [
     appServices
     storage
     appInsights
-    managedIdentities
   ]
 }
 
