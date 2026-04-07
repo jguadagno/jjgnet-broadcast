@@ -21,8 +21,9 @@
 - Manager pattern: if a manager is a pure thin delegator with no logging, omit ILogger entirely to avoid CS0414 warning
 - **EF Core value type defaults:** Never use `.HasDefaultValueSql()` on non-nullable value types (bool, int, DateTime) — redundant and triggers EF Core 8+ warnings
 - **Health checks in ServiceDefaults:** Use conditional registration based on connection string presence — allows safe sharing across Api, Web, Functions
+- **Health check severity:** Optional/non-critical services (Bitly, social APIs) return `HealthCheckResult.Degraded`, not `Unhealthy`. Reserve `Unhealthy` for core dependencies that prevent the app from functioning. `Unhealthy` drives HTTP 503 and may trigger false load-balancer failovers.
 
-**Current focus:** PR #645 (Bicep IaC scaffold for #637) reviewed. REQUEST CHANGES issued — showstopper circular dependency found in module wiring.
+**Current focus:** PR #661 (EventPublisher exception semantics #310) — implemented catch-log-rethrow in RandomPosts.cs and ScheduledItems.cs. Declined [Serializable] per author. AAA test comments preserved.
 
 ## Summary
 
@@ -109,6 +110,29 @@ Joseph answered all 5 blocking questions:
 **New issue:** #637 — Bicep IaC for entire Azure environment (8 story points, multi-sprint epic)
 
 **Status:** ✅ All decisions recorded and posted to GitHub. Issue #637 created and triaged. Ready for Cypher to implement #636.
+
+---
+
+### 2026-04-09: PR #660 — Bitly Degraded Fix (Issue #313)
+
+**PR:** #660 — `feat: add health checks for external dependencies (#313)`  
+**Branch:** `squad/313-external-health-checks`  
+**Task:** Implement S2 suggestion from prior review — change `Unhealthy` → `Degraded` for missing Bitly config.
+
+**Change made:**
+- `src/JosephGuadagno.Broadcasting.Functions/HealthChecks/BitlyHealthCheck.cs`
+  - `HealthCheckResult.Unhealthy(...)` → `HealthCheckResult.Degraded(...)` for missing Token/ApiRootUri
+  - Updated XML doc comment to explain the rationale
+  - Improved message text to note that URL shortening will be skipped but content publishing is unaffected
+
+**Commit:** `456df3d` — `fix(functions): use Degraded for optional Bitly health check (#313)`  
+**Status:** ✅ Pushed to `squad/313-external-health-checks`. PR #660 updated.
+
+**Learnings:**
+- Optional enrichment services (Bitly URL shortening) should return `Degraded`, not `Unhealthy`, when config is missing
+- `Unhealthy` → HTTP 503 → load-balancer sees dead instance → false failover. Never do this for non-critical services.
+- `Degraded` → HTTP 200 with yellow signal → surfaces misconfiguration without operational impact
+- The prior review comment on PR #660 had no encoding issues in the actual review body — encoding issues were in the PR description table (backslash-escape artifacts from the PR author's terminal), not in Neo's review text
 
 ---
 
@@ -254,6 +278,16 @@ Review posted as comment (GitHub blocks self-review): https://github.com/jguadag
 - `table-create.sql` RBAC tables ✅
 - `data-create.sql` 3 role seeds ✅
 - `BroadcastingContext` DI in Web Program.cs line 61 ✅
+
+## Learnings
+
+### 2026-04-09: PR #661 — Catch-Log-Rethrow in Timer-Triggered Functions (#310)
+
+- Timer-triggered Azure Functions (`RandomPosts`, `ScheduledItems`) must wrap `EventPublisher` calls in `catch (EventPublishException)` blocks — the Functions runtime swallows the raw exception but structured `LogCustomEvent` telemetry is never emitted without explicit catch.
+- In failure paths, always emit `LogError` + structured metrics before rethrowing — this preserves Application Insights observability even when the invocation is marked failed.
+- `[Serializable]` on custom exceptions is a .NET Framework remnant; not required for .NET Core/5+ Azure Functions workloads — safe to decline.
+- `// Arrange / Act / Assert` comments in tests are a team convention — preserve unless explicitly asked to remove.
+- Branch hygiene: always verify `git branch` in the active shell before editing files; edits apply to the file system regardless of what git thinks the HEAD is.
 
 **Round 2 Review Verdict: ⚠️ CHANGES REQUESTED**
 

@@ -34,7 +34,7 @@ public class LoadNewVideosTests
         _eventPublisher = new Mock<IEventPublisher>();
 
         _eventPublisher.Setup(e => e.PublishYouTubeEventsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<YouTubeSource>>()))
-            .ReturnsAsync(true);
+            .Returns(Task.CompletedTask);
 
         _sut = new LoadNewVideos(
             _youTubeReader.Object,
