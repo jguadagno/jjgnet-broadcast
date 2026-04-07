@@ -302,3 +302,53 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 - ✅ The compiler guards this via type safety — `IList<string>` can only call the list overload
 
 **Neo's Suggestion S3:** VERIFIED — all Function callers correctly migrated to `IList<string>?` overload
+
+---
+
+### 2026-04-07 — Issue #67: Schedule Item Validation Backend (PR #665 + #665-fix)
+
+**Status:** ✅ COMPLETE & MERGED (after build fix)
+
+**What I Implemented:**
+
+**Core Validation Service:**
+1. `ScheduledItemValidationService.cs` — validates source items (Engagements, Talks, SyndicationFeedSources, YouTubeSources) exist before scheduling
+2. `IScheduledItemValidationService.cs` — interface for DI
+3. `ScheduledItemLookupResult.cs` — response DTO (IsValid, ItemTitle, ItemDetails, ErrorMessage)
+
+**API Endpoint:**
+- `SchedulesController.ValidateItem()` — GET `/Schedules/ValidateItem?itemType={0-3}&itemPrimaryKey={id}`
+- Returns JSON validation result
+
+**ViewModel Updates:**
+- `ScheduledItemViewModel.cs` — added `ItemType` property (ScheduledItemType enum)
+- AutoMapper profile updated for bidirectional mapping
+
+**Service Registration:**
+- `Program.cs` (Web) — registered `IScheduledItemValidationService` + required managers/datastores
+
+**Build Issue + Fix:**
+- PR #665: Build succeeded
+- PR #665-fix: Added missing `IScheduledItemValidationService` mock to `SchedulesControllerTests.cs` constructor
+- Both PRs merged
+
+**Verification:**
+- ✅ Build: 0 errors (both PRs)
+- ✅ Tests: 84/84 Web.Tests passing
+- ✅ No breaking changes
+- ✅ Backward compatible with existing endpoints
+
+**Backend Contract (Ready for UI):**
+```
+GET /Schedules/ValidateItem?itemType=0&itemPrimaryKey=1
+
+Response:
+{
+  "isValid": true,
+  "itemTitle": "NDC Sydney 2025",
+  "itemDetails": "2025-02-10 - 2025-02-14",
+  "errorMessage": null
+}
+```
+
+**Outstanding Work:** Sparks needs to implement UI changes (ItemType dropdown + AJAX validation + results display) in `Views/Schedules/Add.cshtml` and `Views/Schedules/Edit.cshtml`. Full guide in `.squad/decisions.md`.

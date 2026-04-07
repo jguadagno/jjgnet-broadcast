@@ -15,20 +15,23 @@
 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <input type="hidden" asp-for="Id" />
     <div class="mb-3">
-        <label asp-for="ItemTableName" class="form-label">Table</label>
-        <select asp-for="ItemTableName" class="form-select" aria-label="Select table name" aria-describedby="val-ItemTableName">
-            <option selected>Select Table</option>
-            <option value="Engagements">Engagements</option>
-            <option value="Talks">Talks</option>
-            <option value="SyndicationFeedSources">Syndication Feed</option>
-            <option value="YouTubeSources">YouTube</option>
+        <label asp-for="ItemType" class="form-label"></label>
+        <select asp-for="ItemType" class="form-select" asp-items="Html.GetEnumSelectList<JosephGuadagno.Broadcasting.Domain.Enums.ScheduledItemType>()" aria-label="Select item type" aria-describedby="val-ItemType">
+            <option value="">Select Item Type</option>
         </select>
-        <span id="val-ItemTableName" asp-validation-for="ItemTableName" class="text-danger"></span>
+        <span id="val-ItemType" asp-validation-for="ItemType" class="text-danger"></span>
     </div>
+    <input type="hidden" asp-for="ItemTableName" />
     <div class="mb-3">
-        <label asp-for="ItemPrimaryKey" class="form-label">Primary Key</label>
-        <input asp-for="ItemPrimaryKey" type="number" class="form-control" autocomplete="off" aria-describedby="val-ItemPrimaryKey" />
+        <label asp-for="ItemPrimaryKey" class="form-label"></label>
+        <div class="input-group">
+            <input asp-for="ItemPrimaryKey" type="number" class="form-control" autocomplete="off" aria-describedby="val-ItemPrimaryKey" />
+            <button type="button" class="btn btn-outline-secondary" id="btnValidateItem">
+                <i class="bi bi-check-circle me-1"></i>Validate
+            </button>
+        </div>
         <span id="val-ItemPrimaryKey" asp-validation-for="ItemPrimaryKey" class="text-danger"></span>
+        <div id="validation-result" class="mt-2"></div>
     </div>
     <div class="mb-3">
         <label asp-for="SendOnDateTime" class="form-label">Send on Date/Time</label>

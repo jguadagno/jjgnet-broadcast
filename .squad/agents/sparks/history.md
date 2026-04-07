@@ -6,6 +6,7 @@
 |------|------|---------|
 | 2026-03-20 | Added CodeQL analysis to ci.yml (#326) | ✅ CodeQL job added as separate job with csharp language, push to main trigger added to workflow |
 | 2026-04-03 | Implement health checks for Api and Web (#635) | ✅ Added SQL Server and Azure Storage health checks to ServiceDefaults; PR #641 created |
+| 2026-05-02 | Schedule Add/Edit UI validation (#67) | ✅ Implemented ItemType dropdown and AJAX validation UI; branch feature/67-schedule-item-validation-ui pushed |
 
 ## Learnings
 
@@ -46,3 +47,14 @@ Established by Joseph Guadagno:
 - Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
 - Charter updated with enforcement rule (## How I Work)
 - Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code
+
+### 2026-05-02: Schedule Add/Edit AJAX Validation (Issue #67)
+- **Integration with Backend:** Trinity implemented `ValidateItem` endpoint returning JSON (`isValid`, `itemTitle`, `itemDetails`, `errorMessage`)
+- **Enum Dropdown Pattern:** Use `asp-items="Html.GetEnumSelectList<EnumType>()"` for enum-based dropdowns; auto-generates options with proper value binding
+- **Bootstrap 5 Input Groups:** Use `input-group` class to attach buttons to input fields; `btn-outline-secondary` for non-primary action buttons
+- **AJAX Validation UX:** Show loading spinner during request (`spinner-border spinner-border-sm`), replace with success/error/warning alert on completion
+- **Bootstrap Icons:** Use `bi-check-circle-fill` (success), `bi-x-circle-fill` (error), `bi-exclamation-triangle-fill` (warning) for visual feedback
+- **Backward Compatibility:** Keep hidden `ItemTableName` field synced from `ItemType` enum via JS mapping for legacy code compatibility
+- **Form Enhancement:** Support Enter key in input field to trigger validation (prevent default form submit, call validation function)
+- **jQuery AJAX Pattern:** Standard pattern: show loading → call endpoint → handle success/error → display feedback in result div
+- **Build Time:** Web project build takes ~160s with 87 pre-existing nullable warnings (CS8618 — standard pattern in this codebase)
