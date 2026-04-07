@@ -17,6 +17,7 @@ namespace JosephGuadagno.Broadcasting.Web.Tests.Controllers;
 public class SchedulesControllerTests
 {
     private readonly Mock<IScheduledItemService> _scheduledItemService;
+    private readonly Mock<IScheduledItemValidationService> _validationService;
     private readonly Mock<IMapper> _mapper;
     private readonly Mock<ILogger<SchedulesController>> _logger;
     private readonly SchedulesController _controller;
@@ -24,9 +25,10 @@ public class SchedulesControllerTests
     public SchedulesControllerTests()
     {
         _scheduledItemService = new Mock<IScheduledItemService>();
+        _validationService = new Mock<IScheduledItemValidationService>();
         _mapper = new Mock<IMapper>();
         _logger = new Mock<ILogger<SchedulesController>>();
-        _controller = new SchedulesController(_scheduledItemService.Object, _mapper.Object, _logger.Object);
+        _controller = new SchedulesController(_scheduledItemService.Object, _validationService.Object, _mapper.Object, _logger.Object);
         
         // Initialize TempData
         var httpContext = new DefaultHttpContext();
