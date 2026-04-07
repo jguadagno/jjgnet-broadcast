@@ -274,3 +274,31 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 **Build:** ✅ 0 errors (59 pre-existing warnings)
 
 **Key Pattern:** Never use `.HasDefaultValueSql()` on non-nullable value types — it serves no purpose and triggers warnings in modern EF Core
+
+---
+
+### 2026-04-07 — Issue #323: HashTagLists.BuildHashTagList Caller Audit
+
+**Status:** ✅ COMPLETE | Branch squad/323-tags-junction-table | Audit only, no code changes needed
+
+**What I Audited:**
+- Verified all 15 `BuildHashTagList` call sites in Functions project
+- Confirmed all callers passing domain model `.Tags` properties (now `IList<string>` after PR #662) correctly use the `IList<string>?` overload via polymorphism
+- Call sites verified:
+  - **Bluesky:** ProcessScheduledItemFired (2 calls - SyndicationFeedSource, YouTubeSource)
+  - **Facebook:** ProcessNewRandomPost, ProcessNewSyndicationDataFired, ProcessNewYouTubeDataFired, ProcessScheduledItemFired (4 calls total)
+  - **LinkedIn:** ProcessNewRandomPost, ProcessNewSyndicationDataFired, ProcessNewYouTubeDataFired (3 calls)
+  - **Twitter:** ProcessNewRandomPost, ProcessNewSyndicationDataFired, ProcessNewYouTubeData, ProcessScheduledItemFired (4 calls total)
+
+**Legitimate string.Join(",", tags) Patterns Found:**
+1. **BroadcastingProfile.cs (AutoMapper):** Converting Domain `IList<string>` → SQL `string` (comma-separated) for persistence — CORRECT
+2. **ProcessScheduledItemFired files:** Converting `IList<string>` to comma-separated string for Scriban template variables — CORRECT (templates expect string values)
+3. **JsonFeedReader.cs:** Converting JSON array to comma-separated string for `JsonFeedSource.Tags` (still `string?` type) — CORRECT (not yet normalized to IList)
+
+**Key Findings:**
+- ✅ NO migration issues found — all callers already using correct overload
+- ✅ All `string.Join` patterns are legitimate conversions for specific purposes (DB persistence, template rendering, non-normalized models)
+- ✅ Build succeeded with 0 errors (518 pre-existing warnings)
+- ✅ The compiler guards this via type safety — `IList<string>` can only call the list overload
+
+**Neo's Suggestion S3:** VERIFIED — all Function callers correctly migrated to `IList<string>?` overload

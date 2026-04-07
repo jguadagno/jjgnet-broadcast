@@ -373,3 +373,31 @@ Established by Joseph Guadagno:
 - **Fix:** Remove .ValidateOnStart() from Functions project. Keep ValidateDataAnnotations() for runtime validation on first access
 - **Prevention:** When refactoring DI registrations, test in the actual deployment target (Azure Functions runtime), not just local builds. Eager validation (ValidateOnStart) should only be used when you have actual DataAnnotations AND can guarantee the DI container is fully initialized
 
+### 2026-04-09: PR #662 Re-Review — Junction Table Normalization (#323)
+
+**Context:** Reviewed PR #662 (feat(data): normalize Tags column to junction table) after Morpheus + Trinity addressed all 6 items from original review (3 critical, 3 suggestions).
+
+**Critical issues verified resolved:**
+1. **EF SourceType bleed**: Originally EF navigation properties didn't filter by SourceType — reads would return mixed SyndicationFeed + YouTube tags for same ID. **Fix:** All reads now use direct discriminated queries (`broadcastingContext.SourceTags.Where(st => st.SourceId == id && st.SourceType == type)`). Zero Include(s => s.SourceTags) usage remains. Navigation properties retained for write-only operations (SyncSourceTagsAsync). BroadcastingContext includes WARNING comments on nav property configs.
+
+2. **Transaction safety**: Originally SaveAsync called SaveChangesAsync twice (entity save + SyncSourceTagsAsync) without transaction wrapper — partial failure risk. **Fix:** Both data stores now wrap in BeginTransactionAsync/CommitAsync. No partial-failure window remains.
+
+3. **EF model ambiguity**: Dual .WithOne() on same FK column risk — resolved via discriminated direct queries. Nav properties no longer used for reads so data integrity preserved.
+
+**Suggestions verified implemented:**
+- S1: Unique index UX_SourceTags_SourceId_SourceType_Tag added to migration + EF config
+- S2: STRING_SPLIT SQL Server 2016+ compatibility documented
+- S3: Trinity verified all 15 BuildHashTagList callers correct (compiler-enforced)
+
+**Verdict:** APPROVED. Posted approval comment to PR #662, marked as ready for review. Ready for Joseph's merge decision.
+
+**Pattern learned:** When using discriminated shared junction tables (SourceType column), prefer direct DbSet<JunctionEntity>.Where(filter) queries over navigation properties to enforce discriminator at query time. Navigation properties remain useful for writes (AddRange/RemoveRange operations).
+
+**Files reviewed:**
+- BroadcastingContext.cs (lines 241-248, 286-293, 296-316)
+- SyndicationFeedSourceDataStore.cs (all read methods + SaveAsync)
+- YouTubeSourceDataStore.cs (all read methods + SaveAsync)
+- 2026-04-09-sourcetags-junction.sql (migration script)
+
+**Decision document:** `.squad/decisions/inbox/neo-pr662-approved.md`
+
