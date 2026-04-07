@@ -20,7 +20,7 @@ public class WebMappingProfile: Profile
         CreateMap<Models.ScheduledItemViewModel, Domain.Models.ScheduledItem>()
             .ForMember(
                 destination => destination.ItemType,
-                options => options.MapFrom(source => Enum.Parse<ScheduledItemType>(source.ItemTableName)))
+                options => options.MapFrom(source => source.ItemType))
             .ForMember(destination => destination.CreatedByEntraOid, options => options.Ignore());
         CreateMap<Models.MessageTemplateViewModel, Domain.Models.MessageTemplate>()
             .ForMember(destination => destination.CreatedByEntraOid, options => options.Ignore());
@@ -31,7 +31,10 @@ public class WebMappingProfile: Profile
         CreateMap<Domain.Models.ScheduledItem, Models.ScheduledItemViewModel>()
             .ForMember(
                 destination => destination.ItemTableName,
-                options => options.MapFrom(source => source.ItemType.ToString()));
+                options => options.MapFrom(source => source.ItemType.ToString()))
+            .ForMember(
+                destination => destination.ItemType,
+                options => options.MapFrom(source => source.ItemType));
         CreateMap<Domain.Models.MessageTemplate, Models.MessageTemplateViewModel>();
         
         // RBAC Phase 1 mappings

@@ -1,5 +1,6 @@
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +17,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 public class SchedulesController : Controller
 {
     private readonly IScheduledItemService _scheduledItemService;
+    private readonly IScheduledItemValidationService _validationService;
     private readonly IMapper _mapper;
     private readonly ILogger<SchedulesController> _logger;
 
@@ -23,11 +25,13 @@ public class SchedulesController : Controller
     /// The constructor for the schedules' controller
     /// </summary>
     /// <param name="scheduledItemService">The scheduled item service</param>
+    /// <param name="validationService">The scheduled item validation service</param>
     /// <param name="mapper">The mapper service</param>
     /// <param name="logger">The logger to use</param>
-    public SchedulesController(IScheduledItemService scheduledItemService, IMapper mapper, ILogger<SchedulesController> logger)
+    public SchedulesController(IScheduledItemService scheduledItemService, IScheduledItemValidationService validationService, IMapper mapper, ILogger<SchedulesController> logger)
     {
         _scheduledItemService = scheduledItemService;
+        _validationService = validationService;
         _mapper = mapper;
         _logger = logger;
     }
@@ -273,5 +277,28 @@ public class SchedulesController : Controller
         ViewBag.ActionName = "Upcoming";
 
         return View(scheduledItemViewModels);
+    }
+    
+    /// <summary>
+    /// Validates that a source item exists for the given type and ID.
+    /// Used for AJAX validation on the Add/Edit forms.
+    /// </summary>
+    /// <param name="itemType">The type of item (Engagements, Talks, SyndicationFeedSources, YouTubeSources)</param>
+    /// <param name="itemPrimaryKey">The primary key of the item to validate</param>
+    /// <returns>JSON result with validation status and item details</returns>
+    [HttpGet]
+    public async Task<IActionResult> ValidateItem(ScheduledItemType itemType, int itemPrimaryKey)
+    {
+        if (itemPrimaryKey <= 0)
+        {
+            return Json(new ScheduledItemLookupResult
+            {
+                IsValid = false,
+                ErrorMessage = "Item ID must be greater than 0"
+            });
+        }
+
+        var result = await _validationService.ValidateItemAsync(itemType, itemPrimaryKey);
+        return Json(result);
     }
 }
