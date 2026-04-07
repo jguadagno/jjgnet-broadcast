@@ -71,3 +71,13 @@ Established by Joseph Guadagno:
 - Documented STRING_SPLIT compatibility: SQL Server 2016+ compatible without ordinal arg since tag ordering is irrelevant for seeding
 - **Pattern:** Junction table unique constraints protect delete+re-insert sync patterns from race conditions
 - Branch: `squad/323-tags-junction-table` | Commit: `8db7dea`
+
+### 2026-04-09 — PR #662 Merge: Resolved merge conflicts with origin/main
+
+- **Conflicts resolved:** 5 code/SQL files + 5 .squad/ files
+- **BroadcastingContext.cs:** Kept our warning comments + integrated main's `HasMany` nav property config. Added our `UX_SourceTags_SourceId_SourceType_Tag` unique index to the SourceTag entity config (main had the SourceTag config at bottom but without unique index).
+- **SyndicationFeedSourceDataStore.cs / YouTubeSourceDataStore.cs:** Kept our direct-query pattern (`Where(st => st.SourceId == id && st.SourceType == SourceType)`) and `BeginTransactionAsync` throughout all methods. Main's version used `Include()` which causes SourceType bleed.
+- **HashTagLists.cs:** Took main's version (intermediate `tagList` variable — functionally identical to our one-liner).
+- **2026-04-09-sourcetags-junction.sql:** Kept our version (includes unique index + STRING_SPLIT compat comment). Main had the same file without the unique index (earlier commit of the same migration).
+- **.squad/ files:** Used `git checkout --ours` for all 5 — Scribe handles these separately.
+- **Build:** 0 errors after resolution. | Commit: `fdc8114`
