@@ -15,6 +15,7 @@ using JosephGuadagno.Broadcasting.Web.Interfaces;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Azure;
@@ -112,6 +113,41 @@ builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
     .EnableTokenAcquisitionToCallDownstreamApi(allScopes)
     .AddDistributedTokenCaches();
 builder.Services.AddDownstreamApis(builder.Configuration.GetSection("DownstreamApis"));
+
+// Add OIDC event handlers for graceful error handling
+builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
+{
+    options.Events.OnRemoteFailure = context =>
+    {
+        // Handle AADSTS consent and authorization errors gracefully
+        if (context.Failure?.Message != null)
+        {
+            var errorMessage = context.Failure.Message;
+            
+            // AADSTS650052: The app needs access to a service that your organization hasn't subscribed to or enabled
+            // AADSTS65001: The user or administrator hasn't consented to use the application
+            // AADSTS700016: Application not found in the directory/tenant
+            // AADSTS70011: The provided value for the input parameter 'scope' is not valid
+            if (errorMessage.Contains("AADSTS650052") ||
+                errorMessage.Contains("AADSTS65001") ||
+                errorMessage.Contains("AADSTS700016") ||
+                errorMessage.Contains("AADSTS70011"))
+            {
+                context.Response.Redirect("/Home/AuthError?message=" + 
+                    Uri.EscapeDataString("Your organization hasn't granted access to this application. " +
+                    "Please contact your IT administrator to enable access."));
+                context.HandleResponse();
+                return Task.CompletedTask;
+            }
+        }
+        
+        // For all other errors, redirect to generic auth error page
+        context.Response.Redirect("/Home/AuthError?message=" + 
+            Uri.EscapeDataString("An error occurred during sign-in. Please try again or contact support."));
+        context.HandleResponse();
+        return Task.CompletedTask;
+    };
+});
 
 // Register claims transformation for RBAC
 builder.Services.AddScoped<IClaimsTransformation, EntraClaimsTransformation>();
