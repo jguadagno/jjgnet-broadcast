@@ -373,3 +373,42 @@ Established by Joseph Guadagno:
 - **Fix:** Remove .ValidateOnStart() from Functions project. Keep ValidateDataAnnotations() for runtime validation on first access
 - **Prevention:** When refactoring DI registrations, test in the actual deployment target (Azure Functions runtime), not just local builds. Eager validation (ValidateOnStart) should only be used when you have actual DataAnnotations AND can guarantee the DI container is fully initialized
 
+
+
+---
+
+### 2026-06-??: Issue #313 — External Dependency Health Checks
+
+**Delivered:** PR #660 (draft) — eat: add health checks for external dependencies (#313)
+
+**Branch:** squad/313-external-health-checks
+
+**What was built:**
+Six IHealthCheck implementations in src/JosephGuadagno.Broadcasting.Functions/HealthChecks/:
+
+| Class | Check name | Validates |
+|---|---|---|
+| BitlyHealthCheck | itly | IBitlyConfiguration.Token + ApiRootUri non-empty |
+| TwitterHealthCheck | 	witter | InMemoryCredentialStore: ConsumerKey, ConsumerSecret, OAuthToken, OAuthTokenSecret |
+| FacebookHealthCheck | acebook | IFacebookApplicationSettings: AppId, PageId, PageAccessToken |
+| LinkedInHealthCheck | linkedin | ILinkedInApplicationSettings: ClientId, AccessToken, AuthorId |
+| BlueskyHealthCheck | luesky | IBlueskySettings: BlueskyUserName, BlueskyPassword |
+| EventGridHealthCheck | vent-grid | IEventPublisherSettings: at least one endpoint, each with Endpoint + Key |
+
+**Registration:** All registered via uilder.Services.AddHealthChecks().AddCheck<T>(name, tags: ["ready"]) in Program.cs after external manager configuration.
+
+**Exposure:** HealthCheck.cs Azure Function (GET /api/health) now injects HealthCheckService and runs all "ready"-tagged checks alongside the existing inline storage checks.
+
+**Pattern established:**
+- Functions-specific external API health checks live in src/JosephGuadagno.Broadcasting.Functions/HealthChecks/
+- They are **configuration-only checks** (no live HTTP probes) — zero side effects, zero API quota consumption
+- Live probes should only be added when deeper signal is justified and rate-limiting risk is understood
+- Do NOT put Functions-specific dependency checks in ServiceDefaults — that creates unnecessary coupling for Api/Web
+
+**External client locations (for reference):**
+- Bitly: IBitlyConfiguration (from JosephGuadagno.Utilities.Web.Shortener.Models) — configured in ConfigureBitly()
+- Twitter: InMemoryCredentialStore (from LinqToTwitter.OAuth) — configured in ConfigureTwitter()
+- Facebook: IFacebookApplicationSettings — configured in ConfigureFacebookManager()
+- LinkedIn: ILinkedInApplicationSettings — configured in ConfigureLinkedInManager()
+- Bluesky: IBlueskySettings — configured in ConfigureBlueskyManager()
+- EventGrid: IEventPublisherSettings — configured directly from EventGridTopics:TopicEndpointSettings config section
