@@ -68,7 +68,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
                 Url = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri ?? string.Empty,
                 AddedOn = currentTime,
                 LastUpdatedOn = currentTime,
-                Tags = syndicationItem.Categories is null ? null : string.Join(",", syndicationItem.Categories.Select(c => c.Name))
+                Tags = syndicationItem.Categories?.Select(c => c.Name).ToList() ?? []
             })
             .ToList();
     }
@@ -123,7 +123,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
                 Url = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri ?? string.Empty,
                 AddedOn = currentTime,
                 LastUpdatedOn = currentTime,
-                Tags = syndicationItem.Categories is null ? null : string.Join(",", syndicationItem.Categories.Select(c => c.Name))
+                Tags = syndicationItem.Categories?.Select(c => c.Name).ToList() ?? []
             })
             .ToList();
     }

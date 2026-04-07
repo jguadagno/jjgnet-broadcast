@@ -11202,3 +11202,179 @@ Adds SQL Server and Azure Storage dependency health checks to Api and Web applic
 - Add Web-specific checks (Key Vault, Communication Services) in future issue
 
 **Decision:** Both PRs approved. Ready for merge. Joseph can merge at his discretion.
+
+
+---
+## Decisions Merged from Inbox — 2026-04-07T15:47:38Z
+
+---
+
+### Decision: Azure Reader Access Required Before Bicep IaC Can Begin
+Date: 2026-04-05 | Author: Cypher | Issue: #637
+
+Bicep IaC generation for issue #637 is blocked until Joseph provides: (1) production resource group name, (2) Reader role assignment on that resource group.
+
+Minimum required: Reader role only (not subscription-wide). Sufficient for az group export, az resource list, Key Vault metadata - does NOT expose secrets or account keys.
+
+Cannot infer without Azure access: Resource group name, SQL Server FQDN, Storage Account name, Key Vault name, App Service Plan resource ID, Application Insights name, Log Analytics workspace, Managed Identity names/client IDs, Event Grid namespace name, all SKUs.
+
+---
+
+### Decision: Azure Access Requirement for Issue #637 Bicep IaC
+Date: 2026-04-05 | Author: Neo | Issue: #637
+
+Live Azure Reader access strongly recommended before Cypher begins writing Bicep. Scratch-writing viable for ~60% of templates from known names but produces drift-prone templates without it. Creates rework risk across all 7 phases.
+
+---
+
+### Decision: Modular Bicep IaC Structure (#637)
+Date: 2026-04-05 | Author: Cypher | PR: #645
+
+Full modular Bicep scaffold for JJGNet Broadcasting Azure environment. Structure: main.bicep + modules/compute (app-service.bicep, function-app.bicep), modules/data (sql-server.bicep, storage-account.bicep, event-grid.bicep), modules/security (key-vault.bicep, managed-identity.bicep), modules/monitoring (log-analytics.bicep, app-insights.bicep, action-group.bicep, alert-rules.bicep).
+
+Key decisions: RBAC over Access Policies (enableRbacAuthorization: true); two storage accounts (jjgnet app data + jjgnetbeb6 Functions runtime - separation intentional); two regions (westus compute + westus2 storage/monitoring); bicepparam format (Bicep 0.18+); infrastructure/discovery/ gitignored.
+
+---
+
+### Decision: Security Fixes — PR #645 Bicep Review
+Date: 2026-04-06 | Author: Cypher | PR: #645
+
+Standing rules for all Bicep work on this project:
+1. No listKeys() in outputs — use identity-based access or Key Vault references
+2. allowBlobPublicAccess: false by default unless explicitly justified
+3. GA API versions only — no -preview in production Bicep
+4. No hardcoded email/notification addresses — always parameterise
+5. StorageV2 kind only — never Storage (legacy)
+6. connectionString not instrumentationKey for App Insights
+
+Circular dependency resolved: removed dead keyVaultUri parameter from app-service.bicep (declared but never referenced). Pattern: when circular dependency identified, audit both modules for unused parameters.
+
+Functions storage: use AzureWebJobsStorage__accountName (account name only, identity-based auth) instead of key-based connection strings. Eliminates keys from deployment artifacts.
+
+---
+
+### Decision: PR #645 Bicep Scaffold — Review Journey and Approval
+Date: 2026-04-06 | Reviewer: Neo | PR: #645 | Final Verdict: APPROVED (3 rounds)
+
+Round 1 (7 issues): circular dependency, preview API versions in monitoring, missing TLS enforcement, Key Vault soft delete + purge protection missing, supportsHttpsTrafficOnly missing, sqlAdminPassword not @secure(), missing README.
+Round 2 (1 remaining): 11 -preview API occurrences in event-grid.bicep, sql-server.bicep, managed-identity.bicep.
+Round 3: All 11 replaced with GA versions. Approved.
+
+GA version reference: EventGrid 2022-06-15, SQL 2021-11-01, ManagedIdentity 2023-01-31, actionGroups 2023-01-01, components 2020-02-02, workspaces 2022-10-01, metricAlerts 2018-03-01.
+
+Security defaults: always enforce minimalTlsVersion: '1.2', supportsHttpsTrafficOnly: true, Key Vault soft delete + purge protection, @secure() on all password params.
+
+---
+
+### Decision: Managed Identity Strategy — API, Web, Functions
+Date: 2026-04-06 | Author: Cypher
+
+System-assigned identities (named after resource) are the active identities — Key Vault Secrets User role granted to their principal IDs. User-assigned identities for API (api-jjgnet-broad-id-8130) and Web (web-jjgnet-broad-id-8f0f) are orphaned — not attached, no configured role assignments.
+
+Recommendation: Delete orphaned user-assigned identities for API and Web. System-assigned identities are sufficient for Key Vault access. Functions user-assigned identity (jjgnet-broadcast-id-8d7d) is attached and used for identity-based storage auth — keep as-is.
+
+---
+
+### Decision: Azure Functions Identity Consolidation
+Date: 2026-04-06 | Author: Cypher | Status: Implemented (Bicep complete)
+
+Consolidated to single user-assigned managed identity named function-jjgnet-broadcast for Functions app. Chosen over renaming Function App (which requires delete + recreate, breaking hostname and CI/CD).
+
+Files changed: managed-identity.bicep (renamed resource), function-app.bicep (identity type UserAssigned only), main.bicep (updated keyVault module to use new identity's principal ID).
+
+Post-deploy steps required: Grant Blob Data Owner, Queue Data Contributor, Table Data Contributor on jjgnetbeb6 to function-jjgnet-broadcast; remove orphaned Key Vault role assignments; delete old identity jjgnet-broadcast-id-8d7d.
+
+---
+
+### Decision: Functions Storage RBAC Codified in Bicep
+Date: 2026-04-07 | Author: Cypher | PR: #658
+
+Post-PR #657: Functions system-assigned identity had 3 storage role assignments (Blob/Queue/Table Data Contributor on jjgnetbeb6) granted manually in Portal but NOT in Bicep. Gap: fresh deployment would lose Functions storage access.
+
+Solution: Created infrastructure/bicep/modules/security/storage-rbac.bicep with 3 deterministic role assignments using guid(storageAccount.id, functionsPrincipalId, roleDefId). Called from main.bicep after storage and functionApp modules. Idempotent — existing assignments reconciled by name.
+
+---
+
+### Decision: Deployment Identity — Intentionally Manual, Not in Bicep
+Date: 2026-04-07 | Author: Cypher
+
+After PR #657 removed user-assigned managed identities (which were also used for GitHub Actions OIDC), Joseph created Entra app JJGNet-Deployment-Credentials. Workflows use repository secrets (not hardcoded IDs). Recent deployments succeeded.
+
+Decision: Deployment identity should NOT be codified in Bicep. Reasons: tenant-level resource (outside Bicep RG scope), governance separation, Bicep Graph provider immature (preview), one-time setup, security boundary (elevated permissions).
+
+Recommended: Document deployment identity setup in infrastructure/docs/deployment-identity-setup.md for disaster recovery.
+
+---
+
+### Decision: MSAL Token Cache Collision Handling (Issue #81)
+Date: 2026-04-06 | Author: Ghost | PR: #648
+
+Problem: App recycles leave stale SQL cache entries; MSAL throws MsalClientException: multiple tokens in cache; existing handler only handled user_null, not cache collisions.
+
+Solution: Added MsalClientException and MsalServiceException catch blocks using IsTokenCacheCollision() detection. Sign out user + reject principal to force clean re-authentication. Cache config: DefaultSlidingExpiration = 14 days, ExpiredItemsDeletionInterval = 30 minutes.
+
+Pattern: Always use MsalError.* constants for MSAL error detection (e.g., MsalError.MultipleTokensMatchedError) — never string-match on .Message or .ErrorCode literals. Constants are stable public API; message text can change across MSAL versions.
+
+---
+
+### Decision: Scheduled Items Refactor — Platform/MessageType Columns (Issue #89, PR #646/#650)
+Date: 2026-04-07 | Author: Morpheus | Status: Phase 1 Complete
+
+Phase 1 implemented: Added Platform (NVARCHAR(50), nullable) and MessageType (NVARCHAR(50), nullable) to ScheduledItems. Backward compatible — existing records backfilled with 'Legacy'. Architecture shift from on-the-fly composition at publish time to pre-composed messages stored per platform at creation time.
+
+Conventions: No EF Migrations (raw SQL scripts in scripts/database/migrations/); idempotent migrations with IF NOT EXISTS guards; base schema (table-create.sql) updated alongside migration; AutoMapper reverse map handles new properties automatically.
+
+Phase 2 next: IScheduledItemContentPublisher — generate series of ScheduledItems from Engagement/Talk on creation.
+Phase 3 final: Update Azure Functions publishers to use pre-composed messages.
+
+---
+
+### Decision: .NET Technical Debt Patterns — IOptions, CancellationToken, OperationResult
+Date: 2026-04-07 | Author: Neo | Issues: #309, #311, #312 | PR: #649
+
+1. IOptions Pattern (#309): Use Configure<T>() + AddOptions<T>().ValidateDataAnnotations().ValidateOnStart(). Inject as IOptions<T>, access via .Value. EXCEPTION: Do NOT use ValidateOnStart() in Azure Functions projects.
+
+2. CancellationToken Propagation (#311): Add ct = default to all async interface methods; propagate to EF Core. Default parameter ensures backward compatibility.
+
+3. OperationResult Pattern (#312): Managers return Task<OperationResult<T>>. Static factory methods: OperationResult<T>.Success(value) and OperationResult<T>.Failure(error, ex). Callers check .IsSuccess before accessing .Value.
+
+---
+
+### Decision: Functions DI Startup Failure Hotfix (PR #649 Regression)
+Date: 2026-04-06 | Author: Neo | Status: RESOLVED (commit ed48022)
+
+Problem: .ValidateOnStart() causes eager IOptions<T> resolution during Azure Functions startup before DI container fully initialized. Error: System.InvalidOperationException: A suitable constructor for type '_functionActivator' could not be located.
+
+Root cause: Azure Functions isolated worker DI initializes in phases; ValidateOnStart() forces immediate resolution before all dependencies wired. None of the settings classes had actual DataAnnotation attributes, making ValidateOnStart() pointless.
+
+Fix: Removed .ValidateOnStart() from all 5 settings registrations in Functions/Program.cs. Kept ValidateDataAnnotations() (lazy validation on first access — safe).
+
+Rule: Do NOT use ValidateOnStart() in Azure Functions isolated worker projects. Safe to use in Api/Web projects with actual DataAnnotation attributes ([Required], [StringLength], etc.).
+
+---
+
+### Decision: GitHub Comment Formatting — Triple Backticks Required
+Date: 2026-04-06 | Author: Neo | Incident: PR #646
+
+All agents posting GitHub content must use triple backticks for fenced code blocks. Single backticks reserved for inline code only (single variable/method names, one line).
+
+Root cause: PR #646 review used single-backtick code fences. GitHub renders them as broken inline code — first character of language hint consumed as delimiter, multi-line content collapses, words truncated. Silent failure.
+
+Enforcement: Rule embedded in all 12 agent charters (## How I Work). Canonical reference: .squad/skills/github-comment-formatting/SKILL.md. Neo flags any single-backtick code fence as a formatting defect.
+
+Correct pattern: inline code uses backtick (e.g., Platform), multi-line uses triple backtick with language hint.
+
+---
+
+### Decision: Sprint 12 Re-Review Patterns (PRs #647, #648, #650)
+Date: 2026-04-07 | Reviewer: Neo | Outcome: All 3 PRs approved
+
+1. Database Schema Change Checklist: synchronize all four layers — migration script, base schema (table-create.sql), EF Core context (HasMaxLength()), Domain model ([MaxLength]).
+
+2. MSAL Error Handling: use MsalError.* constants, never string-match on .Message or .ErrorCode literals.
+
+3. ViewModel mirrors Domain annotations: [MaxLength] on Domain → [MaxLength] on ViewModel (client-side validation). API DTOs do NOT need [MaxLength] (data contracts, not validation models).
+
+4. Migration backfill: independent UPDATE statements per column (not combined with OR, which risks overwriting existing data).
+
+5. Controversial code: document with PR/issue references in justification comments to preserve historical context.

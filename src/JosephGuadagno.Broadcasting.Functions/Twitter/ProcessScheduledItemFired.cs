@@ -214,13 +214,13 @@ public class ProcessScheduledItemFired(
                     var feed = await syndicationFeedSourceManager.GetAsync(scheduledItem.ItemPrimaryKey);
                     title = feed.Title;
                     url = feed.ShortenedUrl ?? feed.Url;
-                    tags = feed.Tags ?? "";
+                    tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : "";
                     break;
                 case ScheduledItemType.YouTubeSources:
                     var yt = await youTubeSourceManager.GetAsync(scheduledItem.ItemPrimaryKey);
                     title = yt.Title;
                     url = yt.ShortenedUrl ?? yt.Url;
-                    tags = yt.Tags ?? "";
+                    tags = yt.Tags?.Count > 0 ? string.Join(",", yt.Tags) : "";
                     break;
                 case ScheduledItemType.Engagements:
                     var engagement = await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey);

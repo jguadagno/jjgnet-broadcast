@@ -75,7 +75,7 @@ public class ProcessScheduledItemFiredTests
         Title = "Building Better Apps with .NET",
         Url = "https://youtube.com/watch?v=abc123def",
         ShortenedUrl = null,
-        Tags = null,
+        Tags = [],
         PublicationDate = DateTimeOffset.UtcNow,
         AddedOn = DateTimeOffset.UtcNow,
         LastUpdatedOn = DateTimeOffset.UtcNow

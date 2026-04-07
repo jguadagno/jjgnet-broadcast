@@ -123,16 +123,17 @@ Joseph answered all 5 blocking questions:
 - `src/JosephGuadagno.Broadcasting.Functions/HealthChecks/BitlyHealthCheck.cs`
   - `HealthCheckResult.Unhealthy(...)` → `HealthCheckResult.Degraded(...)` for missing Token/ApiRootUri
   - Updated XML doc comment to explain the rationale
-  - Improved message text to note that URL shortening will be skipped but content publishing is unaffected
+  - Message text clarifies URL shortening will be skipped but content publishing continues
 
 **Commit:** `456df3d` — `fix(functions): use Degraded for optional Bitly health check (#313)`  
 **Status:** ✅ Pushed to `squad/313-external-health-checks`. PR #660 updated.
 
 **Learnings:**
-- Optional enrichment services (Bitly URL shortening) should return `Degraded`, not `Unhealthy`, when config is missing
-- `Unhealthy` → HTTP 503 → load-balancer sees dead instance → false failover. Never do this for non-critical services.
-- `Degraded` → HTTP 200 with yellow signal → surfaces misconfiguration without operational impact
-- The prior review comment on PR #660 had no encoding issues in the actual review body — encoding issues were in the PR description table (backslash-escape artifacts from the PR author's terminal), not in Neo's review text
+- Optional enrichment services (Bitly) should return `Degraded` when config is missing — not `Unhealthy`
+- `Unhealthy` → HTTP 503 → load-balancer removes instance → false failover. Never for non-critical services.
+- `Degraded` → HTTP 200 yellow signal → surfaces the issue without operational harm
+- Prior review comment on PR #660 had no encoding issues in the review body — encoding artifacts were only in the PR description table (terminal escape sequences from the PR author), not in Neo's text
+- The `.squad/decisions/inbox/` directory is gitignored — inbox files are never committed to git
 
 ---
 
@@ -407,3 +408,50 @@ Established by Joseph Guadagno:
 - **Fix:** Remove .ValidateOnStart() from Functions project. Keep ValidateDataAnnotations() for runtime validation on first access
 - **Prevention:** When refactoring DI registrations, test in the actual deployment target (Azure Functions runtime), not just local builds. Eager validation (ValidateOnStart) should only be used when you have actual DataAnnotations AND can guarantee the DI container is fully initialized
 
+
+
+---
+
+### 2026-06-??: Issue #313 — External Dependency Health Checks
+
+**Delivered:** PR #660 (draft) — eat: add health checks for external dependencies (#313)
+
+**Branch:** squad/313-external-health-checks
+
+**What was built:**
+Six IHealthCheck implementations in src/JosephGuadagno.Broadcasting.Functions/HealthChecks/:
+
+| Class | Check name | Validates |
+|---|---|---|
+| BitlyHealthCheck | itly | IBitlyConfiguration.Token + ApiRootUri non-empty |
+| TwitterHealthCheck | 	witter | InMemoryCredentialStore: ConsumerKey, ConsumerSecret, OAuthToken, OAuthTokenSecret |
+| FacebookHealthCheck | acebook | IFacebookApplicationSettings: AppId, PageId, PageAccessToken |
+| LinkedInHealthCheck | linkedin | ILinkedInApplicationSettings: ClientId, AccessToken, AuthorId |
+| BlueskyHealthCheck | luesky | IBlueskySettings: BlueskyUserName, BlueskyPassword |
+| EventGridHealthCheck | vent-grid | IEventPublisherSettings: at least one endpoint, each with Endpoint + Key |
+
+**Registration:** All registered via uilder.Services.AddHealthChecks().AddCheck<T>(name, tags: ["ready"]) in Program.cs after external manager configuration.
+
+**Exposure:** HealthCheck.cs Azure Function (GET /api/health) now injects HealthCheckService and runs all "ready"-tagged checks alongside the existing inline storage checks.
+
+**Pattern established:**
+- Functions-specific external API health checks live in src/JosephGuadagno.Broadcasting.Functions/HealthChecks/
+- They are **configuration-only checks** (no live HTTP probes) — zero side effects, zero API quota consumption
+- Live probes should only be added when deeper signal is justified and rate-limiting risk is understood
+- Do NOT put Functions-specific dependency checks in ServiceDefaults — that creates unnecessary coupling for Api/Web
+
+**External client locations (for reference):**
+- Bitly: IBitlyConfiguration (from JosephGuadagno.Utilities.Web.Shortener.Models) — configured in ConfigureBitly()
+- Twitter: InMemoryCredentialStore (from LinqToTwitter.OAuth) — configured in ConfigureTwitter()
+- Facebook: IFacebookApplicationSettings — configured in ConfigureFacebookManager()
+- LinkedIn: ILinkedInApplicationSettings — configured in ConfigureLinkedInManager()
+- Bluesky: IBlueskySettings — configured in ConfigureBlueskyManager()
+- EventGrid: IEventPublisherSettings — configured directly from EventGridTopics:TopicEndpointSettings config section
+
+### 2026-04-07: GitHub Comment Formatting Skill Added
+- Skill: .squad/skills/github-comment-formatting/SKILL.md now exists — canonical reference for formatting GitHub comments
+- Rule: Use triple backticks for ALL fenced code blocks in GitHub content (PR reviews, issue comments, PR comments)
+- Single backticks are for inline code only (single variable/method names, one line)
+- Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
+- Charter updated with enforcement rule (## How I Work)
+- Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code

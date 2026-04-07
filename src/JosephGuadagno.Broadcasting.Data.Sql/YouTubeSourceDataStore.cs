@@ -7,9 +7,13 @@ namespace JosephGuadagno.Broadcasting.Data.Sql;
 
 public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMapper mapper) : IYouTubeSourceDataStore
 {
+    private const string SourceType = "YouTube";
+
     public async Task<Domain.Models.YouTubeSource> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        var dbYouTubeSource = await broadcastingContext.YouTubeSources.FindAsync(new object[] { primaryKey }, cancellationToken);
+        var dbYouTubeSource = await broadcastingContext.YouTubeSources
+            .Include(y => y.SourceTags)
+            .FirstOrDefaultAsync(y => y.Id == primaryKey, cancellationToken);
         return mapper.Map<Domain.Models.YouTubeSource>(dbYouTubeSource);
     }
 
@@ -21,12 +25,17 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
             broadcastingContext.Entry(dbYouTubeSource).State =
                 dbYouTubeSource.Id == 0 ? EntityState.Added : EntityState.Modified;
 
-            var result = await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
-            if (result)
-            {
-                return OperationResult<Domain.Models.YouTubeSource>.Success(mapper.Map<Domain.Models.YouTubeSource>(dbYouTubeSource));
-            }
-            return OperationResult<Domain.Models.YouTubeSource>.Failure("Failed to save YouTube source");
+            await broadcastingContext.SaveChangesAsync(cancellationToken);
+
+            await SyncSourceTagsAsync(dbYouTubeSource.Id, entity.Tags, cancellationToken);
+
+            var saved = await broadcastingContext.YouTubeSources
+                .Include(y => y.SourceTags)
+                .FirstOrDefaultAsync(y => y.Id == dbYouTubeSource.Id, cancellationToken);
+
+            return saved is not null
+                ? OperationResult<Domain.Models.YouTubeSource>.Success(mapper.Map<Domain.Models.YouTubeSource>(saved))
+                : OperationResult<Domain.Models.YouTubeSource>.Failure("Failed to save YouTube source");
         }
         catch (Exception ex)
         {
@@ -36,7 +45,9 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
 
     public async Task<List<Domain.Models.YouTubeSource>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var dbYouTubeSources = await broadcastingContext.YouTubeSources.ToListAsync(cancellationToken);
+        var dbYouTubeSources = await broadcastingContext.YouTubeSources
+            .Include(y => y.SourceTags)
+            .ToListAsync(cancellationToken);
         return mapper.Map<List<Domain.Models.YouTubeSource>>(dbYouTubeSources);
     }
 
@@ -49,9 +60,12 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
     {
         try
         {
-            var dbYouTubeSource = await broadcastingContext.YouTubeSources.FindAsync(new object[] { primaryKey }, cancellationToken);
+            var dbYouTubeSource = await broadcastingContext.YouTubeSources
+                .Include(y => y.SourceTags)
+                .FirstOrDefaultAsync(y => y.Id == primaryKey, cancellationToken);
             if (dbYouTubeSource == null) return OperationResult<bool>.Success(true);
 
+            broadcastingContext.SourceTags.RemoveRange(dbYouTubeSource.SourceTags);
             broadcastingContext.YouTubeSources.Remove(dbYouTubeSource);
             await broadcastingContext.SaveChangesAsync(cancellationToken);
             return OperationResult<bool>.Success(true);
@@ -64,15 +78,40 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
 
     public async Task<Domain.Models.YouTubeSource?> GetByUrlAsync(string url, CancellationToken cancellationToken = default)
     {
-        var dbYouTubeSource = await broadcastingContext.YouTubeSources.AsNoTracking()
+        var dbYouTubeSource = await broadcastingContext.YouTubeSources
+            .Include(y => y.SourceTags)
+            .AsNoTracking()
             .FirstOrDefaultAsync(y => y.Url == url, cancellationToken);
         return dbYouTubeSource is null ? null : mapper.Map<Domain.Models.YouTubeSource>(dbYouTubeSource);
     }
 
     public async Task<Domain.Models.YouTubeSource?> GetByVideoIdAsync(string videoId, CancellationToken cancellationToken = default)
     {
-        var dbYouTubeSource = await broadcastingContext.YouTubeSources.AsNoTracking()
+        var dbYouTubeSource = await broadcastingContext.YouTubeSources
+            .Include(y => y.SourceTags)
+            .AsNoTracking()
             .FirstOrDefaultAsync(y => y.VideoId == videoId, cancellationToken);
         return dbYouTubeSource is null ? null : mapper.Map<Domain.Models.YouTubeSource>(dbYouTubeSource);
+    }
+
+    private async Task SyncSourceTagsAsync(int sourceId, IList<string> tags, CancellationToken cancellationToken)
+    {
+        var existing = await broadcastingContext.SourceTags
+            .Where(st => st.SourceId == sourceId && st.SourceType == SourceType)
+            .ToListAsync(cancellationToken);
+        broadcastingContext.SourceTags.RemoveRange(existing);
+
+        if (tags.Count > 0)
+        {
+            var newTags = tags.Select(tag => new Models.SourceTag
+            {
+                SourceId = sourceId,
+                SourceType = SourceType,
+                Tag = tag
+            });
+            broadcastingContext.SourceTags.AddRange(newTags);
+        }
+
+        await broadcastingContext.SaveChangesAsync(cancellationToken);
     }
 }
