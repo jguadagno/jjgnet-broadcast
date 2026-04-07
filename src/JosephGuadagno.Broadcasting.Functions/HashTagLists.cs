@@ -5,6 +5,23 @@ namespace JosephGuadagno.Broadcasting.Functions;
 /// </summary>
 public static class HashTagLists
 {
+    private const string DefaultHashtags = "#dotnet #csharp #dotnetcore";
+
+    /// <summary>
+    /// Builds a hashtag string from a list of tags.
+    /// </summary>
+    public static string BuildHashTagList(IList<string>? tags)
+    {
+        if (tags is null || tags.Count == 0)
+        {
+            return DefaultHashtags;
+        }
+
+        var hashTagCategories = tags.Where(tag => !tag.Contains("Article"));
+        return hashTagCategories.Aggregate("",
+            (current, tag) => current + $" #{tag.Replace(" ", "").Replace(".", "")}");
+    }
+
     /// <summary>
     /// Builds a list of hashtags from a comma-separated list of tags
     /// </summary>
@@ -15,13 +32,9 @@ public static class HashTagLists
     {
         if (string.IsNullOrEmpty(tags))
         {
-            return "#dotnet #csharp #dotnetcore";
+            return DefaultHashtags;
         }
 
-        var tagList = tags.Split(',');
-        var hashTagCategories = tagList.Where(tag => !tag.Contains("Article"));
-
-        return hashTagCategories.Aggregate("",
-            (current, tag) => current + $" #{tag.Replace(" ", "").Replace(".", "")}");
+        return BuildHashTagList(tags.Split(','));
     }
 }

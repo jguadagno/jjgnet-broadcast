@@ -60,9 +60,9 @@ public class ProcessNewSyndicationDataFired(
                 Url = syndicationFeedSource.Url,
                 ShortenedUrl = syndicationFeedSource.ShortenedUrl
             };
-            if (!string.IsNullOrEmpty(syndicationFeedSource.Tags))
+            if (syndicationFeedSource.Tags.Count > 0)
             {
-                blueskyPostMessage.Hashtags = syndicationFeedSource.Tags.Split(',').ToList();
+                blueskyPostMessage.Hashtags = syndicationFeedSource.Tags.ToList();
             }
 
             // Return

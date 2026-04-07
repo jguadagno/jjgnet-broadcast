@@ -103,6 +103,18 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         };
         _context.SyndicationFeedSources.AddRange(sources);
         _context.SaveChanges();
+
+        // Seed SourceTags junction records mirroring the string Tags above
+        _context.SourceTags.AddRange(
+            new Models.SourceTag { SourceId = 1, SourceType = "SyndicationFeed", Tag = "csharp" },
+            new Models.SourceTag { SourceId = 1, SourceType = "SyndicationFeed", Tag = "azure" },
+            new Models.SourceTag { SourceId = 2, SourceType = "SyndicationFeed", Tag = "dotnet" },
+            new Models.SourceTag { SourceId = 2, SourceType = "SyndicationFeed", Tag = "aws" },
+            new Models.SourceTag { SourceId = 3, SourceType = "SyndicationFeed", Tag = "csharp" },
+            new Models.SourceTag { SourceId = 3, SourceType = "SyndicationFeed", Tag = "dotnet" },
+            new Models.SourceTag { SourceId = 4, SourceType = "SyndicationFeed", Tag = "java" }
+        );
+        _context.SaveChanges();
         _context.ChangeTracker.Clear();
     }
 
@@ -142,7 +154,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         var result = await _dataStore.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories);
 
         Assert.NotNull(result);
-        if (result.Tags != null)
+        if (result.Tags.Count > 0)
         {
             Assert.DoesNotContain("csharp", result.Tags);
         }
@@ -162,7 +174,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         var result = await _dataStore.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories);
 
         Assert.NotNull(result);
-        if (result.Tags != null)
+        if (result.Tags.Count > 0)
         {
             Assert.DoesNotContain("csharp", result.Tags);
             Assert.DoesNotContain("dotnet", result.Tags);
@@ -251,7 +263,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
             Title = "New Post",
             Author = "Author",
             Url = "newurl",
-            Tags = "tag",
+            Tags = ["tag"],
             PublicationDate = DateTimeOffset.UtcNow
         };
 
@@ -351,7 +363,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
             Title = "Should Fail",
             Author = "Author",
             Url = "fail-url",
-            Tags = "x",
+            Tags = ["x"],
             PublicationDate = DateTimeOffset.UtcNow
         };
 

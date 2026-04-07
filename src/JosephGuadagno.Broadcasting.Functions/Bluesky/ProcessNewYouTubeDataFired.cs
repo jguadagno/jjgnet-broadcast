@@ -60,9 +60,9 @@ public class ProcessNewYouTubeDataFired(
                 Url = youTubeSource.Url,
                 ShortenedUrl = youTubeSource.ShortenedUrl
             };
-            if (!string.IsNullOrEmpty(youTubeSource.Tags))
+            if (youTubeSource.Tags.Count > 0)
             {
-                blueskyPostMessage.Hashtags = youTubeSource.Tags.Split(',').ToList();
+                blueskyPostMessage.Hashtags = youTubeSource.Tags.ToList();
             }
 
             // Return

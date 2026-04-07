@@ -98,3 +98,18 @@ Established by Joseph Guadagno:
 1. **PR Merge Authority**: Only Joseph may merge PRs
 2. **Mapping**: All object mapping must use AutoMapper profiles
 3. **Paging/Sorting/Filtering**: Must be at the data layer only
+
+### 2026-04-09 — Issue #323 (Tags Junction Table Normalization)
+- **Task:** Normalize delimited Tags string columns on SyndicationFeedSources and YouTubeSources into a `dbo.SourceTags` junction table
+- **Migration:** `scripts/database/migrations/2026-04-09-sourcetags-junction.sql` — creates SourceTags, indexes it, migrates existing data from STRING_SPLIT
+- **SourceType enum values:** `'SyndicationFeed'` for SyndicationFeedSources; `'YouTube'` for YouTubeSources
+- **EF entity:** `Data.Sql/Models/SourceTag.cs` with `Id`, `SourceId`, `SourceType`, `Tag` properties
+- **Navigation:** Both `SyndicationFeedSource` and `YouTubeSource` EF models gained `ICollection<SourceTag> SourceTags`
+- **Domain model change:** `Tags` on `SyndicationFeedSource` and `YouTubeSource` changed from `string?` → `IList<string>`
+- **AutoMapper:** Forward (EF→Domain) maps `SourceTags.Select(st => st.Tag).ToList()` → `Tags`; Reverse (Domain→EF) writes comma-joined string back to old `Tags` column for backward compat; ignores `SourceTags` nav property
+- **Data stores:** All reads use `Include(s => s.SourceTags)`; `SaveAsync` syncs SourceTags via `SyncSourceTagsAsync`; `GetRandomSyndicationDataAsync` uses `!s.SourceTags.Any(st => st.Tag == excludedCategory)` for proper relational filtering
+- **HashTagLists:** Added `BuildHashTagList(IList<string>?)` overload; old string overload delegates to it
+- **Functions updated:** All callers of `Tags.Split(',')` / `Tags ?? ""` updated for list type; template rendering uses `string.Join(",", tags)`
+- **Pattern learned:** For backward-compat migrations, keep old denormalized column and write to both simultaneously; remove in a follow-up migration
+- **Branch:** squad/323-tags-junction-table
+- **Build status:** All production projects build clean (0 errors); pre-existing test errors in EventPublisherTests and LoadNewPostsTests unrelated to this change

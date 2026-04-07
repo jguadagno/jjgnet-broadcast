@@ -16,10 +16,32 @@ public class BroadcastingProfile: Profile
                 options => options.MapFrom(source => Enum.Parse<ScheduledItemType>(source.ItemTableName)));
         CreateMap<Models.FeedCheck, Domain.Models.FeedCheck>().ReverseMap();
         CreateMap<Models.MessageTemplate, Domain.Models.MessageTemplate>().ReverseMap();
-        CreateMap<Models.SyndicationFeedSource, Domain.Models.SyndicationFeedSource>().ReverseMap();
-        CreateMap<Models.YouTubeSource, Domain.Models.YouTubeSource>().ReverseMap();
         CreateMap<Models.TokenRefresh, Domain.Models.TokenRefresh>().ReverseMap();
-        
+
+        CreateMap<Models.SyndicationFeedSource, Domain.Models.SyndicationFeedSource>()
+            .ForMember(
+                destination => destination.Tags,
+                options => options.MapFrom(source => source.SourceTags.Select(st => st.Tag).ToList()))
+            .ReverseMap()
+            .ForMember(
+                destination => destination.Tags,
+                options => options.MapFrom(source => source.Tags.Count > 0 ? string.Join(",", source.Tags) : null))
+            .ForMember(
+                destination => destination.SourceTags,
+                options => options.Ignore());
+
+        CreateMap<Models.YouTubeSource, Domain.Models.YouTubeSource>()
+            .ForMember(
+                destination => destination.Tags,
+                options => options.MapFrom(source => source.SourceTags.Select(st => st.Tag).ToList()))
+            .ReverseMap()
+            .ForMember(
+                destination => destination.Tags,
+                options => options.MapFrom(source => source.Tags.Count > 0 ? string.Join(",", source.Tags) : null))
+            .ForMember(
+                destination => destination.SourceTags,
+                options => options.Ignore());
+
         // Domain to Sql models
         CreateMap<Domain.Models.Talk, Models.Talk>()
             .ForMember(destination => destination.Engagement, options => options.Ignore());
