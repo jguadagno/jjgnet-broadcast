@@ -7,6 +7,9 @@ namespace JosephGuadagno.Broadcasting.Functions.HealthChecks;
 /// Health check for the Bitly URL shortener API.
 /// Validates that the Bitly API token and root URI are configured.
 /// A missing or empty token means URL shortening will fail silently at runtime.
+/// Returns <see cref="HealthCheckResult.Degraded"/> (not Unhealthy) when configuration is missing,
+/// because Bitly is an optional/non-critical service — the app continues to publish content
+/// with unshortened URLs and should not trigger a load-balancer failover.
 /// </summary>
 internal sealed class BitlyHealthCheck : IHealthCheck
 {
@@ -31,8 +34,8 @@ internal sealed class BitlyHealthCheck : IHealthCheck
 
         if (missing.Count > 0)
         {
-            return Task.FromResult(HealthCheckResult.Unhealthy(
-                $"Bitly configuration is incomplete. Missing: {string.Join(", ", missing)}."));
+            return Task.FromResult(HealthCheckResult.Degraded(
+                $"Bitly configuration is incomplete. Missing: {string.Join(", ", missing)}. URL shortening will be skipped; content publishing is unaffected."));
         }
 
         return Task.FromResult(HealthCheckResult.Healthy("Bitly API configuration is valid."));
