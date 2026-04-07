@@ -11866,5 +11866,292 @@ app.UseRateLimiter();
 
 `MapDefaultEndpoints()` (Aspire) is handled separately from `MapControllers()` and is not affected by the `RequireRateLimiting(...)` call on the controller route group.
 
+---
+
+# Decision: OIDC Consent Error Handling (Issue #85)
+
+**Date:** 2026-04-07  
+**Author:** Ghost (Security & Identity Specialist)  
+**Status:** Implemented (PR #664, merged)  
+**Branch:** `fix/85-oidc-consent-error-handling`  
+**Related Issue:** #85
+
+## Context
+
+Users attempting to sign in with Work/Org accounts (Microsoft Entra ID) from external tenants that have not granted admin consent to the application's API scope encounter an unhandled `OpenIdConnectProtocolException`. The error code `AADSTS650052` indicates "The app needs access to a service that your organization has not subscribed to or enabled."
+
+This results in a crashed authentication flow and exposes a generic error page with technical details that are not user-friendly.
+
+## Decision
+
+Implement graceful error handling for OIDC consent-related errors by adding an `OnRemoteFailure` event handler to the `OpenIdConnectOptions` configuration in `Program.cs`.
+
+### Error Codes Handled
+
+The handler detects and provides friendly messages for:
+- **AADSTS650052**: The app needs access to a service that your organization hasn't subscribed to or enabled
+- **AADSTS65001**: The user or administrator hasn't consented to use the application
+- **AADSTS700016**: Application not found in the directory/tenant
+- **AADSTS70011**: The provided value for the input parameter 'scope' is not valid
+
+### Implementation Details
+
+1. **Event Handler Location**: `Program.cs` after `AddMicrosoftIdentityWebAppAuthentication()` setup
+2. **Pattern**: 
+   ```csharp
+   builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
+   {
+       options.Events.OnRemoteFailure = context => { /* handler */ };
+   });
+   ```
+3. **Redirect Target**: Existing `/Home/AuthError` page with URL-encoded error message as query parameter
+4. **Error Message**: "Your organization hasn't granted access to this application. Please contact your IT administrator to enable access."
+5. **Fallback**: All other OIDC errors redirect to generic auth error message
+
+### Reused Infrastructure
+
+- **View**: `Views/Home/AuthError.cshtml` (already exists)
+- **ViewModel**: `AuthErrorViewModel` (already exists)
+- **Controller Action**: `HomeController.AuthError(string? message)` (already exists, has `[AllowAnonymous]`)
+
+No new views or controllers required.
+
+## Rationale
+
+### Why This Approach?
+
+1. **Centralized Error Handling**: OIDC event handlers are the canonical place to catch authentication protocol failures
+2. **User-Friendly**: Provides actionable guidance ("contact your IT administrator") instead of technical error codes
+3. **Secure**: Sanitizes error messages before redirect (URL-encoded), never exposes internal exception details
+4. **Minimal Footprint**: Reuses existing error page infrastructure, no new views or models needed
+5. **Future-Proof**: Handles multiple consent-related error codes, not just AADSTS650052
+
+### Why Not Alternative Approaches?
+
+- **Global Exception Handler**: Would catch the exception too late, after the OIDC middleware has already failed
+- **Custom Error Page**: Existing `AuthError` page already handles this scenario perfectly with its flexible message parameter
+- **Retry Logic**: Consent errors are not transient failures - retrying won't help without admin intervention
+
+## Consequences
+
+### Positive
+
+- Users from external tenants see a clear, actionable error message instead of a crash
+- No changes required to existing error page views or controllers
+- Handles multiple consent-related error scenarios with one handler
+- Error messages are sanitized and user-friendly
+
+### Negative
+
+- Adds one more configuration block to `Program.cs` (minimal complexity increase)
+- Error message is generic and doesn't specify which API scope requires consent (intentional for security)
+
+### Neutral
+
+- Does not change the authentication flow for successful logins
+- Does not affect users from the primary tenant (they already have consent)
+- Future OIDC errors will also redirect to `AuthError` page (consistent UX)
+
+## Key Learning
+
+Microsoft Identity Web configures OpenID Connect automatically via `AddMicrosoftIdentityWebAppAuthentication()`, but event customization requires explicit `Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, ...)` **after** the Microsoft Identity Web setup.
+
+### Order of Operations
+
+```csharp
+// 1. Microsoft Identity Web setup (auto-configures OIDC)
+builder.Services.AddMicrosoftIdentityWebAppAuthentication(...)
+    .EnableTokenAcquisitionToCallDownstreamApi(...)
+    .AddDistributedTokenCaches();
+
+// 2. OIDC event handler customization (must come after)
+builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
+{
+    options.Events.OnRemoteFailure = context => { /* ... */ };
+});
+```
+
+---
+
+# Decision: UI Implementation Notes for Issue #67 (Schedule Item Validation)
+
+**Date:** 2026-04-07  
+**Author:** Trinity (Backend Domain Architect), pending UI by Sparks  
+**Backend Status:** Implemented (PR #665, #665-fix, merged)  
+**UI Status:** Pending  
+**Branch:** `feature/67-schedule-item-validation`  
+**Related Issue:** #67
+
+## Context
+
+A backend service has been implemented to validate that a source item (Engagement, Talk, SyndicationFeedSource, YouTubeSource) exists before scheduling. The validation endpoint is ready; Razor view changes are needed to complete the feature.
+
+## What Was Implemented (Backend)
+
+### 1. Validation Service
+- **File:** `JosephGuadagno.Broadcasting.Web/Services/ScheduledItemValidationService.cs`
+- **Interface:** `JosephGuadagno.Broadcasting.Web/Interfaces/IScheduledItemValidationService.cs`
+- **Purpose:** Validates that a source item exists before scheduling
+- **Method:** `ValidateItemAsync(ScheduledItemType itemType, int itemPrimaryKey)` → returns `ScheduledItemLookupResult`
+
+### 2. API Endpoint
+- **URL:** `GET /Schedules/ValidateItem?itemType={type}&itemPrimaryKey={id}`
+- **Controller:** `SchedulesController.ValidateItem()`
+- **Returns:** JSON with:
+  - `IsValid` (bool)
+  - `ItemTitle` (string, if found)
+  - `ItemDetails` (string, e.g., date range for engagements)
+  - `ErrorMessage` (string, if invalid)
+
+### 3. ViewModel Updates
+- **File:** `JosephGuadagno.Broadcasting.Web/Models/ScheduledItemViewModel.cs`
+- **Added:** `ItemType` property (ScheduledItemType enum)
+- **Updated:** AutoMapper profile to map ItemType bidirectionally
+
+### 4. Lookup Result Model
+- **File:** `JosephGuadagno.Broadcasting.Web/Models/ScheduledItemLookupResult.cs`
+- Contains validation result structure for AJAX responses
+
+### 5. Service Registration
+- **File:** `Program.cs`
+- Registered validation service + required managers and datastores
+
+## What Needs Implementation (Razor Views — Sparks)
+
+### Views to Update
+1. `Views/Schedules/Add.cshtml`
+2. `Views/Schedules/Edit.cshtml`
+
+### Required UI Changes
+
+#### 1. Add ItemType Dropdown
+Replace or augment `ItemTableName` field with a proper enum selector:
+```cshtml
+<div class="form-group">
+    <label asp-for="ItemType" class="control-label"></label>
+    <select asp-for="ItemType" class="form-control" asp-items="Html.GetEnumSelectList<ScheduledItemType>()"></select>
+    <span asp-validation-for="ItemType" class="text-danger"></span>
+</div>
+```
+
+#### 2. Update ItemPrimaryKey Field
+Add attributes for AJAX validation:
+```cshtml
+<div class="form-group">
+    <label asp-for="ItemPrimaryKey" class="control-label"></label>
+    <input asp-for="ItemPrimaryKey" class="form-control" id="itemPrimaryKey" />
+    <span asp-validation-for="ItemPrimaryKey" class="text-danger"></span>
+    <div id="validation-result" class="mt-2"></div>
+</div>
+```
+
+#### 3. Add JavaScript for Live Validation
+Add to page scripts section:
+```javascript
+<script>
+$(document).ready(function() {
+    $('#itemPrimaryKey, #ItemType').on('change', function() {
+        var itemType = $('#ItemType').val();
+        var itemPrimaryKey = $('#itemPrimaryKey').val();
+        
+        if (itemType && itemPrimaryKey > 0) {
+            $.ajax({
+                url: '@Url.Action("ValidateItem", "Schedules")',
+                type: 'GET',
+                data: { itemType: itemType, itemPrimaryKey: itemPrimaryKey },
+                success: function(result) {
+                    if (result.isValid) {
+                        $('#validation-result').html(
+                            '<div class="alert alert-success">' +
+                            '<strong>✓ Found:</strong> ' + result.itemTitle +
+                            (result.itemDetails ? '<br/><small>' + result.itemDetails + '</small>' : '') +
+                            '</div>'
+                        );
+                    } else {
+                        $('#validation-result').html(
+                            '<div class="alert alert-danger">' +
+                            '<strong>✗ Error:</strong> ' + result.errorMessage +
+                            '</div>'
+                        );
+                    }
+                },
+                error: function() {
+                    $('#validation-result').html(
+                        '<div class="alert alert-warning">Unable to validate item</div>'
+                    );
+                }
+            });
+        } else {
+            $('#validation-result').html('');
+        }
+    });
+});
+</script>
+```
+
+#### 4. Optional Enhancement: Item Picker
+For a better UX, consider adding a modal picker that:
+- Lists available items of the selected type
+- Allows searching/filtering
+- Pre-fills ItemPrimaryKey on selection
+- Could call existing list endpoints (e.g., `/Engagements/Index`, `/Talks/Index`)
+
+## Backend Contract
+
+### Endpoint Signature
+```csharp
+GET /Schedules/ValidateItem
+Parameters:
+  - itemType: int (0=Engagements, 1=Talks, 2=SyndicationFeedSources, 3=YouTubeSources)
+  - itemPrimaryKey: int
+
+Response: ScheduledItemLookupResult
+{
+  "isValid": bool,
+  "itemTitle": string?,
+  "itemDetails": string?,
+  "errorMessage": string?
+}
+```
+
+### Example Responses
+
+**Valid Engagement:**
+```json
+{
+  "isValid": true,
+  "itemTitle": "NDC Sydney 2025",
+  "itemDetails": "2025-02-10 - 2025-02-14",
+  "errorMessage": null
+}
+```
+
+**Invalid Talk:**
+```json
+{
+  "isValid": false,
+  "itemTitle": null,
+  "itemDetails": null,
+  "errorMessage": "Talk with ID 999 not found"
+}
+```
+
+## Notes for UI Implementation
+
+- The `ItemTableName` field can be kept for backward compatibility (it's auto-populated from ItemType via AutoMapper)
+- Client-side validation is optional but recommended for better UX
+- Server-side validation will still catch invalid items when the form is submitted
+- The enum values are: Engagements (0), Talks (1), SyndicationFeedSources (2), YouTubeSources (3)
+- Consider adding a "Validate" button instead of live validation if performance is a concern
+
+## Testing the Feature
+
+1. Navigate to `/Schedules/Add`
+2. Select an ItemType (e.g., "Engagements")
+3. Enter an ItemPrimaryKey (e.g., "1")
+4. Should see validation feedback appear below the field
+5. Try invalid ID → should show error
+6. Try valid ID → should show item title and details
+
 
 

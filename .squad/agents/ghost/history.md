@@ -132,10 +132,48 @@ MapControllerRoute()
 - Global `AuthorizeFilter` in Program.cs means ALL controllers default to requiring authentication unless explicitly opted out
 - The Error action in HomeController was missing `[AllowAnonymous]` - critical gap since error pages must be accessible during auth failures
 - LinkedIn OAuth flow controller handles sensitive Key Vault operations - correct admin-only gating prevents unauthorized token access
-### 2026-04-07: GitHub Comment Formatting Skill Added
-- Skill: .squad/skills/github-comment-formatting/SKILL.md now exists — canonical reference for formatting GitHub comments
-- Rule: Use triple backticks for ALL fenced code blocks in GitHub content (PR reviews, issue comments, PR comments)
-- Single backticks are for inline code only (single variable/method names, one line)
-- Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
-- Charter updated with enforcement rule (## How I Work)
-- Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code
+### 2026-04-07 — Issue #85: OIDC Consent Error Handling (PR #664)
+
+**Status:** ✅ COMPLETE & MERGED
+
+**What I Implemented:**
+
+1. **OnRemoteFailure Event Handler** (Program.cs)
+   - Detects OIDC consent error codes: AADSTS650052, AADSTS65001, AADSTS700016, AADSTS70011
+   - Redirects to `/Home/AuthError` with URL-encoded, user-friendly error message
+   - Fallback: generic error message for all other OIDC failures
+
+2. **Error Message Sanitization**
+   - All messages URL-encoded before redirect (prevents injection attacks)
+   - User-friendly: "Your organization hasn't granted access to this application. Please contact your IT administrator to enable access."
+   - Technical details never exposed
+
+3. **Infrastructure Reuse**
+   - No new views or controllers required
+   - Uses existing `AuthError.cshtml` view + `AuthErrorViewModel` + `HomeController.AuthError()` action
+   - Minimal footprint: one configuration block in Program.cs
+
+**Key Implementation Detail:**
+Event customization must come AFTER `AddMicrosoftIdentityWebAppAuthentication()`:
+```csharp
+// 1. Microsoft Identity Web setup
+builder.Services.AddMicrosoftIdentityWebAppAuthentication(...)
+    .EnableTokenAcquisitionToCallDownstreamApi(...)
+    .AddDistributedTokenCaches();
+
+// 2. OIDC event handler customization (must come after)
+builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
+{
+    options.Events.OnRemoteFailure = context => { /* handler */ };
+});
+```
+
+**Build:** ✅ 0 errors
+
+**Merge:** PR #664 merged to main by Joseph
+
+**Security Impact:** Issue #85 closed. External tenant users without admin consent now see actionable error instead of crash.
+
+---
+
+## GitHub Comment Formatting Skill Added
