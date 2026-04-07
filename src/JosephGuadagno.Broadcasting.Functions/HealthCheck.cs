@@ -4,6 +4,7 @@ using Azure.Storage.Queues;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions;
@@ -11,11 +12,15 @@ namespace JosephGuadagno.Broadcasting.Functions;
 /// <summary>
 /// Lightweight health endpoint for App Service Health Check probing and uptime monitoring.
 /// Route: GET /api/health
-/// Returns HTTP 200 with JSON body on success, HTTP 503 on any storage connectivity failure.
+/// Returns HTTP 200 with JSON body on success, HTTP 503 on any connectivity or configuration failure.
+/// Infrastructure checks (queue/table storage) run inline.
+/// External-dependency readiness checks (Bitly, Twitter, Facebook, LinkedIn, Bluesky, EventGrid)
+/// are delegated to registered <see cref="IHealthCheck"/> implementations via <see cref="HealthCheckService"/>.
 /// </summary>
 public class HealthCheck(
     QueueServiceClient queueServiceClient,
     TableServiceClient tableServiceClient,
+    HealthCheckService healthCheckService,
     ILogger<HealthCheck> logger)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
@@ -34,6 +39,19 @@ public class HealthCheck(
 
         // Check table storage connectivity (Serilog logging sink)
         checks.Add(await CheckTableStorageAsync(cancellationToken));
+
+        // Run all registered IHealthCheck implementations tagged "ready"
+        // (Bitly, Twitter, Facebook, LinkedIn, Bluesky, EventGrid)
+        var healthReport = await healthCheckService.CheckHealthAsync(
+            r => r.Tags.Contains("ready"), cancellationToken);
+
+        foreach (var entry in healthReport.Entries)
+        {
+            checks.Add((
+                entry.Key,
+                entry.Value.Status == HealthStatus.Healthy,
+                entry.Value.Status == HealthStatus.Healthy ? null : entry.Value.Description));
+        }
 
         var allHealthy = checks.All(c => c.Healthy);
         var timestamp = DateTimeOffset.UtcNow;
@@ -79,7 +97,7 @@ public class HealthCheck(
 
         try
         {
-            // List one queue to verify connectivity — does not modify any data.
+            // List one queue to verify connectivity -- does not modify any data.
             await foreach (var _ in queueServiceClient.GetQueuesAsync(cancellationToken: cts.Token)
                                .AsPages(pageSizeHint: 1).WithCancellation(cts.Token))
             {
@@ -107,7 +125,7 @@ public class HealthCheck(
 
         try
         {
-            // List one table to verify connectivity — does not modify any data.
+            // List one table to verify connectivity -- does not modify any data.
             await foreach (var _ in tableServiceClient.QueryAsync(cancellationToken: cts.Token)
                                .AsPages(pageSizeHint: 1).WithCancellation(cts.Token))
             {

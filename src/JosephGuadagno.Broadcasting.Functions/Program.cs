@@ -7,7 +7,9 @@ using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.Functions.Interfaces;using JosephGuadagno.Broadcasting.Managers;
+using JosephGuadagno.Broadcasting.Functions.HealthChecks;
+using JosephGuadagno.Broadcasting.Functions.Interfaces;
+using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Managers.Bluesky;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
@@ -132,6 +134,15 @@ ConfigureFacebookManager(builder.Services, builder.Configuration);
 ConfigureBlueskyManager(builder.Services, builder.Configuration);
 
 builder.Services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader>();
+
+// Register external-dependency readiness health checks
+builder.Services.AddHealthChecks()
+    .AddCheck<BitlyHealthCheck>("bitly", tags: ["ready"])
+    .AddCheck<TwitterHealthCheck>("twitter", tags: ["ready"])
+    .AddCheck<FacebookHealthCheck>("facebook", tags: ["ready"])
+    .AddCheck<LinkedInHealthCheck>("linkedin", tags: ["ready"])
+    .AddCheck<BlueskyHealthCheck>("bluesky", tags: ["ready"])
+    .AddCheck<EventGridHealthCheck>("event-grid", tags: ["ready"]);
 
 builder.Build().Run();
 
