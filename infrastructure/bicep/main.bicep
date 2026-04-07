@@ -190,6 +190,20 @@ module functionApp 'modules/compute/function-app.bicep' = {
   ]
 }
 
+module storageRbac 'modules/security/storage-rbac.bicep' = {
+  name: 'deploy-storage-rbac'
+  params: {
+    location: locationPrimary
+    storageAccountName: functionsStorageAccountName
+    functionsPrincipalId: functionApp.outputs.functionAppPrincipalId
+    tags: tags
+  }
+  dependsOn: [
+    functionApp
+    storage
+  ]
+}
+
 module alertRules 'modules/monitoring/alert-rules.bicep' = {
   name: 'deploy-alert-rules'
   params: {
