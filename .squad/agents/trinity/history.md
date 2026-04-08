@@ -41,6 +41,58 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 
 ## Recent Work
 
+### 2026-04-08 — Epic #667 Sprint 2: SocialMediaPlatform Manager & API (#674-677)
+
+**Status:** ✅ COMPLETE (staged, awaiting Tank's test fixes) | Branch issue-667-social-media-platforms | Commit afe2fb9
+
+**What I Built:**
+
+**SocialMediaPlatformManager Implementation:**
+- New manager class implementing `ISocialMediaPlatformManager`
+- Methods: `GetAsync(int socialMediaPlatformId)`, `GetAllAsync()`
+- Injects `IDataStore<SocialMediaPlatform>` for data access
+- Scoped registration in Program.cs
+
+**SocialMediaPlatformsController (REST API):**
+- New controller with GET endpoints: `/SocialMediaPlatforms/{id}`, `/SocialMediaPlatforms`
+- Returns `SocialMediaPlatformDto` (mapped via AutoMapper)
+- Proper error handling (404, 500)
+
+**EngagementSocialMediaPlatformDataStore (Data Layer):**
+- Implements `IDataStore<SocialMediaPlatform>`
+- Maps from stored procedures, filters by engagement ID
+- Transaction-safe via EF Core DbContext
+
+**Breaking Change Fixes (14 Compile Errors):**
+- **Functions Project:** Updated 8 function constructors to accept new manager registrations
+- **Web Project:** Fixed 3 views and controller action signatures (SocialMediaPlatformId renames)
+- **Api Project:** Added scope registrations, updated DTOs, fixed controller class registrations
+- All breaking changes from Morpheus' database layer (Sprint 1) now resolved
+
+**DTOs & Service Registration:**
+- `SocialMediaPlatformDto` with all platform metadata
+- `SocialMediaPlatformProfile` (AutoMapper)
+- Scoped registrations for manager and datastore
+
+**Build Status:**
+- ✅ Build succeeded (0 new errors)
+- ⏳ Tests: 40 compile errors in Functions.Tests pending Tank's fixes (constructor signatures, GetAsync signature changes)
+
+**Key Learnings (Sprint 2):**
+- **Manager pattern:** Business logic should sit in managers, not repositories. Managers abstract datastore complexity.
+- **Controller design:** Keep REST endpoints thin — delegate to managers for logic
+- **Breaking changes across sprints:** Use draft PRs to show scope; document remediation plan for downstream teams
+- **Constructor injection coordination:** When adding new dependencies to managers, must update ALL constructor calls (Functions, tests, DI registration)
+- **Soft delete pattern:** Platform retirement uses IsActive flag; NULL FK handling deferred to application
+- **Composite PKs in data layer:** EngagementSocialMediaPlatforms uses composite (EngagementId, SocialMediaPlatformId) to prevent duplicates
+
+**Outstanding:**
+- Tank (QA) must fix 40 Functions.Tests compile errors before merge
+- Full test suite must pass
+- Switch/Sparks (Sprint 3) will build Web UI on top of new API endpoints
+
+---
+
 ### 2026-04-02 — PR #610 Round 2: ApplicationClaimTypes constants + SQL CHECK constraints (#603 #606)
 
 **Status:** ✅ COMPLETE | Branch squad/rbac-phase1 | Commit d0aa61a
