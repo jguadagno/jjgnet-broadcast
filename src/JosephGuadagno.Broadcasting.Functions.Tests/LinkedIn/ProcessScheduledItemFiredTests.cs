@@ -129,7 +129,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -161,7 +161,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync((MessageTemplate?)null);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -201,7 +201,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -241,7 +241,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -273,7 +273,7 @@ public class ProcessScheduledItemFiredTests
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync((MessageTemplate?)null);
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(
             mockScheduledItemManager,
@@ -323,7 +323,7 @@ public class ProcessScheduledItemFiredTests
 
         // Assert — must request the engagement-specific template
         mockMessageTemplateDataStore.Verify(
-            m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSpeakingEngagement),
+            m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSpeakingEngagement),
             Times.Once);
     }
 
@@ -351,7 +351,7 @@ public class ProcessScheduledItemFiredTests
         mockEngagementManager.Setup(m => m.GetAsync(42)).ReturnsAsync(engagement);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSpeakingEngagement))
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSpeakingEngagement))
             .ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
@@ -384,7 +384,7 @@ public class ProcessScheduledItemFiredTests
         mockEngagementManager.Setup(m => m.GetAsync(42)).ReturnsAsync(engagement);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSpeakingEngagement))
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSpeakingEngagement))
             .ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
@@ -429,7 +429,7 @@ public class ProcessScheduledItemFiredTests
 
         // Assert — must request the talk-specific template
         mockMessageTemplateDataStore.Verify(
-            m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.ScheduledItem),
+            m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.ScheduledItem),
             Times.Once);
     }
 
@@ -457,7 +457,7 @@ public class ProcessScheduledItemFiredTests
         mockEngagementManager.Setup(m => m.GetTalkAsync(42)).ReturnsAsync(talk);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.ScheduledItem))
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.ScheduledItem))
             .ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
@@ -489,7 +489,7 @@ public class ProcessScheduledItemFiredTests
         mockEngagementManager.Setup(m => m.GetTalkAsync(42)).ReturnsAsync(talk);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.ScheduledItem))
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.ScheduledItem))
             .ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
@@ -534,7 +534,7 @@ public class ProcessScheduledItemFiredTests
 
         // Assert — must request the YouTube-specific template
         mockMessageTemplateDataStore.Verify(
-            m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewYouTubeItem),
+            m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewYouTubeItem),
             Times.Once);
     }
 
@@ -562,7 +562,7 @@ public class ProcessScheduledItemFiredTests
         mockYouTubeSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(youTubeSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewYouTubeItem))
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewYouTubeItem))
             .ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
@@ -594,7 +594,7 @@ public class ProcessScheduledItemFiredTests
         mockYouTubeSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(youTubeSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewYouTubeItem))
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewYouTubeItem))
             .ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
@@ -608,3 +608,4 @@ public class ProcessScheduledItemFiredTests
         Assert.Equal("youtube fallback message", result!.Text);
     }
 }
+

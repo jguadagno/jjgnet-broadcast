@@ -19,6 +19,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 public class MessageTemplatesController : ControllerBase
 {
     private readonly IMessageTemplateDataStore _messageTemplateDataStore;
+    private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
     private readonly ILogger<MessageTemplatesController> _logger;
     private readonly IMapper _mapper;
 
@@ -26,12 +27,15 @@ public class MessageTemplatesController : ControllerBase
     /// Handles the interactions with Message Templates
     /// </summary>
     /// <param name="messageTemplateDataStore">The message template data store</param>
+    /// <param name="socialMediaPlatformManager">The social media platform manager</param>
     /// <param name="logger">The logger</param>
     /// <param name="mapper">The AutoMapper instance</param>
     public MessageTemplatesController(IMessageTemplateDataStore messageTemplateDataStore,
+        ISocialMediaPlatformManager socialMediaPlatformManager,
         ILogger<MessageTemplatesController> logger, IMapper mapper)
     {
         _messageTemplateDataStore = messageTemplateDataStore;
+        _socialMediaPlatformManager = socialMediaPlatformManager;
         _logger = logger;
         _mapper = mapper;
     }
@@ -82,10 +86,18 @@ public class MessageTemplatesController : ControllerBase
     public async Task<ActionResult<MessageTemplateResponse>> GetAsync(string platform, string messageType)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.View, Domain.Scopes.MessageTemplates.All);
-        var template = await _messageTemplateDataStore.GetAsync(platform, messageType);
+        
+        var socialMediaPlatform = await _socialMediaPlatformManager.GetByNameAsync(platform);
+        if (socialMediaPlatform is null)
+        {
+            _logger.LogWarning("Social media platform not found: {Platform}", platform);
+            return NotFound();
+        }
+        
+        var template = await _messageTemplateDataStore.GetAsync(socialMediaPlatform.Id, messageType);
         if (template is null)
         {
-            _logger.LogWarning("MessageTemplate not found for Platform={Platform}, MessageType={MessageType}", platform, messageType);
+            _logger.LogWarning("MessageTemplate not found for PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, messageType);
             return NotFound();
         }
         return _mapper.Map<MessageTemplateResponse>(template);
@@ -118,13 +130,20 @@ public class MessageTemplatesController : ControllerBase
             return BadRequest(ModelState);
         }
 
+        var socialMediaPlatform = await _socialMediaPlatformManager.GetByNameAsync(platform);
+        if (socialMediaPlatform is null)
+        {
+            _logger.LogWarning("Social media platform not found: {Platform}", platform);
+            return NotFound();
+        }
+
         var messageTemplate = _mapper.Map<MessageTemplate>(request);
-        messageTemplate.Platform = platform;
+        messageTemplate.SocialMediaPlatformId = socialMediaPlatform.Id;
         messageTemplate.MessageType = messageType;
         var updated = await _messageTemplateDataStore.UpdateAsync(messageTemplate);
         if (updated is null)
         {
-            _logger.LogWarning("MessageTemplate not found for update: Platform={Platform}, MessageType={MessageType}", platform, messageType);
+            _logger.LogWarning("MessageTemplate not found for update: PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, messageType);
             return NotFound();
         }
 
