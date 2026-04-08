@@ -75,7 +75,7 @@ IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Twit
     VALUES (N'Twitter', N'https://twitter.com', N'bi-twitter-x', 1)
 IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'BlueSky')
     INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
-    VALUES (N'BlueSky', N'https://bsky.app', N'bi-cloud', 1)
+    VALUES (N'BlueSky', N'https://bsky.app', N'bi-bluesky', 1)
 IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'LinkedIn')
     INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
     VALUES (N'LinkedIn', N'https://www.linkedin.com', N'bi-linkedin', 1)

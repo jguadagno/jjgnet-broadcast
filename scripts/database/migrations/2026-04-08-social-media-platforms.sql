@@ -75,7 +75,7 @@ go
 
 -- BlueSky
 INSERT INTO dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
-VALUES ('BlueSky', 'https://bsky.app', 'bi-cloud', 1)
+VALUES ('BlueSky', 'https://bsky.app', 'bi-bluesky', 1)
 go
 
 -- LinkedIn
