@@ -101,3 +101,30 @@ Established by Joseph Guadagno:
   - MessageTemplates.Platform: migrate to SocialMediaPlatformId FK (careful — currently in composite PK)
   - Seed: Twitter/X, BlueSky, LinkedIn, Facebook, Mastodon
 - **Next:** Morpheus first in pipeline — begin DB migration script
+
+### 2026-04-08 — Epic #667 Phase 1: Database Layer Complete
+- **Migration:** `scripts/database/migrations/2026-04-08-social-media-platforms.sql`
+  - Created SocialMediaPlatforms table (Id, Name UNIQUE, Url, Icon, IsActive)
+  - Created EngagementSocialMediaPlatforms junction table (composite PK on EngagementId + SocialMediaPlatformId)
+  - Migrated ScheduledItems.Platform (nvarchar) → SocialMediaPlatformId (int FK) with best-effort string mapping
+  - Migrated MessageTemplates.Platform (composite PK component) → SocialMediaPlatformId (int FK, new PK)
+  - Dropped old columns: Engagements (BlueSkyHandle, ConferenceHashtag, ConferenceTwitterHandle), Talks (BlueSkyHandle)
+  - Seeded 5 platforms: Twitter, BlueSky, LinkedIn, Facebook, Mastodon
+- **Base scripts updated:** `table-create.sql` and `data-seed.sql` reflect post-migration schema
+- **EF Core:**
+  - Created entity models: `SocialMediaPlatform.cs`, `EngagementSocialMediaPlatform.cs`
+  - Updated existing entities: Engagement, Talk, ScheduledItem, MessageTemplate (removed old social fields, added FK refs)
+  - Updated `BroadcastingContext.cs` with new DbSets, composite PK config, FK relationships, unique indexes
+- **Domain:**
+  - Created domain models: `SocialMediaPlatform.cs`, `EngagementSocialMediaPlatform.cs`
+  - Updated existing: Engagement, Talk, ScheduledItem, MessageTemplate (replaced string Platform with int SocialMediaPlatformId)
+- **Repository:**
+  - Created `ISocialMediaPlatformDataStore` interface (GetAsync, GetAllAsync, AddAsync, UpdateAsync, DeleteAsync)
+  - Implemented `SocialMediaPlatformDataStore` with soft delete logic (IsActive flag)
+  - Updated `IMessageTemplateDataStore` and `MessageTemplateDataStore` to use int SocialMediaPlatformId instead of string Platform
+- **AutoMapper:** Added mappings for SocialMediaPlatform ↔ EngagementSocialMediaPlatform (bidirectional ReverseMap)
+- **DI Registration:** Added `ISocialMediaPlatformDataStore` → `SocialMediaPlatformDataStore` to Api Program.cs
+- **Decision doc:** `.squad/decisions/inbox/morpheus-667-db-decisions.md` (migration strategy, PK migration approach, risks)
+- **Status:** ✅ Database layer complete. Breaking changes to MessageTemplate interface require updates in Functions and Web (out of scope for Morpheus — Trinity and Cypher to handle).
+- **Branch:** `issue-667-social-media-platforms`
+

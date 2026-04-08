@@ -447,4 +447,34 @@ Established by Joseph Guadagno:
 
 **Open questions documented** in `.squad/decisions/inbox/neo-social-media-platforms-epic.md` — must be resolved before DB work starts (especially junction table shape and ScheduledItems/MessageTemplates Platform migration strategy).
 
+## Learnings — Epic #667 Sprint Breakdown (2025-01-23)
+
+**Task:** Break epic #667 into 15 child issues and organize into 3 sprints.
+
+**Execution:**
+- Created issues #668–#682 using `gh issue create` with full acceptance criteria, dependencies, and squad assignments
+- Sprint 1 (6 issues): Database foundation + EF Core layer — all Morpheus
+- Sprint 2 (4 issues): API endpoints + Manager layer — all Trinity
+- Sprint 3 (5 issues): Web UI (Switch+Sparks), Tests (Tank), Cleanup (Neo)
+- Added comment to #667 with full task list
+- Decision doc written to `.squad/decisions/inbox/neo-667-sprint-breakdown.md`
+
+**Key principles applied:**
+- Sequential sprints with hard dependencies: Sprint 2 requires Sprint 1 complete, Sprint 3 requires Sprint 2 complete
+- Database/domain first, API second, UI third — standard vertical slice order
+- Tests and cleanup in final sprint to validate complete implementation
+- Clear squad boundaries: Morpheus owns all data layer, Trinity owns all API/manager, Switch+Sparks own all Web UI
+
+**Issue creation pattern:**
+- Title format: `{Layer} — {Description}` (e.g., "Database — Create SocialMediaPlatforms tables")
+- Body sections: Sprint, Description, Acceptance Criteria (checklist), Dependencies, Related, Assigned To
+- Labels: `enhancement`, `.NET`, and appropriate `squad:{name}` labels
+- Dependencies explicitly called out using issue numbers
+
+**Validation:**
+- All 15 issues created successfully
+- Comment added to #667 with full breakdown
+- Decision doc created
+- History updated (this entry)
+
 

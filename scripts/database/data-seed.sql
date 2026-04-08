@@ -69,6 +69,23 @@ IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.Roles WHERE Name = N'Viewer')
 -- NOTE: The initial Administrator ApplicationUser seed is a manual step (requires the admin Entra Object ID from config).
 --       See scripts/database/migrations/2026-04-02-rbac-user-approval.sql for the template SQL.
 
+-- Seed the SocialMediaPlatforms table (Epic #667)
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Twitter')
+    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
+    VALUES (N'Twitter', N'https://twitter.com', N'bi-twitter-x', 1)
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'BlueSky')
+    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
+    VALUES (N'BlueSky', N'https://bsky.app', N'bi-cloud', 1)
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'LinkedIn')
+    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
+    VALUES (N'LinkedIn', N'https://www.linkedin.com', N'bi-linkedin', 1)
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Facebook')
+    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
+    VALUES (N'Facebook', N'https://www.facebook.com', N'bi-facebook', 1)
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Mastodon')
+    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
+    VALUES (N'Mastodon', N'https://mastodon.social', N'bi-mastodon', 1)
+
 -- Seed the EmailTemplates table (Issue #615)
 IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.EmailTemplates WHERE Name = N'UserApproved')
     INSERT INTO JJGNet.dbo.EmailTemplates (Name, Subject, Body) VALUES (

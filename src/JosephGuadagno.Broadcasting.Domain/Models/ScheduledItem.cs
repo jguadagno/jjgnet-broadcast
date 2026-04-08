@@ -60,10 +60,9 @@ public class ScheduledItem
     public DateTimeOffset SendOnDateTime { get; set; }
 
     /// <summary>
-    /// The target social platform for this scheduled item (e.g., Twitter, Facebook, LinkedIn, Bluesky)
+    /// The target social platform ID for this scheduled item (references SocialMediaPlatforms table)
     /// </summary>
-    [MaxLength(50)]
-    public string? Platform { get; set; }
+    public int? SocialMediaPlatformId { get; set; }
 
     /// <summary>
     /// The message type/category (e.g., RandomPost, Speaking90Days, Speaking30Days, NextWeek, Tomorrow, ComingUp)

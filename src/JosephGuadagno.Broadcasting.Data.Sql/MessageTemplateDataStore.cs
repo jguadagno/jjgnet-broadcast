@@ -6,11 +6,11 @@ namespace JosephGuadagno.Broadcasting.Data.Sql;
 
 public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, IMapper mapper) : IMessageTemplateDataStore
 {
-    public async Task<Domain.Models.MessageTemplate?> GetAsync(string platform, string messageType, CancellationToken cancellationToken = default)
+    public async Task<Domain.Models.MessageTemplate?> GetAsync(int socialMediaPlatformId, string messageType, CancellationToken cancellationToken = default)
     {
         var dbMessageTemplate = await broadcastingContext.MessageTemplates
             .AsNoTracking()
-            .FirstOrDefaultAsync(mt => mt.Platform == platform && mt.MessageType == messageType, cancellationToken);
+            .FirstOrDefaultAsync(mt => mt.SocialMediaPlatformId == socialMediaPlatformId && mt.MessageType == messageType, cancellationToken);
         return dbMessageTemplate is null ? null : mapper.Map<Domain.Models.MessageTemplate>(dbMessageTemplate);
     }
 
@@ -23,7 +23,7 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
     public async Task<Domain.Models.MessageTemplate?> UpdateAsync(Domain.Models.MessageTemplate messageTemplate, CancellationToken cancellationToken = default)
     {
         var existing = await broadcastingContext.MessageTemplates
-            .FirstOrDefaultAsync(mt => mt.Platform == messageTemplate.Platform && mt.MessageType == messageTemplate.MessageType, cancellationToken);
+            .FirstOrDefaultAsync(mt => mt.SocialMediaPlatformId == messageTemplate.SocialMediaPlatformId && mt.MessageType == messageTemplate.MessageType, cancellationToken);
         if (existing is null) return null;
 
         existing.Template = messageTemplate.Template;
@@ -37,7 +37,7 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
         var totalCount = await broadcastingContext.MessageTemplates.CountAsync(cancellationToken);
         var dbItems = await broadcastingContext.MessageTemplates
             .AsNoTracking()
-            .OrderBy(mt => mt.Platform)
+            .OrderBy(mt => mt.SocialMediaPlatformId)
             .ThenBy(mt => mt.MessageType)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
