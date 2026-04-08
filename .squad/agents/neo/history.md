@@ -478,3 +478,74 @@ Established by Joseph Guadagno:
 - History updated (this entry)
 
 
+
+## Learnings — Epic #667 PR Review and Deployment Runbook (2026-04-08)
+
+**Task:** Review Morpheus's PR on branch `issue-667-social-media-platforms` and write production deployment runbook.
+
+**Context:**  
+- Morpheus completed database layer work for Epic #667 (Social Media Platforms)  
+- Branch exists locally (commit 3fc341e) but PR not yet created  
+- Work introduces breaking changes to `MessageTemplate` interface affecting Api, Web, Functions  
+
+**Review Findings:**
+
+**✅ PASSES:**
+1. **Database schema** — All tables match architecture decisions exactly (SocialMediaPlatforms, EngagementSocialMediaPlatforms, ScheduledItems/MessageTemplates FKs)
+2. **SQL migration script** — Excellent quality, proper 7-part structure, correct PK rebuild sequence for MessageTemplates
+3. **EF Core entities** — Match SQL schema perfectly, proper nullable annotations
+4. **Domain models** — Correct nullability, Required attributes, proper navigation properties
+5. **Repository pattern** — ISocialMediaPlatformDataStore interface complete, soft delete implemented correctly
+6. **AutoMapper profiles** — Bidirectional mappings for both new entities
+7. **DI registration** — Registered in Api Program.cs
+8. **Base scripts updated** — table-create.sql and data-seed.sql reflect post-migration schema
+
+**❌ BLOCKERS:**
+1. **Build fails** — 14 compile errors across Data.Sql.Tests, Api, Web, Functions projects
+2. **No PR exists** — Branch not pushed to GitHub
+3. **Breaking change** — `IMessageTemplateDataStore.GetAsync` signature changed from `GetAsync(string platform, ...)` to `GetAsync(int socialMediaPlatformId, ...)`, breaking 4 Azure Functions
+
+**Root cause of build errors:** Expected breaking change — downstream projects (Api, Web, Functions) still reference old `MessageTemplate.Platform` string field instead of new `SocialMediaPlatformId` int field. Requires Trinity and Cypher follow-up PRs.
+
+**Recommendation:** CONDITIONAL APPROVAL pending:
+1. Morpheus pushes branch and creates PR
+2. Trinity updates Api layer (MessageTemplates endpoints, SocialMediaPlatforms CRUD)
+3. Cypher updates all 4 Functions `ProcessScheduledItemFired` handlers
+4. Switch updates Web layer (MessageTemplateService, Engagement controllers)
+5. Build passes on main before DB migration runs
+
+**Deployment Runbook:**  
+Created comprehensive production deployment runbook posted to issue #667 ([comment link](https://github.com/jguadagno/jjgnet-broadcast/issues/667#issuecomment-4210318810)).
+
+**Key runbook decisions:**
+- **Downtime required:** 5-10 minute maintenance window during MessageTemplates PK rebuild (table lock)
+- **Service stop requirement:** All services (Functions, Api, Web) must stop during PART 5 of migration
+- **Deployment order:** Code MUST deploy first (all PRs merged), then DB migration during maintenance window
+- **Safe vs. breaking:** Parts 1-3 (new tables + seed) are additive and safe; Parts 4-7 (column drops + PK rebuild) are breaking
+- **Rollback plan:** Database restore from backup + redeploy previous code version
+- **Risk mitigation:** Pre-flight checklist enforces "all code deployed first" rule
+
+**Pattern established:**  
+For breaking database migrations involving PK rebuilds or column drops:
+1. **Code deploys first** — All layers (Data, Api, Web, Functions) must be updated and deployed
+2. **Maintenance window required** — PK rebuild operations require brief downtime with services stopped
+3. **Incremental migration option** — Additive changes (new tables, seed data) can run separately before code deployment
+4. **Runbook mandatory** — Complex migrations require step-by-step runbook with rollback plan
+
+**Files reviewed:**
+- Migration script: `scripts/database/migrations/2026-04-08-social-media-platforms.sql` (279 lines)
+- 24 C# files (753 insertions, 61 deletions)
+- Base scripts: table-create.sql, data-seed.sql
+
+**Outcome:**  
+- ✅ Deployment runbook posted to #667  
+- ✅ Review findings documented (neo-review-667.md)  
+- ⏳ Awaiting Morpheus to push branch and create PR  
+- ⏳ Awaiting Trinity/Cypher/Switch follow-up PRs to fix build errors  
+
+**Next steps:**
+1. Morpheus creates PR
+2. Trinity/Cypher/Switch create follow-up PRs
+3. Neo reviews final PR when build passes
+4. Joseph executes deployment runbook during maintenance window
+
