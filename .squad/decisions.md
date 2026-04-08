@@ -12155,3 +12155,70 @@ Response: ScheduledItemLookupResult
 
 
 
+
+
+---
+
+## 2026-05-02 — Issue #67: Schedule Add/Edit AJAX Validation (Sparks)
+
+**Source:** .squad/decisions/inbox/sparks-schedule-ui.md
+
+### ItemType Dropdown Pattern
+Use Html.GetEnumSelectList<T>() for enum-driven dropdowns — type-safe, auto-reflects enum changes.
+
+### Backward Compatibility with ItemTableName
+Keep ItemTableName as a hidden field synced via JS. AutoMapper profiles rely on it; avoids breaking existing backend.
+
+`javascript
+let tableNameMap = { "0": "Engagements", "1": "Talks", "2": "SyndicationFeedSources", "3": "YouTubeSources" };
+$("#ItemTableName").val(tableNameMap[selectedType] || "");
+`
+
+### Validation Button UX
+Use Bootstrap input-group with explicit "Validate" button — not auto-validation on blur. Enter key triggers validation.
+
+### Feedback States
+Three alert states: success (green, i-check-circle-fill), error (red, i-x-circle-fill), warning (yellow, i-exclamation-triangle-fill). Show spinner during AJAX call.
+
+### JS Structure
+Extend wwwroot/js/schedules.edit.js (not inline scripts). Key functions: alidateScheduledItem().
+
+### Files Changed
+- Views/Schedules/Add.cshtml, Views/Schedules/Edit.cshtml — ItemType dropdown + validation button
+- wwwroot/js/schedules.edit.js — AJAX validation logic
+
+---
+
+## 2026-04-08 — Epic #667: Social Media Platforms Normalization (Neo)
+
+**Source:** .squad/decisions/inbox/neo-social-media-platforms-epic.md
+
+### Architecture: Junction Table Approach
+Replace ad-hoc columns (BlueSkyHandle, ConferenceHashtag, ConferenceTwitterHandle on Engagements/Talks) with:
+- dbo.SocialMediaPlatforms — lookup table
+- dbo.EngagementSocialMediaPlatforms — junction table
+
+### Codebase Facts
+- dbo.Engagements: BlueSkyHandle, ConferenceHashtag, ConferenceTwitterHandle
+- dbo.Talks: BlueSkyHandle
+- dbo.ScheduledItems.Platform: nvarchar(50) free-text
+- dbo.MessageTemplates.Platform: nvarchar(50), part of composite PK (high-impact)
+- Migration convention: YYYY-MM-DD-description.sql in scripts/database/migrations/
+- EF config: Data.Sql/BroadcastingContext.cs
+
+### Sub-Issues Superseded
+#537 (LinkedIn), #536 (Bluesky), #54 (Twitter/Talk), #53 (Twitter/Engagement) — all superseded by #667.
+
+### Squad Assignments
+Morpheus (DB) → Trinity (API) → Switch (Web Controllers) → Sparks (Views) → Tank (Tests)
+
+### Open Questions (Pending Joseph)
+1. dbo.Talks own junction (TalkSocialMediaPlatforms) or inherit from parent Engagement?
+2. EngagementSocialMediaPlatforms need a per-conference Handle/AccountUrl column?
+3. Migrate ScheduledItems.Platform to int FK or keep string + validate?
+4. Migrate MessageTemplates.Platform (PK — high-impact)?
+5. Soft delete: IsActive bool vs DeletedOn datetimeoffset?
+6. Seed platforms: Twitter/X, Bluesky, LinkedIn, Facebook — any others?
+
+### Decision
+**Do not start Morpheus DB work until questions 1–4 are answered by Joseph.**

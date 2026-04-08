@@ -401,3 +401,27 @@ Established by Joseph Guadagno:
 
 **Decision document:** `.squad/decisions/inbox/neo-pr662-approved.md`
 
+---
+
+## Learnings — Epic #667 Triage: Social Media Platforms (2025-07-17)
+
+**Context:** Triaged epic #667 — "Move social links for engagements into its own table".
+
+**Codebase facts established:**
+- `dbo.Engagements` has 3 social columns to remove: `BlueSkyHandle`, `ConferenceHashtag`, `ConferenceTwitterHandle`
+- `dbo.Talks` has its own `BlueSkyHandle` — relationship to this epic needs clarification
+- `dbo.ScheduledItems.Platform` is nvarchar(50) free-text — possible FK migration candidate
+- `dbo.MessageTemplates.Platform` is part of the composite PK — high-impact if migrated
+- Migration naming convention confirmed: `YYYY-MM-DD-description.sql`
+- Sub-issues #537, #536, #54, #53 are all superseded by this epic (commented on all four)
+
+**Squad assignments made on #667:**
+- Morpheus: DB (tables, migrations, seed, EF Core)
+- Trinity: API (CRUD endpoints, DTO updates)
+- Switch: Web/Controllers (admin UI, engagement controller)
+- Sparks: Views (Razor views, Bootstrap, JS)
+- Tank: Tests
+
+**Open questions documented** in `.squad/decisions/inbox/neo-social-media-platforms-epic.md` — must be resolved before DB work starts (especially junction table shape and ScheduledItems/MessageTemplates Platform migration strategy).
+
+

@@ -81,3 +81,11 @@ Established by Joseph Guadagno:
 - **2026-04-09-sourcetags-junction.sql:** Kept our version (includes unique index + STRING_SPLIT compat comment). Main had the same file without the unique index (earlier commit of the same migration).
 - **.squad/ files:** Used `git checkout --ours` for all 5 — Scribe handles these separately.
 - **Build:** 0 errors after resolution. | Commit: `fdc8114`
+
+
+### 2026-04-08 — Epic #667 Assigned: Social Media Platforms (DB Schema)
+- **Task:** Design and implement DB migration for dbo.SocialMediaPlatforms lookup table + dbo.EngagementSocialMediaPlatforms junction table
+- **Replacing:** Ad-hoc columns BlueSkyHandle, ConferenceHashtag, ConferenceTwitterHandle on dbo.Engagements and BlueSkyHandle on dbo.Talks
+- **Also in scope (pending Joseph):** ScheduledItems.Platform (nvarchar FK→int?) and MessageTemplates.Platform (composite PK — high-impact)
+- **Status:** 🔴 BLOCKED — awaiting Joseph's answers to 6 open architecture questions (see .squad/decisions.md → Epic #667 section)
+- **Triage source:** Neo (issue #667)

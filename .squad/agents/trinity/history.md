@@ -352,3 +352,10 @@ Response:
 ```
 
 **Outstanding Work:** Sparks needs to implement UI changes (ItemType dropdown + AJAX validation + results display) in `Views/Schedules/Add.cshtml` and `Views/Schedules/Edit.cshtml`. Full guide in `.squad/decisions.md`.
+
+
+### 2026-04-08 — Epic #667 Assigned: Social Media Platforms (API Layer)
+- **Task:** CRUD endpoints for SocialMediaPlatforms and EngagementSocialMediaPlatforms; DTOs and AutoMapper profiles
+- **Dependency:** Morpheus DB work must complete first (blocked on Joseph's architecture answers)
+- **Status:** 🔴 BLOCKED — waiting on Morpheus
+- **Triage source:** Neo (issue #667)

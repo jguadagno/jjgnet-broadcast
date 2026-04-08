@@ -113,3 +113,9 @@ Established by Joseph Guadagno:
 - **Pattern learned:** For backward-compat migrations, keep old denormalized column and write to both simultaneously; remove in a follow-up migration
 - **Branch:** squad/323-tags-junction-table
 - **Build status:** All production projects build clean (0 errors); pre-existing test errors in EventPublisherTests and LoadNewPostsTests unrelated to this change
+
+### 2026-04-08 — Epic #667 Assigned: Social Media Platforms (Web Controllers)
+- **Task:** Controller actions for managing platform associations in the Web project
+- **Dependency:** Trinity API work must complete first
+- **Status:** 🔴 BLOCKED — waiting on Trinity → Morpheus → Joseph's answers
+- **Triage source:** Neo (issue #667)

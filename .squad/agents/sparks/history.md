@@ -58,3 +58,9 @@ Established by Joseph Guadagno:
 - **Form Enhancement:** Support Enter key in input field to trigger validation (prevent default form submit, call validation function)
 - **jQuery AJAX Pattern:** Standard pattern: show loading → call endpoint → handle success/error → display feedback in result div
 - **Build Time:** Web project build takes ~160s with 87 pre-existing nullable warnings (CS8618 — standard pattern in this codebase)
+
+### 2026-04-08 — Epic #667 Assigned: Social Media Platforms (Razor Views)
+- **Task:** Razor views for managing platform associations on Engagements/Talks (Add/Edit/List)
+- **Dependency:** Switch controller work must complete first
+- **Status:** 🔴 BLOCKED — waiting on Switch → Trinity → Morpheus → Joseph's answers
+- **Triage source:** Neo (issue #667)

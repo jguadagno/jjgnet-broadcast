@@ -355,3 +355,9 @@ Established by Joseph Guadagno:
 - Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
 - Charter updated with enforcement rule (## How I Work)
 - Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code
+
+### 2026-04-08 — Epic #667 Assigned: Social Media Platforms (Tests)
+- **Task:** Unit + integration tests for all new SocialMediaPlatforms code (DB data stores, API controllers, Web controllers)
+- **Dependency:** All other squad work must complete first
+- **Status:** 🔴 BLOCKED — last in the pipeline for epic #667
+- **Triage source:** Neo (issue #667)
