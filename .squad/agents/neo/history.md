@@ -297,6 +297,29 @@ Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomme
 
 ---
 
+### 2026-04-08: Epic #667 — Architecture Decisions Resolved
+
+**Issue:** #667 — Move social links for engagements into its own table
+
+Joseph answered all 6 open architecture questions. Updated GitHub issue and recorded decisions.
+
+**Resolved decisions:**
+
+1. **Talks**: Inherit social media from parent Engagement — no separate junction table
+2. **EngagementSocialMediaPlatforms**: EngagementId FK + SocialMediaPlatformId FK + Handle (conference's @handle). SocialMediaPlatforms.Url = canonical platform URL
+3. **ScheduledItems.Platform**: DROP column, ADD SocialMediaPlatformId int FK — intentional breaking change, migration script required
+4. **MessageTemplates.Platform**: Migrate to SocialMediaPlatformId FK — currently in composite PK, requires careful migration planning
+5. **Soft delete**: IsActive (bool). UI: ✗ icon for inactive. List page: single toggle button
+6. **Seed data**: Twitter/X, BlueSky, LinkedIn, Facebook, Mastodon (even without publisher)
+
+**Actions taken:**
+- Updated GitHub issue #667: replaced Open Questions with Architecture Decisions table, added Implementation Order section, updated Work Breakdown (Mastodon added to seed data)
+- Wrote decisions to `.squad/decisions/inbox/neo-667-architecture-decisions.md`
+
+**Status:** ✅ All decisions recorded. Morpheus can begin DB work.
+
+---
+
 ### Prior Work Archive (Sprint 11 + Early Reviews)
 
 - **Sprint 11 closeout (PRs #551–#555):** 5 PRs merged, later **reverted** (PR #572, MSAL auth broken). Issue #85 open.

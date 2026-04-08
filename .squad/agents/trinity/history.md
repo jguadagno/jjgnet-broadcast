@@ -359,3 +359,13 @@ Response:
 - **Dependency:** Morpheus DB work must complete first (blocked on Joseph's architecture answers)
 - **Status:** 🔴 BLOCKED — waiting on Morpheus
 - **Triage source:** Neo (issue #667)
+
+
+### 2026-04-08 — Epic #667 Architecture Decisions Resolved
+- **Status change:** 🟡 WAITING ON MORPHEUS (unblocked from Joseph's answers)
+- **Key decisions affecting Trinity (API):**
+  - CRUD endpoints needed: SocialMediaPlatforms (admin) + EngagementSocialMediaPlatforms (per-engagement associations)
+  - DTOs: SocialMediaPlatformDto (Id, Name, Url, Icon, IsActive), EngagementSocialMediaPlatformDto (EngagementId, PlatformId, Handle)
+  - ScheduledItems endpoints: SocialMediaPlatformId replaces Platform string field
+  - MessageTemplates endpoints: SocialMediaPlatformId replaces Platform string field
+- **Next:** Begin API work after Morpheus delivers DB migration

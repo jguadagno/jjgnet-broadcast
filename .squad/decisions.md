@@ -12222,3 +12222,34 @@ Morpheus (DB) → Trinity (API) → Switch (Web Controllers) → Sparks (Views) 
 
 ### Decision
 **Do not start Morpheus DB work until questions 1–4 are answered by Joseph.**
+
+
+---
+
+## 2026-04-08 — Epic #667: Architecture Decisions Resolved (Neo)
+
+**Source:** .squad/decisions/inbox/neo-667-architecture-answers.md + neo-667-architecture-decisions.md
+
+### dbo.SocialMediaPlatforms Schema
+Id (PK), Name, Url (canonical platform URL), Icon (Bootstrap icon class), IsActive (bool soft delete)
+
+### dbo.EngagementSocialMediaPlatforms Schema
+EngagementId (FK), SocialMediaPlatformId (FK), Handle (nvarchar) — composite PK on (EngagementId, SocialMediaPlatformId). Max one of each platform per engagement.
+
+### Talks Inheritance
+Talks inherit social media from parent Engagement. No TalkSocialMediaPlatforms junction table.
+
+### ScheduledItems.Platform Migration
+DROP existing nvarchar Platform column. ADD SocialMediaPlatformId int FK. Intentional breaking change.
+
+### MessageTemplates.Platform Migration
+YES — migrate to SocialMediaPlatformId FK. Currently part of composite PK; requires careful migration script.
+
+### Soft Delete Strategy
+IsActive bool on SocialMediaPlatforms. UI shows ✗ icon for inactive records. List page provides single toggle button.
+
+### Seed Data
+Twitter/X, BlueSky, LinkedIn, Facebook, Mastodon (include even if no publisher exists yet).
+
+### Implementation Order
+Morpheus (DB) → Trinity (API) → Switch (Web Controllers) → Sparks (Razor Views) → Tank (Tests)

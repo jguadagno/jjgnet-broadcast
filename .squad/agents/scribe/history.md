@@ -81,3 +81,10 @@
 - Skill: .squad/skills/github-comment-formatting/SKILL.md now exists — canonical reference
 - Rule: Triple backticks for fenced code blocks; single backticks for inline code only
 - Charter updated with enforcement rule
+
+### 2026-04-08T22-11-20Z — Epic #667 Architecture Decisions (Neo Session)
+- Orchestration log: .squad/orchestration-log/2026-04-08T22-11-20Z-neo.md
+- Session log: .squad/log/2026-04-08T22-11-20Z-667-decisions.md
+- Merged 2 inbox decisions into decisions.md (neo-667-architecture-answers.md + neo-667-architecture-decisions.md), deduplicated
+- Deleted 2 inbox files
+- Appended epic #667 unblock notes to Morpheus, Trinity, Switch, Sparks, Tank history.md files

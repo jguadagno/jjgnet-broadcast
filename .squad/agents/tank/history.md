@@ -361,3 +361,12 @@ Established by Joseph Guadagno:
 - **Dependency:** All other squad work must complete first
 - **Status:** 🔴 BLOCKED — last in the pipeline for epic #667
 - **Triage source:** Neo (issue #667)
+
+
+### 2026-04-08 — Epic #667 Architecture Decisions Resolved
+- **Status change:** 🟡 WAITING ON ALL OTHERS (unblocked from Joseph's answers, last in pipeline)
+- **Key decisions affecting Tank (Tests):**
+  - Unit tests needed for: SocialMediaPlatforms data store, API controllers, Web controllers
+  - Test ScheduledItems and MessageTemplates with int FK SocialMediaPlatformId (not string Platform)
+  - IsActive toggle logic should be covered
+- **Next:** Begin test work after all other agents complete epic #667 implementation

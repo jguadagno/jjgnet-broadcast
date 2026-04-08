@@ -119,3 +119,12 @@ Established by Joseph Guadagno:
 - **Dependency:** Trinity API work must complete first
 - **Status:** 🔴 BLOCKED — waiting on Trinity → Morpheus → Joseph's answers
 - **Triage source:** Neo (issue #667)
+
+
+### 2026-04-08 — Epic #667 Architecture Decisions Resolved
+- **Status change:** 🟡 WAITING ON TRINITY (unblocked from Joseph's answers)
+- **Key decisions affecting Switch (Web Controllers):**
+  - Engagement detail/edit pages need platform association management (add/remove per-platform handle)
+  - IsActive toggle action for SocialMediaPlatforms admin page
+  - ScheduledItems and MessageTemplates forms: platform dropdown (FK) replaces free-text Platform field
+- **Next:** Begin controller work after Trinity delivers API layer

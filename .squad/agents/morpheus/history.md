@@ -89,3 +89,15 @@ Established by Joseph Guadagno:
 - **Also in scope (pending Joseph):** ScheduledItems.Platform (nvarchar FK→int?) and MessageTemplates.Platform (composite PK — high-impact)
 - **Status:** 🔴 BLOCKED — awaiting Joseph's answers to 6 open architecture questions (see .squad/decisions.md → Epic #667 section)
 - **Triage source:** Neo (issue #667)
+
+
+### 2026-04-08 — Epic #667 Architecture Decisions Resolved
+- **Status change:** 🟢 UNBLOCKED — Joseph answered all 6 open architecture questions
+- **Key decisions affecting Morpheus (DB):**
+  - dbo.SocialMediaPlatforms: Id, Name, Url, Icon, IsActive (bool soft delete)
+  - dbo.EngagementSocialMediaPlatforms: EngagementId FK + SocialMediaPlatformId FK + Handle; composite PK
+  - Talks inherit from parent Engagement (no separate junction table)
+  - ScheduledItems.Platform: DROP nvarchar → ADD SocialMediaPlatformId int FK (breaking change)
+  - MessageTemplates.Platform: migrate to SocialMediaPlatformId FK (careful — currently in composite PK)
+  - Seed: Twitter/X, BlueSky, LinkedIn, Facebook, Mastodon
+- **Next:** Morpheus first in pipeline — begin DB migration script
