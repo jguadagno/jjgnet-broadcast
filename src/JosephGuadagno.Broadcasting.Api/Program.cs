@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
 using JosephGuadagno.Broadcasting.Api.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
 using JosephGuadagno.Broadcasting.Api.Models;
 using Microsoft.AspNetCore.RateLimiting;
 using JosephGuadagno.Broadcasting.Data.Sql;
@@ -76,7 +77,11 @@ ConfigureApplication(builder.Services);
 // ASP.NET Core API stuff
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    // API uses Bearer token auth — antiforgery tokens are not applicable
+    options.Filters.Add(new IgnoreAntiforgeryTokenAttribute());
+});
 
 // Rate limiting — 100 requests per minute (fixed window), applied globally
 builder.Services.AddRateLimiter(options =>
