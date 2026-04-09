@@ -25,13 +25,9 @@ public partial class Engagement
 
     public DateTimeOffset LastUpdatedOn { get; set; }
 
-    public string ConferenceHashtag { get; set; }
-
-    public string ConferenceTwitterHandle { get; set; }
-
-    public string BlueSkyHandle { get; set; }
-
     public string? CreatedByEntraOid { get; set; }
 
     public virtual ICollection<Talk> Talks { get; set; } = new List<Talk>();
+
+    public virtual ICollection<EngagementSocialMediaPlatform> SocialMediaPlatforms { get; set; } = new List<EngagementSocialMediaPlatform>();
 }

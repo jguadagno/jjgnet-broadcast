@@ -22,6 +22,7 @@ public class ProcessScheduledItemFired(
     IYouTubeSourceManager youTubeSourceManager,
     ILinkedInApplicationSettings linkedInApplicationSettings,
     IMessageTemplateDataStore messageTemplateDataStore,
+    ISocialMediaPlatformManager socialMediaPlatformManager,
     ILogger<ProcessScheduledItemFired> logger)
 {
 
@@ -90,7 +91,11 @@ public class ProcessScheduledItemFired(
                 ScheduledItemType.SyndicationFeedSources => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
                 ScheduledItemType.YouTubeSources => MessageTemplates.MessageTypes.NewYouTubeItem,
                 _ => MessageTemplates.MessageTypes.RandomPost
-            };            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.LinkedIn, messageType);
+            };            
+            var linkedInPlatform = await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.LinkedIn);
+            var messageTemplate = linkedInPlatform != null 
+                ? await messageTemplateDataStore.GetAsync(linkedInPlatform.Id, messageType) 
+                : null;
             string? renderedText = null;
             if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
                 renderedText = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);

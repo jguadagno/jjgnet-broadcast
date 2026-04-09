@@ -7,7 +7,7 @@ namespace JosephGuadagno.Broadcasting.Data.Sql.Models;
 
 public partial class MessageTemplate
 {
-    public string Platform { get; set; }
+    public int SocialMediaPlatformId { get; set; }
 
     public string MessageType { get; set; }
 
@@ -16,4 +16,6 @@ public partial class MessageTemplate
     public string Description { get; set; }
 
     public string? CreatedByEntraOid { get; set; }
+
+    public virtual SocialMediaPlatform SocialMediaPlatform { get; set; }
 }

@@ -17,12 +17,14 @@ namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
 public class EngagementsControllerTests
 {
     private readonly Mock<IEngagementManager> _engagementManagerMock;
+    private readonly Mock<IEngagementSocialMediaPlatformDataStore> _engagementSocialMediaPlatformDataStoreMock;
     private readonly Mock<ILogger<EngagementsController>> _loggerMock;
     private readonly IMapper _mapper;
 
     public EngagementsControllerTests()
     {
         _engagementManagerMock = new Mock<IEngagementManager>();
+        _engagementSocialMediaPlatformDataStoreMock = new Mock<IEngagementSocialMediaPlatformDataStore>();
         _loggerMock = new Mock<ILogger<EngagementsController>>();
         
         // Configure AutoMapper with the API profile
@@ -39,7 +41,7 @@ public class EngagementsControllerTests
 
     private EngagementsController CreateSut(string scopeClaimValue)
     {
-        var controller = new EngagementsController(_engagementManagerMock.Object, _loggerMock.Object, _mapper)
+        var controller = new EngagementsController(_engagementManagerMock.Object, _engagementSocialMediaPlatformDataStoreMock.Object, _loggerMock.Object, _mapper)
         {
             ControllerContext = CreateControllerContext(scopeClaimValue),
             ProblemDetailsFactory = new TestProblemDetailsFactory()

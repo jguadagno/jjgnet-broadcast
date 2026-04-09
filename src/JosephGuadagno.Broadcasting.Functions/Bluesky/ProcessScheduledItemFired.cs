@@ -20,6 +20,7 @@ public class ProcessScheduledItemFired(
     IYouTubeSourceManager youTubeSourceManager,
     IEngagementManager engagementManager,
     IMessageTemplateDataStore messageTemplateDataStore,
+    ISocialMediaPlatformManager socialMediaPlatformManager,
     ILogger<ProcessScheduledItemFired> logger)
 {
     const int MaxPostLength = 300;
@@ -66,7 +67,11 @@ public class ProcessScheduledItemFired(
                 ScheduledItemType.SyndicationFeedSources => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
                 ScheduledItemType.YouTubeSources => MessageTemplates.MessageTypes.NewYouTubeItem,
                 _ => MessageTemplates.MessageTypes.RandomPost
-            };            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.Bluesky, messageType);
+            };            
+            var blueSkyPlatform = await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Bluesky);
+            var messageTemplate = blueSkyPlatform != null 
+                ? await messageTemplateDataStore.GetAsync(blueSkyPlatform.Id, messageType) 
+                : null;
             if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
                 blueSkyPostText = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);
 
