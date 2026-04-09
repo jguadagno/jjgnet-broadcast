@@ -309,6 +309,24 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 - `QueueServiceClient` registration pattern: use `TryAddSingleton` with factory lambda reading `ConnectionStrings:QueueStorage` — works for all three project types
 - Each project's `Settings` class implements both the project-specific `ISettings` AND (via interface inheritance) `IEmailSettings` from Domain — register both in DI from the same settings instance
 - When test files have duplicate class declarations, the compiler reports errors at confusing line numbers — always rewrite the entire file cleanly
+
+### 2026-04-08 — CodeQL Security Fixes & Neo Review Suggestions (#667)
+
+**Status:** ✅ COMPLETE | Branch issue-667-social-media-platforms | Commit f5786a8
+
+**What I fixed:**
+- **Log injection prevention:** Added `SanitizeForLog` helper to `MessageTemplatesController` and `SocialMediaPlatformsController` to strip `\r` and `\n` from user-provided values before logging (5 CodeQL alerts)
+- **CSRF false positive:** Added `[IgnoreAntiforgeryToken]` at class level to `SocialMediaPlatformsController` — JWT Bearer APIs are not vulnerable to CSRF (CodeQL alert #26)
+- **Performance optimization:** Added `GetByNameAsync` to `ISocialMediaPlatformDataStore` interface and implemented DB-level filtering instead of loading all platforms into memory (Neo suggestion)
+- **Exception logging:** Added `ILogger<SocialMediaPlatformDataStore>` to constructor and logged all 3 catch blocks with relevant context (Neo suggestion)
+
+**Learnings:**
+- **Always sanitize user-controlled strings before logging** (route params, query params, request body fields) to prevent log injection attacks — use pattern: `value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty`
+- **JWT Bearer API controllers should use `[IgnoreAntiforgeryToken]`** at class level to explicitly document CSRF is N/A (cookie-based auth controllers should NOT use this)
+- **Never filter at manager layer** — all filtering/lookups should be pushed to DB level via data store methods (performance and scalability)
+- **All data stores must inject ILogger and log exceptions** in catch blocks with relevant context (IDs, names, operation type) — silent failures break observability
+- **CodeQL log injection alerts are valid** even if severity is low — defense-in-depth matters, and sanitization is cheap insurance
+
 - **EF Core bool defaults**: Never use `.HasDefaultValueSql()` on non-nullable `bool` properties. EF Core 8+ cannot distinguish explicit `false` from CLR default, causing startup warnings. The DB default is always redundant for value types — EF Core inserts the C# value directly.
 - `BroadcastingContext.cs` location: `src/JosephGuadagno.Broadcasting.Data.Sql/BroadcastingContext.cs` — all entity configurations are in `OnModelCreating()` method starting at line 47
 
