@@ -103,6 +103,7 @@ public class EngagementsController : Controller
     /// <param name="engagementViewModel">The <see cref="EngagementViewModel"/> to edit.</param>
     /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, redirects to the <see cref="Edit(int)"/> page.</returns>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     [Authorize(Policy = "RequireContributor")]
     public async Task<IActionResult> Edit(EngagementViewModel engagementViewModel)
     {
@@ -211,6 +212,7 @@ public class EngagementsController : Controller
     /// <param name="engagementViewModel">The <see cref="EngagementViewModel"/></param>
     /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, redirects to the <see cref="Edit(int)"/> page.</returns>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     [Authorize(Policy = "RequireContributor")]
     public async Task<RedirectToActionResult> Add(EngagementViewModel engagementViewModel)
     {
