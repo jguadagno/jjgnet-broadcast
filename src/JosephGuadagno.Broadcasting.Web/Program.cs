@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -158,6 +159,8 @@ builder.Services.AddControllersWithViews(options =>
         .RequireAuthenticatedUser()
         .Build();
     options.Filters.Add(new AuthorizeFilter(policy));
+    // Validate antiforgery tokens on all unsafe methods (POST/PUT/DELETE) globally
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
 }).AddMicrosoftIdentityUI();
 
 // Configure authorization policies
