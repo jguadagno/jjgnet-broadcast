@@ -87,9 +87,25 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 - **Composite PKs in data layer:** EngagementSocialMediaPlatforms uses composite (EngagementId, SocialMediaPlatformId) to prevent duplicates
 
 **Outstanding:**
-- Tank (QA) must fix 40 Functions.Tests compile errors before merge
-- Full test suite must pass
+- ~~Tank (QA) must fix 40 Functions.Tests compile errors before merge~~ ✅ RESOLVED
+- ~~Full test suite must pass~~ ✅ 500+ tests passing
 - Switch/Sparks (Sprint 3) will build Web UI on top of new API endpoints
+
+### 2026-04-09 — Sprint 2 Test Fixes Committed & Pushed
+
+**Status:** ✅ COMPLETE | Branch issue-667-social-media-platforms | Commit 0b42f38
+
+**What Was Fixed:**
+- `Data.Sql/MappingProfiles/BroadcastingProfile.cs`: Added `.Ignore()` for `SocialMediaPlatform` navigation property to prevent AutoMapper ambiguity
+- `Web/MappingProfiles/WebMappingProfile.cs`: Added `.Ignore()` for Sprint 3 ViewModel properties not yet wired up (BlueSkyHandle, ConferenceHashtag, ConferenceTwitterHandle, Platform, SocialMediaPlatformId, SocialMediaPlatforms)
+- `Functions.Tests` (Twitter, Bluesky, LinkedIn, Facebook): Added `BuildPlatformManager()` mock helper to all 4 publisher test classes; fixed mock setup for new `ISocialMediaPlatformManager` constructor dependency
+
+**Test Results:** 105/105 Web.Tests, 154/154 Functions.Tests, 137/137 Data.Sql.Tests — all passing
+
+**Key Learnings:**
+- AutoMapper navigation property conflicts: when EF adds a navigation property to a domain model, explicitly `.Ignore()` it in ALL relevant AutoMapper profiles (not just the Data.Sql one)
+- Sprint boundary ViewModel properties: when a Sprint 3 property is added to the ViewModel but not yet wired, add `.Ignore()` in WebMappingProfile to prevent unmapped member errors
+- Functions.Tests constructor updates: when a manager gains a new DI dependency, every test that calls `new Manager(...)` must be updated — use a `Build*Manager()` helper pattern to centralize this
 
 ---
 
