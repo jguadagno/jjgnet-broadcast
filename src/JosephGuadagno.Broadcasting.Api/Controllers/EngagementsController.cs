@@ -14,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 /// </summary>
 [ApiController]
 [Authorize]
+[IgnoreAntiforgeryToken]
 [Route("[controller]")]
 [Produces("application/json")]
 public class EngagementsController: ControllerBase
