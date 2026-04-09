@@ -17,16 +17,19 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 public class EngagementsController : Controller
 {
     private readonly IEngagementService _engagementService;
+    private readonly ISocialMediaPlatformService _socialMediaPlatformService;
     private readonly IMapper _mapper;
 
     /// <summary>
     /// The constructor for the EngagementsController.
     /// </summary>
     /// <param name="engagementService">The engagement service</param>
+    /// <param name="socialMediaPlatformService">The social media platform service</param>
     /// <param name="mapper">The mapper service</param>
-    public EngagementsController(IEngagementService engagementService, IMapper mapper)
+    public EngagementsController(IEngagementService engagementService, ISocialMediaPlatformService socialMediaPlatformService, IMapper mapper)
     {
         _engagementService = engagementService;
+        _socialMediaPlatformService = socialMediaPlatformService;
         _mapper = mapper;
     }
 
@@ -81,6 +84,11 @@ public class EngagementsController : Controller
         }
 
         var engagementViewModel = _mapper.Map<EngagementViewModel>(engagement);
+
+        // Load platforms for this engagement
+        var platforms = await _engagementService.GetPlatformsForEngagementAsync(id);
+        engagementViewModel.SocialMediaPlatforms = _mapper.Map<List<EngagementSocialMediaPlatformViewModel>>(platforms);
+
         return View(engagementViewModel);
     }
 
@@ -211,5 +219,74 @@ public class EngagementsController : Controller
         }
         TempData["SuccessMessage"] = "Engagement added successfully.";
         return RedirectToAction("Details", new { id = savedEngagement.Id });
+    }
+
+    /// <summary>
+    /// Shows the form to add a social media platform to an engagement.
+    /// </summary>
+    /// <param name="engagementId">The identity of the engagement</param>
+    /// <returns>The add platform view.</returns>
+    [HttpGet]
+    [Authorize(Policy = "RequireContributor")]
+    public async Task<IActionResult> AddPlatform(int engagementId)
+    {
+        var allPlatforms = await _socialMediaPlatformService.GetAllAsync();
+        ViewBag.Platforms = allPlatforms;
+        return View(new EngagementSocialMediaPlatformViewModel { EngagementId = engagementId });
+    }
+
+    /// <summary>
+    /// Adds a social media platform to an engagement.
+    /// </summary>
+    /// <param name="engagementId">The identity of the engagement</param>
+    /// <param name="vm">The platform view model</param>
+    /// <returns>Upon success, redirects to the Edit page.</returns>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = "RequireContributor")]
+    public async Task<IActionResult> AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)
+    {
+        if (!ModelState.IsValid)
+        {
+            var allPlatforms = await _socialMediaPlatformService.GetAllAsync();
+            ViewBag.Platforms = allPlatforms;
+            return View(vm);
+        }
+
+        var result = await _engagementService.AddPlatformToEngagementAsync(engagementId, vm.SocialMediaPlatformId, vm.Handle);
+        if (result is null)
+        {
+            TempData["ErrorMessage"] = "Failed to add platform to engagement.";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Platform added successfully.";
+        }
+
+        return RedirectToAction("Edit", new { id = engagementId });
+    }
+
+    /// <summary>
+    /// Removes a social media platform from an engagement.
+    /// </summary>
+    /// <param name="engagementId">The identity of the engagement</param>
+    /// <param name="platformId">The identity of the platform to remove</param>
+    /// <returns>Redirects to the Edit page.</returns>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = "RequireContributor")]
+    public async Task<IActionResult> RemovePlatform(int engagementId, int platformId)
+    {
+        var result = await _engagementService.RemovePlatformFromEngagementAsync(engagementId, platformId);
+        if (!result)
+        {
+            TempData["ErrorMessage"] = "Failed to remove platform from engagement.";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Platform removed successfully.";
+        }
+
+        return RedirectToAction("Edit", new { id = engagementId });
     }
 }

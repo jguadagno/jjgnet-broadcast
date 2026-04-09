@@ -250,6 +250,7 @@ void ConfigureApplication(IServiceCollection services)
 {
     services.AddHttpClient();
     services.TryAddScoped<IEngagementService, EngagementService>();
+    services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
     services.TryAddScoped<IMessageTemplateService, MessageTemplateService>();
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();

@@ -30,9 +30,12 @@ public class WebMappingProfile: Profile
 
         CreateMap<Domain.Models.Engagement, Models.EngagementViewModel>()
             .ForMember(destination => destination.TimeZones, options => options.Ignore())
-            .ForMember(destination => destination.BlueSkyHandle, options => options.Ignore())
-            .ForMember(destination => destination.ConferenceHashtag, options => options.Ignore())
-            .ForMember(destination => destination.ConferenceTwitterHandle, options => options.Ignore());
+            .ForMember(destination => destination.SocialMediaPlatforms, options => options.Ignore());
+        CreateMap<Domain.Models.EngagementSocialMediaPlatform, Models.EngagementSocialMediaPlatformViewModel>()
+            .ForMember(destination => destination.PlatformName,
+                options => options.MapFrom(source => source.SocialMediaPlatform != null ? source.SocialMediaPlatform.Name : null))
+            .ForMember(destination => destination.PlatformIcon,
+                options => options.MapFrom(source => source.SocialMediaPlatform != null ? source.SocialMediaPlatform.Icon : null));
         CreateMap<Domain.Models.Talk, Models.TalkViewModel>()
             .ForMember(destination => destination.BlueSkyHandle, options => options.Ignore());
         CreateMap<Domain.Models.ScheduledItem, Models.ScheduledItemViewModel>()

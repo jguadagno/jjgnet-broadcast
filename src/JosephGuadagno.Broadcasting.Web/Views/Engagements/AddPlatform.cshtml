@@ -1,0 +1,45 @@
+@model JosephGuadagno.Broadcasting.Web.Models.EngagementSocialMediaPlatformViewModel
+
+@{
+    ViewData["Title"] = "Add Social Media Platform";
+    var platforms = ViewBag.Platforms as List<JosephGuadagno.Broadcasting.Domain.Models.SocialMediaPlatform> ?? new List<JosephGuadagno.Broadcasting.Domain.Models.SocialMediaPlatform>();
+}
+
+<h1>Add Social Media Platform</h1>
+<p class="lead">Add a social media platform to this engagement.</p>
+
+<form asp-action="AddPlatform" asp-route-engagementId="@Model.EngagementId" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="EngagementId" />
+
+    <div class="mb-3">
+        <label asp-for="SocialMediaPlatformId" class="form-label">Platform</label>
+        <select asp-for="SocialMediaPlatformId" class="form-select" aria-describedby="val-SocialMediaPlatformId">
+            <option value="">Please select a platform</option>
+            @foreach (var platform in platforms)
+            {
+                <option value="@platform.Id">@platform.Name</option>
+            }
+        </select>
+        <span id="val-SocialMediaPlatformId" asp-validation-for="SocialMediaPlatformId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Handle" class="form-label">Handle / Hashtag</label>
+        <input asp-for="Handle" type="text" class="form-control" autocomplete="off" placeholder="e.g. @@MyConference or #DevConf2026" aria-describedby="val-Handle" />
+        <span id="val-Handle" asp-validation-for="Handle" class="text-danger"></span>
+    </div>
+
+    <br />
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>Add Platform
+    </button>
+    <a asp-action="Edit" asp-controller="Engagements" asp-route-id="@Model.EngagementId" class="btn btn-secondary ms-2">
+        <i class="bi bi-x-circle me-2"></i>Cancel
+    </a>
+</form>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

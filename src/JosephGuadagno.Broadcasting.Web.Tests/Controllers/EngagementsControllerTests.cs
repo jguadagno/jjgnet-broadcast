@@ -18,14 +18,16 @@ namespace JosephGuadagno.Broadcasting.Web.Tests.Controllers;
 public class EngagementsControllerTests
 {
     private readonly Mock<IEngagementService> _engagementService;
+    private readonly Mock<ISocialMediaPlatformService> _socialMediaPlatformService;
     private readonly Mock<IMapper> _mapper;
     private readonly EngagementsController _controller;
 
     public EngagementsControllerTests()
     {
         _engagementService = new Mock<IEngagementService>();
+        _socialMediaPlatformService = new Mock<ISocialMediaPlatformService>();
         _mapper = new Mock<IMapper>();
-        _controller = new EngagementsController(_engagementService.Object, _mapper.Object);
+        _controller = new EngagementsController(_engagementService.Object, _socialMediaPlatformService.Object, _mapper.Object);
         
         // Initialize TempData
         var httpContext = new DefaultHttpContext();
@@ -91,7 +93,11 @@ public class EngagementsControllerTests
         var engagement = new Engagement { Id = 1 };
         var viewModel = new EngagementViewModel { Id = 1 };
         _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(engagement);
+        _engagementService.Setup(s => s.GetPlatformsForEngagementAsync(1))
+            .ReturnsAsync(new List<EngagementSocialMediaPlatform>());
         _mapper.Setup(m => m.Map<EngagementViewModel>(It.IsAny<object>())).Returns(viewModel);
+        _mapper.Setup(m => m.Map<List<EngagementSocialMediaPlatformViewModel>>(It.IsAny<object>()))
+            .Returns(new List<EngagementSocialMediaPlatformViewModel>());
 
         // Act
         var result = await _controller.Edit(1);

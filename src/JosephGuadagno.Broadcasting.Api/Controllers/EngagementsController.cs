@@ -358,17 +358,7 @@ public class EngagementsController: ControllerBase
         return new NotFoundResult();
     }
 
-    // =========================================================================
-    // Social Media Platform sub-resource endpoints
-    // =========================================================================
-
-    /// <summary>
-    /// Gets all social media platforms associated with an engagement
-    /// </summary>
-    /// <param name="engagementId">The identifier of the engagement</param>
-    /// <returns>A list of engagement-platform associations</returns>
-    /// <response code="200">If the call was successful</response>
-    /// <response code="401">If the current user was unauthorized to access this endpoint</response>
+    // ==================================================================    /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{engagementId:int}/platforms")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EngagementSocialMediaPlatformResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
