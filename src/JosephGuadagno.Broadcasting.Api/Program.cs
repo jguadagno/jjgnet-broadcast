@@ -198,6 +198,12 @@ void ConfigureRepositories(IServiceCollection services)
     // MessageTemplate
     services.TryAddScoped<IMessageTemplateDataStore, MessageTemplateDataStore>();
 
+    // SocialMediaPlatform
+    services.TryAddScoped<ISocialMediaPlatformDataStore, SocialMediaPlatformDataStore>();
+    services.TryAddScoped<ISocialMediaPlatformManager, SocialMediaPlatformManager>();
+    
+    services.TryAddScoped<IEngagementSocialMediaPlatformDataStore, EngagementSocialMediaPlatformDataStore>();
+
     // RBAC Phase 1
     services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
     services.TryAddScoped<IRoleDataStore, RoleDataStore>();

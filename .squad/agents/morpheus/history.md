@@ -101,3 +101,50 @@ Established by Joseph Guadagno:
   - MessageTemplates.Platform: migrate to SocialMediaPlatformId FK (careful — currently in composite PK)
   - Seed: Twitter/X, BlueSky, LinkedIn, Facebook, Mastodon
 - **Next:** Morpheus first in pipeline — begin DB migration script
+=======
+
+### 2026-04-08 — Epic #667 Phase 1: Database Layer Complete
+- **Migration:** `scripts/database/migrations/2026-04-08-social-media-platforms.sql`
+  - Created SocialMediaPlatforms table (Id, Name UNIQUE, Url, Icon, IsActive)
+  - Created EngagementSocialMediaPlatforms junction table (composite PK on EngagementId + SocialMediaPlatformId)
+  - Migrated ScheduledItems.Platform (nvarchar) → SocialMediaPlatformId (int FK) with best-effort string mapping
+  - Migrated MessageTemplates.Platform (composite PK component) → SocialMediaPlatformId (int FK, new PK)
+  - Dropped old columns: Engagements (BlueSkyHandle, ConferenceHashtag, ConferenceTwitterHandle), Talks (BlueSkyHandle)
+  - Seeded 5 platforms: Twitter, BlueSky, LinkedIn, Facebook, Mastodon
+- **Base scripts updated:** `table-create.sql` and `data-seed.sql` reflect post-migration schema
+- **EF Core:**
+  - Created entity models: `SocialMediaPlatform.cs`, `EngagementSocialMediaPlatform.cs`
+  - Updated existing entities: Engagement, Talk, ScheduledItem, MessageTemplate (removed old social fields, added FK refs)
+  - Updated `BroadcastingContext.cs` with new DbSets, composite PK config, FK relationships, unique indexes
+- **Domain:**
+  - Created domain models: `SocialMediaPlatform.cs`, `EngagementSocialMediaPlatform.cs`
+  - Updated existing: Engagement, Talk, ScheduledItem, MessageTemplate (replaced string Platform with int SocialMediaPlatformId)
+- **Repository:**
+  - Created `ISocialMediaPlatformDataStore` interface (GetAsync, GetAllAsync, AddAsync, UpdateAsync, DeleteAsync)
+  - Implemented `SocialMediaPlatformDataStore` with soft delete logic (IsActive flag)
+  - Updated `IMessageTemplateDataStore` and `MessageTemplateDataStore` to use int SocialMediaPlatformId instead of string Platform
+- **AutoMapper:** Added mappings for SocialMediaPlatform ↔ EngagementSocialMediaPlatform (bidirectional ReverseMap)
+- **DI Registration:** Added `ISocialMediaPlatformDataStore` → `SocialMediaPlatformDataStore` to Api Program.cs
+- **Decision doc:** `.squad/decisions/inbox/morpheus-667-db-decisions.md` (migration strategy, PK migration approach, risks)
+- **Status:** ✅ Database layer complete. Breaking changes to MessageTemplate interface require updates in Functions and Web (out of scope for Morpheus — Trinity and Cypher to handle).
+- **Branch:** `issue-667-social-media-platforms`
+
+### 2026-04-08 — Epic #667: PR #683 Opened (Draft)
+- **PR:** https://github.com/jguadagno/jjgnet-broadcast/pull/683
+- **Status:** Draft PR (build broken with 14 expected compile errors from breaking changes)
+- **Breaking change:** `IMessageTemplateDataStore.GetAsync(string platform, ...)` → `GetAsync(int socialMediaPlatformId, ...)`
+- **Impact:** Functions (Twitter, Facebook, LinkedIn), Api, and Web require updates in Sprint 2 (Trinity) and Sprint 3 (Switch/Sparks)
+- **Closes:** #668, #669, #670, #671, #672, #673 (Sprint 1 child issues)
+- **Label:** squad:morpheus
+- **Pattern:** For large cross-cutting changes, use draft PRs to show DB foundation while acknowledging downstream compilation errors. Clearly document expected failures and remediation owners.
+
+### 2026-04-08 — Epic #667: PR #683 Review Fix (bi-bluesky icon)
+- **Review comment:** Reviewer flagged line 78 of migration script — `bi-cloud` should be `bi-bluesky` for BlueSky platform
+- **Files fixed:**
+  - `scripts/database/migrations/2026-04-08-social-media-platforms.sql` (line 78)
+  - `scripts/database/data-seed.sql` (line 78)
+- **Pattern:** Bootstrap icon class names for social platforms must match official icon library names. BlueSky uses `bi-bluesky`, not `bi-cloud`.
+- **Process:** Fixed in both migration script AND base seed data script (consistency rule).
+- **Commit:** `c864f74` — `fix(#667): Use correct Bootstrap icon bi-bluesky for BlueSky platform seed data`
+- **PR reply:** Posted via `gh api repos/.../pulls/683/comments/{comment_id}/replies` to confirm fix and close review thread
+

@@ -11,9 +11,6 @@ create table dbo.Engagements
     StartDateTime datetimeoffset             not null,
     EndDateTime   datetimeoffset             not null,
     Comments      nvarchar(max),
-    BlueSkyHandle nvarchar(255)  null,
-    ConferenceHashtag nvarchar(255) null,
-    ConferenceTwitterHandle nvarchar(255) null,
     TimeZoneId    nvarchar(50) default 'America/Phoenix' not null,
     CreatedOn datetimeoffset default getutcdate() NOT NULL,
     LastUpdatedOn datetimeoffset default getutcdate() NOT NULL,
@@ -36,7 +33,6 @@ create table dbo.Talks
     EndDateTime          datetimeoffset not null,
     TalkLocation         nvarchar(500),
     Comments             nvarchar(max),
-    BlueSkyHandle        nvarchar(255)  null,
     CreatedByEntraOid    nvarchar(36)   null
 )
 go
@@ -55,7 +51,7 @@ create table dbo.ScheduledItems
     MessageSent      bit default 0  not null,
     MessageSentOn    datetimeoffset,
     ImageUrl         nvarchar(2048),
-    Platform         nvarchar(50)   null,
+    SocialMediaPlatformId int null,
     MessageType      nvarchar(50)   null,
     CreatedByEntraOid nvarchar(36)  null
 )
@@ -180,12 +176,12 @@ go
 -- Create the MessageTemplates table
 create table dbo.MessageTemplates
 (
-    Platform      nvarchar(50)  not null,
+    SocialMediaPlatformId int not null,
     MessageType   nvarchar(50)  not null,
     Template      nvarchar(max) not null,
     Description   nvarchar(500) null,
     CreatedByEntraOid nvarchar(36) null,
-    constraint PK_MessageTemplates primary key ([Platform], [MessageType])
+    constraint PK_MessageTemplates primary key (SocialMediaPlatformId, MessageType)
 )
 go
 
@@ -284,3 +280,52 @@ create table dbo.EmailTemplates
             default (SYSDATETIMEOFFSET())
 )
 go
+
+-- Create the SocialMediaPlatforms table (Epic #667)
+create table dbo.SocialMediaPlatforms
+(
+    Id       int identity
+        constraint PK_SocialMediaPlatforms
+            primary key clustered,
+    Name     nvarchar(100) not null
+        constraint UQ_SocialMediaPlatforms_Name
+            unique,
+    Url      nvarchar(500) null,
+    Icon     nvarchar(100) null,
+    IsActive bit default 1 not null
+)
+go
+
+-- Create the EngagementSocialMediaPlatforms junction table (Epic #667)
+create table dbo.EngagementSocialMediaPlatforms
+(
+    EngagementId           int           not null
+        constraint FK_EngagementSocialMediaPlatforms_Engagements
+            references dbo.Engagements,
+    SocialMediaPlatformId  int           not null
+        constraint FK_EngagementSocialMediaPlatforms_SocialMediaPlatforms
+            references dbo.SocialMediaPlatforms,
+    Handle                 nvarchar(200) null,
+    constraint PK_EngagementSocialMediaPlatforms
+        primary key clustered (EngagementId, SocialMediaPlatformId)
+)
+go
+
+create nonclustered index IX_EngagementSocialMediaPlatforms_SocialMediaPlatformId
+    on dbo.EngagementSocialMediaPlatforms (SocialMediaPlatformId)
+go
+
+-- Add FK constraint from ScheduledItems to SocialMediaPlatforms (Epic #667)
+ALTER TABLE dbo.ScheduledItems
+    ADD CONSTRAINT FK_ScheduledItems_SocialMediaPlatforms
+        FOREIGN KEY (SocialMediaPlatformId)
+        REFERENCES dbo.SocialMediaPlatforms(Id)
+go
+
+-- Add FK constraint from MessageTemplates to SocialMediaPlatforms (Epic #667)
+ALTER TABLE dbo.MessageTemplates
+    ADD CONSTRAINT FK_MessageTemplates_SocialMediaPlatforms
+        FOREIGN KEY (SocialMediaPlatformId)
+        REFERENCES dbo.SocialMediaPlatforms(Id)
+go
+

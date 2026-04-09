@@ -51,6 +51,32 @@ public static class Scopes
     }
 
     /// <summary>
+    /// Contains the scopes for the SocialMediaPlatform API
+    /// </summary>
+    public static class SocialMediaPlatforms
+    {
+        public static readonly string Add = "SocialMediaPlatforms.Add";
+        public static readonly string All = "SocialMediaPlatforms.All";
+        public static readonly string Delete = "SocialMediaPlatforms.Delete";
+        public static readonly string List = "SocialMediaPlatforms.List";
+        public static readonly string Modify = "SocialMediaPlatforms.Modify";
+        public static readonly string View = "SocialMediaPlatforms.View";
+
+        public static Dictionary<string, string> ToDictionary()
+        {
+            return new Dictionary<string, string>
+            {
+                { Add, Add },
+                { All, All },
+                { Delete, Delete },
+                { List, List },
+                { Modify, Modify },
+                { View, View }
+            };
+        }
+    }
+
+    /// <summary>
     /// Contains the scopes for the Schedule API
     /// </summary>
     public static class Schedules
@@ -155,6 +181,11 @@ public static class Scopes
             allScopes.Add(scopeUrl + scope.Key, scope.Value);
         }
 
+        foreach (var scope in SocialMediaPlatforms.ToDictionary())
+        {
+            allScopes.Add(scopeUrl + scope.Key, scope.Value);
+        }
+
         return allScopes;
     }
 
@@ -165,7 +196,8 @@ public static class Scopes
             { scopeUri + Engagements.All, Engagements.All },
             { scopeUri + Talks.All, Talks.All },
             { scopeUri + Schedules.All, Schedules.All },
-            { scopeUri + MessageTemplates.All, MessageTemplates.All }
+            { scopeUri + MessageTemplates.All, MessageTemplates.All },
+            { scopeUri + SocialMediaPlatforms.All, SocialMediaPlatforms.All }
         };
 
         return scopes;

@@ -19,6 +19,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 public class EngagementsController: ControllerBase
 {
     private readonly IEngagementManager _engagementManager;
+    private readonly IEngagementSocialMediaPlatformDataStore _engagementSocialMediaPlatformDataStore;
     private readonly ILogger<EngagementsController> _logger;
     private readonly IMapper _mapper;
 
@@ -26,11 +27,17 @@ public class EngagementsController: ControllerBase
     /// Handles the interactions with Engagements
     /// </summary>
     /// <param name="engagementManager"></param>
+    /// <param name="engagementSocialMediaPlatformDataStore"></param>
     /// <param name="logger"></param>
     /// <param name="mapper"></param>
-    public EngagementsController(IEngagementManager engagementManager, ILogger<EngagementsController> logger, IMapper mapper)
+    public EngagementsController(
+        IEngagementManager engagementManager,
+        IEngagementSocialMediaPlatformDataStore engagementSocialMediaPlatformDataStore,
+        ILogger<EngagementsController> logger,
+        IMapper mapper)
     {
         _engagementManager = engagementManager;
+        _engagementSocialMediaPlatformDataStore = engagementSocialMediaPlatformDataStore;
         _logger = logger;
         _mapper = mapper;
     }

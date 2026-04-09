@@ -44,6 +44,8 @@ public partial class BroadcastingContext : DbContext
     public virtual DbSet<UserApprovalLog> UserApprovalLogs { get; set; } = null!;
     public virtual DbSet<EmailTemplate> EmailTemplates { get; set; } = null!;
     public virtual DbSet<SourceTag> SourceTags { get; set; } = null!;
+    public virtual DbSet<SocialMediaPlatform> SocialMediaPlatforms { get; set; } = null!;
+    public virtual DbSet<EngagementSocialMediaPlatform> EngagementSocialMediaPlatforms { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -82,17 +84,13 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired()
                 .HasDefaultValueSql("(getutcdate())");
 
-            entity.Property(e => e.BlueSkyHandle)
-                .HasMaxLength(255);
-
-            entity.Property(e => e.ConferenceHashtag)
-                .HasMaxLength(255);
-
-            entity.Property(e => e.ConferenceTwitterHandle)
-                .HasMaxLength(255);
-
             entity.Property(e => e.CreatedByEntraOid)
                 .HasMaxLength(36);
+
+            entity.HasMany(e => e.SocialMediaPlatforms)
+                .WithOne(esmp => esmp.Engagement)
+                .HasForeignKey(esmp => esmp.EngagementId)
+                .HasConstraintName("FK_EngagementSocialMediaPlatforms_Engagements");
         });
 
         modelBuilder.Entity<ScheduledItem>(entity =>
@@ -120,14 +118,19 @@ public partial class BroadcastingContext : DbContext
             entity.Property(e => e.ImageUrl)
                 .HasMaxLength(2048);
 
-            entity.Property(e => e.Platform)
-                .HasMaxLength(50);
+            entity.Property(e => e.SocialMediaPlatformId);
 
             entity.Property(e => e.MessageType)
                 .HasMaxLength(50);
 
             entity.Property(e => e.CreatedByEntraOid)
                 .HasMaxLength(36);
+
+            entity.HasOne(e => e.SocialMediaPlatform)
+                .WithMany()
+                .HasForeignKey(e => e.SocialMediaPlatformId)
+                .HasConstraintName("FK_ScheduledItems_SocialMediaPlatforms")
+                .IsRequired(false);
         });
 
         modelBuilder.Entity<Talk>(entity =>
@@ -147,9 +150,6 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.TalkLocation)
                 .HasMaxLength(500);
-
-            entity.Property(e => e.BlueSkyHandle)
-                .HasMaxLength(255);
 
             entity.Property(e => e.CreatedByEntraOid)
                 .HasMaxLength(36);
@@ -295,11 +295,10 @@ public partial class BroadcastingContext : DbContext
 
         modelBuilder.Entity<MessageTemplate>(entity =>
         {
-            entity.HasKey(e => new { e.Platform, e.MessageType })
+            entity.HasKey(e => new { e.SocialMediaPlatformId, e.MessageType })
                 .HasName("PK_MessageTemplates");
 
-            entity.Property(e => e.Platform)
-                .HasMaxLength(50)
+            entity.Property(e => e.SocialMediaPlatformId)
                 .IsRequired();
 
             entity.Property(e => e.MessageType)
@@ -314,6 +313,11 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.CreatedByEntraOid)
                 .HasMaxLength(36);
+
+            entity.HasOne(e => e.SocialMediaPlatform)
+                .WithMany()
+                .HasForeignKey(e => e.SocialMediaPlatformId)
+                .HasConstraintName("FK_MessageTemplates_SocialMediaPlatforms");
         });
 
         modelBuilder.Entity<ApplicationUser>(entity =>
@@ -468,6 +472,51 @@ public partial class BroadcastingContext : DbContext
             entity.Property(e => e.Tag)
                 .HasMaxLength(100)
                 .IsRequired();
+        });
+
+        modelBuilder.Entity<SocialMediaPlatform>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_SocialMediaPlatforms")
+                .IsClustered();
+
+            entity.HasIndex(e => e.Name, "UQ_SocialMediaPlatforms_Name")
+                .IsUnique();
+
+            entity.Property(e => e.Name)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.Url)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.Icon)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValueSql("1");
+        });
+
+        modelBuilder.Entity<EngagementSocialMediaPlatform>(entity =>
+        {
+            entity.HasKey(e => new { e.EngagementId, e.SocialMediaPlatformId })
+                .HasName("PK_EngagementSocialMediaPlatforms");
+
+            entity.HasIndex(e => e.SocialMediaPlatformId, "IX_EngagementSocialMediaPlatforms_SocialMediaPlatformId");
+
+            entity.Property(e => e.Handle)
+                .HasMaxLength(200);
+
+            entity.HasOne(e => e.Engagement)
+                .WithMany(eng => eng.SocialMediaPlatforms)
+                .HasForeignKey(e => e.EngagementId)
+                .HasConstraintName("FK_EngagementSocialMediaPlatforms_Engagements");
+
+            entity.HasOne(e => e.SocialMediaPlatform)
+                .WithMany(smp => smp.EngagementSocialMediaPlatforms)
+                .HasForeignKey(e => e.SocialMediaPlatformId)
+                .HasConstraintName("FK_EngagementSocialMediaPlatforms_SocialMediaPlatforms");
         });
 
         OnModelCreatingPartial(modelBuilder);

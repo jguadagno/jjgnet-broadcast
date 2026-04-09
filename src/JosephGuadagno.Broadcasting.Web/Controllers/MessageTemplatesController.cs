@@ -78,7 +78,7 @@ public class MessageTemplatesController : Controller
         }
 
         var template = _mapper.Map<Domain.Models.MessageTemplate>(model);
-        var saved = await _messageTemplateService.UpdateAsync(template);
+        var saved = await _messageTemplateService.UpdateAsync(model.Platform, template);
         if (saved is null)
         {
             _logger.LogWarning("Failed to save MessageTemplate for Platform={Platform}, MessageType={MessageType}",

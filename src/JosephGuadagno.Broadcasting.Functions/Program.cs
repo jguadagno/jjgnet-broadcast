@@ -206,6 +206,9 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<ITokenRefreshManager, TokenRefreshManager>();
 
     services.TryAddScoped<IMessageTemplateDataStore, MessageTemplateDataStore>();
+    
+    services.TryAddScoped<ISocialMediaPlatformDataStore, SocialMediaPlatformDataStore>();
+    services.TryAddScoped<ISocialMediaPlatformManager, SocialMediaPlatformManager>();
 
     // RBAC Phase 1
     services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
