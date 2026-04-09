@@ -445,3 +445,47 @@ private static Functions.Twitter.ProcessScheduledItemFired BuildSut(
 **Next Steps:**
 - Epic #667 test work remains: Unit tests for SocialMediaPlatforms data store, API controllers, Web controllers (blocked on implementation completion)
 
+
+### 2026-04-09: Integer Platform ID Test Pattern & Session Consolidation
+
+**Status:** ✅ CONSOLIDATED | Session log: .squad/log/2026-04-09T00-43-53Z-codeql-fixes.md
+
+**Work Summary:**
+- Test pattern decision documented: Always use integer platform IDs from seed data in MessageTemplate tests (replaces deprecated string-based Platform property)
+- Fixed 40 compile errors in Functions.Tests (all ProjectName.Tests files):
+  - `CS0117`: MessageTemplate.Platform property removed (27 instances)
+  - `CS1503`: GetAsync parameter type changed from string to int (9 instances)
+  - `CS7036`: Missing ISocialMediaPlatformManager constructor parameter (multiple call sites)
+- Test files updated:
+  - Twitter/ProcessScheduledItemFiredTests.cs (7 fixes)
+  - LinkedIn/ProcessScheduledItemFiredTests.cs (6 fixes)
+  - Facebook/ProcessScheduledItemFiredTests.cs (7 fixes)
+  - Bluesky/ProcessScheduledItemFiredTests.cs (7 fixes)
+- Decision documented to decisions.md (consolidated with other team decisions)
+- 3 inbox files merged and deleted
+- Appended team updates to Trinity, Neo, Tank history.md
+
+**Platform ID Reference:**
+`csharp
+// from src/scripts/database/data-create.sql
+1 = Twitter
+2 = BlueSky
+3 = LinkedIn
+4 = Facebook
+5 = Mastodon
+`
+
+**Test Pattern Update:**
+- Before: `messageTemplate.Platform = "Twitter"` + string-based mock setup
+- After: `messageTemplate.SocialMediaPlatformId = 1` + `Mock<ISocialMediaPlatformManager>` in BuildSut
+
+**Key Learning:**
+- Epic #667 Sprint 1 changed domain model: string Platform → int SocialMediaPlatformId (FK)
+- Sprint 2 added ISocialMediaPlatformManager to all ProcessScheduledItemFired functions
+- All test files must follow the new integer ID pattern for consistency
+
+**Build Verification:**
+- ✅ Build: 0 errors (47 pre-existing warnings)
+- ✅ Tests: All compile; SyndicationFeedReader network test failures EXPECTED (external dependency)
+
+**Next:** Ready for PR #683 merge; Epic #667 Sprints 3-6 can proceed.

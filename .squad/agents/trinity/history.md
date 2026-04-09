@@ -439,3 +439,26 @@ Response:
   - ScheduledItems endpoints: SocialMediaPlatformId replaces Platform string field
   - MessageTemplates endpoints: SocialMediaPlatformId replaces Platform string field
 - **Next:** Begin API work after Morpheus delivers DB migration
+
+### 2026-04-09 — CodeQL Fixes Session Consolidated
+
+**Status:** ✅ CONSOLIDATED | Session log: .squad/log/2026-04-09T00-43-53Z-codeql-fixes.md
+
+**Work Summary:**
+- Orchestration log: .squad/orchestration-log/2026-04-09T00-43-53Z-trinity.md (Trinity CodeQL + Neo review fixes documented)
+- Session log: .squad/log/2026-04-09T00-43-53Z-codeql-fixes.md (brief summary of security/performance hardening)
+- 3 inbox decisions merged to decisions.md:
+  - trinity-codeql-fixes.md (log sanitization, CSRF handling, DB filtering, exception logging patterns)
+  - neo-pr683-review-complete.md (PR #683 APPROVED for merge)
+  - tank-test-platform-id-pattern.md (integer platform IDs in tests, 40 compile errors fixed)
+- Deleted 3 inbox files after merge
+- Appended team updates to Trinity, Neo, Tank history.md files
+- Prepared git commit
+
+**Key Patterns Established:**
+1. Log sanitization: `SanitizeForLog()` helper strips `\r\n` (attack prevention)
+2. JWT Bearer CSRF: Use `[IgnoreAntiforgeryToken]` at class level (false positive suppression)
+3. Data store optimization: DB-level filtering via `GetByNameAsync()` (performance)
+4. Exception visibility: Inject `ILogger` and log before returning null (troubleshooting)
+
+**Next:** PR #683 merge approval; Epic #667 Sprints 3-6 ready for Switch/Sparks.

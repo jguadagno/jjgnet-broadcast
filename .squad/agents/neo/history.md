@@ -574,3 +574,33 @@ For breaking database migrations involving PK rebuilds or column drops:
 **Tools used:** gh pr diff, view, grep, git diff --stat. Full diff was 5147 lines; reviewed in sections (migration script, interfaces, implementations, controllers, tests).
 
 **Recommendation posted:** GitHub comment #4210546660 (cannot approve own PRs, posted as comment instead).
+### 2026-04-09: PR #683 Code Review Complete — Epic #667 Consolidation
+
+**Status:** ✅ CONSOLIDATED | Session log: .squad/log/2026-04-09T00-43-53Z-codeql-fixes.md
+
+**Work Summary:**
+- PR #683 (feat(#667): Add SocialMediaPlatforms table and database layer) — **APPROVED for merge**
+- Verified all architectural patterns, migration script safety, breaking change handling
+- Trinity executed CodeQL security hardening + performance suggestions from this review:
+  - Log sanitization (5 CodeQL alerts fixed)
+  - CSRF handling (1 CodeQL alert fixed)
+  - DB-level name lookup (performance)
+  - Exception logging (visibility)
+- 3 inbox decisions merged to decisions.md (consolidating all team work)
+- Appended team updates to Trinity, Neo, Tank history.md files
+
+**Review Verified:**
+- ✅ Build: 0 errors, 322 pre-existing warnings (safe)
+- ✅ Architecture: Manager pattern respected, soft delete via IsActive
+- ✅ Migration: Nullable-first, composite PK handled correctly, idempotent
+- ✅ Breaking changes: All callers updated (4 Functions, API, Web)
+- ✅ Test coverage: Tank fixed 40 compile errors
+- ✅ Code quality: XML docs, AutoMapper, scopes, EF Core config complete
+
+**Key Decisions Documented:**
+1. **Log Sanitization Pattern** — Sanitize all user input before logging (prevents injection)
+2. **JWT CSRF Handling** — `[IgnoreAntiforgeryToken]` for Bearer APIs (false positive suppression)
+3. **DB Filtering** — GetByNameAsync delegates to data layer (performance + scalability)
+4. **Exception Logging** — All data stores inject ILogger and log before returning null
+
+**Next:** Joseph merges PR #683. Epic #667 Sprints 3-6 unblocked for Switch/Sparks (API/Web UI integration). Tank: Unit tests for SocialMediaPlatforms layer.
