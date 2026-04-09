@@ -370,7 +370,6 @@ public class EngagementsController: ControllerBase
     /// <response code="200">If the call was successful</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{engagementId:int}/platforms")]
-    [ActionName(nameof(GetPlatformsForEngagementAsync))]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EngagementSocialMediaPlatformResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<EngagementSocialMediaPlatformResponse>>> GetPlatformsForEngagementAsync(int engagementId)
@@ -436,7 +435,7 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult> RemovePlatformFromEngagementAsync(int engagementId, int platformId)
+    public async Task<IActionResult> RemovePlatformFromEngagementAsync(int engagementId, int platformId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Delete, Domain.Scopes.Engagements.All);
 
