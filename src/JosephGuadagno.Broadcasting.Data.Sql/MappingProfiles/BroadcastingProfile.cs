@@ -51,6 +51,9 @@ public class BroadcastingProfile: Profile
         CreateMap<Domain.Models.ScheduledItem, Models.ScheduledItem>()
             .ForMember(
                 destination => destination.ItemTableName,
-                options => options.MapFrom(source => source.ItemType.ToString()));
+                options => options.MapFrom(source => source.ItemType.ToString()))
+            .ForMember(
+                destination => destination.SocialMediaPlatform,
+                options => options.Ignore());
     }
 }
