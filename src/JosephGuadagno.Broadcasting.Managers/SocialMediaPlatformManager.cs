@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -29,8 +28,7 @@ public class SocialMediaPlatformManager : ISocialMediaPlatformManager
 
     public async Task<SocialMediaPlatform?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
     {
-        var platforms = await _dataStore.GetAllAsync(includeInactive: false, cancellationToken);
-        return platforms.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        return await _dataStore.GetByNameAsync(name, cancellationToken);
     }
 
     public async Task<SocialMediaPlatform?> AddAsync(SocialMediaPlatform platform, CancellationToken cancellationToken = default)

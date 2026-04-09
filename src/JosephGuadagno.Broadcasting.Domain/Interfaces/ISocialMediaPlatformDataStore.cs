@@ -24,6 +24,14 @@ public interface ISocialMediaPlatformDataStore
     Task<List<SocialMediaPlatform>> GetAllAsync(bool includeInactive = false, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Get a social media platform by name (case-insensitive)
+    /// </summary>
+    /// <param name="name">The platform name</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The social media platform or null if not found</returns>
+    Task<SocialMediaPlatform?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Add a new social media platform
     /// </summary>
     /// <param name="socialMediaPlatform">The platform to add</param>

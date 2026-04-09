@@ -13,6 +13,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 /// </summary>
 [ApiController]
 [Authorize]
+[IgnoreAntiforgeryToken]
 [Route("[controller]")]
 [Produces("application/json")]
 public class SocialMediaPlatformsController : ControllerBase
@@ -33,6 +34,9 @@ public class SocialMediaPlatformsController : ControllerBase
         _logger = logger;
         _mapper = mapper;
     }
+
+    private static string SanitizeForLog(string? value) =>
+        value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty;
 
     /// <summary>
     /// Gets all active social media platforms
@@ -104,7 +108,7 @@ public class SocialMediaPlatformsController : ControllerBase
         var created = await _socialMediaPlatformManager.AddAsync(platform);
         if (created is null)
         {
-            _logger.LogError("Failed to create social media platform: {Name}", request.Name);
+            _logger.LogError("Failed to create social media platform: {Name}", SanitizeForLog(request.Name));
             return BadRequest("Failed to create social media platform");
         }
 

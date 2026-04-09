@@ -370,3 +370,78 @@ Established by Joseph Guadagno:
   - Test ScheduledItems and MessageTemplates with int FK SocialMediaPlatformId (not string Platform)
   - IsActive toggle logic should be covered
 - **Next:** Begin test work after all other agents complete epic #667 implementation
+
+---
+
+## Session: 2026-04-11T[TIME]Z — Issue #667 Functions.Tests Compile Error Fix
+
+**Summary:** Fixed 40 compile errors in Functions.Tests project caused by Sprint 1 + Sprint 2 changes to MessageTemplate domain model and IMessageTemplateDataStore interface. All errors resolved, build passing.
+
+**Issue #667 Context:**
+- Sprint 1 removed `MessageTemplate.Platform` (string) and replaced with `SocialMediaPlatformId` (int)
+- Sprint 2 added `ISocialMediaPlatformManager` parameter to all `ProcessScheduledItemFired` constructors
+- `IMessageTemplateDataStore.GetAsync(string platform, string messageType)` changed to `GetAsync(int socialMediaPlatformId, string messageType)`
+
+**Errors Fixed:**
+1. **CS0117** — `MessageTemplate` no longer contains `Platform` property (replaced with `SocialMediaPlatformId`)
+   - Twitter tests: 7 occurrences → `SocialMediaPlatformId = 1`
+   - BlueSky tests: 7 occurrences → `SocialMediaPlatformId = 2`
+   - LinkedIn tests: 6 occurrences → `SocialMediaPlatformId = 3`
+   - Facebook tests: 7 occurrences → `SocialMediaPlatformId = 4`
+
+2. **CS1503** — `GetAsync()` parameter type changed from `string` to `int`
+   - Fixed 9 calls across all 4 test files: `.Setup(m => m.GetAsync(It.IsAny<string>(), ...))` → `.Setup(m => m.GetAsync(It.IsAny<int>(), ...))`
+
+3. **CS7036** — Missing `ISocialMediaPlatformManager` constructor parameter
+   - Added `Mock<ISocialMediaPlatformManager>` parameter to all `BuildSut()` methods
+   - Updated all `BuildSut()` call sites to pass `new Mock<ISocialMediaPlatformManager>()`
+
+**Files Modified:**
+- `src/JosephGuadagno.Broadcasting.Functions.Tests/Twitter/ProcessScheduledItemFiredTests.cs`
+- `src/JosephGuadagno.Broadcasting.Functions.Tests/LinkedIn/ProcessScheduledItemFiredTests.cs`
+- `src/JosephGuadagno.Broadcasting.Functions.Tests/Facebook/ProcessScheduledItemFiredTests.cs`
+- `src/JosephGuadagno.Broadcasting.Functions.Tests/Bluesky/ProcessScheduledItemFiredTests.cs`
+
+**Verification:**
+- ✅ Build: 0 errors (47 warnings, all pre-existing and safe to ignore)
+- ✅ Commit: efd3a91
+
+**Branch:** issue-667-social-media-platforms  
+**Commit:** efd3a91  
+
+**Key Pattern:**
+```csharp
+// Platform IDs from seed data:
+SocialMediaPlatformId = 1,  // Twitter
+SocialMediaPlatformId = 2,  // BlueSky
+SocialMediaPlatformId = 3,  // LinkedIn
+SocialMediaPlatformId = 4,  // Facebook
+SocialMediaPlatformId = 5,  // Mastodon (not used in tests yet)
+
+// GetAsync signature changed:
+mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSyndicationFeedItem))
+    .ReturnsAsync(messageTemplate);
+
+// BuildSut signature changed:
+private static Functions.Twitter.ProcessScheduledItemFired BuildSut(
+    Mock<IScheduledItemManager> scheduledItemManager,
+    Mock<ISyndicationFeedSourceManager> feedSourceManager,
+    Mock<IYouTubeSourceManager> youTubeSourceManager,
+    Mock<IEngagementManager> engagementManager,
+    Mock<IMessageTemplateDataStore> messageTemplateDataStore,
+    Mock<ISocialMediaPlatformManager> socialMediaPlatformManager)  // NEW parameter
+{
+    return new Functions.Twitter.ProcessScheduledItemFired(
+        scheduledItemManager.Object,
+        feedSourceManager.Object,
+        youTubeSourceManager.Object,
+        engagementManager.Object,
+        messageTemplateDataStore.Object,
+        socialMediaPlatformManager.Object,  // NEW parameter
+        NullLogger<Functions.Twitter.ProcessScheduledItemFired>.Instance);
+}
+```
+
+**Next Steps:**
+- Epic #667 test work remains: Unit tests for SocialMediaPlatforms data store, API controllers, Web controllers (blocked on implementation completion)
+

@@ -40,6 +40,9 @@ public class MessageTemplatesController : ControllerBase
         _mapper = mapper;
     }
 
+    private static string SanitizeForLog(string? value) =>
+        value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty;
+
     /// <summary>
     /// Gets all message templates
     /// </summary>
@@ -90,14 +93,14 @@ public class MessageTemplatesController : ControllerBase
         var socialMediaPlatform = await _socialMediaPlatformManager.GetByNameAsync(platform);
         if (socialMediaPlatform is null)
         {
-            _logger.LogWarning("Social media platform not found: {Platform}", platform);
+            _logger.LogWarning("Social media platform not found: {Platform}", SanitizeForLog(platform));
             return NotFound();
         }
         
         var template = await _messageTemplateDataStore.GetAsync(socialMediaPlatform.Id, messageType);
         if (template is null)
         {
-            _logger.LogWarning("MessageTemplate not found for PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, messageType);
+            _logger.LogWarning("MessageTemplate not found for PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, SanitizeForLog(messageType));
             return NotFound();
         }
         return _mapper.Map<MessageTemplateResponse>(template);
@@ -133,7 +136,7 @@ public class MessageTemplatesController : ControllerBase
         var socialMediaPlatform = await _socialMediaPlatformManager.GetByNameAsync(platform);
         if (socialMediaPlatform is null)
         {
-            _logger.LogWarning("Social media platform not found: {Platform}", platform);
+            _logger.LogWarning("Social media platform not found: {Platform}", SanitizeForLog(platform));
             return NotFound();
         }
 
@@ -143,7 +146,7 @@ public class MessageTemplatesController : ControllerBase
         var updated = await _messageTemplateDataStore.UpdateAsync(messageTemplate);
         if (updated is null)
         {
-            _logger.LogWarning("MessageTemplate not found for update: PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, messageType);
+            _logger.LogWarning("MessageTemplate not found for update: PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, SanitizeForLog(messageType));
             return NotFound();
         }
 

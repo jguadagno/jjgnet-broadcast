@@ -549,3 +549,28 @@ For breaking database migrations involving PK rebuilds or column drops:
 3. Neo reviews final PR when build passes
 4. Joseph executes deployment runbook during maintenance window
 
+
+## Learnings — PR #683 Code Review (2026-04-11)
+
+**Context:** Formal code review of Epic #667 PR #683 (SocialMediaPlatforms table and database layer). Comprehensive multi-sprint PR spanning Morpheus (Sprint 1 DB), Trinity (Sprint 2 API/Managers), and Tank (test fixes).
+
+**Review scope:** 57 files, +2921/-244 lines. Migration script, domain models, data stores, manager, API controller, DTOs, AutoMapper profiles, DI registrations, scopes, Functions updates, test fixes.
+
+**Key findings:**
+1. ✅ **Architecture patterns respected:** Manager layer used correctly (Web/Functions never call data stores directly), soft delete via IsActive, DateTimeOffset consistency, DI registrations complete
+2. ✅ **Migration script safety:** Adds nullable columns → populates → makes NOT NULL. MessageTemplates composite PK change handled without data loss. Idempotent and safe.
+3. ✅ **Breaking change handling:** IMessageTemplateDataStore.GetAsync signature change (string→int) fixed in ALL callers (4 Functions, API, Web service)
+4. ⚠️ **Minor inefficiency:** SocialMediaPlatformManager.GetByNameAsync loads all platforms for in-memory filtering (acceptable for 5 platforms, but pattern doesn't scale)
+5. ⚠️ **Exception swallowing:** Data stores catch and return null/false without logging (suggested ILogger injection for troubleshooting)
+
+**Verdict:** ✅ APPROVED — No blockers, production-ready. Two suggestions for future optimization (non-blocking).
+
+**Pattern reinforced:**
+- Multi-agent PR reviews require checking ALL layer interactions: DB → Data.Sql → Domain → Managers → API/Functions/Web
+- Migration scripts must be verified for: idempotency, data loss risk, FK dependency order, nullable-first strategy
+- Breaking interface changes require grep-based verification of ALL callers across solution
+- Test compile errors from domain model changes are EXPECTED and must be fixed before merge (Tank's role)
+
+**Tools used:** gh pr diff, view, grep, git diff --stat. Full diff was 5147 lines; reviewed in sections (migration script, interfaces, implementations, controllers, tests).
+
+**Recommendation posted:** GitHub comment #4210546660 (cannot approve own PRs, posted as comment instead).
