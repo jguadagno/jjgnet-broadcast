@@ -66,6 +66,11 @@ public class EngagementsController : Controller
         }
 
         var engagementViewModel = _mapper.Map<EngagementViewModel>(engagement);
+
+        // Load platforms for this engagement
+        var platforms = await _engagementService.GetPlatformsForEngagementAsync(id);
+        engagementViewModel.SocialMediaPlatforms = _mapper.Map<List<EngagementSocialMediaPlatformViewModel>>(platforms);
+
         return View(engagementViewModel);
     }
 
@@ -230,7 +235,7 @@ public class EngagementsController : Controller
     [Authorize(Policy = "RequireContributor")]
     public async Task<IActionResult> AddPlatform(int engagementId)
     {
-        var allPlatforms = await _socialMediaPlatformService.GetAllAsync();
+        var allPlatforms = await _socialMediaPlatformService.GetAllAsync(includeInactive: true);
         ViewBag.Platforms = allPlatforms;
         return View(new EngagementSocialMediaPlatformViewModel { EngagementId = engagementId });
     }

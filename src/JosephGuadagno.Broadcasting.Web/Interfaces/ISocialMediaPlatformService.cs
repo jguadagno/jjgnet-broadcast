@@ -10,7 +10,8 @@ public interface ISocialMediaPlatformService
     /// <summary>
     /// Gets all social media platforms including inactive ones (for admin use)
     /// </summary>
-    Task<List<SocialMediaPlatform>> GetAllAsync();
+    /// <param name="includeInactive">Whether to include inactive platforms (default: false)</param>
+    Task<List<SocialMediaPlatform>> GetAllAsync(bool includeInactive = false);
 
     /// <summary>
     /// Gets a social media platform by its ID
