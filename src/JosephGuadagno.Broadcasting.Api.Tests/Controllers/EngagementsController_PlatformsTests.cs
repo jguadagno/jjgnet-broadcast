@@ -1,0 +1,465 @@
+using System.Security.Claims;
+using AutoMapper;
+using FluentAssertions;
+using JosephGuadagno.Broadcasting.Api.Controllers;
+using JosephGuadagno.Broadcasting.Api.Dtos;
+using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
+using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Moq;
+
+namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
+
+/// <summary>
+/// Unit tests for the social media platform sub-resource endpoints on
+/// <see cref="EngagementsController"/>:
+///   GET    /engagements/{id}/platforms
+///   POST   /engagements/{id}/platforms
+///   DELETE /engagements/{id}/platforms/{platformId}
+/// </summary>
+public class EngagementsController_PlatformsTests
+{
+    // =========================================================================
+    // Fields / constructor
+    // =========================================================================
+
+    private readonly Mock<IEngagementManager> _engagementManagerMock;
+    private readonly Mock<IEngagementSocialMediaPlatformDataStore> _dataStoreMock;
+    private readonly Mock<ILogger<EngagementsController>> _loggerMock;
+    private readonly IMapper _mapper;
+
+    public EngagementsController_PlatformsTests()
+    {
+        _engagementManagerMock = new Mock<IEngagementManager>();
+        _dataStoreMock = new Mock<IEngagementSocialMediaPlatformDataStore>();
+        _loggerMock = new Mock<ILogger<EngagementsController>>();
+
+        var mapperConfig = new MapperConfiguration(cfg =>
+        {
+            cfg.AddProfile<JosephGuadagno.Broadcasting.Api.MappingProfiles.ApiBroadcastingProfile>();
+        }, new LoggerFactory());
+        _mapper = mapperConfig.CreateMapper();
+    }
+
+    // =========================================================================
+    // Helpers
+    // =========================================================================
+
+    /// <summary>
+    /// Creates the SUT (controller) with an HttpContext whose ClaimsPrincipal
+    /// carries the supplied OAuth scope value so that
+    /// <c>HttpContext.VerifyUserHasAnyAcceptedScope</c> succeeds.
+    /// </summary>
+    private EngagementsController CreateSut(string scopeClaimValue)
+    {
+        var user = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim("scp", scopeClaimValue),
+            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue)
+        ], "TestAuthentication"));
+
+        var httpContext = new DefaultHttpContext { User = user };
+        var controllerContext = new ControllerContext { HttpContext = httpContext };
+
+        return new EngagementsController(
+            _engagementManagerMock.Object,
+            _dataStoreMock.Object,
+            _loggerMock.Object,
+            _mapper)
+        {
+            ControllerContext = controllerContext,
+            ProblemDetailsFactory = new TestProblemDetailsFactory()
+        };
+    }
+
+    /// <summary>Builds a minimal <see cref="EngagementSocialMediaPlatform"/> for testing.</summary>
+    private static EngagementSocialMediaPlatform BuildEsmp(
+        int engagementId = 1,
+        int platformId = 2,
+        string? handle = "@TestHandle",
+        string platformName = "Twitter") =>
+        new()
+        {
+            EngagementId = engagementId,
+            SocialMediaPlatformId = platformId,
+            Handle = handle,
+            SocialMediaPlatform = new SocialMediaPlatform
+            {
+                Id = platformId,
+                Name = platformName,
+                Url = "https://twitter.com",
+                Icon = "bi-twitter-x",
+                IsActive = true
+            }
+        };
+
+    // =========================================================================
+    // GET /engagements/{engagementId}/platforms
+    // =========================================================================
+
+    [Fact]
+    public async Task GetPlatformsForEngagement_WhenEngagementHasPlatforms_ShouldReturn200WithList()
+    {
+        // Arrange
+        var platforms = new List<EngagementSocialMediaPlatform>
+        {
+            BuildEsmp(1, 2, "@NDCSydney", "Twitter"),
+            BuildEsmp(1, 3, "NDCSydney", "LinkedIn")
+        };
+        _dataStoreMock
+            .Setup(d => d.GetByEngagementIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(platforms);
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        var result = await sut.GetPlatformsForEngagementAsync(1);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var responses = okResult.Value.Should()
+            .BeAssignableTo<List<EngagementSocialMediaPlatformResponse>>().Subject;
+
+        responses.Should().HaveCount(2);
+        responses[0].Handle.Should().Be("@NDCSydney");
+        responses[0].EngagementId.Should().Be(1);
+        responses[0].SocialMediaPlatformId.Should().Be(2);
+        responses[1].Handle.Should().Be("NDCSydney");
+        responses[1].SocialMediaPlatformId.Should().Be(3);
+
+        _dataStoreMock.Verify(d => d.GetByEngagementIdAsync(1, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPlatformsForEngagement_WhenNoPlatformsExist_ShouldReturn200WithEmptyList()
+    {
+        // Arrange
+        _dataStoreMock
+            .Setup(d => d.GetByEngagementIdAsync(99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<EngagementSocialMediaPlatform>());
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        var result = await sut.GetPlatformsForEngagementAsync(99);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var responses = okResult.Value.Should()
+            .BeAssignableTo<List<EngagementSocialMediaPlatformResponse>>().Subject;
+
+        responses.Should().BeEmpty();
+        _dataStoreMock.Verify(d => d.GetByEngagementIdAsync(99, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPlatformsForEngagement_ShouldMapHandleAndPlatformDetails_WhenPlatformNavigationIsPresent()
+    {
+        // Arrange
+        var esmp = BuildEsmp(5, 10, "#DevConf2024", "Mastodon");
+        _dataStoreMock
+            .Setup(d => d.GetByEngagementIdAsync(5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<EngagementSocialMediaPlatform> { esmp });
+
+        var sut = CreateSut(Scopes.Engagements.View);
+
+        // Act
+        var result = await sut.GetPlatformsForEngagementAsync(5);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var responses = okResult.Value.Should()
+            .BeAssignableTo<List<EngagementSocialMediaPlatformResponse>>().Subject;
+
+        responses.Should().HaveCount(1);
+        var first = responses[0];
+        first.Handle.Should().Be("#DevConf2024");
+        first.SocialMediaPlatform.Should().NotBeNull();
+        first.SocialMediaPlatform!.Name.Should().Be("Mastodon");
+        first.SocialMediaPlatform.Icon.Should().Be("bi-twitter-x");
+    }
+
+    // =========================================================================
+    // POST /engagements/{engagementId}/platforms
+    // =========================================================================
+
+    [Fact]
+    public async Task AddPlatformToEngagement_WithValidRequest_ShouldReturn201Created()
+    {
+        // Arrange
+        const int engagementId = 1;
+        var request = new EngagementSocialMediaPlatformRequest
+        {
+            SocialMediaPlatformId = 2,
+            Handle = "@NDCSydney"
+        };
+        var savedEsmp = BuildEsmp(engagementId, 2, "@NDCSydney");
+
+        _dataStoreMock
+            .Setup(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(savedEsmp);
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        var result = await sut.AddPlatformToEngagementAsync(engagementId, request);
+
+        // Assert
+        var createdResult = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        createdResult.ActionName.Should().Be(nameof(EngagementsController.GetPlatformsForEngagementAsync));
+        createdResult.RouteValues.Should().ContainKey("engagementId")
+            .WhoseValue.Should().Be(engagementId);
+
+        var response = createdResult.Value.Should()
+            .BeOfType<EngagementSocialMediaPlatformResponse>().Subject;
+        response.EngagementId.Should().Be(engagementId);
+        response.SocialMediaPlatformId.Should().Be(2);
+        response.Handle.Should().Be("@NDCSydney");
+
+        _dataStoreMock.Verify(
+            d => d.AddAsync(It.Is<EngagementSocialMediaPlatform>(e =>
+                e.EngagementId == engagementId && e.SocialMediaPlatformId == 2),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task AddPlatformToEngagement_WithNullHandle_ShouldReturn201Created()
+    {
+        // Arrange — handle is optional per the domain model
+        const int engagementId = 3;
+        var request = new EngagementSocialMediaPlatformRequest
+        {
+            SocialMediaPlatformId = 5,
+            Handle = null
+        };
+        var savedEsmp = BuildEsmp(engagementId, 5, null);
+
+        _dataStoreMock
+            .Setup(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(savedEsmp);
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        var result = await sut.AddPlatformToEngagementAsync(engagementId, request);
+
+        // Assert
+        var createdResult = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        var response = createdResult.Value.Should()
+            .BeOfType<EngagementSocialMediaPlatformResponse>().Subject;
+        response.Handle.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task AddPlatformToEngagement_WithInvalidModelState_ShouldReturn400BadRequest()
+    {
+        // Arrange
+        var request = new EngagementSocialMediaPlatformRequest { SocialMediaPlatformId = 0 };
+        var sut = CreateSut(Scopes.Engagements.All);
+        sut.ModelState.AddModelError("SocialMediaPlatformId", "SocialMediaPlatformId is required");
+
+        // Act
+        var result = await sut.AddPlatformToEngagementAsync(1, request);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+        _dataStoreMock.Verify(
+            d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task AddPlatformToEngagement_WhenDataStoreReturnsNull_ShouldReturn400BadRequest()
+    {
+        // Arrange — data store signals failure by returning null (e.g. DB constraint violation)
+        var request = new EngagementSocialMediaPlatformRequest
+        {
+            SocialMediaPlatformId = 2,
+            Handle = "@handle"
+        };
+
+        _dataStoreMock
+            .Setup(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((EngagementSocialMediaPlatform?)null);
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        var result = await sut.AddPlatformToEngagementAsync(1, request);
+
+        // Assert
+        var badRequest = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequest.Value.Should().Be("Failed to add platform to engagement");
+    }
+
+    [Fact]
+    public async Task AddPlatformToEngagement_WhenDuplicatePlatform_ShouldReturn400BadRequest()
+    {
+        // Arrange — duplicate is signalled the same way: data store returns null
+        var request = new EngagementSocialMediaPlatformRequest { SocialMediaPlatformId = 2 };
+
+        _dataStoreMock
+            .Setup(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((EngagementSocialMediaPlatform?)null);
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        var result = await sut.AddPlatformToEngagementAsync(1, request);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task AddPlatformToEngagement_ShouldSetEngagementIdFromRoute_NotFromRequest()
+    {
+        // Arrange — verify the route engagementId is stamped on the entity, not any request field
+        const int routeEngagementId = 42;
+        var request = new EngagementSocialMediaPlatformRequest
+        {
+            SocialMediaPlatformId = 7,
+            Handle = "@RouteTest"
+        };
+        var savedEsmp = BuildEsmp(routeEngagementId, 7, "@RouteTest");
+
+        EngagementSocialMediaPlatform? capturedEntity = null;
+        _dataStoreMock
+            .Setup(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
+            .Callback<EngagementSocialMediaPlatform, CancellationToken>((e, _) => capturedEntity = e)
+            .ReturnsAsync(savedEsmp);
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        await sut.AddPlatformToEngagementAsync(routeEngagementId, request);
+
+        // Assert
+        capturedEntity.Should().NotBeNull();
+        capturedEntity!.EngagementId.Should().Be(routeEngagementId);
+        capturedEntity.SocialMediaPlatformId.Should().Be(7);
+    }
+
+    // =========================================================================
+    // DELETE /engagements/{engagementId}/platforms/{platformId}
+    // =========================================================================
+
+    [Fact]
+    public async Task RemovePlatformFromEngagement_WhenAssociationExists_ShouldReturn204NoContent()
+    {
+        // Arrange
+        _dataStoreMock
+            .Setup(d => d.DeleteAsync(1, 2, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        var result = await sut.RemovePlatformFromEngagementAsync(1, 2);
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
+        _dataStoreMock.Verify(d => d.DeleteAsync(1, 2, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemovePlatformFromEngagement_WhenAssociationDoesNotExist_ShouldReturn404NotFound()
+    {
+        // Arrange
+        _dataStoreMock
+            .Setup(d => d.DeleteAsync(1, 99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        var result = await sut.RemovePlatformFromEngagementAsync(1, 99);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
+        _dataStoreMock.Verify(d => d.DeleteAsync(1, 99, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemovePlatformFromEngagement_ShouldPassBothIdsToDataStore()
+    {
+        // Arrange — verify the correct composite key is forwarded to the data store
+        _dataStoreMock
+            .Setup(d => d.DeleteAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var sut = CreateSut(Scopes.Engagements.Delete);
+
+        // Act
+        await sut.RemovePlatformFromEngagementAsync(7, 13);
+
+        // Assert
+        _dataStoreMock.Verify(
+            d => d.DeleteAsync(7, 13, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    // =========================================================================
+    // Data store interaction — verify no cross-contamination between operations
+    // =========================================================================
+
+    [Fact]
+    public async Task GetPlatformsForEngagement_ShouldNeverCallAddOrDelete()
+    {
+        // Arrange
+        _dataStoreMock
+            .Setup(d => d.GetByEngagementIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<EngagementSocialMediaPlatform>());
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        await sut.GetPlatformsForEngagementAsync(1);
+
+        // Assert
+        _dataStoreMock.Verify(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()), Times.Never);
+        _dataStoreMock.Verify(d => d.DeleteAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddPlatformToEngagement_ShouldNeverCallGetOrDelete()
+    {
+        // Arrange
+        var request = new EngagementSocialMediaPlatformRequest { SocialMediaPlatformId = 2, Handle = "@x" };
+        _dataStoreMock
+            .Setup(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildEsmp());
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        await sut.AddPlatformToEngagementAsync(1, request);
+
+        // Assert
+        _dataStoreMock.Verify(d => d.GetByEngagementIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _dataStoreMock.Verify(d => d.DeleteAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RemovePlatformFromEngagement_ShouldNeverCallGetOrAdd()
+    {
+        // Arrange
+        _dataStoreMock
+            .Setup(d => d.DeleteAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        await sut.RemovePlatformFromEngagementAsync(1, 2);
+
+        // Assert
+        _dataStoreMock.Verify(d => d.GetByEngagementIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _dataStoreMock.Verify(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+}
