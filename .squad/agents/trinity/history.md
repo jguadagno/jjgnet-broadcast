@@ -41,6 +41,58 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 
 ## Recent Work
 
+### 2026-04-08 — Epic #667 Sprint 2: SocialMediaPlatform Manager & API (#674-677)
+
+**Status:** ✅ COMPLETE (staged, awaiting Tank's test fixes) | Branch issue-667-social-media-platforms | Commit afe2fb9
+
+**What I Built:**
+
+**SocialMediaPlatformManager Implementation:**
+- New manager class implementing `ISocialMediaPlatformManager`
+- Methods: `GetAsync(int socialMediaPlatformId)`, `GetAllAsync()`
+- Injects `IDataStore<SocialMediaPlatform>` for data access
+- Scoped registration in Program.cs
+
+**SocialMediaPlatformsController (REST API):**
+- New controller with GET endpoints: `/SocialMediaPlatforms/{id}`, `/SocialMediaPlatforms`
+- Returns `SocialMediaPlatformDto` (mapped via AutoMapper)
+- Proper error handling (404, 500)
+
+**EngagementSocialMediaPlatformDataStore (Data Layer):**
+- Implements `IDataStore<SocialMediaPlatform>`
+- Maps from stored procedures, filters by engagement ID
+- Transaction-safe via EF Core DbContext
+
+**Breaking Change Fixes (14 Compile Errors):**
+- **Functions Project:** Updated 8 function constructors to accept new manager registrations
+- **Web Project:** Fixed 3 views and controller action signatures (SocialMediaPlatformId renames)
+- **Api Project:** Added scope registrations, updated DTOs, fixed controller class registrations
+- All breaking changes from Morpheus' database layer (Sprint 1) now resolved
+
+**DTOs & Service Registration:**
+- `SocialMediaPlatformDto` with all platform metadata
+- `SocialMediaPlatformProfile` (AutoMapper)
+- Scoped registrations for manager and datastore
+
+**Build Status:**
+- ✅ Build succeeded (0 new errors)
+- ⏳ Tests: 40 compile errors in Functions.Tests pending Tank's fixes (constructor signatures, GetAsync signature changes)
+
+**Key Learnings (Sprint 2):**
+- **Manager pattern:** Business logic should sit in managers, not repositories. Managers abstract datastore complexity.
+- **Controller design:** Keep REST endpoints thin — delegate to managers for logic
+- **Breaking changes across sprints:** Use draft PRs to show scope; document remediation plan for downstream teams
+- **Constructor injection coordination:** When adding new dependencies to managers, must update ALL constructor calls (Functions, tests, DI registration)
+- **Soft delete pattern:** Platform retirement uses IsActive flag; NULL FK handling deferred to application
+- **Composite PKs in data layer:** EngagementSocialMediaPlatforms uses composite (EngagementId, SocialMediaPlatformId) to prevent duplicates
+
+**Outstanding:**
+- Tank (QA) must fix 40 Functions.Tests compile errors before merge
+- Full test suite must pass
+- Switch/Sparks (Sprint 3) will build Web UI on top of new API endpoints
+
+---
+
 ### 2026-04-02 — PR #610 Round 2: ApplicationClaimTypes constants + SQL CHECK constraints (#603 #606)
 
 **Status:** ✅ COMPLETE | Branch squad/rbac-phase1 | Commit d0aa61a
@@ -257,6 +309,24 @@ Backend dev. Primary domain: API layer, pagination, DTOs, message templates, sco
 - `QueueServiceClient` registration pattern: use `TryAddSingleton` with factory lambda reading `ConnectionStrings:QueueStorage` — works for all three project types
 - Each project's `Settings` class implements both the project-specific `ISettings` AND (via interface inheritance) `IEmailSettings` from Domain — register both in DI from the same settings instance
 - When test files have duplicate class declarations, the compiler reports errors at confusing line numbers — always rewrite the entire file cleanly
+
+### 2026-04-08 — CodeQL Security Fixes & Neo Review Suggestions (#667)
+
+**Status:** ✅ COMPLETE | Branch issue-667-social-media-platforms | Commit f5786a8
+
+**What I fixed:**
+- **Log injection prevention:** Added `SanitizeForLog` helper to `MessageTemplatesController` and `SocialMediaPlatformsController` to strip `\r` and `\n` from user-provided values before logging (5 CodeQL alerts)
+- **CSRF false positive:** Added `[IgnoreAntiforgeryToken]` at class level to `SocialMediaPlatformsController` — JWT Bearer APIs are not vulnerable to CSRF (CodeQL alert #26)
+- **Performance optimization:** Added `GetByNameAsync` to `ISocialMediaPlatformDataStore` interface and implemented DB-level filtering instead of loading all platforms into memory (Neo suggestion)
+- **Exception logging:** Added `ILogger<SocialMediaPlatformDataStore>` to constructor and logged all 3 catch blocks with relevant context (Neo suggestion)
+
+**Learnings:**
+- **Always sanitize user-controlled strings before logging** (route params, query params, request body fields) to prevent log injection attacks — use pattern: `value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty`
+- **JWT Bearer API controllers should use `[IgnoreAntiforgeryToken]`** at class level to explicitly document CSRF is N/A (cookie-based auth controllers should NOT use this)
+- **Never filter at manager layer** — all filtering/lookups should be pushed to DB level via data store methods (performance and scalability)
+- **All data stores must inject ILogger and log exceptions** in catch blocks with relevant context (IDs, names, operation type) — silent failures break observability
+- **CodeQL log injection alerts are valid** even if severity is low — defense-in-depth matters, and sanitization is cheap insurance
+
 - **EF Core bool defaults**: Never use `.HasDefaultValueSql()` on non-nullable `bool` properties. EF Core 8+ cannot distinguish explicit `false` from CLR default, causing startup warnings. The DB default is always redundant for value types — EF Core inserts the C# value directly.
 - `BroadcastingContext.cs` location: `src/JosephGuadagno.Broadcasting.Data.Sql/BroadcastingContext.cs` — all entity configurations are in `OnModelCreating()` method starting at line 47
 
@@ -352,3 +422,43 @@ Response:
 ```
 
 **Outstanding Work:** Sparks needs to implement UI changes (ItemType dropdown + AJAX validation + results display) in `Views/Schedules/Add.cshtml` and `Views/Schedules/Edit.cshtml`. Full guide in `.squad/decisions.md`.
+
+
+### 2026-04-08 — Epic #667 Assigned: Social Media Platforms (API Layer)
+- **Task:** CRUD endpoints for SocialMediaPlatforms and EngagementSocialMediaPlatforms; DTOs and AutoMapper profiles
+- **Dependency:** Morpheus DB work must complete first (blocked on Joseph's architecture answers)
+- **Status:** 🔴 BLOCKED — waiting on Morpheus
+- **Triage source:** Neo (issue #667)
+
+
+### 2026-04-08 — Epic #667 Architecture Decisions Resolved
+- **Status change:** 🟡 WAITING ON MORPHEUS (unblocked from Joseph's answers)
+- **Key decisions affecting Trinity (API):**
+  - CRUD endpoints needed: SocialMediaPlatforms (admin) + EngagementSocialMediaPlatforms (per-engagement associations)
+  - DTOs: SocialMediaPlatformDto (Id, Name, Url, Icon, IsActive), EngagementSocialMediaPlatformDto (EngagementId, PlatformId, Handle)
+  - ScheduledItems endpoints: SocialMediaPlatformId replaces Platform string field
+  - MessageTemplates endpoints: SocialMediaPlatformId replaces Platform string field
+- **Next:** Begin API work after Morpheus delivers DB migration
+
+### 2026-04-09 — CodeQL Fixes Session Consolidated
+
+**Status:** ✅ CONSOLIDATED | Session log: .squad/log/2026-04-09T00-43-53Z-codeql-fixes.md
+
+**Work Summary:**
+- Orchestration log: .squad/orchestration-log/2026-04-09T00-43-53Z-trinity.md (Trinity CodeQL + Neo review fixes documented)
+- Session log: .squad/log/2026-04-09T00-43-53Z-codeql-fixes.md (brief summary of security/performance hardening)
+- 3 inbox decisions merged to decisions.md:
+  - trinity-codeql-fixes.md (log sanitization, CSRF handling, DB filtering, exception logging patterns)
+  - neo-pr683-review-complete.md (PR #683 APPROVED for merge)
+  - tank-test-platform-id-pattern.md (integer platform IDs in tests, 40 compile errors fixed)
+- Deleted 3 inbox files after merge
+- Appended team updates to Trinity, Neo, Tank history.md files
+- Prepared git commit
+
+**Key Patterns Established:**
+1. Log sanitization: `SanitizeForLog()` helper strips `\r\n` (attack prevention)
+2. JWT Bearer CSRF: Use `[IgnoreAntiforgeryToken]` at class level (false positive suppression)
+3. Data store optimization: DB-level filtering via `GetByNameAsync()` (performance)
+4. Exception visibility: Inject `ILogger` and log before returning null (troubleshooting)
+
+**Next:** PR #683 merge approval; Epic #667 Sprints 3-6 ready for Switch/Sparks.

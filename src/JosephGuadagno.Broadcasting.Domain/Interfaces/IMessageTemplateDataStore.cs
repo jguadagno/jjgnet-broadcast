@@ -4,7 +4,7 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 
 public interface IMessageTemplateDataStore
 {
-    Task<MessageTemplate?> GetAsync(string platform, string messageType, CancellationToken cancellationToken = default);
+    Task<MessageTemplate?> GetAsync(int socialMediaPlatformId, string messageType, CancellationToken cancellationToken = default);
     Task<List<MessageTemplate>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<MessageTemplate?> UpdateAsync(MessageTemplate messageTemplate, CancellationToken cancellationToken = default);
     

@@ -60,19 +60,9 @@ public class Engagement
     public List<Talk>? Talks { get; set; }
 
     /// <summary>
-    /// The BlueSky handle for the engagement (e.g. the speaker's or event's BlueSky account)
+    /// Social media platforms and handles associated with this engagement
     /// </summary>
-    public string? BlueSkyHandle { get; set; }
-
-    /// <summary>
-    /// The hashtag for the conference/event (e.g. #NDCSydney)
-    /// </summary>
-    public string? ConferenceHashtag { get; set; }
-
-    /// <summary>
-    /// The Twitter/X handle for the conference/event (e.g. @NDCSydney)
-    /// </summary>
-    public string? ConferenceTwitterHandle { get; set; }
+    public List<EngagementSocialMediaPlatform>? SocialMediaPlatforms { get; set; }
 
     /// <summary>
     /// The date and time the item was created

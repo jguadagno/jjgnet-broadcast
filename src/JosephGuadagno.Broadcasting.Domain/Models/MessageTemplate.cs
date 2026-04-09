@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace JosephGuadagno.Broadcasting.Domain.Models;
 
 /// <summary>
@@ -6,9 +8,10 @@ namespace JosephGuadagno.Broadcasting.Domain.Models;
 public class MessageTemplate
 {
     /// <summary>
-    /// The social platform name, e.g. Twitter, Facebook, LinkedIn, Bluesky.
+    /// The social platform ID, e.g. references SocialMediaPlatforms table.
     /// </summary>
-    public string Platform { get; set; } = string.Empty;
+    [Required]
+    public int SocialMediaPlatformId { get; set; }
 
     /// <summary>
     /// The message category, e.g. RandomPost.

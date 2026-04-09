@@ -45,11 +45,11 @@ public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplate
     /// <summary>
     /// Updates a message template
     /// </summary>
-    public async Task<MessageTemplate?> UpdateAsync(MessageTemplate messageTemplate)
+    public async Task<MessageTemplate?> UpdateAsync(string platform, MessageTemplate messageTemplate)
     {
         var savedMessageTemplate = await apiClient.PutForUserAsync<MessageTemplate, MessageTemplate>(ApiServiceName, messageTemplate, options =>
         {
-            options.RelativePath = $"{MessageTemplateBaseUrl}/{messageTemplate.Platform}/{messageTemplate.MessageType}";
+            options.RelativePath = $"{MessageTemplateBaseUrl}/{platform}/{messageTemplate.MessageType}";
         });
 
         return savedMessageTemplate;

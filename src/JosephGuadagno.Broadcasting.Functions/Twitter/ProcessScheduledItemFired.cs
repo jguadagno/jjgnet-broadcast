@@ -20,6 +20,7 @@ public class ProcessScheduledItemFired(
     IYouTubeSourceManager youTubeSourceManager,
     IEngagementManager engagementManager,
     IMessageTemplateDataStore messageTemplateDataStore,
+    ISocialMediaPlatformManager socialMediaPlatformManager,
     ILogger<ProcessScheduledItemFired> logger)
 {
     const int MaxTweetLength = 240;
@@ -67,7 +68,11 @@ public class ProcessScheduledItemFired(
                 ScheduledItemType.SyndicationFeedSources => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
                 ScheduledItemType.YouTubeSources => MessageTemplates.MessageTypes.NewYouTubeItem,
                 _ => MessageTemplates.MessageTypes.RandomPost
-            };            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.Twitter, messageType);
+            };            
+            var twitterPlatform = await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Twitter);
+            var messageTemplate = twitterPlatform != null 
+                ? await messageTemplateDataStore.GetAsync(twitterPlatform.Id, messageType) 
+                : null;
             if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
                 tweetText = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);
 

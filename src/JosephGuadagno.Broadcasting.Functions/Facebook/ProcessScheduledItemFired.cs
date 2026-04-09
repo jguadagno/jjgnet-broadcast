@@ -20,6 +20,7 @@ public class ProcessScheduledItemFired(
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
     IYouTubeSourceManager youTubeSourceManager,
     IMessageTemplateDataStore messageTemplateDataStore,
+    ISocialMediaPlatformManager socialMediaPlatformManager,
     ILogger<ProcessScheduledItemFired> logger)
 {
     const int MaxFacebookStatusText = 2000;
@@ -87,7 +88,11 @@ public class ProcessScheduledItemFired(
                 ScheduledItemType.SyndicationFeedSources => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
                 ScheduledItemType.YouTubeSources => MessageTemplates.MessageTypes.NewYouTubeItem,
                 _ => MessageTemplates.MessageTypes.RandomPost
-            };            var messageTemplate = await messageTemplateDataStore.GetAsync(MessageTemplates.Platforms.Facebook, messageType);
+            };            
+            var facebookPlatform = await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Facebook);
+            var messageTemplate = facebookPlatform != null 
+                ? await messageTemplateDataStore.GetAsync(facebookPlatform.Id, messageType) 
+                : null;
             if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
             {
                 var rendered = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);

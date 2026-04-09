@@ -42,12 +42,18 @@ public class BroadcastingProfile: Profile
                 destination => destination.SourceTags,
                 options => options.Ignore());
 
+        CreateMap<Models.SocialMediaPlatform, Domain.Models.SocialMediaPlatform>().ReverseMap();
+        CreateMap<Models.EngagementSocialMediaPlatform, Domain.Models.EngagementSocialMediaPlatform>().ReverseMap();
+
         // Domain to Sql models
         CreateMap<Domain.Models.Talk, Models.Talk>()
             .ForMember(destination => destination.Engagement, options => options.Ignore());
         CreateMap<Domain.Models.ScheduledItem, Models.ScheduledItem>()
             .ForMember(
                 destination => destination.ItemTableName,
-                options => options.MapFrom(source => source.ItemType.ToString()));
+                options => options.MapFrom(source => source.ItemType.ToString()))
+            .ForMember(
+                destination => destination.SocialMediaPlatform,
+                options => options.Ignore());
     }
 }

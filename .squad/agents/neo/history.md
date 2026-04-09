@@ -297,6 +297,29 @@ Review posted: https://github.com/jguadagno/jjgnet-broadcast/pull/610#issuecomme
 
 ---
 
+### 2026-04-08: Epic #667 — Architecture Decisions Resolved
+
+**Issue:** #667 — Move social links for engagements into its own table
+
+Joseph answered all 6 open architecture questions. Updated GitHub issue and recorded decisions.
+
+**Resolved decisions:**
+
+1. **Talks**: Inherit social media from parent Engagement — no separate junction table
+2. **EngagementSocialMediaPlatforms**: EngagementId FK + SocialMediaPlatformId FK + Handle (conference's @handle). SocialMediaPlatforms.Url = canonical platform URL
+3. **ScheduledItems.Platform**: DROP column, ADD SocialMediaPlatformId int FK — intentional breaking change, migration script required
+4. **MessageTemplates.Platform**: Migrate to SocialMediaPlatformId FK — currently in composite PK, requires careful migration planning
+5. **Soft delete**: IsActive (bool). UI: ✗ icon for inactive. List page: single toggle button
+6. **Seed data**: Twitter/X, BlueSky, LinkedIn, Facebook, Mastodon (even without publisher)
+
+**Actions taken:**
+- Updated GitHub issue #667: replaced Open Questions with Architecture Decisions table, added Implementation Order section, updated Work Breakdown (Mastodon added to seed data)
+- Wrote decisions to `.squad/decisions/inbox/neo-667-architecture-decisions.md`
+
+**Status:** ✅ All decisions recorded. Morpheus can begin DB work.
+
+---
+
 ### Prior Work Archive (Sprint 11 + Early Reviews)
 
 - **Sprint 11 closeout (PRs #551–#555):** 5 PRs merged, later **reverted** (PR #572, MSAL auth broken). Issue #85 open.
@@ -401,3 +424,183 @@ Established by Joseph Guadagno:
 
 **Decision document:** `.squad/decisions/inbox/neo-pr662-approved.md`
 
+---
+
+## Learnings — Epic #667 Triage: Social Media Platforms (2025-07-17)
+
+**Context:** Triaged epic #667 — "Move social links for engagements into its own table".
+
+**Codebase facts established:**
+- `dbo.Engagements` has 3 social columns to remove: `BlueSkyHandle`, `ConferenceHashtag`, `ConferenceTwitterHandle`
+- `dbo.Talks` has its own `BlueSkyHandle` — relationship to this epic needs clarification
+- `dbo.ScheduledItems.Platform` is nvarchar(50) free-text — possible FK migration candidate
+- `dbo.MessageTemplates.Platform` is part of the composite PK — high-impact if migrated
+- Migration naming convention confirmed: `YYYY-MM-DD-description.sql`
+- Sub-issues #537, #536, #54, #53 are all superseded by this epic (commented on all four)
+
+**Squad assignments made on #667:**
+- Morpheus: DB (tables, migrations, seed, EF Core)
+- Trinity: API (CRUD endpoints, DTO updates)
+- Switch: Web/Controllers (admin UI, engagement controller)
+- Sparks: Views (Razor views, Bootstrap, JS)
+- Tank: Tests
+
+**Open questions documented** in `.squad/decisions/inbox/neo-social-media-platforms-epic.md` — must be resolved before DB work starts (especially junction table shape and ScheduledItems/MessageTemplates Platform migration strategy).
+
+## Learnings — Epic #667 Sprint Breakdown (2025-01-23)
+
+**Task:** Break epic #667 into 15 child issues and organize into 3 sprints.
+
+**Execution:**
+- Created issues #668–#682 using `gh issue create` with full acceptance criteria, dependencies, and squad assignments
+- Sprint 1 (6 issues): Database foundation + EF Core layer — all Morpheus
+- Sprint 2 (4 issues): API endpoints + Manager layer — all Trinity
+- Sprint 3 (5 issues): Web UI (Switch+Sparks), Tests (Tank), Cleanup (Neo)
+- Added comment to #667 with full task list
+- Decision doc written to `.squad/decisions/inbox/neo-667-sprint-breakdown.md`
+
+**Key principles applied:**
+- Sequential sprints with hard dependencies: Sprint 2 requires Sprint 1 complete, Sprint 3 requires Sprint 2 complete
+- Database/domain first, API second, UI third — standard vertical slice order
+- Tests and cleanup in final sprint to validate complete implementation
+- Clear squad boundaries: Morpheus owns all data layer, Trinity owns all API/manager, Switch+Sparks own all Web UI
+
+**Issue creation pattern:**
+- Title format: `{Layer} — {Description}` (e.g., "Database — Create SocialMediaPlatforms tables")
+- Body sections: Sprint, Description, Acceptance Criteria (checklist), Dependencies, Related, Assigned To
+- Labels: `enhancement`, `.NET`, and appropriate `squad:{name}` labels
+- Dependencies explicitly called out using issue numbers
+
+**Validation:**
+- All 15 issues created successfully
+- Comment added to #667 with full breakdown
+- Decision doc created
+- History updated (this entry)
+
+
+
+## Learnings — Epic #667 PR Review and Deployment Runbook (2026-04-08)
+
+**Task:** Review Morpheus's PR on branch `issue-667-social-media-platforms` and write production deployment runbook.
+
+**Context:**  
+- Morpheus completed database layer work for Epic #667 (Social Media Platforms)  
+- Branch exists locally (commit 3fc341e) but PR not yet created  
+- Work introduces breaking changes to `MessageTemplate` interface affecting Api, Web, Functions  
+
+**Review Findings:**
+
+**✅ PASSES:**
+1. **Database schema** — All tables match architecture decisions exactly (SocialMediaPlatforms, EngagementSocialMediaPlatforms, ScheduledItems/MessageTemplates FKs)
+2. **SQL migration script** — Excellent quality, proper 7-part structure, correct PK rebuild sequence for MessageTemplates
+3. **EF Core entities** — Match SQL schema perfectly, proper nullable annotations
+4. **Domain models** — Correct nullability, Required attributes, proper navigation properties
+5. **Repository pattern** — ISocialMediaPlatformDataStore interface complete, soft delete implemented correctly
+6. **AutoMapper profiles** — Bidirectional mappings for both new entities
+7. **DI registration** — Registered in Api Program.cs
+8. **Base scripts updated** — table-create.sql and data-seed.sql reflect post-migration schema
+
+**❌ BLOCKERS:**
+1. **Build fails** — 14 compile errors across Data.Sql.Tests, Api, Web, Functions projects
+2. **No PR exists** — Branch not pushed to GitHub
+3. **Breaking change** — `IMessageTemplateDataStore.GetAsync` signature changed from `GetAsync(string platform, ...)` to `GetAsync(int socialMediaPlatformId, ...)`, breaking 4 Azure Functions
+
+**Root cause of build errors:** Expected breaking change — downstream projects (Api, Web, Functions) still reference old `MessageTemplate.Platform` string field instead of new `SocialMediaPlatformId` int field. Requires Trinity and Cypher follow-up PRs.
+
+**Recommendation:** CONDITIONAL APPROVAL pending:
+1. Morpheus pushes branch and creates PR
+2. Trinity updates Api layer (MessageTemplates endpoints, SocialMediaPlatforms CRUD)
+3. Cypher updates all 4 Functions `ProcessScheduledItemFired` handlers
+4. Switch updates Web layer (MessageTemplateService, Engagement controllers)
+5. Build passes on main before DB migration runs
+
+**Deployment Runbook:**  
+Created comprehensive production deployment runbook posted to issue #667 ([comment link](https://github.com/jguadagno/jjgnet-broadcast/issues/667#issuecomment-4210318810)).
+
+**Key runbook decisions:**
+- **Downtime required:** 5-10 minute maintenance window during MessageTemplates PK rebuild (table lock)
+- **Service stop requirement:** All services (Functions, Api, Web) must stop during PART 5 of migration
+- **Deployment order:** Code MUST deploy first (all PRs merged), then DB migration during maintenance window
+- **Safe vs. breaking:** Parts 1-3 (new tables + seed) are additive and safe; Parts 4-7 (column drops + PK rebuild) are breaking
+- **Rollback plan:** Database restore from backup + redeploy previous code version
+- **Risk mitigation:** Pre-flight checklist enforces "all code deployed first" rule
+
+**Pattern established:**  
+For breaking database migrations involving PK rebuilds or column drops:
+1. **Code deploys first** — All layers (Data, Api, Web, Functions) must be updated and deployed
+2. **Maintenance window required** — PK rebuild operations require brief downtime with services stopped
+3. **Incremental migration option** — Additive changes (new tables, seed data) can run separately before code deployment
+4. **Runbook mandatory** — Complex migrations require step-by-step runbook with rollback plan
+
+**Files reviewed:**
+- Migration script: `scripts/database/migrations/2026-04-08-social-media-platforms.sql` (279 lines)
+- 24 C# files (753 insertions, 61 deletions)
+- Base scripts: table-create.sql, data-seed.sql
+
+**Outcome:**  
+- ✅ Deployment runbook posted to #667  
+- ✅ Review findings documented (neo-review-667.md)  
+- ⏳ Awaiting Morpheus to push branch and create PR  
+- ⏳ Awaiting Trinity/Cypher/Switch follow-up PRs to fix build errors  
+
+**Next steps:**
+1. Morpheus creates PR
+2. Trinity/Cypher/Switch create follow-up PRs
+3. Neo reviews final PR when build passes
+4. Joseph executes deployment runbook during maintenance window
+
+
+## Learnings — PR #683 Code Review (2026-04-11)
+
+**Context:** Formal code review of Epic #667 PR #683 (SocialMediaPlatforms table and database layer). Comprehensive multi-sprint PR spanning Morpheus (Sprint 1 DB), Trinity (Sprint 2 API/Managers), and Tank (test fixes).
+
+**Review scope:** 57 files, +2921/-244 lines. Migration script, domain models, data stores, manager, API controller, DTOs, AutoMapper profiles, DI registrations, scopes, Functions updates, test fixes.
+
+**Key findings:**
+1. ✅ **Architecture patterns respected:** Manager layer used correctly (Web/Functions never call data stores directly), soft delete via IsActive, DateTimeOffset consistency, DI registrations complete
+2. ✅ **Migration script safety:** Adds nullable columns → populates → makes NOT NULL. MessageTemplates composite PK change handled without data loss. Idempotent and safe.
+3. ✅ **Breaking change handling:** IMessageTemplateDataStore.GetAsync signature change (string→int) fixed in ALL callers (4 Functions, API, Web service)
+4. ⚠️ **Minor inefficiency:** SocialMediaPlatformManager.GetByNameAsync loads all platforms for in-memory filtering (acceptable for 5 platforms, but pattern doesn't scale)
+5. ⚠️ **Exception swallowing:** Data stores catch and return null/false without logging (suggested ILogger injection for troubleshooting)
+
+**Verdict:** ✅ APPROVED — No blockers, production-ready. Two suggestions for future optimization (non-blocking).
+
+**Pattern reinforced:**
+- Multi-agent PR reviews require checking ALL layer interactions: DB → Data.Sql → Domain → Managers → API/Functions/Web
+- Migration scripts must be verified for: idempotency, data loss risk, FK dependency order, nullable-first strategy
+- Breaking interface changes require grep-based verification of ALL callers across solution
+- Test compile errors from domain model changes are EXPECTED and must be fixed before merge (Tank's role)
+
+**Tools used:** gh pr diff, view, grep, git diff --stat. Full diff was 5147 lines; reviewed in sections (migration script, interfaces, implementations, controllers, tests).
+
+**Recommendation posted:** GitHub comment #4210546660 (cannot approve own PRs, posted as comment instead).
+### 2026-04-09: PR #683 Code Review Complete — Epic #667 Consolidation
+
+**Status:** ✅ CONSOLIDATED | Session log: .squad/log/2026-04-09T00-43-53Z-codeql-fixes.md
+
+**Work Summary:**
+- PR #683 (feat(#667): Add SocialMediaPlatforms table and database layer) — **APPROVED for merge**
+- Verified all architectural patterns, migration script safety, breaking change handling
+- Trinity executed CodeQL security hardening + performance suggestions from this review:
+  - Log sanitization (5 CodeQL alerts fixed)
+  - CSRF handling (1 CodeQL alert fixed)
+  - DB-level name lookup (performance)
+  - Exception logging (visibility)
+- 3 inbox decisions merged to decisions.md (consolidating all team work)
+- Appended team updates to Trinity, Neo, Tank history.md files
+
+**Review Verified:**
+- ✅ Build: 0 errors, 322 pre-existing warnings (safe)
+- ✅ Architecture: Manager pattern respected, soft delete via IsActive
+- ✅ Migration: Nullable-first, composite PK handled correctly, idempotent
+- ✅ Breaking changes: All callers updated (4 Functions, API, Web)
+- ✅ Test coverage: Tank fixed 40 compile errors
+- ✅ Code quality: XML docs, AutoMapper, scopes, EF Core config complete
+
+**Key Decisions Documented:**
+1. **Log Sanitization Pattern** — Sanitize all user input before logging (prevents injection)
+2. **JWT CSRF Handling** — `[IgnoreAntiforgeryToken]` for Bearer APIs (false positive suppression)
+3. **DB Filtering** — GetByNameAsync delegates to data layer (performance + scalability)
+4. **Exception Logging** — All data stores inject ILogger and log before returning null
+
+**Next:** Joseph merges PR #683. Epic #667 Sprints 3-6 unblocked for Switch/Sparks (API/Web UI integration). Tank: Unit tests for SocialMediaPlatforms layer.

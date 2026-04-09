@@ -23,9 +23,11 @@ public partial class ScheduledItem
 
     public string ImageUrl { get; set; }
 
-    public string? Platform { get; set; }
+    public int? SocialMediaPlatformId { get; set; }
 
     public string? MessageType { get; set; }
 
     public string? CreatedByEntraOid { get; set; }
+
+    public virtual SocialMediaPlatform SocialMediaPlatform { get; set; }
 }
