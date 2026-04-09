@@ -85,7 +85,8 @@ public class ProcessScheduledItemFiredTests
         Mock<ISyndicationFeedSourceManager> feedSourceManager,
         Mock<IYouTubeSourceManager> youTubeSourceManager,
         Mock<IEngagementManager> engagementManager,
-        Mock<IMessageTemplateDataStore> messageTemplateDataStore)
+        Mock<IMessageTemplateDataStore> messageTemplateDataStore,
+        Mock<ISocialMediaPlatformManager> socialMediaPlatformManager)
     {
         return new Functions.Facebook.ProcessScheduledItemFired(
             scheduledItemManager.Object,
@@ -93,6 +94,7 @@ public class ProcessScheduledItemFiredTests
             feedSourceManager.Object,
             youTubeSourceManager.Object,
             messageTemplateDataStore.Object,
+            socialMediaPlatformManager.Object,
             NullLogger<Functions.Facebook.ProcessScheduledItemFired>.Instance);
     }
 
@@ -104,7 +106,7 @@ public class ProcessScheduledItemFiredTests
         var feedSource = BuildFeedSource();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "Facebook",
+            SocialMediaPlatformId = 4,
             MessageType = "NewSyndicationFeedItem",
             Template = "{{ title }} - {{ url }}"
         };
@@ -123,7 +125,8 @@ public class ProcessScheduledItemFiredTests
             mockFeedSourceManager,
             new Mock<IYouTubeSourceManager>(),
             new Mock<IEngagementManager>(),
-            mockMessageTemplateDataStore);
+            mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -155,7 +158,8 @@ public class ProcessScheduledItemFiredTests
             mockFeedSourceManager,
             new Mock<IYouTubeSourceManager>(),
             new Mock<IEngagementManager>(),
-            mockMessageTemplateDataStore);
+            mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -177,7 +181,7 @@ public class ProcessScheduledItemFiredTests
         var feedSource = BuildFeedSource();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "Facebook",
+            SocialMediaPlatformId = 4,
             MessageType = "NewSyndicationFeedItem",
             Template = "{{ title }} {{ image_url }}"
         };
@@ -196,7 +200,8 @@ public class ProcessScheduledItemFiredTests
             mockFeedSourceManager,
             new Mock<IYouTubeSourceManager>(),
             new Mock<IEngagementManager>(),
-            mockMessageTemplateDataStore);
+            mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -216,7 +221,7 @@ public class ProcessScheduledItemFiredTests
         var feedSource = BuildFeedSource();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "Facebook",
+            SocialMediaPlatformId = 4,
             MessageType = "NewSyndicationFeedItem",
             Template = "{{ title }}|{{ image_url }}"
         };
@@ -235,7 +240,8 @@ public class ProcessScheduledItemFiredTests
             mockFeedSourceManager,
             new Mock<IYouTubeSourceManager>(),
             new Mock<IEngagementManager>(),
-            mockMessageTemplateDataStore);
+            mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -253,7 +259,7 @@ public class ProcessScheduledItemFiredTests
         var feedSource = BuildFeedSource();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "Facebook",
+            SocialMediaPlatformId = 4,
             MessageType = "NewSyndicationFeedItem",
             Template = "Just the title: {{ title }}"
         };
@@ -272,7 +278,8 @@ public class ProcessScheduledItemFiredTests
             mockFeedSourceManager,
             new Mock<IYouTubeSourceManager>(),
             new Mock<IEngagementManager>(),
-            mockMessageTemplateDataStore);
+            mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -297,7 +304,7 @@ public class ProcessScheduledItemFiredTests
         var engagement = BuildEngagement();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "Facebook",
+            SocialMediaPlatformId = 4,
             MessageType = MessageTemplates.MessageTypes.NewSpeakingEngagement,
             Template = "Speaking at {{ title }} - {{ url }}"
         };
@@ -313,7 +320,8 @@ public class ProcessScheduledItemFiredTests
             .ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore);
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -346,7 +354,8 @@ public class ProcessScheduledItemFiredTests
             .ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore);
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -369,7 +378,7 @@ public class ProcessScheduledItemFiredTests
         var talk = BuildTalk();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "Facebook",
+            SocialMediaPlatformId = 4,
             MessageType = MessageTemplates.MessageTypes.ScheduledItem,
             Template = "My talk: {{ title }} - {{ url }}"
         };
@@ -385,7 +394,8 @@ public class ProcessScheduledItemFiredTests
             .ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore);
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -418,7 +428,8 @@ public class ProcessScheduledItemFiredTests
             .ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore);
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -441,7 +452,7 @@ public class ProcessScheduledItemFiredTests
         var youTubeSource = BuildYouTubeSource();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "Facebook",
+            SocialMediaPlatformId = 4,
             MessageType = MessageTemplates.MessageTypes.NewYouTubeItem,
             Template = "New video: {{ title }} - {{ url }}"
         };
@@ -457,7 +468,8 @@ public class ProcessScheduledItemFiredTests
             .ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            mockYouTubeSourceManager, new Mock<IEngagementManager>(), mockMessageTemplateDataStore);
+            mockYouTubeSourceManager, new Mock<IEngagementManager>(), mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -490,7 +502,8 @@ public class ProcessScheduledItemFiredTests
             .ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            mockYouTubeSourceManager, new Mock<IEngagementManager>(), mockMessageTemplateDataStore);
+            mockYouTubeSourceManager, new Mock<IEngagementManager>(), mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));

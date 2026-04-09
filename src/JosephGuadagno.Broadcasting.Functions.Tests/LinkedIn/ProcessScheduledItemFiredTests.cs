@@ -97,7 +97,8 @@ public class ProcessScheduledItemFiredTests
         Mock<IYouTubeSourceManager> youTubeSourceManager,
         Mock<IEngagementManager> engagementManager,
         Mock<ILinkedInApplicationSettings> linkedInSettings,
-        Mock<IMessageTemplateDataStore> messageTemplateDataStore)
+        Mock<IMessageTemplateDataStore> messageTemplateDataStore,
+        Mock<ISocialMediaPlatformManager> socialMediaPlatformManager)
     {
         return new Functions.LinkedIn.ProcessScheduledItemFired(
             scheduledItemManager.Object,
@@ -106,6 +107,7 @@ public class ProcessScheduledItemFiredTests
             youTubeSourceManager.Object,
             linkedInSettings.Object,
             messageTemplateDataStore.Object,
+            socialMediaPlatformManager.Object,
             NullLogger<Functions.LinkedIn.ProcessScheduledItemFired>.Instance);
     }
 
@@ -117,7 +119,7 @@ public class ProcessScheduledItemFiredTests
         var feedSource = BuildFeedSource();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "LinkedIn",
+            SocialMediaPlatformId = 3,
             MessageType = "NewSyndicationFeedItem",
             Template = "{{ title }} - {{ url }}"
         };
@@ -137,7 +139,8 @@ public class ProcessScheduledItemFiredTests
             new Mock<IYouTubeSourceManager>(),
             new Mock<IEngagementManager>(),
             BuildLinkedInSettings(),
-            mockMessageTemplateDataStore);
+            mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -169,7 +172,8 @@ public class ProcessScheduledItemFiredTests
             new Mock<IYouTubeSourceManager>(),
             new Mock<IEngagementManager>(),
             BuildLinkedInSettings(),
-            mockMessageTemplateDataStore);
+            mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -189,7 +193,7 @@ public class ProcessScheduledItemFiredTests
         var feedSource = BuildFeedSource();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "LinkedIn",
+            SocialMediaPlatformId = 3,
             MessageType = "NewSyndicationFeedItem",
             Template = "{{ title }} {{ image_url }}"
         };
@@ -209,7 +213,8 @@ public class ProcessScheduledItemFiredTests
             new Mock<IYouTubeSourceManager>(),
             new Mock<IEngagementManager>(),
             BuildLinkedInSettings(),
-            mockMessageTemplateDataStore);
+            mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -229,7 +234,7 @@ public class ProcessScheduledItemFiredTests
         var feedSource = BuildFeedSource();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "LinkedIn",
+            SocialMediaPlatformId = 3,
             MessageType = "NewSyndicationFeedItem",
             Template = "{{ title }}|{{ image_url }}"
         };
@@ -249,7 +254,8 @@ public class ProcessScheduledItemFiredTests
             new Mock<IYouTubeSourceManager>(),
             new Mock<IEngagementManager>(),
             BuildLinkedInSettings(),
-            mockMessageTemplateDataStore);
+            mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -281,7 +287,8 @@ public class ProcessScheduledItemFiredTests
             new Mock<IYouTubeSourceManager>(),
             new Mock<IEngagementManager>(),
             BuildLinkedInSettings(),
-            mockMessageTemplateDataStore);
+            mockMessageTemplateDataStore,
+            new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -312,11 +319,11 @@ public class ProcessScheduledItemFiredTests
         mockEngagementManager.Setup(m => m.GetAsync(42)).ReturnsAsync(engagement);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<string>()))
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>()))
             .ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore);
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore, new Mock<ISocialMediaPlatformManager>());
 
         // Act
         await sut.RunAsync(BuildEventGridEvent(1));
@@ -339,7 +346,7 @@ public class ProcessScheduledItemFiredTests
         var engagement = BuildEngagement();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "LinkedIn",
+            SocialMediaPlatformId = 3,
             MessageType = MessageTemplates.MessageTypes.NewSpeakingEngagement,
             Template = "Speaking at {{ title }} - {{ url }}"
         };
@@ -355,7 +362,7 @@ public class ProcessScheduledItemFiredTests
             .ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore);
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore, new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -388,7 +395,7 @@ public class ProcessScheduledItemFiredTests
             .ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore);
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore, new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -418,11 +425,11 @@ public class ProcessScheduledItemFiredTests
         mockEngagementManager.Setup(m => m.GetTalkAsync(42)).ReturnsAsync(talk);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<string>()))
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>()))
             .ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore);
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore, new Mock<ISocialMediaPlatformManager>());
 
         // Act
         await sut.RunAsync(BuildEventGridEvent(1));
@@ -445,7 +452,7 @@ public class ProcessScheduledItemFiredTests
         var talk = BuildTalk();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "LinkedIn",
+            SocialMediaPlatformId = 3,
             MessageType = MessageTemplates.MessageTypes.ScheduledItem,
             Template = "My talk: {{ title }} - {{ url }}"
         };
@@ -461,7 +468,7 @@ public class ProcessScheduledItemFiredTests
             .ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore);
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore, new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -493,7 +500,7 @@ public class ProcessScheduledItemFiredTests
             .ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore);
+            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildLinkedInSettings(), mockMessageTemplateDataStore, new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -523,11 +530,11 @@ public class ProcessScheduledItemFiredTests
         mockYouTubeSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(youTubeSource);
 
         var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<string>()))
+        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>()))
             .ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            mockYouTubeSourceManager, new Mock<IEngagementManager>(), BuildLinkedInSettings(), mockMessageTemplateDataStore);
+            mockYouTubeSourceManager, new Mock<IEngagementManager>(), BuildLinkedInSettings(), mockMessageTemplateDataStore, new Mock<ISocialMediaPlatformManager>());
 
         // Act
         await sut.RunAsync(BuildEventGridEvent(1));
@@ -550,7 +557,7 @@ public class ProcessScheduledItemFiredTests
         var youTubeSource = BuildYouTubeSource();
         var messageTemplate = new MessageTemplate
         {
-            Platform = "LinkedIn",
+            SocialMediaPlatformId = 3,
             MessageType = MessageTemplates.MessageTypes.NewYouTubeItem,
             Template = "New video: {{ title }} - {{ url }}"
         };
@@ -566,7 +573,7 @@ public class ProcessScheduledItemFiredTests
             .ReturnsAsync(messageTemplate);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            mockYouTubeSourceManager, new Mock<IEngagementManager>(), BuildLinkedInSettings(), mockMessageTemplateDataStore);
+            mockYouTubeSourceManager, new Mock<IEngagementManager>(), BuildLinkedInSettings(), mockMessageTemplateDataStore, new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -598,7 +605,7 @@ public class ProcessScheduledItemFiredTests
             .ReturnsAsync((MessageTemplate?)null);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            mockYouTubeSourceManager, new Mock<IEngagementManager>(), BuildLinkedInSettings(), mockMessageTemplateDataStore);
+            mockYouTubeSourceManager, new Mock<IEngagementManager>(), BuildLinkedInSettings(), mockMessageTemplateDataStore, new Mock<ISocialMediaPlatformManager>());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
