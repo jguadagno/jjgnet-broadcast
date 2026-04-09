@@ -249,6 +249,7 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
     services.TryAddScoped<IMessageTemplateService, MessageTemplateService>();
+    services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
 
     // RBAC Phase 1
     services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();

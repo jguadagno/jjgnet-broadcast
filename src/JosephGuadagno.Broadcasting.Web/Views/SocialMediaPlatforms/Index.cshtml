@@ -1,0 +1,111 @@
+@model List<JosephGuadagno.Broadcasting.Web.Models.SocialMediaPlatformViewModel>
+@{
+    ViewData["Title"] = "Social Media Platforms";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>
+        <i class="bi bi-share me-2"></i>Social Media Platforms
+    </h1>
+    @if (User.IsInRole("Administrator") || User.IsInRole("Contributor"))
+    {
+        <a asp-action="Add" asp-controller="SocialMediaPlatforms" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Add New Platform
+        </a>
+    }
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th scope="col" class="col-1">Icon</th>
+                <th scope="col">Name</th>
+                <th scope="col">URL</th>
+                <th scope="col" class="col-1 text-center">Active</th>
+                <th scope="col" class="col-3 text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var platform in Model)
+            {
+                <tr class="@(platform.IsActive ? string.Empty : "table-secondary text-muted")">
+                    <td class="text-center">
+                        @if (!string.IsNullOrEmpty(platform.Icon))
+                        {
+                            <i class="bi @platform.Icon fs-4" title="@platform.Icon"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-question-circle fs-4 text-muted" title="No icon set"></i>
+                        }
+                    </td>
+                    <td>@platform.Name</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(platform.Url))
+                        {
+                            <a href="@platform.Url" target="_blank" rel="noopener noreferrer">
+                                @platform.Url
+                                <i class="bi bi-box-arrow-up-right ms-1 small"></i>
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic">—</span>
+                        }
+                    </td>
+                    <td class="text-center">
+                        @if (platform.IsActive)
+                        {
+                            <i class="bi bi-check-circle-fill text-success fs-5" title="Active"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-x-circle-fill text-danger fs-5" title="Inactive"></i>
+                        }
+                    </td>
+                    <td class="text-end">
+                        @if (User.IsInRole("Administrator") || User.IsInRole("Contributor"))
+                        {
+                            <a asp-action="Edit" asp-controller="SocialMediaPlatforms" asp-route-id="@platform.Id"
+                               class="btn btn-sm btn-outline-secondary" title="Edit">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+
+                            <form asp-action="ToggleActive" asp-controller="SocialMediaPlatforms"
+                                  asp-route-id="@platform.Id" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit"
+                                        class="btn btn-sm @(platform.IsActive ? "btn-outline-warning" : "btn-outline-success")"
+                                        title="@(platform.IsActive ? "Deactivate" : "Reactivate")">
+                                    <i class="bi @(platform.IsActive ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                </button>
+                            </form>
+                        }
+                        @if (User.IsInRole("Administrator"))
+                        {
+                            <a asp-action="Delete" asp-controller="SocialMediaPlatforms" asp-route-id="@platform.Id"
+                               class="btn btn-sm btn-danger" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-share fs-1 mb-3 d-block"></i>
+        <p>No social media platforms found.</p>
+        @if (User.IsInRole("Administrator") || User.IsInRole("Contributor"))
+        {
+            <a asp-action="Add" asp-controller="SocialMediaPlatforms" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Add the first platform
+            </a>
+        }
+    </div>
+}
