@@ -169,7 +169,7 @@ public class TalksController : Controller
     {
         return View(new TalkViewModel
         {
-            EngagementId = engagementId, StartDateTime = DateTime.UtcNow, EndDateTime = DateTime.UtcNow.AddHours(1)
+            EngagementId = engagementId, StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
         });
     }
 
