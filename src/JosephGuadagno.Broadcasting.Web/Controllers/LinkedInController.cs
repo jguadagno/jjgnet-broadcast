@@ -143,8 +143,8 @@ public class LinkedInController : Controller
         }
         
         // Save the token and expiration to KeyVault
-        var tokenExpiration = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn); 
-        await _keyVault.UpdateSecretValueAndPropertiesAsync(KeyVaultSecretName, tokenResponse.AccessToken, tokenExpiration);
+        var tokenExpiration = DateTimeOffset.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
+        await _keyVault.UpdateSecretValueAndPropertiesAsync(KeyVaultSecretName, tokenResponse.AccessToken, tokenExpiration.DateTime);
         
         _logger.LogInformation("Saved new token '{KeyVaultSecretName}' to KeyVault", KeyVaultSecretName);
 
@@ -152,9 +152,9 @@ public class LinkedInController : Controller
         if (!string.IsNullOrEmpty(tokenResponse.RefreshToken))
         {
             var refreshTokenExpiration = tokenResponse.RefreshTokenExpiresIn.HasValue
-                ? DateTime.UtcNow.AddSeconds(tokenResponse.RefreshTokenExpiresIn.Value)
-                : DateTime.UtcNow.AddDays(365);
-            await _keyVault.UpdateSecretValueAndPropertiesAsync(KeyVaultRefreshTokenSecretName, tokenResponse.RefreshToken, refreshTokenExpiration);
+                ? DateTimeOffset.UtcNow.AddSeconds(tokenResponse.RefreshTokenExpiresIn.Value)
+                : DateTimeOffset.UtcNow.AddDays(365);
+            await _keyVault.UpdateSecretValueAndPropertiesAsync(KeyVaultRefreshTokenSecretName, tokenResponse.RefreshToken, refreshTokenExpiration.DateTime);
             _logger.LogInformation("Saved new refresh token '{KeyVaultRefreshTokenSecretName}' to KeyVault", KeyVaultRefreshTokenSecretName);
         }
 

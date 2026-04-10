@@ -185,7 +185,7 @@ public class SchedulesController : Controller
     /// <returns>Returns a form to add a <see cref="ScheduledItemViewModel"/></returns>
     public IActionResult Add()
     {
-        return View(new ScheduledItemViewModel{SendOnDateTime = DateTime.UtcNow});
+        return View(new ScheduledItemViewModel{SendOnDateTime = DateTimeOffset.UtcNow});
     }
         
     /// <summary>

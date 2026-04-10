@@ -203,7 +203,7 @@ public class EngagementsController : Controller
     public IActionResult Add()
     {
         return View(new EngagementViewModel
-            { StartDateTime = DateTime.UtcNow, EndDateTime = DateTime.UtcNow.AddHours(1) });
+            { StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddHours(1) });
     }
 
     /// <summary>
