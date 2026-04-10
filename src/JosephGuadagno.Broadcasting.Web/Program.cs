@@ -1,6 +1,5 @@
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
-using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -88,9 +87,6 @@ builder.Services.AddSession(options =>
 var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
 ConfigureTelemetryAndLogging(builder.Services, fullyQualifiedLogFile, "Web");
 
-// Register BroadcastingContext for RBAC data stores
-builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer");
-
 // Register DI services
 builder.AddAzureQueueServiceClient("QueueAccount");
 ConfigureApplication(builder.Services);
@@ -101,8 +97,7 @@ builder.Services.AddAutoMapper(config =>
     config.LicenseKey = autoMapperSettings.LicenseKey;
     config.AddProfile<WebMappingProfile>();
     config.AddProfile<NodaTimeProfile>();
-    config.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
-    config.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.RbacProfile>();
+    config.AddDataSqlMappingProfiles();
 }, typeof(Program));
 
 // Configure Microsoft Identity
@@ -249,6 +244,14 @@ void ConfigureTelemetryAndLogging(IServiceCollection services, string logPath, s
 void ConfigureApplication(IServiceCollection services)
 {
     services.AddHttpClient();
+    
+    // Register BroadcastingContext via transitive dependency (Managers → Data.Sql)
+    // Note: BroadcastingContext type is fully qualified to avoid needing "using Data.Sql"
+    builder.AddSqlServerDbContext<JosephGuadagno.Broadcasting.Data.Sql.BroadcastingContext>("JJGNetDatabaseSqlServer");
+    
+    // Register all SQL data stores
+    services.AddSqlDataStores();
+    
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
@@ -256,10 +259,6 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
 
     // RBAC Phase 1
-    services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
-    services.TryAddScoped<IRoleDataStore, RoleDataStore>();
-    services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();
-    services.TryAddScoped<IEmailTemplateDataStore, EmailTemplateDataStore>();
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
 
     // Email
