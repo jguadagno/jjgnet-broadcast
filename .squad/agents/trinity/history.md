@@ -479,3 +479,47 @@ Response:
 4. Exception visibility: Inject `ILogger` and log before returning null (troubleshooting)
 
 **Next:** PR #683 merge approval; Epic #667 Sprints 3-6 ready for Switch/Sparks.
+
+## Learnings
+
+### Backend Audit Patterns (2025-01-XX)
+
+**Audit Scope:** API Controllers, Managers, Azure Functions, Data Layer
+
+**Key Patterns Confirmed:**
+
+1. **Rate Limiting Implementation**
+   - Applied globally via `app.MapControllers().RequireRateLimiting(RateLimitingPolicies.FixedWindow)` in Program.cs
+   - NO per-action attributes needed — centralized configuration is correct approach
+   - Health check endpoints should use `.DisableRateLimiting()` when added (noted in Program.cs:158-160)
+
+2. **Manager Error Handling**
+   - Save/Delete operations: Return `OperationResult<T>` with IsSuccess flag
+   - GET operations: Return `null` for not-found (simpler pattern for read-only)
+   - Controllers check both patterns: `if (result.IsSuccess)` for saves, `if (item is null)` for gets
+
+3. **EventPublisher Exception Handling in Functions**
+   - Timer-triggered publishers wrap `IEventPublisher` calls in try/catch(EventPublishException)
+   - Log the error with details, then re-throw — don't swallow exceptions
+   - Example pattern: `RandomPosts.cs:43-69`, `ScheduledItems.cs:45-59`
+
+4. **Queue Trigger Default Connection**
+   - All queue-triggered functions use default `AzureWebJobsStorage` (no explicit Connection= parameter)
+   - This is correct — only specify Connection= when using non-default storage account
+
+5. **Data Layer Security**
+   - No `FromSqlRaw` or string concatenation found — all queries use LINQ to Entities
+   - Paging/filtering/sorting done at database level (not in-memory)
+   - AutoMapper separates Domain models from EF models (security boundary)
+
+6. **API Controller Authorization Pattern**
+   - `[Authorize]` at class level (all endpoints require auth)
+   - `HttpContext.VerifyUserHasAnyAcceptedScope()` on every endpoint (fine-grained RBAC)
+   - `[IgnoreAntiforgeryToken]` on API controllers (JWT Bearer auth, not cookies)
+
+**Opportunities for Future Enhancement:**
+- Consider standardizing GET operations to return `OperationResult<T>` (currently return null)
+- Add Polly circuit breaker to Twitter/Facebook/LinkedIn managers (resilience improvement)
+- Timer-triggered functions should return `Task` or `Task<bool>`, not `IActionResult` (semantic correctness)
+
+**Audit Deliverable:** `.squad/decisions/inbox/trinity-backend-audit-findings.md` (comprehensive report with file/line references)

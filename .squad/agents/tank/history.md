@@ -490,3 +490,118 @@ private static Functions.Twitter.ProcessScheduledItemFired BuildSut(
 - ✅ Tests: All compile; SyndicationFeedReader network test failures EXPECTED (external dependency)
 
 **Next:** Ready for PR #683 merge; Epic #667 Sprints 3-6 can proceed.
+
+---
+
+## 2025-01-27: Test Coverage & Quality Audit (Pre-Feature Health Check)
+
+**Status:** ✅ COMPLETED  
+**Findings:** `.squad/decisions/inbox/tank-test-audit-findings.md`
+
+**Scope:** Comprehensive audit of test suite health, coverage gaps, quality patterns, and recent feature test status.
+
+**Coverage Analysis:**
+- ✅ 15 of 19 source projects have corresponding .Tests projects
+- ✅ 7 of 13 Data.Sql DataStores have test files
+- ❌ 6 DataStores without tests: EngagementSocialMediaPlatformDataStore, SocialMediaPlatformDataStore, EmailTemplateDataStore, ApplicationUserDataStore, RoleDataStore, UserApprovalLogDataStore
+
+**Critical Gaps Identified:**
+1. **EngagementSocialMediaPlatformDataStore** (epic #667) — Junction table operations have NO tests
+2. **SocialMediaPlatformDataStore** (epic #667) — CRUD operations including soft delete have NO tests
+3. **RejectSessionCookieWhenAccountNotInCacheEvents** (issue #85) — Complex auth logic with re-entry guard has NO tests
+4. **RateLimitingPolicies** (issue #304) — Rate limiting has no integration test verification
+
+**Quality Assessment:**
+- ✅ **EXCELLENT:** FluentAssertions usage (19 test files use `.Should()` assertions)
+- ✅ **EXCELLENT:** Moq usage (all mocks use `Mock<T>`, no hand-rolled fakes)
+- ✅ **EXCELLENT:** AAA pattern adherence (all tests have Arrange-Act-Assert sections)
+- ✅ **EXCELLENT:** Async test signatures (zero `async void` instances)
+- ✅ **EXCELLENT:** No empty tests (all tests have assertions)
+- ⚠️ **MINOR:** xUnit1051 warnings in integration tests (5+ instances, should use `TestContext.Current.CancellationToken`)
+
+**Recent Feature Test Status:**
+- ✅ **SendEmail function** (issue #618) — EXCELLENT coverage (6 test scenarios)
+- ✅ **SocialMediaPlatform Manager/API** (epic #667) — Manager and Controller layers covered
+- ⚠️ **SocialMediaPlatform DataStore** (epic #667) — DataStore layer has NO tests (GAP)
+- ⚠️ **EngagementSocialMediaPlatform** (epic #667) — DataStore layer has NO tests (GAP)
+
+**Recommendations (Priority Order):**
+1. 🔴 HIGH: Create `EngagementSocialMediaPlatformDataStoreTests.cs` (junction table operations)
+2. 🔴 HIGH: Create `SocialMediaPlatformDataStoreTests.cs` (CRUD + soft delete)
+3. 🔴 HIGH: Create `RejectSessionCookieWhenAccountNotInCacheEventsTests.cs` (auth edge cases)
+4. 🟡 MEDIUM: Verify SourceTags junction table coverage in existing tests
+5. 🟡 MEDIUM: Add rate limiting integration test
+6. 🟡 MEDIUM: Fix xUnit1051 warnings (replace `default` with `TestContext.Current.CancellationToken`)
+
+## Learnings
+
+### Test Pattern: In-Memory EF Core for DataStore Tests
+- **Pattern:** Use `UseInMemoryDatabase(Guid.NewGuid().ToString())` for test isolation
+- **Example:** `EngagementDataStoreTests` creates unique in-memory DB per test class
+- **Benefit:** Fast, isolated, no cleanup needed (database auto-disposed)
+- **Usage:** Standard pattern for all Data.Sql DataStore tests
+
+### Test Pattern: Real AutoMapper with LoggerFactory in Tests
+- **Pattern:** Configure real AutoMapper with profile, not mocked
+- **Example:**
+  ```csharp
+  var config = new MapperConfiguration(cfg =>
+  {
+      cfg.AddProfile<MappingProfiles.BroadcastingProfile>();
+  }, new LoggerFactory());
+  var mapper = config.CreateMapper();
+  ```
+- **Benefit:** Tests actual mapping configuration, catches profile errors
+- **Usage:** All DataStore and Manager tests use real mapper
+
+### Test Pattern: Callback Capture for Assertion
+- **Pattern:** Use Moq `Callback<T>()` to capture objects sent to mocks
+- **Example:**
+  ```csharp
+  Email? capturedEmail = null;
+  _mockQueue
+      .Setup(x => x.AddMessageAsync(It.IsAny<Email>()))
+      .Callback<Email>(email => capturedEmail = email)
+      .ReturnsAsync((SendReceipt?)null!);
+  // Assert on capturedEmail properties
+  ```
+- **Benefit:** Verify complex object properties without strict matching
+- **Usage:** Common pattern in EmailSenderTests, SendEmailTests
+
+### Test Pattern: TestProblemDetailsFactory Helper
+- **Pattern:** Custom `TestProblemDetailsFactory` for API controller tests
+- **Purpose:** Avoid null reference exceptions in `ControllerBase.ProblemDetailsFactory`
+- **Example:**
+  ```csharp
+  var controller = new SocialMediaPlatformsController(...)
+  {
+      ProblemDetailsFactory = new TestProblemDetailsFactory()
+  };
+  ```
+- **Usage:** Required for all API controller tests that call Problem() methods
+
+### Test Pattern: Helper Methods for Test Data
+- **Pattern:** Private helper methods in test classes for building test objects
+- **Examples:**
+  - `CreateEngagement(int id, string name)` — builds Engagement with defaults
+  - `BuildTestEmail(string from, string to, ...)` — builds Email with defaults
+  - `BuildBase64JsonMessage(EmailModel email)` — encodes Email as Base64 JSON
+- **Benefit:** DRY, readable, consistent test data
+- **Usage:** Standard pattern across all test classes
+
+### Test Naming Convention
+- **File:** `{ClassName}Tests.cs` (e.g., `SocialMediaPlatformManagerTests.cs`)
+- **Method:** `{MethodName}_{Scenario}_Should{ExpectedBehavior}`
+- **Examples:**
+  - `GetAllAsync_WhenPlatformsExist_ShouldReturnOnlyActivePlatforms`
+  - `DeleteAsync_WhenPlatformDoesNotExist_ShouldReturnFalse`
+  - `Run_InvalidBase64_DoesNotCallEmailClient`
+- **Benefit:** Self-documenting, predictable, searchable
+
+### xUnit Best Practice: CancellationToken in Async Tests
+- **Issue:** xUnit1051 warning when async tests don't accept CancellationToken
+- **Recommendation:** Use `TestContext.Current.CancellationToken` instead of `default`
+- **Impact:** Makes tests more responsive to cancellation, better CI/CD behavior
+- **Status:** Currently 5+ warnings in integration tests (low priority fix)
+
+**Next:** Joseph to review findings and prioritize test gap remediation work.
