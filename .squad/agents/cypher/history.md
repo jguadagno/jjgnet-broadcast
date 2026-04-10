@@ -1,122 +1,39 @@
-# Cypher — History
+# Cypher - History
 
 ## Core Context
 
-- **Project:** A .NET broadcasting application using Azure Functions, ASP.NET Core API/MVC, SQL Server, and Azure infrastructure to collect and distribute social media content.
-- **Role:** DevOps Engineer
-- **Joined:** 2026-03-14T16:55:20.779Z
+**Role:** DevOps Engineer | CI/CD, GitHub Actions, Azure infrastructure, Bicep IaC, health monitoring
 
-## Learnings
+**Key infrastructure facts:**
+- App Service names: api-jjgnet-broadcast, web-jjgnet-broadcast, jjgnet-broadcast (Functions)
+- All 3 apps on same App Service plan (NOT Consumption) -> App Service Health Check /health works for all
+- Health endpoints (ServiceDefaults): /health (readiness) + /alive (liveness)
+- Resource Group: jjgnet | Subscription: 4f42033c-3579-4a94-8023-a3561518ae7f
+- SQL Server: r4bv7wtt6u (westus) | DB: JJGNet | Key Vault: jjgnet-broadcasting (westus2)
+- Storage (main): jjgnet (westus2, RAGRS) | Storage (functions): jjgnetbeb6 (westus, LRS)
+- App Insights/Log Analytics: jjgnet/jjgnet-log-workspace (westus2) | App Service Plan: jjgnet-broadcast (P1v3, westus)
+- Managed Identities: api-jjgnet-broad-id-8130, web-jjgnet-broad-id-8f0f, jjgnet-broadcast-id-8d7d
 
-<!-- Append learnings below -->
+**Bicep IaC patterns:**
+- targetScope = 'resourceGroup' at main.bicep; modules under infrastructure/bicep/modules/{compute,data,security,monitoring}/
+- NEVER listKeys() in module outputs (exposes in ARM history); @secure() on all connection string params
+- NEVER -preview API versions in production
+- GA versions: actionGroups@2023-01-01, components@2020-02-02, workspaces@2022-10-01, metricAlerts@2018-03-01, eventGrid/topics@2022-06-15, sql/servers@2021-11-01, managedIdentities@2023-01-31
+- allowBlobPublicAccess:false; StorageV2 over legacy Storage; ConnectionString over deprecated InstrumentationKey
+- Circular dependency fix: identify dead params (declared but unused in resources) and remove to break cycle
+- event-grid.bicep is in modules/data/ not modules/monitoring/ - always search before assuming paths
+- Hardcode nothing - parameterise emails, notification targets, environment values
 
-### Approval Gates via GitHub Environments (2026-03-14)
+**GitHub Actions patterns:**
+- environment: production creates approval gate if GitHub Settings has required reviewers
+- "Stop staging slot" step after swap (before informational steps): az webapp stop --slot staging
 
-- `environment: production` on a job is sufficient to create an approval gate in GitHub Actions. GitHub will pause the job and wait for a required reviewer **if** the `production` environment in GitHub Settings has required reviewers configured. No extra YAML is needed beyond the `environment:` key.
-- The environment protection rules live entirely in GitHub Settings (not in YAML). A workflow can have `environment: production` in place before reviewers are added; enabling enforcement is a one-click change in Settings → Environments.
-- After a slot swap, App Service staging slots can be stopped with `az webapp stop --slot staging`. For Azure Functions slots, use `az functionapp stop --slot staging`. Both commands accept `--name` and `--resource-group` identical to other az CLI calls in the workflow — no extra credentials needed since the same Azure login session covers all steps in the job.
-- Stopping the staging slot after a swap is a cheap guard: it ensures staging is never left running/serving traffic after going dark, and makes the next staging deploy a clean start.
+**Completed work:**
+- PR #557: Production approval gate + staging slot cleanup in all 3 workflows
+- Issue #635: App Service Health Check + Availability Tests runbook posted
+- Issue #637: Full modular Bicep scaffold (PR #645); circular dependency fixed; preview APIs pinned to GA
 
-### Deployment Approval Gate + Staging Cleanup (2026-03-22)
-
-- **Issue #556** / **PR #557**: Implemented production approval gate + automatic staging slot cleanup in all three workflows (API, Web, Functions)
-- Added "Stop staging slot" step to each `swap-to-production` job in `.github/workflows/`
-- GitHub environment gates already in place (`environment: production`) — required reviewers needed in GitHub Settings
-- Scribe created orchestration logs and merged decisions into team decisions.md
-- Neo flagged non-blocking observation: cleanup steps should run immediately after primary action (swap), before informational steps, to avoid skipping if downstream steps fail
-
-### Azure Health Monitoring Configuration — Issue #635 (2026-04-05)
-
-**Context:** Neo triaged #635 (add health checks to Api & Web). Health check infrastructure already exists via `ServiceDefaults` — `/health` (readiness) and `/alive` (liveness) endpoints mapped in both projects.
-
-**Findings:**
-- **Azure App Service names confirmed:**
-  - API: `api-jjgnet-broadcast` (deployed via `.github/workflows/main_api-jjgnet-broadcast.yml`)
-  - Web: `web-jjgnet-broadcast` (deployed via `.github/workflows/main_web-jjgnet-broadcast.yml`)
-  - Functions: `jjgnet-broadcast` (deployed via `.github/workflows/main_jjgnet-broadcast.yml`)
-- **Health endpoint paths (ServiceDefaults/Extensions.cs):**
-  - `/health` — full readiness check (validates all dependencies)
-  - `/alive` — liveness check (tagged "live", basic app responsiveness)
-- **CORRECTED: All three apps on App Service plan** — Initially I incorrectly stated Functions was on Consumption plan. Joseph confirmed **all three apps (api-jjgnet-broadcast, web-jjgnet-broadcast, jjgnet-broadcast) are hosted on the same App Service plan**
-  - **Result:** App Service Health Check feature IS available for Functions — no workaround needed
-  - All three services can use the platform `/health` endpoint with zero code changes
-  - Custom HTTP trigger for Functions is optional/nice-to-have, not required
-- **No `infra/` directory exists** — all infrastructure currently managed manually in Azure Portal or via GitHub Actions deployment
-
-**Deliverable:** Posted comprehensive Azure Portal runbook to issue #635 covering:
-1. **App Service Health Check** configuration for Api, Web, and Functions (path: `/health`, threshold: 3 failures)
-2. **Azure Monitor Availability Tests** — external uptime monitoring setup (all 3 services)
-3. **Summary table** — quick reference for each service's monitoring configuration
-4. **Correction comment posted** — [Clarified Functions hosting plan](https://github.com/jguadagno/jjgnet-broadcast/issues/635#issuecomment-4184423317)
-
-**Key decisions embedded in guide:**
-- Use `/health` for App Service Health Check (validates dependencies) — better than `/alive` for production readiness
-- Recommend 2+ instances for true HA (single-instance restarts cause downtime)
-- Defense in depth: Use both App Service Health Check (internal) + Availability Tests (external)
-- All three services on App Service plan — simplified health check setup
-
-**References:** 
-- [Initial guide posted to issue #635](https://github.com/jguadagno/jjgnet-broadcast/issues/635#issuecomment-4184410295)
-- [Correction comment](https://github.com/jguadagno/jjgnet-broadcast/issues/635#issuecomment-4184423317)
-
-**Status:** ✅ Correction posted confirming Functions on App Service plan (NOT Consumption), so Health Check support is available. Strategy remains valid.
-
-
-### Bicep IaC Discovery — Issue #637 (2026-04-05)
-
-**Context:** Drafted Azure access request and discovery checklist for the IaC initiative (#637). Confirmed with Neo's analysis that ~10 critical resource identifiers cannot be inferred from the codebase.
-
-**Key pattern — `az group export` workflow:**
-1. Joseph grants `Reader` role on production resource group (resource group scope, not subscription)
-2. `az group export --name <rg> --include-parameter-default-values > arm-export.json`
-3. `az bicep decompile --file arm-export.json` → raw monolith Bicep
-4. Refactor into modular structure: `infrastructure/bicep/modules/{compute,data,security,monitoring}/`
-5. `infrastructure/discovery/` is gitignored — raw ARM export artifacts, no secrets
-
-**Why Reader is sufficient (not Contributor):** Reader allows `az group export`, `az resource list`, and reading metadata for App Insights / Key Vault / Storage. It does NOT expose secret values, storage keys, or SQL credentials. Zero security risk for IaC generation.
-
-**Blocker pattern:** Do NOT scaffold Bicep for production resources without Azure access — templates that compile without real resource names/SKUs will require manual substitution on every parameter, creating rework risk across all 7 phases.
-
-**Time estimate:** Discovery + initial scaffold = 6–9 hours once access and resource group name are provided.
-
-**References:**
-- [GitHub comment posted](https://github.com/jguadagno/jjgnet-broadcast/issues/637#issuecomment-4189062098)
-- Neo's analysis: `.squad/decisions/inbox/neo-637-azure-access-for-bicep.md`
-- Cypher decision: `.squad/decisions/inbox/cypher-637-access-checklist.md`
-
-### Bicep IaC Scaffold — Issue #637 (2026-04-05)
-
-**Context:** Created the full modular Bicep scaffold for the JJGNet Broadcasting Azure environment.
-
-**Resource Group / Subscription confirmed:**
-- Resource Group: `jjgnet`
-- Subscription: `4f42033c-3579-4a94-8023-a3561518ae7f` (Visual Studio Ultimate - MSDN MVP)
-- Tenant: `bee716cf-fa94-4610-b72e-5df4bf5ac339`
-
-**All production resource names resolved from `az resource list`:**
-- SQL Server: `r4bv7wtt6u` (westus) — database: `JJGNet`
-- Key Vault: `jjgnet-broadcasting` (westus2)
-- Storage (main): `jjgnet` (westus2, Standard_RAGRS)
-- Storage (functions): `jjgnetbeb6` (westus, Standard_LRS)
-- App Insights: `jjgnet` (westus2)
-- Log Analytics: `jjgnet-log-workspace` (westus2)
-- App Service Plan: `jjgnet-broadcast` (westus, P1v3)
-- Managed Identities: `api-jjgnet-broad-id-8130`, `web-jjgnet-broad-id-8f0f`, `jjgnet-broadcast-id-8d7d`
-
-**Bicep patterns used:**
-- `targetScope = 'resourceGroup'` at main.bicep level
-- Module-per-resource-type under `infrastructure/bicep/modules/{compute,data,security,monitoring}/`
-- RBAC model for Key Vault (`enableRbacAuthorization: true`) — no access policies, use `roleAssignments` instead
-- `guid(keyVault.id, principalId, roleId)` for deterministic role assignment names
-- `listKeys()` inline for storage connection strings in outputs (secure — outputs are marked sensitive by Bicep)
-- `@secure()` on all password/connection string params
-- `dependsOn` explicit on modules that reference outputs from other modules (key vault depends on app services for principalIds)
-- User-assigned identity wired into function app via `userAssignedIdentities: { '${id}': {} }`
-- Staging slots defined as child resources inside compute modules (not separate modules)
-
-**PR:** #645 — https://github.com/jguadagno/jjgnet-broadcast/pull/645
-**Issue comment:** https://github.com/jguadagno/jjgnet-broadcast/issues/637#issuecomment-4192734573
-
+**Team standing rules:** Only Joseph merges PRs; All mapping via AutoMapper; Paging at data layer only
 ### Bicep Security Patterns — PR #645 Review Fixes (2026-04-06)
 
 **Security patterns to always follow in Bicep:**

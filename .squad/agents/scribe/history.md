@@ -88,3 +88,24 @@
 - Merged 2 inbox decisions into decisions.md (neo-667-architecture-answers.md + neo-667-architecture-decisions.md), deduplicated
 - Deleted 2 inbox files
 - Appended epic #667 unblock notes to Morpheus, Trinity, Switch, Sparks, Tank history.md files
+
+### Squad Upgrade Cleanup & History Compaction (2026-04-11)
+
+**Files removed (stray duplicates from commit 0629a27):**
+- Casting state at .squad/ root: casting-history.json, casting-policy.json, casting-registry.json
+- Template duplicates at .squad/ root: 14 files (charter.md, constraint-tracking.md, copilot-instructions.md, history.md, issue-lifecycle.md, mcp-config.md, multi-agent-format.md, orchestration-log.md, plugin-marketplace.md, raw-agent-output.md, roster.md, run-output.md, scribe-charter.md, skill.md)
+- Casting state in .squad/templates/: casting-history.json, casting-policy.json, casting-registry.json
+- Deleted .squad/templates/identity/now.md (real copy at .squad/identity/now.md)
+
+**Files moved to correct locations:**
+- .squad/templates/identity/wisdom.md -> .squad/identity/wisdom.md
+- .squad/templates/casting/Futurama.json -> .squad/casting/Futurama.json
+
+**History files compacted (originals archived):**
+- Neo: 41.5KB -> ~10KB | archive: .squad/agents/neo/history-archive.md
+- Tank: 39KB -> ~11KB | archive: .squad/agents/tank/history-archive.md
+- Trinity: 30.7KB -> ~9KB | archive: .squad/agents/trinity/history-archive.md
+- Morpheus: 12.5KB -> ~6KB | archive: .squad/agents/morpheus/history-archive.md
+- Cypher: 12.3KB -> ~6KB | archive: .squad/agents/cypher/history-archive.md
+
+**Policy:** Full original content in history-archive.md beside each agent. Compact versions: dense Core Context + 2-3 most recent sessions verbatim.
