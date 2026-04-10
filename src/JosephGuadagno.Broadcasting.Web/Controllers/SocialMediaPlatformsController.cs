@@ -47,6 +47,7 @@ public class SocialMediaPlatformsController : Controller
     /// Creates a new social media platform.
     /// </summary>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     [Authorize(Policy = "RequireContributor")]
     public async Task<IActionResult> Add(SocialMediaPlatformViewModel viewModel)
     {
@@ -87,6 +88,7 @@ public class SocialMediaPlatformsController : Controller
     /// Saves changes to an existing social media platform.
     /// </summary>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     [Authorize(Policy = "RequireContributor")]
     public async Task<IActionResult> Edit(SocialMediaPlatformViewModel viewModel)
     {
