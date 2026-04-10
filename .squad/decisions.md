@@ -13095,3 +13095,95 @@ Sprint 2 AutoMapper and test-fix changes are now committed and pushed. All 500+ 
 ## Action Required
 - Switch/Sparks: Branch is ready — Sprint 3 Web UI work can begin on top of `issue-667-social-media-platforms`
 - Team: PR review can proceed whenever ready
+
+---
+
+### 2026-04-09: Process Directive — Full Test Suite Before Every Push
+
+**By:** jguadagno (via Copilot)
+**What:** Run `dotnet test` (full suite, not targeted build) before every push to any PR branch — including after rebases, empty commits, and incremental fixes. A targeted build is not sufficient.
+**Why:** User request — enforced after Sprint 3 where multiple CI failures were caused by pushing without running the full test suite.
+
+---
+
+### 2026-04-10: Code Review — PR #685 and PR #686 (Epic #667 Sprint 3 Tests)
+
+**Reviewer:** Neo (Tech Lead)
+**PRs:** #685 (`issue-681` branch) and #686 (`issue-680` branch)
+**Requested by:** jguadagno
+
+#### PR #685 — EngagementsController Platform Sub-Resource Endpoints
+**Verdict:** ⚠️ Approve with suggestions
+
+**What was added:** 3 API endpoints (`GET/POST/DELETE /engagements/{id}/platforms`), 2 DTOs, AutoMapper mappings, `[IgnoreAntiforgeryToken]` at class level, 13 unit tests.
+
+**Suggestions (non-blocking):**
+1. `[ActionName]` on `GetPlatformsForEngagementAsync` is redundant — remove for consistency.
+2. `[Required]` on `int SocialMediaPlatformId` does not prevent `0` — prefer `[Range(1, int.MaxValue)]`.
+3. `RemovePlatformFromEngagementAsync` returns `Task<ActionResult>` vs codebase preference of `Task<IActionResult>` for delete-only endpoints.
+4. Missing newline at end of `EngagementsController.cs`.
+
+**Patterns confirmed:** `EngagementsController` does NOT use `[FromBody]` on complex type parameters (unlike `SocialMediaPlatformsController`). `[IgnoreAntiforgeryToken]` correctly placed at class level.
+
+#### PR #686 — Tests for SocialMediaPlatformManager and SocialMediaPlatformsController
+**Verdict:** ✅ Approve
+
+**What was added:** 13 tests in `SocialMediaPlatformManagerTests.cs`, 12 tests in `SocialMediaPlatformsControllerTests.cs`. No production code changes.
+
+**Key patterns confirmed:**
+- Use real `IMapper` from `MapperConfiguration` + `LoggerFactory` in tests (not mocked AutoMapper).
+- Manager test `CancellationToken` pattern: use `default`.
+- Controller test `CancellationToken` pattern: use `It.IsAny<CancellationToken>()`.
+
+---
+
+### 2026-04-09: Code Review — PR #687 (SocialMediaPlatforms Admin UI)
+
+**Reviewer:** Neo (Tech Lead)
+**Branch:** `issue-678`
+**Verdict:** REQUEST CHANGES → resolved before merge
+
+**Blockers (both resolved):**
+1. Missing explicit `[ValidateAntiForgeryToken]` on `Add` POST and `Edit` POST in `SocialMediaPlatformsController.cs`. Global `AutoValidateAntiforgeryTokenAttribute` does not replace explicit per-action requirement for CodeQL.
+2. Missing unit tests for `SocialMediaPlatformManager` and `SocialMediaPlatformsController` (addressed in PR #686).
+
+**Non-blocking suggestions:** `SocialMediaPlatformService.DeleteAsync` no distinction between 404 and 5xx; caching consideration for `SocialMediaPlatformManager` (filed as #689); nav link placement for Platforms visible to all Viewers.
+
+**Architecture confirmed correct:** Web → `ISocialMediaPlatformService` → `IDownstreamApi`. AutoMapper bidirectional mappings correct. All IActionResult return types correct.
+
+---
+
+### 2026-04-10: Code Review — PR #688 (Engagement Platform Selector)
+
+**Reviewer:** Neo (Tech Lead)
+**Branch:** `issue-679`
+**Verdict:** REQUEST CHANGES → resolved before merge
+
+**Required changes (both resolved):**
+1. `GetAllAsync()` missing `?includeInactive=true` for AddPlatform dropdown — fix propagated through full service stack (ISocialMediaPlatformManager → Manager → API controller → ISocialMediaPlatformService → Web controller).
+2. `Details` action not loading platforms while `Details.cshtml` renders them — fixed by mirroring `Edit` GET action pattern.
+
+**Pattern established:** `Details` GET action must populate all ViewModel properties that `Edit` GET action populates when the view renders that data.
+
+---
+
+### 2026-04-10: Switch — PR #688 Fixes: includeInactive and Details Action Pattern
+
+**Author:** Switch
+**Branch:** issue-679 / PR #688
+
+**Decision: Thread `includeInactive` Through the Full Service Stack**
+When a new query capability exists at the data layer but is not exposed at upper layers, the fix must propagate through every layer: Domain interface → Manager → API controller → Web service interface → Web service implementation → Web controller call site. Active-only is the right default for end-user-facing dropdowns; `includeInactive: true` is correct for admin configuration dropdowns.
+
+**Decision: Details Action Must Mirror Edit Action for Associated Data**
+Any ViewModel property populated in `Edit` GET must also be populated in `Details` GET if the Details view renders that data. Pattern: load associated data after fetching the entity in both actions.
+
+---
+
+### 2026-04-10: Epic #667 — Social Media Platform Management — COMPLETE
+
+**Status:** Fully implemented and shipped
+**PRs merged:** #686 (domain/data), #685 (API + tests), #687 (Web Admin UI), #688 (Engagement platform selector)
+**Issues closed:** #667 (epic), #682 (cleanup), #53, #54, #536, #537 (superseded as "not planned")
+**Remaining:** #689 (in-memory caching for SocialMediaPlatformManager) — future work, not blocking
+**Process note:** Sprint 3 retrospective identified: full `dotnet test` required before every push (no exceptions, including after rebases). Targeted builds are not sufficient.
