@@ -8130,7 +8130,7 @@ feat: Add EntraClaimsTransformation and UserApprovalMiddleware (Phase 1)
 
 Closes #603
 
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+Co-authored-by: Copilot <[email scrubbed]>
 ```
 
 Commit hash: `a046eb0`
@@ -13187,3 +13187,386 @@ Any ViewModel property populated in `Edit` GET must also be populated in `Detail
 **Issues closed:** #667 (epic), #682 (cleanup), #53, #54, #536, #537 (superseded as "not planned")
 **Remaining:** #689 (in-memory caching for SocialMediaPlatformManager) — future work, not blocking
 **Process note:** Sprint 3 retrospective identified: full `dotnet test` required before every push (no exceptions, including after rebases). Targeted builds are not sufficient.
+
+---
+
+--- From: neo-arch-audit-findings.md (2026-04-10) ---
+# Neo Decision: Architecture & Conventions Audit Findings
+
+**Date:** 2026-04-10  
+**Auditor:** Neo (Lead Architect)  
+**Scope:** Pre-feature codebase health check — architecture, conventions, datetime usage, project references  
+**Status:** ⚠️ Multiple violations found requiring attention
+
+## Summary
+
+The codebase demonstrates **strong architectural discipline** in most areas. However, critical violations were found:
+
+- ❌ **Web layer directly references Data.Sql** (architecture violation)
+- ❌ **DateTime used in Functions** instead of DateTimeOffset (30+ occurrences)
+- ❌ **DateTime used in Web Controllers** (2 occurrences)
+- ⚠️ **Web Controllers missing CancellationToken** parameters
+
+## Critical Findings
+
+### ❌ VIOLATION: Web References Data.Sql Directly
+- **File:** `src/JosephGuadagno.Broadcasting.Web/JosephGuadagno.Broadcasting.Web.csproj:70`
+- **Issue:** Web has ProjectReference to Data.Sql, violating architecture rule (Web must use Managers, not data stores directly)
+- **Impact:** Allows Web Controllers/Services to bypass Manager layer
+- **Fix:** Remove ProjectReference; verify all Web Controller constructors inject only I*Service interfaces
+- **Priority:** 🔴 CRITICAL — Must fix before next feature
+
+### ❌ VIOLATION: DateTime.UtcNow in Functions (30+ occurrences)
+- **Files:** Twitter, Facebook, LinkedIn, Bluesky, Publishers, Collectors, Maintenance functions
+- **Issue:** Functions use `DateTime.UtcNow` instead of `DateTimeOffset.UtcNow` for `startedAt` timestamps
+- **Examples:** PublisherScheduledItems.cs:21, FacebookPostPageStatus.cs:17, TwitterProcessScheduledItemFired.cs:37, RefreshTokens.cs:104
+- **Fix:** Global find/replace `DateTime.UtcNow` → `DateTimeOffset.UtcNow` and `DateTime.MinValue` → `DateTimeOffset.MinValue`
+- **Impact:** DateTime lacks timezone offset. DateTimeOffset is team standard.
+- **Priority:** 🟡 HIGH — Fix in next sprint
+
+### ❌ VIOLATION: DateTime.UtcNow in Web Controllers (2 occurrences)
+- **Files:** `EngagementsController.cs:206`, `SchedulesController.cs:188`
+- **Issue:** Initialize EngagementViewModel/ScheduledItemViewModel with `DateTime.UtcNow` instead of `DateTimeOffset.UtcNow`
+- **Fix:** Change to `DateTimeOffset.UtcNow` to match ViewModel property types
+- **Priority:** 🟡 HIGH — Fix in next sprint
+
+### ⚠️ WARNING: Web Controllers Missing CancellationToken Parameters
+- **Files:** All async controller actions in Web project (16 in EngagementsController, 13 in SchedulesController, 10 in TalksController)
+- **Issue:** Async methods don't accept CancellationToken parameters (unlike Manager classes which do)
+- **Fix:** Add optional `CancellationToken cancellationToken = default` to all async actions
+- **Benefit:** Enables proper request cancellation when clients disconnect
+- **Priority:** 🟢 MEDIUM — Nice to have
+
+## What's Working Well
+
+- ✅ API references Data.Sql correctly (allowed for API layer)
+- ✅ All domain models and ViewModels use DateTimeOffset consistently
+- ✅ AutoMapper properly configured for all DTO/ViewModel mappings
+- ✅ Async methods properly suffixed with `Async`
+- ✅ Excellent error handling patterns in Azure Functions
+- ✅ Recent feature work follows conventions
+
+## Audit Rating: 🟡 B+ (Good with Minor Issues)
+
+- Architecture: ✅ Mostly excellent (one violation)
+- DateTime conventions: ⚠️ Needs correction in Functions
+- AutoMapper: ✅ Excellent
+- Naming: ✅ Excellent
+- Error handling: ✅ Excellent
+
+---
+
+--- From: trinity-backend-audit-findings.md (2026-04-10) ---
+# Trinity Decision: Backend Patterns & API Audit Findings
+
+**Date:** 2026-04-10  
+**Auditor:** Trinity (Backend Developer)  
+**Scope:** API Controllers, Managers, Azure Functions, Data Layer  
+**Status:** ✅ Excellent patterns, no violations found
+
+## Summary
+
+All critical patterns reviewed follow best practices or documented conventions. **No violations requiring immediate fixes.** Minor recommendations for future resilience enhancements.
+
+## What's Working Exceptionally Well
+
+### API Controllers
+- ✅ Consistent response patterns with proper HTTP status codes (200, 201, 204, 400, 404, 401)
+- ✅ ProducesResponseType attributes document all response types
+- ✅ Global `[Authorize]` with scope verification on all 31 endpoints
+- ✅ DTOs use DataAnnotations for validation; ModelState checked before processing
+- ✅ Global rate limiting applied via centralized RateLimitingPolicies
+- ✅ All API controllers use `[IgnoreAntiforgeryToken]` (correct for Bearer auth)
+
+### Manager Classes
+- ✅ All return Domain models (not EF models), never repository entities
+- ✅ Save/Delete use `OperationResult<T>` pattern for error handling
+- ✅ GET operations return null on not-found (consistent across codebase)
+- ✅ All async methods properly support CancellationToken
+- ✅ AutoMapper used consistently between layers
+
+### Azure Functions
+- ✅ EventPublisher exception handling wraps calls in try/catch(EventPublishException)
+- ✅ Proper re-throw after structured logging
+- ✅ DI pattern uses Program.cs (no Startup.cs), primary constructor injection
+- ✅ Queue triggers use default connection string (no explicit Connection= parameter)
+- ✅ Health checks exist for all external dependencies (Bitly, Bluesky, EventGrid, Facebook, LinkedIn, Twitter)
+
+### Data Layer
+- ✅ No raw SQL found (grep: FromSqlRaw, FromSqlInterpolated, ExecuteSqlRaw, ExecuteSqlInterpolated = 0 results)
+- ✅ All queries use LINQ to Entities (safe from SQL injection)
+- ✅ Database-level paging/filtering/sorting (Skip/Take, Where, OrderBy executed in SQL)
+- ✅ AutoMapper used for Domain ↔ EF mapping in repositories
+
+## Recommended Improvements (Not Required)
+
+### Short Term (Optional)
+1. **Standardize Error Handling:** Consider making GET operations return `OperationResult<T>` instead of null (currently inconsistent)
+2. **Collector Function Return Types:** Timer-triggered functions should return `Task` or `Task<bool>`, not `IActionResult` (currently semantically incorrect for non-HTTP)
+
+### Medium Term (Resilience)
+3. **Add Circuit Breaker:** Apply Polly circuit breaker to Twitter/Facebook/LinkedIn manager calls (note: LoadNewPosts.cs already uses Polly retry correctly)
+4. **Explicit Transactions:** Multi-step data operations could benefit from explicit transaction visibility
+
+### Long Term (If Needed)
+5. **Consider FluentValidation:** Only if complex cross-field validation rules emerge (DataAnnotations sufficient today)
+
+## Recent Changes Analysis
+
+Reviewed 7 commits (8a3cedc through 6bd1454), all follow patterns correctly:
+
+1. **SocialMediaPlatforms Feature (epic #667)** — All controllers, managers, DTOs follow conventions ✅
+2. **Rate Limiting (issue #304)** — Centralized in Program.cs, properly applied ✅
+3. **Health Checks (issue #313)** — All external dependencies covered ✅
+4. **EventPublisher Refactor (issue #310)** — Failure semantics correctly implemented ✅
+
+## Audit Rating: 🟢 A- (Excellent)
+
+- Controllers: ✅ Well-architected and consistent
+- Managers: ✅ Proper patterns and error handling
+- Functions: ✅ Correct DI and exception handling
+- Data Layer: ✅ Safe queries, proper mapping
+- Recent Changes: ✅ All follow established patterns
+
+---
+
+--- From: tank-test-audit-findings.md (2026-04-10) ---
+# Tank Decision: Test Coverage Audit Findings
+
+**Date:** 2026-04-10  
+**Auditor:** Tank (QA Automation Engineer)  
+**Scope:** Test coverage, quality patterns, recent features, DataStore tests  
+**Status:** 🟡 Good coverage with notable gaps in recent work
+
+## Summary
+
+Test suite is **well-architected and high-quality** with consistent patterns. Most core modules have solid tests. However, recent infrastructure components lack test coverage, creating regression risk for future changes.
+
+**Overall Grade:** B+ (Good coverage with notable gaps)
+
+## Critical Coverage Gaps (MUST ADDRESS)
+
+### ❌ EngagementSocialMediaPlatformDataStore — NO TESTS
+- **File:** `src/JosephGuadagno.Broadcasting.Data.Sql/EngagementSocialMediaPlatformDataStore.cs`
+- **Risk:** HIGH — Junction table operations (Add, Delete, GetByEngagementId) have NO unit test coverage
+- **Used by:** Engagement platform selector feature (commits 8a3cedc, ae2befa, epic #667)
+- **Fix:** Create `EngagementSocialMediaPlatformDataStoreTests.cs` with in-memory EF Core tests
+- **Priority:** 🔴 CRITICAL
+
+### ❌ SocialMediaPlatformDataStore — NO TESTS
+- **File:** `src/JosephGuadagno.Broadcasting.Data.Sql/SocialMediaPlatformDataStore.cs`
+- **Risk:** HIGH — CRUD operations and soft delete (IsActive = false) have NO unit test coverage
+- **Used by:** SocialMediaPlatforms feature (commits d43747f, ae2befa, epic #667)
+- **Fix:** Create `SocialMediaPlatformDataStoreTests.cs` with GetAll, GetByName, Add, Update, soft Delete tests
+- **Priority:** 🔴 CRITICAL
+
+### ❌ RejectSessionCookieWhenAccountNotInCacheEvents — NO TESTS
+- **File:** `src/JosephGuadagno.Broadcasting.Web/RejectSessionCookieWhenAccountNotInCacheEvents.cs`
+- **Risk:** HIGH — Complex authentication logic with re-entry guard, exception handling
+- **Fixed by:** Issue #85 infinite loop fix (commit 1140dcc)
+- **Fix:** Create unit tests for guard clause, token cache exceptions (user_null, MultipleTokensMatchedError, NoTokensFoundError), RejectPrincipal flow
+- **Priority:** 🔴 CRITICAL
+
+### ⚠️ RateLimitingPolicies — NO TESTS
+- **File:** `src/JosephGuadagno.Broadcasting.Api/Infrastructure/RateLimitingPolicies.cs`
+- **Risk:** MEDIUM — Constants file (low complexity), but rate limiting enforcement has no integration test
+- **Added by:** Issue #304 (commit 33ca8de)
+- **Fix:** Consider integration test verifying rate limit is enforced on API
+- **Priority:** 🟡 MEDIUM
+
+### ⚠️ Missing DataStore Tests
+- ❌ EmailTemplateDataStore (no test file)
+- ❌ ApplicationUserDataStore (no test file)
+- ❌ RoleDataStore (no test file)
+- ❌ UserApprovalLogDataStore (no test file)
+- **Priority:** 🟢 LOW (only if these change frequently)
+
+## What's Working Excellently
+
+### Test Quality ✅
+- **FluentAssertions:** 19 test files use `.Should()` syntax consistently
+- **Moq:** All mocks use `Mock<T>` correctly with `.Setup()`, `.Verify()`, callbacks
+- **AAA Pattern:** Tests follow Arrange-Act-Assert with clear comments
+- **Async Tests:** Zero `async void` in test methods; all use `async Task`
+- **No Empty Tests:** All tests have meaningful assertions
+- **Test Naming:** Consistent {ClassName}Tests.cs and {MethodName}_{Scenario}_Should{ExpectedBehavior} patterns
+
+### Test Patterns (Keep Using)
+1. ✅ Constructor setup with Moq for DRY initialization
+2. ✅ In-memory EF Core for DataStore tests (isolation with unique Guid database names)
+3. ✅ Real AutoMapper with LoggerFactory (not mocked)
+4. ✅ Helper methods for test data (CreateEngagement(), BuildBase64JsonMessage(), etc.)
+5. ✅ Callback captures for assertion (Callback<Email>(email => capturedEmail = email))
+6. ✅ TestProblemDetailsFactory for API controller tests
+
+## Recent Feature Coverage Status
+
+### ✅ SendEmail Function (issue #618)
+- **Tests:** SendEmailTests.cs — EXCELLENT
+- **Coverage:** Base64 JSON, From address, exceptions, poison queue handling
+
+### ✅ SocialMediaPlatform Manager & Controllers (epic #667)
+- **Manager Tests:** SocialMediaPlatformManagerTests.cs — EXCELLENT (GetAll, GetByName, Add, Update, Delete)
+- **API Controller Tests:** SocialMediaPlatformsControllerTests.cs — EXCELLENT (all CRUD endpoints)
+- **Web Controller Tests:** SocialMediaPlatformsControllerTests.cs — Web UI covered
+- **Gap:** DataStore layer has NO tests ❌
+
+### ✅ EngagementSocialMediaPlatform API Endpoints (epic #667)
+- **Controller Tests:** EngagementsController_PlatformsTests.cs — endpoints tested
+- **Gap:** DataStore layer has NO tests ❌
+
+### ✅ Schedule Add/Edit UI (issue #67)
+- **Tests:** SchedulesControllerTests.cs — Controller logic tested
+- **Gap:** Service layer (ScheduledItemValidationService) tested indirectly via controller
+
+## Audit Rating: 🟡 B+ (Good with Notable Gaps)
+
+- Test Quality: ✅ Excellent (FluentAssertions, Moq, AAA)
+- Coverage Breadth: ⚠️ Solid for core features, gaps in recent additions
+- Test Patterns: ✅ Industry best practices consistently applied
+- Recent Features: ⚠️ Manager/Controller tests good, DataStore coverage gaps
+
+## Minor Issues
+
+### xUnit1051 Warnings (Low Impact)
+- **Count:** 5+ in integration tests (TwitterManagerTests.cs, PostShareTests.cs)
+- **Issue:** Tests don't use CancellationToken in async methods
+- **Fix:** Replace `default` with `TestContext.Current.CancellationToken`
+- **Impact:** LOW — Tests work correctly but could be more responsive
+
+---
+
+--- From: oracle-security-audit-findings.md (2026-04-10) ---
+# Oracle Decision: Security & Authentication Audit Findings
+
+**Date:** 2026-04-10  
+**Auditor:** Oracle (Security Engineer)  
+**Scope:** Secrets management, auth middleware, authorization, session handling, tokens, input validation  
+**Status:** 🟢 STRONG posture with one critical vulnerability
+
+## Summary
+
+Overall security posture is **STRONG** ✅ with comprehensive scope validation, secure middleware ordering, and proper session handling. **One critical vulnerability identified requiring immediate remediation before next deployment.**
+
+## Critical Issue (⚠️ MUST FIX IMMEDIATELY)
+
+### ❌ Hardcoded Application Insights Key in Functions
+- **File:** `src/JosephGuadagno.Broadcasting.Functions/local.settings.json` (lines 5-6)
+- **Keys:** `APPLICATIONINSIGHTS_CONNECTION_STRING`, `APPINSIGHTS_INSTRUMENTATIONKEY`
+- **Value:** `c2f97275-e157-434a-981b-051a4e897744`
+- **Risk:** CRITICAL — Anyone with repository access can send telemetry data to this App Insights instance, potentially polluting metrics or exfiltrating data
+- **Fix:**
+  - Replace with: `"APPLICATIONINSIGHTS_CONNECTION_STRING": "Set in User Secrets"`
+  - Move to user secrets: `dotnet user-secrets set "APPLICATIONINSIGHTS_CONNECTION_STRING" "<real-value>"`
+  - Verify .gitignore excludes `local.settings.json` (should be, but file is clearly committed)
+- **Priority:** 🔴 CRITICAL — Must be fixed before next deployment
+
+## Recommended Improvements
+
+### 🔄 SHORT-TERM (Next Sprint)
+1. **Mask LinkedIn Access Token in UI** (Views/LinkedIn/Index.cshtml:14)
+   - **Issue:** Access token displayed in plaintext input field, not masked
+   - **Risk:** Visible if screen-sharing or in public space
+   - **Fix:** Use `type="password"` instead of `type="text"` or truncate display to last 4 characters
+   - **Priority:** ⚠️ MEDIUM
+
+2. **Document CORS Policy for API**
+   - **Current:** No explicit CORS configuration (acceptable)
+   - **Future:** When adding CORS, use explicit allowed origins, never `AllowAnyOrigin()`
+   - **Example:**
+     ```csharp
+     policy.WithOrigins("https://web-jjgnet-broadcast.azurewebsites.net")
+           .AllowCredentials();
+     ```
+   - **Priority:** ⚠️ LOW (planning for future)
+
+## What's Working Excellently
+
+### Secrets Management ✅
+- ✅ Api/Web projects: All secrets use placeholders ("Set in User Secrets", "Set in Users Secrets/Azure App Service Settings")
+- ✅ All connection strings empty, delegated to external config
+- ✅ All social platform tokens (Facebook, LinkedIn, Twitter, Bluesky, YouTube, Bitly) are empty strings — properly configured for injection
+- ✅ Event Grid keys use placeholder text
+
+### Authentication Middleware ✅
+- ✅ **Api Program.cs (lines 150-156):** Middleware ordering CORRECT
+  - UseExceptionHandler → UseHttpsRedirection → UseStaticFiles → UseAuthentication → UseAuthorization → UseRateLimiter
+  - HTTPS enabled, Authentication before Authorization
+- ✅ **Web Program.cs (lines 217-224):** Middleware ordering CORRECT
+  - UseHttpsRedirection → UseStaticFiles → UseRouting → UseAuthentication → UseUserApprovalGate → UseAuthorization → UseSession
+  - Custom RBAC middleware correctly positioned after auth, before authz
+
+### Authorization Coverage ✅
+- ✅ **All 4 API Controllers:** Have class-level `[Authorize]` attribute
+- ✅ **All 31 API Endpoints:** Use `HttpContext.VerifyUserHasAnyAcceptedScope()` for scope validation
+  - Engagements: 10 endpoints (List, View, Modify, Delete, Add)
+  - Schedules: 9 endpoints (List, View, Modify, Delete, ScheduledToSend, UnsentScheduled, UpcomingScheduled)
+  - MessageTemplates: 3 endpoints (List, View, Modify)
+  - SocialMediaPlatforms: 5 endpoints (List, View, Add, Modify, Delete)
+  - Talks: 4 endpoints (List, View, Modify, Delete)
+- ✅ **Web:** Global `[Authorize]` filter applied to all controllers, role-based policies defined
+
+### Session Cookie Handling ✅
+- ✅ Session cookies configured securely:
+  - `HttpOnly = true` — prevents JavaScript access
+  - `SecurePolicy = CookieSecurePolicy.Always` — HTTPS only
+  - `SameSite = SameSiteMode.Lax` — protects against CSRF
+  - `IsEssential = true` — required for GDPR compliance
+- ✅ Antiforgery tokens configured even more strictly (SameSite = Strict)
+- ✅ **RejectSessionCookieWhenAccountNotInCacheEvents.cs (lines 31-40):** Uses `context.RejectPrincipal()` ONLY (no SignOutAsync — correct pattern)
+- ✅ Guard clause prevents null principal infinite loop
+
+### Social Platform Tokens ✅
+- ✅ OAuth tokens NOT stored in config (all empty strings or placeholders)
+- ✅ Facebook/LinkedIn refresh logic saves to Key Vault, not config files
+- ✅ Token metadata (DisplayName, Expires) logged, but never the token itself
+- ✅ Health checks log missing config names, not values
+
+### Input Validation ✅
+- ✅ **SQL Injection:** No raw SQL found (grep: FromSqlRaw, FromSqlInterpolated = 0 results), all queries use EF Core LINQ
+- ✅ **XSS Protection:** No unescaped output found (grep: @Html.Raw = 0 results), all output HTML-encoded
+- ✅ **Global CSRF Protection:** Applied via `[AutoValidateAntiforgeryTokenAttribute]` on Web controllers
+- ✅ **API CSRF Handling:** Correctly uses `[IgnoreAntiforgeryToken]` on API (Bearer token auth, not form-based)
+- ✅ **Logging Sanitization:** Newline removal before logging user input
+
+## Security Summary by Category
+
+| Category | Status | Critical Issues | Warnings |
+|----------|--------|-----------------|----------|
+| Secrets Management | ⚠️ | 1 | 0 |
+| Authentication Middleware | ✅ | 0 | 0 (CORS planning only) |
+| Authorization Coverage | ✅ | 0 | 0 |
+| Session Cookie Handling | ✅ | 0 | 0 |
+| Social Platform Tokens | ✅ | 0 | 0 |
+| Input Validation | ✅ | 0 | 1 (LinkedIn token display) |
+| **TOTAL** | **STRONG** | **1** | **2** |
+
+## Audit Rating: 🟢 STRONG
+
+Overall security posture is excellent. One critical vulnerability requiring immediate fix. Two areas flagged for review/enhancement during next sprint.
+
+## Files Audited (28 total)
+
+**Configuration Files (11):**
+- Api/Web: appsettings.json, appsettings.Development.json, appsettings.Production.json
+- Functions: local.settings.json ❌, event-grid-simulator-config.json ✅
+
+**Program.cs Files (2):**
+- Api/Program.cs ✅
+- Web/Program.cs ✅
+
+**Security-Critical Classes (3):**
+- RejectSessionCookieWhenAccountNotInCacheEvents.cs ✅
+- Facebook/RefreshTokens.cs ✅
+- Functions/Program.cs ✅
+
+**Controllers (4):**
+- EngagementsController.cs ✅
+- SchedulesController.cs ✅
+- MessageTemplatesController.cs ✅
+- SocialMediaPlatformsController.cs ✅
+
+**Views (8 sampled):**
+- LinkedIn/Index.cshtml ⚠️
+- Shared/_Layout.cshtml ✅
+- All other views (searched for @Html.Raw = 0 results) ✅

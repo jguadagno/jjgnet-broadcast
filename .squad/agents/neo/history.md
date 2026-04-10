@@ -41,7 +41,39 @@ Lead reviewer and sprint planner. Primary domain: architecture, CI/CD, patterns,
 
 **Sprint closure:** Sprint 9 (7 issues) complete via PRs #516–#526, all merged. Sprint 11 (5 issues) complete via PRs #551–#555, all merged. Three-layer auth exception defence live on main.
 
+## Learnings
+
+### Architecture & DateTime Conventions (2026-01-09)
+- **Web → Data.Sql reference is a violation:** Web projects must never reference Data.Sql directly, only Managers. API projects are allowed to reference Data.Sql for DI setup.
+- **DateTimeOffset is the standard:** All datetime handling should use `DateTimeOffset`, not `DateTime`. This applies to domain models (✅ compliant), ViewModels (✅ compliant), but Azure Functions have 30+ violations using `DateTime.UtcNow` instead of `DateTimeOffset.UtcNow`.
+- **Manual LINQ .Select() is acceptable for anonymous types:** When creating anonymous objects for JSON serialization (e.g., FullCalendar.js), manual `.Select(x => new { ... })` is allowed since AutoMapper doesn't support anonymous types.
+- **CancellationToken optional in Controllers:** While Manager classes correctly implement `CancellationToken cancellationToken = default`, Web Controllers currently don't accept CancellationTokens. This is acceptable but could be improved for better request cancellation handling.
+
 ## Recent Work
+
+### 2026-01-09: Architecture & Conventions Audit
+
+**Audit completed:** Pre-feature codebase health check across 6 dimensions  
+**Findings:** 2 critical violations, 3 high-priority issues, 1 medium-priority improvement
+
+**Critical violations:**
+1. Web project has direct ProjectReference to Data.Sql (line 70 of Web.csproj) — bypasses Manager layer
+2. Functions use `DateTime.UtcNow` instead of `DateTimeOffset.UtcNow` (30+ occurrences)
+
+**High priority:**
+- Web Controllers use `DateTime.UtcNow` for ViewModel initialization (2 occurrences)
+- Should be `DateTimeOffset.UtcNow` to match property types
+
+**Positive findings:**
+- ✅ Domain models: All use DateTimeOffset consistently
+- ✅ AutoMapper: Properly configured, consistent usage
+- ✅ Async naming: All methods have `Async` suffix
+- ✅ Error handling: Functions follow EventPublishException pattern with structured logging
+- ✅ Recent changes (Social Media Platforms feature): Clean, no violations introduced
+
+**Audit rating:** B+ (Good with Minor Issues)
+
+**Decision inbox updated:** `neo-arch-audit-findings.md` created with full report and recommendations
 
 ### 2026-04-05: Infrastructure Issues Triage — #635 and #636
 
