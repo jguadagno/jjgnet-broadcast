@@ -2,8 +2,8 @@
   "IsEncrypted": false,
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "APPLICATIONINSIGHTS_CONNECTION_STRING": "InstrumentationKey=c2f97275-e157-434a-981b-051a4e897744;IngestionEndpoint=https://westus2-0.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/",
-    "APPINSIGHTS_INSTRUMENTATIONKEY": "c2f97275-e157-434a-981b-051a4e897744",
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": "",
+    "APPINSIGHTS_INSTRUMENTATIONKEY": "",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "FUNCTIONS_EXTENSION_VERSION": "~4",
     "WEBSITE_CLOUD_ROLENAME": "FunctionApp",
