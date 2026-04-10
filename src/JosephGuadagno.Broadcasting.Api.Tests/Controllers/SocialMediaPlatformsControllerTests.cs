@@ -80,7 +80,7 @@ public class SocialMediaPlatformsControllerTests
             new() { Id = 2, Name = "BlueSky",  Url = "https://bsky.app",     IsActive = true },
             new() { Id = 3, Name = "LinkedIn", Url = "https://linkedin.com", IsActive = true }
         };
-        _managerMock.Setup(m => m.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(platforms);
+        _managerMock.Setup(m => m.GetAllAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>())).ReturnsAsync(platforms);
 
         var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.All);
 
@@ -92,14 +92,14 @@ public class SocialMediaPlatformsControllerTests
         var response = okResult.Value.Should().BeAssignableTo<List<SocialMediaPlatformResponse>>().Subject;
         response.Should().HaveCount(3);
         response.Should().BeEquivalentTo(platforms, opts => opts.ExcludingMissingMembers());
-        _managerMock.Verify(m => m.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _managerMock.Verify(m => m.GetAllAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task GetAllAsync_WhenEmpty_ShouldReturn200WithEmptyList()
     {
         // Arrange
-        _managerMock.Setup(m => m.GetAllAsync(It.IsAny<CancellationToken>()))
+        _managerMock.Setup(m => m.GetAllAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<SocialMediaPlatform>());
 
         var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.List);
@@ -111,7 +111,7 @@ public class SocialMediaPlatformsControllerTests
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeAssignableTo<List<SocialMediaPlatformResponse>>().Subject;
         response.Should().BeEmpty();
-        _managerMock.Verify(m => m.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _managerMock.Verify(m => m.GetAllAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------
