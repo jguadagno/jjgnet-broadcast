@@ -19,21 +19,31 @@
     <dd class="col-sm-9"><local-time value="@Model.EndDateTime" /></dd>
     <dt class="col-sm-3">Comments</dt>
     <dd class="col-sm-9">@Model.Comments</dd>
-    @if (!string.IsNullOrEmpty(Model.ConferenceHashtag))
-    {
-        <dt class="col-sm-3">Conference Hashtag</dt>
-        <dd class="col-sm-9">@Model.ConferenceHashtag</dd>
-    }
-    @if (!string.IsNullOrEmpty(Model.ConferenceTwitterHandle))
-    {
-        <dt class="col-sm-3">Conference Handle</dt>
-        <dd class="col-sm-9">@Model.ConferenceTwitterHandle</dd>
-    }
     <dt class="col-sm-3">Created On</dt>
     <dd class="col-sm-9"><local-time value="@Model.CreatedOn" /></dd>
     <dt class="col-sm-3">Last Updated On</dt>
     <dd class="col-sm-9"><local-time value="@Model.LastUpdatedOn" /></dd>
 </dl>
+@if (Model.SocialMediaPlatforms is not null && Model.SocialMediaPlatforms.Count > 0)
+{
+    <h3>Social Media Platforms</h3>
+    <ul class="list-group mb-3">
+        @foreach (var platform in Model.SocialMediaPlatforms)
+        {
+            <li class="list-group-item">
+                @if (!string.IsNullOrEmpty(platform.PlatformIcon))
+                {
+                    <i class="bi @platform.PlatformIcon me-2"></i>
+                }
+                <strong>@platform.PlatformName</strong>
+                @if (!string.IsNullOrEmpty(platform.Handle))
+                {
+                    <span class="ms-2 text-muted">@platform.Handle</span>
+                }
+            </li>
+        }
+    </ul>
+}
 @if (Model.Talks is not null && Model.Talks.Count > 0)
 {
     <h3>Talks</h3>

@@ -13,4 +13,7 @@ public interface IEngagementService
     Task<Talk?> SaveEngagementTalkAsync(Talk talk);
     Task<Talk?> GetEngagementTalkAsync(int engagementId, int talkId);
     Task<bool> DeleteEngagementTalkAsync(int engagementId, int talkId);
+    Task<List<EngagementSocialMediaPlatform>> GetPlatformsForEngagementAsync(int engagementId);
+    Task<EngagementSocialMediaPlatform?> AddPlatformToEngagementAsync(int engagementId, int socialMediaPlatformId, string? handle);
+    Task<bool> RemovePlatformFromEngagementAsync(int engagementId, int platformId);
 }

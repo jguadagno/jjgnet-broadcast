@@ -142,4 +142,51 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
 
         return response is { StatusCode: HttpStatusCode.NoContent };
     }
+
+    /// <summary>
+    /// Gets all social media platforms for a given engagement
+    /// </summary>
+    /// <param name="engagementId">The identifier of the engagement</param>
+    /// <returns>A list of engagement social media platforms</returns>
+    public async Task<List<EngagementSocialMediaPlatform>> GetPlatformsForEngagementAsync(int engagementId)
+    {
+        var platforms = await apiClient.GetForUserAsync<List<EngagementSocialMediaPlatform>>(ApiServiceName, options =>
+        {
+            options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/platforms";
+        });
+        return platforms ?? new List<EngagementSocialMediaPlatform>();
+    }
+
+    /// <summary>
+    /// Adds a social media platform to an engagement
+    /// </summary>
+    /// <param name="engagementId">The identifier of the engagement</param>
+    /// <param name="socialMediaPlatformId">The identifier of the social media platform</param>
+    /// <param name="handle">The handle or hashtag</param>
+    /// <returns>The added platform association, or null if failed</returns>
+    public async Task<EngagementSocialMediaPlatform?> AddPlatformToEngagementAsync(int engagementId, int socialMediaPlatformId, string? handle)
+    {
+        var request = new { SocialMediaPlatformId = socialMediaPlatformId, Handle = handle };
+        var result = await apiClient.PostForUserAsync<object, EngagementSocialMediaPlatform>(ApiServiceName, request, options =>
+        {
+            options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/platforms";
+        });
+        return result;
+    }
+
+    /// <summary>
+    /// Removes a social media platform from an engagement
+    /// </summary>
+    /// <param name="engagementId">The identifier of the engagement</param>
+    /// <param name="platformId">The identifier of the platform</param>
+    /// <returns>True if successful, otherwise false</returns>
+    public async Task<bool> RemovePlatformFromEngagementAsync(int engagementId, int platformId)
+    {
+        var response = await apiClient.CallApiForUserAsync<HttpResponseMessage>(ApiServiceName, options =>
+        {
+            options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/platforms/{platformId}";
+            options.HttpMethod = HttpMethod.Delete.Method;
+        });
+        return response is { StatusCode: HttpStatusCode.NoContent };
+    }
 }

@@ -42,16 +42,6 @@
         <input asp-for="Comments" type="text" class="form-control" autocomplete="off" aria-describedby="val-Comments" />
         <span id="val-Comments" asp-validation-for="Comments" class="text-danger"></span>
     </div>
-    <div class="mb-3">
-        <label asp-for="ConferenceHashtag" class="form-label">Conference Hashtag</label>
-        <input asp-for="ConferenceHashtag" type="text" class="form-control" autocomplete="off" placeholder="#MyConf2026" aria-describedby="val-ConferenceHashtag" />
-        <span id="val-ConferenceHashtag" asp-validation-for="ConferenceHashtag" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="ConferenceTwitterHandle" class="form-label">Conference Handle</label>
-        <input asp-for="ConferenceTwitterHandle" type="text" class="form-control" autocomplete="off" placeholder="@@MyConference" aria-describedby="val-ConferenceTwitterHandle" />
-        <span id="val-ConferenceTwitterHandle" asp-validation-for="ConferenceTwitterHandle" class="text-danger"></span>
-    </div>
     <br />
     <button type="submit" class="btn btn-primary">
         <i class="bi bi-floppy me-2"></i>Save
@@ -99,6 +89,50 @@
 
 <a asp-action="Add" asp-controller="Talks" asp-route-engagementId="@Model.Id" class="btn btn-primary">
     <i class="bi bi-easel me-2"></i>Add New Talk
+</a>
+
+<h2 class="pt-4">Social Media Platforms</h2>
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th scope="col">Platform</th>
+        <th scope="col">Handle</th>
+        <th scope="col">&nbsp;</th>
+    </tr>
+    </thead>
+    <tbody>
+    @if (Model.SocialMediaPlatforms is null || Model.SocialMediaPlatforms.Count == 0)
+    {
+        <tr><td colspan="3">No social media platforms configured for this engagement</td></tr>
+    }
+    else
+    {
+        @foreach (var platform in Model.SocialMediaPlatforms)
+        {
+            <tr>
+                <td>
+                    @if (!string.IsNullOrEmpty(platform.PlatformIcon))
+                    {
+                        <i class="bi @platform.PlatformIcon me-1"></i>
+                    }
+                    @platform.PlatformName
+                </td>
+                <td>@platform.Handle</td>
+                <td class="text-end">
+                    <form asp-action="RemovePlatform" asp-route-engagementId="@Model.Id" asp-route-platformId="@platform.SocialMediaPlatformId" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        }
+    }
+    </tbody>
+</table>
+<a asp-action="AddPlatform" asp-controller="Engagements" asp-route-engagementId="@Model.Id" class="btn btn-secondary">
+    <i class="bi bi-plus-circle me-2"></i>Add Platform
 </a>
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }

@@ -8,11 +8,12 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 public interface ISocialMediaPlatformManager
 {
     /// <summary>
-    /// Get all active social media platforms
+    /// Get all social media platforms
     /// </summary>
+    /// <param name="includeInactive">Whether to include inactive platforms (default: false)</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>List of active social media platforms</returns>
-    Task<List<SocialMediaPlatform>> GetAllAsync(CancellationToken cancellationToken = default);
+    /// <returns>List of social media platforms</returns>
+    Task<List<SocialMediaPlatform>> GetAllAsync(bool includeInactive = false, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get all social media platforms including inactive ones (for admin use)

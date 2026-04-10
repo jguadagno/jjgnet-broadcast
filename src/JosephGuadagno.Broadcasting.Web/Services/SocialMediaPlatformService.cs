@@ -17,7 +17,7 @@ public class SocialMediaPlatformService(IDownstreamApi apiClient, ILogger<Social
     /// <summary>
     /// Gets all social media platforms including inactive ones (for admin use)
     /// </summary>
-    public async Task<List<SocialMediaPlatform>> GetAllAsync()
+    public async Task<List<SocialMediaPlatform>> GetAllAsync(bool includeInactive = false)
     {
         var platforms = await apiClient.GetForUserAsync<List<SocialMediaPlatform>>(ApiServiceName, options =>
         {

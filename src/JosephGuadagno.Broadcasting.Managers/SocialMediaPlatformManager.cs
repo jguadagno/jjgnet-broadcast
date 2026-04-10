@@ -16,9 +16,9 @@ public class SocialMediaPlatformManager : ISocialMediaPlatformManager
         _dataStore = dataStore;
     }
 
-    public async Task<List<SocialMediaPlatform>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<List<SocialMediaPlatform>> GetAllAsync(bool includeInactive = false, CancellationToken cancellationToken = default)
     {
-        return await _dataStore.GetAllAsync(includeInactive: false, cancellationToken);
+        return await _dataStore.GetAllAsync(includeInactive: includeInactive, cancellationToken);
     }
 
     public async Task<List<SocialMediaPlatform>> GetAllIncludingInactiveAsync(CancellationToken cancellationToken = default)
