@@ -59,11 +59,5 @@ public class WebMappingProfile: Profile
         CreateMap<Domain.Models.SocialMediaPlatform, Models.SocialMediaPlatformViewModel>();
         CreateMap<Models.SocialMediaPlatformViewModel, Domain.Models.SocialMediaPlatform>();
 
-        // EngagementSocialMediaPlatform mappings (Issue #679 - included here to fix build)
-        CreateMap<Domain.Models.EngagementSocialMediaPlatform, Models.EngagementSocialMediaPlatformViewModel>()
-            .ForMember(destination => destination.PlatformName,
-                options => options.MapFrom(source => source.SocialMediaPlatform != null ? source.SocialMediaPlatform.Name : null))
-            .ForMember(destination => destination.PlatformIcon,
-                options => options.MapFrom(source => source.SocialMediaPlatform != null ? source.SocialMediaPlatform.Icon : null));
     }
 }
