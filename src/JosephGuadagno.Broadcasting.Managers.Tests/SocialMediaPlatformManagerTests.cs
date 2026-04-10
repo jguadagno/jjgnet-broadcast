@@ -7,246 +7,346 @@ namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
 public class SocialMediaPlatformManagerTests
 {
-    private readonly Mock<ISocialMediaPlatformDataStore> _dataStoreMock;
-    private readonly SocialMediaPlatformManager _manager;
+    private readonly Mock<ISocialMediaPlatformDataStore> _dataStore;
+    private readonly SocialMediaPlatformManager _sut;
 
     public SocialMediaPlatformManagerTests()
     {
-        _dataStoreMock = new Mock<ISocialMediaPlatformDataStore>();
-        _manager = new SocialMediaPlatformManager(_dataStoreMock.Object);
+        _dataStore = new Mock<ISocialMediaPlatformDataStore>();
+        _sut = new SocialMediaPlatformManager(_dataStore.Object);
     }
 
-    // -------------------------------------------------------------------------
-    // GetAllAsync
-    // -------------------------------------------------------------------------
+    // ── GetAllAsync ───────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task GetAllAsync_ShouldCallDataStoreWithIncludeInactiveFalse()
+    public async Task GetAllAsync_WhenPlatformsExist_ShouldReturnOnlyActivePlatforms()
     {
         // Arrange
         var platforms = new List<SocialMediaPlatform>
         {
-            new() { Id = 1, Name = "Twitter", Url = "https://twitter.com", IsActive = true },
-            new() { Id = 2, Name = "BlueSky", Url = "https://bsky.app", IsActive = true }
+            new SocialMediaPlatform { Id = 1, Name = "Twitter", IsActive = true },
+            new SocialMediaPlatform { Id = 2, Name = "BlueSky", IsActive = true }
         };
-        _dataStoreMock.Setup(d => d.GetAllAsync(false, default)).ReturnsAsync(platforms);
+        _dataStore
+            .Setup(d => d.GetAllAsync(false, default))
+            .ReturnsAsync(platforms);
 
         // Act
-        var result = await _manager.GetAllAsync();
+        var result = await _sut.GetAllAsync();
 
         // Assert
+        result.Should().NotBeNull();
+        result.Should().HaveCount(2);
         result.Should().BeEquivalentTo(platforms);
-        _dataStoreMock.Verify(d => d.GetAllAsync(false, default), Times.Once);
-        _dataStoreMock.Verify(d => d.GetAllAsync(true, It.IsAny<CancellationToken>()), Times.Never);
+        _dataStore.Verify(d => d.GetAllAsync(false, default), Times.Once);
     }
 
     [Fact]
-    public async Task GetAllAsync_WhenEmpty_ShouldReturnEmptyList()
+    public async Task GetAllAsync_WhenNoActivePlatformsExist_ShouldReturnEmptyList()
     {
         // Arrange
-        _dataStoreMock.Setup(d => d.GetAllAsync(false, default))
+        _dataStore
+            .Setup(d => d.GetAllAsync(false, default))
             .ReturnsAsync(new List<SocialMediaPlatform>());
 
         // Act
-        var result = await _manager.GetAllAsync();
+        var result = await _sut.GetAllAsync();
 
         // Assert
         result.Should().NotBeNull();
         result.Should().BeEmpty();
-        _dataStoreMock.Verify(d => d.GetAllAsync(false, default), Times.Once);
+        _dataStore.Verify(d => d.GetAllAsync(false, default), Times.Once);
     }
 
-    // -------------------------------------------------------------------------
-    // GetByIdAsync
-    // -------------------------------------------------------------------------
-
     [Fact]
-    public async Task GetByIdAsync_WhenFound_ShouldReturnPlatform()
+    public async Task GetAllAsync_ShouldPassIncludeInactiveFalseToDataStore()
     {
         // Arrange
-        var platform = new SocialMediaPlatform { Id = 1, Name = "Twitter", Url = "https://twitter.com", IsActive = true };
-        _dataStoreMock.Setup(d => d.GetAsync(1, default)).ReturnsAsync(platform);
+        _dataStore
+            .Setup(d => d.GetAllAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<SocialMediaPlatform>());
 
         // Act
-        var result = await _manager.GetByIdAsync(1);
+        await _sut.GetAllAsync();
+
+        // Assert — ensure inactive platforms are excluded by passing false
+        _dataStore.Verify(d => d.GetAllAsync(false, It.IsAny<CancellationToken>()), Times.Once);
+        _dataStore.Verify(d => d.GetAllAsync(true, It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ── GetAllIncludingInactiveAsync ──────────────────────────────────────────
+
+    [Fact]
+    public async Task GetAllIncludingInactiveAsync_WhenPlatformsExist_ShouldReturnAllPlatforms()
+    {
+        // Arrange
+        var platforms = new List<SocialMediaPlatform>
+        {
+            new SocialMediaPlatform { Id = 1, Name = "Twitter", IsActive = true },
+            new SocialMediaPlatform { Id = 2, Name = "MySpace", IsActive = false }
+        };
+        _dataStore
+            .Setup(d => d.GetAllAsync(true, default))
+            .ReturnsAsync(platforms);
+
+        // Act
+        var result = await _sut.GetAllIncludingInactiveAsync();
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(platform);
-        _dataStoreMock.Verify(d => d.GetAsync(1, default), Times.Once);
+        result.Should().HaveCount(2);
+        result.Should().BeEquivalentTo(platforms);
+        _dataStore.Verify(d => d.GetAllAsync(true, default), Times.Once);
     }
 
     [Fact]
-    public async Task GetByIdAsync_WhenNotFound_ShouldReturnNull()
+    public async Task GetAllIncludingInactiveAsync_ShouldPassIncludeInactiveTrueToDataStore()
     {
         // Arrange
-        _dataStoreMock.Setup(d => d.GetAsync(99, default)).ReturnsAsync((SocialMediaPlatform?)null);
+        _dataStore
+            .Setup(d => d.GetAllAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<SocialMediaPlatform>());
 
         // Act
-        var result = await _manager.GetByIdAsync(99);
+        await _sut.GetAllIncludingInactiveAsync();
+
+        // Assert — both active and inactive platforms should be requested
+        _dataStore.Verify(d => d.GetAllAsync(true, It.IsAny<CancellationToken>()), Times.Once);
+        _dataStore.Verify(d => d.GetAllAsync(false, It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ── GetByIdAsync ──────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_WhenPlatformExists_ShouldReturnPlatform()
+    {
+        // Arrange
+        var platform = new SocialMediaPlatform { Id = 1, Name = "Twitter", IsActive = true };
+        _dataStore
+            .Setup(d => d.GetAsync(1, default))
+            .ReturnsAsync(platform);
+
+        // Act
+        var result = await _sut.GetByIdAsync(1);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(1);
+        result.Name.Should().Be("Twitter");
+        _dataStore.Verify(d => d.GetAsync(1, default), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WhenPlatformDoesNotExist_ShouldReturnNull()
+    {
+        // Arrange
+        _dataStore
+            .Setup(d => d.GetAsync(99, default))
+            .ReturnsAsync((SocialMediaPlatform?)null);
+
+        // Act
+        var result = await _sut.GetByIdAsync(99);
 
         // Assert
         result.Should().BeNull();
-        _dataStoreMock.Verify(d => d.GetAsync(99, default), Times.Once);
+        _dataStore.Verify(d => d.GetAsync(99, default), Times.Once);
     }
 
-    // -------------------------------------------------------------------------
-    // GetByNameAsync
-    // -------------------------------------------------------------------------
+    // ── GetByNameAsync ────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task GetByNameAsync_WhenFound_ShouldReturnPlatform()
+    public async Task GetByNameAsync_WhenPlatformExists_ShouldReturnPlatform()
     {
         // Arrange
-        var platform = new SocialMediaPlatform { Id = 3, Name = "Mastodon", Url = "https://mastodon.social", IsActive = true };
-        _dataStoreMock.Setup(d => d.GetByNameAsync("Mastodon", default)).ReturnsAsync(platform);
+        var platform = new SocialMediaPlatform { Id = 3, Name = "BlueSky", IsActive = true };
+        _dataStore
+            .Setup(d => d.GetByNameAsync("BlueSky", default))
+            .ReturnsAsync(platform);
 
         // Act
-        var result = await _manager.GetByNameAsync("Mastodon");
+        var result = await _sut.GetByNameAsync("BlueSky");
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(platform);
-        _dataStoreMock.Verify(d => d.GetByNameAsync("Mastodon", default), Times.Once);
+        result!.Name.Should().Be("BlueSky");
+        _dataStore.Verify(d => d.GetByNameAsync("BlueSky", default), Times.Once);
     }
 
     [Fact]
-    public async Task GetByNameAsync_WhenNotFound_ShouldReturnNull()
+    public async Task GetByNameAsync_WhenPlatformDoesNotExist_ShouldReturnNull()
     {
         // Arrange
-        _dataStoreMock.Setup(d => d.GetByNameAsync("NonExistent", default)).ReturnsAsync((SocialMediaPlatform?)null);
+        _dataStore
+            .Setup(d => d.GetByNameAsync("NonExistent", default))
+            .ReturnsAsync((SocialMediaPlatform?)null);
 
         // Act
-        var result = await _manager.GetByNameAsync("NonExistent");
+        var result = await _sut.GetByNameAsync("NonExistent");
 
         // Assert
         result.Should().BeNull();
-        _dataStoreMock.Verify(d => d.GetByNameAsync("NonExistent", default), Times.Once);
+        _dataStore.Verify(d => d.GetByNameAsync("NonExistent", default), Times.Once);
     }
 
-    // -------------------------------------------------------------------------
-    // AddAsync
-    // -------------------------------------------------------------------------
+    // ── AddAsync ──────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task AddAsync_ShouldDelegateToDataStore()
+    public async Task AddAsync_WhenPlatformIsValid_ShouldReturnCreatedPlatform()
     {
         // Arrange
-        var request = new SocialMediaPlatform { Name = "LinkedIn", Url = "https://linkedin.com", IsActive = true };
-        var saved = new SocialMediaPlatform { Id = 5, Name = "LinkedIn", Url = "https://linkedin.com", IsActive = true };
-        _dataStoreMock.Setup(d => d.AddAsync(request, default)).ReturnsAsync(saved);
+        var input = new SocialMediaPlatform { Name = "Mastodon", Url = "https://mastodon.social", IsActive = true };
+        var created = new SocialMediaPlatform { Id = 10, Name = "Mastodon", Url = "https://mastodon.social", IsActive = true };
+        _dataStore
+            .Setup(d => d.AddAsync(input, default))
+            .ReturnsAsync(created);
 
         // Act
-        var result = await _manager.AddAsync(request);
+        var result = await _sut.AddAsync(input);
 
         // Assert
         result.Should().NotBeNull();
-        result!.Id.Should().Be(5);
-        result!.Name.Should().Be("LinkedIn");
-        _dataStoreMock.Verify(d => d.AddAsync(request, default), Times.Once);
+        result!.Id.Should().Be(10);
+        result.Name.Should().Be("Mastodon");
+        _dataStore.Verify(d => d.AddAsync(input, default), Times.Once);
     }
 
     [Fact]
     public async Task AddAsync_WhenDataStoreFails_ShouldReturnNull()
     {
         // Arrange
-        var request = new SocialMediaPlatform { Name = "Facebook", IsActive = true };
-        _dataStoreMock.Setup(d => d.AddAsync(request, default)).ReturnsAsync((SocialMediaPlatform?)null);
+        var input = new SocialMediaPlatform { Name = "Mastodon" };
+        _dataStore
+            .Setup(d => d.AddAsync(It.IsAny<SocialMediaPlatform>(), default))
+            .ReturnsAsync((SocialMediaPlatform?)null);
 
         // Act
-        var result = await _manager.AddAsync(request);
+        var result = await _sut.AddAsync(input);
 
         // Assert
         result.Should().BeNull();
-        _dataStoreMock.Verify(d => d.AddAsync(request, default), Times.Once);
+        _dataStore.Verify(d => d.AddAsync(input, default), Times.Once);
     }
 
-    // -------------------------------------------------------------------------
-    // UpdateAsync
-    // -------------------------------------------------------------------------
-
     [Fact]
-    public async Task UpdateAsync_ShouldDelegateToDataStore()
+    public async Task AddAsync_ShouldForwardCancellationTokenToDataStore()
     {
         // Arrange
-        var platform = new SocialMediaPlatform { Id = 2, Name = "Mastodon", Url = "https://mastodon.social", IsActive = true };
-        _dataStoreMock.Setup(d => d.UpdateAsync(platform, default)).ReturnsAsync(platform);
+        var platform = new SocialMediaPlatform { Name = "LinkedIn" };
+        var cts = new CancellationTokenSource();
+        _dataStore
+            .Setup(d => d.AddAsync(platform, cts.Token))
+            .ReturnsAsync(platform);
 
         // Act
-        var result = await _manager.UpdateAsync(platform);
+        await _sut.AddAsync(platform, cts.Token);
+
+        // Assert
+        _dataStore.Verify(d => d.AddAsync(platform, cts.Token), Times.Once);
+    }
+
+    // ── UpdateAsync ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateAsync_WhenPlatformExists_ShouldReturnUpdatedPlatform()
+    {
+        // Arrange
+        var input = new SocialMediaPlatform { Id = 5, Name = "Twitter", Url = "https://x.com", IsActive = true };
+        var updated = new SocialMediaPlatform { Id = 5, Name = "Twitter", Url = "https://x.com", IsActive = true };
+        _dataStore
+            .Setup(d => d.UpdateAsync(input, default))
+            .ReturnsAsync(updated);
+
+        // Act
+        var result = await _sut.UpdateAsync(input);
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(platform);
-        _dataStoreMock.Verify(d => d.UpdateAsync(platform, default), Times.Once);
+        result!.Id.Should().Be(5);
+        result.Url.Should().Be("https://x.com");
+        _dataStore.Verify(d => d.UpdateAsync(input, default), Times.Once);
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenNotFound_ShouldReturnNull()
+    public async Task UpdateAsync_WhenPlatformDoesNotExist_ShouldReturnNull()
     {
         // Arrange
-        var platform = new SocialMediaPlatform { Id = 999, Name = "Ghost Platform", IsActive = true };
-        _dataStoreMock.Setup(d => d.UpdateAsync(platform, default)).ReturnsAsync((SocialMediaPlatform?)null);
+        var input = new SocialMediaPlatform { Id = 999, Name = "Ghost" };
+        _dataStore
+            .Setup(d => d.UpdateAsync(It.IsAny<SocialMediaPlatform>(), default))
+            .ReturnsAsync((SocialMediaPlatform?)null);
 
         // Act
-        var result = await _manager.UpdateAsync(platform);
+        var result = await _sut.UpdateAsync(input);
 
         // Assert
         result.Should().BeNull();
-        _dataStoreMock.Verify(d => d.UpdateAsync(platform, default), Times.Once);
+        _dataStore.Verify(d => d.UpdateAsync(input, default), Times.Once);
     }
 
-    // -------------------------------------------------------------------------
-    // DeleteAsync
-    // -------------------------------------------------------------------------
-
     [Fact]
-    public async Task DeleteAsync_WhenFound_ShouldReturnTrue()
+    public async Task UpdateAsync_ShouldForwardCancellationTokenToDataStore()
     {
         // Arrange
-        _dataStoreMock.Setup(d => d.DeleteAsync(3, default)).ReturnsAsync(true);
+        var platform = new SocialMediaPlatform { Id = 1, Name = "LinkedIn" };
+        var cts = new CancellationTokenSource();
+        _dataStore
+            .Setup(d => d.UpdateAsync(platform, cts.Token))
+            .ReturnsAsync(platform);
 
         // Act
-        var result = await _manager.DeleteAsync(3);
+        await _sut.UpdateAsync(platform, cts.Token);
 
         // Assert
-        result.Should().BeTrue();
-        _dataStoreMock.Verify(d => d.DeleteAsync(3, default), Times.Once);
+        _dataStore.Verify(d => d.UpdateAsync(platform, cts.Token), Times.Once);
     }
 
-    [Fact]
-    public async Task DeleteAsync_WhenNotFound_ShouldReturnFalse()
-    {
-        // Arrange
-        _dataStoreMock.Setup(d => d.DeleteAsync(999, default)).ReturnsAsync(false);
-
-        // Act
-        var result = await _manager.DeleteAsync(999);
-
-        // Assert
-        result.Should().BeFalse();
-        _dataStoreMock.Verify(d => d.DeleteAsync(999, default), Times.Once);
-    }
+    // ── DeleteAsync ───────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task DeleteAsync_ShouldToggleIsActive_ByDelegatingToDataStore()
+    public async Task DeleteAsync_WhenPlatformExists_ShouldReturnTrue()
     {
         // Arrange
-        // The manager delegates the soft-delete (IsActive = false) responsibility to the
-        // data store. Verify the data store is called with the correct ID and reports success.
-        const int platformId = 7;
-        var beforeDelete = new SocialMediaPlatform { Id = platformId, Name = "Pinterest", IsActive = true };
-
-        _dataStoreMock.Setup(d => d.DeleteAsync(platformId, default))
-            .Callback(() => beforeDelete.IsActive = false)   // simulate soft-delete side-effect
+        _dataStore
+            .Setup(d => d.DeleteAsync(7, default))
             .ReturnsAsync(true);
 
         // Act
-        var deleted = await _manager.DeleteAsync(platformId);
+        var result = await _sut.DeleteAsync(7);
 
         // Assert
-        deleted.Should().BeTrue();
-        beforeDelete.IsActive.Should().BeFalse("the data store performs a soft delete by setting IsActive to false");
-        _dataStoreMock.Verify(d => d.DeleteAsync(platformId, default), Times.Once);
+        result.Should().BeTrue();
+        _dataStore.Verify(d => d.DeleteAsync(7, default), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenPlatformDoesNotExist_ShouldReturnFalse()
+    {
+        // Arrange
+        _dataStore
+            .Setup(d => d.DeleteAsync(999, default))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _sut.DeleteAsync(999);
+
+        // Assert
+        result.Should().BeFalse();
+        _dataStore.Verify(d => d.DeleteAsync(999, default), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ShouldForwardCancellationTokenToDataStore()
+    {
+        // Arrange
+        var cts = new CancellationTokenSource();
+        _dataStore
+            .Setup(d => d.DeleteAsync(1, cts.Token))
+            .ReturnsAsync(true);
+
+        // Act
+        await _sut.DeleteAsync(1, cts.Token);
+
+        // Assert
+        _dataStore.Verify(d => d.DeleteAsync(1, cts.Token), Times.Once);
     }
 }
