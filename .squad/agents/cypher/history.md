@@ -1,36 +1,35 @@
-# Cypher - History
+# Cypher — History
 
 ## Core Context
 
 **Role:** DevOps Engineer | CI/CD, GitHub Actions, Azure infrastructure, Bicep IaC, health monitoring
 
 **Key infrastructure facts:**
-- App Service names: api-jjgnet-broadcast, web-jjgnet-broadcast, jjgnet-broadcast (Functions)
-- All 3 apps on same App Service plan (NOT Consumption) -> App Service Health Check /health works for all
-- Health endpoints (ServiceDefaults): /health (readiness) + /alive (liveness)
-- Resource Group: jjgnet | Subscription: 4f42033c-3579-4a94-8023-a3561518ae7f
-- SQL Server: r4bv7wtt6u (westus) | DB: JJGNet | Key Vault: jjgnet-broadcasting (westus2)
-- Storage (main): jjgnet (westus2, RAGRS) | Storage (functions): jjgnetbeb6 (westus, LRS)
-- App Insights/Log Analytics: jjgnet/jjgnet-log-workspace (westus2) | App Service Plan: jjgnet-broadcast (P1v3, westus)
-- Managed Identities: api-jjgnet-broad-id-8130, web-jjgnet-broad-id-8f0f, jjgnet-broadcast-id-8d7d
+- App Service names: `api-jjgnet-broadcast`, `web-jjgnet-broadcast`, `jjgnet-broadcast` (Functions)
+- All 3 apps on same App Service plan (NOT Consumption) → App Service Health Check `/health` works for all
+- Health endpoints (ServiceDefaults): `/health` (readiness) + `/alive` (liveness)
+- Resource Group: `jjgnet` | Subscription: `4f42033c-3579-4a94-8023-a3561518ae7f`
+- SQL Server: `r4bv7wtt6u` (westus) | DB: `JJGNet` | Key Vault: `jjgnet-broadcasting` (westus2)
+- Storage (main): `jjgnet` (westus2, RAGRS) | Storage (functions): `jjgnetbeb6` (westus, LRS)
+- App Insights/Log Analytics: `jjgnet`/`jjgnet-log-workspace` (westus2) | App Service Plan: `jjgnet-broadcast` (P1v3, westus)
+- Managed Identities: `api-jjgnet-broad-id-8130`, `web-jjgnet-broad-id-8f0f`, `jjgnet-broadcast-id-8d7d`
 
 **Bicep IaC patterns:**
-- targetScope = 'resourceGroup' at main.bicep; modules under infrastructure/bicep/modules/{compute,data,security,monitoring}/
-- NEVER listKeys() in module outputs (exposes in ARM history); @secure() on all connection string params
-- NEVER -preview API versions in production
-- GA versions: actionGroups@2023-01-01, components@2020-02-02, workspaces@2022-10-01, metricAlerts@2018-03-01, eventGrid/topics@2022-06-15, sql/servers@2021-11-01, managedIdentities@2023-01-31
-- allowBlobPublicAccess:false; StorageV2 over legacy Storage; ConnectionString over deprecated InstrumentationKey
-- Circular dependency fix: identify dead params (declared but unused in resources) and remove to break cycle
-- event-grid.bicep is in modules/data/ not modules/monitoring/ - always search before assuming paths
-- Hardcode nothing - parameterise emails, notification targets, environment values
+- `targetScope = 'resourceGroup'` at main.bicep; modules under `infrastructure/bicep/modules/{compute,data,security,monitoring}/`
+- NEVER `listKeys()` in module outputs (exposes in ARM history); `@secure()` on all connection string params
+- NEVER `-preview` API versions in production
+- GA versions: actionGroups `@2023-01-01`, components `@2020-02-02`, workspaces `@2022-10-01`, metricAlerts `@2018-03-01`, eventGrid `@2022-06-15`, sql/servers `@2021-11-01`, managedIdentities `@2023-01-31`
+- `allowBlobPublicAccess: false`; `StorageV2` over legacy `Storage`; `ConnectionString` over deprecated `InstrumentationKey`
+- Circular dependency fix: identify dead params (declared but not used in resources) and remove to break cycle
+- Hardcode nothing — parameterise emails, notification targets; `event-grid.bicep` is in `modules/data/` not `modules/monitoring/`
 
 **GitHub Actions patterns:**
-- environment: production creates approval gate if GitHub Settings has required reviewers
-- "Stop staging slot" step after swap (before informational steps): az webapp stop --slot staging
+- `environment: production` creates approval gate if GitHub Settings has required reviewers
+- "Stop staging slot" step after swap: `az webapp stop --slot staging` / `az functionapp stop --slot staging`
 
 **Completed work:**
 - PR #557: Production approval gate + staging slot cleanup in all 3 workflows
-- Issue #635: App Service Health Check + Availability Tests runbook posted
+- Issue #635: App Service Health Check + Availability Tests runbook posted  
 - Issue #637: Full modular Bicep scaffold (PR #645); circular dependency fixed; preview APIs pinned to GA
 
 **Team standing rules:** Only Joseph merges PRs; All mapping via AutoMapper; Paging at data layer only

@@ -38,7 +38,7 @@ public class LoadNewVideos(
     public async Task<IActionResult> RunAsync(
         [TimerTrigger("%collectors_youtube_load_new_videos_cron_settings%")] TimerInfo myTimer)
     {
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos, startedAt);
 
@@ -47,7 +47,7 @@ public class LoadNewVideos(
             var feedCheck = await feedCheckManager.GetByNameAsync(
                                 ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos
                             ) ??
-                            new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTime.MinValue };
+                            new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue };
 
             // Check for new items
             logger.LogDebug("Checking playlist for videos since '{LastItemAddedOrUpdated}'",
@@ -117,7 +117,7 @@ public class LoadNewVideos(
 
             // Save the last checked value
             feedCheck.LastCheckedFeed = startedAt;
-            feedCheck.LastUpdatedOn = DateTime.UtcNow;
+            feedCheck.LastUpdatedOn = DateTimeOffset.UtcNow;
             var latestAdded = newItems.Max(item => item.PublicationDate);
             var latestUpdated = newItems.Max(item => item.LastUpdatedOn);
             feedCheck.LastItemAddedOrUpdated = latestUpdated > latestAdded

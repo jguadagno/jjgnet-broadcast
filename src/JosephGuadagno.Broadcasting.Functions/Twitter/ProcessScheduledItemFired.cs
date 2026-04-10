@@ -34,7 +34,7 @@ public class ProcessScheduledItemFired(
     [QueueOutput(Queues.TwitterTweetsToSend)]
     public async Task<TwitterTweetMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.TwitterProcessScheduledItemFired, startedAt);
         
@@ -116,7 +116,7 @@ public class ProcessScheduledItemFired(
         }
         finally
         {
-            var endedAt = DateTime.UtcNow;
+            var endedAt = DateTimeOffset.UtcNow;
             logger.LogDebug("{FunctionName} ended at: {EndedAt:f}",
                 ConfigurationFunctionNames.TwitterProcessScheduledItemFired, endedAt);
         }

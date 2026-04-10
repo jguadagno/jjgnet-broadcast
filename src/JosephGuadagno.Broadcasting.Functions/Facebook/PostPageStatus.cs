@@ -14,7 +14,7 @@ public class PostPageStatus(IFacebookManager facebookManager, ILogger<PostPageSt
         [QueueTrigger(Queues.FacebookPostStatusToPage)]
         Domain.Models.Messages.FacebookPostStatus facebookPostStatus)
     {
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.FacebookPostPageStatus, startedAt);
 

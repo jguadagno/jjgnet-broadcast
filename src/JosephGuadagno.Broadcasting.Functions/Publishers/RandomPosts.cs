@@ -18,14 +18,14 @@ public class RandomPosts(
     public async Task Run(
         [TimerTrigger("%publishers_random_post_cron_settings%")] TimerInfo myTimer)
     {
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.PublishersRandomPosts, startedAt);
 
         // Get the feed items
         // Check for the from date
         var cutoffDate = DateTimeOffset.MinValue;
-        if (randomPostSettings.CutoffDate != DateTime.MinValue)
+        if (randomPostSettings.CutoffDate != DateTimeOffset.MinValue)
         {
             cutoffDate = randomPostSettings.CutoffDate;
         }

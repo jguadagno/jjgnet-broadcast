@@ -32,7 +32,7 @@ public class LoadNewSpeakingEngagements(
     public async Task<IActionResult> RunAsync(
         [TimerTrigger("%collectors_speaking_engagements_load_new_speaking_engagements_cron_settings%")] TimerInfo myTimer)
     {
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew, startedAt);
 
@@ -44,7 +44,7 @@ public class LoadNewSpeakingEngagements(
             {
                 Name = ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew,
                 LastCheckedFeed = startedAt,
-                LastItemAddedOrUpdated = DateTime.MinValue
+                LastItemAddedOrUpdated = DateTimeOffset.MinValue
             };
 
             // Check for new items
@@ -111,7 +111,7 @@ public class LoadNewSpeakingEngagements(
 
             // Save the last checked value
             feedCheck.LastCheckedFeed = startedAt;
-            feedCheck.LastUpdatedOn = DateTime.UtcNow;
+            feedCheck.LastUpdatedOn = DateTimeOffset.UtcNow;
             var latestAdded = newItems.Max(item => item.CreatedOn);
             var latestUpdated = newItems.Max(item => item.LastUpdatedOn);
             feedCheck.LastItemAddedOrUpdated = latestUpdated > latestAdded

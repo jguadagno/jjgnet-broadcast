@@ -29,12 +29,12 @@ public class LoadAllVideos(
         HttpRequest req, 
         string checkFrom)
     {
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos, startedAt);
 
         // Check for the date to check from
-        var dateToCheckFrom = DateTime.MinValue;
+        var dateToCheckFrom = DateTimeOffset.MinValue;
 
         if (!checkFrom.IsNullOrEmpty())
         {

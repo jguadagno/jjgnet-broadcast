@@ -18,14 +18,14 @@ public class ScheduledItems(
     [Function(ConfigurationFunctionNames.PublishersScheduledItems)]
     public async Task RunAsync([TimerTrigger("%publishers_scheduled_items_cron_settings%")] TimerInfo myTimer, ILogger log)
     {
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.PublishersScheduledItems, startedAt);
 
         var configuration = await feedCheckManager.GetByNameAsync(
                                 ConfigurationFunctionNames.PublishersScheduledItems
                             ) ??
-                            new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTime.MinValue };
+                            new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue };
 
         // Check for items that are due to be fired
         logger.LogDebug("Checking for scheduled items that have not been fired");

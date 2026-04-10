@@ -20,7 +20,7 @@ public class RefreshTokens(
     [Function(ConfigurationFunctionNames.FacebookTokenRefresh)]
     public async Task Run([TimerTrigger("%facebook_refresh_tokens_cron_settings%")] TimerInfo myTimer)
     {
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.FacebookTokenRefresh, startedAt);
 
@@ -43,12 +43,12 @@ public class RefreshTokens(
                                 new TokenRefresh
                                 {
                                     Name = tokenType.DisplayName(),
-                                    LastRefreshed = DateTime.MinValue,
-                                    LastChecked = DateTime.MinValue,
-                                    Expires = DateTime.MinValue
+                                    LastRefreshed = DateTimeOffset.MinValue,
+                                    LastChecked = DateTimeOffset.MinValue,
+                                    Expires = DateTimeOffset.MinValue
                                 };
         
-        if (tokenInfo.Expires < DateTime.UtcNow || tokenInfo.Expires.AddDays(-5) < DateTime.UtcNow)
+        if (tokenInfo.Expires < DateTimeOffset.UtcNow || tokenInfo.Expires.AddDays(-5) < DateTimeOffset.UtcNow)
         {
             // Refresh the token
             logger.LogDebug("{DisplayName} is expired or will expire soon. Refreshing the token", tokenType.DisplayName());
@@ -63,7 +63,7 @@ public class RefreshTokens(
                 await keyVault.UpdateSecretValueAndPropertiesAsync(secretName, newToken.AccessToken, newToken.ExpiresOn);
                 
                 // Save the token refresh info to the database
-                tokenInfo.LastRefreshed = tokenInfo.LastChecked = DateTime.UtcNow;
+                tokenInfo.LastRefreshed = tokenInfo.LastChecked = DateTimeOffset.UtcNow;
                 tokenInfo.Expires = newToken.ExpiresOn;
                 await tokenRefreshManager.SaveAsync(tokenInfo);
                 
