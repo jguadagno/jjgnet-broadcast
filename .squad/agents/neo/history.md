@@ -168,3 +168,25 @@ For breaking database migrations involving PK rebuilds or column drops:
 4. **Exception Logging** — All data stores inject ILogger and log before returning null
 
 **Next:** Joseph merges PR #683. Epic #667 Sprints 3-6 unblocked for Switch/Sparks (API/Web UI integration). Tank: Unit tests for SocialMediaPlatforms layer.
+
+## 2026-04-10: Issue #690 - Remove Web → Data.Sql Direct Reference
+
+**Challenge:** Web project had illegal direct `<ProjectReference>` to Data.Sql, violating architectural rule that Web must NEVER call data stores directly.
+
+**Solution:**
+1. Removed Data.Sql reference from Web.csproj
+2. Added Data.Sql reference to Managers.csproj (so Web gets transitive access)
+3. Created ServiceCollectionExtensions.cs in Data.Sql with DI extension methods in Microsoft.Extensions.DependencyInjection namespace:
+   - AddSqlDataStores() - registers all data store implementations
+   - AddDataSqlMappingProfiles() - adds AutoMapper profiles
+4. Updated Web/Program.cs to use extension methods, no direct Data.Sql types
+5. Used fully-qualified type name for BroadcastingContext to avoid using statement
+
+**Architecture:** Web → Managers → Data.Sql (transitive dependency only)
+
+**Result:** Web code never directly references Data.Sql types. Architectural boundary enforced. Build succeeds. PR #700 created.
+
+**Learnings:**
+- Extension method namespace matters! Placing in Microsoft.Extensions.DependencyInjection makes them discoverable without needing project using statement.
+- Transitive dependencies allow compile-time access to types without direct ProjectReference.
+- Architectural rules are about preventing coupling in application code, not startup/DI configuration.
