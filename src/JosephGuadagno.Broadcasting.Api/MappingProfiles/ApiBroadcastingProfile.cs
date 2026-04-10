@@ -14,6 +14,7 @@ public class ApiBroadcastingProfile : Profile
         CreateMap<ScheduledItem, ScheduledItemResponse>();
         CreateMap<MessageTemplate, MessageTemplateResponse>();
         CreateMap<SocialMediaPlatform, SocialMediaPlatformResponse>();
+        CreateMap<EngagementSocialMediaPlatform, EngagementSocialMediaPlatformResponse>();
 
         // Request DTOs → Domain
         CreateMap<EngagementRequest, Engagement>()
@@ -37,5 +38,10 @@ public class ApiBroadcastingProfile : Profile
 
         CreateMap<SocialMediaPlatformRequest, SocialMediaPlatform>()
             .ForMember(d => d.Id, o => o.Ignore());
+
+        CreateMap<EngagementSocialMediaPlatformRequest, EngagementSocialMediaPlatform>()
+            .ForMember(d => d.EngagementId, o => o.Ignore())
+            .ForMember(d => d.Engagement, o => o.Ignore())
+            .ForMember(d => d.SocialMediaPlatform, o => o.Ignore());
     }
 }

@@ -7,7 +7,7 @@ namespace JosephGuadagno.Broadcasting.Api.Dtos;
 /// </summary>
 public class EngagementSocialMediaPlatformRequest
 {
-    [Required]
+    [Range(1, int.MaxValue, ErrorMessage = "SocialMediaPlatformId must be a valid platform identifier.")]
     public int SocialMediaPlatformId { get; set; }
 
     [MaxLength(200)]
