@@ -15,7 +15,7 @@ public class PostText(ILinkedInManager linkedInManager, ILogger<PostText> logger
         [QueueTrigger(Queues.LinkedInPostText)]
         LinkedInPostText linkedInPostText)
     {
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.LinkedInPostText, startedAt);
 

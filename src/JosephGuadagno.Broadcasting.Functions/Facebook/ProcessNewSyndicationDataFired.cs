@@ -26,7 +26,7 @@ public class ProcessNewSyndicationDataFired(
     public async Task<FacebookPostStatus?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.FacebookProcessNewSyndicationDataFired, startedAt);
         

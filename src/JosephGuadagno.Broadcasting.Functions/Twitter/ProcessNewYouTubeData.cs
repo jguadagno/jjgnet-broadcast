@@ -27,7 +27,7 @@ public class ProcessNewYouTubeDataFired(
     [QueueOutput(Queues.TwitterTweetsToSend)] 
     public async Task<TwitterTweetMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.TwitterProcessNewYouTubeDataFired, startedAt);
         

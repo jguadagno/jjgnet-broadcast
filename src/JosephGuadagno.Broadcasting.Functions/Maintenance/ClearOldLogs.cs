@@ -17,7 +17,7 @@ public class ClearOldLogs(ILogger<ClearOldLogs> logger)
     {
         // 0 */2 * * * * - Every 2 minutes
         // 0 23 * * 0 - Run at 11pm on Sunday
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.MaintenanceClearOldLogs, startedAt);
         var numberOfItemsDeleted = 0;
@@ -25,9 +25,9 @@ public class ClearOldLogs(ILogger<ClearOldLogs> logger)
 
         // Get all the log messages older than a week
         #if DEBUG
-        var dateTimeAsString = DateTime.UtcNow.AddMinutes(-2).ToString("s");
+        var dateTimeAsString = DateTimeOffset.UtcNow.AddMinutes(-2).ToString("s");
         #else
-        var dateTimeAsString = DateTime.UtcNow.AddDays(-7).ToString("s");
+        var dateTimeAsString = DateTimeOffset.UtcNow.AddDays(-7).ToString("s");
         #endif
         var filter = $"Timestamp le datetime'{dateTimeAsString}'";
         AsyncPageable<TableEntity> queryResults = tableClient.QueryAsync<TableEntity>(filter: filter);

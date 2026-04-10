@@ -22,7 +22,7 @@ public class ProcessNewRandomPost(
     [QueueOutput(Queues.LinkedInPostLink)]
     public async Task<LinkedInPostLink?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
-        var startedAt = DateTime.UtcNow;
+        var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.LinkedInProcessRandomPostFired, startedAt);
 

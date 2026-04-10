@@ -21,7 +21,7 @@ public class ProcessNewYouTubeDataFired(
     {
         try
         {
-            var startedAt = DateTime.UtcNow;
+            var startedAt = DateTimeOffset.UtcNow;
             logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
                 ConfigurationFunctionNames.BlueskyProcessNewYouTubeDataFired, startedAt);
 
