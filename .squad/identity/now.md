@@ -1,7 +1,9 @@
-# Team Status: Epic #667 Complete — Post-Epic Maintenance Mode
+# Team Focus — Now
 
-**Updated:** 2026-04-10T01:32:00Z  
-**Status:** Epic #667 fully shipped. All PRs merged. All issues closed. Main is up to date. No active work items.
+**Last updated:** 2026-04-10  
+**Sprint:** 13 (complete) → ready for Sprint 14  
+**Status:** All Sprint 13 issues closed. Main is up to date.  
+**Next:** Awaiting Sprint 14 feature planning from jguadagno.
 
 ## Current Focus
 
