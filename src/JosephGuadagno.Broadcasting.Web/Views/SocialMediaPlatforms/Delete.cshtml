@@ -1,0 +1,90 @@
+@model JosephGuadagno.Broadcasting.Web.Models.SocialMediaPlatformViewModel
+@{
+    ViewData["Title"] = "Delete Social Media Platform";
+}
+
+<h1>
+    <i class="bi bi-trash me-2 text-danger"></i>Delete Social Media Platform
+</h1>
+
+<div class="alert alert-danger" role="alert">
+    <h4 class="alert-heading">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>Warning — This action is irreversible
+    </h4>
+    <p>You are about to permanently delete this social media platform. This cannot be undone.</p>
+    <hr>
+    <p class="mb-0">
+        <strong>Recommendation:</strong> Consider using the
+        <a asp-action="Index" asp-controller="SocialMediaPlatforms" class="alert-link">Toggle Active</a>
+        button instead to deactivate the platform without permanently removing it.
+    </p>
+</div>
+
+@if (Model != null)
+{
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Platform Details</strong>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">ID</dt>
+                <dd class="col-sm-9">@Model.Id</dd>
+
+                <dt class="col-sm-3">Name</dt>
+                <dd class="col-sm-9">
+                    @if (!string.IsNullOrEmpty(Model.Icon))
+                    {
+                        <i class="bi @Model.Icon me-2"></i>
+                    }
+                    @Model.Name
+                </dd>
+
+                <dt class="col-sm-3">URL</dt>
+                <dd class="col-sm-9">
+                    @if (!string.IsNullOrEmpty(Model.Url))
+                    {
+                        <a href="@Model.Url" target="_blank" rel="noopener noreferrer">@Model.Url</a>
+                    }
+                    else
+                    {
+                        <span class="text-muted fst-italic">—</span>
+                    }
+                </dd>
+
+                <dt class="col-sm-3">Status</dt>
+                <dd class="col-sm-9">
+                    @if (Model.IsActive)
+                    {
+                        <i class="bi bi-check-circle-fill text-success me-1"></i><span class="text-success">Active</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-x-circle-fill text-danger me-1"></i><span class="text-danger">Inactive</span>
+                    }
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-circle-fill me-2"></i>
+            Failed to delete the platform. Please try again.
+        </div>
+    }
+
+    <form asp-action="Delete" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-trash me-2"></i>Confirm Delete
+            </button>
+            <a asp-action="Index" asp-controller="SocialMediaPlatforms" class="btn btn-secondary">
+                <i class="bi bi-x me-2"></i>Cancel
+            </a>
+        </div>
+    </form>
+}

@@ -15,6 +15,13 @@ public interface ISocialMediaPlatformManager
     Task<List<SocialMediaPlatform>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Get all social media platforms including inactive ones (for admin use)
+    /// </summary>
+    /// <param name='cancellationToken'>Cancellation token</param>
+    /// <returns>List of all social media platforms including inactive</returns>
+    Task<List<SocialMediaPlatform>> GetAllIncludingInactiveAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Get a social media platform by ID
     /// </summary>
     /// <param name="id">The platform ID</param>

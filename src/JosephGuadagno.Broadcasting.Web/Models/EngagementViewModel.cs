@@ -76,6 +76,11 @@ public class EngagementViewModel
     public List<TalkViewModel>? Talks { get; set; }
 
     /// <summary>
+    /// A list of social media platforms associated with this engagement
+    /// </summary>
+    public List<EngagementSocialMediaPlatformViewModel>? SocialMediaPlatforms { get; set; }
+
+    /// <summary>
     /// Returns a list of TimeZones
     /// </summary>
     public List<string> TimeZones

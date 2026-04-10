@@ -74,6 +74,12 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="MessageTemplates" asp-action="Index">Message Templates</a>
                         </li>
+                        @if (User.IsInRole("Administrator") || User.IsInRole("Contributor"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="SocialMediaPlatforms" asp-action="Index">Platforms</a>
+                            </li>
+                        }
                         @if (User.IsInRole("Administrator"))
                         {
                             <li class="nav-item dropdown">

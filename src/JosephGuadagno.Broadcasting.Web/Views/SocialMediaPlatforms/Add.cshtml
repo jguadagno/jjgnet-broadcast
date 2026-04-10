@@ -1,0 +1,82 @@
+@model JosephGuadagno.Broadcasting.Web.Models.SocialMediaPlatformViewModel
+@{
+    ViewData["Title"] = "Add Social Media Platform";
+}
+
+<h1>
+    <i class="bi bi-plus-circle me-2"></i>Add Social Media Platform
+</h1>
+<p class="lead">Enter the details for the new social media platform.</p>
+
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Add">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Name <span class="text-danger">*</span></label>
+                <input asp-for="Name" type="text" class="form-control" autocomplete="off"
+                       placeholder="e.g. Twitter, BlueSky, LinkedIn" aria-describedby="val-Name" />
+                <span id="val-Name" asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Url" class="form-label">URL</label>
+                <input asp-for="Url" type="url" class="form-control" autocomplete="url"
+                       placeholder="https://twitter.com" aria-describedby="val-Url" />
+                <div class="form-text">The canonical URL for the platform homepage.</div>
+                <span id="val-Url" asp-validation-for="Url" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Icon" class="form-label">Bootstrap Icon Class</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i id="icon-preview" class="bi bi-question-circle"></i>
+                    </span>
+                    <input asp-for="Icon" type="text" class="form-control" autocomplete="off"
+                           placeholder="e.g. bi-twitter-x" aria-describedby="val-Icon"
+                           id="icon-input" />
+                </div>
+                <div class="form-text">
+                    Enter a <a href="https://icons.getbootstrap.com/" target="_blank" rel="noopener noreferrer">Bootstrap Icon</a> class name (e.g. <code>bi-twitter-x</code>, <code>bi-linkedin</code>, <code>bi-facebook</code>).
+                </div>
+                <span id="val-Icon" asp-validation-for="Icon" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                    <label asp-for="IsActive" class="form-check-label">Active</label>
+                </div>
+                <div class="form-text">Uncheck to create the platform in an inactive state.</div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-floppy me-2"></i>Save Platform
+                </button>
+                <a asp-action="Index" asp-controller="SocialMediaPlatforms" class="btn btn-secondary">
+                    <i class="bi bi-x me-2"></i>Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        // Live icon preview
+        const iconInput = document.getElementById('icon-input');
+        const iconPreview = document.getElementById('icon-preview');
+
+        function updateIconPreview() {
+            const iconClass = iconInput.value.trim();
+            iconPreview.className = iconClass ? `bi ${iconClass}` : 'bi bi-question-circle';
+        }
+
+        iconInput.addEventListener('input', updateIconPreview);
+        updateIconPreview();
+    </script>
+}

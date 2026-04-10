@@ -39,19 +39,22 @@ public class SocialMediaPlatformsController : ControllerBase
         value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty;
 
     /// <summary>
-    /// Gets all active social media platforms
+    /// Gets social media platforms
     /// </summary>
-    /// <returns>A list of active social media platforms</returns>
+    /// <param name='includeInactive'>When true, returns all platforms including inactive ones. Default is false (active only).</param>
+    /// <returns>A list of social media platforms</returns>
     /// <response code="200">If the call was successful</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SocialMediaPlatformResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<SocialMediaPlatformResponse>>> GetAllAsync()
+    public async Task<ActionResult<List<SocialMediaPlatformResponse>>> GetAllAsync([FromQuery] bool includeInactive = false)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.SocialMediaPlatforms.List, Domain.Scopes.SocialMediaPlatforms.All);
 
-        var platforms = await _socialMediaPlatformManager.GetAllAsync();
+        var platforms = includeInactive
+            ? await _socialMediaPlatformManager.GetAllIncludingInactiveAsync()
+            : await _socialMediaPlatformManager.GetAllAsync();
         var response = _mapper.Map<List<SocialMediaPlatformResponse>>(platforms);
         return Ok(response);
     }
