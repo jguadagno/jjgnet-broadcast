@@ -9,7 +9,7 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// <summary>
 /// Calls out to the Social Media Platforms API
 /// </summary>
-public class SocialMediaPlatformService(IDownstreamApi apiClient) : ISocialMediaPlatformService
+public class SocialMediaPlatformService(IDownstreamApi apiClient, ILogger<SocialMediaPlatformService> logger) : ISocialMediaPlatformService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
     private const string PlatformBaseUrl = "/socialmediaplatforms";
@@ -82,6 +82,12 @@ public class SocialMediaPlatformService(IDownstreamApi apiClient) : ISocialMedia
             options.RelativePath = $"{PlatformBaseUrl}/{id}";
             options.HttpMethod = HttpMethod.Delete.Method;
         });
-        return response is { StatusCode: HttpStatusCode.NoContent };
+
+        if (response is { StatusCode: HttpStatusCode.NoContent or HttpStatusCode.NotFound })
+            return true;
+
+        logger.LogWarning("Unexpected status {StatusCode} deleting platform {PlatformId}",
+            response?.StatusCode, id);
+        return false;
     }
 }
