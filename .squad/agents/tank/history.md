@@ -76,6 +76,9 @@
 10. **`FluentAssertions` must be added explicitly to Functions.Tests.csproj:** The project previously only used xUnit-native assertions. When writing new tests with FluentAssertions, add `<PackageReference Include="FluentAssertions" Version="8.9.0" />` to `Functions.Tests.csproj`.
 11. **`IEmailTemplateManager.GetTemplateAsync(string name)` — NOT `GetByNameAsync`:** The issue spec described `GetByNameAsync` but the actual interface method is `GetTemplateAsync(string name)`. Always verify method names from the interface file, not the spec narrative.
 12. **`FunctionContext` required as second parameter in queue trigger Run methods:** Trinity's `SendEmail.Run` takes `(string message, FunctionContext context)`. Always check the actual function signature; queue triggers can include `FunctionContext` as second arg. Mock it with `new Mock<FunctionContext>().Object`.
+13. **Data.Sql.Tests uses xUnit Assert, not FluentAssertions:** The `Data.Sql.Tests` project follows existing patterns using xUnit `Assert` methods (`Assert.NotNull`, `Assert.Equal`, `Assert.True/False`) instead of FluentAssertions. Match the existing style in the test project.
+14. **EF Core InMemory limitations in tests:** InMemory database doesn't enforce foreign key constraints, so tests expecting SaveChanges to fail on invalid FKs will pass. CancellationToken tests also unreliable with InMemory. Focus tests on happy paths and logical business rules, not DB constraints.
+
 
 
 ---
@@ -605,3 +608,44 @@ private static Functions.Twitter.ProcessScheduledItemFired BuildSut(
 - **Status:** Currently 5+ warnings in integration tests (low priority fix)
 
 **Next:** Joseph to review findings and prioritize test gap remediation work.
+
+## Current Session: 2026-04-02T (Issue #693) — Add Unit Tests for SocialMediaPlatformDataStore
+
+**Summary:** Created comprehensive unit tests for `SocialMediaPlatformDataStore` covering all CRUD operations (17 tests, all passing).
+
+**What I Did:**
+1. Investigated `SocialMediaPlatformDataStore.cs` and `ISocialMediaPlatformDataStore` interface
+2. Reviewed existing DataStore test patterns (`EngagementDataStoreTests`, `MessageTemplateDataStoreTests`)
+3. Created `SocialMediaPlatformDataStoreTests.cs` with:
+   - 14 `[Fact]` tests for individual scenarios
+   - 3 `[Theory]` tests with `[InlineData]` (7 total theory executions)
+   - Coverage: GetAsync, GetAllAsync, GetByNameAsync, AddAsync, UpdateAsync, DeleteAsync
+   - Tests for: happy paths, non-existing IDs, case-insensitive search, soft delete behavior, empty database
+4. Fixed initial FluentAssertions dependency issue — project uses standard xUnit `Assert.*` not FluentAssertions
+5. Removed tests that disposed context (causing double-dispose errors in teardown)
+6. Verified all tests pass (17/17 passing)
+7. Committed, pushed branch `issue-693`, opened PR #698
+
+**Test Patterns Used:**
+- In-memory EF Core database with `UseInMemoryDatabase(Guid.NewGuid().ToString())` for isolation
+- AutoMapper with `BroadcastingProfile` configured via `MapperConfiguration`
+- Moq for `ILogger<SocialMediaPlatformDataStore>` (verified error logging)
+- AAA (Arrange/Act/Assert) pattern
+- Helper methods: `CreateDbPlatform()`, `CreateDomainPlatform()`
+- `IDisposable` for database cleanup (`EnsureDeleted`)
+
+**Key Findings:**
+- `SocialMediaPlatformDataStore` implements soft delete (`IsActive = false`) not hard delete
+- `GetByNameAsync` is case-insensitive and only returns active platforms
+- `GetAllAsync` orders results alphabetically by name
+- Exception handling logs errors and returns `null` (Add/Update) or `false` (Delete)
+
+**Branch:** `issue-693` | **PR:** #698 | **Status:** Awaiting review
+
+## Learnings
+
+8. **Project does NOT use FluentAssertions:** Despite being a common xUnit companion library, this project exclusively uses standard xUnit assertions (`Assert.NotNull`, `Assert.Equal`, `Assert.True`, etc.). Attempting to use FluentAssertions results in build errors (CS0246: type not found). Always check existing test files for assertion style before copying patterns.
+
+9. **Avoid disposing DbContext in exception tests:** When testing exception handling, disposing the EF Core `DbContext` in a test method causes `ObjectDisposedException` in the test class's `Dispose()` method. Better to test exception paths without artificially disposing resources, or use a separate context instance.
+
+10. **SocialMediaPlatformDataStore soft delete pattern:** The `DeleteAsync` method sets `IsActive = false` rather than removing the record. This is important for tests — verify `IsActive` state, not row count. Also, `GetByNameAsync` filters by `IsActive`, so inactive platforms won't be found even if they exist in the database.
