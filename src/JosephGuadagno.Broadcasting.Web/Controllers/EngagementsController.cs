@@ -245,13 +245,12 @@ public class EngagementsController : Controller
     /// <summary>
     /// Adds a social media platform to an engagement.
     /// </summary>
-    /// <param name="engagementId">The identity of the engagement</param>
     /// <param name="vm">The platform view model</param>
     /// <returns>Upon success, redirects to the Edit page.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "RequireContributor")]
-    public async Task<IActionResult> AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)
+    public async Task<IActionResult> AddPlatform(EngagementSocialMediaPlatformViewModel vm)
     {
         if (!ModelState.IsValid)
         {
@@ -262,7 +261,7 @@ public class EngagementsController : Controller
 
         try
         {
-            var result = await _engagementService.AddPlatformToEngagementAsync(engagementId, vm.SocialMediaPlatformId, vm.Handle);
+            var result = await _engagementService.AddPlatformToEngagementAsync(vm.EngagementId, vm.SocialMediaPlatformId, vm.Handle);
             if (result is null)
             {
                 TempData["ErrorMessage"] = "Failed to add platform to engagement.";
@@ -277,7 +276,7 @@ public class EngagementsController : Controller
             TempData["ErrorMessage"] = $"Failed to add platform: {ex.Message}";
         }
 
-        return RedirectToAction("Edit", new { id = engagementId });
+        return RedirectToAction("Edit", new { id = vm.EngagementId });
     }
 
     /// <summary>
