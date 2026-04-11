@@ -190,3 +190,57 @@ Note: Data.Sql.Tests uses standard xUnit Assert.* (NOT FluentAssertions)
 9. **Avoid disposing DbContext in exception tests:** When testing exception handling, disposing the EF Core `DbContext` in a test method causes `ObjectDisposedException` in the test class's `Dispose()` method. Better to test exception paths without artificially disposing resources, or use a separate context instance.
 
 10. **SocialMediaPlatformDataStore soft delete pattern:** The `DeleteAsync` method sets `IsActive = false` rather than removing the record. This is important for tests — verify `IsActive` state, not row count. Also, `GetByNameAsync` filters by `IsActive`, so inactive platforms won't be found even if they exist in the database.
+
+## Current Session: 2026-04-11 (Issue #708) — Regression Coverage for Double-Submit Bug Fix
+
+**Summary:** Verified fix for client-side double-submit bug and documented regression coverage strategy (no new test framework needed, backend validation provides defense-in-depth).
+
+**What I Did:**
+1. Read squad context (history, decisions, wisdom, now) to understand issue #708
+2. Verified the fix was already applied in `site.js` (event.preventDefault() now called when button disabled)
+3. Assessed test infrastructure: NO JavaScript testing frameworks in place (no Selenium, Playwright, etc.)
+4. Verified existing API test coverage for `AddPlatformToEngagementAsync` endpoint (15 tests, all passing)
+5. Documented regression coverage decision in `.squad/decisions/inbox/tank-708-regression-coverage.md`
+6. Updated history with learnings
+
+**Fix Already in Place:**
+- **File:** `Web/wwwroot/js/site.js` lines 8-12
+- **Change:** Added `event` parameter and `event.preventDefault()` call when button is already disabled
+- **Impact:** Prevents double-submit for all forms in the application
+
+**Regression Coverage Strategy:**
+- ✅ **Client-side fix:** JavaScript now prevents double-submit
+- ✅ **API validation:** 15 existing tests verify duplicate detection logic (`EngagementsController_PlatformsTests`)
+- ❌ **No new framework:** Do NOT add Selenium/Playwright for this isolated bug (cost/benefit too high)
+- ✅ **Manual QA:** Verification steps documented for browser testing
+
+**Key Finding:**
+The API already has **defense-in-depth** protection. Even if double-submit occurs, the `AddPlatformToEngagementAsync` endpoint returns `400 BadRequest` for duplicate platform associations. The existing test suite validates this behavior thoroughly.
+
+**Test Results:**
+- `EngagementsController_PlatformsTests`: 15/15 passing
+- No new tests required (backend validation already comprehensive)
+
+**Branch:** `social-media-708` | **Status:** Ready for manual QA and PR review
+
+## Learnings
+
+11. **Web.Tests vs Api.Tests assertion styles:** The `Web.Tests` project DOES use FluentAssertions (v8.9.0) while `Api.Tests` also uses FluentAssertions (v8.9.0). However, `Data.Sql.Tests` uses standard xUnit assertions. Always check the .csproj file to confirm available assertion libraries before writing tests.
+
+12. **Client-side JavaScript testing decision framework:** When encountering client-side JS bugs, use this decision tree:
+    - **Option 1:** Add browser automation (Selenium/Playwright) if:
+      - Project has 5+ client-side bugs needing regression tests
+      - Implementing complex client-side features (SPA, rich interactions)
+      - Backend validation insufficient to prevent data corruption
+    - **Option 2:** Fix JS + verify backend validation + manual QA if:
+      - Isolated bug with simple fix
+      - Backend API already has comprehensive test coverage
+      - Backend validation prevents data corruption even if bug recurs
+    - **This project:** No JS testing framework exists; prefer Option 2 unless pattern of JS bugs emerges
+
+13. **Defense-in-depth testing pattern:** Client-side bugs (like double-submit) should have two layers of protection:
+    - **Layer 1:** Client-side prevention (JavaScript fix) — improves UX, reduces server load
+    - **Layer 2:** Server-side validation (API business logic) — prevents data corruption
+    - **Testing focus:** Test Layer 2 comprehensively (API tests). Layer 1 can be manual QA unless high-risk/high-frequency bug.
+
+14. **Key file path for regression coverage decisions:** `.squad/decisions/inbox/tank-{issue}-regression-coverage.md` — documents why a particular testing approach was chosen for future reference when similar bugs occur.
