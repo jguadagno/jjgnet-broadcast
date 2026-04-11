@@ -62,7 +62,7 @@ You will need access to the Azure Portal to add a new scope. More specifically, 
 
 Note: you will need to make these changes to both the test and production environments.
 
-#### API Application
+#### API Application Registration
 
 - Log in to the [Azure Portal](https://portal.azure.com)
 - Navigate to the App Registrations section
@@ -88,7 +88,7 @@ Note: you will need to make these changes to both the test and production enviro
 
 Once you have added all the scopes, you will then need to add the scopes to the production API application (`JosephGuadagno.NET Broadcasting - API`).
 
-#### Web Application
+#### Web Application Registration
 
 - Log in to the [Azure Portal](https://portal.azure.com)
 - Navigate to the App Registrations section
@@ -104,6 +104,34 @@ Once you have added all the scopes, you will then need to add the scopes to the 
 - Click **Grant admin consent for Default Directory**
 
 Once you have added all the scopes, you will then need to add the scopes to the production API application (`JosephGuadagno.NET Broadcasting - MVC Client`).
+
+#### Web Application Configuration (Production)
+
+Next we need to add the scopes to the Web application. Open up the *Environment Variables* for the Web application (`web-jjgnet-broadcast`) and add one entry for each scope that you added.  It's easiest to click on the *Advanced Edit* button and add the scopes one at a time.
+
+Look for the last scope number for the configuration parameter `DownstreamApis__JosephGuadagnoBroadcastingApi__Scopes__` and example would be `DownstreamApis__JosephGuadagnoBroadcastingApi__Scopes__15`.  Copy and paste that configuration, increment the scope number and update the value.  
+
+Sample value:
+
+```json
+{
+    "name": "DownstreamApis__JosephGuadagnoBroadcastingApi__Scopes__14",
+    "value": "api://abb01bf7-dd41-475a-a1a2-6bec32a74cd6/SocialMediaPlatforms.Delete",
+    "slotSetting": false
+}
+```
+
+#### Web Application Configuration (Development)
+
+Next we need to add the scopes to the Web application. Open up the [appsettings.Development.json](../src/JosephGuadagno.Broadcasting.Web/appsettings.Development.json) file in the *JosephGuadagno.Broadcasting.Web* project and add one entry for each scope that you added.
+
+The configuration will be in the `DownstreamApis\JosephGuadagnoBroadcastingApi\Scopes` section. You will want to add one entry for each scope that you added.
+
+```json
+"api://027edf6f-5140-44c8-9496-e7e98390d60c/SocialMediaPlatforms.All",
+"api://027edf6f-5140-44c8-9496-e7e98390d60c/SocialMediaPlatforms.View",
+"api://027edf6f-5140-44c8-9496-e7e98390d60c/SocialMediaPlatforms.List"
+```
 
 ### Adding new scopes wrap up
 
