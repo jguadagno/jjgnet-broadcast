@@ -225,3 +225,25 @@ form.addEventListener('submit', function (e) {
 - All other forms using site.js are potentially affected
 
 **Recommendation:** Fix belongs to Sparks (Web/UI specialist). Backend API is functioning correctly.
+
+### 2026-04-11 — Issue #708: Real 400 Error Cause Fixed
+
+**Status:** ✅ RESOLVED
+
+**Finding:** The JavaScript double-submit fix was correct, but a second issue remained: the Web layer ViewModel lacked validation, allowing `SocialMediaPlatformId=0` to be sent to the API, which correctly rejected it with 400 BadRequest.
+
+**Root Causes:**
+1. **Missing validation:** `EngagementSocialMediaPlatformViewModel` had no `[Range]` attribute on `SocialMediaPlatformId`
+2. **No exception handling:** Web controller didn't catch `HttpRequestException` from API calls
+
+**Fix Applied:**
+1. Added `[Range(1, int.MaxValue, ErrorMessage = "Please select a platform.")]` to ViewModel
+2. Added try/catch in `EngagementsController.AddPlatform()` to handle API exceptions gracefully
+
+**Files Modified:**
+- `src/JosephGuadagno.Broadcasting.Web/Models/EngagementSocialMediaPlatformViewModel.cs`
+- `src/JosephGuadagno.Broadcasting.Web/Controllers/EngagementsController.cs`
+
+**Result:** Users now see clear validation errors instead of HTTP exceptions. Defense-in-depth: both Web validation and API validation work together.
+
+**Branch:** `social-media-708` | **Commit:** `0a60493`
