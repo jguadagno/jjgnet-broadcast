@@ -100,7 +100,6 @@ IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.EmailTemplates WHERE Name = N'UserReject
         N'<!DOCTYPE html><html><body><p>Hello,</p><p>Thank you for your interest in the JJGNet Broadcasting application.</p><p>After review, we are unable to approve your access request at this time.</p><p>If you believe this is an error or would like more information, please contact the administrator.</p><p>The JJGNet Broadcasting Team</p></body></html>'
     )
 
-
 -- Seed the SyndicationFeedSource table
 INSERT INTO JJGNet.dbo.SyndicationFeedSources (FeedIdentifier, Author, Title, ShortenedUrl, Tags, Url, PublicationDate, AddedOn, ItemLastUpdatedOn, LastUpdatedOn) VALUES (	'https://www.josephguadagno.net/2007/08/02/developing-microsoft-asp-net-server-controls-and-components/','Joseph Guadagno','Developing Microsoft ASP.NET Server Controls and Components','https://jjg.me/3zBGp3K','Books,Book Reviews','https://www.josephguadagno.net/2007/08/02/developing-microsoft-asp-net-server-controls-and-components/','2007-08-02 00:12:56.0000000 +07:00','2025-09-06 01:18:54.8588384 +07:00','2007-08-02 00:12:56.0000000 +07:00','2026-01-28 04:07:56.6219101 +07:00')
 INSERT INTO JJGNet.dbo.SyndicationFeedSources (FeedIdentifier, Author, Title, ShortenedUrl, Tags, Url, PublicationDate, AddedOn, ItemLastUpdatedOn, LastUpdatedOn) VALUES (	'https://www.josephguadagno.net/2007/08/02/essential-asp-net-2-0/','Joseph Guadagno','Essential ASP.NET 2.0','https://jjg.me/4ePNqy9','Books,Book Reviews','https://www.josephguadagno.net/2007/08/02/essential-asp-net-2-0/','2007-08-02 00:11:45.0000000 +07:00','2025-09-06 01:18:54.8588384 +07:00','2007-08-02 00:11:45.0000000 +07:00','2026-01-28 04:07:56.6219103 +07:00')
@@ -422,106 +421,91 @@ INSERT INTO JJGNet.dbo.YouTubeSources (VideoId, Author, Title, ShortenedUrl, Tag
 --   {{ image_url }}   - ScheduledItem.ImageUrl (nullable; not currently forwarded to queue payloads)
 -- =============================================
 
+DECLARE @SocialMediaPlatformId int;
+
 -- ----- Twitter (max ~280 chars) -----
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Twitter' AND MessageType = N'RandomPost')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Twitter', N'RandomPost', N'{{ title }} - {{ url }}', N'Default Twitter template for random/scheduled posts');
+SET @SocialMediaPlatformId = (SELECT Id FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Twitter');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'RandomPost', N'{{ title }} - {{ url }}', N'Default Twitter template for random/scheduled posts');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Twitter' AND MessageType = N'NewSyndicationFeedItem')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Twitter', N'NewSyndicationFeedItem', N'Blog Post: {{ title }} {{ url }}', N'Twitter template for new blog post announcements');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'NewSyndicationFeedItem', N'Blog Post: {{ title }} {{ url }}', N'Twitter template for new blog post announcements');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Twitter' AND MessageType = N'NewYouTubeItem')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Twitter', N'NewYouTubeItem', N'New video: {{ title }} {{ url }}', N'Twitter template for new YouTube video announcements');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'NewYouTubeItem', N'New video: {{ title }} {{ url }}', N'Twitter template for new YouTube video announcements');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Twitter' AND MessageType = N'NewSpeakingEngagement')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Twitter', N'NewSpeakingEngagement', N'I''m speaking at {{ title }}! {{ url }}', N'Twitter template for new speaking engagement announcements');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'NewSpeakingEngagement', N'I''m speaking at {{ title }}! {{ url }}', N'Twitter template for new speaking engagement announcements');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Twitter' AND MessageType = N'ScheduledItem')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Twitter', N'ScheduledItem', N'{{ title }} {{ url }}', N'Twitter template for generic scheduled item broadcasts');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'ScheduledItem', N'{{ title }} {{ url }}', N'Twitter template for generic scheduled item broadcasts');
 
 -- ----- Facebook (max ~2000 chars) -----
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Facebook' AND MessageType = N'RandomPost')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Facebook', N'RandomPost',
-        N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
-        N'Default Facebook template for random/scheduled posts');
+SET @SocialMediaPlatformId = (SELECT Id FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Facebook');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'RandomPost',
+    N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
+    N'Default Facebook template for random/scheduled posts');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Facebook' AND MessageType = N'NewSyndicationFeedItem')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Facebook', N'NewSyndicationFeedItem',
-        N'ICYMI: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
-        N'Facebook template for new blog post announcements');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'NewSyndicationFeedItem',
+    N'ICYMI: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
+    N'Facebook template for new blog post announcements');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Facebook' AND MessageType = N'NewYouTubeItem')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Facebook', N'NewYouTubeItem',
-        N'New video: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Watch now: {{ url }}',
-        N'Facebook template for new YouTube video announcements');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)    VALUES (@SocialMediaPlatformId, N'NewYouTubeItem',
+    N'New video: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Watch now: {{ url }}',
+    N'Facebook template for new YouTube video announcements');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Facebook' AND MessageType = N'NewSpeakingEngagement')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Facebook', N'NewSpeakingEngagement',
-        N'I''m speaking at {{ title }}!' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
-        N'Facebook template for new speaking engagement announcements');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'NewSpeakingEngagement',
+    N'I''m speaking at {{ title }}!' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
+    N'Facebook template for new speaking engagement announcements');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Facebook' AND MessageType = N'ScheduledItem')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Facebook', N'ScheduledItem',
-        N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
-        N'Facebook template for generic scheduled item broadcasts');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'ScheduledItem',
+    N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
+    N'Facebook template for generic scheduled item broadcasts');
 
 -- ----- LinkedIn (professional tone) -----
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'LinkedIn' AND MessageType = N'RandomPost')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'LinkedIn', N'RandomPost',
-        N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
-        N'Default LinkedIn template for random/scheduled posts');
+SET @SocialMediaPlatformId = (SELECT Id FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'LinkedIn');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'RandomPost',
+    N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
+    N'Default LinkedIn template for random/scheduled posts');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'LinkedIn' AND MessageType = N'NewSyndicationFeedItem')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'LinkedIn', N'NewSyndicationFeedItem',
-        N'New blog post: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Read more: {{ url }}',
-        N'LinkedIn template for new blog post announcements');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'NewSyndicationFeedItem',
+    N'New blog post: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Read more: {{ url }}',
+    N'LinkedIn template for new blog post announcements');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'LinkedIn' AND MessageType = N'NewYouTubeItem')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'LinkedIn', N'NewYouTubeItem',
-        N'New video: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Watch: {{ url }}',
-        N'LinkedIn template for new YouTube video announcements');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'NewYouTubeItem',
+    N'New video: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Watch: {{ url }}',
+    N'LinkedIn template for new YouTube video announcements');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'LinkedIn' AND MessageType = N'NewSpeakingEngagement')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'LinkedIn', N'NewSpeakingEngagement',
-        N'I am excited to announce I will be speaking at {{ title }}.' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Learn more: {{ url }}',
-        N'LinkedIn template for new speaking engagement announcements');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'NewSpeakingEngagement',
+    N'I am excited to announce I will be speaking at {{ title }}.' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Learn more: {{ url }}',
+    N'LinkedIn template for new speaking engagement announcements');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'LinkedIn' AND MessageType = N'ScheduledItem')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'LinkedIn', N'ScheduledItem',
-        N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
-        N'LinkedIn template for generic scheduled item broadcasts');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'ScheduledItem',
+    N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
+    N'LinkedIn template for generic scheduled item broadcasts');
 
 -- ----- Bluesky (casual tone, max ~300 chars) -----
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Bluesky' AND MessageType = N'RandomPost')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Bluesky', N'RandomPost', N'{{ title }} - {{ url }}', N'Default Bluesky template for random/scheduled posts');
+SET @SocialMediaPlatformId = (SELECT Id FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'BlueSky');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'RandomPost', N'{{ title }} - {{ url }}', N'Default Bluesky template for random/scheduled posts');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Bluesky' AND MessageType = N'NewSyndicationFeedItem')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Bluesky', N'NewSyndicationFeedItem', N'Blog Post: {{ title }} {{ url }}', N'Bluesky template for new blog post announcements');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'NewSyndicationFeedItem', N'Blog Post: {{ title }} {{ url }}', N'Bluesky template for new blog post announcements');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Bluesky' AND MessageType = N'NewYouTubeItem')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Bluesky', N'NewYouTubeItem', N'New video: {{ title }} {{ url }}', N'Bluesky template for new YouTube video announcements');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'NewYouTubeItem', N'New video: {{ title }} {{ url }}', N'Bluesky template for new YouTube video announcements');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Bluesky' AND MessageType = N'NewSpeakingEngagement')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Bluesky', N'NewSpeakingEngagement', N'Speaking at {{ title }}! {{ url }}', N'Bluesky template for new speaking engagement announcements');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'NewSpeakingEngagement', N'Speaking at {{ title }}! {{ url }}', N'Bluesky template for new speaking engagement announcements');
 
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE Platform = N'Bluesky' AND MessageType = N'ScheduledItem')
-    INSERT INTO JJGNet.dbo.MessageTemplates (Platform, MessageType, Template, Description)
-    VALUES (N'Bluesky', N'ScheduledItem', N'{{ title }} {{ url }}', N'Bluesky template for generic scheduled item broadcasts');
+INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description)
+VALUES (@SocialMediaPlatformId, N'ScheduledItem', N'{{ title }} {{ url }}', N'Bluesky template for generic scheduled item broadcasts');
