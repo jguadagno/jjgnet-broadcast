@@ -260,14 +260,21 @@ public class EngagementsController : Controller
             return View(vm);
         }
 
-        var result = await _engagementService.AddPlatformToEngagementAsync(engagementId, vm.SocialMediaPlatformId, vm.Handle);
-        if (result is null)
+        try
         {
-            TempData["ErrorMessage"] = "Failed to add platform to engagement.";
+            var result = await _engagementService.AddPlatformToEngagementAsync(engagementId, vm.SocialMediaPlatformId, vm.Handle);
+            if (result is null)
+            {
+                TempData["ErrorMessage"] = "Failed to add platform to engagement.";
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Platform added successfully.";
+            }
         }
-        else
+        catch (HttpRequestException ex)
         {
-            TempData["SuccessMessage"] = "Platform added successfully.";
+            TempData["ErrorMessage"] = $"Failed to add platform: {ex.Message}";
         }
 
         return RedirectToAction("Edit", new { id = engagementId });
