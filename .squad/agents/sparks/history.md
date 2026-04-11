@@ -104,3 +104,20 @@ Established by Joseph Guadagno:
 - **Session log:** `.squad/log/2026-04-11T22-51-44Z-issue-708-form-trace.md` — Issue summary and pattern documented
 - **Decision merged:** `sparks-708-form-route-binding.md` → decisions.md (model binding pattern established for team)
 - **Outcome:** Issue #708 fully resolved; dual fixes committed (079cb14, ce28027); team pattern documented for future form implementations
+
+### 2026-04-11 — Issue #708 REVERSAL: Route Parameter Required (Second Investigation)
+- **Root Cause:** Previous fix (commit ce28027) that removed `asp-route-engagementId` from AddPlatform form was INCORRECT
+- **Impact:** Without route parameter, form POSTs to `/Engagements/AddPlatform` (no engagementId), causing HTTP 400 because controller action signature `AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)` expects engagementId as a ROUTE parameter
+- **Fix:** Restored `asp-route-engagementId="@Model.EngagementId"` to form action — engagementId is now passed in BOTH route AND hidden field (not a conflict when both sources provide same value)
+- **File Changed:** `JosephGuadagno.Broadcasting.Web/Views/Engagements/AddPlatform.cshtml` (line 11)
+- **Pattern Correction:** Controller actions with simple-type route parameters (int, string) MUST have those values in the route. Hidden fields in the ViewModel are for model binding, not routing. When an action expects `AddPlatform(int engagementId, ModelType vm)`, the route must include engagementId
+- **Branch:** social-media-708
+- **Commit:** 2fa1fe2
+- **Status:** ✅ Complete — Previous decision sparks-708-form-route-binding.md was INCORRECT and should be superseded by this learning
+
+## Session 2026-04-11T23:23:33Z — Orchestration Closure
+
+**Scribe** consolidated Issue #708 resolution:
+- Orchestration log: `.squad/orchestration-log/2026-04-11T23-23-33Z-Sparks.md` — Final fix documented (asp-route-engagementId restored)
+- Session log: `.squad/log/2026-04-11T23-23-33Z-issue-708-save-400-web.md` — Web form routing fix logged
+- Status: ✅ Complete — Issue #708 fully resolved; Sparks' all fixes committed and documented

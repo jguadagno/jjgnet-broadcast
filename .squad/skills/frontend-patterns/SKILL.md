@@ -113,33 +113,15 @@ $(form).on('invalid-form.validate', function () {
 
 ## Razor Forms and Model Binding
 
-### Avoid Duplicate Route and Model Binding
+### Route Parameters Required for Controller Action Matching
 
-When a controller POST action accepts both a route parameter AND a ViewModel with a matching property name, ASP.NET Core model binding can become confused about the binding source, causing HTTP 400 Bad Request errors.
+When a controller POST action has simple-type parameters (int, string, guid) that are NOT properties of the ViewModel, those parameters MUST be included in the route. Without them, ASP.NET Core routing cannot match the action, causing HTTP 400 Bad Request.
 
 **❌ WRONG:**
 ```razor
 @model EngagementSocialMediaPlatformViewModel
 
-<form asp-action="AddPlatform" asp-route-engagementId="@Model.EngagementId" method="post">
-    <input type="hidden" asp-for="EngagementId" />
-    <!-- ... -->
-</form>
-```
-
-Controller:
-```csharp
-[HttpPost]
-public async Task<IActionResult> AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)
-{
-    // ⚠️ ASP.NET Core doesn't know whether to bind engagementId from route or vm.EngagementId
-}
-```
-
-**✅ CORRECT:**
-```razor
-@model EngagementSocialMediaPlatformViewModel
-
+<!-- Missing route parameter - causes 400 error! -->
 <form asp-action="AddPlatform" method="post">
     <input type="hidden" asp-for="EngagementId" />
     <!-- ... -->
@@ -151,25 +133,61 @@ Controller:
 [HttpPost]
 public async Task<IActionResult> AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)
 {
-    // ✅ ASP.NET Core binds engagementId from vm.EngagementId unambiguously
+    // ⚠️ Form POSTs to /Engagements/AddPlatform (no engagementId in route)
+    // ⚠️ ASP.NET Core expects route like /Engagements/AddPlatform/5
+    // ⚠️ Route doesn't match → HTTP 400
 }
 ```
+
+**✅ CORRECT:**
+```razor
+@model EngagementSocialMediaPlatformViewModel
+
+<!-- Route parameter required for action matching -->
+<form asp-action="AddPlatform" asp-route-engagementId="@Model.EngagementId" method="post">
+    <input type="hidden" asp-for="EngagementId" />
+    <!-- ... -->
+</form>
+```
+
+Controller:
+```csharp
+[HttpPost]
+public async Task<IActionResult> AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)
+{
+    // ✅ Form POSTs to /Engagements/AddPlatform/5
+    // ✅ Route matches action signature
+    // ✅ engagementId = 5 (from route), vm.EngagementId = 5 (from POST body)
+}
+```
+
+### Route vs. Model Binding: Different Purposes
+
+Having BOTH `asp-route-X` and a matching ViewModel property is **NOT a conflict**:
+- **Route parameter**: Used by ASP.NET Core routing to match the controller action
+- **Model property**: Used by controller logic to access the value from the ViewModel
+- Both mechanisms are independent and don't interfere with each other
 
 ### When to Use Route Parameters vs Model Properties
 
 **Use route parameters (asp-route-*) when:**
-- The value is NOT part of the posted model
-- You're building a GET link/form
-- The parameter represents a different entity (e.g., parent ID in a nested route)
+- Controller action signature has simple-type parameters (int, string) that are not ViewModel properties
+- The parameter is required for route matching
+- Example: `Action(int id, ViewModelType model)`
 
 **Use model properties (hidden fields) when:**
-- The value is part of the ViewModel
-- You're building a POST form
-- The value is being submitted with other form data
+- The value is part of the ViewModel and used in controller logic
+- The value must be validated with other form fields
+- Example: `vm.EngagementId` used to verify data integrity
+
+**Use BOTH when:**
+- The controller action signature is `Action(int routeParam, ViewModelType vm)` where `vm` has a property matching `routeParam`
+- The route parameter satisfies routing requirements
+- The model property satisfies business logic requirements
 
 ### Related Issues
 
-- **Issue #708:** AddPlatform form returned 400 due to route/model binding conflict
-- **Decision:** `.squad/decisions/inbox/sparks-708-form-route-binding.md`
+- **Issue #708:** AddPlatform form returned 400 when route parameter was removed
+- **Decision:** `.squad/decisions/inbox/sparks-708-route-parameter-correction.md` (SUPERSEDES previous incorrect decision)
 - **File:** `JosephGuadagno.Broadcasting.Web/Views/Engagements/AddPlatform.cshtml`
 
