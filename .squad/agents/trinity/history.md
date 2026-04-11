@@ -1,5 +1,17 @@
 # Trinity - History
 
+### 2026-04-11 — Issue #708: Duplicate API Call Investigation
+
+**Status:** ✅ ROOT CAUSE IDENTIFIED
+
+**Finding:** Issue #708 (duplicate `AddPlatformToEngagementAsync` API calls) is **NOT a backend bug**. Root cause is a **client-side JavaScript bug** in `site.js` form double-submit prevention logic.
+
+**Details:** The form submit event handler returns early on disabled button without calling `event.preventDefault()`, allowing the browser's default form submission to occur even when the button is already disabled.
+
+**Ownership:** Fix belongs to Sparks (Web/UI specialist). Trinity has verified API, routing, and middleware are functioning correctly.
+
+**Decision:** Trinity will not implement the fix—it's out of domain. Coordinator should route to Sparks for implementation.
+
 ## Core Context
 
 **Role:** Backend Domain Architect | API design, data models, RBAC, database integration, AutoMapper
@@ -164,3 +176,52 @@ Response:
 - Timer-triggered functions should return `Task` or `Task<bool>`, not `IActionResult` (semantic correctness)
 
 **Audit Deliverable:** `.squad/decisions/inbox/trinity-backend-audit-findings.md` (comprehensive report with file/line references)
+
+### Issue #708 Root Cause Analysis — Duplicate API Calls (2026-04-11)
+
+**Status:** ✅ ROOT CAUSE IDENTIFIED
+
+**Issue:** `AddPlatformToEngagementAsync` in `EngagementsController` (API) appears to be called twice on form submission.
+
+**Root Cause:** Client-side JavaScript bug in `Web\wwwroot\js\site.js` lines 8-13.
+
+**Technical Analysis:**
+The form submit handler attempts to prevent double-submission by disabling the submit button, but has a critical flaw:
+
+```javascript
+form.addEventListener('submit', function () {
+    if (btn.disabled) return;  // ❌ BUG: Returns without preventing form submission
+    btn.disabled = true;
+});
+```
+
+**Why It Fails:**
+1. User double-clicks submit button quickly
+2. First click: Button not disabled → disables button → form submits
+3. Second click: Button IS disabled → `return` executes → **form still submits because `event.preventDefault()` was not called**
+
+**The Fix:**
+Add `event.preventDefault()` when button is already disabled:
+
+```javascript
+form.addEventListener('submit', function (e) {
+    if (btn.disabled) {
+        e.preventDefault();  // ✅ Prevents duplicate submission
+        return;
+    }
+    btn.disabled = true;
+});
+```
+
+**Impact:**
+- NOT an API routing issue
+- NOT a middleware issue
+- NOT a controller/manager issue
+- Client-side only — affects ALL forms in the Web application
+
+**Files Involved:**
+- `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/site.js:8-13` (bug location)
+- `src/JosephGuadagno.Broadcasting.Web/Views/Engagements/AddPlatform.cshtml` (affected form)
+- All other forms using site.js are potentially affected
+
+**Recommendation:** Fix belongs to Sparks (Web/UI specialist). Backend API is functioning correctly.

@@ -1,5 +1,71 @@
 
 
+--- From: trinity-708-duplicate-call.md ---
+---
+date: 2026-04-11
+author: Trinity
+issue: 708
+status: root-cause-identified
+---
+
+# Issue #708: Duplicate API Call Root Cause
+
+## Summary
+
+The `AddPlatformToEngagementAsync` API endpoint is being called twice due to a **client-side JavaScript bug** in the Web layer's form double-submit prevention logic.
+
+## Root Cause
+
+**File:** `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/site.js`  
+**Lines:** 8-13
+
+The form submit event handler attempts to prevent double-submission by disabling the submit button, but fails to call `event.preventDefault()` when the button is already disabled:
+
+```javascript
+form.addEventListener('submit', function () {
+    if (btn.disabled) return;  // ❌ BUG: Returns without calling preventDefault()
+    btn.disabled = true;
+});
+```
+
+## Why It Fails
+
+When a user double-clicks the submit button quickly:
+
+1. **First click:** Button not disabled → handler disables button → form submits
+2. **Second click:** Button IS disabled → `return` executes → **form STILL submits** (no preventDefault)
+
+The `return` statement only exits the event handler—it does NOT prevent the browser's default form submission behavior.
+
+## The Fix
+
+Add event parameter and call `preventDefault()`:
+
+```javascript
+form.addEventListener('submit', function (e) {
+    if (btn.disabled) {
+        e.preventDefault();  // ✅ Prevents duplicate submission
+        return;
+    }
+    btn.disabled = true;
+});
+```
+
+## Impact
+
+- **Scope:** All forms in the Web application (site.js is global)
+- **Severity:** Medium (affects all POST operations if user double-clicks)
+- **Backend:** API is functioning correctly—this is purely a client-side issue
+
+## Ownership
+
+- **Fix belongs to:** Sparks (Web/UI specialist)
+- **Backend review:** Trinity verified API/routing/middleware are not the cause
+
+## Decision
+
+Trinity will NOT make the fix (out of domain). Coordinator should route this to Sparks for implementation.
+
 --- From: ghost-83-85-review.md ---
 # Ghost Decision: Issues #83 and #85 NOT Resolved by PR #532
 
