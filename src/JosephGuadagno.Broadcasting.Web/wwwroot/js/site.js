@@ -5,8 +5,11 @@
         var btn = form.querySelector('[type="submit"]');
         if (!btn) return;
 
-        form.addEventListener('submit', function () {
-            if (btn.disabled) return;
+        form.addEventListener('submit', function (event) {
+            if (btn.disabled) {
+                event.preventDefault();
+                return;
+            }
             btn.dataset.originalHtml = btn.innerHTML;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
             btn.disabled = true;
