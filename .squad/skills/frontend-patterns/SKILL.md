@@ -110,3 +110,66 @@ $(form).on('invalid-form.validate', function () {
 - **Issue #708:** Double-submit bug fix (root cause and solution)
 - **File:** `JosephGuadagno.Broadcasting.Web/wwwroot/js/site.js`
 - **Decision:** `.squad/decisions/inbox/sparks-708-double-submit-fix.md`
+
+## Razor Forms and Model Binding
+
+### Avoid Duplicate Route and Model Binding
+
+When a controller POST action accepts both a route parameter AND a ViewModel with a matching property name, ASP.NET Core model binding can become confused about the binding source, causing HTTP 400 Bad Request errors.
+
+**❌ WRONG:**
+```razor
+@model EngagementSocialMediaPlatformViewModel
+
+<form asp-action="AddPlatform" asp-route-engagementId="@Model.EngagementId" method="post">
+    <input type="hidden" asp-for="EngagementId" />
+    <!-- ... -->
+</form>
+```
+
+Controller:
+```csharp
+[HttpPost]
+public async Task<IActionResult> AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)
+{
+    // ⚠️ ASP.NET Core doesn't know whether to bind engagementId from route or vm.EngagementId
+}
+```
+
+**✅ CORRECT:**
+```razor
+@model EngagementSocialMediaPlatformViewModel
+
+<form asp-action="AddPlatform" method="post">
+    <input type="hidden" asp-for="EngagementId" />
+    <!-- ... -->
+</form>
+```
+
+Controller:
+```csharp
+[HttpPost]
+public async Task<IActionResult> AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)
+{
+    // ✅ ASP.NET Core binds engagementId from vm.EngagementId unambiguously
+}
+```
+
+### When to Use Route Parameters vs Model Properties
+
+**Use route parameters (asp-route-*) when:**
+- The value is NOT part of the posted model
+- You're building a GET link/form
+- The parameter represents a different entity (e.g., parent ID in a nested route)
+
+**Use model properties (hidden fields) when:**
+- The value is part of the ViewModel
+- You're building a POST form
+- The value is being submitted with other form data
+
+### Related Issues
+
+- **Issue #708:** AddPlatform form returned 400 due to route/model binding conflict
+- **Decision:** `.squad/decisions/inbox/sparks-708-form-route-binding.md`
+- **File:** `JosephGuadagno.Broadcasting.Web/Views/Engagements/AddPlatform.cshtml`
+

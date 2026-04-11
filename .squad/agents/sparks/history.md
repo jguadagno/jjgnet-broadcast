@@ -8,6 +8,7 @@
 | 2026-04-03 | Implement health checks for Api and Web (#635) | ✅ Added SQL Server and Azure Storage health checks to ServiceDefaults; PR #641 created |
 | 2026-05-02 | Schedule Add/Edit UI validation (#67) | ✅ Implemented ItemType dropdown and AJAX validation UI; branch feature/67-schedule-item-validation-ui pushed |
 | 2026-04-11 | Fix double-submit bug in site.js (#708) | ✅ Added event.preventDefault() in submit handler to block duplicate form submissions; committed to branch social-media-708 |
+| 2026-04-11 | Fix AddPlatform 400 error (#708) | ✅ Removed redundant asp-route-engagementId from form causing model binding conflict; EngagementId now only posted via hidden field in ViewModel |
 
 ## Learnings
 
@@ -85,3 +86,13 @@ Established by Joseph Guadagno:
 - **Commit:** 079cb14
 - **Regression Coverage:** Backend API validation prevents data corruption even if double-submit occurs (15 tests already passing); no new test framework added
 - **Status:** ✅ Complete — Orchestration log 2026-04-11T22-34-33Z-sparks.md recorded; decisions merged to decisions.md
+
+### 2026-04-11 — Issue #708: AddPlatform 400 Error (Route Parameter Conflict)
+- **Root Cause:** The AddPlatform.cshtml form had both `asp-route-engagementId="@Model.EngagementId"` in the form action AND a hidden field `<input asp-for="EngagementId" />`, causing ASP.NET Core model binding confusion
+- **Impact:** POST to AddPlatform returned HTTP 400 Bad Request because the controller action signature `AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)` couldn't resolve whether `engagementId` should come from the route or the model property
+- **Fix:** Removed `asp-route-engagementId` attribute from the form tag; `EngagementId` is now posted solely via the hidden field as part of the ViewModel
+- **File Changed:** `JosephGuadagno.Broadcasting.Web/Views/Engagements/AddPlatform.cshtml` (line 11)
+- **Pattern:** When a controller action accepts both a route parameter AND a model with a matching property name, avoid duplicating the value in both the route and the form — choose one binding source (prefer model binding for forms)
+- **Branch:** social-media-708
+- **Commit:** ce28027
+- **Status:** ✅ Complete
