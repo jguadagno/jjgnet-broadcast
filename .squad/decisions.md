@@ -13831,3 +13831,38 @@ To manually verify the fix works:
 ✅ **Backend tests verified:** 15 API tests passing  
 ✅ **Ready for manual QA and PR review**
 
+--- From: sparks-708-form-route-binding.md ---
+
+# Decision: Avoid Duplicate Route and Model Binding in Forms
+
+**Date:** 2026-04-11  
+**Agent:** Sparks (Frontend Developer)  
+**Context:** Issue #708 — AddPlatform form returning HTTP 400 Bad Request
+
+## Problem
+
+The AddPlatform.cshtml form was configured with route and form binding for EngagementId, causing ASP.NET Core model binding confusion. The parameter appeared in both the route (`asp-route-engagementId`) and the ViewModel (`vm.EngagementId`), resulting in HTTP 400 Bad Request.
+
+## Decision
+
+When a controller action accepts both a route parameter AND a model with a matching property name, choose ONE binding source:
+- **Prefer model binding for POST forms** — POST the value as part of the ViewModel (hidden field or other input)
+- **Use route parameters only when the value is NOT part of the posted model** — typically for GET actions
+
+## Implementation
+
+Removed the redundant `asp-route-engagementId` from AddPlatform.cshtml. EngagementId is now posted exclusively via hidden field as part of the ViewModel.
+
+## Scope
+
+**Affects:** All Razor form views that POST to controller actions with parameter names matching ViewModel properties  
+**Audience:** Sparks (Frontend), Trinity (Controller layer)  
+**Future Action:** Review other forms (Talks, Schedules, MessageTemplates) for similar patterns
+
+## Related
+
+- Issue #708
+- Commit: ce28027
+- Branch: social-media-708
+- Files: `JosephGuadagno.Broadcasting.Web/Views/Engagements/AddPlatform.cshtml`
+

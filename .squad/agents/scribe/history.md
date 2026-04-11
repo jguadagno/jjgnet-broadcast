@@ -112,3 +112,15 @@
 
 **Policy:** Full original content in `history-archive.md` beside each agent. Compact versions have dense Core Context + 2-3 most recent sessions verbatim.
 
+### Session: Issue #708 Final Trace & Consolidation (2026-04-11)
+
+- **Work:** Orchestration and decision consolidation for Sparks' Issue #708 fixes
+- **Agents involved:** Sparks (completed work) → Scribe (logged and merged)
+- **Created files:**
+  - Orchestration log: `.squad/orchestration-log/2026-04-11T22-51-44Z-sparks.md` (both fixes documented)
+  - Session log: `.squad/log/2026-04-11T22-51-44Z-issue-708-form-trace.md` (brief summary)
+- **Decision merged:** `sparks-708-form-route-binding.md` merged to decisions.md (ASP.NET Core model binding pattern)
+- **Inbox cleared:** 1 file deleted
+- **History updated:** Sparks history.md appended with session completion note
+- **Outcome:** Issue #708 fully resolved; decisions consolidated for team reference
+

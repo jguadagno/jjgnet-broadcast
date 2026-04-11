@@ -96,3 +96,11 @@ Established by Joseph Guadagno:
 - **Branch:** social-media-708
 - **Commit:** ce28027
 - **Status:** ✅ Complete
+
+## Session Complete: Issue #708 Final Trace (2026-04-11)
+
+- **Work:** Scribe session to consolidate Sparks' Issue #708 fixes and team decisions
+- **Orchestration log:** `.squad/orchestration-log/2026-04-11T22-51-44Z-sparks.md` — Captured both fixes (site.js + AddPlatform.cshtml)
+- **Session log:** `.squad/log/2026-04-11T22-51-44Z-issue-708-form-trace.md` — Issue summary and pattern documented
+- **Decision merged:** `sparks-708-form-route-binding.md` → decisions.md (model binding pattern established for team)
+- **Outcome:** Issue #708 fully resolved; dual fixes committed (079cb14, ce28027); team pattern documented for future form implementations
