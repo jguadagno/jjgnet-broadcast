@@ -40,14 +40,14 @@
     <DocumentationFile>bin\Release\JosephGuadagno.Broadcasting.Api.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Aspire.Azure.Storage.Queues" Version="13.2.1" />
-    <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.2.1" />
+    <PackageReference Include="Aspire.Azure.Storage.Queues" Version="13.2.2" />
+    <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.2.2" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
     <PackageReference Include="Microsoft.Identity.Web" Version="4.7.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.1" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.13.18" />
-    <PackageReference Include="Scalar.AspNetCore.Microsoft" Version="2.13.18" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.2" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.13.22" />
+    <PackageReference Include="Scalar.AspNetCore.Microsoft" Version="2.13.22" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
