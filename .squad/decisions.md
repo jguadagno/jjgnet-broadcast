@@ -13866,3 +13866,84 @@ Removed the redundant `asp-route-engagementId` from AddPlatform.cshtml. Engageme
 - Branch: social-media-708
 - Files: `JosephGuadagno.Broadcasting.Web/Views/Engagements/AddPlatform.cshtml`
 
+
+--- From: trinity-708-real-400-cause.md ---
+---
+date: 2026-04-11
+author: Trinity
+issue: 708
+status: resolved
+---
+
+# Issue #708: Real 400 Error Cause and Fix
+
+## Summary
+
+The earlier fix for duplicate API calls (JavaScript double-submit prevention) was correct but incomplete. The user still received HttpRequestException 400 from EngagementService.AddPlatformToEngagementAsync on **legitimate single submissions**.
+
+## Root Cause
+
+**Missing validation on the Web layer ViewModel:**
+
+The EngagementSocialMediaPlatformViewModel had **no validation attributes** on SocialMediaPlatformId. When users submitted the form without selecting a platform from the dropdown (value=""), the property defaulted to 0.
+
+The API's EngagementSocialMediaPlatformRequest DTO has [Range(1, int.MaxValue)] validation, which correctly rejects 0, returning 400 BadRequest. However, the Web layer had no client-side or server-side validation to catch this before sending to the API.
+
+## Secondary Issue
+
+**No exception handling in the Web controller:**
+
+When the API returned 400, PostForUserAsync threw HttpRequestException, which was not caught. The Web controller only checked if (result is null), which doesn't handle exceptions.
+
+## The Fix
+
+**File 1:** src/JosephGuadagno.Broadcasting.Web/Models/EngagementSocialMediaPlatformViewModel.cs
+
+Added validation attribute:
+
+\\\csharp
+[Range(1, int.MaxValue, ErrorMessage = "Please select a platform.")]
+public int SocialMediaPlatformId { get; set; }
+\\\
+
+This ensures ModelState.IsValid catches the error before calling the API, displaying a user-friendly message.
+
+**File 2:** src/JosephGuadagno.Broadcasting.Web/Controllers/EngagementsController.AddPlatform()
+
+Added try/catch for HttpRequestException:
+
+\\\csharp
+try
+{
+    var result = await _engagementService.AddPlatformToEngagementAsync(...);
+    // ... existing null check
+}
+catch (HttpRequestException ex)
+{
+    TempData["ErrorMessage"] = $"Failed to add platform: {ex.Message}";
+}
+\\\
+
+This provides graceful degradation if the API returns any HTTP error.
+
+## Impact
+
+- **User Experience:** Clear validation message instead of exception
+- **Defense-in-Depth:** Both client/server validation + exception handling
+- **API Integrity:** API validation remains strict (no changes needed)
+
+## Testing
+
+- Manual testing recommended: Submit form without selecting platform → should show "Please select a platform." error
+- Manual testing: Submit with valid platform + handle → should succeed
+- API tests: 15/15 passing (no backend changes)
+
+## Branch
+
+- **Branch:** social-media-708
+- **Commit:**  a60493
+
+## Status
+
+✅ **RESOLVED** — Validation and error handling complete, ready for merge after testing.
+

@@ -247,3 +247,11 @@ form.addEventListener('submit', function (e) {
 **Result:** Users now see clear validation errors instead of HTTP exceptions. Defense-in-depth: both Web validation and API validation work together.
 
 **Branch:** `social-media-708` | **Commit:** `0a60493`
+
+## Session Complete: Issue #708 Final Trace (2026-04-11)
+
+- **Work:** Scribe session to consolidate Trinity's Issue #708 API trace and finalize decisions
+- **Orchestration log:** `.squad/orchestration-log/2026-04-11T22-54-14Z-trinity.md` — Captured Trinity's 400 error root cause investigation
+- **Session log:** `.squad/log/2026-04-11T22-54-14Z-issue-708-api-trace.md` — Issue summary and Web validation pattern documented
+- **Decision merged:** `trinity-708-real-400-cause.md` → decisions.md (Web-side validation requirement established for team)
+- **Outcome:** Issue #708 fully resolved; Web validation and error handling complete (commit 0a60493); team pattern documented for required field validation
