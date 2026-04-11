@@ -32,7 +32,7 @@
     "AzureWebJobs.TwitterProcessNewSourceData.Disabled": true,
     "AzureWebJobs.TwitterProcessScheduledItemFired.Disabled": true,
     "AzureWebJobs.TwitterProcessRandomPostFired.Disabled": true,
-    "AzureWebJobs.MaintenanceClearOldLogs.Disabled": true,
+    "AzureWebJobs.MaintenanceClearOldLogs.Disabled": false,
     "AzureWebJobs.MaintenanceAdClientSecretRefresh.Disabled": true,
     "AzureWebJobs.LinkedInPostLink.Disabled": true,
     "AzureWebJobs.LinkedInPostText.Disabled": true,
