@@ -255,3 +255,27 @@ form.addEventListener('submit', function (e) {
 - **Session log:** `.squad/log/2026-04-11T22-54-14Z-issue-708-api-trace.md` — Issue summary and Web validation pattern documented
 - **Decision merged:** `trinity-708-real-400-cause.md` → decisions.md (Web-side validation requirement established for team)
 - **Outcome:** Issue #708 fully resolved; Web validation and error handling complete (commit 0a60493); team pattern documented for required field validation
+
+## Issue #708 Final Fix (2026-04-11)
+
+**Status:** ✅ RESOLVED
+
+**Symptom:** Platform successfully saved to database, but Web UI showed "400 Bad Request" error.
+
+**Root Cause:** Model binding ambiguity. The `AddPlatform` POST action took `engagementId` both as a parameter (from query string via `asp-route-engagementId`) and within the ViewModel (from hidden field). While ASP.NET Core can handle this, the redundancy created unnecessary complexity and potential for binding conflicts.
+
+**Fix Applied (commit 865b903):**
+1. Removed `engagementId` parameter from action signature
+2. Simplified to use only `vm.EngagementId` from the ViewModel
+3. Removed `asp-route-engagementId` from form (redundant with hidden field)
+
+**Files Modified:**
+- `src/JosephGuadagno.Broadcasting.Web/Controllers/EngagementsController.cs` — Action signature simplified
+- `src/JosephGuadagno.Broadcasting.Web/Views/Engagements/AddPlatform.cshtml` — Removed redundant route parameter
+
+**Pattern Established:** When a ViewModel contains all required data for an action, prefer a single ViewModel parameter over duplicating values in separate action parameters. This reduces binding complexity and makes the code clearer.
+
+**Result:** Issue fully resolved. Platform save now works correctly without spurious 400 errors.
+
+**Branch:** `social-media-708` | **Commit:** `865b903`
+
