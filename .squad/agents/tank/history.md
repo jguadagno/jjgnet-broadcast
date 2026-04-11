@@ -244,3 +244,11 @@ The API already has **defense-in-depth** protection. Even if double-submit occur
     - **Testing focus:** Test Layer 2 comprehensively (API tests). Layer 1 can be manual QA unless high-risk/high-frequency bug.
 
 14. **Key file path for regression coverage decisions:** `.squad/decisions/inbox/tank-{issue}-regression-coverage.md` — documents why a particular testing approach was chosen for future reference when similar bugs occur.
+
+## Orchestration Session: 2026-04-11T22:36:40Z (Issue #708 Regression Assessment)
+
+**Outcome:** Tank's regression assessment completed. Orchestration logs written:
+- `.squad/orchestration-log/2026-04-11T22-36-40Z-Tank.md`
+- `.squad/log/2026-04-11T22-36-40Z-issue-708-tests.md`
+
+**Decision:** No new test framework required. Backend API tests provide defense-in-depth protection for double-submit bug fix. Manual QA recommended for browser behavior verification.
