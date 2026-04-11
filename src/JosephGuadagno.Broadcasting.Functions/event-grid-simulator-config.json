@@ -11,22 +11,22 @@
         "http": [
           {
             "name": "BlueskyProcessRandomPostFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=BlueskyProcessRandomPostFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=BlueskyProcessRandomPostFired",
             "disableValidation": true
           },
           {
             "name": "FacebookProcessNewRandomPost",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=FacebookProcessNewRandomPost",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=FacebookProcessNewRandomPost",
             "disableValidation": true
           },
           {
             "name": "LinkedInProcessNewRandomPost",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=LinkedInProcessNewRandomPost",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=LinkedInProcessNewRandomPost",
             "disableValidation": true
           },
           {
             "name": "TwitterProcessRandomPostFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=TwitterProcessRandomPostFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=TwitterProcessRandomPostFired",
             "disableValidation": true
           }
         ]
@@ -41,22 +41,22 @@
         "http": [
           {
             "name": "BlueskyProcessSpeakingEngagementDataFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=BlueskyProcessSpeakingEngagementDataFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=BlueskyProcessSpeakingEngagementDataFired",
             "disableValidation": true
           },
           {
             "name": "FacebookProcessSpeakingEngagementDataFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=FacebookProcessSpeakingEngagementDataFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=FacebookProcessSpeakingEngagementDataFired",
             "disableValidation": true
           },
           {
             "name": "LinkedInProcessSpeakingEngagementDataFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=LinkedInProcessSpeakingEngagementDataFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=LinkedInProcessSpeakingEngagementDataFired",
             "disableValidation": true
           },
           {
             "name": "TwitterProcessSpeakingEngagementDataFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=TwitterProcessSpeakingEngagementDataFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=TwitterProcessSpeakingEngagementDataFired",
             "disableValidation": true
           }
         ]
@@ -71,22 +71,22 @@
         "http": [
           {
             "name": "BlueskyProcessNewSyndicationDataFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=BlueskyProcessNewSyndicationDataFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=BlueskyProcessNewSyndicationDataFired",
             "disableValidation": true
           },
           {
             "name": "FacebookProcessNewSyndicationDataFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=FacebookProcessNewSyndicationDataFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=FacebookProcessNewSyndicationDataFired",
             "disableValidation": true
           },
           {
             "name": "LinkedInProcessNewSyndicationDataFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=LinkedInProcessNewSyndicationDataFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=LinkedInProcessNewSyndicationDataFired",
             "disableValidation": true
           },
           {
             "name": "TwitterProcessNewSyndicationDataFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=TwitterProcessNewSyndicationDataFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=TwitterProcessNewSyndicationDataFired",
             "disableValidation": true
           }
         ]
@@ -101,22 +101,22 @@
         "http": [
           {
             "name": "BlueskyProcessNewYouTubeDataFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=BlueskyProcessNewYouTubeDataFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=BlueskyProcessNewYouTubeDataFired",
             "disableValidation": true
           },
           {
             "name": "FacebookProcessNewYouTubeDataFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=FacebookProcessNewYouTubeDataFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=FacebookProcessNewYouTubeDataFired",
             "disableValidation": true
           },
           {
             "name": "LinkedInProcessNewYouTubeDataFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=LinkedInProcessNewYouTubeDataFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=LinkedInProcessNewYouTubeDataFired",
             "disableValidation": true
           },
           {
             "name": "TwitterProcessNewYouTubeDataFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=TwitterProcessNewYouTubeDataFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=TwitterProcessNewYouTubeDataFired",
             "disableValidation": true
           }
         ]
@@ -131,22 +131,22 @@
         "http": [
           {
             "name": "BlueskyProcessScheduledItemFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=BlueskyProcessScheduledItemFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=BlueskyProcessScheduledItemFired",
             "disableValidation": true
           },
           {
             "name": "FacebookProcessScheduledItemFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=FacebookProcessScheduledItemFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=FacebookProcessScheduledItemFired",
             "disableValidation": true
           },
           {
             "name": "LinkedInProcessScheduledItemFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=LinkedInProcessScheduledItemFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=LinkedInProcessScheduledItemFired",
             "disableValidation": true
           },
           {
             "name": "TwitterProcessScheduledItemFired",
-            "endpoint": "http://localhost:59833/runtime/webhooks/EventGrid?functionName=TwitterProcessScheduledItemFired",
+            "endpoint": "http://localhost:64819/runtime/webhooks/EventGrid?functionName=TwitterProcessScheduledItemFired",
             "disableValidation": true
           }
         ]
