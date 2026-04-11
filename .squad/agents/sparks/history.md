@@ -7,6 +7,7 @@
 | 2026-03-20 | Added CodeQL analysis to ci.yml (#326) | ✅ CodeQL job added as separate job with csharp language, push to main trigger added to workflow |
 | 2026-04-03 | Implement health checks for Api and Web (#635) | ✅ Added SQL Server and Azure Storage health checks to ServiceDefaults; PR #641 created |
 | 2026-05-02 | Schedule Add/Edit UI validation (#67) | ✅ Implemented ItemType dropdown and AJAX validation UI; branch feature/67-schedule-item-validation-ui pushed |
+| 2026-04-11 | Fix double-submit bug in site.js (#708) | ✅ Added event.preventDefault() in submit handler to block duplicate form submissions; committed to branch social-media-708 |
 
 ## Learnings
 
@@ -73,3 +74,14 @@ Established by Joseph Guadagno:
   - IsActive shown as ✗ icon; list page has toggle button to flip IsActive
   - Platform dropdowns on ScheduledItems and MessageTemplates views (replace free-text with FK dropdown)
 - **Next:** Begin Razor views after Switch delivers controller layer
+
+### 2026-04-11 — Issue #708: Double-Submit Bug Fix
+- **Root Cause:** In site.js, the global form submit handler checked `if (btn.disabled) return;` but did not call `event.preventDefault()` when the button was already disabled
+- **Impact:** Fast double-click sent duplicate POST requests, causing "duplicate platform add" errors in AddPlatform flow
+- **Fix:** Added `event` parameter to submit handler and call `event.preventDefault()` before returning when button is disabled
+- **File Changed:** `JosephGuadagno.Broadcasting.Web/wwwroot/js/site.js` (lines 8-12)
+- **Pattern:** Always accept the `event` parameter in event listeners and call `preventDefault()` when blocking default behavior
+- **Branch:** social-media-708 (existing branch for this fix)
+- **Commit:** 079cb14
+- **Regression Coverage:** Backend API validation prevents data corruption even if double-submit occurs (15 tests already passing); no new test framework added
+- **Status:** ✅ Complete — Orchestration log 2026-04-11T22-34-33Z-sparks.md recorded; decisions merged to decisions.md
