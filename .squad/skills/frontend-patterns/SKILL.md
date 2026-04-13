@@ -46,23 +46,46 @@ form.addEventListener('submit', function (event) {
 
 ### Pattern in site.js (Global Form Handler)
 
-The project's global form submit handler (site.js) implements double-submit prevention:
+The project's global form submit handler (site.js) implements double-submit prevention. **IMPORTANT:** Use button click event, NOT form submit event, to prevent race conditions.
 
+**❌ WRONG - Race Condition:**
 ```javascript
 form.addEventListener('submit', function (event) {
     if (btn.disabled) {
-        event.preventDefault();  // Block repeat submits
+        event.preventDefault();
         return;
     }
-    btn.disabled = true;  // Disable for this submit
+    btn.disabled = true;  // ⚠️ Too late! Second click already queued submit event
+});
+```
+
+**✅ CORRECT - Click Event:**
+```javascript
+btn.addEventListener('click', function (event) {
+    if (btn.disabled) {
+        event.preventDefault();  // Block if already disabled
+        return;
+    }
+    
+    // Check client validation BEFORE disabling
+    if (typeof $ !== 'undefined' && $(form).valid && !$(form).valid()) {
+        return;  // Let validation run, don't disable
+    }
+    
+    btn.disabled = true;  // Disable immediately on first click
     btn.innerHTML = '<span>...</span>Saving...';  // Visual feedback
 });
 ```
 
+**Why Click Event Prevents Race:**
+- Click event fires BEFORE form submit event
+- Button disables on FIRST click, preventing second click from queuing another submit
+- Validation check runs before disable, so invalid forms don't stay disabled
+
 **Key Points:**
-- Checks disabled state to catch rapid clicks
-- Prevents default BEFORE returning
-- Provides visual feedback (spinner + "Saving...")
+- Use button click event, not form submit event
+- Check client validation BEFORE disabling button
+- Disable happens atomically on first click (no race window)
 - Re-enables button on validation errors (invalid-form.validate event)
 
 ## Form UX Patterns
@@ -107,9 +130,10 @@ $(form).on('invalid-form.validate', function () {
 
 ## References
 
-- **Issue #708:** Double-submit bug fix (root cause and solution)
+- **Issue #708:** Double-submit race condition fix (click event vs submit event)
 - **File:** `JosephGuadagno.Broadcasting.Web/wwwroot/js/site.js`
-- **Decision:** `.squad/decisions/inbox/sparks-708-double-submit-fix.md`
+- **Decision:** `.squad/decisions/inbox/switch-real-fix-708.md` (2026-04-13)
+- **Pattern:** Button click event for double-submit prevention (atomic disable before form submit fires)
 
 ## Razor Forms and Model Binding
 
