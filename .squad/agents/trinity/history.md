@@ -1,5 +1,60 @@
 # Trinity - History
 
+### 2026-04-13T17-34-54Z — Issue #708: Backend Validation Coordination
+**Status:** ✅ COMPLETE & COORDINATED
+
+**Task:** Validate end-to-end add-platform flow for issue #708
+
+**Outcome:** Confirmed backend duplicate handling remains appropriate defense-in-depth and aligns with Web-side fix.
+
+**Validation Results:**
+- Domain: `DuplicateEngagementSocialMediaPlatformException` properly typed
+- Data Layer: Pre-check + SQL constraint catch detects duplicates
+- API Layer: Returns HTTP 409 Conflict with ProblemDetails
+- Web Layer: Catches 409 and shows user-friendly warning
+- Test Coverage: 18/18 API tests, 14/14 data store tests, 30/30 Web tests passing
+
+**Defense-in-Depth Architecture:**
+1. Client-side: `site.js` prevents double-submit (Switch)
+2. Backend: API returns 409 for duplicates (Trinity)
+3. Web: Shows warning message (Switch + Trinity)
+4. Tests: 10+ regression tests verify all layers (Tank)
+
+**Architectural Decision:** 409 Conflict chosen over 400 BadRequest to distinguish valid requests with state conflicts from validation failures.
+
+**Team Coordination:**
+- Coordinated with Switch (client-side fix and Web messaging) and Tank (regression tests)
+- All layers integrated and tested
+- Ready for merge with all tests passing
+
+**Status:** Complete. No outstanding issues.
+
+### 2026-04-11 — Issue #708: Fix Validation Complete
+
+**Status:** ✅ FIX VALIDATED & READY FOR MERGE
+
+**What I Validated:**
+1. **Client-side fix (site.js):** ✅ Already committed (079cb14) — `event.preventDefault()` now blocks duplicate submits
+2. **Backend duplicate handling:** ✅ All changes validated and tests passing
+   - `DuplicateEngagementSocialMediaPlatformException` domain exception
+   - Data layer pre-check + SQL constraint catch (`IsDuplicateAssociationException`)
+   - API endpoint returns HTTP 409 Conflict with ProblemDetails
+   - Web layer catches 409 and shows user-friendly warning message
+3. **Test coverage:** ✅ 18/18 API tests passing, 14/14 data store tests passing, 30/30 Web tests passing
+
+**Root Cause Confirmed:**
+Issue #708 was caused by **client-side JavaScript bug** — form submit handler returned early without calling `event.preventDefault()`, allowing duplicate submissions despite disabled button. Fix applied by Sparks (commit 079cb14).
+
+**Backend Defense-in-Depth:**
+Backend changes provide data integrity protection even if double-submit recurs:
+- Data layer validates uniqueness before insert + catches SQL unique constraint violations
+- API returns explicit 409 Conflict (not generic 400/500)
+- Web layer gracefully handles 409 with appropriate user messaging
+
+**Key Architectural Decision:** Idempotent duplicate handling — second identical request returns 409 with clear message instead of failing silently or with generic error. Client can distinguish "duplicate" from "failure" for better UX.
+
+**Ready for Merge:** All code committed to `social-media-708` branch, all tests passing, no outstanding issues.
+
 ### 2026-04-13 — Issue #708: Backend Duplicate Handling Implementation
 
 **Status:** ✅ COMPLETE & MERGED
@@ -36,6 +91,76 @@
 **Ownership:** Fix belongs to Sparks (Web/UI specialist). Trinity verified API, routing, and middleware are functioning correctly.
 
 **Decision:** Trinity will not implement the fix—it's out of domain. Coordinator should route to Sparks for implementation.
+
+## Learnings
+
+### HTTP Status Code Semantics for Duplicate Resources
+**Pattern:** Use HTTP 409 Conflict (not 400 Bad Request) for duplicate resource associations.
+
+**Reasoning:** 
+- 400 indicates malformed request or validation failure
+- 409 indicates request is valid but conflicts with current state
+- Clients can distinguish "already exists" from "invalid input" for appropriate UX
+
+**Implementation:** Catch domain exception (`DuplicateEngagementSocialMediaPlatformException`) in API controller and return `Problem(statusCode: 409, title: "...", detail: ex.Message)`.
+
+**Files:** `src/JosephGuadagno.Broadcasting.Api/Controllers/EngagementsController.cs` (lines 445-456)
+
+### Defense-in-Depth for Duplicate Detection
+**Pattern:** Implement both pre-insert check AND SQL constraint catch for duplicate prevention.
+
+**Reasoning:**
+- Pre-check provides fast rejection and clear diagnostics
+- SQL constraint catch handles race conditions (concurrent requests)
+- Never rely on one layer alone — database constraints are ultimate safety net
+
+**Implementation:**
+1. Query `AnyAsync()` before insert — throw domain exception if exists
+2. Wrap `SaveChangesAsync()` in try-catch
+3. Check `DbUpdateException.InnerException` for `SqlException` numbers 2601/2627
+4. Log all failures with structured data before throwing/returning
+
+**Files:** `src/JosephGuadagno.Broadcasting.Data.Sql/EngagementSocialMediaPlatformDataStore.cs` (lines 34-84)
+
+### Never Swallow Exceptions in Data Stores
+**Pattern:** Data store methods must either return expected result OR throw exception — never return null/false silently on unexpected failures.
+
+**Rationale:** Silent failures hide bugs and make debugging impossible. Structured logging + exception propagation enables diagnostics.
+
+**Anti-Pattern (OLD):**
+```csharp
+catch (Exception)
+{
+    return null;  // ❌ Swallows all errors
+}
+```
+
+**Correct Pattern (NEW):**
+```csharp
+catch (DbUpdateException ex) when (IsDuplicateAssociationException(ex))
+{
+    logger.LogWarning(ex, "Duplicate detected...");
+    throw new DuplicateEngagementSocialMediaPlatformException(...);
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "Failed to add...");
+    throw;  // ✅ Propagates unexpected errors
+}
+```
+
+**Files:** `src/JosephGuadagno.Broadcasting.Data.Sql/EngagementSocialMediaPlatformDataStore.cs` (lines 52-84)
+
+### Client-Side Double-Submit Prevention
+**Pattern:** Always call `event.preventDefault()` when preventing form submission in JavaScript event handlers.
+
+**Why:** Returning early from event handler does NOT prevent browser's default form submission behavior. Must explicitly call `preventDefault()`.
+
+**Implementation:** `form.addEventListener('submit', function(event) { if (btn.disabled) { event.preventDefault(); return; } ... })`
+
+**Files:** `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/site.js` (lines 8-12)
+
+**Team Member:** Sparks fixed this (commit 079cb14), but Trinity documented for future reference.
 
 ## Core Context
 

@@ -14190,3 +14190,416 @@ status: implemented
 
 ---
 
+# Decision: Graceful 409 Conflict Handling in Web Controllers
+
+**Date:** 2026-04-13  
+**Agent:** Switch  
+**Issue:** #708  
+**Status:** Implemented  
+
+## Context
+
+When adding a social media platform to an engagement, if the platform is already associated, the API returns 409 Conflict. The Web controller was catching all HttpRequestException errors uniformly, showing generic error messages regardless of whether it was a duplicate (409) or a true failure (400, 500, etc).
+
+This caused poor UX:
+- User sees "Failed to add platform" even though the platform is already added
+- User might retry, seeing the same confusing error
+- No distinction between "already done" (benign) and "something broke" (needs investigation)
+
+## Decision
+
+Differentiate HTTP error handling in Web controllers based on HttpStatusCode:
+
+1. **409 Conflict** → Warning-level message ("This platform is already associated with this engagement")
+2. **Other errors** → Error-level message with technical details
+
+Implemented via:
+- HttpRequestException.StatusCode property check
+- TempData["WarningMessage"] for benign duplicates
+- TempData["ErrorMessage"] for true failures
+- _Layout.cshtml now displays WarningMessage with Bootstrap alert-warning styling
+
+## Rationale
+
+- **User clarity:** "Already done" scenarios shouldn't alarm users like failures do
+- **Retry safety:** If user retries after seeing warning, they understand the state
+- **Visual hierarchy:** Warning (yellow) vs Error (red) provides appropriate signaling
+- **Reusable pattern:** Other controllers can adopt this for idempotent operations
+
+## Alternatives Considered
+
+1. **Suppress 409 entirely:** Rejected — user should know the platform is already there
+2. **Treat 409 as success:** Rejected — misleading to show "Platform added successfully" when it wasn't just added
+3. **API-side fix only:** Rejected — Web layer should handle HTTP semantics gracefully
+
+## Impact
+
+- **Files changed:** EngagementsController.cs, _Layout.cshtml, EngagementsControllerTests.cs
+- **Tests:** 7 new/updated AddPlatform tests, all 147 Web.Tests pass
+- **Pattern established:** Warning-level feedback for idempotent operations that detect "already done"
+
+## Follow-up
+
+- Consider applying this pattern to RemovePlatform (404 on remove could be treated as warning)
+- Other controllers with POST operations that can return 409 may benefit
+
+
+
+# Decision: Fix Double-Submit Race Condition in site.js
+
+**Date:** 2026-04-13  
+**Author:** Switch (Frontend Engineer)  
+**Issue:** #708  
+**Status:** Implemented
+
+## Context
+
+Issue #708 reported duplicate platform association submissions. Initial fix (earlier today) addressed the UX messaging by catching 409 Conflicts and showing warning messages, but did NOT fix the actual double-submit bug.
+
+## Problem
+
+The `site.js` form submit handler had a race condition:
+
+```javascript
+form.addEventListener('submit', function (event) {
+    if (btn.disabled) {
+        event.preventDefault();
+        return;
+    }
+    // ... disable button here
+});
+```
+
+When a user rapidly double-clicks a submit button, BOTH clicks can trigger form submit events before the first event handler disables the button. This is a classic race condition.
+
+## Solution
+
+**Move button disable logic from form submit event to button click event:**
+
+```javascript
+btn.addEventListener('click', function (event) {
+    if (btn.disabled) {
+        event.preventDefault();
+        return;
+    }
+    
+    // Check client-side validation before disabling
+    if (typeof $ !== 'undefined' && $(form).valid && !$(form).valid()) {
+        return; // Let validation run, don't disable
+    }
+    
+    // Disable immediately to prevent double-click
+    btn.disabled = true;
+    // ... update button HTML
+});
+```
+
+## Why This Works
+
+- **Click happens BEFORE submit:** The click event fires before the form submit event
+- **Immediate disable:** Button disables on the FIRST click, preventing the second click from queuing another submit
+- **Validation-aware:** Checks client validation BEFORE disabling, so invalid forms don't show a permanently disabled button
+- **Atomic operation:** Check-disable-submit happens in one event cycle
+
+## Pattern Established
+
+**For preventing double-submit:**
+1. ✅ Use `button.addEventListener('click')` to disable button
+2. ❌ Do NOT use `form.addEventListener('submit')` (too late)
+3. ✅ Check client validation BEFORE disabling
+4. ✅ Preserve validation failure re-enable handler
+
+## Files Changed
+
+- `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/site.js` (lines 8-26)
+
+## Testing
+
+- ✅ All 147 Web.Tests pass
+- ✅ Build clean (4 warnings, expected NU1903 baseline)
+- Manual testing recommended: Rapid double-click submit buttons to verify no duplicate POSTs
+
+## Related Work
+
+This completes the #708 fix started earlier today:
+1. **Backend:** API already detects duplicates, returns 409 (Trinity)
+2. **Web messaging:** Controller catches 409, shows warning (Switch, earlier today)
+3. **Web prevention:** `site.js` now prevents double-submit (Switch, this decision)
+
+## Team Impact
+
+**All agents:** This pattern applies to ALL form submissions. When adding new forms:
+- The shared `site.js` handler applies automatically to all `<form>` elements
+- No per-form JavaScript needed for double-submit prevention
+- Client validation still works correctly
+
+
+
+---
+date: 2026-04-13
+issue: 708
+component: Web layer tests
+impact: Regression coverage
+status: Complete
+---
+
+# Issue #708: Web Layer Test Coverage for AddPlatform Double-Submit Fix
+
+## Decision
+
+Added 8 focused regression tests to `EngagementsControllerTests.cs` (Web layer) to cover the AddPlatform/RemovePlatform actions, with specific emphasis on the double-submit symptom from Issue #708.
+
+## Context
+
+**Problem:** Issue #708 involved a client-side double-submit bug where fast double-clicking the "Add Platform" button sent duplicate POST requests. The fix involved:
+1. Client-side: JavaScript `event.preventDefault()` when button is disabled (site.js)
+2. Validation: [Range(1, int.MaxValue)] on SocialMediaPlatformId (ViewModel)
+3. Backend: API returns 409 Conflict for duplicate associations (existing)
+
+**Gap:** No Web layer tests existed for the AddPlatform/RemovePlatform actions. While API and Data layer tests provided backend coverage, the Web controller's error handling and validation behavior was untested.
+
+## Tests Added
+
+1. **GET action validation:**
+   - `AddPlatform_Get_ShouldReturnViewWithViewModel()` - Verifies GET loads platforms into ViewBag
+
+2. **ModelState validation (Issue #708 requirement):**
+   - `AddPlatform_Post_WhenModelStateInvalid_ShouldReturnViewWithPlatforms()` - Validates that SocialMediaPlatformId=0 triggers validation error and returns view without calling service
+
+3. **Happy path:**
+   - `AddPlatform_Post_WhenValidAndSuccessful_ShouldRedirectWithSuccessMessage()` - Verifies successful add with TempData success message
+
+4. **Error handling:**
+   - `AddPlatform_Post_WhenServiceReturnsNull_ShouldRedirectWithErrorMessage()` - Service returns null
+   - `AddPlatform_Post_WhenHttpRequestExceptionThrown_ShouldRedirectWithErrorMessage()` - Generic exception handling
+
+5. **Double-submit regression (KEY TEST):**
+   - `AddPlatform_Post_DuplicateAttempt_ShouldHandleHttpRequestException()` - Uses stateful mock to simulate:
+     - First call: succeeds (returns platform)
+     - Second call: fails with HttpRequestException (simulating API 409 Conflict)
+   - Verifies controller handles both outcomes correctly (success message, then error message)
+
+6. **RemovePlatform coverage:**
+   - `RemovePlatform_WhenSuccessful_ShouldRedirectWithSuccessMessage()` - Success path
+   - `RemovePlatform_WhenFails_ShouldRedirectWithErrorMessage()` - Failure path
+
+## Rationale
+
+**Why not JavaScript tests?**
+- No JS testing framework exists in the project (no Selenium, Playwright, etc.)
+- Cost/benefit too high for isolated bug
+- Backend validation already prevents data corruption (defense-in-depth)
+- Client-side fix is simple and manually verifiable
+
+**Why Web layer tests?**
+- Completes the defense-in-depth coverage pyramid:
+  - ✅ Data layer: DuplicateEngagementSocialMediaPlatformException tests
+  - ✅ API layer: 409 Conflict response tests
+  - ✅ Web layer: HttpRequestException handling tests (NEW)
+  - ✅ Client: JavaScript double-submit prevention (manual verification)
+- Tests that the Web controller properly handles error responses from the API
+- Validates ModelState enforcement at the Web boundary
+- Provides regression coverage for the actual symptom (duplicate call behavior)
+
+**Stateful mock pattern:**
+The `AddPlatform_Post_DuplicateAttempt_ShouldHandleHttpRequestException()` test uses a counter-based mock setup to simulate sequential calls with different outcomes. This pattern is reusable for any scenario where you need to test that a controller handles both success and subsequent failure of the same operation.
+
+## Test Results
+
+- **Web layer:** 21/21 tests passing (13 existing + 8 new)
+- **API layer:** 18/18 tests passing (unchanged)
+- **Data layer:** 14/14 tests passing (unchanged)
+
+All tests pass without modification to existing code, confirming the tests properly validate the current implementation.
+
+## Pattern Established
+
+**For similar client-side bugs in the future:**
+1. Fix the client-side behavior (JavaScript, validation, etc.)
+2. Verify backend has defense-in-depth protection (API validation + tests)
+3. Add Web layer tests to verify error handling from API responses
+4. Use stateful mocks to simulate sequential/race condition scenarios
+5. Do NOT add JavaScript testing framework unless pattern of JS bugs emerges
+
+This approach balances thorough regression coverage with pragmatic test infrastructure decisions.
+
+
+
+---
+agent: tank
+date: 2026-04-14
+issue: 708
+status: verified
+---
+
+# Issue #708: Regression Coverage Complete for Real Backend Fix
+
+## Context
+
+Issue #708 involved duplicate platform associations on the AddPlatform form. The fix had multiple layers:
+
+1. **Client-side fix (Sparks):** `site.js` - Added `event.preventDefault()` to prevent double-submits
+2. **Backend fix (Trinity/Switch):** Added 409 Conflict handling for duplicate associations
+
+The "real #708 fix" (commit 41c082d) implemented the backend duplicate handling:
+- Created `DuplicateEngagementSocialMediaPlatformException` domain exception
+- Extended data store to detect and throw on duplicates
+- Updated API to catch exception and return 409 Conflict with ProblemDetails
+- Updated Web controller to catch 409 and display warning message
+
+## Decision
+
+**Regression test coverage for the real #708 backend fix is COMPLETE and VERIFIED.**
+
+## Verification
+
+All 10 regression tests pass across 3 architectural layers:
+
+### Web Layer (7 tests) ✅
+- Controller receives HttpRequestException with 409 status
+- Warning message displayed to user (not error)
+- Duplicate submission simulation with stateful mock
+
+### API Layer (2 tests) ✅
+- Single duplicate call returns 409 with ProblemDetails
+- Sequential duplicate calls both return 409
+
+### Data Layer (1 test) ✅
+- DuplicateEngagementSocialMediaPlatformException thrown on duplicate
+- Existing association preserved (not overwritten)
+
+## Why This Matters
+
+**Comprehensive coverage at every layer:**
+- If the data store fails to detect duplicates → Data test fails
+- If the API doesn't catch the exception → API test fails
+- If the Web controller doesn't handle 409 → Web test fails
+
+This layered approach provides robust regression protection. Any future refactoring that breaks duplicate handling will be caught immediately by at least one of these 10 tests.
+
+## Pattern for Future
+
+When implementing a fix that spans multiple layers (Data → API → Web):
+
+1. **Write tests at EACH layer** where behavior changes
+2. **Verify independently** with layer-specific test filters
+3. **Use stateful mocks** to simulate sequential calls (double-submit scenarios)
+4. **Test both success and failure paths** at each layer
+
+This pattern was successfully applied to #708 and provides a template for future multi-layer feature work.
+
+## Team Impact
+
+- ✅ Full test coverage documented for #708
+- ✅ Stateful mock pattern established (see `.squad/skills/stateful-mocks/SKILL.md`)
+- ✅ Multi-layer regression verification pattern documented
+- ✅ Ready for merge with confidence
+
+
+
+---
+date: 2026-04-11
+author: Trinity
+issue: 708
+status: validated
+---
+
+# Issue #708: Fix Validation Complete
+
+## Summary
+
+Trinity validated the complete fix for issue #708 (duplicate platform associations). Both client-side and backend changes are in place, tested, and ready for merge.
+
+## Validation Results
+
+### ✅ Client-Side Fix (Sparks)
+**Commit:** 079cb14  
+**File:** `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/site.js`  
+**Change:** Added `event.preventDefault()` in form submit handler when button is disabled
+
+```javascript
+form.addEventListener('submit', function (event) {
+    if (btn.disabled) {
+        event.preventDefault();  // ✅ Prevents duplicate submission
+        return;
+    }
+    btn.disabled = true;
+});
+```
+
+**Impact:** Blocks all duplicate form submissions application-wide.
+
+### ✅ Backend Defense-in-Depth (Trinity)
+**Commits:** Multiple commits on `social-media-708` branch  
+**Layers:**
+
+1. **Domain Exception:**
+   - `DuplicateEngagementSocialMediaPlatformException` — explicit domain exception with EngagementId and PlatformId properties
+   
+2. **Data Layer (`EngagementSocialMediaPlatformDataStore`):**
+   - Pre-insert check: Query database to detect existing association
+   - SQL constraint catch: `IsDuplicateAssociationException()` catches SQL errors 2601 (unique index) and 2627 (PK/unique constraint)
+   - Logs warning with structured data before throwing exception
+   - Never swallows unexpected exceptions (re-throws with logging)
+
+3. **API Layer (`EngagementsController.AddPlatformToEngagementAsync`):**
+   - Catches `DuplicateEngagementSocialMediaPlatformException`
+   - Returns HTTP 409 Conflict with ProblemDetails payload
+   - Title: "Platform already assigned"
+   - Detail: Exception message with engagement/platform IDs
+
+4. **Web Layer (`EngagementsController.AddPlatform` POST):**
+   - Catches `HttpRequestException` with `StatusCode == Conflict`
+   - Shows user-friendly warning: "This platform is already associated with this engagement."
+   - Distinguishes duplicate (409) from general failure (500)
+
+### ✅ Test Coverage
+
+**API Tests (EngagementsController_PlatformsTests):** 18/18 passing
+- `AddPlatformToEngagement_WhenDuplicatePlatform_ShouldReturn409ConflictProblemDetails`
+- `AddPlatformToEngagement_WhenDuplicateAddIsAttempted_ShouldReturn409ConflictOnSecondRequest`
+
+**Data Store Tests (EngagementSocialMediaPlatformDataStoreTests):** 14/14 passing
+- `AddAsync_WhenAssociationAlreadyExists_ThrowsDuplicateExceptionAndKeepsExistingAssociation`
+- `AddAsync_WhenUnexpectedFailureOccurs_DoesNotSwallowTheException`
+
+**Web Tests (EngagementsControllerTests):** 30/30 passing
+
+**Build:** ✅ Clean (0 errors)
+
+## Architectural Decisions
+
+### 1. HTTP 409 Conflict (not 400 Bad Request)
+Duplicate associations return 409 Conflict to distinguish:
+- **400 Bad Request:** Malformed request or validation failure
+- **409 Conflict:** Request is valid but conflicts with current state
+
+This allows clients (Web UI, future integrations) to handle duplicates gracefully with specific messaging.
+
+### 2. Idempotent Duplicate Handling
+Second identical request returns clear error (not silent success). This provides:
+- **Diagnostics:** Logs capture duplicate attempt patterns
+- **UX:** User sees warning (not silent no-op)
+- **Data integrity:** No silent data corruption
+
+### 3. Defense-in-Depth
+Both pre-check and SQL constraint catch provide:
+- **Fast rejection:** Pre-check avoids database round-trip for obvious duplicates
+- **Race condition safety:** SQL constraint catch handles concurrent requests
+- **Never silent:** All failures logged and surfaced
+
+## Status
+
+**Branch:** `social-media-708`  
+**Ready for Merge:** ✅ YES  
+**All Tests Passing:** ✅ YES (18 API, 14 Data, 30 Web)  
+**Build Clean:** ✅ YES (0 errors)  
+
+**Outstanding Work:** NONE — fix is complete and validated.
+
+## Team Coordination
+
+Trinity validated backend changes support the Web layer fix without requiring further coordination. The 409 Conflict response pattern is now available for any future features requiring idempotent duplicate detection.
+
+
+

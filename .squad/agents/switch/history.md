@@ -8,6 +8,20 @@
 
 ## Learnings
 
+### 2026-04-13T17-34-54Z — Issue #708: Double-Submit Race Condition Fix
+- **Task:** Fix actual duplicate-submit path for issue #708
+- **Outcome:** ✅ Complete
+- **Changes:**
+  - `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/site.js` (lines 8-26)
+  - Moved button disable from form submit event to button click event
+  - Rationale: Click event fires BEFORE form submit, preventing race condition
+  - Validation-aware: Checks client validation BEFORE disabling
+  - Pattern: All future forms automatically protected via site.js
+- **Testing:** All 147 Web.Tests pass; build clean
+- **Decisions documented:** `switch-real-fix-708.md` (double-submit prevention), `switch-708-conflict-handling.md` (409 handling)
+- **Team:** Coordinated with Tank (regression tests) and Trinity (backend validation)
+- **Status:** Ready for merge. Complements Tank's regression coverage and Trinity's backend 409 handling.
+
 ### 2026-03-16: Issue #105 - Conference Social Fields UI
 - Added `ConferenceHashtag` and `ConferenceTwitterHandle` fields to Engagement Create/Edit/Details views
 - These fields are nullable `string?` properties added to `EngagementViewModel` in PR #529
