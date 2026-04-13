@@ -128,3 +128,40 @@ Established by Joseph Guadagno:
   - IsActive toggle action for SocialMediaPlatforms admin page
   - ScheduledItems and MessageTemplates forms: platform dropdown (FK) replaces free-text Platform field
 - **Next:** Begin controller work after Trinity delivers API layer
+
+### 2026-04-13 — Issue #708: AddPlatform Duplicate Submit Handling
+- **Problem:** Web controller treated all HttpRequestException errors the same, including 409 Conflict (duplicate platform association)
+- **Root cause:** When API returns 409 Conflict (platform already added), user would see error and might retry, causing confusion
+- **Solution implemented:**
+  - Web controller now catches HttpRequestException and checks StatusCode
+  - 409 Conflict → `TempData["WarningMessage"]` with user-friendly message "This platform is already associated with this engagement"
+  - Other HTTP errors → `TempData["ErrorMessage"]` with technical details
+  - Added `WarningMessage` support to `_Layout.cshtml` (Bootstrap alert-warning styling)
+- **Files changed:**
+  - `EngagementsController.cs`: AddPlatform POST action now differentiates 409 from other errors
+  - `_Layout.cshtml`: Added WarningMessage alert display between Success and Error alerts
+  - `EngagementsControllerTests.cs`: Updated and added tests for 409 Conflict and other HTTP error scenarios
+- **Pattern learned:**
+  - HttpRequestException.StatusCode property available in .NET 5+ enables graceful handling of specific HTTP status codes
+  - Warning-level user feedback (alert-warning) is appropriate for "already done" scenarios vs error-level for failures
+  - ~~site.js submit handler prevents double-click correctly — no changes needed there (disables button on submit, re-enables on validation failure)~~ ← INCORRECT, see 2026-04-13 followup below
+- **Tests:** 7 AddPlatform tests pass, all 147 Web.Tests pass
+- **Branch:** social-media-708 (shared with Trinity and Tank for coordinated fix)
+
+### 2026-04-13 — Issue #708 REAL Fix: Double-Submit Race Condition
+- **Problem:** Initial #708 fix only addressed UX messaging for 409 Conflicts, but did NOT fix the actual double-submit bug
+- **Root cause:** `site.js` had a race condition — using `form.addEventListener('submit')` to disable button allowed multiple rapid clicks to queue multiple submit events before the first one could disable the button
+- **Solution implemented:**
+  - Changed from `form.addEventListener('submit')` to `btn.addEventListener('click')`
+  - Button disables IMMEDIATELY on first click, before form submit event fires, preventing race condition
+  - Added client-side validation check BEFORE disabling button (calls `$(form).valid()` if jQuery validation exists)
+  - Preserved `invalid-form.validate` handler to re-enable button if validation fails asynchronously
+- **Files changed:**
+  - `site.js`: Submit prevention moved from form submit event to button click event (lines 8-26)
+- **Pattern learned:**
+  - To prevent double-submit, disable button on CLICK event, not SUBMIT event (submit fires too late)
+  - Check client validation BEFORE disabling to avoid UX issues with invalid forms showing disabled buttons
+  - Button click → validate → disable → form submits (atomic operation, no race)
+  - Form submit event is too late to prevent race conditions from rapid double-clicks
+- **Tests:** All 147 Web.Tests pass (no JS unit tests in this project)
+- **Branch:** social-media-708 (same branch as initial 409 messaging work)
