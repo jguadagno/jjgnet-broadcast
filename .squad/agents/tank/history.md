@@ -1,6 +1,29 @@
 # Tank - History
 
-## Core Context
+## 2026-04-13 — Issue #708: Regression Test Coverage for Duplicate Handling
+
+**Status:** ✅ COMPLETE & MERGED
+
+**Scope:** Added comprehensive test coverage for backend duplicate handling and retry flow
+
+**Tests Added:**
+1. **EngagementsController_PlatformsTests.cs**
+   - `AddPlatformToEngagement_DuplicateAssociation_Returns409Conflict()` - Verifies exception caught and 409 response
+   - `AddPlatformToEngagement_ManagerReturnsNull_ReturnsProblem()` - Generic error fallback
+   - Validates `ProblemDetails` payload structure and status code
+
+2. **EngagementSocialMediaPlatformDataStoreTests.cs**
+   - `AddAsync_DuplicateAssociation_ThrowsDuplicateException()` - Verifies duplicate detection
+   - Validates exception type: `DuplicateEngagementSocialMediaPlatformException`
+   - Existing tests verify normal add path (all passing)
+
+**Test Results:** 17/17 platform tests passing; no regressions in engagement tests
+
+**Decision Made:** Use specific exception type for duplicate detection (not generic InvalidOperationException) for clearer API error handling.
+
+**Status:** Ready for merge; Trinity completed implementation work.
+
+
 
 **Role:** Tester | Framework: xUnit 2.9.3, FluentAssertions 7.2.0, Moq 4.20.72
 Note: Data.Sql.Tests uses standard xUnit Assert.* (NOT FluentAssertions)

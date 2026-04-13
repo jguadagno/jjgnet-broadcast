@@ -13947,3 +13947,246 @@ This provides graceful degradation if the API returns any HTTP error.
 
 ✅ **RESOLVED** — Validation and error handling complete, ready for merge after testing.
 
+
+--- From: sparks-708-route-parameter-correction.md ---
+date: 2026-04-11
+author: Sparks
+issue: 708
+status: corrects-previous-decision
+supersedes: sparks-708-form-route-binding.md
+---
+
+# Decision CORRECTION: Route Parameters Required for Controller Actions
+
+## Summary
+
+The previous decision (sparks-708-form-route-binding.md) to remove sp-route-engagementId from the AddPlatform form was **INCORRECT**. This correction restores the route parameter and clarifies when route vs. model binding should be used.
+
+## Problem
+
+After applying the previous fix (commit ce28027) that removed the route parameter, the AddPlatform form caused HTTP 400 errors on submission. The controller action signature:
+
+public async Task<IActionResult> AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)
+
+expects ngagementId as a **route parameter**, not a model-bound property. Without sp-route-engagementId, the form POSTs to /Engagements/AddPlatform (no ID in route), which doesn't match the expected route pattern /Engagements/AddPlatform/{engagementId}.
+
+## Corrected Pattern
+
+When to use Route Parameters in Forms: **ALWAYS include route parameters in the form action when:**
+- The controller action has simple-type parameters (int, string, guid) that are NOT part of the ViewModel
+- The action signature is Action(int id, ViewModelType model) or similar
+- The parameter name does NOT match a property in the ViewModel that should be model-bound
+
+Route vs. Model Binding Clarification:
+- **Route parameter (\sp-route-X\)**: Value goes in the URL → /Engagements/AddPlatform/5
+- **Hidden field (\sp-for\)**: Value goes in the POST body → EngagementId=5
+- **Both are valid simultaneously** when the route parameter and model property serve DIFFERENT purposes (route for action matching, model property for data integrity)
+
+## Implementation
+
+**File:** \JosephGuadagno.Broadcasting.Web/Views/Engagements/AddPlatform.cshtml\
+
+Changed form from:
+\\\html
+<form asp-action="AddPlatform" method="post">
+\\\
+
+To:
+\\\html
+<form asp-action="AddPlatform" asp-route-engagementId="@Model.EngagementId" method="post">
+\\\
+
+## Commits
+
+- **Incorrect fix:** ce28027 (removed route parameter)
+- **Correct fix:** 2fa1fe2 (restored route parameter)
+
+---
+
+--- From: trinity-708-500-createdataction-bug.md ---
+date: 2026-04-12
+author: Trinity
+issue: 708
+status: root-cause-documented
+severity: HIGH
+---
+
+# Issue #708: 500 Error Root Cause — CreatedAtAction Contract Bug
+
+**Status:** ✅ IDENTIFIED & DOCUMENTED
+
+**Severity:** HIGH — Blocks successful platform adds (HTTP 500 instead of 201)
+
+## Summary
+
+The HTTP 500 error in issue #708 is **not a consequence** of the Web layer failure—**it IS the root cause**. The API \AddPlatformToEngagementAsync\ endpoint successfully saves the platform to the database but crashes during HTTP response generation.
+
+**Affected Endpoint:** \POST /engagements/{engagementId}/platforms\
+
+## Root Cause
+
+**File:** \src/JosephGuadagno.Broadcasting.Api/Controllers/EngagementsController.cs:409-412\
+
+**Bug:**
+\\\csharp
+return CreatedAtAction(
+    nameof(GetPlatformsForEngagementAsync),  // ❌ Wrong: returns List<...>
+    new { engagementId },                     // ❌ Wrong: missing platformId
+    _mapper.Map<EngagementSocialMediaPlatformResponse>(result));
+\\\
+
+## Why It Fails
+
+1. \GetPlatformsForEngagementAsync(int engagementId)\ returns \List<EngagementSocialMediaPlatformResponse>\ (many-to-one)
+2. \CreatedAtAction\ expects the action to return a **single item** (for the Location: header)
+3. ASP.NET Core tries to match route with both \ngagementId\ AND \platformId\, but only \ngagementId\ is provided
+4. Route match fails → throws \InvalidOperationException: No route matches the supplied values\
+5. Exception occurs in \CreatedAtActionResult.OnFormatting()\ during response generation
+6. Global error handler catches it → sends HTTP 500
+
+## Pattern Established
+
+**CreatedAtAction Rule:** When using \CreatedAtAction\, verify:
+1. ✅ Target action returns a **single resource** (not a list)
+2. ✅ **All route parameters** needed by that action are included in the \outeValues\ dictionary
+3. ✅ Parameter names match the target action's signature
+
+---
+
+--- From: trinity-708-duplicate-platform-conflict.md ---
+date: 2026-04-13
+author: Trinity
+issue: 708
+status: implemented
+---
+
+# Decision: Duplicate engagement platform associations return 409 ProblemDetails
+
+When \POST /Engagements/{engagementId}/platforms\ receives a duplicate \(EngagementId, SocialMediaPlatformId)\ association, the backend now returns **HTTP 409 Conflict** with a \ProblemDetails\ payload instead of a generic 400 string response.
+
+## Why
+
+The original retry path swallowed data-layer exceptions and collapsed duplicate inserts into an undifferentiated bad request. That made the Web layer unable to tell the user what actually happened after the first insert succeeded.
+
+## Implementation
+
+1. \EngagementSocialMediaPlatformDataStore.AddAsync()\ now throws \DuplicateEngagementSocialMediaPlatformException\ for known duplicate associations and rethrows unexpected failures after logging them.
+2. \EngagementsController.AddPlatformToEngagementAsync()\ catches that exception and returns \Problem(statusCode: 409, title: "Platform already assigned", ...)\.
+3. The generic null-result fallback now uses \Problem("Failed to add platform to engagement")\ instead of a blind 400 string response.
+
+## Impact
+
+- Duplicate double-submit retries are diagnosable and safe for the UI to surface directly.
+- Unexpected data-layer failures are no longer silently swallowed in the add path.
+
+---
+
+--- From: trinity-708-model-binding-pattern.md ---
+date: 2026-04-11
+author: Trinity
+issue: 708
+status: implemented
+---
+
+# Trinity Decision: Model Binding Pattern for Controller Actions
+
+**Issue:** #708  
+**Status:** Implemented
+
+## Context
+
+The \AddPlatform\ POST action in \EngagementsController\ was experiencing model binding issues that manifested as 400 Bad Request errors despite successful database saves.
+
+## Decision
+
+**When a ViewModel contains all required data for an action, use ONLY the ViewModel parameter.** Do not duplicate values in separate action parameters.
+
+## Implementation
+
+Simplified the action to use only the ViewModel:
+
+\\\csharp
+// AFTER (correct pattern)
+public async Task<IActionResult> AddPlatform(EngagementSocialMediaPlatformViewModel vm)
+{
+    // All data from vm, including vm.EngagementId
+}
+\\\
+
+## Rationale
+
+1. **Clarity:** Single source of truth for data
+2. **Simplicity:** Fewer moving parts in model binding
+3. **Maintainability:** Changes to the ViewModel automatically reflected
+4. **Consistency:** Follows "prefer ViewModel over parameter soup" pattern
+
+## When to Use Separate Parameters
+
+Separate action parameters are appropriate when:
+- The value comes from the route segment (e.g., \/Engagements/5/Edit\ where \5\ is the ID)
+- The value is NOT part of the posted form data
+- The value serves as a routing/context parameter distinct from the form payload
+
+---
+
+--- From: trinity-issue-708-createdataction.md ---
+date: 2026-04-12
+author: Trinity
+issue: 708
+status: implemented
+---
+
+# Issue #708: CreatedAtAction Requires Single-Item Endpoints
+
+**Date:** 2026-04-12  
+**Decision Maker:** Trinity (Backend Dev)  
+**Context:** Issue #708 - API CreatedAtAction route generation bug
+
+## Pattern Established
+
+**When using \CreatedAtAction\ for RESTful 201 Created responses:**
+
+1. **Target Endpoint Requirements:**
+   - MUST return a single resource (not a collection)
+   - MUST accept ALL route parameters needed to uniquely identify the created resource
+   - Route parameter names MUST match the values provided in \CreatedAtAction\'s route values dictionary
+
+2. **Implementation Standard:**
+   \\\csharp
+   // ✅ CORRECT: Points to single-item endpoint with all required parameters
+   return CreatedAtAction(
+       nameof(GetResourceByIdAsync),
+       new { resourceId = result.Id },
+       mappedResponse);
+
+   // ❌ WRONG: Points to collection endpoint
+   return CreatedAtAction(
+       nameof(GetAllResourcesAsync),
+       new { },
+       mappedResponse);
+
+   // ❌ WRONG: Missing required route parameters
+   return CreatedAtAction(
+       nameof(GetChildResourceAsync),
+       new { parentId },  // Missing childId!
+       mappedResponse);
+   \\\
+
+3. **Sub-Resource Pattern:** For nested resources (e.g., \/engagements/{engagementId}/platforms/{platformId}\):
+   - Collection endpoint: \GET /engagements/{engagementId}/platforms\ → Returns \List<T>\
+   - Single-item endpoint: \GET /engagements/{engagementId}/platforms/{platformId}\ → Returns single \T\
+   - CreatedAtAction MUST use the single-item endpoint with BOTH IDs
+
+## Implementation (Issue #708)
+
+**Added:**
+- Data layer: \IEngagementSocialMediaPlatformDataStore.GetAsync(int engagementId, int platformId)\
+- API endpoint: \GET /engagements/{engagementId:int}/platforms/{platformId:int}\
+- Tests: Coverage for single-item GET endpoint (200 OK, 404 Not Found)
+
+**Updated:**
+- \AddPlatformToEngagementAsync\ to use single-item endpoint in CreatedAtAction
+- Test verification: 17/17 platform tests passing
+
+---
+
