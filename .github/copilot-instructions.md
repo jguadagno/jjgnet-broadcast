@@ -1,147 +1,103 @@
-# JJGNet Broadcasting - Developer Guide for Coding Agents
+# JJGNet Broadcasting - Copilot Instructions
 
-## Repository Overview
+## Build, test, and lint
 
-**Purpose**: Automated broadcasting app sharing blog posts and talks to Twitter, Facebook, LinkedIn, Bluesky. Collects from RSS/YouTube, distributes to social platforms.
+Run commands from `D:\Projects\jjgnet-broadcast`.
 
-**Stack**: .NET 10 Aspire app with API, Web (ASP.NET MVC/Razor), Azure Functions v4, SQL Server, Azure Storage. 289 C# files, 28 projects.
-
-**Testing**: xUnit, FluentAssertions, Moq
-
-## Critical Build Information
-
-**ALWAYS run these commands in this exact order:**
-
-### Initial Setup
-```bash
-cd /home/runner/work/jjgnet-broadcast/jjgnet-broadcast/src
-dotnet restore    # Takes 5-10 seconds, expect NU1510 and NU1903 warnings (safe to ignore)
-dotnet build      # Takes 30-45 seconds, expect 322 warnings (safe to ignore)
+```powershell
+dotnet restore .\src\
+dotnet build .\src\ --no-restore --configuration Release
 ```
 
-### Testing
-```bash
-cd /home/runner/work/jjgnet-broadcast/jjgnet-broadcast/src
-dotnet test --no-build --verbosity normal
-```
-**IMPORTANT**: Some SyndicationFeedReader tests fail with network errors (external dependency on www.josephguadagno.net). This is EXPECTED and NOT a blocker. Tests requiring external network access may fail in CI/sandboxed environments.
+Use the CI-aligned test command for a normal repo-wide pass. It excludes the
+network-dependent SyndicationFeedReader tests.
 
-### Clean Build (if needed)
-```bash
-cd /home/runner/work/jjgnet-broadcast/jjgnet-broadcast/src
-dotnet clean
-dotnet restore
-dotnet build
+```powershell
+dotnet test .\src\ `
+  --no-build `
+  --verbosity normal `
+  --configuration Release `
+  --filter "FullyQualifiedName!~SyndicationFeedReader"
 ```
 
-### Web Project: Restore LibMan (client libraries)
-```bash
-cd src/JosephGuadagno.Broadcasting.Web
-libman restore  # Install libman: dotnet tool install -g Microsoft.Web.LibraryManager.Cli
+Run a single test with a fully qualified name filter. This exact command was
+verified against the repo:
+
+```powershell
+$testProject = `
+  ".\src\JosephGuadagno.Broadcasting.Web.Tests\JosephGuadagno.Broadcasting.Web.Tests.csproj"
+dotnet test $testProject `
+  --no-build `
+  --configuration Release `
+  --filter "FullyQualifiedName~JosephGuadagno.Broadcasting.Web.Tests.Controllers.HomeControllerTests.Index_ShouldReturnView"
 ```
 
-## Project Architecture
+For Markdown edits, lint the files you changed:
 
-### Solution Structure (`src/JosephGuadagnoNet.Broadcasting.sln`)
+```powershell
+npx -y markdownlint-cli@0.41.0 .github\copilot-instructions.md
+```
 
-**Entry Points:**
-- `JosephGuadagno.Broadcasting.AppHost` - .NET Aspire orchestrator (defines infrastructure, starts all services)
-- `JosephGuadagno.Broadcasting.Api` - REST API for managing content and schedules
-- `JosephGuadagno.Broadcasting.Web` - ASP.NET Core MVC UI for managing engagements and scheduled items
-- `JosephGuadagno.Broadcasting.Functions` - Azure Functions for collectors and publishers
+There is no separate repo-wide C# lint command defined in the workflows.
 
-**Core Libraries:**
-- `JosephGuadagno.Broadcasting.Domain` - Domain models, interfaces, constants
-- `JosephGuadagno.Broadcasting.Data` - Base data interfaces and table storage implementations
-- `JosephGuadagno.Broadcasting.Data.Sql` - SQL Server repositories (EF Core)
-- `JosephGuadagno.Broadcasting.Data.KeyVault` - Azure Key Vault integration
-- `JosephGuadagno.Broadcasting.Managers` - Business logic for URL shortening, bitly
-- `JosephGuadagno.Broadcasting.Serilog` - Logging configuration
-- `JosephGuadagno.Broadcasting.ServiceDefaults` - Shared Aspire service defaults
+If you change `src\JosephGuadagno.Broadcasting.Web\libman.json` or the checked-in
+files under `src\JosephGuadagno.Broadcasting.Web\wwwroot\libs`, run:
 
-**Collectors & Publishers:**
-- Feed readers: SyndicationFeedReader (RSS/Atom), JsonFeedReader, YouTubeReader
-- Social managers: Facebook, LinkedIn, Bluesky (all in `Managers.*` projects)
+```powershell
+cd .\src\JosephGuadagno.Broadcasting.Web
+libman restore
+```
 
-**Test Projects:** All test projects use xUnit, FluentAssertions, and Moq. Located in same directory as project being tested with `.Tests` suffix.
+## High-level architecture
 
-### Configuration Files
+- `src\JosephGuadagno.Broadcasting.AppHost\AppHost.cs` is the composition root.
+  It starts SQL Server and Azurite, wires connection strings into the API, Web,
+  and Functions projects, and creates the `JJGNet` database by concatenating
+  `scripts\database\database-create.sql`,
+  `scripts\database\table-create.sql`, and
+  `scripts\database\data-seed.sql`.
+- The shared application flow is
+  **Domain -> Data/Data.Sql/Data.KeyVault -> Managers -> Api/Web/Functions**.
+  Domain projects define models, interfaces, and constants; Managers contain
+  business logic; entry-point apps consume those layers.
+- The API (`src\JosephGuadagno.Broadcasting.Api`) is a bearer-token-protected
+  ASP.NET Core API with OpenAPI/Scalar enabled in development. It registers
+  `BroadcastingContext` plus its repositories and managers directly in
+  `Program.cs`.
+- The Web app (`src\JosephGuadagno.Broadcasting.Web`) is an ASP.NET Core MVC
+  app with controllers and Razor views. It is not a Razor Pages app. It uses
+  Microsoft Identity Web for sign-in, shared SQL store registration through
+  `AddSqlDataStores()`, and the custom `UseUserApprovalGate()` middleware
+  between authentication and authorization.
+- The Functions app (`src\JosephGuadagno.Broadcasting.Functions`) handles
+  collectors and publishers for feeds and social platforms. Aspire injects the
+  same SQL, blob, table, and queue connections used by the other apps. Local
+  Event Grid testing uses Azure Event Grid Simulator as described in
+  `src\JosephGuadagno.Broadcasting.Functions\readme.md`.
 
-**Root Level:**
-- `.editorconfig` (in `src/`) - Disables XML comment warnings (CS1591), sets code style
-- `.gitignore` - Standard .NET patterns, excludes bin/, obj/, user secrets
-- `CONTRIBUTING.md` - Conventional Commits specification (required for PRs)
+## Repo-specific conventions
 
-**Project Configs:**
-- User secrets stored in each project (Api, Web, Functions) - NOT committed
-- `appsettings.json` / `appsettings.Development.json` - Per-project configuration
-- `libman.json` (Web project only) - Client-side library management
-- `local.settings.json` (Functions project) - Local Azure Functions settings
-
-### Infrastructure (Auto-provisioned by Aspire)
-
-**Database**: SQL Server `JJGNet` (scripts in `scripts/database/`) - Engagements, ScheduledItems, SourceData, Talks
-**Storage**: Azurite emulator - Tables (Configuration, Logging), Queues (facebook-post-status-to-page, twitter-tweets-to-send, linkedin-*)
-**No manual setup needed** - Aspire AppHost auto-starts SQL Server and Azurite containers
-
-## CI/CD: Three workflows on push to `main`
-
-1. **API**: `dotnet build ./src/JosephGuadagno.Broadcasting.Api --configuration Release` → Azure App Service `api-jjgnet-broadcast`
-2. **Web**: `dotnet build ./src/JosephGuadagno.Broadcasting.Web --configuration Release` → Azure App Service `web-jjgnet-broadcast`
-3. **Functions**: `dotnet build ./src/JosephGuadagno.Broadcasting.Functions --configuration Release --output ./output` → Azure Functions `jjgnet-broadcast`
-
-All use .NET 10.x prerelease and Azure OIDC auth.
-
-## Common Warnings (Safe to Ignore)
-
-1. **NU1510**: Package reference pruning warnings - packages are marked as unnecessary but can be ignored
-2. **NU1903**: Newtonsoft.Json 10.0.2 vulnerability - legacy dependency, tracked but not blocking
-3. **NETSDK1206**: win7-x64 RID warnings for Microsoft.Azure.DocumentDB.Core - .NET 8+ compatibility notice
-4. **CS8618**: Non-nullable property warnings in ViewModels - acceptable pattern for this codebase
-5. **xUnit1051**: CancellationToken usage - test improvement suggestion, not critical
-
-## Known Issues
-
-- **SyndicationFeedReader tests fail** with network errors - EXPECTED, tests hit external URL (www.josephguadagno.net)
-- **322 build warnings** - Safe to ignore (nullable refs, XML docs, package pruning)
-- **Some tests need infrastructure** - Unit tests use mocks; integration tests need Aspire AppHost running
-
-## Code Changes
-
-**Testing**: `*.Tests` projects mirror source. Use FluentAssertions (`result.Should().NotBeNull()`), Moq (`Mock<IRepository>`).
-**Dependencies**: `dotnet add package <name>`, check vulnerabilities, use .NET 10.0 compatible packages.
-**Style**: 4-space indent, conventional commits (`feat:`, `fix:`), async/await for I/O, nullable refs enabled.
-
-## Quick Reference: Key Files
-
-**Must Read Before Changes:**
-- `/README.md` - Project overview and plans
-- `/developer-getting-started.md` - Setup requirements (Docker, SQL, Azurite, libman, ngrok)
-- `/infrastructure-needs.md` - Full Azure infrastructure documentation
-- `/CONTRIBUTING.md` - Commit message format
-
-**Aspire AppHost:**
-- `/src/JosephGuadagno.Broadcasting.AppHost/AppHost.cs` - Infrastructure definitions
-
-**API Endpoints:**
-- `/src/JosephGuadagno.Broadcasting.Api/` - Controllers, DTOs, Swagger
-
-**Web UI:**
-- `/src/JosephGuadagno.Broadcasting.Web/Controllers/` - MVC controllers
-- `/src/JosephGuadagno.Broadcasting.Web/Views/` - Razor views
-- `/src/JosephGuadagno.Broadcasting.Web/wwwroot/` - Static assets (requires libman restore)
-
-**Azure Functions:**
-- `/src/JosephGuadagno.Broadcasting.Functions/Collectors/` - Feed and YouTube collectors
-- `/src/JosephGuadagno.Broadcasting.Functions/Twitter/` - Twitter integration
-- `/src/JosephGuadagno.Broadcasting.Functions/Facebook/` - Facebook integration
-- `/src/JosephGuadagno.Broadcasting.Functions/LinkedIn/` - LinkedIn integration
-
-**Database Scripts:**
-- `/scripts/database/database-create.sql`
-- `/scripts/database/table-create.sql`
-- `/scripts/database/data-create.sql`
-
-## Trust These Instructions
-
-These instructions are based on actual testing of the repository. Always follow the documented command sequences. If something doesn't work as documented, investigate the specific error before trying alternative approaches. The build process is stable and reliable when commands are run in the correct order from the correct directory.
+- Use Conventional Commits as documented in `CONTRIBUTING.md`.
+- Database changes are script-first. Update SQL under `scripts\database\...`;
+  do not use Entity Framework migrations. Seed data must stay idempotent because
+  AppHost replays the creation script for fresh environments.
+- Keep the layering intact: persistence belongs in `JosephGuadagno.Broadcasting.Data.Sql`,
+  business logic belongs in manager classes, and the Web project should work
+  through services/managers instead of calling data stores directly.
+- Push paging, sorting, and filtering down into `JosephGuadagno.Broadcasting.Data.Sql`
+  instead of implementing them in managers, controllers, or Razor code.
+- Reuse the existing AutoMapper profiles. Shared SQL mappings live in
+  `src\JosephGuadagno.Broadcasting.Data.Sql\MappingProfiles`; API and Web add
+  their own profiles on top of those shared mappings.
+- Use `DateTimeOffset` in C# and `datetimeoffset` in SQL for persisted date/time fields.
+- Test projects live beside the production project with a `.Tests` suffix.
+  xUnit, FluentAssertions, and Moq are the standard test stack.
+- `SyndicationFeedReader` tests can fail because they hit
+  `www.josephguadagno.net`. CI already filters them out; do not treat those
+  failures as a general build break.
+- In `RejectSessionCookieWhenAccountNotInCacheEvents.ValidatePrincipal`, reject
+  the principal when the token cache is invalid; do not call `SignOutAsync()`
+  there or you can create an auth redirect loop.
+- Secrets belong in user secrets for the API, Web, and Functions projects.
+  `src\JosephGuadagno.Broadcasting.Functions\local.settings.json` is a template,
+  not a source of real credentials.

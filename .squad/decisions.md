@@ -5565,7 +5565,8 @@ Neo (Lead)
 Azure Functions v4 `host.json` retry and queue extension config is valid:
 
 ```json
-"retry": {
+{
+  "retry": {
   "strategy": "exponentialBackoff",
   "maxRetryCount": 3,
   "minimumInterval": "00:00:05",
@@ -14048,7 +14049,8 @@ return CreatedAtAction(
 
 **CreatedAtAction Rule:** When using \CreatedAtAction\, verify:
 1. ✅ Target action returns a **single resource** (not a list)
-2. ✅ **All route parameters** needed by that action are included in the \outeValues\ dictionary
+2. ✅ **All route parameters** needed by that action are included in the \
+outeValues\ dictionary
 3. ✅ Parameter names match the target action's signature
 
 ---
@@ -14600,6 +14602,3 @@ Both pre-check and SQL constraint catch provide:
 ## Team Coordination
 
 Trinity validated backend changes support the Web layer fix without requiring further coordination. The 409 Conflict response pattern is now available for any future features requiring idempotent duplicate detection.
-
-
-

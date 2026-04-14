@@ -740,3 +740,4 @@ infrastructure/discovery/*.bicep
 .squad/log/
 .squad/decisions/inbox/
 .squad/sessions/
+.squad-workstream
