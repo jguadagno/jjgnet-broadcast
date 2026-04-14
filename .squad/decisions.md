@@ -5567,18 +5567,19 @@ Azure Functions v4 `host.json` retry and queue extension config is valid:
 ```json
 {
   "retry": {
-  "strategy": "exponentialBackoff",
-  "maxRetryCount": 3,
-  "minimumInterval": "00:00:05",
-  "maximumInterval": "00:00:30"
-},
-"extensions": {
-  "queues": {
-    "maxPollingInterval": "00:00:02",
-    "visibilityTimeout": "00:00:30",
-    "batchSize": 16,
-    "maxDequeueCount": 3,
-    "newBatchThreshold": 8
+    "strategy": "exponentialBackoff",
+    "maxRetryCount": 3,
+    "minimumInterval": "00:00:05",
+    "maximumInterval": "00:00:30"
+  },
+  "extensions": {
+    "queues": {
+      "maxPollingInterval": "00:00:02",
+      "visibilityTimeout": "00:00:30",
+      "batchSize": 16,
+      "maxDequeueCount": 3,
+      "newBatchThreshold": 8
+    }
   }
 }
 ```
@@ -12171,7 +12172,7 @@ $(document).ready(function() {
         } else {
             $('#validation-result').html('');
         }
-    });
+    })
 });
 </script>
 ```
@@ -14602,3 +14603,191 @@ Both pre-check and SQL constraint catch provide:
 ## Team Coordination
 
 Trinity validated backend changes support the Web layer fix without requiring further coordination. The 409 Conflict response pattern is now available for any future features requiring idempotent duplicate detection.
+
+--- From: trinity-708-audit.md ---
+---
+date: 2026-04-14
+author: Trinity
+issue: 708
+status: audit-complete
+---
+
+# Issue #708 Branch Audit
+
+## Decision
+
+No additional backend/domain work is required on the current branch for issue #708.
+
+## Why
+
+The branch already includes the backend pieces needed to close the failure path:
+
+1. Duplicate engagement-platform associations are surfaced as `409 Conflict`
+2. The POST add-platform API now returns `201 Created` using a single-resource route instead of the broken collection `CreatedAtAction`
+3. The Web caller now handles `409 Conflict` as a warning, avoiding the misleading generic failure path
+
+## Validation
+
+- Reviewed the affected API, domain, and data-store files
+- Confirmed the Web call path and duplicate-submit guard are present
+- Ran targeted regression tests for API, data store, and Web controller coverage; all passed
+
+## Routing
+
+No remaining Trinity-owned fix is needed. If the team wants extra confidence before merge, route only manual browser verification of the add-platform UX to the Web/UI owner.
+
+--- From: tank-708-regression.md ---
+**Date:** 2026-04-14  
+**Agent:** Tank  
+**Issue:** #708  
+**Status:** Verified
+
+## Context
+
+Issue #708's actual failure was not just a duplicate submit. The first add request could save the engagement/platform association successfully, then fail while generating the downstream API response, which surfaced in Web as `HttpRequestException: 400 Bad Request`.
+
+## Decision
+
+No additional regression tests are required on this branch.
+
+The current suite already proves the real bug path is covered:
+
+1. **API success path is protected**
+   - `AddPlatformToEngagement_WithValidRequest_ShouldReturn201Created`
+   - `AddPlatformToEngagement_WithNullHandle_ShouldReturn201Created`
+   - These verify `CreatedAtAction` targets the single-item route (`GetPlatformForEngagementAsync`) with valid route values, covering the response-generation failure that caused the false failure.
+
+2. **Retry/duplicate behavior is protected**
+   - `AddPlatformToEngagement_WhenDuplicatePlatform_ShouldReturn409ConflictProblemDetails`
+   - `AddPlatformToEngagement_WhenDuplicateAddIsAttempted_ShouldReturn409ConflictOnSecondRequest`
+   - `AddAsync_WhenAssociationAlreadyExists_ThrowsDuplicateExceptionAndKeepsExistingAssociation`
+
+3. **Web behavior is protected**
+   - `AddPlatform_Post_WhenNon409HttpRequestException_ShouldRedirectWithErrorMessage`
+   - `AddPlatform_Post_When409Conflict_ShouldRedirectWithWarningMessage`
+   - `AddPlatform_Post_DuplicateAttempt_ShouldHandleWithWarning`
+
+## Evidence
+
+- Focused regression suites passed:
+  - Web AddPlatform tests: 7/7
+  - API AddPlatform/GetPlatform tests: 10/10
+  - Data AddAsync tests: 4/4
+- Repo-wide CI-aligned test pass succeeded: 785 passed, 0 failed, 41 skipped.
+
+## Implication
+
+From QA's side, this branch already has the necessary automated proof for the real #708 failure path. Any remaining concern would be production behavior divergence, not missing unit-test coverage.
+
+--- From: tank-708-service-tests.md ---
+---
+date: 2026-04-14
+author: Tank
+issue: 708
+status: coverage-gap-confirmed
+---
+
+# Issue #708: Web service-call path had no direct test coverage
+
+## Decision
+
+Add focused `EngagementService` unit tests for `AddPlatformToEngagementAsync`.
+
+## Why
+
+The existing regression coverage proved:
+
+- Web controller behavior around duplicate/exception handling
+- API controller behavior for `POST /engagements/{id}/platforms`
+
+But it did **not** prove the Web service layer in between. `EngagementsControllerTests` mocks `IEngagementService`, so it never verifies what `EngagementService` actually sends to `IDownstreamApi`. That left a real gap around the Web service/API contract for the manual failing path.
+
+## What was added
+
+- `src\JosephGuadagno.Broadcasting.Web.Tests\Services\EngagementServiceTests.cs`
+  - verifies the downstream service name is `JosephGuadagnoBroadcastingApi`
+  - verifies the relative path is `/engagements/{engagementId}/platforms`
+  - verifies the posted payload includes `SocialMediaPlatformId` and optional `Handle`
+
+## Coordinator note
+
+I did **not** find evidence that production `EngagementService.AddPlatformToEngagementAsync` is building the wrong route or request shape. Current evidence says the service/API contract is correct; the prior problem was that this path simply was not covered by tests.
+
+--- From: switch-708-web-audit.md ---
+---
+date: 2026-04-14
+author: Switch
+issue: 708
+status: audit-complete
+---
+
+# Issue #708: Web Audit Outcome
+
+## Summary
+
+I audited the current Web-side add-platform flow on `social-media-708` against the reported manual failure (`HttpRequestException` / `BadRequest` after the association is saved).
+
+## Findings
+
+The claimed Web fixes are present in the current branch state:
+
+1. **Double-submit prevention is present**
+   - `src\JosephGuadagno.Broadcasting.Web\wwwroot\js\site.js`
+   - Submit buttons are disabled on **click**, not on form submit, which closes the old race window.
+
+2. **Warning-message rendering is present**
+   - `src\JosephGuadagno.Broadcasting.Web\Views\Shared\_Layout.cshtml`
+   - `TempData["WarningMessage"]` renders as a Bootstrap warning alert.
+
+3. **Current POST action uses the correct Web binding shape**
+   - `src\JosephGuadagno.Broadcasting.Web\Controllers\EngagementsController.cs`
+   - POST signature is `AddPlatform(EngagementSocialMediaPlatformViewModel vm)`, so the Web action is no longer relying on the older duplicated route + form parameter pattern.
+
+4. **AddPlatform.cshtml matches that controller shape**
+   - Form posts the ViewModel, including hidden `EngagementId`.
+
+## Conclusion
+
+If a **valid single submit** still saves the engagement-platform association and then ends in `BadRequest`, the remaining defect is **not in the Razor/JS Web flow**. That points to downstream API behavior/response generation or another backend-side contract problem after persistence succeeds.
+
+## Verification
+
+- Focused Web tests passed: 9
+- Focused API platform tests passed: 10
+
+## Team Note
+
+I also corrected the stale `.squad/skills/frontend-patterns/SKILL.md` guidance so it no longer recommends unnecessary route duplication for ViewModel-only POST actions.
+
+--- From: switch-708-service-contract.md ---
+---
+date: 2026-04-14
+author: Switch
+issue: 708
+status: implemented
+---
+
+# Issue #708 — Web service/API contract hardening
+
+## Decision
+
+For the engagement add-platform flow, the Web project should not rely on anonymous request objects plus direct Domain-model deserialization when the API is returning DTO-shaped resources.
+
+Instead, `JosephGuadagno.Broadcasting.Web\Services\EngagementService` now uses explicit internal request/response contract types for:
+
+- `GET /engagements/{engagementId}/platforms`
+- `POST /engagements/{engagementId}/platforms`
+
+and maps those responses into Domain models before handing them to MVC controllers.
+
+## Why
+
+- The Razor/controller flow was already correct.
+- The active Web risk was service-layer contract ambiguity: the API returns `EngagementSocialMediaPlatformResponse` with nested `SocialMediaPlatform` data, while the Web service was assuming it could deserialize straight into Domain types.
+- Making the contract explicit gives us a stable adapter at the Web boundary and removes guesswork when API DTOs evolve.
+
+## Impact
+
+- No controller or Razor changes required.
+- Existing in-progress API/Data work stays untouched.
+- Added Web service tests now pin the relative path, request payload shape, and DTO-to-Domain mapping behavior.

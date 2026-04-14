@@ -411,3 +411,37 @@ The `AddPlatform_Post_DuplicateAttempt_ShouldHandleHttpRequestException()` test 
 This provides regression coverage as close to the actual bug as the existing test structure allows, without requiring JavaScript testing infrastructure.
 
 **Status:** Ready for merge; completes Issue #708 test coverage requirements.
+
+## Learnings
+
+18. **Issue #708 false-failure regression proof:** For add/create endpoints that save successfully before failing during response generation, regression coverage must prove both halves of the flow: the API returns a valid `201 Created` response for the first save, and a follow-up retry surfaces a specific duplicate/conflict path instead of a generic bad request. In this repo, the existing API `CreatedAtAction` tests plus the Web controller retry/error-handling tests are the minimum proof; double-submit-only coverage would miss the real bug.
+19. **Web service contract gaps hide between controller and API tests:** In this repo, Web controller tests mock `IEngagementService`, and API tests start at `EngagementsController`, so neither proves what `EngagementService` actually posts. For `IDownstreamApi` calls, a focused unit test can verify the service name, relative path, and serialized request shape directly from `Mock.Invocations` without needing a live HTTP stack.
+
+## 2026-04-14 — Issue #708: Final Orchestration & Coverage Verification
+
+**Status:** ✅ ORCHESTRATION COMPLETE
+
+**Role in Multi-Agent Investigation:** QA verification layer — identified and filled Web service-layer test coverage gap; verified all regression coverage now complete.
+
+**Coverage Gaps Addressed:**
+- Phase 1: Regression audit confirmed backend and Web controller paths were protected
+- Phase 2: Identified that Web service layer (EngagementService) had no direct test coverage
+- Phase 3: Added focused service tests for POST and GET engagement-platform operations
+
+**New Tests Delivered:**
+- File: src\JosephGuadagno.Broadcasting.Web.Tests\Services\EngagementServiceTests.cs
+- Coverage: Service name, endpoint path, request payload shape, DTO-to-Domain mapping
+- Result: All passing, gap closed
+
+**Coordination with Team:**
+- Trinity: Backend validation confirmed 409 Conflict handling is correct
+- Switch: Web flow confirmed correct; service/API contract hardened with explicit DTOs
+- Scribe: Orchestration logging of all three audits
+
+**Final Evidence:**
+- Backend: 21/21 tests passing
+- Web: 7/7 controller tests passing + new service tests passing
+- Repo-wide: 785/785 passed, 41 skipped
+- Root cause: API response generation failure after successful save, now covered by automation
+
+**Status:** Ready for merge. Test coverage now complete across all layers.
