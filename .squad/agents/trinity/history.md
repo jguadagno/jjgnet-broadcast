@@ -2,6 +2,30 @@
 
 ## Learnings
 
+### 2026-04-16 — Issue #707: AdminController Renamed to SiteAdminController
+**Status:** ✅ COMPLETE & BUILD VERIFIED
+
+**Task:** Renamed `AdminController` to `SiteAdminController` as prep work for issue #707 (multi-tenancy epic #609).
+
+**Changes Made:**
+1. **Controller:** Created `SiteAdminController.cs`, deleted `AdminController.cs`
+   - Updated class name: `AdminController` → `SiteAdminController`
+   - Updated logger injection: `ILogger<AdminController>` → `ILogger<SiteAdminController>`
+   - All methods preserved exactly as-is (Users, ApproveUser, RejectUser, ManageRoles, AssignRole, RemoveRole)
+2. **Views:** Moved from `Views\Admin\` to `Views\SiteAdmin\`
+   - `Users.cshtml` — User approval interface
+   - `ManageRoles.cshtml` — Role management interface
+   - View content unchanged (MVC convention finds views by controller name)
+3. **References:** Updated `_Layout.cshtml` line 97 from `asp-controller="Admin"` to `asp-controller="SiteAdmin"`
+
+**Build Status:** Web project built successfully with no errors. 
+
+**Rationale:** This rename prepares the codebase for introducing a new lower-privilege "Administrator" role for per-user content management (#719), while keeping the existing admin role distinct as "Site Administrator" for cross-tenant/support functions. This RBAC restructuring is critical prep work for the multi-tenancy epic #609.
+
+**Coordination Note:** Switch is handling the nav dropdown label rename ("Admin" → "Site Admin") and new Platforms menu entry separately.
+
+**Decision Filed:** `.squad/decisions/inbox/trinity-707-siteadmin-rename.md`
+
 ### 2026-04-16 — Issue #714: [FromBody] on complex parameters eliminates binding latency
 Always annotate complex-type body parameters with `[FromBody]` in `[ApiController]` actions. Without it, the framework walks route → query → form → body sources sequentially before settling on body binding, adding measurable latency (confirmed 2 s in issue #714). Making intent explicit with `[FromBody]` short-circuits that walk. Decision filed: `trinity-714-frombody.md`.
 

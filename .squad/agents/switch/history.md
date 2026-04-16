@@ -236,3 +236,27 @@ Established by Joseph Guadagno:
 Real #708 failure was API response generation issue after successful save, not Web-side bug. Web flow is correct. Service/API contract now has explicit boundary contract to prevent future misalignment.
 
 **Status:** Ready for merge. All Web-owned work complete and validated.
+
+### 2026-04-14 — Issue #707: Site Admin Navigation Consolidation
+- **Task:** Rename "Admin" dropdown to "Site Admin" and move Platforms link into it
+- **Outcome:** ✅ Navigation consolidated successfully
+- **Changes:**
+  - File: `src\JosephGuadagno.Broadcasting.Web\Views\Shared\_Layout.cshtml`
+  - Renamed "Admin" dropdown label to "Site Admin" (kept shield-lock icon)
+  - Moved standalone "Platforms" link into Site Admin dropdown as "Social Media Platforms" with broadcast icon
+  - Changed dropdown visibility from Administrator-only to Administrator OR Contributor (since both roles can access Platforms)
+  - Added two-section structure inside dropdown:
+    - "Platform Management" section with Social Media Platforms link (visible to both Administrator and Contributor)
+    - "Account Management" section with Users link (visible to Administrator only, role-gated)
+  - Updated controller reference from `asp-controller="Admin"` to `asp-controller="SiteAdmin"` (coordinated with Trinity's controller rename)
+  - Changed dropdown ID from "adminDropdown" to "siteAdminDropdown" for consistency
+- **Pattern learned:**
+  - Dropdown visibility based on OR condition allows consolidating features with different role requirements
+  - Use nested role checks inside dropdown to show/hide sections per role
+  - Use `<hr class="dropdown-divider">` between sections for visual separation
+  - Bootstrap icons: `bi-broadcast` for platforms, `bi-people` for users, `bi-shield-lock` for admin
+  - When coordinating renames with backend agents, update references proactively to match planned controller names
+- **Prepares for:** Future addition of MessageTemplates to Site Admin dropdown
+- **Testing:** Syntax verified clean (no Razor compilation errors in _Layout.cshtml)
+- **Branch:** issue-707 (or current working branch)
+- **Decision log:** `.squad/decisions/inbox/switch-707-nav-site-admin.md`

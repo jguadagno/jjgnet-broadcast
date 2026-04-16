@@ -26,6 +26,26 @@
 
 **Status:** Ready for merge. No further test expansion needed.
 
+## 2026-04-14 — Issue #707: SiteAdminControllerTests Rename
+
+**Status:** ✅ COMPLETE
+
+**Task:** Update test file to match Trinity's rename of `AdminController` → `SiteAdminController`
+
+**Changes Made:**
+1. Renamed test class from `AdminControllerTests` to `SiteAdminControllerTests`
+2. Updated all type references: `Mock<ILogger<AdminController>>` → `Mock<ILogger<SiteAdminController>>`
+3. Updated all instantiations: `new AdminController(...)` → `new SiteAdminController(...)`
+4. Renamed file from `AdminControllerTests.cs` to `SiteAdminControllerTests.cs`
+
+**Key Decision:** Used create + delete approach for file rename (can't rename with edit tool)
+
+**Test Logic:** All test scenarios remain unchanged - only class/type names updated
+
+**Coordination:** Trinity's `SiteAdminController` rename is complete in Web project. Test rename aligns.
+
+**Decision Documented:** `.squad/decisions/inbox/tank-707-test-rename.md`
+
 ## 2026-04-14 — Issue #708: Final Regression Test Verification
 
 **Status:** ✅ VERIFIED & COMPLETE

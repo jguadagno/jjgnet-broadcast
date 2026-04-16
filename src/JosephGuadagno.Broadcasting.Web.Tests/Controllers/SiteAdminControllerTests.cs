@@ -14,20 +14,20 @@ using Moq;
 
 namespace JosephGuadagno.Broadcasting.Web.Tests.Controllers;
 
-public class AdminControllerTests
+public class SiteAdminControllerTests
 {
     private readonly Mock<IUserApprovalManager> _mockUserApprovalManager;
     private readonly Mock<IMapper> _mockMapper;
-    private readonly Mock<ILogger<AdminController>> _mockLogger;
-    private readonly AdminController _sut;
+    private readonly Mock<ILogger<SiteAdminController>> _mockLogger;
+    private readonly SiteAdminController _sut;
     private const string EntraObjectIdClaimType = "http://schemas.microsoft.com/identity/claims/objectidentifier";
 
-    public AdminControllerTests()
+    public SiteAdminControllerTests()
     {
         _mockUserApprovalManager = new Mock<IUserApprovalManager>();
         _mockMapper = new Mock<IMapper>();
-        _mockLogger = new Mock<ILogger<AdminController>>();
-        _sut = new AdminController(
+        _mockLogger = new Mock<ILogger<SiteAdminController>>();
+        _sut = new SiteAdminController(
             _mockUserApprovalManager.Object,
             _mockMapper.Object,
             _mockLogger.Object);
