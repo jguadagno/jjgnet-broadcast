@@ -11,10 +11,9 @@ using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.AzureHelpers.Storage;
 using JosephGuadagno.AzureHelpers.Storage.Interfaces;
-
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
-using OpenTelemetry.Logs;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -169,10 +168,6 @@ void ConfigureTelemetryAndLogging(IServiceCollection services, string logPath, s
         .CreateLogger();
     services.AddLogging(loggingBuilder =>
     {
-        loggingBuilder.AddOpenTelemetry(options =>
-        {
-            options.AddConsoleExporter();
-        });
         loggingBuilder.AddSerilog(logger);
     });
 }
@@ -184,12 +179,19 @@ void ConfigureApplication(IServiceCollection services)
 
 void ConfigureRepositories(IServiceCollection services)
 {
-    builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer");
-    builder.EnrichSqlServerDbContext<BroadcastingContext>(
+    builder.AddSqlServerDbContext<BroadcastingContext>(
+        "JJGNetDatabaseSqlServer",
         configureSettings: sqlServerSettings =>
         {
             sqlServerSettings.DisableRetry = false;
             sqlServerSettings.CommandTimeout = 30; // seconds
+        },
+        configureDbContextOptions: options =>
+        {
+            options.UseSqlServer(o => o.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorNumbersToAdd: null));
         });
 
     // Engagements

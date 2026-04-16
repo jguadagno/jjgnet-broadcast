@@ -27,6 +27,7 @@
 - RBAC #607: CreatedByEntraOid nullable columns on 4 tables + domain/EF models
 - PR #662 (#323): SourceTags junction discriminator + unique index UX_SourceTags_SourceId_SourceType_Tag
 - Epic #667 Phase 1: SocialMediaPlatforms table, EngagementSocialMediaPlatforms junction, string->int FK migrations, 5 seeds
+- Issue #715: Removed AnyAsync pre-check from EngagementSocialMediaPlatformDataStore.AddAsync; capped EF retry to 3x/5s
 
 **Team standing rules:** Only Joseph merges PRs; All mapping via AutoMapper; Paging at data layer only
 ### 2026-04-08 — Epic #667 Phase 1: Database Layer Complete
@@ -74,3 +75,10 @@
 - **Commit:** `c864f74` — `fix(#667): Use correct Bootstrap icon bi-bluesky for BlueSky platform seed data`
 - **PR reply:** Posted via `gh api repos/.../pulls/683/comments/{comment_id}/replies` to confirm fix and close review thread
 
+## Learnings
+
+### 2025-01-27 — Issue #715: AnyAsync pre-check anti-pattern
+- **Problem:** `AnyAsync()` before `SaveChangesAsync()` in `AddAsync` triggered the EF Core SQL Server retry policy on transient faults, causing ~28s delays (6 retries × exponential backoff).
+- **Fix:** Removed the `AnyAsync` pre-check entirely. Duplicate detection now relies solely on the composite PK `(EngagementId, SocialMediaPlatformId)` and the existing `catch (DbUpdateException ex) when (IsDuplicateAssociationException(ex))` block.
+- **EF Retry cap:** `EnrichSqlServerDbContext` (Aspire 13.x) does NOT accept `configureDbContextOptions`. Use `AddSqlServerDbContext` with both `configureSettings` and `configureDbContextOptions` in a single call to set `EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: 5s)`.
+- **Pattern:** Never guard `AddAsync` with an `AnyAsync` pre-existence check — it is both a TOCTOU race and a retry-policy amplifier on transient faults. Let the DB PK constraint + `DbUpdateException` handler be the single source of truth.

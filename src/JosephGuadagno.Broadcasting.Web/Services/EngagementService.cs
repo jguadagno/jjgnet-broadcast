@@ -150,11 +150,11 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
     /// <returns>A list of engagement social media platforms</returns>
     public async Task<List<EngagementSocialMediaPlatform>> GetPlatformsForEngagementAsync(int engagementId)
     {
-        var platforms = await apiClient.GetForUserAsync<List<EngagementSocialMediaPlatform>>(ApiServiceName, options =>
+        var platforms = await apiClient.GetForUserAsync<List<EngagementSocialMediaPlatformApiResponse>>(ApiServiceName, options =>
         {
             options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/platforms";
         });
-        return platforms ?? new List<EngagementSocialMediaPlatform>();
+        return platforms?.Select(MapPlatform).ToList() ?? [];
     }
 
     /// <summary>
@@ -166,12 +166,16 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
     /// <returns>The added platform association, or null if failed</returns>
     public async Task<EngagementSocialMediaPlatform?> AddPlatformToEngagementAsync(int engagementId, int socialMediaPlatformId, string? handle)
     {
-        var request = new { SocialMediaPlatformId = socialMediaPlatformId, Handle = handle };
-        var result = await apiClient.PostForUserAsync<object, EngagementSocialMediaPlatform>(ApiServiceName, request, options =>
+        var request = new EngagementSocialMediaPlatformApiRequest
+        {
+            SocialMediaPlatformId = socialMediaPlatformId,
+            Handle = handle
+        };
+        var result = await apiClient.PostForUserAsync<EngagementSocialMediaPlatformApiRequest, EngagementSocialMediaPlatformApiResponse>(ApiServiceName, request, options =>
         {
             options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/platforms";
         });
-        return result;
+        return result is null ? null : MapPlatform(result);
     }
 
     /// <summary>
@@ -189,4 +193,44 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
         });
         return response is { StatusCode: HttpStatusCode.NoContent };
     }
+
+    private static EngagementSocialMediaPlatform MapPlatform(EngagementSocialMediaPlatformApiResponse response) => new()
+    {
+        EngagementId = response.EngagementId,
+        SocialMediaPlatformId = response.SocialMediaPlatformId,
+        Handle = response.Handle,
+        SocialMediaPlatform = response.SocialMediaPlatform is null
+            ? null
+            : new SocialMediaPlatform
+            {
+                Id = response.SocialMediaPlatform.Id,
+                Name = response.SocialMediaPlatform.Name,
+                Url = response.SocialMediaPlatform.Url,
+                Icon = response.SocialMediaPlatform.Icon,
+                IsActive = response.SocialMediaPlatform.IsActive
+            }
+    };
+}
+
+internal sealed class EngagementSocialMediaPlatformApiRequest
+{
+    public int SocialMediaPlatformId { get; set; }
+    public string? Handle { get; set; }
+}
+
+internal sealed class EngagementSocialMediaPlatformApiResponse
+{
+    public int EngagementId { get; set; }
+    public int SocialMediaPlatformId { get; set; }
+    public string? Handle { get; set; }
+    public SocialMediaPlatformApiResponse? SocialMediaPlatform { get; set; }
+}
+
+internal sealed class SocialMediaPlatformApiResponse
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Url { get; set; }
+    public string? Icon { get; set; }
+    public bool IsActive { get; set; }
 }

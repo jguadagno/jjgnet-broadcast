@@ -24,13 +24,10 @@
     <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(GITHUB_RUN_ID)-preview</VersionSuffix>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
-    <AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</AssemblyVersion>
-  </PropertyGroup>
-  <PropertyGroup>
     <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
     <FileVersion>$(VersionPrefix)</FileVersion>
-    <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
+    <InformationalVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</InformationalVersion>
+    <InformationalVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.8" />

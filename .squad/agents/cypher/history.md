@@ -85,3 +85,13 @@ Established by Joseph Guadagno:
 - Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
 - Charter updated with enforcement rule (## How I Work)
 - Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code
+
+## Learnings
+
+### 2026-04-16: OTel Logging — Single Provider Rule
+- `AddServiceDefaults()` (via `ServiceDefaults/Extensions.cs`) already registers the OTel logging provider — never call `loggingBuilder.AddOpenTelemetry()` again in `Program.cs`
+- Never add `.WriteTo.OpenTelemetry()` to Serilog config — it creates a third export path and duplicates log volume
+- Symptom: 2-3x duplicate log entries in Azure Monitor / OTLP pipelines
+- Fix: removed `loggingBuilder.AddOpenTelemetry(...)` block from `Api/Program.cs`, removed `.WriteTo.OpenTelemetry()` from `Broadcasting.Serilog/LoggingExtensions.cs`, removed now-unused `Serilog.Sinks.OpenTelemetry` package and `using OpenTelemetry.Logs` directive
+- Decision filed: `.squad/decisions/inbox/cypher-otel-logging.md`
+

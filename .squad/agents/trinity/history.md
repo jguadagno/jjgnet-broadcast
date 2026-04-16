@@ -2,8 +2,14 @@
 
 ## Learnings
 
+### 2026-04-16 — Issue #714: [FromBody] on complex parameters eliminates binding latency
+Always annotate complex-type body parameters with `[FromBody]` in `[ApiController]` actions. Without it, the framework walks route → query → form → body sources sequentially before settling on body binding, adding measurable latency (confirmed 2 s in issue #714). Making intent explicit with `[FromBody]` short-circuits that walk. Decision filed: `trinity-714-frombody.md`.
+
 ### ActionName Pattern in EngagementsController
 When an async action method is a target of `CreatedAtAction(nameof(...))`, it must have the `[ActionName(nameof(MethodAsync))]` attribute. ASP.NET Core's `SuppressAsyncSuffixInActionNames` defaults to true and strips the "Async" suffix from the registered action name. Without the explicit `[ActionName]` attribute, the nameof() reference in CreatedAtAction will not match the actual registered name, causing route resolution to fail with HTTP 500. All async action methods in EngagementsController (`GetEngagementAsync`, `GetTalkAsync`, `GetPlatformForEngagementAsync`) follow this pattern.
+
+### 2025-07-14 — Issue #708: Prevention Documentation Added
+**Prevention pattern codified:** Added `<remarks>` XML doc on `GetPlatformForEngagementAsync` explaining why `[ActionName]` is required; added inline comment on the `CreatedAtAction` call in `AddPlatformToEngagementAsync`; filed team decision entry `trinity-708-actionname-rule.md`. Rule: every async action method that is the target of `CreatedAtAction` or `CreatedAtRoute` must carry `[ActionName(nameof(MethodNameAsync))]` to prevent ASP.NET Core's suffix-stripping from breaking route resolution at runtime.
 
 ### 2026-04-13T17-34-54Z — Issue #708: Backend Validation Coordination
 **Status:** ✅ COMPLETE & COORDINATED
@@ -98,6 +104,24 @@ Backend changes provide data integrity protection even if double-submit recurs:
 **Decision:** Trinity will not implement the fix—it's out of domain. Coordinator should route to Sparks for implementation.
 
 ## Learnings
+
+### 2026-04-16 — Issues #714/#715: Performance Bottleneck Findings
+
+**Issue #714 (2-second pre-body delay):**
+- Most likely cause: Azure AD JWT Bearer middleware (`UseAuthentication`) triggers an outbound OIDC/JWKS key fetch on cold start or key cache expiry (~1-2s).
+- Secondary: `AddPlatformToEngagementAsync` (EngagementsController.cs line 428) lacks an explicit `[FromBody]` attribute on `request`. `[ApiController]` covers this by convention but Content-Type mismatch will fall through multiple binders and slow model binding.
+- `AddHttpLogging(HttpLoggingFields.All)` is registered unconditionally (Program.cs line 24-26) — in Development, full body buffering adds overhead.
+- Fix: add `[FromBody]` explicitly; background-refresh AAD signing keys; guard `AddHttpLogging` inside `IsDevelopment()`.
+
+**Issue #715 (28-second gap before SaveChanges):**
+- Root cause: `EngagementSocialMediaPlatformDataStore.AddAsync()` runs `AnyAsync()` pre-check (lines 34-38) BEFORE the logged `SaveChangesAsync()`. The 28s gap is entirely inside that SELECT.
+- `EnrichSqlServerDbContext` in Program.cs (lines 188-193) sets `DisableRetry = false` + `CommandTimeout = 30`. EF Core's SQL Server retry strategy (default: 6 retries, exponential back-off ~1+2+4+8+16 = 31s) fires on transient faults during `AnyAsync()`, matching the observed window.
+- Fix: **remove the `AnyAsync()` pre-check entirely** — the clustered PK unique constraint already handles duplicates; catch `DbUpdateException` only. Also consider capping retries to 2 with MaxRetryDelay=5s for interactive API endpoints.
+
+**Duplicate Logs:**
+- Root cause found: TWO `AddOpenTelemetry()` logging providers are registered — one by `AddServiceDefaults()` (Extensions.cs line 51-55) and a second by `ConfigureTelemetryAndLogging()` (Program.cs lines 172-174). Every `ILogger.Log()` call emits twice.
+- Compounded by: Serilog also has `.WriteTo.OpenTelemetry()` (LoggingExtensions.cs line 40), creating a third export path via Serilog bridge.
+- Fix: remove the redundant `loggingBuilder.AddOpenTelemetry()` from Program.cs; evaluate removing `.WriteTo.OpenTelemetry()` from Serilog.
 
 ### HTTP Status Code Semantics for Duplicate Resources
 **Pattern:** Use HTTP 409 Conflict (not 400 Bad Request) for duplicate resource associations.

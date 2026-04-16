@@ -390,6 +390,12 @@ public class EngagementsController: ControllerBase
     /// <response code="200">Returns the platform association</response>
     /// <response code="404">If the association was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
+    /// <remarks>
+    /// The <see cref="ActionNameAttribute"/> is required so that
+    /// <see cref="ControllerBase.CreatedAtAction"/> can resolve this route by the C# method name
+    /// (including the Async suffix). Without it, ASP.NET Core strips the suffix and route lookup fails
+    /// with a 500 "No route matches the supplied values" error. See issue #708.
+    /// </remarks>
     [HttpGet("{engagementId:int}/platforms/{platformId:int}", Name = "GetPlatformForEngagement")]
     [ActionName(nameof(GetPlatformForEngagementAsync))]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(EngagementSocialMediaPlatformResponse))]
@@ -425,7 +431,7 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<EngagementSocialMediaPlatformResponse>> AddPlatformToEngagementAsync(
         int engagementId,
-        EngagementSocialMediaPlatformRequest request)
+        [FromBody] EngagementSocialMediaPlatformRequest request)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify, Domain.Scopes.Engagements.All);
 
@@ -464,6 +470,7 @@ public class EngagementsController: ControllerBase
         }
 
         _logger.LogInformation("Platform {PlatformId} added to engagement {EngagementId}", result.SocialMediaPlatformId, engagementId);
+        // [ActionName] on GetPlatformForEngagementAsync is required for this lookup to succeed (#708)
         return CreatedAtAction(
             nameof(GetPlatformForEngagementAsync),
             new { engagementId, platformId = result.SocialMediaPlatformId },

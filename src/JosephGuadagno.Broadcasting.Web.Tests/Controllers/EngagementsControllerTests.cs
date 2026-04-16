@@ -494,4 +494,266 @@ public class EngagementsControllerTests
         Assert.NotNull(authorizeAttribute);
         Assert.Equal("RequireContributor", authorizeAttribute!.Policy);
     }
+
+    #region AddPlatform Tests (Issue #708 Regression Coverage)
+
+    [Fact]
+    public async Task AddPlatform_Get_ShouldReturnViewWithViewModel()
+    {
+        // Arrange
+        var engagementId = 42;
+        var platforms = new List<SocialMediaPlatform>
+        {
+            new SocialMediaPlatform { Id = 1, Name = "Twitter", IsActive = true },
+            new SocialMediaPlatform { Id = 2, Name = "LinkedIn", IsActive = true }
+        };
+        _socialMediaPlatformService.Setup(s => s.GetAllAsync(true)).ReturnsAsync(platforms);
+
+        // Act
+        var result = await _controller.AddPlatform(engagementId);
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        var model = Assert.IsType<EngagementSocialMediaPlatformViewModel>(viewResult.Model);
+        Assert.Equal(engagementId, model.EngagementId);
+        Assert.Equal(platforms, _controller.ViewBag.Platforms);
+        _socialMediaPlatformService.Verify(s => s.GetAllAsync(true), Times.Once);
+    }
+
+    [Fact]
+    public async Task AddPlatform_Post_WhenModelStateInvalid_ShouldReturnViewWithPlatforms()
+    {
+        // Arrange
+        var viewModel = new EngagementSocialMediaPlatformViewModel
+        {
+            EngagementId = 42,
+            SocialMediaPlatformId = 0 // Invalid - fails [Range(1, int.MaxValue)] validation
+        };
+        var platforms = new List<SocialMediaPlatform>
+        {
+            new SocialMediaPlatform { Id = 1, Name = "Twitter", IsActive = true }
+        };
+        _socialMediaPlatformService.Setup(s => s.GetAllAsync(false)).ReturnsAsync(platforms);
+        _controller.ModelState.AddModelError("SocialMediaPlatformId", "Please select a platform.");
+
+        // Act
+        var result = await _controller.AddPlatform(viewModel);
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        Assert.Equal(viewModel, viewResult.Model);
+        Assert.Equal(platforms, _controller.ViewBag.Platforms);
+        _engagementService.Verify(
+            s => s.AddPlatformToEngagementAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()),
+            Times.Never,
+            "Service should not be called when ModelState is invalid");
+    }
+
+    [Fact]
+    public async Task AddPlatform_Post_WhenValidAndSuccessful_ShouldRedirectWithSuccessMessage()
+    {
+        // Arrange
+        var viewModel = new EngagementSocialMediaPlatformViewModel
+        {
+            EngagementId = 42,
+            SocialMediaPlatformId = 1,
+            Handle = "@TestHandle"
+        };
+        var addedPlatform = new EngagementSocialMediaPlatform
+        {
+            EngagementId = 42,
+            SocialMediaPlatformId = 1,
+            Handle = "@TestHandle"
+        };
+        _engagementService
+            .Setup(s => s.AddPlatformToEngagementAsync(42, 1, "@TestHandle"))
+            .ReturnsAsync(addedPlatform);
+
+        // Act
+        var result = await _controller.AddPlatform(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Edit", redirectResult.ActionName);
+        Assert.Equal(42, redirectResult.RouteValues?["id"]);
+        Assert.Equal("Platform added successfully.", _controller.TempData["SuccessMessage"]);
+        _engagementService.Verify(s => s.AddPlatformToEngagementAsync(42, 1, "@TestHandle"), Times.Once);
+    }
+
+    [Fact]
+    public async Task AddPlatform_Post_WhenServiceReturnsNull_ShouldRedirectWithErrorMessage()
+    {
+        // Arrange
+        var viewModel = new EngagementSocialMediaPlatformViewModel
+        {
+            EngagementId = 42,
+            SocialMediaPlatformId = 1,
+            Handle = "@TestHandle"
+        };
+        _engagementService
+            .Setup(s => s.AddPlatformToEngagementAsync(42, 1, "@TestHandle"))
+            .ReturnsAsync((EngagementSocialMediaPlatform?)null);
+
+        // Act
+        var result = await _controller.AddPlatform(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Edit", redirectResult.ActionName);
+        Assert.Equal(42, redirectResult.RouteValues?["id"]);
+        Assert.Equal("Failed to add platform to engagement.", _controller.TempData["ErrorMessage"]);
+    }
+
+    [Fact]
+    public async Task AddPlatform_Post_When409Conflict_ShouldRedirectWithWarningMessage()
+    {
+        // Arrange
+        var viewModel = new EngagementSocialMediaPlatformViewModel
+        {
+            EngagementId = 42,
+            SocialMediaPlatformId = 1,
+            Handle = "@TestHandle"
+        };
+        var conflictException = new HttpRequestException(
+            "Conflict",
+            null,
+            System.Net.HttpStatusCode.Conflict);
+        _engagementService
+            .Setup(s => s.AddPlatformToEngagementAsync(42, 1, "@TestHandle"))
+            .ThrowsAsync(conflictException);
+
+        // Act
+        var result = await _controller.AddPlatform(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Edit", redirectResult.ActionName);
+        Assert.Equal(42, redirectResult.RouteValues?["id"]);
+        Assert.Equal("This platform is already associated with this engagement.", _controller.TempData["WarningMessage"]);
+    }
+
+    [Fact]
+    public async Task AddPlatform_Post_WhenNon409HttpRequestException_ShouldRedirectWithErrorMessage()
+    {
+        // Arrange
+        var viewModel = new EngagementSocialMediaPlatformViewModel
+        {
+            EngagementId = 42,
+            SocialMediaPlatformId = 1,
+            Handle = "@TestHandle"
+        };
+        var exceptionMessage = "Bad Request";
+        var badRequestException = new HttpRequestException(
+            exceptionMessage,
+            null,
+            System.Net.HttpStatusCode.BadRequest);
+        _engagementService
+            .Setup(s => s.AddPlatformToEngagementAsync(42, 1, "@TestHandle"))
+            .ThrowsAsync(badRequestException);
+
+        // Act
+        var result = await _controller.AddPlatform(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Edit", redirectResult.ActionName);
+        Assert.Equal(42, redirectResult.RouteValues?["id"]);
+        Assert.Contains("Failed to add platform", (string)_controller.TempData["ErrorMessage"]!);
+    }
+
+    [Fact]
+    public async Task AddPlatform_Post_DuplicateAttempt_ShouldHandleWithWarning()
+    {
+        // Arrange - Simulates the double-submit scenario from issue #708
+        // First call succeeds, second call would fail with 409 Conflict
+        var viewModel = new EngagementSocialMediaPlatformViewModel
+        {
+            EngagementId = 42,
+            SocialMediaPlatformId = 1,
+            Handle = "@TestHandle"
+        };
+
+        var firstCallSucceeds = new EngagementSocialMediaPlatform
+        {
+            EngagementId = 42,
+            SocialMediaPlatformId = 1,
+            Handle = "@TestHandle"
+        };
+
+        var callCount = 0;
+        _engagementService
+            .Setup(s => s.AddPlatformToEngagementAsync(42, 1, "@TestHandle"))
+            .ReturnsAsync(() =>
+            {
+                callCount++;
+                if (callCount == 1)
+                {
+                    return firstCallSucceeds;
+                }
+                throw new HttpRequestException("Conflict", null, System.Net.HttpStatusCode.Conflict);
+            });
+
+        // Act - First call (succeeds)
+        var firstResult = await _controller.AddPlatform(viewModel);
+
+        // Assert first call
+        var firstRedirect = Assert.IsType<RedirectToActionResult>(firstResult);
+        Assert.Equal("Edit", firstRedirect.ActionName);
+        Assert.Equal("Platform added successfully.", _controller.TempData["SuccessMessage"]);
+
+        // Act - Second call (simulates double-submit or retry after error)
+        var secondResult = await _controller.AddPlatform(viewModel);
+
+        // Assert second call - Conflict should show warning, not error
+        var secondRedirect = Assert.IsType<RedirectToActionResult>(secondResult);
+        Assert.Equal("Edit", secondRedirect.ActionName);
+        Assert.Equal("This platform is already associated with this engagement.", _controller.TempData["WarningMessage"]);
+    }
+
+    #endregion
+
+    #region RemovePlatform Tests
+
+    [Fact]
+    public async Task RemovePlatform_WhenSuccessful_ShouldRedirectWithSuccessMessage()
+    {
+        // Arrange
+        var engagementId = 42;
+        var platformId = 1;
+        _engagementService
+            .Setup(s => s.RemovePlatformFromEngagementAsync(engagementId, platformId))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _controller.RemovePlatform(engagementId, platformId);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Edit", redirectResult.ActionName);
+        Assert.Equal(engagementId, redirectResult.RouteValues?["id"]);
+        Assert.Equal("Platform removed successfully.", _controller.TempData["SuccessMessage"]);
+        _engagementService.Verify(s => s.RemovePlatformFromEngagementAsync(engagementId, platformId), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemovePlatform_WhenFails_ShouldRedirectWithErrorMessage()
+    {
+        // Arrange
+        var engagementId = 42;
+        var platformId = 1;
+        _engagementService
+            .Setup(s => s.RemovePlatformFromEngagementAsync(engagementId, platformId))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _controller.RemovePlatform(engagementId, platformId);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Edit", redirectResult.ActionName);
+        Assert.Equal(engagementId, redirectResult.RouteValues?["id"]);
+        Assert.Equal("Failed to remove platform from engagement.", _controller.TempData["ErrorMessage"]);
+    }
+
+    #endregion
 }

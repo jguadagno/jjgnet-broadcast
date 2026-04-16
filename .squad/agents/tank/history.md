@@ -445,3 +445,30 @@ This provides regression coverage as close to the actual bug as the existing tes
 - Root cause: API response generation failure after successful save, now covered by automation
 
 **Status:** Ready for merge. Test coverage now complete across all layers.
+
+## 2026 — AnyAsync Removal Pre-Prep: Duplicate Detection Test Fix
+
+**Status:** ✅ COMPLETE
+
+**Context:** Morpheus is removing the `AnyAsync` pre-check from `EngagementSocialMediaPlatformDataStore.AddAsync()`. After removal, duplicate detection relies entirely on `catch (DbUpdateException ex) when (IsDuplicateAssociationException(ex))`, which checks the inner `SqlException` for SQL Server error codes 2601/2627.
+
+**Problem:** The existing duplicate test used EF Core in-memory, which does NOT throw `DbUpdateException` wrapping a `SqlException` on duplicate inserts. After `AnyAsync` removal, the in-memory provider would throw an incompatible exception, causing the test to receive something other than `DuplicateEngagementSocialMediaPlatformException`.
+
+**Solution Applied:** Updated `AddAsync_WhenAssociationAlreadyExists_ThrowsDuplicateExceptionAndKeepsExistingAssociation` to:
+1. Use a `Mock<BroadcastingContext>` with `CallBase = true` pointing at a dedicated in-memory DB
+2. Mock `SaveChangesAsync` to throw `new DbUpdateException(..., CreateSqlExceptionForTesting(2627))`
+3. Added `CreateSqlExceptionForTesting(int errorNumber)` reflection helper that constructs `SqlException` via `SqlError`/`SqlErrorCollection`/`SqlException.CreateException` internal APIs
+
+**Why not SQLite?** `BroadcastingContext.OnModelCreating` contains SQL Server-specific DDL (`HasDefaultValueSql("(getutcdate())")`, `IsClustered()`) that would cause SQLite's `EnsureCreated()` to fail or generate incompatible SQL. The Moq approach is provider-agnostic and doesn't require schema creation.
+
+**Dual-mode safety:** The test works both NOW (with `AnyAsync` in place — it finds the seeded record and throws before reaching `SaveChangesAsync`) AND AFTER the removal (mock intercepts `SaveChangesAsync` and produces the right exception chain). Zero test logic needs to change when Morpheus lands the removal.
+
+**All 173 Data.Sql.Tests pass.**
+
+## Learnings
+
+20. **SQLite in-memory is NOT a drop-in for SQL Server DataStore tests** when `BroadcastingContext.OnModelCreating` uses SQL Server-specific functions in `HasDefaultValueSql` (e.g., `getutcdate()`). EF Core passes these raw SQL expressions to the DDL verbatim, causing SQLite `EnsureCreated()` to fail. Use the Moq `CallBase = true` approach instead.
+
+21. **`SqlException` has no public constructor; use reflection to create one in tests.** The pattern: build a `SqlError` via its internal ctor, add it to a `SqlErrorCollection` via internal `Add()`, then call `SqlException.CreateException(collection, "7.0")` — all via `BindingFlags.NonPublic`. Works with `Microsoft.Data.SqlClient` 5.x/6.x. Isolate to a `CreateSqlExceptionForTesting()` helper to avoid scattering reflection code.
+
+22. **Moq `CallBase = true` on `BroadcastingContext` shares the in-memory DB.** When the mock context is constructed with the same `DbContextOptions`, it reads/writes from the same in-memory store as a separate seed context. This lets you verify "original record survives" by querying the seed context after the mock throws — no extra cleanup needed.

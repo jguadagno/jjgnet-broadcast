@@ -273,7 +273,15 @@ public class EngagementsController : Controller
         }
         catch (HttpRequestException ex)
         {
-            TempData["ErrorMessage"] = $"Failed to add platform: {ex.Message}";
+            // Check if this is a duplicate (409 Conflict) - treat as success since platform is already added
+            if (ex.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                TempData["WarningMessage"] = "This platform is already associated with this engagement.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = $"Failed to add platform: {ex.Message}";
+            }
         }
 
         return RedirectToAction("Edit", new { id = vm.EngagementId });
