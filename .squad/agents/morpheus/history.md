@@ -90,3 +90,15 @@
 - **Fix:** Removed the `AnyAsync` pre-check entirely. Duplicate detection now relies solely on the composite PK `(EngagementId, SocialMediaPlatformId)` and the existing `catch (DbUpdateException ex) when (IsDuplicateAssociationException(ex))` block.
 - **EF Retry cap:** `EnrichSqlServerDbContext` (Aspire 13.x) does NOT accept `configureDbContextOptions`. Use `AddSqlServerDbContext` with both `configureSettings` and `configureDbContextOptions` in a single call to set `EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: 5s)`.
 - **Pattern:** Never guard `AddAsync` with an `AnyAsync` pre-existence check — it is both a TOCTOU race and a retry-policy amplifier on transient faults. Let the DB PK constraint + `DbUpdateException` handler be the single source of truth.
+
+### 2025-01-28 — Issue #713 Revision: Exception Logging Audit Completion
+- **Context:** Neo (Lead) rejected Trinity's initial exception audit work due to missing LogError calls and cross-contamination from issue #704/#705 pagination changes.
+- **Problems fixed:**
+  1. Added `ILogger<EngagementDataStore>` to primary constructor and inserted `_logger.LogError(ex, ...)` into all 5 catch blocks (SaveAsync, DeleteAsync×2, SaveTalkAsync, RemoveTalkFromEngagementAsync×2).
+  2. Added `ILogger<EngagementManager>` to constructor and inserted `_logger.LogError(ex, ...)` into 2 catch blocks (SaveAsync, SaveTalkAsync).
+  3. Reverted unrelated pagination changes: `EngagementsController.cs`, `IEngagementService.cs`, `EngagementService.cs`, `Index.cshtml`, `_PaginationPartial.cshtml`, `EngagementsControllerTests.cs` (restored from main).
+  4. Fixed broken tests: Added `Mock<ILogger<T>>` to constructors in all DataStore test classes (`EngagementDataStoreTests`, `FeedCheckDataStoreTests`, `ScheduledItemDataStoreTests`, `YouTubeSourceDataStoreTests`, `TokenRefreshDataStoreTests`, `SyndicationFeedSourceDataStoreTests`, `ScheduledItemOrphanTests`) + `EngagementManagerTests`.
+- **Build:** Clean success after all fixes (0 errors).
+- **Commit:** e306636 — `fix(data,managers): complete exception logging audit - add missing LogError calls (#713)` (10 files changed, -245 lines from reverted pagination tests).
+- **Pattern:** When fixing reviewer-rejected work on a feature branch, FIRST identify and revert any cross-contamination from unrelated branches (use `git diff main...branch --name-only` and `git checkout main -- path/to/file`), THEN add the fixes requested (logging calls), THEN fix all test constructors to match updated DI signatures. Never commit incomplete logging instrumentation — every catch block that returns an OperationResult MUST log the exception before returning.
+

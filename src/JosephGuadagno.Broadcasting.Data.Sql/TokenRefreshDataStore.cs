@@ -2,10 +2,11 @@ using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
-public class TokenRefreshDataStore(BroadcastingContext broadcastingContext, IMapper mapper) : ITokenRefreshDataStore
+public class TokenRefreshDataStore(BroadcastingContext broadcastingContext, IMapper mapper, ILogger<TokenRefreshDataStore> logger) : ITokenRefreshDataStore
 {
     public async Task<Domain.Models.TokenRefresh> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
@@ -30,6 +31,7 @@ public class TokenRefreshDataStore(BroadcastingContext broadcastingContext, IMap
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to save token refresh {TokenRefreshId}", entity.Id);
             return OperationResult<Domain.Models.TokenRefresh>.Failure("An error occurred while saving the token refresh", ex);
         }
     }
@@ -58,6 +60,7 @@ public class TokenRefreshDataStore(BroadcastingContext broadcastingContext, IMap
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to delete token refresh {TokenRefreshId}", primaryKey);
             return OperationResult<bool>.Failure("An error occurred while deleting the token refresh", ex);
         }
     }

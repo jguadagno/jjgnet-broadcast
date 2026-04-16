@@ -2,10 +2,11 @@ using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
-public class EngagementDataStore(BroadcastingContext broadcastingContext, IMapper mapper) : IEngagementDataStore
+public class EngagementDataStore(BroadcastingContext broadcastingContext, IMapper mapper, ILogger<EngagementDataStore> logger) : IEngagementDataStore
 {
     public async Task<Domain.Models.Engagement> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
@@ -32,6 +33,7 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to save engagement {EngagementId}", engagement.Id);
             return OperationResult<Domain.Models.Engagement>.Failure("An error occurred while saving the engagement", ex);
         }
     }
@@ -67,6 +69,7 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to delete engagement {EngagementId}", primaryKey);
             return OperationResult<bool>.Failure("An error occurred while deleting the engagement", ex);
         }
     }
@@ -151,6 +154,7 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to save talk {TalkId}", talk?.Id);
             return OperationResult<Domain.Models.Talk>.Failure("An error occurred while saving the talk", ex);
         }
     }
@@ -170,6 +174,7 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to remove talk {TalkId} from engagement", talkId);
             return OperationResult<bool>.Failure("An error occurred while removing the talk", ex);
         }
     }
@@ -186,6 +191,7 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to remove talk {TalkId} from engagement", talk?.Id);
             return OperationResult<bool>.Failure("An error occurred while removing the talk", ex);
         }
     }

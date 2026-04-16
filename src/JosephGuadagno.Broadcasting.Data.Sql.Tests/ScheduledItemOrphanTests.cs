@@ -134,7 +134,8 @@ public class ScheduledItemOrphanTests
         var config = new MapperConfiguration(
             cfg => cfg.AddProfile<MappingProfiles.BroadcastingProfile>(),
             new LoggerFactory());
-        return (context, new ScheduledItemDataStore(context, config.CreateMapper()));
+        var logger = new Mock<ILogger<ScheduledItemDataStore>>();
+        return (context, new ScheduledItemDataStore(context, config.CreateMapper(), logger.Object));
     }
 
     [Fact]

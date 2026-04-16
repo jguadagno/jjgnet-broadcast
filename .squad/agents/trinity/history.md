@@ -674,3 +674,61 @@ Real #708 failure was not duplicate submit, but API response generation failure 
 - New service tests: All passing with explicit contract assertions
 
 **Status:** Ready for merge. All code validated, test coverage complete, root cause understood.
+
+### 2026-04-17 — Issues #704 & #705: Sort and Filter for Engagements List
+**Status:** ✅ COMPLETE & BUILD VERIFIED
+
+**Task:** Implement sort and filter functionality for the Engagements list at the backend layer (Data.Sql, Managers, API).
+
+**Changes Made:**
+1. **Domain Interfaces:** Added optional parameters to IEngagementDataStore.GetAllAsync() and IEngagementManager.GetAllAsync():
+   - sortBy (default: "startdate") — Field to sort by: "startdate", "enddate", or "name"
+   - sortDescending (default: true) — Sort direction, true = newest/largest first
+   - ilter (default: null) — Case-insensitive contains match on Engagement.Name
+
+2. **Data Layer (EngagementDataStore.GetAllAsync):** Implemented sorting and filtering using EF Core LINQ:
+   - Applied ilter as WHERE Name CONTAINS filter using .Contains()
+   - Applied dynamic ordering using switch expression on sortBy + sortDescending
+   - Default behavior: OrderByDescending(e => e.StartDateTime) (newest first, fixes #704)
+   - Pushed logic into Data.Sql as per architecture rules (not in managers or controllers)
+
+3. **Manager Layer (EngagementManager.GetAllAsync):** Pass-through implementation, accepts new params and forwards to data store
+
+4. **API Layer (EngagementsController.GetEngagementsAsync):** Added query parameters matching the contract, forwards to manager
+
+**Architecture Compliance:** All sorting/filtering logic pushed into JosephGuadagno.Broadcasting.Data.Sql per copilot-instructions.md. No EF migrations required (query-only changes). Default values ensure backward compatibility—all existing callers continue to work without code changes.
+
+**Build Status:** API project built successfully with no errors.
+
+**Coordination:** Web layer changes (IEngagementService, EngagementService, Web EngagementsController, views) handled by Switch. Test updates handled by Tank.
+
+**Decision Filed:** `.squad/decisions/inbox/trinity-704-705-sort-filter-contract.md`
+
+### 2026-04-16 — Issue #713: Exception Audit and Logging
+**Status:** ✅ COMPLETE
+
+**Task:** Audit and fix swallowed exceptions in Data.Sql and Managers layers that returned null/false/OperationResult.Failure without logging.
+
+**Patterns Found:**
+- 6 DataStores had no ILogger injection: EngagementDataStore, SyndicationFeedSourceDataStore, YouTubeSourceDataStore, FeedCheckDataStore, ScheduledItemDataStore, TokenRefreshDataStore
+- 1 Manager had no ILogger injection: EngagementManager
+- 1 DataStore with ILogger but 1 silent catch: EngagementSocialMediaPlatformDataStore.DeleteAsync
+- Total: 15 catch blocks fixed across 7 classes
+
+**Changes Applied:**
+- Added ILogger<T> injection to 7 classes (6 DataStores + 1 Manager)
+- Added LogError calls before all OperationResult.Failure returns
+- Pattern: `_logger.LogError(ex, "Failed to [operation] {EntityId}", entityId);`
+- Preserved existing return values (no breaking changes)
+- Exception context now visible in logs for debugging
+
+**Already Compliant:**
+- SocialMediaPlatformDataStore: 3 catch blocks already had LogError
+- EngagementSocialMediaPlatformDataStore.AddAsync: Had LogWarning for duplicates + LogError for general failures
+- UserApprovalManager: catch block already used LogWarning
+- ApplicationUserDataStore, UserApprovalLogDataStore: throw exceptions, no catch blocks
+- EmailTemplateDataStore, MessageTemplateDataStore, RoleDataStore: no exception handling needed
+
+**Key Learning:** Exception swallowing is debugging poison. Every exception that might happen in production needs logging before returning a failure indicator. The pattern is: log error with context, then return failure (don't throw, since the contract is OperationResult-based). This gives ops visibility without changing API contracts.
+
+**Decision Filed:** `.squad/decisions/inbox/trinity-713-exception-audit-findings.md`

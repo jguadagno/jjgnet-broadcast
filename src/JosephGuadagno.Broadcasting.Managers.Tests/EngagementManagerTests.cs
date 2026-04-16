@@ -3,6 +3,7 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
@@ -14,7 +15,8 @@ public class EngagementManagerTests
     public EngagementManagerTests()
     {
         _repository = new Mock<IEngagementDataStore>();
-        _engagementManager = new EngagementManager(_repository.Object);
+        var logger = new Mock<ILogger<EngagementManager>>();
+        _engagementManager = new EngagementManager(_repository.Object, logger.Object);
     }
 
     [Fact]

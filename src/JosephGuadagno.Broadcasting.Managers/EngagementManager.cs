@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.Extensions.Logging;
 using NodaTime;
 
 namespace JosephGuadagno.Broadcasting.Managers;
@@ -12,10 +13,12 @@ namespace JosephGuadagno.Broadcasting.Managers;
 public class EngagementManager: IEngagementManager
 {
     private readonly IEngagementDataStore _engagementDataStore;
+    private readonly ILogger<EngagementManager> _logger;
 
-    public EngagementManager(IEngagementDataStore engagementDataStore)
+    public EngagementManager(IEngagementDataStore engagementDataStore, ILogger<EngagementManager> logger)
     {
         _engagementDataStore = engagementDataStore;
+        _logger = logger;
     }
     
     public async Task<Engagement> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
@@ -42,6 +45,7 @@ public class EngagementManager: IEngagementManager
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to save engagement {EngagementId}", entity.Id);
             return OperationResult<Engagement>.Failure("An error occurred while saving the engagement", ex);
         }
     }
@@ -82,6 +86,7 @@ public class EngagementManager: IEngagementManager
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to save talk {TalkId} for engagement {EngagementId}", talk.Id, talk.EngagementId);
             return OperationResult<Talk>.Failure("An error occurred while saving the talk", ex);
         }
     }

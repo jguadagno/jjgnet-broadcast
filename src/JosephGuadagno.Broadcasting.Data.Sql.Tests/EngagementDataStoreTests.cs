@@ -2,6 +2,7 @@ using AutoMapper;
 using JosephGuadagno.Broadcasting.Data.Sql.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql.Tests;
@@ -24,7 +25,8 @@ public class EngagementDataStoreTests : IDisposable
         }, new LoggerFactory());
         var mapper = config.CreateMapper();
 
-        _dataStore = new EngagementDataStore(_context, mapper);
+        var logger = new Mock<ILogger<EngagementDataStore>>();
+        _dataStore = new EngagementDataStore(_context, mapper, logger.Object);
     }
 
     public void Dispose()

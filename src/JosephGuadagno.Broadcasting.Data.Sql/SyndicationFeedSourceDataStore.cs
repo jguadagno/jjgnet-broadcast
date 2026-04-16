@@ -2,10 +2,11 @@ using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
-public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingContext, IMapper mapper)
+public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingContext, IMapper mapper, ILogger<SyndicationFeedSourceDataStore> logger)
     : ISyndicationFeedSourceDataStore
 {
     private const string SourceType = "SyndicationFeed";
@@ -55,6 +56,7 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to save syndication feed source {FeedId}", entity.Id);
             return OperationResult<Domain.Models.SyndicationFeedSource>.Failure("An error occurred while saving the syndication feed source", ex);
         }
     }
@@ -98,6 +100,7 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to delete syndication feed source {FeedId}", primaryKey);
             return OperationResult<bool>.Failure("An error occurred while deleting the syndication feed source", ex);
         }
     }
