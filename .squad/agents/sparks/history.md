@@ -7,6 +7,8 @@
 | 2026-03-20 | Added CodeQL analysis to ci.yml (#326) | ✅ CodeQL job added as separate job with csharp language, push to main trigger added to workflow |
 | 2026-04-03 | Implement health checks for Api and Web (#635) | ✅ Added SQL Server and Azure Storage health checks to ServiceDefaults; PR #641 created |
 | 2026-05-02 | Schedule Add/Edit UI validation (#67) | ✅ Implemented ItemType dropdown and AJAX validation UI; branch feature/67-schedule-item-validation-ui pushed |
+| 2026-04-11 | Fix double-submit bug in site.js (#708) | ✅ Added event.preventDefault() in submit handler to block duplicate form submissions; committed to branch social-media-708 |
+| 2026-04-11 | Fix AddPlatform 400 error (#708) | ✅ Removed redundant asp-route-engagementId from form causing model binding conflict; EngagementId now only posted via hidden field in ViewModel |
 
 ## Learnings
 
@@ -73,3 +75,49 @@ Established by Joseph Guadagno:
   - IsActive shown as ✗ icon; list page has toggle button to flip IsActive
   - Platform dropdowns on ScheduledItems and MessageTemplates views (replace free-text with FK dropdown)
 - **Next:** Begin Razor views after Switch delivers controller layer
+
+### 2026-04-11 — Issue #708: Double-Submit Bug Fix
+- **Root Cause:** In site.js, the global form submit handler checked `if (btn.disabled) return;` but did not call `event.preventDefault()` when the button was already disabled
+- **Impact:** Fast double-click sent duplicate POST requests, causing "duplicate platform add" errors in AddPlatform flow
+- **Fix:** Added `event` parameter to submit handler and call `event.preventDefault()` before returning when button is disabled
+- **File Changed:** `JosephGuadagno.Broadcasting.Web/wwwroot/js/site.js` (lines 8-12)
+- **Pattern:** Always accept the `event` parameter in event listeners and call `preventDefault()` when blocking default behavior
+- **Branch:** social-media-708 (existing branch for this fix)
+- **Commit:** 079cb14
+- **Regression Coverage:** Backend API validation prevents data corruption even if double-submit occurs (15 tests already passing); no new test framework added
+- **Status:** ✅ Complete — Orchestration log 2026-04-11T22-34-33Z-sparks.md recorded; decisions merged to decisions.md
+
+### 2026-04-11 — Issue #708: AddPlatform 400 Error (Route Parameter Conflict)
+- **Root Cause:** The AddPlatform.cshtml form had both `asp-route-engagementId="@Model.EngagementId"` in the form action AND a hidden field `<input asp-for="EngagementId" />`, causing ASP.NET Core model binding confusion
+- **Impact:** POST to AddPlatform returned HTTP 400 Bad Request because the controller action signature `AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)` couldn't resolve whether `engagementId` should come from the route or the model property
+- **Fix:** Removed `asp-route-engagementId` attribute from the form tag; `EngagementId` is now posted solely via the hidden field as part of the ViewModel
+- **File Changed:** `JosephGuadagno.Broadcasting.Web/Views/Engagements/AddPlatform.cshtml` (line 11)
+- **Pattern:** When a controller action accepts both a route parameter AND a model with a matching property name, avoid duplicating the value in both the route and the form — choose one binding source (prefer model binding for forms)
+- **Branch:** social-media-708
+- **Commit:** ce28027
+- **Status:** ✅ Complete
+
+## Session Complete: Issue #708 Final Trace (2026-04-11)
+
+- **Work:** Scribe session to consolidate Sparks' Issue #708 fixes and team decisions
+- **Orchestration log:** `.squad/orchestration-log/2026-04-11T22-51-44Z-sparks.md` — Captured both fixes (site.js + AddPlatform.cshtml)
+- **Session log:** `.squad/log/2026-04-11T22-51-44Z-issue-708-form-trace.md` — Issue summary and pattern documented
+- **Decision merged:** `sparks-708-form-route-binding.md` → decisions.md (model binding pattern established for team)
+- **Outcome:** Issue #708 fully resolved; dual fixes committed (079cb14, ce28027); team pattern documented for future form implementations
+
+### 2026-04-11 — Issue #708 REVERSAL: Route Parameter Required (Second Investigation)
+- **Root Cause:** Previous fix (commit ce28027) that removed `asp-route-engagementId` from AddPlatform form was INCORRECT
+- **Impact:** Without route parameter, form POSTs to `/Engagements/AddPlatform` (no engagementId), causing HTTP 400 because controller action signature `AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)` expects engagementId as a ROUTE parameter
+- **Fix:** Restored `asp-route-engagementId="@Model.EngagementId"` to form action — engagementId is now passed in BOTH route AND hidden field (not a conflict when both sources provide same value)
+- **File Changed:** `JosephGuadagno.Broadcasting.Web/Views/Engagements/AddPlatform.cshtml` (line 11)
+- **Pattern Correction:** Controller actions with simple-type route parameters (int, string) MUST have those values in the route. Hidden fields in the ViewModel are for model binding, not routing. When an action expects `AddPlatform(int engagementId, ModelType vm)`, the route must include engagementId
+- **Branch:** social-media-708
+- **Commit:** 2fa1fe2
+- **Status:** ✅ Complete — Previous decision sparks-708-form-route-binding.md was INCORRECT and should be superseded by this learning
+
+## Session 2026-04-11T23:23:33Z — Orchestration Closure
+
+**Scribe** consolidated Issue #708 resolution:
+- Orchestration log: `.squad/orchestration-log/2026-04-11T23-23-33Z-Sparks.md` — Final fix documented (asp-route-engagementId restored)
+- Session log: `.squad/log/2026-04-11T23-23-33Z-issue-708-save-400-web.md` — Web form routing fix logged
+- Status: ✅ Complete — Issue #708 fully resolved; Sparks' all fixes committed and documented

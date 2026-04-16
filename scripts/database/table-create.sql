@@ -82,7 +82,7 @@ create table dbo.TokenCache
 go
 
 create index Index_ExpiresAtTime
-    on Cache (ExpiresAtTime)
+    on TokenCache (ExpiresAtTime)
 go
 
 -- Create the Feed Checks table

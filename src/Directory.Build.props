@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts\**</DefaultItemExcludes>
+  </PropertyGroup>
+</Project>

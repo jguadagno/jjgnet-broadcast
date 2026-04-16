@@ -245,13 +245,12 @@ public class EngagementsController : Controller
     /// <summary>
     /// Adds a social media platform to an engagement.
     /// </summary>
-    /// <param name="engagementId">The identity of the engagement</param>
     /// <param name="vm">The platform view model</param>
     /// <returns>Upon success, redirects to the Edit page.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "RequireContributor")]
-    public async Task<IActionResult> AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)
+    public async Task<IActionResult> AddPlatform(EngagementSocialMediaPlatformViewModel vm)
     {
         if (!ModelState.IsValid)
         {
@@ -260,17 +259,32 @@ public class EngagementsController : Controller
             return View(vm);
         }
 
-        var result = await _engagementService.AddPlatformToEngagementAsync(engagementId, vm.SocialMediaPlatformId, vm.Handle);
-        if (result is null)
+        try
         {
-            TempData["ErrorMessage"] = "Failed to add platform to engagement.";
+            var result = await _engagementService.AddPlatformToEngagementAsync(vm.EngagementId, vm.SocialMediaPlatformId, vm.Handle);
+            if (result is null)
+            {
+                TempData["ErrorMessage"] = "Failed to add platform to engagement.";
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Platform added successfully.";
+            }
         }
-        else
+        catch (HttpRequestException ex)
         {
-            TempData["SuccessMessage"] = "Platform added successfully.";
+            // Check if this is a duplicate (409 Conflict) - treat as success since platform is already added
+            if (ex.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                TempData["WarningMessage"] = "This platform is already associated with this engagement.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = $"Failed to add platform: {ex.Message}";
+            }
         }
 
-        return RedirectToAction("Edit", new { id = engagementId });
+        return RedirectToAction("Edit", new { id = vm.EngagementId });
     }
 
     /// <summary>

@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
 using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -184,6 +185,56 @@ public class EngagementsController_PlatformsTests
     }
 
     // =========================================================================
+    // GET /engagements/{engagementId}/platforms/{platformId}
+    // =========================================================================
+
+    [Fact]
+    public async Task GetPlatformForEngagement_WhenAssociationExists_ShouldReturn200WithPlatform()
+    {
+        // Arrange
+        var esmp = BuildEsmp(1, 2, "@NDCSydney", "Twitter");
+        _dataStoreMock
+            .Setup(d => d.GetAsync(1, 2, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(esmp);
+
+        var sut = CreateSut(Scopes.Engagements.View);
+
+        // Act
+        var result = await sut.GetPlatformForEngagementAsync(1, 2);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should()
+            .BeOfType<EngagementSocialMediaPlatformResponse>().Subject;
+
+        response.EngagementId.Should().Be(1);
+        response.SocialMediaPlatformId.Should().Be(2);
+        response.Handle.Should().Be("@NDCSydney");
+        response.SocialMediaPlatform.Should().NotBeNull();
+        response.SocialMediaPlatform!.Name.Should().Be("Twitter");
+
+        _dataStoreMock.Verify(d => d.GetAsync(1, 2, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPlatformForEngagement_WhenAssociationDoesNotExist_ShouldReturn404NotFound()
+    {
+        // Arrange
+        _dataStoreMock
+            .Setup(d => d.GetAsync(1, 99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((EngagementSocialMediaPlatform?)null);
+
+        var sut = CreateSut(Scopes.Engagements.View);
+
+        // Act
+        var result = await sut.GetPlatformForEngagementAsync(1, 99);
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundResult>();
+        _dataStoreMock.Verify(d => d.GetAsync(1, 99, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // =========================================================================
     // POST /engagements/{engagementId}/platforms
     // =========================================================================
 
@@ -208,11 +259,13 @@ public class EngagementsController_PlatformsTests
         // Act
         var result = await sut.AddPlatformToEngagementAsync(engagementId, request);
 
-        // Assert
+        // Assert - Issue #708: CreatedAtAction should target single-item endpoint, not collection
         var createdResult = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
-        createdResult.ActionName.Should().Be(nameof(EngagementsController.GetPlatformsForEngagementAsync));
+        createdResult.ActionName.Should().Be(nameof(EngagementsController.GetPlatformForEngagementAsync));
         createdResult.RouteValues.Should().ContainKey("engagementId")
             .WhoseValue.Should().Be(engagementId);
+        createdResult.RouteValues.Should().ContainKey("platformId")
+            .WhoseValue.Should().Be(2);
 
         var response = createdResult.Value.Should()
             .BeOfType<EngagementSocialMediaPlatformResponse>().Subject;
@@ -248,8 +301,14 @@ public class EngagementsController_PlatformsTests
         // Act
         var result = await sut.AddPlatformToEngagementAsync(engagementId, request);
 
-        // Assert
+        // Assert - Issue #708: CreatedAtAction should target single-item endpoint with both IDs
         var createdResult = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        createdResult.ActionName.Should().Be("GetPlatformForEngagementAsync");
+        createdResult.RouteValues.Should().ContainKey("engagementId")
+            .WhoseValue.Should().Be(engagementId);
+        createdResult.RouteValues.Should().ContainKey("platformId")
+            .WhoseValue.Should().Be(5);
+        
         var response = createdResult.Value.Should()
             .BeOfType<EngagementSocialMediaPlatformResponse>().Subject;
         response.Handle.Should().BeNull();
@@ -274,7 +333,7 @@ public class EngagementsController_PlatformsTests
     }
 
     [Fact]
-    public async Task AddPlatformToEngagement_WhenDataStoreReturnsNull_ShouldReturn400BadRequest()
+    public async Task AddPlatformToEngagement_WhenDataStoreReturnsNull_ShouldReturn500ProblemDetails()
     {
         // Arrange — data store signals failure by returning null (e.g. DB constraint violation)
         var request = new EngagementSocialMediaPlatformRequest
@@ -293,19 +352,22 @@ public class EngagementsController_PlatformsTests
         var result = await sut.AddPlatformToEngagementAsync(1, request);
 
         // Assert
-        var badRequest = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        badRequest.Value.Should().Be("Failed to add platform to engagement");
+        var problem = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        problem.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+
+        var details = problem.Value.Should().BeOfType<ProblemDetails>().Subject;
+        details.Detail.Should().Be("Failed to add platform to engagement");
     }
 
     [Fact]
-    public async Task AddPlatformToEngagement_WhenDuplicatePlatform_ShouldReturn400BadRequest()
+    public async Task AddPlatformToEngagement_WhenDuplicatePlatform_ShouldReturn409ConflictProblemDetails()
     {
-        // Arrange — duplicate is signalled the same way: data store returns null
+        // Arrange — duplicate is surfaced explicitly from the data store
         var request = new EngagementSocialMediaPlatformRequest { SocialMediaPlatformId = 2 };
 
         _dataStoreMock
             .Setup(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((EngagementSocialMediaPlatform?)null);
+            .ThrowsAsync(new DuplicateEngagementSocialMediaPlatformException(1, 2));
 
         var sut = CreateSut(Scopes.Engagements.All);
 
@@ -313,7 +375,53 @@ public class EngagementsController_PlatformsTests
         var result = await sut.AddPlatformToEngagementAsync(1, request);
 
         // Assert
-        result.Result.Should().BeOfType<BadRequestObjectResult>();
+        var problem = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        problem.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+
+        var details = problem.Value.Should().BeOfType<ProblemDetails>().Subject;
+        details.Title.Should().Be("Platform already assigned");
+        details.Detail.Should().Be("Engagement 1 already has social media platform 2 assigned.");
+    }
+
+    [Fact]
+    public async Task AddPlatformToEngagement_WhenDuplicateAddIsAttempted_ShouldReturn409ConflictOnSecondRequest()
+    {
+        // Arrange — Issue #708: first submit succeeds, duplicate follow-up is rejected
+        const int engagementId = 1;
+        var request = new EngagementSocialMediaPlatformRequest
+        {
+            SocialMediaPlatformId = 2,
+            Handle = "@doubleclick"
+        };
+        var savedEsmp = BuildEsmp(engagementId, 2, "@doubleclick");
+
+        _dataStoreMock
+            .SetupSequence(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(savedEsmp)
+            .ThrowsAsync(new DuplicateEngagementSocialMediaPlatformException(engagementId, request.SocialMediaPlatformId));
+
+        var sut = CreateSut(Scopes.Engagements.All);
+
+        // Act
+        var firstResult = await sut.AddPlatformToEngagementAsync(engagementId, request);
+        var secondResult = await sut.AddPlatformToEngagementAsync(engagementId, request);
+
+        // Assert
+        firstResult.Result.Should().BeOfType<CreatedAtActionResult>();
+
+        var conflict = secondResult.Result.Should().BeOfType<ObjectResult>().Subject;
+        conflict.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+        conflict.Value.Should().BeOfType<ProblemDetails>()
+            .Which.Detail.Should().Be("Engagement 1 already has social media platform 2 assigned.");
+
+        _dataStoreMock.Verify(
+            d => d.AddAsync(
+                It.Is<EngagementSocialMediaPlatform>(e =>
+                    e.EngagementId == engagementId &&
+                    e.SocialMediaPlatformId == request.SocialMediaPlatformId &&
+                    e.Handle == request.Handle),
+                It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
     }
 
     [Fact]

@@ -8,6 +8,46 @@
 
 ## Learnings
 
+### 2026-04-14T00-30-00Z — Issue #708: Web Service Contract Audit
+- **Task:** Audit `EngagementService.AddPlatformToEngagementAsync` after manual testing still failed in the downstream API call path.
+- **Outcome:** ✅ Web-side contract hardening complete.
+- **What I found:**
+  - The Web controller/form flow was already correct; the remaining Web risk was the service depending on anonymous request payloads and direct Domain-model deserialization for the add-platform endpoints.
+  - The API now returns a created resource shape (`EngagementSocialMediaPlatformResponse`) and a nested `SocialMediaPlatform` DTO, so I made the Web service consume that response shape explicitly instead of assuming Domain-model JSON.
+- **What I changed:**
+  - `src\JosephGuadagno.Broadcasting.Web\Services\EngagementService.cs`
+    - Added explicit internal request/response contract types for engagement-platform API calls.
+    - Mapped API DTO-shaped responses into Domain models before returning to controllers.
+    - Applied the same contract mapping to both `GetPlatformsForEngagementAsync` and `AddPlatformToEngagementAsync`.
+  - `src\JosephGuadagno.Broadcasting.Web.Tests\Services\EngagementServiceTests.cs`
+    - Added/updated service-level tests to verify the request payload, endpoint path, and DTO→Domain mapping.
+- **Testing:** `dotnet build .\src\ --no-restore --configuration Release` ✅ and `dotnet test .\src\JosephGuadagno.Broadcasting.Web.Tests\JosephGuadagno.Broadcasting.Web.Tests.csproj --no-build --configuration Release` ✅ (149 passing).
+
+### 2026-04-14T00-00-00Z — Issue #708: Web Audit on social-media-708social-media-708
+- **Task:** Audit the Web-side add-platform flow after manual testing still reported HttpRequestException/BadRequest.
+- **Outcome:** ✅ Web audit complete; no additional Web-layer fix was needed.
+- **What I verified:**
+  - `site.js` already uses button-click disabling, so the earlier double-submit race fix is present.
+  - `_Layout.cshtml` already renders `TempData["WarningMessage"]`, so warning UX support is present.
+  - `EngagementsController.AddPlatform(EngagementSocialMediaPlatformViewModel vm)` already uses the ViewModel-only POST pattern, so the old route/model-binding mismatch is not the active Web issue.
+  - The AddPlatform Razor form posts the ViewModel payload expected by the current controller and service flow.
+- **Assessment:** If a valid single submit still saves the association and then ends in BadRequest/HttpRequestException, the remaining fault is downstream of Web (API response/contract behavior), not the Razor/JS form flow.
+- **Testing:** Focused Issue #708 coverage still passed — 9 Web tests and 10 API platform tests.
+
+### 2026-04-13T17-34-54Z — Issue #708: Double-Submit Race Condition Fix
+- **Task:** Fix actual duplicate-submit path for issue #708
+- **Outcome:** ✅ Complete
+- **Changes:**
+  - `src/JosephGuadagno.Broadcasting.Web/wwwroot/js/site.js` (lines 8-26)
+  - Moved button disable from form submit event to button click event
+  - Rationale: Click event fires BEFORE form submit, preventing race condition
+  - Validation-aware: Checks client validation BEFORE disabling
+  - Pattern: All future forms automatically protected via site.js
+- **Testing:** All 147 Web.Tests pass; build clean
+- **Decisions documented:** `switch-real-fix-708.md` (double-submit prevention), `switch-708-conflict-handling.md` (409 handling)
+- **Team:** Coordinated with Tank (regression tests) and Trinity (backend validation)
+- **Status:** Ready for merge. Complements Tank's regression coverage and Trinity's backend 409 handling.
+
 ### 2026-03-16: Issue #105 - Conference Social Fields UI
 - Added `ConferenceHashtag` and `ConferenceTwitterHandle` fields to Engagement Create/Edit/Details views
 - These fields are nullable `string?` properties added to `EngagementViewModel` in PR #529
@@ -128,3 +168,71 @@ Established by Joseph Guadagno:
   - IsActive toggle action for SocialMediaPlatforms admin page
   - ScheduledItems and MessageTemplates forms: platform dropdown (FK) replaces free-text Platform field
 - **Next:** Begin controller work after Trinity delivers API layer
+
+### 2026-04-13 — Issue #708: AddPlatform Duplicate Submit Handling
+- **Problem:** Web controller treated all HttpRequestException errors the same, including 409 Conflict (duplicate platform association)
+- **Root cause:** When API returns 409 Conflict (platform already added), user would see error and might retry, causing confusion
+- **Solution implemented:**
+  - Web controller now catches HttpRequestException and checks StatusCode
+  - 409 Conflict → `TempData["WarningMessage"]` with user-friendly message "This platform is already associated with this engagement"
+  - Other HTTP errors → `TempData["ErrorMessage"]` with technical details
+  - Added `WarningMessage` support to `_Layout.cshtml` (Bootstrap alert-warning styling)
+- **Files changed:**
+  - `EngagementsController.cs`: AddPlatform POST action now differentiates 409 from other errors
+  - `_Layout.cshtml`: Added WarningMessage alert display between Success and Error alerts
+  - `EngagementsControllerTests.cs`: Updated and added tests for 409 Conflict and other HTTP error scenarios
+- **Pattern learned:**
+  - HttpRequestException.StatusCode property available in .NET 5+ enables graceful handling of specific HTTP status codes
+  - Warning-level user feedback (alert-warning) is appropriate for "already done" scenarios vs error-level for failures
+  - ~~site.js submit handler prevents double-click correctly — no changes needed there (disables button on submit, re-enables on validation failure)~~ ← INCORRECT, see 2026-04-13 followup below
+- **Tests:** 7 AddPlatform tests pass, all 147 Web.Tests pass
+- **Branch:** social-media-708 (shared with Trinity and Tank for coordinated fix)
+
+### 2026-04-13 — Issue #708 REAL Fix: Double-Submit Race Condition
+- **Problem:** Initial #708 fix only addressed UX messaging for 409 Conflicts, but did NOT fix the actual double-submit bug
+- **Root cause:** `site.js` had a race condition — using `form.addEventListener('submit')` to disable button allowed multiple rapid clicks to queue multiple submit events before the first one could disable the button
+- **Solution implemented:**
+  - Changed from `form.addEventListener('submit')` to `btn.addEventListener('click')`
+  - Button disables IMMEDIATELY on first click, before form submit event fires, preventing race condition
+  - Added client-side validation check BEFORE disabling button (calls `$(form).valid()` if jQuery validation exists)
+  - Preserved `invalid-form.validate` handler to re-enable button if validation fails asynchronously
+- **Files changed:**
+  - `site.js`: Submit prevention moved from form submit event to button click event (lines 8-26)
+- **Pattern learned:**
+  - To prevent double-submit, disable button on CLICK event, not SUBMIT event (submit fires too late)
+  - Check client validation BEFORE disabling to avoid UX issues with invalid forms showing disabled buttons
+  - Button click → validate → disable → form submits (atomic operation, no race)
+  - Form submit event is too late to prevent race conditions from rapid double-clicks
+- **Tests:** All 147 Web.Tests pass (no JS unit tests in this project)
+- **Branch:** social-media-708 (same branch as initial 409 messaging work)
+
+## 2026-04-14 — Issue #708: Final Orchestration & Service Contract Hardening
+
+**Status:** ✅ ORCHESTRATION COMPLETE
+
+**Role in Multi-Agent Investigation:** Web/Frontend validation layer — audited Web flow (confirmed correct), identified and fixed service/API contract gap.
+
+**Two-Phase Approach:**
+1. **Web Flow Audit:** Confirmed Razor/JS flow is correct (double-submit guard present, warning rendering present, controller binding shape correct)
+2. **Service-Layer Hardening:** Added explicit internal DTO types for API request/response contract to remove guesswork and provide stable adapter at Web boundary
+
+**Changes Delivered:**
+- File: src\JosephGuadagno.Broadcasting.Web\Services\EngagementService.cs
+  - Added explicit internal request/response types for engagement-platform endpoints
+  - Implemented DTO-to-Domain mapping before controller handoff
+  - Applied to both GET and POST operations
+- File: src\JosephGuadagno.Broadcasting.Web.Tests\Services\EngagementServiceTests.cs
+  - New focused tests for service layer
+  - Verified request payload shape, endpoint path, and mapping behavior
+- File: .squad/skills/frontend-patterns/SKILL.md
+  - Corrected stale guidance about ViewModel-only POST route duplication
+
+**Coordination with Team:**
+- Trinity: Backend duplicate handling confirmed complete (409 Conflict correct)
+- Tank: Regression coverage confirmed complete, identified service-layer gap and closure
+- Scribe: Orchestration logging and decision documentation
+
+**Findings:**
+Real #708 failure was API response generation issue after successful save, not Web-side bug. Web flow is correct. Service/API contract now has explicit boundary contract to prevent future misalignment.
+
+**Status:** Ready for merge. All Web-owned work complete and validated.

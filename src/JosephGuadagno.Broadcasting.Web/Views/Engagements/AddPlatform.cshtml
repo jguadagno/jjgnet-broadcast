@@ -8,7 +8,7 @@
 <h1>Add Social Media Platform</h1>
 <p class="lead">Add a social media platform to this engagement.</p>
 
-<form asp-action="AddPlatform" asp-route-engagementId="@Model.EngagementId" method="post">
+<form asp-controller="Engagements" asp-action="AddPlatform" method="post">
     @Html.AntiForgeryToken()
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <input type="hidden" asp-for="EngagementId" />

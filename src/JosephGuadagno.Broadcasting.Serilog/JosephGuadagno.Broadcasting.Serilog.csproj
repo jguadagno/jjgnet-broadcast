@@ -24,13 +24,10 @@
     <VersionSuffix Condition=" '$(GITHUB_RUN_ID)' != '' And '$(Configuration)' == 'Debug'">$(GITHUB_RUN_ID)-preview</VersionSuffix>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
-    <AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</AssemblyVersion>
-  </PropertyGroup>
-  <PropertyGroup>
     <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
     <FileVersion>$(VersionPrefix)</FileVersion>
-    <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
+    <InformationalVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionPrefix)-$(VersionSuffix)</InformationalVersion>
+    <InformationalVersion Condition=" '$(VersionSuffix)' == '' ">$(VersionPrefix)</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.5" />
@@ -41,6 +38,5 @@
     <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
     <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
     <PackageReference Include="Serilog.Sinks.AzureTableStorage" Version="10.2.0" />
-    <PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
   </ItemGroup>
 </Project>

@@ -1,10 +1,16 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
-public class EngagementSocialMediaPlatformDataStore(BroadcastingContext broadcastingContext, IMapper mapper) : IEngagementSocialMediaPlatformDataStore
+public class EngagementSocialMediaPlatformDataStore(
+    BroadcastingContext broadcastingContext,
+    IMapper mapper,
+    ILogger<EngagementSocialMediaPlatformDataStore> logger) : IEngagementSocialMediaPlatformDataStore
 {
     public async Task<List<Domain.Models.EngagementSocialMediaPlatform>> GetByEngagementIdAsync(int engagementId, CancellationToken cancellationToken = default)
     {
@@ -13,6 +19,14 @@ public class EngagementSocialMediaPlatformDataStore(BroadcastingContext broadcas
             .Where(esmp => esmp.EngagementId == engagementId)
             .ToListAsync(cancellationToken);
         return mapper.Map<List<Domain.Models.EngagementSocialMediaPlatform>>(dbPlatforms);
+    }
+
+    public async Task<Domain.Models.EngagementSocialMediaPlatform?> GetAsync(int engagementId, int platformId, CancellationToken cancellationToken = default)
+    {
+        var dbPlatform = await broadcastingContext.EngagementSocialMediaPlatforms
+            .Include(esmp => esmp.SocialMediaPlatform)
+            .FirstOrDefaultAsync(esmp => esmp.EngagementId == engagementId && esmp.SocialMediaPlatformId == platformId, cancellationToken);
+        return dbPlatform == null ? null : mapper.Map<Domain.Models.EngagementSocialMediaPlatform>(dbPlatform);
     }
 
     public async Task<Domain.Models.EngagementSocialMediaPlatform?> AddAsync(Domain.Models.EngagementSocialMediaPlatform engagementSocialMediaPlatform, CancellationToken cancellationToken = default)
@@ -28,9 +42,27 @@ public class EngagementSocialMediaPlatformDataStore(BroadcastingContext broadcas
             }
             return null;
         }
-        catch (Exception)
+        catch (DbUpdateException ex) when (IsDuplicateAssociationException(ex))
         {
-            return null;
+            logger.LogWarning(
+                ex,
+                "Duplicate engagement/platform association detected while saving engagement {EngagementId} and platform {PlatformId}",
+                engagementSocialMediaPlatform.EngagementId,
+                engagementSocialMediaPlatform.SocialMediaPlatformId);
+
+            throw new DuplicateEngagementSocialMediaPlatformException(
+                engagementSocialMediaPlatform.EngagementId,
+                engagementSocialMediaPlatform.SocialMediaPlatformId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to add platform {PlatformId} to engagement {EngagementId}",
+                engagementSocialMediaPlatform.SocialMediaPlatformId,
+                engagementSocialMediaPlatform.EngagementId);
+
+            throw;
         }
     }
 
@@ -54,4 +86,8 @@ public class EngagementSocialMediaPlatformDataStore(BroadcastingContext broadcas
             return false;
         }
     }
+
+    private static bool IsDuplicateAssociationException(DbUpdateException exception) =>
+        exception.InnerException is SqlException sqlException
+        && (sqlException.Number == 2601 || sqlException.Number == 2627);
 }

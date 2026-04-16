@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace JosephGuadagno.Broadcasting.Web.Models;
 
 /// <summary>
@@ -13,6 +15,7 @@ public class EngagementSocialMediaPlatformViewModel
     /// <summary>
     /// The identifier of the social media platform
     /// </summary>
+    [Range(1, int.MaxValue, ErrorMessage = "Please select a platform.")]
     public int SocialMediaPlatformId { get; set; }
 
     /// <summary>

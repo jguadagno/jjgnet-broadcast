@@ -36,7 +36,6 @@ public static class LoggingExtensions
             .Destructure.ToMaximumCollectionCount(10)
             .WriteTo.Console()
             .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
-            .WriteTo.AzureTableStorage("TableAccount", storageTableName: "Logging", keyGenerator: new SerilogKeyGenerator())
-            .WriteTo.OpenTelemetry();
+            .WriteTo.AzureTableStorage("TableAccount", storageTableName: "Logging", keyGenerator: new SerilogKeyGenerator());
     }
 }
