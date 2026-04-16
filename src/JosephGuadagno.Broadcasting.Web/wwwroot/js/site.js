@@ -5,28 +5,17 @@
         var btn = form.querySelector('[type="submit"]');
         if (!btn) return;
 
-        // Use click handler instead of submit to prevent race condition where multiple
-        // clicks can queue multiple submits before the first submit disables the button
-        btn.addEventListener('click', function (event) {
+        form.addEventListener('submit', function (event) {
             if (btn.disabled) {
                 event.preventDefault();
                 return;
             }
-            
-            // Check client-side validation before disabling (if jQuery validation exists)
-            if (typeof $ !== 'undefined' && $(form).valid && !$(form).valid()) {
-                // Let validation run and show errors, don't disable button
-                return;
-            }
-            
-            // Disable immediately to prevent double-click
             btn.dataset.originalHtml = btn.innerHTML;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
             btn.disabled = true;
         });
 
         // jQuery Validate fires 'invalid-form.validate' when client-side validation fails.
-        // This handles cases where validation happens after button click (async validation, etc.)
         if (typeof $ !== 'undefined') {
             $(form).on('invalid-form.validate', function () {
                 if (btn.dataset.originalHtml) {
