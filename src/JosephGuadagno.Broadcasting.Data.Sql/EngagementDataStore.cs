@@ -220,7 +220,8 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         
         if (!string.IsNullOrWhiteSpace(filter))
         {
-            query = query.Where(e => e.Name.Contains(filter));
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(e => e.Name.ToLower().Contains(lowerFilter));
         }
         
         query = sortBy?.ToLowerInvariant() switch

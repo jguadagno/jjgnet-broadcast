@@ -4,6 +4,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 using SqlModels = JosephGuadagno.Broadcasting.Data.Sql.Models;
@@ -134,8 +135,7 @@ public class ScheduledItemOrphanTests
         var config = new MapperConfiguration(
             cfg => cfg.AddProfile<MappingProfiles.BroadcastingProfile>(),
             new LoggerFactory());
-        var logger = new Mock<ILogger<ScheduledItemDataStore>>();
-        return (context, new ScheduledItemDataStore(context, config.CreateMapper(), logger.Object));
+        return (context, new ScheduledItemDataStore(context, config.CreateMapper(), NullLogger<ScheduledItemDataStore>.Instance));
     }
 
     [Fact]
