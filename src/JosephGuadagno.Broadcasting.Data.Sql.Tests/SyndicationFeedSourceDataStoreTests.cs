@@ -3,6 +3,7 @@ using JosephGuadagno.Broadcasting.Data.Sql.Models;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql.Tests;
@@ -26,7 +27,8 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         }, new LoggerFactory());
         var mapper = config.CreateMapper();
 
-        _dataStore = new SyndicationFeedSourceDataStore(_context, mapper);
+        var logger = new Mock<ILogger<SyndicationFeedSourceDataStore>>();
+        _dataStore = new SyndicationFeedSourceDataStore(_context, mapper, logger.Object);
     }
 
     public void Dispose()
@@ -356,7 +358,8 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         }, new LoggerFactory());
         var mapper = config.CreateMapper();
 
-        var store = new SyndicationFeedSourceDataStore(failingContext, mapper);
+        var logger = new Mock<ILogger<SyndicationFeedSourceDataStore>>();
+        var store = new SyndicationFeedSourceDataStore(failingContext, mapper, logger.Object);
         var entity = new JosephGuadagno.Broadcasting.Domain.Models.SyndicationFeedSource
         {
             FeedIdentifier = "fail",
