@@ -154,7 +154,7 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to save talk {TalkId}", talk.Id);
+            logger.LogError(ex, "Failed to save talk {TalkId}", talk?.Id);
             return OperationResult<Domain.Models.Talk>.Failure("An error occurred while saving the talk", ex);
         }
     }
@@ -191,7 +191,7 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to remove talk {TalkId} from engagement", talk.Id);
+            logger.LogError(ex, "Failed to remove talk {TalkId} from engagement", talk?.Id);
             return OperationResult<bool>.Failure("An error occurred while removing the talk", ex);
         }
     }
