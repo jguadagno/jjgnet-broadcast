@@ -158,7 +158,7 @@ git push origin main
 # ERROR: Permission denied — EMU account has no access to personal repo
 
 # BAD: Hardcoding tokens in scripts
-git push https://personaluser:ghp_xxxxxxxxxxxx@github.com/personaluser/repo.git main
+git push https://personaluser:<PERSONAL_ACCESS_TOKEN>@github.com/personaluser/repo.git main
 # SECURITY RISK: Token exposed in command history and process list
 ```
 
