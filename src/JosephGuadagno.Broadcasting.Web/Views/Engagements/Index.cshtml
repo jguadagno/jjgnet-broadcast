@@ -1,15 +1,49 @@
 @model List<JosephGuadagno.Broadcasting.Web.Models.EngagementViewModel>
 @{
     ViewData["Title"] = "View Engagements";
+    
+    string NextSortDirection(string col)
+    {
+        return (ViewBag.SortBy as string) == col && (bool)ViewBag.SortDescending ? "false" : "true";
+    }
+    
+    string SortIcon(string col)
+    {
+        if ((ViewBag.SortBy as string) != col) return "";
+        return (bool)ViewBag.SortDescending ? " <i class=\"bi bi-arrow-down\"></i>" : " <i class=\"bi bi-arrow-up\"></i>";
+    }
 }
 <div class="text-center">
+    <form method="get" asp-action="Index" asp-controller="Engagements" class="mb-3 d-flex gap-2">
+        <input type="hidden" name="sortBy" value="@ViewBag.SortBy" />
+        <input type="hidden" name="sortDescending" value="@ViewBag.SortDescending" />
+        <input type="text" name="filter" class="form-control" placeholder="Filter by name..." value="@ViewBag.Filter" />
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        @if (!string.IsNullOrEmpty(ViewBag.Filter as string))
+        {
+            <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="@ViewBag.SortBy" asp-route-sortDescending="@ViewBag.SortDescending" class="btn btn-outline-danger">Clear</a>
+        }
+    </form>
+    
     <table class="table table-striped">
         <thead class="thead-dark">
         <tr>
-            <th scope="col">Name</th>
+            <th scope="col">
+                <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="name" asp-route-sortDescending="@NextSortDirection("name")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                    Name@Html.Raw(SortIcon("name"))
+                </a>
+            </th>
             <th scope="col" class="col-2">Time Zone</th>
-            <th scope="col" class="col-2">Start Date</th>
-            <th scope="col" class="col-2">End Date</th>
+            <th scope="col" class="col-2">
+                <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="startdate" asp-route-sortDescending="@NextSortDirection("startdate")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                    Start Date@Html.Raw(SortIcon("startdate"))
+                </a>
+            </th>
+            <th scope="col" class="col-2">
+                <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="enddate" asp-route-sortDescending="@NextSortDirection("enddate")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                    End Date@Html.Raw(SortIcon("enddate"))
+                </a>
+            </th>
             <th scope="col" class="col-1">Updated</th>
             <th scope="col" class="col-3">&nbsp;</th>
         </tr>

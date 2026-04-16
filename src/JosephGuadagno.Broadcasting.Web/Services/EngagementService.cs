@@ -20,12 +20,20 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
     /// </summary>
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
+    /// <param name="sortBy">The field to sort by (startdate, enddate, name)</param>
+    /// <param name="sortDescending">True to sort descending, false for ascending</param>
+    /// <param name="filter">Optional text filter on engagement name</param>
     /// <returns>A List&lt;<see cref="Engagement"/>&gt;s</returns>
-    public async Task<PagedResult<Engagement>> GetEngagementsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
+    public async Task<PagedResult<Engagement>> GetEngagementsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null)
     {
         var pagedResponse  = await apiClient.GetForUserAsync<PagedResponse<Engagement>>(ApiServiceName, options =>
         {
-            options.RelativePath = $"{EngagementBaseUrl}?page={page}&pageSize={pageSize}";
+            var queryParams = $"page={page}&pageSize={pageSize}&sortBy={sortBy}&sortDescending={sortDescending}";
+            if (!string.IsNullOrEmpty(filter))
+            {
+                queryParams += $"&filter={Uri.EscapeDataString(filter)}";
+            }
+            options.RelativePath = $"{EngagementBaseUrl}?{queryParams}";
         });
 
         if (pagedResponse is null) return new PagedResult<Engagement>();
