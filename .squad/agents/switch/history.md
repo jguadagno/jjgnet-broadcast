@@ -260,3 +260,34 @@ Real #708 failure was API response generation issue after successful save, not W
 - **Testing:** Syntax verified clean (no Razor compilation errors in _Layout.cshtml)
 - **Branch:** issue-707 (or current working branch)
 - **Decision log:** `.squad/decisions/inbox/switch-707-nav-site-admin.md`
+
+### 2026-04-16 — Issues #704 & #705: Engagement Sort + Filter UI
+- **Task:** Implement frontend UI for sorting and filtering engagement list (coordinated with Trinity's backend work on same branch)
+- **Outcome:** ✅ Complete — changes already committed in 6ad9396
+- **Changes delivered:**
+  - File: `src\JosephGuadagno.Broadcasting.Web\Interfaces\IEngagementService.cs`
+    - Updated `GetEngagementsAsync` signature to accept `sortBy`, `sortDescending`, and `filter` params with defaults
+  - File: `src\JosephGuadagno.Broadcasting.Web\Services\EngagementService.cs`
+    - Updated API query string builder to include sort/filter params
+    - Only appends filter param when non-empty (proper URL encoding via `Uri.EscapeDataString`)
+  - File: `src\JosephGuadagno.Broadcasting.Web\Controllers\EngagementsController.cs`
+    - Updated `Index` action to accept sort/filter from query string with sensible defaults
+    - Added ViewBag values for SortBy, SortDescending, Filter to pass state to view
+  - File: `src\JosephGuadagno.Broadcasting.Web\Views\Engagements\Index.cshtml`
+    - Added filter form above table (Bootstrap inline form with text input, Filter button, Clear link)
+    - Made column headers sortable (Name, Start Date, End Date) with Bootstrap Icons arrows indicating current sort direction
+    - Helper functions `NextSortDirection()` and `SortIcon()` handle toggle logic and visual indicators
+  - File: `src\JosephGuadagno.Broadcasting.Web\Views\Shared\_PaginationPartial.cshtml`
+    - Enhanced pagination partial to preserve sort/filter state across page navigation
+    - Added `asp-route-sortBy`, `asp-route-sortDescending`, `asp-route-filter` to all pagination links
+- **Shared contract with Trinity:** API endpoint `GET /engagements` accepts `sortBy` (startdate|enddate|name), `sortDescending` (bool), and `filter` (string) params
+- **Pattern learned:**
+  - Pagination partials can accept additional route params via ViewBag to preserve filter/sort state
+  - Use helper functions in Razor to centralize sort direction toggle logic
+  - `Html.Raw()` needed for rendering Bootstrap Icons in table headers
+  - Bootstrap Icons: `bi-arrow-up` for ascending, `bi-arrow-down` for descending
+  - Filter forms should preserve sort state via hidden inputs, and vice versa
+- **Testing:** Web project builds successfully (exit code 0, one ignorable warning about unused local function)
+- **Branch:** issue-704-705-engagement-sort-filter (shared with Trinity for coordinated backend/frontend work)
+- **Commit:** 6ad9396 (combined with exception handling fixes for #713)
+- **Decision log:** `.squad/decisions/inbox/switch-704-705-web-sort-filter.md`
