@@ -14791,3 +14791,41 @@ and maps those responses into Domain models before handing them to MVC controlle
 - No controller or Razor changes required.
 - Existing in-progress API/Data work stays untouched.
 - Added Web service tests now pin the relative path, request payload shape, and DTO-to-Domain mapping behavior.
+
+---
+date: 2026-04-16
+author: Trinity
+issue: 708
+status: implemented
+---
+
+# ActionName Pattern in EngagementsController
+
+## Decision
+All async action methods in EngagementsController that are targets of `CreatedAtAction(nameof(...))` must have `[ActionName(nameof(MethodAsync))]` to prevent `SuppressAsyncSuffixInActionNames` from breaking route resolution.
+
+## Root Cause
+ASP.NET Core's `SuppressAsyncSuffixInActionNames` configuration defaults to `true`, automatically stripping the "Async" suffix from registered action names. When a method like `GetPlatformForEngagementAsync()` has no explicit `[ActionName]` attribute:
+- The registered action name becomes `GetPlatformForEngagement` (suffix stripped)
+- But `CreatedAtAction(nameof(GetPlatformForEngagementAsync), ...)` passes `GetPlatformForEngagementAsync`
+- Route resolution fails because the names don't match → HTTP 500
+
+## Pattern Applied
+```csharp
+[HttpGet("{engagementId:int}/platforms/{platformId:int}", Name = "GetPlatformForEngagement")]
+[ActionName(nameof(GetPlatformForEngagementAsync))]  // ← Explicit attribute prevents stripping
+public async Task<ActionResult<EngagementSocialMediaPlatformResponse>> GetPlatformForEngagementAsync(...)
+{
+    // ...
+}
+```
+
+## Why This Matters
+- **Defense against configuration changes:** If `SuppressAsyncSuffixInActionNames` is ever disabled, explicit `[ActionName]` makes the intent clear
+- **CreatedAtAction consistency:** Ensures `nameof(Method)` in creational endpoints always matches the registered action name
+- **Code clarity:** Future maintainers see exactly which action name is registered, not guessing based on method naming
+
+## Affected Methods
+- ✅ `GetEngagementAsync` — already has `[ActionName]`
+- ✅ `GetTalkAsync` — already has `[ActionName]`
+- ✅ `GetPlatformForEngagementAsync` — fixed in commit 793244d

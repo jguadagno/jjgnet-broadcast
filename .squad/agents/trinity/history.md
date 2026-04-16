@@ -1,5 +1,10 @@
 # Trinity - History
 
+## Learnings
+
+### ActionName Pattern in EngagementsController
+When an async action method is a target of `CreatedAtAction(nameof(...))`, it must have the `[ActionName(nameof(MethodAsync))]` attribute. ASP.NET Core's `SuppressAsyncSuffixInActionNames` defaults to true and strips the "Async" suffix from the registered action name. Without the explicit `[ActionName]` attribute, the nameof() reference in CreatedAtAction will not match the actual registered name, causing route resolution to fail with HTTP 500. All async action methods in EngagementsController (`GetEngagementAsync`, `GetTalkAsync`, `GetPlatformForEngagementAsync`) follow this pattern.
+
 ### 2026-04-13T17-34-54Z — Issue #708: Backend Validation Coordination
 **Status:** ✅ COMPLETE & COORDINATED
 

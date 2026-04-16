@@ -137,15 +137,14 @@ $(form).on('invalid-form.validate', function () {
 
 ## Razor Forms and Model Binding
 
-### Route Parameters Required for Controller Action Matching
+### Prefer ViewModel-Only POST Actions When the Form Already Has the Data
 
-When a controller POST action has simple-type parameters (int, string, guid) that are NOT properties of the ViewModel, those parameters MUST be included in the route. Without them, ASP.NET Core routing cannot match the action, causing HTTP 400 Bad Request.
+If the posted ViewModel already contains every value the action needs, keep the POST signature to the ViewModel alone. Do not duplicate the same value as a separate simple parameter unless routing truly requires it.
 
-**❌ WRONG:**
+**✅ PREFERRED:**
 ```razor
 @model EngagementSocialMediaPlatformViewModel
 
-<!-- Missing route parameter - causes 400 error! -->
 <form asp-action="AddPlatform" method="post">
     <input type="hidden" asp-for="EngagementId" />
     <!-- ... -->
@@ -155,63 +154,70 @@ When a controller POST action has simple-type parameters (int, string, guid) tha
 Controller:
 ```csharp
 [HttpPost]
-public async Task<IActionResult> AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)
+public async Task<IActionResult> AddPlatform(EngagementSocialMediaPlatformViewModel vm)
 {
-    // ⚠️ Form POSTs to /Engagements/AddPlatform (no engagementId in route)
-    // ⚠️ ASP.NET Core expects route like /Engagements/AddPlatform/5
-    // ⚠️ Route doesn't match → HTTP 400
+    // ✅ Single source of truth: vm.EngagementId
 }
 ```
 
-**✅ CORRECT:**
-```razor
-@model EngagementSocialMediaPlatformViewModel
+### When Route Parameters Are Actually Needed
 
-<!-- Route parameter required for action matching -->
-<form asp-action="AddPlatform" asp-route-engagementId="@Model.EngagementId" method="post">
-    <input type="hidden" asp-for="EngagementId" />
-    <!-- ... -->
-</form>
-```
+Use `asp-route-*` only when the action signature includes a separate simple parameter that is not coming solely from the ViewModel, for example:
 
-Controller:
 ```csharp
 [HttpPost]
-public async Task<IActionResult> AddPlatform(int engagementId, EngagementSocialMediaPlatformViewModel vm)
-{
-    // ✅ Form POSTs to /Engagements/AddPlatform/5
-    // ✅ Route matches action signature
-    // ✅ engagementId = 5 (from route), vm.EngagementId = 5 (from POST body)
-}
+public async Task<IActionResult> Edit(int id, EngagementViewModel vm)
 ```
 
-### Route vs. Model Binding: Different Purposes
+In that case, the route value is part of action matching and should stay in the form or URL generation.
 
-Having BOTH `asp-route-X` and a matching ViewModel property is **NOT a conflict**:
-- **Route parameter**: Used by ASP.NET Core routing to match the controller action
-- **Model property**: Used by controller logic to access the value from the ViewModel
-- Both mechanisms are independent and don't interfere with each other
+### Quick Rule
 
-### When to Use Route Parameters vs Model Properties
-
-**Use route parameters (asp-route-*) when:**
-- Controller action signature has simple-type parameters (int, string) that are not ViewModel properties
-- The parameter is required for route matching
-- Example: `Action(int id, ViewModelType model)`
-
-**Use model properties (hidden fields) when:**
-- The value is part of the ViewModel and used in controller logic
-- The value must be validated with other form fields
-- Example: `vm.EngagementId` used to verify data integrity
-
-**Use BOTH when:**
-- The controller action signature is `Action(int routeParam, ViewModelType vm)` where `vm` has a property matching `routeParam`
-- The route parameter satisfies routing requirements
-- The model property satisfies business logic requirements
+- **ViewModel has everything + action accepts only ViewModel** → use hidden fields/model binding, no duplicate route parameter needed.
+- **Action has separate simple parameters** → provide matching route values.
+- **Seeing a 400 after a successful save** → inspect downstream API response generation/contract issues before blaming Razor form markup.
 
 ### Related Issues
 
-- **Issue #708:** AddPlatform form returned 400 when route parameter was removed
-- **Decision:** `.squad/decisions/inbox/sparks-708-route-parameter-correction.md` (SUPERSEDES previous incorrect decision)
-- **File:** `JosephGuadagno.Broadcasting.Web/Views/Engagements/AddPlatform.cshtml`
+- **Issue #708:** Current AddPlatform POST pattern is `AddPlatform(EngagementSocialMediaPlatformViewModel vm)`, so the active Web-side form uses ViewModel-only posting.
+- **Decision:** `.squad/decisions.md` entries `trinity-708-model-binding-pattern` and `trinity-issue-708-createdataction`
+- **Files:** `src\JosephGuadagno.Broadcasting.Web\Controllers\EngagementsController.cs`, `src\JosephGuadagno.Broadcasting.Web\Views\Engagements\AddPlatform.cshtml`
+
+## Web Service Contract Adapters
+
+### Prefer Explicit Internal Contract Types at the MVC/API Boundary
+
+When a Web service in `JosephGuadagno.Broadcasting.Web\Services` talks to the API, prefer explicit internal request/response types that mirror the API payload over anonymous request objects or direct Domain-model deserialization.
+
+**✅ PREFERRED:**
+```csharp
+var request = new EngagementSocialMediaPlatformApiRequest
+{
+    SocialMediaPlatformId = socialMediaPlatformId,
+    Handle = handle
+};
+
+var response = await apiClient.PostForUserAsync<EngagementSocialMediaPlatformApiRequest, EngagementSocialMediaPlatformApiResponse>(
+    ApiServiceName,
+    request,
+    options => options.RelativePath = $"/engagements/{engagementId}/platforms");
+
+return response is null ? null : MapPlatform(response);
+```
+
+### Why This Pattern Helps
+
+- Keeps Web resilient when API DTOs and Domain models are similar but not identical.
+- Makes nested response-shape expectations explicit (`SocialMediaPlatform`, paging DTOs, etc.).
+- Gives tests a stable seam to verify path, payload, and mapping behavior without depending on anonymous reflection tricks.
+
+### Use It When
+
+- The Web layer calls the API through `IDownstreamApi`.
+- The API returns DTOs rather than Domain models.
+- The controller only needs Domain models after the service boundary.
+
+### Related Issue
+
+- **Issue #708:** `EngagementService` now adapts `EngagementSocialMediaPlatformResponse` payloads into Domain models instead of assuming direct Domain JSON.
 
