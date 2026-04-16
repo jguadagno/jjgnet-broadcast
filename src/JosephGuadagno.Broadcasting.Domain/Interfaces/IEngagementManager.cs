@@ -11,6 +11,6 @@ public interface IEngagementManager: IManager<Engagement>
     public Task<Talk> GetTalkAsync(int talkId, CancellationToken cancellationToken = default);
     public Task<Engagement?> GetByNameAndUrlAndYearAsync(string name, string url, int year, CancellationToken cancellationToken = default);
     
-    Task<PagedResult<Engagement>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<PagedResult<Engagement>> GetAllAsync(int page, int pageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null, CancellationToken cancellationToken = default);
     Task<PagedResult<Talk>> GetTalksForEngagementAsync(int engagementId, int page, int pageSize, CancellationToken cancellationToken = default);
 }

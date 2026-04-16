@@ -2,7 +2,7 @@ using AutoMapper;
 using JosephGuadagno.Broadcasting.Data.Sql.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Moq;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql.Tests;
@@ -25,8 +25,7 @@ public class ScheduledItemDataStoreTests : IDisposable
         }, new LoggerFactory());
         var mapper = config.CreateMapper();
 
-        var logger = new Mock<ILogger<ScheduledItemDataStore>>();
-        _dataStore = new ScheduledItemDataStore(_context, mapper, logger.Object);
+        _dataStore = new ScheduledItemDataStore(_context, mapper, NullLogger<ScheduledItemDataStore>.Instance);
     }
 
     public void Dispose()

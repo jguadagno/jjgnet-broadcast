@@ -57,7 +57,7 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(PagedResponse<EngagementResponse>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PagedResponse<EngagementResponse>>> GetEngagementsAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
+    public async Task<ActionResult<PagedResponse<EngagementResponse>>> GetEngagementsAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null)
     {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 1;
@@ -65,7 +65,7 @@ public class EngagementsController: ControllerBase
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List, Domain.Scopes.Engagements.All);
 
-        var result = await _engagementManager.GetAllAsync(page, pageSize);
+        var result = await _engagementManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
         var items = _mapper.Map<List<EngagementResponse>>(result.Items);
         
         return new PagedResponse<EngagementResponse>
