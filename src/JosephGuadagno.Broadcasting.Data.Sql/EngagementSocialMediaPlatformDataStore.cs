@@ -81,8 +81,9 @@ public class EngagementSocialMediaPlatformDataStore(
             var result = await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
             return result;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to delete platform {PlatformId} from engagement {EngagementId}", socialMediaPlatformId, engagementId);
             return false;
         }
     }

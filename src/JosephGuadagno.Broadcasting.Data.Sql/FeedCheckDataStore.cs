@@ -2,10 +2,11 @@ using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
-public class FeedCheckDataStore(BroadcastingContext broadcastingContext, IMapper mapper) : IFeedCheckDataStore
+public class FeedCheckDataStore(BroadcastingContext broadcastingContext, IMapper mapper, ILogger<FeedCheckDataStore> logger) : IFeedCheckDataStore
 {
     public async Task<Domain.Models.FeedCheck> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
@@ -37,6 +38,7 @@ public class FeedCheckDataStore(BroadcastingContext broadcastingContext, IMapper
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to save feed check {FeedCheckId}", entity.Id);
             return OperationResult<Domain.Models.FeedCheck>.Failure("An error occurred while saving the FeedCheck", ex);
         }
     }
@@ -65,6 +67,7 @@ public class FeedCheckDataStore(BroadcastingContext broadcastingContext, IMapper
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to delete feed check {FeedCheckId}", primaryKey);
             return OperationResult<bool>.Failure("An error occurred while deleting the FeedCheck", ex);
         }
     }

@@ -2,10 +2,11 @@ using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
-public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMapper mapper) : IYouTubeSourceDataStore
+public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMapper mapper, ILogger<YouTubeSourceDataStore> logger) : IYouTubeSourceDataStore
 {
     private const string SourceType = "YouTube";
 
@@ -54,6 +55,7 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to save YouTube source {SourceId}", entity.Id);
             return OperationResult<Domain.Models.YouTubeSource>.Failure("An error occurred while saving the YouTube source", ex);
         }
     }
@@ -97,6 +99,7 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to delete YouTube source {SourceId}", primaryKey);
             return OperationResult<bool>.Failure("An error occurred while deleting the YouTube source", ex);
         }
     }

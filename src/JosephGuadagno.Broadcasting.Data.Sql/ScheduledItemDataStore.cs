@@ -3,10 +3,11 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
-public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMapper mapper) : IScheduledItemDataStore
+public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMapper mapper, ILogger<ScheduledItemDataStore> logger) : IScheduledItemDataStore
 {
     public async Task<Domain.Models.ScheduledItem> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
@@ -28,6 +29,7 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to save scheduled item {ScheduledItemId}", scheduledItem.Id);
             return OperationResult<Domain.Models.ScheduledItem>.Failure("An error occurred while saving the scheduled item", ex);
         }
     }
@@ -55,6 +57,7 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to delete scheduled item {ScheduledItemId}", primaryKey);
             return OperationResult<bool>.Failure("An error occurred while deleting the scheduled item", ex);
         }
     }

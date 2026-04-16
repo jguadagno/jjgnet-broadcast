@@ -4,6 +4,9 @@
     - ViewBag.TotalPages (total number of pages)
     - ViewBag.ControllerName (target controller)
     - ViewBag.ActionName (target action)
+    - ViewBag.SortBy (optional sort field)
+    - ViewBag.SortDescending (optional sort direction)
+    - ViewBag.Filter (optional filter text)
 *@
 
 @{
@@ -11,6 +14,9 @@
     int totalPages = ViewBag.TotalPages ?? 1;
     string controllerName = ViewBag.ControllerName ?? "Home";
     string actionName = ViewBag.ActionName ?? "Index";
+    string? sortBy = ViewBag.SortBy as string;
+    bool? sortDescending = ViewBag.SortDescending as bool?;
+    string? filter = ViewBag.Filter as string;
     
     // Only render pagination if there is more than one page
     if (totalPages > 1)
@@ -25,7 +31,7 @@
                     }
                     else
                     {
-                        <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="@(currentPage - 1)">Previous</a>
+                        <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="@(currentPage - 1)" asp-route-sortBy="@sortBy" asp-route-sortDescending="@sortDescending" asp-route-filter="@filter">Previous</a>
                     }
                 </li>
 
@@ -38,7 +44,7 @@
                     if (startPage > 1)
                     {
                         <li class="page-item">
-                            <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="1">1</a>
+                            <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="1" asp-route-sortBy="@sortBy" asp-route-sortDescending="@sortDescending" asp-route-filter="@filter">1</a>
                         </li>
                         if (startPage > 2)
                         {
@@ -56,7 +62,7 @@
                             }
                             else
                             {
-                                <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="@i">@i</a>
+                                <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="@i" asp-route-sortBy="@sortBy" asp-route-sortDescending="@sortDescending" asp-route-filter="@filter">@i</a>
                             }
                         </li>
                     }
@@ -69,7 +75,7 @@
                             <li class="page-item disabled"><span class="page-link">...</span></li>
                         }
                         <li class="page-item">
-                            <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="@totalPages">@totalPages</a>
+                            <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="@totalPages" asp-route-sortBy="@sortBy" asp-route-sortDescending="@sortDescending" asp-route-filter="@filter">@totalPages</a>
                         </li>
                     }
                 }
@@ -82,7 +88,7 @@
                     }
                     else
                     {
-                        <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="@(currentPage + 1)">Next</a>
+                        <a class="page-link" asp-controller="@controllerName" asp-action="@actionName" asp-route-page="@(currentPage + 1)" asp-route-sortBy="@sortBy" asp-route-sortDescending="@sortDescending" asp-route-filter="@filter">Next</a>
                     }
                 </li>
             </ul>
