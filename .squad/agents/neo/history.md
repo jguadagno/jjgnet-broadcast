@@ -190,3 +190,35 @@ For breaking database migrations involving PK rebuilds or column drops:
 - Extension method namespace matters! Placing in Microsoft.Extensions.DependencyInjection makes them discoverable without needing project using statement.
 - Transitive dependencies allow compile-time access to types without direct ProjectReference.
 - Architectural rules are about preventing coupling in application code, not startup/DI configuration.
+
+## Learnings — Issue #713 Code Review (2026-04-16)
+
+**Task:** Review Trinity's exception audit work on branch `issue-713-audit-exceptions`.
+
+**Files correctly modified by Trinity (6):**
+- EngagementSocialMediaPlatformDataStore.cs — fixed 1 catch block
+- FeedCheckDataStore.cs — added ILogger + 2 LogError calls
+- ScheduledItemDataStore.cs — added ILogger + 2 LogError calls
+- SyndicationFeedSourceDataStore.cs — added ILogger + 2 LogError calls
+- TokenRefreshDataStore.cs — added ILogger + 2 LogError calls
+- YouTubeSourceDataStore.cs — added ILogger + 2 LogError calls
+
+**Files MISSED by Trinity (2) — BLOCKING:**
+- EngagementDataStore.cs — 5 catch blocks without logging, no ILogger
+- EngagementManager.cs — 2 catch blocks without logging, no ILogger
+
+**Files already correct (not Trinity's work):**
+- SocialMediaPlatformDataStore.cs — already had ILogger + logging
+- EmailSender.cs — uses source-generated logging
+- UserApprovalManager.cs — already had ILogger with LogWarning
+- BroadcastingContext.cs — catch rethrows, not swallowing
+
+**Build status:** 25 errors — test files not updated to pass ILogger mocks.
+
+**Review pattern established:**
+- For exception audit: grep `catch\s*\(.*Exception` and verify EVERY catch has logging
+- When adding ILogger to primary constructors, MUST update test instantiations
+- Run `dotnet build` before marking any code work complete
+- Cross-check claimed scope against actual diff
+
+**Verdict:** REJECTED — Assigned to Morpheus to fix (Trinity lockout per rejection rules).

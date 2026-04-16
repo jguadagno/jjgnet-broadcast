@@ -36,14 +36,10 @@ public class EngagementsController : Controller
     /// <summary>
     /// Gets the list of engagements. 
     /// </summary>
-    /// <param name="page">The page number to get</param>
-    /// <param name="sortBy">The field to sort by (startdate, enddate, name)</param>
-    /// <param name="sortDescending">True to sort descending, false for ascending</param>
-    /// <param name="filter">Optional text filter on engagement name</param>
     /// <returns>Returns a List&lt;<see cref="EngagementViewModel"/>&gt;.</returns>
-    public async Task<IActionResult> Index(int page = Pagination.DefaultPage, string sortBy = "startdate", bool sortDescending = true, string? filter = null)
+    public async Task<IActionResult> Index(int page = Pagination.DefaultPage)
     {
-        var result = await _engagementService.GetEngagementsAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
+        var result = await _engagementService.GetEngagementsAsync(page, Pagination.DefaultPageSize);
         var viewEngagements = _mapper.Map<List<EngagementViewModel>>(result.Items);
 
         ViewBag.Page = page;
@@ -52,9 +48,6 @@ public class EngagementsController : Controller
         ViewBag.TotalPages = (int)Math.Ceiling(result.TotalCount / (double)Pagination.DefaultPageSize);
         ViewBag.ControllerName = "Engagements";
         ViewBag.ActionName = "Index";
-        ViewBag.SortBy = sortBy;
-        ViewBag.SortDescending = sortDescending;
-        ViewBag.Filter = filter;
 
         return View(viewEngagements);
     }
