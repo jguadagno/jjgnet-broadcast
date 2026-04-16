@@ -76,24 +76,28 @@
                         </li>
                         @if (User.IsInRole("Administrator") || User.IsInRole("Contributor"))
                         {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="SocialMediaPlatforms" asp-action="Index">Platforms</a>
-                            </li>
-                        }
-                        @if (User.IsInRole("Administrator"))
-                        {
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
+                                <a class="nav-link dropdown-toggle" href="#" id="siteAdminDropdown" role="button"
                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-shield-lock me-1"></i>Admin
+                                    <i class="bi bi-shield-lock me-1"></i>Site Admin
                                 </a>
-                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                <ul class="dropdown-menu" aria-labelledby="siteAdminDropdown">
                                     <li>
-                                        <h6 class="dropdown-header">Account Management</h6>
+                                        <h6 class="dropdown-header">Platform Management</h6>
                                     </li>
-                                    <li><a class="dropdown-item" asp-area="" asp-controller="Admin" asp-action="Users">
-                                        <i class="bi bi-people me-2"></i>Users
+                                    <li><a class="dropdown-item" asp-area="" asp-controller="SocialMediaPlatforms" asp-action="Index">
+                                        <i class="bi bi-broadcast me-2"></i>Social Media Platforms
                                     </a></li>
+                                    @if (User.IsInRole("Administrator"))
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <h6 class="dropdown-header">Account Management</h6>
+                                        </li>
+                                        <li><a class="dropdown-item" asp-area="" asp-controller="SiteAdmin" asp-action="Users">
+                                            <i class="bi bi-people me-2"></i>Users
+                                        </a></li>
+                                    }
                                 </ul>
                             </li>
                         }

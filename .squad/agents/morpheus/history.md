@@ -77,6 +77,14 @@
 
 ## Learnings
 
+### 2026-04-15 — Post-PR-718 Remaining 20 s Delay Investigation
+
+- **Context:** After #714 (FromBody) and #715 (AnyAsync removal + EF retry cap) merged in PR #718, a ~20 s delay persisted on `AddPlatformToEngagementAsync`.
+- **Root cause:** `DisableRetry = false` in `configureSettings` caused Aspire's `AddSqlServerDbContext` to install its default retry policy (6 retries, 30 s max) **before** `configureDbContextOptions` runs.  Despite the developer's subsequent `EnableRetryOnFailure(3, 5 s)` call theoretically overriding it, the observed latency (~20 s ≈ 3 retries at Aspire's default delay schedule) confirmed the 3/5 s cap was not taking effect.
+- **Fix:** Changed `DisableRetry = false` → `DisableRetry = true` in `configureSettings`.  Aspire now skips its retry setup entirely.  The developer's explicit `EnableRetryOnFailure(3, 5 s)` in `configureDbContextOptions` is the single source of truth, capping max retry delay at ~9.2 s.
+- **Pattern:** When customising EF Core retry via `configureDbContextOptions` in Aspire's `AddSqlServerDbContext`, **always** set `DisableRetry = true` to prevent Aspire's default retry from silently overriding or co-existing with your explicit cap.
+- **Verified:** API project builds with 0 errors.  Decision doc: `.squad/decisions/inbox/morpheus-delay-root-cause.md`.
+
 ### 2025-01-27 — Issue #715: AnyAsync pre-check anti-pattern
 - **Problem:** `AnyAsync()` before `SaveChangesAsync()` in `AddAsync` triggered the EF Core SQL Server retry policy on transient faults, causing ~28s delays (6 retries × exponential backoff).
 - **Fix:** Removed the `AnyAsync` pre-check entirely. Duplicate detection now relies solely on the composite PK `(EngagementId, SocialMediaPlatformId)` and the existing `catch (DbUpdateException ex) when (IsDuplicateAssociationException(ex))` block.

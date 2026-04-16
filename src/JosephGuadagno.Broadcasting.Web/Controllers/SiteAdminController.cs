@@ -12,23 +12,23 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Controller for administrative functions (user approval, role management)
 /// </summary>
 [Authorize(Policy = "RequireAdministrator")]
-public class AdminController : Controller
+public class SiteAdminController : Controller
 {
     private readonly IUserApprovalManager _userApprovalManager;
     private readonly IMapper _mapper;
-    private readonly ILogger<AdminController> _logger;
+    private readonly ILogger<SiteAdminController> _logger;
     private const string EntraObjectIdClaimType = ApplicationClaimTypes.EntraObjectId;
 
     /// <summary>
-    /// Constructor for the AdminController
+    /// Constructor for the SiteAdminController
     /// </summary>
     /// <param name="userApprovalManager">The user approval manager</param>
     /// <param name="mapper">The mapper service</param>
     /// <param name="logger">The logger</param>
-    public AdminController(
+    public SiteAdminController(
         IUserApprovalManager userApprovalManager,
         IMapper mapper,
-        ILogger<AdminController> logger)
+        ILogger<SiteAdminController> logger)
     {
         _userApprovalManager = userApprovalManager;
         _mapper = mapper;

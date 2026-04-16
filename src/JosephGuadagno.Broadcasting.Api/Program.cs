@@ -179,11 +179,17 @@ void ConfigureApplication(IServiceCollection services)
 
 void ConfigureRepositories(IServiceCollection services)
 {
+    // DisableRetry = true tells Aspire to skip its own EnableRetryOnFailure() call.
+    // We own the retry policy exclusively via configureDbContextOptions.
+    // With DisableRetry = false, Aspire calls EnableRetryOnFailure() with its defaults (6 retries,
+    // 30 s max) inside UseSqlServer, and although configureDbContextOptions runs after and should
+    // override it, in practice the Aspire-default schedule (≈14–20 s for 3 transient retries)
+    // was still observed.  Setting DisableRetry = true removes that ambiguity entirely.
     builder.AddSqlServerDbContext<BroadcastingContext>(
         "JJGNetDatabaseSqlServer",
         configureSettings: sqlServerSettings =>
         {
-            sqlServerSettings.DisableRetry = false;
+            sqlServerSettings.DisableRetry = true; // Aspire must not set up its own retry
             sqlServerSettings.CommandTimeout = 30; // seconds
         },
         configureDbContextOptions: options =>
