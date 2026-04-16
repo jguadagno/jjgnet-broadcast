@@ -154,7 +154,7 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to save talk {TalkId}", talk?.Id);
+            logger.LogError(ex, "Failed to save talk {TalkId} for engagement {EngagementId}", talk?.Id, talk?.EngagementId);
             return OperationResult<Domain.Models.Talk>.Failure("An error occurred while saving the talk", ex);
         }
     }
@@ -214,11 +214,24 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         return dbEngagement is null ? null : mapper.Map<Domain.Models.Engagement>(dbEngagement);
     }
 
-    public async Task<Domain.Models.PagedResult<Domain.Models.Engagement>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<Domain.Models.PagedResult<Domain.Models.Engagement>> GetAllAsync(int page, int pageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null, CancellationToken cancellationToken = default)
     {
-        var totalCount = await broadcastingContext.Engagements.CountAsync(cancellationToken);
-        var dbItems = await broadcastingContext.Engagements
-            .OrderBy(e => e.StartDateTime)
+        IQueryable<Models.Engagement> query = broadcastingContext.Engagements;
+        
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            query = query.Where(e => e.Name.Contains(filter));
+        }
+        
+        query = sortBy?.ToLowerInvariant() switch
+        {
+            "name" => sortDescending ? query.OrderByDescending(e => e.Name) : query.OrderBy(e => e.Name),
+            "enddate" => sortDescending ? query.OrderByDescending(e => e.EndDateTime) : query.OrderBy(e => e.EndDateTime),
+            _ => sortDescending ? query.OrderByDescending(e => e.StartDateTime) : query.OrderBy(e => e.StartDateTime),
+        };
+        
+        var totalCount = await query.CountAsync(cancellationToken);
+        var dbItems = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);

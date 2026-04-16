@@ -45,7 +45,7 @@ public class EngagementManager: IEngagementManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to save engagement {EngagementId}", entity.Id);
+            _logger.LogError(ex, "Failed to save engagement {EngagementId} with name '{EngagementName}'", entity.Id, entity.Name);
             return OperationResult<Engagement>.Failure("An error occurred while saving the engagement", ex);
         }
     }
@@ -122,9 +122,9 @@ public class EngagementManager: IEngagementManager
         return await _engagementDataStore.GetByNameAndUrlAndYearAsync(name, url, year, cancellationToken);
     }
     
-    public async Task<PagedResult<Engagement>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<Engagement>> GetAllAsync(int page, int pageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null, CancellationToken cancellationToken = default)
     {
-        return await _engagementDataStore.GetAllAsync(page, pageSize, cancellationToken);
+        return await _engagementDataStore.GetAllAsync(page, pageSize, sortBy, sortDescending, filter, cancellationToken);
     }
     
     public async Task<PagedResult<Talk>> GetTalksForEngagementAsync(int engagementId, int page, int pageSize, CancellationToken cancellationToken = default)
