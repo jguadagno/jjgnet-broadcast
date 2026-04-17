@@ -59,9 +59,17 @@ INSERT INTO JJGNet.dbo.FeedChecks (Name, LastCheckedFeed, LastItemAddedOrUpdated
 INSERT INTO JJGNet.dbo.TokenRefreshes (Name, Expires, LastChecked, LastRefreshed, LastUpdatedOn) VALUES ('long-lived', '2026-02-06 01:00:00.4204227 -07:00', '2025-12-08 01:00:02.4382065 -07:00', '2025-12-08 01:00:02.4382065 -07:00', '2026-01-28 04:07:47.4046874 -07:00');
 INSERT INTO JJGNet.dbo.TokenRefreshes (Name, Expires, LastChecked, LastRefreshed, LastUpdatedOn) VALUES ('page', '2026-02-06 01:00:02.8047779 -07:00', '2025-12-08 01:00:03.5324031 -07:00', '2025-12-08 01:00:03.5324031 -07:00', '2026-01-28 04:07:47.4046875 -07:00');
 
--- Seed the Roles table (Issue #602)
+-- Seed the Roles table (Issue #602, restructured #719)
+-- Rename existing Administrator → Site Administrator if needed (for existing environments)
+IF EXISTS (SELECT 1 FROM JJGNet.dbo.Roles WHERE Name = N'Administrator')
+   AND NOT EXISTS (SELECT 1 FROM JJGNet.dbo.Roles WHERE Name = N'Site Administrator')
+    UPDATE JJGNet.dbo.Roles SET Name = N'Site Administrator', Description = N'Full app admin: user approval, role management, and global platform definitions' WHERE Name = N'Administrator'
+-- Seed Site Administrator (fresh environments)
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.Roles WHERE Name = N'Site Administrator')
+    INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES (N'Site Administrator', N'Full app admin: user approval, role management, and global platform definitions')
+-- Seed new Administrator role
 IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.Roles WHERE Name = N'Administrator')
-    INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES (N'Administrator', N'Full access; can approve users, manage roles, and delete any content')
+    INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES (N'Administrator', N'Personal content admin: manage own Message Templates and Social Media Platforms')
 IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.Roles WHERE Name = N'Contributor')
     INSERT INTO JJGNet.dbo.Roles (Name, Description) VALUES (N'Contributor', N'Can create, edit, and delete their own content')
 IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.Roles WHERE Name = N'Viewer')

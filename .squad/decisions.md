@@ -14829,3 +14829,146 @@ public async Task<ActionResult<EngagementSocialMediaPlatformResponse>> GetPlatfo
 - ✅ `GetEngagementAsync` — already has `[ActionName]`
 - ✅ `GetTalkAsync` — already has `[ActionName]`
 - ✅ `GetPlatformForEngagementAsync` — fixed in commit 793244d
+
+---
+
+# Merged from inbox — 2026-04-17T14:27:33Z
+
+---
+date: 2026-04-17
+author: Joseph Guadagno
+topic: user-directive-linkedin-policy
+---
+
+## User Directive: LinkedInController Policy Choice
+
+LinkedInController should use RequireContributor policy. LinkedIn configuration will be per-user/account in future multi-tenancy.
+
+---
+date: 2026-04-17
+author: jguadagno
+topic: pr-review-comments
+---
+
+## User Directive: PR Review Comments on GitHub
+
+PR reviews should be posted as comments on GitHub for visibility and audit trail.
+
+---
+date: 2026-04-16
+author: Trinity
+issue: 713
+---
+
+# Exception Audit Findings - Issue #713
+
+Audited catch blocks across Data.Sql and Managers. Added ILogger to 6 DataStores + EngagementManager. Fixed 15 catch blocks swallowing exceptions.
+
+---
+date: 2026-04-16
+author: Neo
+issue: 713
+status: changes-requested
+---
+
+# Review: Issue #713 - Exception Audit (CHANGES REQUESTED)
+
+**Critical Issues:** Incomplete logging in EngagementDataStore/EngagementManager, build failures, scope creep.
+**Assignee:** Morpheus (different agent - Trinity locked out)
+
+---
+date: 2026-01-28
+author: Morpheus
+issue: 713
+status: complete
+---
+
+# Issue #713 Revision Complete - Exception Logging
+
+✅ Complete — Ready for re-review. All fixes applied, build passing.
+
+---
+date: 2026-04-12
+author: Neo
+prs: [721, 722]
+---
+
+# PR Review Verdicts — #721 and #722
+
+**PR #721:** APPROVE (exception logging)
+**PR #722:** APPROVE (sort/filter feature)
+Merge PR #721 first, then rebase #722.
+
+---
+date: 2026-04-16
+author: Switch
+issues: [704, 705]
+---
+
+# Decision: Engagement List Sort + Filter UI Pattern
+
+GET form for filters, sortable column headers with icons, pagination state preservation.
+
+---
+date: 2026-04-17
+author: Trinity
+issues: [704, 705]
+---
+
+# Decision: Sort & Filter Interface Contract
+
+sortBy (string), sortDescending (bool), filter (string?) parameters for GetAllAsync.
+
+---
+date: 2026-04-17
+author: Neo
+issue: 719
+pr: 723
+status: changes-requested
+---
+
+# PR #723: Role Restructure - View Update Required
+
+Update SocialMediaPlatforms/Index.cshtml lines 10,68,85,104 to check "Site Administrator" role.
+
+---
+date: 2026-04-17
+author: Tank
+issue: 719
+---
+
+# Tank: Issue #719 Test Updates
+
+157/157 Web.Tests passing. Fixed self-demotion guard + LinkedInController policy bugs.
+
+---
+date: 2026-04-17
+author: Morpheus
+issue: 719
+---
+
+# Decision: DB Role Restructure - Issue #719
+
+Split Administrator → Site Administrator + Administrator. Idempotent seed/migration.
+
+---
+date: 2026-04-17
+author: Trinity
+issue: 719
+---
+
+# Issue #719: Role Restructure - Backend
+
+Four-role hierarchy (Site Admin, Admin, Contributor, Viewer). Cumulative policies.
+
+---
+date: 2026-04-17
+author: Neo
+issue: 719
+pr: 723
+status: approved
+---
+
+# Decision: PR #723 Final Review - APPROVED
+
+All blockers resolved. Ready to merge.

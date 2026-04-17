@@ -6,7 +6,12 @@ namespace JosephGuadagno.Broadcasting.Domain.Constants;
 public static class RoleNames
 {
     /// <summary>
-    /// Administrator role - full access to all resources
+    /// Site Administrator role - full app admin: user approval, role management, global platform definitions
+    /// </summary>
+    public const string SiteAdministrator = "Site Administrator";
+
+    /// <summary>
+    /// Administrator role - personal content admin: own Message Templates and Platforms
     /// </summary>
     public const string Administrator = "Administrator";
     

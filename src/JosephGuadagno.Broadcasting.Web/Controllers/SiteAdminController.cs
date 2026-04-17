@@ -11,7 +11,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// Controller for administrative functions (user approval, role management)
 /// </summary>
-[Authorize(Policy = "RequireAdministrator")]
+[Authorize(Policy = "RequireSiteAdministrator")]
 public class SiteAdminController : Controller
 {
     private readonly IUserApprovalManager _userApprovalManager;
@@ -227,14 +227,14 @@ public class SiteAdminController : Controller
                 return RedirectToAction("Users");
             }
 
-            // Guard: prevent self-demotion from Administrator role
+            // Guard: prevent self-demotion from Site Administrator role
             if (userId == adminUserId.Value)
             {
                 var userRoles = await _userApprovalManager.GetUserRolesAsync(userId);
                 var roleToRemove = userRoles.FirstOrDefault(r => r.Id == roleId);
-                if (roleToRemove?.Name == RoleNames.Administrator)
+                if (roleToRemove?.Name == RoleNames.SiteAdministrator)
                 {
-                    TempData["ErrorMessage"] = "You cannot remove the Administrator role from yourself.";
+                    TempData["ErrorMessage"] = "You cannot remove the Site Administrator role from yourself.";
                     return RedirectToAction("ManageRoles", new { userId });
                 }
             }

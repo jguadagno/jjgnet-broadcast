@@ -244,7 +244,7 @@ public class LinkedInControllerTests
     }
 
     [Fact]
-    public void LinkedInController_HasRequireAdministratorPolicy()
+    public void LinkedInController_HasRequireContributorPolicy()
     {
         // Arrange & Act
         var controllerType = typeof(LinkedInController);
@@ -254,6 +254,6 @@ public class LinkedInControllerTests
         Assert.NotEmpty(attributes);
         var authorizeAttribute = attributes.First() as AuthorizeAttribute;
         Assert.NotNull(authorizeAttribute);
-        Assert.Equal("RequireAdministrator", authorizeAttribute!.Policy);
+        Assert.Equal("RequireContributor", authorizeAttribute!.Policy);
     }
 }

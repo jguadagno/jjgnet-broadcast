@@ -138,6 +138,39 @@ For breaking database migrations involving PK rebuilds or column drops:
 **Tools used:** gh pr diff, view, grep, git diff --stat. Full diff was 5147 lines; reviewed in sections (migration script, interfaces, implementations, controllers, tests).
 
 **Recommendation posted:** GitHub comment #4210546660 (cannot approve own PRs, posted as comment instead).
+
+## Learnings — PR #723 Code Review (2026-04-17)
+
+**Context:** Code review of PR #723 implementing issue #719 (role hierarchy restructure). Renames existing `Administrator` → `Site Administrator` (full app admin) and introduces new narrower `Administrator` role (personal content admin).
+
+**Review scope:** 14 files, +123/-29 lines. Domain constants, Program.cs policies, 3 controllers, 1 view, DB seed + migration script, 3 test files, 3 agent history files.
+
+**Initial review:** CHANGES REQUESTED — SocialMediaPlatforms/Index.cshtml had role checks not updated.
+
+**Follow-up (commit 2a6a15e):** Trinity fixed the view. Re-verified all 4 IsInRole locations:
+- Line 10: `Site Administrator || Administrator || Contributor` ✅
+- Line 68: `Site Administrator || Administrator || Contributor` ✅
+- Line 85: `Site Administrator` only (Delete button) ✅
+- Line 104: `Site Administrator || Administrator || Contributor` ✅
+
+**Final verification:**
+1. All view role checks align with controller authorization policies
+2. Add/Edit/ToggleActive = RequireContributor (Site Admin + Admin + Contributor) — views match
+3. Delete = RequireSiteAdministrator (Site Admin only) — view matches
+4. Other SocialMediaPlatforms views (Add.cshtml, Edit.cshtml, Delete.cshtml) have no inline role checks — correct because authorization is enforced at controller action level
+5. No other Razor views in the solution have orphaned role checks that need updating
+
+**Key findings (all verified):**
+1. **Domain constants** — `RoleNames.SiteAdministrator` added correctly
+2. **Authorization policies** — Cumulative chain correct
+3. **Controllers** — SiteAdminController, LinkedInController, SocialMediaPlatformsController all correct
+4. **Views** — _Layout.cshtml and SocialMediaPlatforms/Index.cshtml both correct
+5. **DB scripts** — Idempotent rename + seed pattern correct
+6. **Self-demotion guard** — Uses `RoleNames.SiteAdministrator`
+7. **Tests** — All policy assertions and fixtures updated
+
+**Final Verdict:** ✅ **APPROVED**
+
 ### 2026-04-09: PR #683 Code Review Complete — Epic #667 Consolidation
 
 **Status:** ✅ CONSOLIDATED | Session log: .squad/log/2026-04-09T00-43-53Z-codeql-fixes.md

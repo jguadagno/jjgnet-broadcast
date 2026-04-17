@@ -385,7 +385,7 @@ public class SiteAdminControllerTests
         var allRoles = new List<Role>
         {
             new Role { Id = 1, Name = "Contributor", Description = "Can contribute" },
-            new Role { Id = 2, Name = "Administrator", Description = "Full access" }
+            new Role { Id = 2, Name = "Site Administrator", Description = "Full access" }
         };
 
         var currentRoleViewModels = new List<RoleViewModel>
@@ -395,7 +395,7 @@ public class SiteAdminControllerTests
 
         var availableRoleViewModels = new List<RoleViewModel>
         {
-            new RoleViewModel { Id = 2, Name = "Administrator", Description = "Full access" }
+            new RoleViewModel { Id = 2, Name = "Site Administrator", Description = "Full access" }
         };
 
         var userViewModel = new ApplicationUserViewModel { Id = userId, DisplayName = "Test User" };
@@ -666,7 +666,7 @@ public class SiteAdminControllerTests
     }
 
     [Fact]
-    public async Task RemoveRole_WhenAdminRemovesOwnAdministratorRole_ReturnsRedirectWithError()
+    public async Task RemoveRole_WhenAdminRemovesOwnSiteAdministratorRole_ReturnsRedirectWithError()
     {
         // Arrange
         var adminUserId = 5;
@@ -687,7 +687,7 @@ public class SiteAdminControllerTests
 
         var userRoles = new List<Role>
         {
-            new Role { Id = 1, Name = "Administrator", Description = "Full access" }
+            new Role { Id = 1, Name = "Site Administrator", Description = "Full access" }
         };
 
         var claims = new List<Claim>
@@ -730,7 +730,7 @@ public class SiteAdminControllerTests
     }
 
     [Fact]
-    public async Task RemoveRole_WhenAdminRemovesOwnNonAdministratorRole_ProceedsNormally()
+    public async Task RemoveRole_WhenAdminRemovesOwnNonSiteAdministratorRole_ProceedsNormally()
     {
         // Arrange
         var adminUserId = 5;
@@ -872,7 +872,7 @@ public class SiteAdminControllerTests
         var allRoles = new List<Role>
         {
             new Role { Id = 1, Name = "Contributor", Description = "Can contribute" },
-            new Role { Id = 2, Name = "Administrator", Description = "Full access" }
+            new Role { Id = 2, Name = "Site Administrator", Description = "Full access" }
         };
 
         var currentRoleViewModels = new List<RoleViewModel>
@@ -883,7 +883,7 @@ public class SiteAdminControllerTests
         var allRoleViewModels = new List<RoleViewModel>
         {
             new RoleViewModel { Id = 1, Name = "Contributor", Description = "Can contribute" },
-            new RoleViewModel { Id = 2, Name = "Administrator", Description = "Full access" }
+            new RoleViewModel { Id = 2, Name = "Site Administrator", Description = "Full access" }
         };
 
         var userViewModel = new ApplicationUserViewModel { Id = userId, DisplayName = "Test User" };
@@ -910,7 +910,7 @@ public class SiteAdminControllerTests
 
         _mockMapper
             .Setup(x => x.Map<List<RoleViewModel>>(It.Is<List<Role>>(r => r.Count == 1 && r.First().Id == 2)))
-            .Returns(new List<RoleViewModel> { new RoleViewModel { Id = 2, Name = "Administrator", Description = "Full access" } });
+            .Returns(new List<RoleViewModel> { new RoleViewModel { Id = 2, Name = "Site Administrator", Description = "Full access" } });
 
         // Act
         var result = await _sut.ManageRoles(userId);
