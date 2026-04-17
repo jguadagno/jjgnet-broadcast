@@ -32,6 +32,11 @@ public class YouTubeSourceManager : IYouTubeSourceManager
         return await _youTubeSourceDataStore.GetAllAsync(cancellationToken);
     }
 
+    public async Task<List<YouTubeSource>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
+    {
+        return await _youTubeSourceDataStore.GetAllAsync(ownerEntraOid, cancellationToken);
+    }
+
     public async Task<OperationResult<bool>> DeleteAsync(YouTubeSource entity, CancellationToken cancellationToken = default)
     {
         return await _youTubeSourceDataStore.DeleteAsync(entity, cancellationToken);

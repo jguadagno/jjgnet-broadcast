@@ -61,6 +61,11 @@ public class YouTubeReader: IYouTubeReader
         return GetAsync(sinceWhen).Result;
     }
 
+    public List<YouTubeSource> GetSinceDate(string ownerOid, DateTimeOffset sinceWhen)
+    {
+        return GetAsync(ownerOid, sinceWhen).Result;
+    }
+
     public async Task<List<YouTubeSource>> GetAsync(DateTimeOffset sinceWhen)
     {
         var currentTime = DateTime.Now;
@@ -102,7 +107,6 @@ public class YouTubeReader: IYouTubeReader
                                 Title = playlistItem.Snippet.Title,
                                 Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",
                                 AddedOn = currentTime,
-                                // TODO: #728 — Replace with ownerOid resolved from collector config. CreatedByEntraOid must never be string.Empty or null. See decisions.md.
                                 CreatedByEntraOid = string.Empty
                             });
                         }
@@ -127,5 +131,21 @@ public class YouTubeReader: IYouTubeReader
         }
 
         return videoItems;
+    }
+
+    public async Task<List<YouTubeSource>> GetAsync(string ownerOid, DateTimeOffset sinceWhen)
+    {
+        var items = await GetAsync(sinceWhen);
+        return ApplyOwnerOid(items, ownerOid);
+    }
+
+    private static List<YouTubeSource> ApplyOwnerOid(List<YouTubeSource> items, string ownerOid)
+    {
+        foreach (var item in items)
+        {
+            item.CreatedByEntraOid = ownerOid;
+        }
+
+        return items;
     }
 }

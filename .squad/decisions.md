@@ -15000,3 +15000,219 @@ status: approved
 # Decision: PR #723 Final Review - APPROVED
 
 All blockers resolved. Ready to merge.
+---
+date: 2026-04-17
+author: Neo
+issue: 731
+status: recommendation
+---
+
+# Architecture Decision: Per-User Publisher Settings UI (#731)
+
+## Summary
+
+**Recommendation:** Use per-platform strongly-typed ViewModels with dedicated Razor partial views. Store the JSON blob in `Settings`, but define the schema in code—not in the database.
+
+---
+
+## The Questions
+
+Joseph asked:
+1. Per-platform page vs dynamic JSON page?
+2. Could we build a single dynamic page from JSON schema?
+3. How do we know what fields are required per platform?
+
+---
+
+## What I Found
+
+### Platform Settings Requirements
+
+From the existing managers, each platform needs different credentials:
+
+| Platform | Required Fields |
+|----------|-----------------|
+| **Bluesky** | `BlueskyUserName`, `BlueskyPassword` |
+| **Twitter/X** | `ConsumerKey`, `ConsumerSecret`, `OAuthToken`, `OAuthTokenSecret` |
+| **LinkedIn** | `ClientId`, `ClientSecret`, `AccessToken`, `AuthorId`, `AccessTokenUrl` |
+| **Facebook** | `PageId`, `PageAccessToken`, `AppId`, `AppSecret`, `ClientToken`, `GraphApiRootUrl`, `GraphApiVersion` |
+
+These are **fixed** sets of fields that won't change dynamically. Twitter will always need those 4 OAuth values. Bluesky will always need handle + app password.
+
+### Existing Codebase Patterns
+
+- Web uses ASP.NET Core MVC with Razor views, not Razor Pages
+- Forms use strongly-typed ViewModels with `[Required]`, `[Url]`, `[MaxLength]` data annotations
+- Validation is via `_ValidationScriptsPartial` (client-side) + ModelState (server-side)
+- `SocialMediaPlatforms` table has `Id`, `Name`, `Url`, `Icon`, `IsActive`—no schema/config column
+- No existing dynamic form generation patterns in the codebase
+
+---
+
+## My Recommendation
+
+### A. Schema Approach: Strongly-Typed Per-Platform Classes
+
+**DO:** Create a settings class per platform that serializes to/from the JSON blob:
+
+```csharp
+// In Domain
+public class BlueskySettings
+{
+    [Required] public string UserName { get; set; }
+    [Required] public string AppPassword { get; set; }
+}
+
+public class TwitterSettings
+{
+    [Required] public string ConsumerKey { get; set; }
+    [Required] public string ConsumerSecret { get; set; }
+    [Required] public string AccessToken { get; set; }
+    [Required] public string AccessTokenSecret { get; set; }
+}
+
+// etc.
+```
+
+**DON'T:** Add a `SettingsSchema` column to `SocialMediaPlatforms`.
+
+**Why:** 
+- The schema is **code knowledge**, not data. When you add a new platform, you write a new manager that knows what fields it needs. The schema doesn't change at runtime.
+- JSON Schema in the DB adds complexity for zero benefit. You'd need a schema parser, dynamic form builder, custom validation logic—all to avoid writing 4 simple classes and 4 simple partials.
+- Strongly-typed classes give you IntelliSense, compile-time safety, and work with existing AutoMapper + EF Core patterns.
+
+### B. UI Approach: Dedicated Partial Views Per Platform
+
+**DO:** Create one partial view per platform:
+- `Views/PublisherSettings/_BlueskySettings.cshtml`
+- `Views/PublisherSettings/_TwitterSettings.cshtml`
+- `Views/PublisherSettings/_LinkedInSettings.cshtml`
+- `Views/PublisherSettings/_FacebookSettings.cshtml`
+
+The main settings page renders the correct partial based on platform ID:
+
+```razor
+@switch (Model.SocialMediaPlatformId)
+{
+    case 1: // Bluesky
+        await Html.RenderPartialAsync("_BlueskySettings", Model.BlueskySettings);
+        break;
+    case 2: // Twitter
+        await Html.RenderPartialAsync("_TwitterSettings", Model.TwitterSettings);
+        break;
+    // ...
+}
+```
+
+**DON'T:** Build a dynamic form renderer from JSON schema.
+
+**Why:**
+- This matches the existing codebase patterns (see `_ValidationScriptsPartial`, `_PaginationPartial`, `_LoginPartial`)
+- Each platform has different UX needs—Twitter shows 4 credential fields; LinkedIn shows an OAuth flow link; Facebook shows a "refresh token" button. A dynamic renderer can't handle these differences.
+- Adding a new platform is ~30 min work: one ViewModel, one partial, one switch case. That's acceptable for the 4-5 platforms we'll realistically support.
+
+### C. Required Fields: Data Annotations on ViewModels
+
+**DO:** Use standard ASP.NET Core validation:
+
+```csharp
+public class BlueskySettingsViewModel
+{
+    [Required(ErrorMessage = "Bluesky handle is required")]
+    [Display(Name = "Bluesky Handle")]
+    public string UserName { get; set; }
+
+    [Required(ErrorMessage = "App password is required")]
+    [Display(Name = "App Password")]
+    [DataType(DataType.Password)]
+    public string AppPassword { get; set; }
+}
+```
+
+**DON'T:** Store required field metadata in the database or in separate constants.
+
+**Why:**
+- Data annotations are the standard in this codebase (see `EngagementViewModel`, `SocialMediaPlatformViewModel`)
+- You get client-side + server-side validation for free
+- Display names and error messages are localization-ready if needed later
+
+### D. Sensitive Fields: Write-Only Pattern
+
+**DO:** Split the ViewModel into display and edit concerns:
+
+1. **On GET:** Return a masked/indicator-only model:
+   ```csharp
+   public class BlueskySettingsDisplayViewModel
+   {
+       public string UserName { get; set; }
+       public bool HasAppPassword { get; set; }  // true/false, never the actual value
+   }
+   ```
+
+2. **On POST:** Accept nullable credentials that only update if provided:
+   ```csharp
+   public class BlueskySettingsEditViewModel
+   {
+       [Required]
+       public string UserName { get; set; }
+       
+       [DataType(DataType.Password)]
+       public string? NewAppPassword { get; set; }  // Only update if user provides new value
+   }
+   ```
+
+3. **In the view:** Show "••••••••" with a "Change Password" button that reveals the input field:
+   ```razor
+   @if (Model.HasAppPassword)
+   {
+       <div class="mb-3">
+           <label class="form-label">App Password</label>
+           <div class="input-group">
+               <input type="text" class="form-control" value="••••••••" readonly />
+               <button type="button" class="btn btn-outline-secondary" onclick="showPasswordField()">
+                   <i class="bi bi-pencil"></i> Change
+               </button>
+           </div>
+       </div>
+   }
+   ```
+
+**Why:**
+- Secrets should never round-trip through the browser
+- This is standard credential management UX (see GitHub, Azure Portal, AWS Console)
+- The API should also follow this pattern: `Settings` column returns null/masked values for sensitive fields in GET responses
+
+---
+
+## What NOT to Build
+
+1. **JSON Schema editor in SiteAdmin** — Overkill. Schema is code, not config.
+2. **Generic dynamic form component** — High cost, low value. You'd spend more time building/debugging the abstraction than the 4 partials.
+3. **Platform-specific tables** — Don't create `UserBlueskySettings`, `UserTwitterSettings`. The JSON blob in `Settings` is the right call.
+
+---
+
+## Implementation Order
+
+1. Add per-platform settings classes to Domain
+2. Add `UserPublisherSettingDataStore` and manager (per issue spec)
+3. Add API endpoints (GET returns masked, POST accepts full values)
+4. Add Web ViewModels (display + edit variants)
+5. Add partial views for each platform
+6. Add main settings page that dispatches to partials
+
+---
+
+## Decision
+
+**Schema:** JSON blob in `Settings` column, deserialized to strongly-typed classes in code. No schema column in database.
+
+**UI:** One Razor partial per platform, rendered via switch statement. No dynamic form generation.
+
+**Validation:** Standard ASP.NET Core data annotations on ViewModels.
+
+**Secrets:** Write-only pattern with masked display and optional update fields.
+
+---
+
+**Confidence:** High. This approach aligns with every pattern I found in the existing codebase and avoids unnecessary abstraction for a fixed set of platforms.
