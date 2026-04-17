@@ -38,4 +38,6 @@ public class YouTubeSource
 
     [Required]
     public DateTimeOffset LastUpdatedOn { get; set; }
+
+    public string? CreatedByEntraOid { get; set; }
 }
