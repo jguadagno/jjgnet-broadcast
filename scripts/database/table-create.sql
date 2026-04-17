@@ -131,7 +131,8 @@ create table dbo.SyndicationFeedSources
     PublicationDate   datetimeoffset default getutcdate() not null,
     AddedOn           datetimeoffset default getutcdate() not null,
     ItemLastUpdatedOn datetimeoffset default getutcdate(),
-    LastUpdatedOn     datetimeoffset default getutcdate() not null
+    LastUpdatedOn     datetimeoffset default getutcdate() not null,
+    CreatedByEntraOid nvarchar(36)                        null
 )
 GO
 
@@ -150,7 +151,8 @@ create table dbo.YouTubeSources
     PublicationDate   datetimeoffset default getutcdate() not null,
     AddedOn           datetimeoffset default getutcdate() not null,
     ItemLastUpdatedOn datetimeoffset default getutcdate(),
-    LastUpdatedOn     datetimeoffset default getutcdate() not null
+    LastUpdatedOn     datetimeoffset default getutcdate() not null,
+    CreatedByEntraOid nvarchar(36)                        null
 )
 go
 
