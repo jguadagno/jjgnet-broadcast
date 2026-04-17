@@ -102,6 +102,7 @@ public class YouTubeReader: IYouTubeReader
                                 Title = playlistItem.Snippet.Title,
                                 Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",
                                 AddedOn = currentTime,
+                                // TODO: #728 — Replace with ownerOid resolved from collector config. CreatedByEntraOid must never be string.Empty or null. See decisions.md.
                                 CreatedByEntraOid = string.Empty
                             });
                         }
