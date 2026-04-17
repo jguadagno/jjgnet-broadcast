@@ -126,3 +126,14 @@
 - **Commit:** e306636 — `fix(data,managers): complete exception logging audit - add missing LogError calls (#713)` (10 files changed, -245 lines from reverted pagination tests).
 - **Pattern:** When fixing reviewer-rejected work on a feature branch, FIRST identify and revert any cross-contamination from unrelated branches (use `git diff main...branch --name-only` and `git checkout main -- path/to/file`), THEN add the fixes requested (logging calls), THEN fix all test constructors to match updated DI signatures. Never commit incomplete logging instrumentation — every catch block that returns an OperationResult MUST log the exception before returning.
 
+
+
+### 2026-04-17 — Sprint 16 #727: Owner-Filtered Data Store Overloads
+
+- **Pattern:** When adding owner-filtered query overloads (e.g., `GetAllAsync(string ownerEntraOid, ...)`) to data stores alongside existing unfiltered methods (`GetAllAsync(CancellationToken)`), maintain BOTH signatures for different use cases: owner-filtered for user-scoped queries, unfiltered for Site Admin and background job access.
+- **Interface design:** Place owner-filtered overloads directly in the derived interface (e.g., `ISyndicationFeedSourceDataStore`), not in the base `IDataStore<T>`. This keeps base interfaces clean and allows each data store to expose domain-specific filtering.
+- **Implementation:** Use `.Where(x => x.CreatedByEntraOid == ownerEntraOid)` in LINQ queries. For paged methods, apply the owner filter before counting and paging.
+- **Test fix:** When adding method overloads, Moq may struggle with overload resolution if tests use `GetAllAsync(default)`. Use `GetAllAsync(It.IsAny<CancellationToken>())` explicitly, or better, call with no parameters (`GetAllAsync()`) and let C# default parameter resolution handle it. After changing test mocks, REBUILD the test project to ensure Moq rebinds correctly.
+- **Scope:** Added owner-filtered overloads to 5 data stores: `SyndicationFeedSourceDataStore`, `YouTubeSourceDataStore`, `EngagementDataStore`, `ScheduledItemDataStore`, `MessageTemplateDataStore`.
+- **Branch:** `squad/727-filter-datasources-by-owner` → PR #735
+- **Commit:** `9558b20` — 275 insertions (12 files changed: 5 interfaces, 5 implementations, 2 test files)
