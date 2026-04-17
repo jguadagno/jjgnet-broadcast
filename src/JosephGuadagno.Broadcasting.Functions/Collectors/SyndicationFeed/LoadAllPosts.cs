@@ -48,7 +48,7 @@ public class LoadAllPosts(
         try
         {
             logger.LogDebug("Getting all items from feed from '{DateToCheckFrom}'", dateToCheckFrom);
-            var newItems = await syndicationFeedReader.GetAsync(dateToCheckFrom);
+            var newItems = await syndicationFeedReader.GetAsync(settingsOptions.Value.OwnerEntraOid, dateToCheckFrom);
 
             // If there is nothing new, save the last checked value and exit
             if (newItems is null || newItems.Count == 0)

@@ -51,7 +51,7 @@ public class LoadNewPosts(
 
             // Check for new items
             logger.LogDebug("Checking the syndication feed for posts since '{LastItemAddedOrUpdated}'", feedCheck.LastItemAddedOrUpdated);
-            var newItems = await syndicationFeedReader.GetAsync(feedCheck.LastItemAddedOrUpdated);
+            var newItems = await syndicationFeedReader.GetAsync(settingsOptions.Value.OwnerEntraOid, feedCheck.LastItemAddedOrUpdated);
 
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)

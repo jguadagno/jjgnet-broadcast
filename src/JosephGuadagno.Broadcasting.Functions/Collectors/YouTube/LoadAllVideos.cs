@@ -48,7 +48,7 @@ public class LoadAllVideos(
         try
         {
             logger.LogDebug("Getting all items from YouTube for the playlist since '{DateToCheckFrom}'", dateToCheckFrom);
-            var newItems = await youTubeReader.GetAsync(dateToCheckFrom);
+            var newItems = await youTubeReader.GetAsync(settingsOptions.Value.OwnerEntraOid, dateToCheckFrom);
 
             // If there is nothing new, save the last checked value and exit
             if (newItems.Count == 0)

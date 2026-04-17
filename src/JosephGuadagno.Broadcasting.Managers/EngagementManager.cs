@@ -55,6 +55,11 @@ public class EngagementManager: IEngagementManager
         return await _engagementDataStore.GetAllAsync(cancellationToken);
     }
 
+    public async Task<List<Engagement>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
+    {
+        return await _engagementDataStore.GetAllAsync(ownerEntraOid, cancellationToken);
+    }
+
     public async Task<OperationResult<bool>> DeleteAsync(Engagement entity, CancellationToken cancellationToken = default)
     {
         return await _engagementDataStore.DeleteAsync(entity, cancellationToken);
@@ -125,6 +130,11 @@ public class EngagementManager: IEngagementManager
     public async Task<PagedResult<Engagement>> GetAllAsync(int page, int pageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null, CancellationToken cancellationToken = default)
     {
         return await _engagementDataStore.GetAllAsync(page, pageSize, sortBy, sortDescending, filter, cancellationToken);
+    }
+
+    public async Task<PagedResult<Engagement>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        return await _engagementDataStore.GetAllAsync(ownerEntraOid, page, pageSize, sortBy, sortDescending, filter, cancellationToken);
     }
     
     public async Task<PagedResult<Talk>> GetTalksForEngagementAsync(int engagementId, int page, int pageSize, CancellationToken cancellationToken = default)

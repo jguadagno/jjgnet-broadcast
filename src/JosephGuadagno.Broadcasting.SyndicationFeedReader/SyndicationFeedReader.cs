@@ -68,16 +68,27 @@ public class SyndicationFeedReader: ISyndicationFeedReader
                 Url = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri ?? string.Empty,
                 AddedOn = currentTime,
                 LastUpdatedOn = currentTime,
-                // TODO: #728 — Replace with ownerOid resolved from collector config. CreatedByEntraOid must never be string.Empty or null. See decisions.md.
                 CreatedByEntraOid = string.Empty,
                 Tags = syndicationItem.Categories?.Select(c => c.Name).ToList() ?? []
             })
             .ToList();
     }
 
+    public List<SyndicationFeedSource> GetSinceDate(string ownerOid, DateTimeOffset sinceWhen)
+    {
+        var items = GetSinceDate(sinceWhen);
+        return ApplyOwnerOid(items, ownerOid);
+    }
+
     public async Task<List<SyndicationFeedSource>> GetAsync(DateTimeOffset sinceWhen)
     {
         return await Task.Run(() => GetSinceDate(sinceWhen));
+    }
+
+    public async Task<List<SyndicationFeedSource>> GetAsync(string ownerOid, DateTimeOffset sinceWhen)
+    {
+        var items = await GetAsync(sinceWhen);
+        return ApplyOwnerOid(items, ownerOid);
     }
 
     public List<SyndicationFeedSource> GetSyndicationItems(DateTimeOffset sinceWhen, List<string> excludeCategories = null)
@@ -125,11 +136,16 @@ public class SyndicationFeedReader: ISyndicationFeedReader
                 Url = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri ?? string.Empty,
                 AddedOn = currentTime,
                 LastUpdatedOn = currentTime,
-                // TODO: #728 — Replace with ownerOid resolved from collector config. CreatedByEntraOid must never be string.Empty or null. See decisions.md.
                 CreatedByEntraOid = string.Empty,
                 Tags = syndicationItem.Categories?.Select(c => c.Name).ToList() ?? []
             })
             .ToList();
+    }
+
+    public List<SyndicationFeedSource> GetSyndicationItems(string ownerOid, DateTimeOffset sinceWhen, List<string>? excludeCategories = null)
+    {
+        var items = GetSyndicationItems(sinceWhen, excludeCategories);
+        return ApplyOwnerOid(items, ownerOid);
     }
 
     public SyndicationFeedSource GetRandomSyndicationItem(DateTimeOffset sinceWhen, List<string> excludeCategories = null)
@@ -153,5 +169,27 @@ public class SyndicationFeedReader: ISyndicationFeedReader
         _logger.LogDebug("Selected random item '{ItemTitle}'", randomItem.Title);
 
         return randomItem;
+    }
+
+    public SyndicationFeedSource? GetRandomSyndicationItem(string ownerOid, DateTimeOffset sinceWhen, List<string>? excludeCategories = null)
+    {
+        var item = GetRandomSyndicationItem(sinceWhen, excludeCategories);
+        if (item is null)
+        {
+            return null;
+        }
+
+        item.CreatedByEntraOid = ownerOid;
+        return item;
+    }
+
+    private static List<SyndicationFeedSource> ApplyOwnerOid(List<SyndicationFeedSource> items, string ownerOid)
+    {
+        foreach (var item in items)
+        {
+            item.CreatedByEntraOid = ownerOid;
+        }
+
+        return items;
     }
 }
