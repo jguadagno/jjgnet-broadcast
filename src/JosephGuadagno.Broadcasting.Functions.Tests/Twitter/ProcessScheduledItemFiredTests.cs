@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,7 +40,8 @@ public class ProcessScheduledItemFiredTests
         Author = "Author",
         PublicationDate = DateTimeOffset.UtcNow,
         AddedOn = DateTimeOffset.UtcNow,
-        LastUpdatedOn = DateTimeOffset.UtcNow
+        LastUpdatedOn = DateTimeOffset.UtcNow,
+        CreatedByEntraOid = ""
     };
 
     private static Engagement BuildEngagement(int id = 42) => new()
@@ -78,7 +79,8 @@ public class ProcessScheduledItemFiredTests
         Tags = [],
         PublicationDate = DateTimeOffset.UtcNow,
         AddedOn = DateTimeOffset.UtcNow,
-        LastUpdatedOn = DateTimeOffset.UtcNow
+        LastUpdatedOn = DateTimeOffset.UtcNow,
+        CreatedByEntraOid = ""
     };
 
     private static Functions.Twitter.ProcessScheduledItemFired BuildSut(

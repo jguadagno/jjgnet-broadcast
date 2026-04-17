@@ -77,7 +77,23 @@
 
 ## Learnings
 
-### 2026-04-17 — Issue #719: Role Restructure Seed Update
+### 2026-04-17 — Issue #726: CreatedByEntraOid Promoted to NOT NULL
+
+- **Pattern:** Nullable-to-NOT NULL promotion follows a deliberate two-step approach for the project: (1) add column as NULL with a backfill migration (PR #733), confirm all rows updated, then (2) tighten to NOT NULL in a separate migration after confirmation. This avoids data-loss risk on active environments.
+- **Automated collectors:** `SyndicationFeedReader` and `YouTubeReader` use `string.Empty` as a `CreatedByEntraOid` placeholder because they run with no authenticated user context. Future work could inject a system/service-principal OID here.
+
+### 2025-01-30 — Issue #728: TODO Comments for CreatedByEntraOid Placeholders (PR #734)
+
+- **Context:** Sprint 17 issue #728 requires replacing `CreatedByEntraOid = string.Empty` scaffolding in readers with real ownership threading from collector config.
+- **Files flagged:**
+  - `src/JosephGuadagno.Broadcasting.SyndicationFeedReader/SyndicationFeedReader.cs` — two object initializers (lines 71, 127)
+  - `src/JosephGuadagno.Broadcasting.YouTubeReader/YouTubeReader.cs` — one object initializer (line 105)
+- **Comment template:** `// TODO: #728 — Replace with ownerOid resolved from collector config. CreatedByEntraOid must never be string.Empty or null. See decisions.md.`
+- **Pattern:** When adding technical debt markers to scaffolding, place the TODO comment on the line immediately before the problematic assignment. Include the issue number, a concise remediation instruction, and a reference to architectural context (decisions.md) for team visibility.
+- **Branch:** `squad/725-createdbyentraoid-not-null` (PR #734)
+- **Commit:** `9ab51a9` — `chore: add TODO comments to CreatedByEntraOid string.Empty placeholders`
+
+
 
 - **Change:** Renamed existing `Administrator` role to `Site Administrator` (broader platform admin) and introduced a new, narrower `Administrator` role (personal content management).
 - **Files changed:**

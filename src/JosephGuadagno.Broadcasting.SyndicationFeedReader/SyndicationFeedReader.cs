@@ -68,6 +68,8 @@ public class SyndicationFeedReader: ISyndicationFeedReader
                 Url = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri ?? string.Empty,
                 AddedOn = currentTime,
                 LastUpdatedOn = currentTime,
+                // TODO: #728 — Replace with ownerOid resolved from collector config. CreatedByEntraOid must never be string.Empty or null. See decisions.md.
+                CreatedByEntraOid = string.Empty,
                 Tags = syndicationItem.Categories?.Select(c => c.Name).ToList() ?? []
             })
             .ToList();
@@ -123,6 +125,8 @@ public class SyndicationFeedReader: ISyndicationFeedReader
                 Url = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri ?? string.Empty,
                 AddedOn = currentTime,
                 LastUpdatedOn = currentTime,
+                // TODO: #728 — Replace with ownerOid resolved from collector config. CreatedByEntraOid must never be string.Empty or null. See decisions.md.
+                CreatedByEntraOid = string.Empty,
                 Tags = syndicationItem.Categories?.Select(c => c.Name).ToList() ?? []
             })
             .ToList();

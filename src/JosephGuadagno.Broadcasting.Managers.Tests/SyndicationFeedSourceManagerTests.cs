@@ -1,4 +1,4 @@
-using Moq;
+﻿using Moq;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -20,7 +20,7 @@ public class SyndicationFeedSourceManagerTests
     public async Task GetAsync_ShouldCallRepository()
     {
         // Arrange
-        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test" };
+        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "" };
         _repository.Setup(r => r.GetAsync(1, default)).ReturnsAsync(source);
 
         // Act
@@ -35,7 +35,7 @@ public class SyndicationFeedSourceManagerTests
     public async Task SaveAsync_ShouldCallRepository()
     {
         // Arrange
-        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test" };
+        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "" };
         _repository.Setup(r => r.SaveAsync(source, default)).ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(source));
 
         // Act
@@ -51,7 +51,7 @@ public class SyndicationFeedSourceManagerTests
     public async Task GetAllAsync_ShouldCallRepository()
     {
         // Arrange
-        var sources = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test" } };
+        var sources = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "" } };
         _repository.Setup(r => r.GetAllAsync(default)).ReturnsAsync(sources);
 
         // Act
@@ -66,7 +66,7 @@ public class SyndicationFeedSourceManagerTests
     public async Task DeleteAsync_Entity_ShouldCallRepository()
     {
         // Arrange
-        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test" };
+        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "" };
         _repository.Setup(r => r.DeleteAsync(source, default)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         // Act
@@ -95,7 +95,7 @@ public class SyndicationFeedSourceManagerTests
     public async Task GetByUrlAsync_ShouldCallRepository()
     {
         // Arrange
-        var source = new SyndicationFeedSource { Id = 1, Url = "http://test.com", FeedIdentifier = "Test" };
+        var source = new SyndicationFeedSource { Id = 1, Url = "http://test.com", FeedIdentifier = "Test", CreatedByEntraOid = "" };
         _repository.Setup(r => r.GetByUrlAsync("http://test.com", default)).ReturnsAsync(source);
 
         // Act
@@ -110,7 +110,7 @@ public class SyndicationFeedSourceManagerTests
     public async Task GetRandomSyndicationDataAsync_ShouldCallRepository()
     {
         // Arrange
-        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test" };
+        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "" };
         var cutoffDate = DateTimeOffset.UtcNow;
         var excludedCategories = new List<string> { "Exclude" };
         _repository.Setup(r => r.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories, default)).ReturnsAsync(source);
@@ -127,7 +127,7 @@ public class SyndicationFeedSourceManagerTests
     public async Task GetByFeedIdentifierAsync_ShouldCallRepository()
     {
         // Arrange
-        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "test-feed-id" };
+        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "test-feed-id", CreatedByEntraOid = "" };
         _repository.Setup(r => r.GetByFeedIdentifierAsync("test-feed-id", default)).ReturnsAsync(source);
 
         // Act

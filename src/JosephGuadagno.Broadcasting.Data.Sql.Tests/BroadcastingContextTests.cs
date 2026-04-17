@@ -173,7 +173,8 @@ public class BroadcastingContextTests : IDisposable
             Url = "https://example.com/post",
             PublicationDate = DateTimeOffset.UtcNow,
             AddedOn = DateTimeOffset.UtcNow,
-            LastUpdatedOn = DateTimeOffset.UtcNow
+            LastUpdatedOn = DateTimeOffset.UtcNow,
+            CreatedByEntraOid = ""
         };
 
         // Act
@@ -198,7 +199,8 @@ public class BroadcastingContextTests : IDisposable
             Url = "https://youtube.com/watch?v=abc123",
             PublicationDate = DateTimeOffset.UtcNow,
             AddedOn = DateTimeOffset.UtcNow,
-            LastUpdatedOn = DateTimeOffset.UtcNow
+            LastUpdatedOn = DateTimeOffset.UtcNow,
+            CreatedByEntraOid = ""
         };
 
         // Act

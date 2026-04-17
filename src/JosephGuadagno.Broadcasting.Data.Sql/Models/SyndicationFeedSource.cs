@@ -29,7 +29,7 @@ public partial class SyndicationFeedSource
 
     public DateTimeOffset LastUpdatedOn { get; set; }
 
-    public string CreatedByEntraOid { get; set; }
+    public required string CreatedByEntraOid { get; set; }
 
     public virtual ICollection<SourceTag> SourceTags { get; set; } = new List<SourceTag>();
 }
