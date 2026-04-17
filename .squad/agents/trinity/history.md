@@ -2,6 +2,25 @@
 
 ## Learnings
 
+### 2026-04-17 — Issue #719: Role Restructure
+**Status:** ✅ COMPLETE & BUILD VERIFIED
+
+**Task:** Implement the four-role hierarchy for issue #719 (multi-tenancy epic #609).
+
+**Changes Made:**
+1. **RoleNames.cs:** Added `SiteAdministrator = "Site Administrator"` constant; updated `Administrator` XML doc to reflect narrower personal-content-admin scope.
+2. **Program.cs:** Added `RequireSiteAdministrator` policy (SiteAdministrator only); updated `RequireAdministrator` to include SiteAdministrator; updated `RequireContributor` and `RequireViewer` to include full cumulative chain.
+3. **SiteAdminController.cs:** Changed `[Authorize(Policy = "RequireAdministrator")]` → `[Authorize(Policy = "RequireSiteAdministrator")]` — user approval and role management are Site Admin only.
+4. **LinkedInController.cs:** Changed `[Authorize(Policy = "RequireAdministrator")]` → `[Authorize(Policy = "RequireSiteAdministrator")]` — LinkedIn OAuth config is a global admin concern.
+5. **SocialMediaPlatformsController.cs (lines 137, 156):** Changed Delete action attributes to `RequireSiteAdministrator` — global platform deletion is Site Admin only.
+6. **_Layout.cshtml:** Outer nav dropdown (Platform Management) now gates on `Site Administrator || Administrator || Contributor`; Account Management section inside gates on `Site Administrator` only.
+
+**Build Status:** 0 errors, 565 warnings (pre-existing).
+
+**Rationale:** Policies are cumulative: SiteAdministrator inherits all lower permissions. The `RequireAdministrator` policy now covers both SiteAdministrator and Administrator roles, so existing routes using that policy automatically open to the new Administrator role without per-action changes.
+
+**Decision Filed:** `.squad/decisions/inbox/trinity-719-role-restructure.md`
+
 ### 2026-04-16 — Issue #707: AdminController Renamed to SiteAdminController
 **Status:** ✅ COMPLETE & BUILD VERIFIED
 

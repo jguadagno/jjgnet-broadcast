@@ -77,6 +77,14 @@
 
 ## Learnings
 
+### 2026-04-17 — Issue #719: Role Restructure Seed Update
+
+- **Change:** Renamed existing `Administrator` role to `Site Administrator` (broader platform admin) and introduced a new, narrower `Administrator` role (personal content management).
+- **Files changed:**
+  - `scripts/database/data-seed.sql` — replaced single Administrator seed with idempotent rename + re-seed block; kept Contributor and Viewer unchanged.
+  - `scripts/database/migrations/2026-04-17-role-restructure.sql` — standalone, safe-to-replay migration for existing production environments.
+- **Pattern:** When renaming a seed row, use a two-step idempotent block: (1) UPDATE existing row if rename target does not yet exist, (2) INSERT if it still does not exist after the UPDATE guard. This covers both fresh environments and existing ones in a single replay-safe script.
+
 ### 2026-04-15 — Post-PR-718 Remaining 20 s Delay Investigation
 
 - **Context:** After #714 (FromBody) and #715 (AnyAsync removal + EF retry cap) merged in PR #718, a ~20 s delay persisted on `AddPlatformToEngagementAsync`.

@@ -1,5 +1,28 @@
 # Tank - History
 
+## 2026-04-17 — Issue #719: Test Updates for Role Restructure
+**Status:** ✅ COMPLETE
+
+**Task:** Update tests to reflect new role hierarchy: `SiteAdministrator` ("Site Administrator") is the full-admin role; `Administrator` ("Administrator") is the narrower personal-content admin role.
+
+**Files Changed:**
+
+### Test Files
+- `SiteAdminControllerTests.cs`: Updated all `Role`/`RoleViewModel` fixtures where `"Administrator"` represented the full-admin role → renamed to `"Site Administrator"`. Renamed two test methods to use `SiteAdministrator` naming.
+- `LinkedInControllerTests.cs`: Updated policy assertion `"RequireAdministrator"` → `"RequireSiteAdministrator"`. Renamed test method to `LinkedInController_HasRequireSiteAdministratorPolicy`.
+- `SocialMediaPlatformsControllerTests.cs`: Updated policy assertion `"RequireAdministrator"` → `"RequireSiteAdministrator"`. Renamed test method to `Delete_Get_Action_ShouldRequireSiteAdministratorPolicy`.
+- `EngagementsControllerTests.cs`, `SchedulesControllerTests.cs`, `TalksControllerTests.cs`, `EntraClaimsTransformationTests.cs`: No changes required — `RoleNames.Administrator` is correct in those contexts.
+
+### Production Fixes (discovered during testing)
+- `SiteAdminController.cs`: Updated self-demotion guard from `RoleNames.Administrator` → `RoleNames.SiteAdministrator`.
+- `LinkedInController.cs`: Updated `[Authorize(Policy = "RequireContributor")]` → `[Authorize(Policy = "RequireSiteAdministrator")]`.
+
+**Test Results:** 157/157 passing.
+
+## Learnings
+- Self-demotion guards in controllers that use role name strings must be updated alongside auth policy changes — test fixtures expose this coupling clearly.
+- The distinction between `SiteAdministrator` (full-admin) and `Administrator` (personal-content admin) requires careful review of any production code that compares role names as strings.
+
 ## 2026-04-13T17-34-54Z — Issue #708: Regression Coverage Coordination
 **Status:** ✅ VERIFIED & COMPLETE
 

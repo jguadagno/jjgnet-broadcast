@@ -161,14 +161,17 @@ builder.Services.AddControllersWithViews(options =>
 // Configure authorization policies
 builder.Services.AddAuthorization(options =>
 {
+    options.AddPolicy("RequireSiteAdministrator", policy =>
+        policy.RequireRole(RoleNames.SiteAdministrator));
+
     options.AddPolicy("RequireAdministrator", policy =>
-        policy.RequireRole(RoleNames.Administrator));
+        policy.RequireRole(RoleNames.SiteAdministrator, RoleNames.Administrator));
     
     options.AddPolicy("RequireContributor", policy =>
-        policy.RequireRole(RoleNames.Administrator, RoleNames.Contributor));
+        policy.RequireRole(RoleNames.SiteAdministrator, RoleNames.Administrator, RoleNames.Contributor));
     
     options.AddPolicy("RequireViewer", policy =>
-        policy.RequireRole(RoleNames.Administrator, RoleNames.Contributor, RoleNames.Viewer));
+        policy.RequireRole(RoleNames.SiteAdministrator, RoleNames.Administrator, RoleNames.Contributor, RoleNames.Viewer));
 });
 
 builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme,

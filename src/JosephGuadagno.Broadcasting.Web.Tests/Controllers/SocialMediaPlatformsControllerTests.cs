@@ -395,7 +395,7 @@ public class SocialMediaPlatformsControllerTests
     }
 
     [Fact]
-    public void Delete_Get_Action_ShouldRequireAdministratorPolicy()
+    public void Delete_Get_Action_ShouldRequireSiteAdministratorPolicy()
     {
         // Arrange & Act
         var method = typeof(SocialMediaPlatformsController).GetMethod("Delete", new[] { typeof(int) });
@@ -405,6 +405,6 @@ public class SocialMediaPlatformsControllerTests
         var attributes = method!.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: false);
         attributes.Should().NotBeEmpty();
         var authorizeAttribute = (AuthorizeAttribute)attributes.First();
-        authorizeAttribute.Policy.Should().Be("RequireAdministrator");
+        authorizeAttribute.Policy.Should().Be("RequireSiteAdministrator");
     }
 }

@@ -134,7 +134,7 @@ public class SocialMediaPlatformsController : Controller
     /// Shows the delete confirmation page for a social media platform.
     /// </summary>
     [HttpGet]
-    [Authorize(Policy = "RequireAdministrator")]
+    [Authorize(Policy = "RequireSiteAdministrator")]
     public async Task<IActionResult> Delete(int id)
     {
         var platform = await _platformService.GetByIdAsync(id);
@@ -153,7 +153,7 @@ public class SocialMediaPlatformsController : Controller
     [HttpPost]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    [Authorize(Policy = "RequireAdministrator")]
+    [Authorize(Policy = "RequireSiteAdministrator")]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var result = await _platformService.DeleteAsync(id);

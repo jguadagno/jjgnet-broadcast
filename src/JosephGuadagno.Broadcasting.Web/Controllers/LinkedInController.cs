@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Models.LinkedIn;
@@ -11,7 +11,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// Handles the LinkedIn OAuth2 flow
 /// </summary>
-[Authorize(Policy = "RequireAdministrator")]
+[Authorize(Policy = "RequireContributor")]
 public class LinkedInController : Controller
 {
     private readonly HttpClient _httpClient;
