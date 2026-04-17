@@ -255,3 +255,24 @@ For breaking database migrations involving PK rebuilds or column drops:
 - Cross-check claimed scope against actual diff
 
 **Verdict:** REJECTED — Assigned to Morpheus to fix (Trinity lockout per rejection rules).
+
+## Learnings — PR #736 Code Review (2026-04-17)
+
+**Context:** Review of PR #736 (feat(#728): Thread owner OID through manager business logic) — Sprint 17 of Epic #609 per-user data isolation.
+
+**Scope:** 25 files, +448/-66 lines. Manager interfaces + implementations, reader interfaces + implementations, Functions Settings, collector Functions, and tests.
+
+**Key review points verified:**
+1. **Reader overload pattern:** New `ownerOid` overloads call parameterless version, then apply `ApplyOwnerOid()` helper that sets `CreatedByEntraOid = ownerOid`
+2. **Manager pass-through:** All manager `ownerEntraOid` overloads are single-line delegations to data stores — no OID resolution logic
+3. **Functions Settings:** `ISettings.OwnerEntraOid` added as `required string` with XML docs — fails fast if config missing
+4. **Collector updates:** All 4 collectors (LoadAllPosts, LoadNewPosts, LoadAllVideos, LoadNewVideos) pass `settingsOptions.Value.OwnerEntraOid`
+5. **Backward compatibility:** Parameterless methods preserved with `string.Empty` for admin/background processing contexts
+6. **Test updates:** All 4 collector test files updated mock setups to pass `OwnerEntraOid` constant
+
+**Pattern confirmed:**
+- For owner-aware overloads: call existing parameterless method, then post-process to apply ownership
+- This preserves existing behavior while adding new capability
+- `required string` on Settings properties catches missing config at startup, not runtime
+
+**Verdict:** ✅ APPROVED — Clean implementation, all acceptance criteria met, no invariant violations.
