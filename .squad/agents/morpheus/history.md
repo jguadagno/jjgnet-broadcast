@@ -77,7 +77,12 @@
 
 ## Learnings
 
-### 2026-04-17 — Issue #719: Role Restructure Seed Update
+### 2026-04-17 — Issue #726: CreatedByEntraOid Promoted to NOT NULL
+
+- **Pattern:** Nullable-to-NOT NULL promotion follows a deliberate two-step approach for the project: (1) add column as NULL with a backfill migration (PR #733), confirm all rows updated, then (2) tighten to NOT NULL in a separate migration after confirmation. This avoids data-loss risk on active environments.
+- **Automated collectors:** `SyndicationFeedReader` and `YouTubeReader` use `string.Empty` as a `CreatedByEntraOid` placeholder because they run with no authenticated user context. Future work could inject a system/service-principal OID here.
+
+
 
 - **Change:** Renamed existing `Administrator` role to `Site Administrator` (broader platform admin) and introduced a new, narrower `Administrator` role (personal content management).
 - **Files changed:**
