@@ -2,6 +2,34 @@
 
 ## Learnings
 
+### 2026-04-17 — Issue #729: API Owner Isolation
+**Status:** ✅ COMPLETE & BUILD VERIFIED — PR #739
+
+**Task:** Enforce per-user owner isolation in API controllers (sub-issue of multi-tenancy epic #609).
+
+**Changes Made:**
+1. **Helper Methods:** Added `GetOwnerOid()` and `IsSiteAdministrator()` to EngagementsController, SchedulesController, MessageTemplatesController
+2. **GET List Endpoints:** Site Admins call unfiltered `GetAllAsync(page, pageSize, ...)`, regular users call owner-filtered `GetAllAsync(ownerOid, page, pageSize, ...)`
+3. **GET by ID:** After fetching record, verify `record.CreatedByEntraOid == ownerOid` — return `403 Forbid` if non-admin user attempts cross-owner access
+4. **POST:** Set `entity.CreatedByEntraOid = GetOwnerOid()` before calling `SaveAsync`
+5. **PUT:** Fetch existing record, verify ownership, preserve `CreatedByEntraOid` during update
+6. **DELETE:** Fetch record first, verify ownership, then call `DeleteAsync`
+7. **Talk/Platform Sub-Resources:** All operations verify parent engagement ownership before proceeding
+8. **SocialMediaPlatformsController:** No changes (global catalog, managed by Site Admin)
+
+**Test Updates:**
+- Updated `CreateControllerContext` helper in test files to include `ApplicationClaimTypes.EntraObjectId` claim
+- Updated all mock setups to use owner-filtered method signatures (e.g., `GetAllAsync(string, int, int, ...)`)
+- Added `CreatedByEntraOid = "test-oid-12345"` to all test domain objects
+- Added missing `GetAsync` mocks for DELETE/PUT operations (ownership check before mutation)
+
+**Build Status:** 0 errors, 846/846 tests passing (excluding network-dependent SyndicationFeedReader tests).
+
+**Rationale:** This completes the API layer of multi-tenancy isolation. JWT bearer tokens carry Entra OID; controllers extract it via `ApplicationClaimTypes.EntraObjectId` constant and pass to managers. Site Admin role bypass ensures support staff can troubleshoot all records.
+
+**PR:** #739  
+**Decision Filed:** `.squad/decisions/inbox/trinity-729-api-owner-isolation.md`
+
 ### 2026-04-17 — Issue #719: Role Restructure
 **Status:** ✅ COMPLETE & BUILD VERIFIED
 
