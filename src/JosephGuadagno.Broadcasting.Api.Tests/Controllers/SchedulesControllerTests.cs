@@ -53,12 +53,13 @@ public class SchedulesControllerTests
     /// Both the short "scp" claim and the full URI claim type are set for maximum
     /// compatibility with different versions of Microsoft.Identity.Web.
     /// </summary>
-    private static ControllerContext CreateControllerContext(string scopeClaimValue)
+    private static ControllerContext CreateControllerContext(string scopeClaimValue, string ownerOid = "test-oid-12345")
     {
         var user = new ClaimsPrincipal(new ClaimsIdentity(
         [
             new Claim("scp", scopeClaimValue),
-            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue)
+            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue),
+            new Claim(Domain.Constants.ApplicationClaimTypes.EntraObjectId, ownerOid)
         ], "TestAuthentication"));
 
         var httpContext = new DefaultHttpContext { User = user };

@@ -55,12 +55,13 @@ public class EngagementsControllerTests
     /// Both the short "scp" claim and the full URI claim type are set for maximum
     /// compatibility with different versions of Microsoft.Identity.Web.
     /// </summary>
-    private static ControllerContext CreateControllerContext(string scopeClaimValue)
+    private static ControllerContext CreateControllerContext(string scopeClaimValue, string ownerOid = "test-oid-12345")
     {
         var user = new ClaimsPrincipal(new ClaimsIdentity(
         [
             new Claim("scp", scopeClaimValue),
-            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue)
+            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue),
+            new Claim(Domain.Constants.ApplicationClaimTypes.EntraObjectId, ownerOid)
         ], "TestAuthentication"));
 
         var httpContext = new DefaultHttpContext { User = user };
@@ -77,10 +78,10 @@ public class EngagementsControllerTests
         // Arrange
         var engagements = new List<Engagement>
         {
-            new() { Id = 1, Name = "Conference A", Url = "https://conf-a.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(2), TimeZoneId = "UTC" },
-            new() { Id = 2, Name = "Conference B", Url = "https://conf-b.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(3), TimeZoneId = "UTC" }
+            new() { Id = 1, Name = "Conference A", Url = "https://conf-a.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(2), TimeZoneId = "UTC", CreatedByEntraOid = "test-oid-12345" },
+            new() { Id = 2, Name = "Conference B", Url = "https://conf-b.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(3), TimeZoneId = "UTC", CreatedByEntraOid = "test-oid-12345" }
         };
-        _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+        _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
             .ReturnsAsync(new PagedResult<Engagement> { Items = engagements, TotalCount = engagements.Count });
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
@@ -95,7 +96,7 @@ public class EngagementsControllerTests
             .ExcludingMissingMembers()
             .Excluding(e => e.Talks));
         result.Value!.TotalCount.Should().Be(2);
-        _engagementManagerMock.Verify(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
+        _engagementManagerMock.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Once);
     }
 
     [Fact]

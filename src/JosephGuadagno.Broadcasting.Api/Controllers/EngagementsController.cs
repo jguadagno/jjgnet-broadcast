@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
@@ -44,6 +45,17 @@ public class EngagementsController: ControllerBase
         _mapper = mapper;
     }
 
+    private string GetOwnerOid()
+    {
+        return User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
+            ?? throw new InvalidOperationException("Entra Object ID claim not found");
+    }
+
+    private bool IsSiteAdministrator()
+    {
+        return User.IsInRole(RoleNames.SiteAdministrator);
+    }
+
     /// <summary>
     /// Gets all the engagements
     /// </summary>
@@ -65,7 +77,17 @@ public class EngagementsController: ControllerBase
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List, Domain.Scopes.Engagements.All);
 
-        var result = await _engagementManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
+        PagedResult<Engagement> result;
+        if (IsSiteAdministrator())
+        {
+            result = await _engagementManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
+        }
+        else
+        {
+            var ownerOid = GetOwnerOid();
+            result = await _engagementManager.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
+        }
+
         var items = _mapper.Map<List<EngagementResponse>>(result.Items);
         
         return new PagedResponse<EngagementResponse>
@@ -99,6 +121,12 @@ public class EngagementsController: ControllerBase
         var engagement = await _engagementManager.GetAsync(engagementId);
         if (engagement is null)
             return NotFound();
+
+        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
+
         return Ok(_mapper.Map<EngagementResponse>(engagement));
     }
 
@@ -125,6 +153,7 @@ public class EngagementsController: ControllerBase
         }
 
         var engagement = _mapper.Map<Engagement>(request);
+        engagement.CreatedByEntraOid = GetOwnerOid();
         var result = await _engagementManager.SaveAsync(engagement);
         if (result.IsSuccess && result.Value != null)
         {
@@ -159,8 +188,18 @@ public class EngagementsController: ControllerBase
             return BadRequest(ModelState);    
         }
 
+        var existing = await _engagementManager.GetAsync(engagementId);
+        if (existing is null)
+            return NotFound();
+
+        if (!IsSiteAdministrator() && existing.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
+
         var engagement = _mapper.Map<Engagement>(request);
         engagement.Id = engagementId;
+        engagement.CreatedByEntraOid = existing.CreatedByEntraOid;
         var result = await _engagementManager.SaveAsync(engagement);
         if (result.IsSuccess && result.Value != null)
         {
@@ -188,6 +227,18 @@ public class EngagementsController: ControllerBase
     public async Task<ActionResult<bool>> DeleteEngagementAsync(int engagementId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Delete, Domain.Scopes.Engagements.All);
+
+        var engagement = await _engagementManager.GetAsync(engagementId);
+        if (engagement is null)
+        {
+            _logger.LogWarning("Engagement {EngagementId} not found for deletion", engagementId);
+            return new NotFoundResult();
+        }
+
+        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
         
         var wasDeleted = await _engagementManager.DeleteAsync(engagementId);
         if (wasDeleted.IsSuccess)
@@ -195,7 +246,7 @@ public class EngagementsController: ControllerBase
             _logger.LogInformation("Engagement {EngagementId} deleted successfully", engagementId);
             return new NoContentResult();
         }
-        _logger.LogWarning("Engagement {EngagementId} not found for deletion", engagementId);
+        _logger.LogWarning("Engagement {EngagementId} deletion failed", engagementId);
         return new NotFoundResult();
     }
     
@@ -218,6 +269,16 @@ public class EngagementsController: ControllerBase
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List, Domain.Scopes.Talks.All);
+
+        var engagement = await _engagementManager.GetAsync(engagementId);
+        if (engagement is null)
+            return NotFound();
+
+        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
+
         var result = await _engagementManager.GetTalksForEngagementAsync(engagementId, page, pageSize);
         var items = _mapper.Map<List<TalkResponse>>(result.Items);
         
@@ -251,6 +312,15 @@ public class EngagementsController: ControllerBase
         {
             _logger.LogWarning("CreateTalkAsync called with invalid model state");
             return BadRequest(ModelState);
+        }
+
+        var engagement = await _engagementManager.GetAsync(engagementId);
+        if (engagement is null)
+            return NotFound();
+
+        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
         }
 
         var talk = _mapper.Map<Talk>(request);
@@ -290,6 +360,15 @@ public class EngagementsController: ControllerBase
             return BadRequest(ModelState);
         }
 
+        var engagement = await _engagementManager.GetAsync(engagementId);
+        if (engagement is null)
+            return NotFound();
+
+        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
+
         var talk = _mapper.Map<Talk>(request);
         talk.EngagementId = engagementId;
         talk.Id = talkId;
@@ -322,6 +401,15 @@ public class EngagementsController: ControllerBase
     public async Task<ActionResult<TalkResponse>> GetTalkAsync(int engagementId, int talkId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.View, Domain.Scopes.Talks.All);
+
+        var engagement = await _engagementManager.GetAsync(engagementId);
+        if (engagement is null)
+            return NotFound();
+
+        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
         
         var talk = await _engagementManager.GetTalkAsync(talkId);
         if (talk is null)
@@ -347,6 +435,15 @@ public class EngagementsController: ControllerBase
     public async Task<ActionResult<bool>> DeleteTalkAsync(int engagementId, int talkId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Delete, Domain.Scopes.Talks.All);
+
+        var engagement = await _engagementManager.GetAsync(engagementId);
+        if (engagement is null)
+            return NotFound();
+
+        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
         
         var wasDeleted =  await _engagementManager.RemoveTalkFromEngagementAsync(talkId);
         
@@ -377,6 +474,15 @@ public class EngagementsController: ControllerBase
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.View, Domain.Scopes.Engagements.All);
 
+        var engagement = await _engagementManager.GetAsync(engagementId);
+        if (engagement is null)
+            return NotFound();
+
+        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
+
         var platforms = await _engagementSocialMediaPlatformDataStore.GetByEngagementIdAsync(engagementId);
         return Ok(_mapper.Map<List<EngagementSocialMediaPlatformResponse>>(platforms));
     }
@@ -404,6 +510,15 @@ public class EngagementsController: ControllerBase
     public async Task<ActionResult<EngagementSocialMediaPlatformResponse>> GetPlatformForEngagementAsync(int engagementId, int platformId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.View, Domain.Scopes.Engagements.All);
+
+        var engagement = await _engagementManager.GetAsync(engagementId);
+        if (engagement is null)
+            return NotFound();
+
+        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
 
         var platform = await _engagementSocialMediaPlatformDataStore.GetAsync(engagementId, platformId);
         if (platform is null)
@@ -439,6 +554,15 @@ public class EngagementsController: ControllerBase
         {
             _logger.LogWarning("AddPlatformToEngagementAsync called with invalid model state for engagement {EngagementId}", engagementId);
             return BadRequest(ModelState);
+        }
+
+        var engagement = await _engagementManager.GetAsync(engagementId);
+        if (engagement is null)
+            return NotFound();
+
+        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
         }
 
         var esmp = _mapper.Map<EngagementSocialMediaPlatform>(request);
@@ -493,6 +617,15 @@ public class EngagementsController: ControllerBase
     public async Task<IActionResult> RemovePlatformFromEngagementAsync(int engagementId, int platformId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Delete, Domain.Scopes.Engagements.All);
+
+        var engagement = await _engagementManager.GetAsync(engagementId);
+        if (engagement is null)
+            return NotFound();
+
+        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
 
         var deleted = await _engagementSocialMediaPlatformDataStore.DeleteAsync(engagementId, platformId);
         if (!deleted)
