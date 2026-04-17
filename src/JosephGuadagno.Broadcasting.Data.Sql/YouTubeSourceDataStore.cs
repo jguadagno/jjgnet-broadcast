@@ -75,6 +75,22 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
         return mapper.Map<List<Domain.Models.YouTubeSource>>(dbYouTubeSources);
     }
 
+    public async Task<List<Domain.Models.YouTubeSource>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
+    {
+        var dbYouTubeSources = await broadcastingContext.YouTubeSources
+            .Where(y => y.CreatedByEntraOid == ownerEntraOid)
+            .ToListAsync(cancellationToken);
+        
+        foreach (var source in dbYouTubeSources)
+        {
+            source.SourceTags = await broadcastingContext.SourceTags
+                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+        }
+        
+        return mapper.Map<List<Domain.Models.YouTubeSource>>(dbYouTubeSources);
+    }
+
     public async Task<OperationResult<bool>> DeleteAsync(Domain.Models.YouTubeSource entity, CancellationToken cancellationToken = default)
     {
         return await DeleteAsync(entity.Id, cancellationToken);

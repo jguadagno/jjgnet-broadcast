@@ -76,6 +76,22 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
         return mapper.Map<List<Domain.Models.SyndicationFeedSource>>(dbSyndicationFeedSources);
     }
 
+    public async Task<List<Domain.Models.SyndicationFeedSource>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
+    {
+        var dbSyndicationFeedSources = await broadcastingContext.SyndicationFeedSources
+            .Where(s => s.CreatedByEntraOid == ownerEntraOid)
+            .ToListAsync(cancellationToken);
+        
+        foreach (var source in dbSyndicationFeedSources)
+        {
+            source.SourceTags = await broadcastingContext.SourceTags
+                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+        }
+        
+        return mapper.Map<List<Domain.Models.SyndicationFeedSource>>(dbSyndicationFeedSources);
+    }
+
     public async Task<OperationResult<bool>> DeleteAsync(Domain.Models.SyndicationFeedSource entity, CancellationToken cancellationToken = default)
     {
         return await DeleteAsync(entity.Id, cancellationToken);
@@ -143,6 +159,38 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
     {
         var query = broadcastingContext.SyndicationFeedSources
             .AsNoTracking()
+            .Where(s => s.PublicationDate >= cutoffDate || s.ItemLastUpdatedOn >= cutoffDate);
+
+        if (excludedCategories.Count > 0)
+        {
+            var excludedSourceIds = await broadcastingContext.SourceTags
+                .Where(st => st.SourceType == SourceType && excludedCategories.Contains(st.Tag))
+                .Select(st => st.SourceId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            query = query.Where(s => !excludedSourceIds.Contains(s.Id));
+        }
+
+        var dbSyndicationFeedSource = await query.OrderBy(u => Guid.NewGuid())
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (dbSyndicationFeedSource is not null)
+        {
+            dbSyndicationFeedSource.SourceTags = await broadcastingContext.SourceTags
+                .AsNoTracking()
+                .Where(st => st.SourceId == dbSyndicationFeedSource.Id && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+        }
+
+        return dbSyndicationFeedSource is null ? null : mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
+    }
+
+    public async Task<Domain.Models.SyndicationFeedSource?> GetRandomSyndicationDataAsync(string ownerEntraOid, DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default)
+    {
+        var query = broadcastingContext.SyndicationFeedSources
+            .AsNoTracking()
+            .Where(s => s.CreatedByEntraOid == ownerEntraOid)
             .Where(s => s.PublicationDate >= cutoffDate || s.ItemLastUpdatedOn >= cutoffDate);
 
         if (excludedCategories.Count > 0)

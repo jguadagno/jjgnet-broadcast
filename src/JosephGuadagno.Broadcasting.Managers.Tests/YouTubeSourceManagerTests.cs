@@ -52,14 +52,14 @@ public class YouTubeSourceManagerTests
     {
         // Arrange
         var sources = new List<YouTubeSource> { new YouTubeSource { Id = 1, CreatedByEntraOid = "" } };
-        _repository.Setup(r => r.GetAllAsync(default)).ReturnsAsync(sources);
+        _repository.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(sources);
 
         // Act
         var result = await _youTubeSourceManager.GetAllAsync();
 
         // Assert
         Assert.Equal(sources, result);
-        _repository.Verify(r => r.GetAllAsync(default), Times.Once);
+        _repository.Verify(r => r.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
