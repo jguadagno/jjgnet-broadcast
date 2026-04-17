@@ -3,10 +3,9 @@
 
 name: Publish Azure Function App - jjgnet-broadcast
 
+# Push trigger disabled: Epic #609 (Sprints 17-19) — Functions will be broken until #732 is complete.
+# Re-enable push trigger after Sprint 19 merges to main.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency:
