@@ -18,19 +18,15 @@ public class SchedulesControllerTests
 {
     private readonly Mock<IScheduledItemManager> _scheduledItemManagerMock;
     private readonly Mock<ILogger<SchedulesController>> _loggerMock;
-    private readonly IMapper _mapper;
+
+    // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
+    // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
+    private static readonly IMapper _mapper = ApiTestMapper.Instance;
 
     public SchedulesControllerTests()
     {
         _scheduledItemManagerMock = new Mock<IScheduledItemManager>();
         _loggerMock = new Mock<ILogger<SchedulesController>>();
-        
-        // Configure AutoMapper with the API profile
-        var mapperConfig = new MapperConfiguration(cfg =>
-        {
-            cfg.AddProfile<JosephGuadagno.Broadcasting.Api.MappingProfiles.ApiBroadcastingProfile>();
-        }, new LoggerFactory());
-        _mapper = mapperConfig.CreateMapper();
     }
 
     // -------------------------------------------------------------------------
@@ -66,14 +62,16 @@ public class SchedulesControllerTests
         return new ControllerContext { HttpContext = httpContext };
     }
 
-    private static ScheduledItem BuildScheduledItem(int id = 1) => new()
+    private static ScheduledItem BuildScheduledItem(int id = 1, string oid = "test-oid-12345") => new()
     {
         Id = id,
         ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
         ItemPrimaryKey = id * 10,
         Message = $"Check out item {id}!",
         SendOnDateTime = DateTimeOffset.UtcNow.AddDays(id),
-        MessageSent = false
+        MessageSent = false,
+        // Must match the ownerOid set in CreateControllerContext so ownership checks pass.
+        CreatedByEntraOid = oid
     };
 
     private static ScheduledItemRequest BuildScheduledItemRequest(int id = 1) => new()
@@ -97,7 +95,7 @@ public class SchedulesControllerTests
             BuildScheduledItem(1),
             BuildScheduledItem(2)
         };
-        _scheduledItemManagerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+        _scheduledItemManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = items, TotalCount = items.Count });
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
@@ -110,14 +108,14 @@ public class SchedulesControllerTests
         result.Value!.Items.Should().HaveCount(2);
         result.Value!.Items.Should().BeEquivalentTo(items, opts => opts.ExcludingMissingMembers());
         result.Value!.TotalCount.Should().Be(2);
-        _scheduledItemManagerMock.Verify(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
+        _scheduledItemManagerMock.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     [Fact]
     public async Task GetScheduledItemsAsync_WhenNoItemsExist_ReturnsEmptyList()
     {
         // Arrange
-        _scheduledItemManagerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+        _scheduledItemManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 });
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
@@ -129,7 +127,7 @@ public class SchedulesControllerTests
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().BeEmpty();
         result.Value!.TotalCount.Should().Be(0);
-        _scheduledItemManagerMock.Verify(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
+        _scheduledItemManagerMock.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------
@@ -267,6 +265,8 @@ public class SchedulesControllerTests
     {
         // Arrange
         var request = BuildScheduledItemRequest(5);
+        // GetAsync is called first to load the existing item for the ownership check.
+        _scheduledItemManagerMock.Setup(m => m.GetAsync(5)).ReturnsAsync(BuildScheduledItem(5));
         var savedItem = BuildScheduledItem(5);
         savedItem.Message = "Updated message";
         _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(OperationResult<ScheduledItem>.Success(savedItem));
@@ -288,6 +288,8 @@ public class SchedulesControllerTests
     {
         // Arrange
         var request = BuildScheduledItemRequest(5);
+        // GetAsync is called first to load the existing item for the ownership check.
+        _scheduledItemManagerMock.Setup(m => m.GetAsync(5)).ReturnsAsync(BuildScheduledItem(5));
         _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(OperationResult<ScheduledItem>.Failure("Save failed"));
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
@@ -308,6 +310,8 @@ public class SchedulesControllerTests
     public async Task DeleteScheduledItemAsync_WhenItemExists_ReturnsNoContent()
     {
         // Arrange
+        // GetAsync is called first to load the existing item for the ownership check.
+        _scheduledItemManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(BuildScheduledItem(1));
         _scheduledItemManagerMock.Setup(m => m.DeleteAsync(1)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
@@ -324,7 +328,9 @@ public class SchedulesControllerTests
     public async Task DeleteScheduledItemAsync_WhenItemNotFound_ReturnsNotFound()
     {
         // Arrange
-        _scheduledItemManagerMock.Setup(m => m.DeleteAsync(99)).ReturnsAsync(OperationResult<bool>.Failure("Not found"));
+        // The controller now fetches the item first (ownership check).  When GetAsync
+        // returns null it short-circuits with NotFound — DeleteAsync is never invoked.
+        _scheduledItemManagerMock.Setup(m => m.GetAsync(99)).Returns(Task.FromResult<ScheduledItem?>(null));
 
         var sut = CreateSut(Domain.Scopes.Schedules.All);
 
@@ -333,7 +339,8 @@ public class SchedulesControllerTests
 
         // Assert
         result.Result.Should().BeOfType<NotFoundResult>();
-        _scheduledItemManagerMock.Verify(m => m.DeleteAsync(99), Times.Once);
+        _scheduledItemManagerMock.Verify(m => m.GetAsync(99), Times.Once);
+        _scheduledItemManagerMock.Verify(m => m.DeleteAsync(It.IsAny<int>()), Times.Never);
     }
 
     // -------------------------------------------------------------------------
