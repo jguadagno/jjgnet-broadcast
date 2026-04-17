@@ -44,6 +44,14 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         return mapper.Map<List<Domain.Models.Engagement>>(dbEngagements);
     }
 
+    public async Task<List<Domain.Models.Engagement>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
+    {
+        var dbEngagements = await broadcastingContext.Engagements
+            .Where(e => e.CreatedByEntraOid == ownerEntraOid)
+            .ToListAsync(cancellationToken);
+        return mapper.Map<List<Domain.Models.Engagement>>(dbEngagements);
+    }
+
     public async Task<OperationResult<bool>> DeleteAsync(Domain.Models.Engagement engagement, CancellationToken cancellationToken = default)
     {
         return await DeleteAsync(engagement.Id, cancellationToken);
@@ -217,6 +225,36 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
     public async Task<Domain.Models.PagedResult<Domain.Models.Engagement>> GetAllAsync(int page, int pageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null, CancellationToken cancellationToken = default)
     {
         IQueryable<Models.Engagement> query = broadcastingContext.Engagements;
+        
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(e => e.Name.ToLower().Contains(lowerFilter));
+        }
+        
+        query = sortBy?.ToLowerInvariant() switch
+        {
+            "name" => sortDescending ? query.OrderByDescending(e => e.Name) : query.OrderBy(e => e.Name),
+            "enddate" => sortDescending ? query.OrderByDescending(e => e.EndDateTime) : query.OrderBy(e => e.EndDateTime),
+            _ => sortDescending ? query.OrderByDescending(e => e.StartDateTime) : query.OrderBy(e => e.StartDateTime),
+        };
+        
+        var totalCount = await query.CountAsync(cancellationToken);
+        var dbItems = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+        return new Domain.Models.PagedResult<Domain.Models.Engagement>
+        {
+            Items = mapper.Map<List<Domain.Models.Engagement>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.Engagement>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Models.Engagement> query = broadcastingContext.Engagements
+            .Where(e => e.CreatedByEntraOid == ownerEntraOid);
         
         if (!string.IsNullOrWhiteSpace(filter))
         {

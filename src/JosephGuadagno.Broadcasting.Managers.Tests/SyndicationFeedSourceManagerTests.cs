@@ -52,14 +52,14 @@ public class SyndicationFeedSourceManagerTests
     {
         // Arrange
         var sources = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "" } };
-        _repository.Setup(r => r.GetAllAsync(default)).ReturnsAsync(sources);
+        _repository.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(sources);
 
         // Act
         var result = await _syndicationFeedSourceManager.GetAllAsync();
 
         // Assert
         Assert.Equal(sources, result);
-        _repository.Verify(r => r.GetAllAsync(default), Times.Once);
+        _repository.Verify(r => r.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
