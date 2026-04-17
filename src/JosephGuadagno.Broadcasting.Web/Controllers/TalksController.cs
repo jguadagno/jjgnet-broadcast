@@ -44,6 +44,16 @@ public class TalksController : Controller
         {
             return NotFound();
         }
+
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || talk.CreatedByEntraOid == null || talk.CreatedByEntraOid != currentUserOid)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to view this talk.";
+                return RedirectToAction("Edit", "Engagements", new { id = engagementId });
+            }
+        }
         
         var talkViewModel = _mapper.Map<TalkViewModel>(talk);
         return View(talkViewModel);
@@ -63,6 +73,17 @@ public class TalksController : Controller
         {
             return NotFound();
         }
+
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || talk.CreatedByEntraOid == null || talk.CreatedByEntraOid != currentUserOid)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to edit this talk.";
+                return RedirectToAction("Edit", "Engagements", new { id = engagementId });
+            }
+        }
+
         var talkViewModel = _mapper.Map<TalkViewModel>(talk);
         return View(talkViewModel);
     }
@@ -103,13 +124,13 @@ public class TalksController : Controller
             return NotFound();
         }
 
-        // Ownership check: Administrators can delete anything, Contributors only their own
-        if (!User.IsInRole(RoleNames.Administrator))
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
         {
             var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
             if (currentUserOid == null || talk.CreatedByEntraOid == null || talk.CreatedByEntraOid != currentUserOid)
             {
-                return Forbid();
+                TempData["ErrorMessage"] = "You do not have permission to delete this talk.";
+                return RedirectToAction("Edit", "Engagements", new { id = engagementId });
             }
         }
 
@@ -135,13 +156,13 @@ public class TalksController : Controller
             return NotFound();
         }
 
-        // Ownership check: Administrators can delete anything, Contributors only their own
-        if (!User.IsInRole(RoleNames.Administrator))
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
         {
             var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
             if (currentUserOid == null || talk.CreatedByEntraOid == null || talk.CreatedByEntraOid != currentUserOid)
             {
-                return Forbid();
+                TempData["ErrorMessage"] = "You do not have permission to delete this talk.";
+                return RedirectToAction("Edit", "Engagements", new { id = engagementId });
             }
         }
 

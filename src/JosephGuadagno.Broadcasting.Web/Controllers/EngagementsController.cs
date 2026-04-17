@@ -72,6 +72,16 @@ public class EngagementsController : Controller
             return NotFound();
         }
 
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || engagement.CreatedByEntraOid == null || engagement.CreatedByEntraOid != currentUserOid)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to view this engagement.";
+                return RedirectToAction("Index");
+            }
+        }
+
         var engagementViewModel = _mapper.Map<EngagementViewModel>(engagement);
 
         // Load platforms for this engagement
@@ -93,6 +103,16 @@ public class EngagementsController : Controller
         if (engagement == null)
         {
             return NotFound();
+        }
+
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || engagement.CreatedByEntraOid == null || engagement.CreatedByEntraOid != currentUserOid)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to edit this engagement.";
+                return RedirectToAction("Index");
+            }
         }
 
         var engagementViewModel = _mapper.Map<EngagementViewModel>(engagement);
@@ -140,6 +160,16 @@ public class EngagementsController : Controller
             return NotFound();
         }
 
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || engagement.CreatedByEntraOid == null || engagement.CreatedByEntraOid != currentUserOid)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to delete this engagement.";
+                return RedirectToAction("Index");
+            }
+        }
+
         var engagementViewModel = _mapper.Map<EngagementViewModel>(engagement);
         return View(engagementViewModel);
     }
@@ -158,11 +188,14 @@ public class EngagementsController : Controller
         var engagement = await _engagementService.GetEngagementAsync(id);
         if (engagement == null) return NotFound();
 
-        if (!User.IsInRole(RoleNames.Administrator))
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
         {
             var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
             if (currentUserOid == null || engagement.CreatedByEntraOid == null || engagement.CreatedByEntraOid != currentUserOid)
-                return Forbid();
+            {
+                TempData["ErrorMessage"] = "You do not have permission to delete this engagement.";
+                return RedirectToAction("Index");
+            }
         }
 
         var result = await _engagementService.DeleteEngagementAsync(id);

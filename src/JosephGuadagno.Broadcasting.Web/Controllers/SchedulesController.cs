@@ -90,6 +90,17 @@ public class SchedulesController : Controller
         {
             return NotFound();
         }
+
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || scheduledItem.CreatedByEntraOid == null || scheduledItem.CreatedByEntraOid != currentUserOid)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to view this scheduled item.";
+                return RedirectToAction("Index");
+            }
+        }
+
         var scheduledItemViewModel = _mapper.Map<ScheduledItemViewModel>(scheduledItem);
         return View(scheduledItemViewModel);
     }
@@ -106,6 +117,17 @@ public class SchedulesController : Controller
         {
             return NotFound();
         }
+
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || scheduledItem.CreatedByEntraOid == null || scheduledItem.CreatedByEntraOid != currentUserOid)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to edit this scheduled item.";
+                return RedirectToAction("Index");
+            }
+        }
+
         var scheduledItemViewModel = _mapper.Map<ScheduledItemViewModel>(scheduledItem);
         return View(scheduledItemViewModel);
     }
@@ -143,6 +165,16 @@ public class SchedulesController : Controller
             return NotFound();
         }
 
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || scheduledItem.CreatedByEntraOid == null || scheduledItem.CreatedByEntraOid != currentUserOid)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to delete this scheduled item.";
+                return RedirectToAction("Index");
+            }
+        }
+
         var scheduledItemViewModel = _mapper.Map<ScheduledItemViewModel>(scheduledItem);
         return View(scheduledItemViewModel);
     }
@@ -160,11 +192,14 @@ public class SchedulesController : Controller
         var scheduledItem = await _scheduledItemService.GetScheduledItemAsync(id);
         if (scheduledItem == null) return NotFound();
 
-        if (!User.IsInRole(RoleNames.Administrator))
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
         {
             var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
             if (currentUserOid == null || scheduledItem.CreatedByEntraOid == null || scheduledItem.CreatedByEntraOid != currentUserOid)
-                return Forbid();
+            {
+                TempData["ErrorMessage"] = "You do not have permission to delete this scheduled item.";
+                return RedirectToAction("Index");
+            }
         }
 
         var result = await _scheduledItemService.DeleteScheduledItemAsync(id);

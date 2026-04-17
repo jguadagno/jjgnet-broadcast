@@ -59,10 +59,25 @@ public class EngagementsControllerTests
     public async Task Details_WhenEngagementFound_ShouldReturnViewWithEngagementViewModel()
     {
         // Arrange
-        var engagement = new Engagement { Id = 1 };
+        var userOid = "test-user-oid";
+        var engagement = new Engagement { Id = 1, CreatedByEntraOid = userOid };
         var viewModel = new EngagementViewModel { Id = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(engagement);
+        _engagementService.Setup(s => s.GetPlatformsForEngagementAsync(1)).ReturnsAsync(new List<EngagementSocialMediaPlatform>());
         _mapper.Setup(m => m.Map<EngagementViewModel>(It.IsAny<object>())).Returns(viewModel);
+        _mapper.Setup(m => m.Map<List<EngagementSocialMediaPlatformViewModel>>(It.IsAny<object>())).Returns(new List<EngagementSocialMediaPlatformViewModel>());
 
         // Act
         var result = await _controller.Details(1);
@@ -90,8 +105,21 @@ public class EngagementsControllerTests
     public async Task Edit_Get_WhenEngagementFound_ShouldReturnViewWithEngagementViewModel()
     {
         // Arrange
-        var engagement = new Engagement { Id = 1 };
+        var userOid = "test-user-oid";
+        var engagement = new Engagement { Id = 1, CreatedByEntraOid = userOid };
         var viewModel = new EngagementViewModel { Id = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(engagement);
         _engagementService.Setup(s => s.GetPlatformsForEngagementAsync(1))
             .ReturnsAsync(new List<EngagementSocialMediaPlatform>());
@@ -160,8 +188,21 @@ public class EngagementsControllerTests
     public async Task Delete_Get_ShouldReturnConfirmationView()
     {
         // Arrange
-        var engagement = new Engagement { Id = 1 };
+        var userOid = "test-user-oid";
+        var engagement = new Engagement { Id = 1, CreatedByEntraOid = userOid };
         var viewModel = new EngagementViewModel { Id = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(engagement);
         _mapper.Setup(m => m.Map<EngagementViewModel>(It.IsAny<object>())).Returns(viewModel);
 
@@ -300,7 +341,7 @@ public class EngagementsControllerTests
     }
 
     [Fact]
-    public async Task DeleteConfirmed_WhenUserIsAdministrator_DeletesAnyEngagement()
+    public async Task DeleteConfirmed_WhenUserIsSiteAdministrator_DeletesAnyEngagement()
     {
         // Arrange
         var engagementId = 1;
@@ -313,7 +354,7 @@ public class EngagementsControllerTests
         var claims = new List<Claim>
         {
             new Claim(ApplicationClaimTypes.EntraObjectId, "admin-oid"),
-            new Claim(ClaimTypes.Role, RoleNames.Administrator)
+            new Claim(ClaimTypes.Role, RoleNames.SiteAdministrator)
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         _controller.ControllerContext = new ControllerContext
@@ -369,7 +410,7 @@ public class EngagementsControllerTests
     }
 
     [Fact]
-    public async Task DeleteConfirmed_WhenUserIsNotOwnerAndNotAdmin_ReturnsForbid()
+    public async Task DeleteConfirmed_WhenUserIsNotOwnerAndNotAdmin_RedirectsWithError()
     {
         // Arrange
         var engagementId = 1;
@@ -397,7 +438,9 @@ public class EngagementsControllerTests
         var result = await _controller.DeleteConfirmed(engagementId);
 
         // Assert
-        Assert.IsType<ForbidResult>(result);
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("You do not have permission to delete this engagement.", _controller.TempData["ErrorMessage"]);
         _engagementService.Verify(s => s.DeleteEngagementAsync(It.IsAny<int>()), Times.Never);
     }
 
