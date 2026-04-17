@@ -52,7 +52,8 @@ public class LoadAllPostsTests
             Url = $"https://example.com/posts/{feedIdentifier}",
             PublicationDate = DateTimeOffset.UtcNow,
             AddedOn = DateTimeOffset.UtcNow,
-            LastUpdatedOn = DateTimeOffset.UtcNow
+            LastUpdatedOn = DateTimeOffset.UtcNow,
+            CreatedByEntraOid = ""
         };
 
     private void SetupFeedCheck() =>

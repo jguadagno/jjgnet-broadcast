@@ -56,7 +56,8 @@ public class LoadNewVideosTests
             Url = $"https://youtube.com/watch?v={videoId}",
             PublicationDate = DateTimeOffset.UtcNow,
             AddedOn = DateTimeOffset.UtcNow,
-            LastUpdatedOn = DateTimeOffset.UtcNow
+            LastUpdatedOn = DateTimeOffset.UtcNow,
+            CreatedByEntraOid = ""
         };
 
     private void SetupFeedCheck() =>

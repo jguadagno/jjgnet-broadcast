@@ -50,7 +50,8 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
                 Tags = "csharp,azure",
                 PublicationDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 AddedOn = DateTimeOffset.UtcNow,
-                LastUpdatedOn = DateTimeOffset.UtcNow
+                LastUpdatedOn = DateTimeOffset.UtcNow,
+                CreatedByEntraOid = ""
             },
             new SyndicationFeedSource
             {
@@ -62,7 +63,8 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
                 Tags = "dotnet,aws",
                 PublicationDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 AddedOn = DateTimeOffset.UtcNow,
-                LastUpdatedOn = DateTimeOffset.UtcNow
+                LastUpdatedOn = DateTimeOffset.UtcNow,
+                CreatedByEntraOid = ""
             },
             new SyndicationFeedSource
             {
@@ -75,7 +77,8 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
                 PublicationDate = new DateTimeOffset(2023, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 ItemLastUpdatedOn = new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero),
                 AddedOn = DateTimeOffset.UtcNow,
-                LastUpdatedOn = DateTimeOffset.UtcNow
+                LastUpdatedOn = DateTimeOffset.UtcNow,
+                CreatedByEntraOid = ""
             },
             new SyndicationFeedSource
             {
@@ -87,7 +90,8 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
                 Tags = "java",
                 PublicationDate = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 AddedOn = DateTimeOffset.UtcNow,
-                LastUpdatedOn = DateTimeOffset.UtcNow
+                LastUpdatedOn = DateTimeOffset.UtcNow,
+                CreatedByEntraOid = ""
             },
             new SyndicationFeedSource
             {
@@ -99,7 +103,8 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
                 Tags = null,
                 PublicationDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 AddedOn = DateTimeOffset.UtcNow,
-                LastUpdatedOn = DateTimeOffset.UtcNow
+                LastUpdatedOn = DateTimeOffset.UtcNow,
+                CreatedByEntraOid = ""
             }
         };
         _context.SyndicationFeedSources.AddRange(sources);
@@ -265,7 +270,8 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
             Author = "Author",
             Url = "newurl",
             Tags = ["tag"],
-            PublicationDate = DateTimeOffset.UtcNow
+            PublicationDate = DateTimeOffset.UtcNow,
+            CreatedByEntraOid = ""
         };
 
         var result = await _dataStore.SaveAsync(newSource);
@@ -365,7 +371,8 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
             Author = "Author",
             Url = "fail-url",
             Tags = ["x"],
-            PublicationDate = DateTimeOffset.UtcNow
+            PublicationDate = DateTimeOffset.UtcNow,
+            CreatedByEntraOid = ""
         };
 
         var result = await store.SaveAsync(entity);

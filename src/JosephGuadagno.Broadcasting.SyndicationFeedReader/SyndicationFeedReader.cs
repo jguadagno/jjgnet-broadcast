@@ -68,6 +68,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
                 Url = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri ?? string.Empty,
                 AddedOn = currentTime,
                 LastUpdatedOn = currentTime,
+                CreatedByEntraOid = string.Empty,
                 Tags = syndicationItem.Categories?.Select(c => c.Name).ToList() ?? []
             })
             .ToList();
@@ -123,6 +124,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
                 Url = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri ?? string.Empty,
                 AddedOn = currentTime,
                 LastUpdatedOn = currentTime,
+                CreatedByEntraOid = string.Empty,
                 Tags = syndicationItem.Categories?.Select(c => c.Name).ToList() ?? []
             })
             .ToList();

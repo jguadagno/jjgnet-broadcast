@@ -42,7 +42,8 @@ public class YouTubeSourceDataStoreTests : IDisposable
         Url = url,
         PublicationDate = DateTimeOffset.UtcNow,
         AddedOn = DateTimeOffset.UtcNow,
-        LastUpdatedOn = DateTimeOffset.UtcNow
+        LastUpdatedOn = DateTimeOffset.UtcNow,
+        CreatedByEntraOid = ""
     };
 
     [Fact]
@@ -104,7 +105,8 @@ public class YouTubeSourceDataStoreTests : IDisposable
             Url = "https://youtube.com/watch?v=newvid",
             PublicationDate = DateTimeOffset.UtcNow,
             AddedOn = DateTimeOffset.UtcNow,
-            LastUpdatedOn = DateTimeOffset.UtcNow
+            LastUpdatedOn = DateTimeOffset.UtcNow,
+            CreatedByEntraOid = ""
         };
 
         // Act
@@ -135,7 +137,8 @@ public class YouTubeSourceDataStoreTests : IDisposable
             Url = source.Url,
             PublicationDate = source.PublicationDate,
             AddedOn = source.AddedOn,
-            LastUpdatedOn = DateTimeOffset.UtcNow
+            LastUpdatedOn = DateTimeOffset.UtcNow,
+            CreatedByEntraOid = ""
         };
 
         // Act
@@ -155,7 +158,7 @@ public class YouTubeSourceDataStoreTests : IDisposable
         _context.YouTubeSources.Add(source);
         await _context.SaveChangesAsync();
 
-        var domainSource = new Domain.Models.YouTubeSource { Id = source.Id };
+        var domainSource = new Domain.Models.YouTubeSource { Id = source.Id, CreatedByEntraOid = "" };
 
         // Act
         var result = await _dataStore.DeleteAsync(domainSource);

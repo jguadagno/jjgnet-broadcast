@@ -1,4 +1,4 @@
-using Moq;
+﻿using Moq;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -20,7 +20,7 @@ public class YouTubeSourceManagerTests
     public async Task GetAsync_ShouldCallRepository()
     {
         // Arrange
-        var source = new YouTubeSource { Id = 1 };
+        var source = new YouTubeSource { Id = 1, CreatedByEntraOid = "" };
         _repository.Setup(r => r.GetAsync(1)).ReturnsAsync(source);
 
         // Act
@@ -35,7 +35,7 @@ public class YouTubeSourceManagerTests
     public async Task SaveAsync_ShouldCallRepository()
     {
         // Arrange
-        var source = new YouTubeSource { Id = 1 };
+        var source = new YouTubeSource { Id = 1, CreatedByEntraOid = "" };
         _repository.Setup(r => r.SaveAsync(source, default)).ReturnsAsync(OperationResult<YouTubeSource>.Success(source));
 
         // Act
@@ -51,7 +51,7 @@ public class YouTubeSourceManagerTests
     public async Task GetAllAsync_ShouldCallRepository()
     {
         // Arrange
-        var sources = new List<YouTubeSource> { new YouTubeSource { Id = 1 } };
+        var sources = new List<YouTubeSource> { new YouTubeSource { Id = 1, CreatedByEntraOid = "" } };
         _repository.Setup(r => r.GetAllAsync(default)).ReturnsAsync(sources);
 
         // Act
@@ -66,7 +66,7 @@ public class YouTubeSourceManagerTests
     public async Task DeleteAsync_Entity_ShouldCallRepository()
     {
         // Arrange
-        var source = new YouTubeSource { Id = 1 };
+        var source = new YouTubeSource { Id = 1, CreatedByEntraOid = "" };
         _repository.Setup(r => r.DeleteAsync(source, default)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         // Act
@@ -95,7 +95,7 @@ public class YouTubeSourceManagerTests
     public async Task GetByUrlAsync_ShouldCallRepository()
     {
         // Arrange
-        var source = new YouTubeSource { Id = 1, Url = "http://test.com" };
+        var source = new YouTubeSource { Id = 1, Url = "http://test.com", CreatedByEntraOid = "" };
         _repository.Setup(r => r.GetByUrlAsync("http://test.com")).ReturnsAsync(source);
 
         // Act
@@ -110,7 +110,7 @@ public class YouTubeSourceManagerTests
     public async Task GetByVideoIdAsync_ShouldCallRepository()
     {
         // Arrange
-        var source = new YouTubeSource { Id = 1, VideoId = "testvideoid" };
+        var source = new YouTubeSource { Id = 1, VideoId = "testvideoid", CreatedByEntraOid = "" };
         _repository.Setup(r => r.GetByVideoIdAsync("testvideoid")).ReturnsAsync(source);
 
         // Act
