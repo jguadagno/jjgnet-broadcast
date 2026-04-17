@@ -7,7 +7,7 @@
     <h1>
         <i class="bi bi-share me-2"></i>Social Media Platforms
     </h1>
-    @if (User.IsInRole("Administrator") || User.IsInRole("Contributor"))
+    @if (User.IsInRole("Site Administrator") || User.IsInRole("Administrator") || User.IsInRole("Contributor"))
     {
         <a asp-action="Add" asp-controller="SocialMediaPlatforms" class="btn btn-primary">
             <i class="bi bi-plus-circle me-2"></i>Add New Platform
@@ -65,9 +65,9 @@
                         }
                     </td>
                     <td class="text-end">
-                        @if (User.IsInRole("Administrator") || User.IsInRole("Contributor"))
+                        @if (User.IsInRole("Site Administrator") || User.IsInRole("Administrator") || User.IsInRole("Contributor"))
                         {
-                            <a asp-action="Edit" asp-controller="SocialMediaPlatforms" asp-route-id="@platform.Id"
+                            <a asp-action="Edit"asp-controller="SocialMediaPlatforms" asp-route-id="@platform.Id"
                                class="btn btn-sm btn-outline-secondary" title="Edit">
                                 <i class="bi bi-pencil-square"></i>
                             </a>
@@ -82,9 +82,9 @@
                                 </button>
                             </form>
                         }
-                        @if (User.IsInRole("Administrator"))
+                        @if (User.IsInRole("Site Administrator"))
                         {
-                            <a asp-action="Delete" asp-controller="SocialMediaPlatforms" asp-route-id="@platform.Id"
+                            <a asp-action="Delete"asp-controller="SocialMediaPlatforms" asp-route-id="@platform.Id"
                                class="btn btn-sm btn-danger" title="Delete">
                                 <i class="bi bi-trash"></i>
                             </a>
@@ -101,7 +101,7 @@
     <div class="text-center text-muted py-5">
         <i class="bi bi-share fs-1 mb-3 d-block"></i>
         <p>No social media platforms found.</p>
-        @if (User.IsInRole("Administrator") || User.IsInRole("Contributor"))
+        @if (User.IsInRole("Site Administrator") || User.IsInRole("Administrator") || User.IsInRole("Contributor"))
         {
             <a asp-action="Add" asp-controller="SocialMediaPlatforms" class="btn btn-primary">
                 <i class="bi bi-plus-circle me-2"></i>Add the first platform
