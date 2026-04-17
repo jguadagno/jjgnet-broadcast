@@ -2871,6 +2871,34 @@ Every merge to `main` deployed directly to production with no approval gate. One
 | `WebApp` | `web-jjgnet-broadcast` | `web-jjgnet-broadcast` | Web App Service, P1v3, `ASPNETCORE_ENVIRONMENT=Production` |
 | `WebAppSlot` | `web-staging` | `web-jjgnet-broadcast/staging` | Staging slot, `ASPNETCORE_ENVIRONMENT=Staging` |
 | `WebApp` | `jjgnet-broadcast` | `jjgnet-broadcast` | Functions App, P1v3 (shared plan), `AZURE_FUNCTIONS_ENVIRONMENT=Production` |
+
+---
+
+## Decision: CreatedByEntraOid Promoted to NOT NULL
+
+**Date:** 2026-04-17  
+**Author:** Morpheus (Data Engineer)  
+**Related Issues:** #725, #726, PR #734  
+
+### Decision
+
+`CreatedByEntraOid` has been changed from `NVARCHAR(36) NULL` to `NVARCHAR(36) NOT NULL` on the `SyndicationFeedSources` and `YouTubeSources` tables. The corresponding Domain and Data.Sql C# models now use `required string` (non-nullable).
+
+### Reason
+
+PR #733 added the column as nullable to allow backward compatibility with existing rows. A backfill migration (`2026-04-17-backfill-owner-oid.sql`) was included and Joseph confirmed all records have been updated. With backfill confirmed, the nullable safety net is no longer needed and the constraint can be tightened.
+
+### What Changed
+
+- **SQL migration** (`scripts/database/migrations/2026-04-17-createdbyentraoid-not-null.sql`): Idempotent `ALTER COLUMN ... NOT NULL` using `sys.columns` `is_nullable = 1` guard.
+- **table-create.sql**: Column definition updated to `NOT NULL` for fresh environment provisioning via Aspire.
+- **Domain models**: `SyndicationFeedSource` and `YouTubeSource` — property promoted from `string?` to `[Required] [StringLength(36)] required string`.
+- **Data.Sql models**: Same promotion with `required string`.
+- **Automated readers** (`SyndicationFeedReader`, `YouTubeReader`): Set to `string.Empty` as a placeholder since these collectors have no authenticated user context. A future issue should consider injecting a system OID or service principal OID here.
+
+### Impact on Automated Collectors
+
+`SyndicationFeedReader` and `YouTubeReader` are automated processes with no authenticated user context. They now use `string.Empty` as `CreatedByEntraOid`. These records will appear ownerless in the RBAC ownership model — consistent with their prior `NULL` treatment (only Administrators can delete them, not Contributors).
 | `WebAppSlot` | `functions-staging` | `jjgnet-broadcast/staging` | Staging slot, `AZURE_FUNCTIONS_ENVIRONMENT=Staging` |
 
 ### Also Fixed
