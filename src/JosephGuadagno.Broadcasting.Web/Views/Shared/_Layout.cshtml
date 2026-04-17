@@ -74,7 +74,7 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="MessageTemplates" asp-action="Index">Message Templates</a>
                         </li>
-                        @if (User.IsInRole("Site Administrator") || User.IsInRole("Administrator") || User.IsInRole("Contributor"))
+                        @if (User.IsInRole(RoleNames.SiteAdministrator) || User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Contributor))
                         {
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="siteAdminDropdown" role="button"
@@ -88,7 +88,7 @@
                                     <li><a class="dropdown-item" asp-area="" asp-controller="SocialMediaPlatforms" asp-action="Index">
                                         <i class="bi bi-broadcast me-2"></i>Social Media Platforms
                                     </a></li>
-                                    @if (User.IsInRole("Site Administrator"))
+                                    @if (User.IsInRole(RoleNames.SiteAdministrator))
                                     {
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
