@@ -33,6 +33,11 @@ public class ScheduledItemManager: IScheduledItemManager
         return await _scheduledItemDataStore.GetAllAsync(cancellationToken);
     }
 
+    public async Task<List<ScheduledItem>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
+    {
+        return await _scheduledItemDataStore.GetAllAsync(ownerEntraOid, cancellationToken);
+    }
+
     public async Task<OperationResult<bool>> DeleteAsync(ScheduledItem entity, CancellationToken cancellationToken = default)
     {
         return await _scheduledItemDataStore.DeleteAsync(entity, cancellationToken);
@@ -53,9 +58,19 @@ public class ScheduledItemManager: IScheduledItemManager
         return await _scheduledItemDataStore.GetUnsentScheduledItemsAsync(cancellationToken);
     }
 
+    public async Task<List<ScheduledItem>> GetUnsentScheduledItemsAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
+    {
+        return await _scheduledItemDataStore.GetUnsentScheduledItemsAsync(ownerEntraOid, cancellationToken);
+    }
+
     public async Task<List<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, CancellationToken cancellationToken = default)
     {
         return await _scheduledItemDataStore.GetScheduledItemsByCalendarMonthAsync(year, month, cancellationToken);
+    }
+
+    public async Task<List<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(string ownerEntraOid, int year, int month, CancellationToken cancellationToken = default)
+    {
+        return await _scheduledItemDataStore.GetScheduledItemsByCalendarMonthAsync(ownerEntraOid, year, month, cancellationToken);
     }
 
     public async Task<bool> SentScheduledItemAsync(int primaryKey, CancellationToken cancellationToken = default)
@@ -73,15 +88,31 @@ public class ScheduledItemManager: IScheduledItemManager
         var items = await _scheduledItemDataStore.GetOrphanedScheduledItemsAsync(cancellationToken);
         return items.ToList();
     }
+
+    public async Task<List<ScheduledItem>> GetOrphanedScheduledItemsAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
+    {
+        var items = await _scheduledItemDataStore.GetOrphanedScheduledItemsAsync(ownerEntraOid, cancellationToken);
+        return items.ToList();
+    }
     
     public async Task<PagedResult<ScheduledItem>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
         return await _scheduledItemDataStore.GetAllAsync(page, pageSize, cancellationToken);
     }
+
+    public async Task<PagedResult<ScheduledItem>> GetAllAsync(string ownerEntraOid, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return await _scheduledItemDataStore.GetAllAsync(ownerEntraOid, page, pageSize, cancellationToken);
+    }
     
     public async Task<PagedResult<ScheduledItem>> GetUnsentScheduledItemsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
         return await _scheduledItemDataStore.GetUnsentScheduledItemsAsync(page, pageSize, cancellationToken);
+    }
+
+    public async Task<PagedResult<ScheduledItem>> GetUnsentScheduledItemsAsync(string ownerEntraOid, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return await _scheduledItemDataStore.GetUnsentScheduledItemsAsync(ownerEntraOid, page, pageSize, cancellationToken);
     }
     
     public async Task<PagedResult<ScheduledItem>> GetScheduledItemsToSendAsync(int page, int pageSize, CancellationToken cancellationToken = default)
@@ -93,9 +124,19 @@ public class ScheduledItemManager: IScheduledItemManager
     {
         return await _scheduledItemDataStore.GetScheduledItemsByCalendarMonthAsync(year, month, page, pageSize, cancellationToken);
     }
+
+    public async Task<PagedResult<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(string ownerEntraOid, int year, int month, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return await _scheduledItemDataStore.GetScheduledItemsByCalendarMonthAsync(ownerEntraOid, year, month, page, pageSize, cancellationToken);
+    }
     
     public async Task<PagedResult<ScheduledItem>> GetOrphanedScheduledItemsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
         return await _scheduledItemDataStore.GetOrphanedScheduledItemsAsync(page, pageSize, cancellationToken);
+    }
+
+    public async Task<PagedResult<ScheduledItem>> GetOrphanedScheduledItemsAsync(string ownerEntraOid, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        return await _scheduledItemDataStore.GetOrphanedScheduledItemsAsync(ownerEntraOid, page, pageSize, cancellationToken);
     }
 }

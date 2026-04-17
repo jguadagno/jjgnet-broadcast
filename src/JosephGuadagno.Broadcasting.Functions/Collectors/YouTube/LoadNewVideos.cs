@@ -52,7 +52,7 @@ public class LoadNewVideos(
             // Check for new items
             logger.LogDebug("Checking playlist for videos since '{LastItemAddedOrUpdated}'",
                 feedCheck.LastItemAddedOrUpdated);
-            var newItems = await youTubeReader.GetAsync(feedCheck.LastItemAddedOrUpdated);
+            var newItems = await youTubeReader.GetAsync(settingsOptions.Value.OwnerEntraOid, feedCheck.LastItemAddedOrUpdated);
 
             // If there is nothing new, save the last checked value and exit
             if (newItems.Count == 0)
