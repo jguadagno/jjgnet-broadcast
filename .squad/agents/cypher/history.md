@@ -95,3 +95,10 @@ Established by Joseph Guadagno:
 - Fix: removed `loggingBuilder.AddOpenTelemetry(...)` block from `Api/Program.cs`, removed `.WriteTo.OpenTelemetry()` from `Broadcasting.Serilog/LoggingExtensions.cs`, removed now-unused `Serilog.Sinks.OpenTelemetry` package and `using OpenTelemetry.Logs` directive
 - Decision filed: `.squad/decisions/inbox/cypher-otel-logging.md`
 
+### 2026-04-17: GitHub OAuth Token Limitations on Workflow Files
+- GitHub requires `workflow` scope on OAuth tokens to push changes to `.github/workflows/` files
+- Standard repo token from GH Copilot CLI doesn't include `workflow` scope — push is rejected with "refusing to allow an OAuth App to create or update workflow"
+- Workaround: Commit is local (in staging) but cannot be pushed via standard token. Requires either (a) personal token with workflow scope, (b) GitHub App with workflow permissions, or (c) Joseph's manual push
+- File change is ready to commit; workflow verification shows correct YAML structure with push trigger removed and explanatory comment added
+- Decision filed: `.squad/decisions/inbox/cypher-functions-deploy-disabled.md`
+
