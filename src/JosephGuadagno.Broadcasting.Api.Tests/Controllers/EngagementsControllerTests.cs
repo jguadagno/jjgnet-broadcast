@@ -19,31 +19,27 @@ public class EngagementsControllerTests
     private readonly Mock<IEngagementManager> _engagementManagerMock;
     private readonly Mock<IEngagementSocialMediaPlatformDataStore> _engagementSocialMediaPlatformDataStoreMock;
     private readonly Mock<ILogger<EngagementsController>> _loggerMock;
-    private readonly IMapper _mapper;
+
+    // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
+    // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
+    private static readonly IMapper _mapper = ApiTestMapper.Instance;
 
     public EngagementsControllerTests()
     {
         _engagementManagerMock = new Mock<IEngagementManager>();
         _engagementSocialMediaPlatformDataStoreMock = new Mock<IEngagementSocialMediaPlatformDataStore>();
         _loggerMock = new Mock<ILogger<EngagementsController>>();
-        
-        // Configure AutoMapper with the API profile
-        var mapperConfig = new MapperConfiguration(cfg =>
-        {
-            cfg.AddProfile<JosephGuadagno.Broadcasting.Api.MappingProfiles.ApiBroadcastingProfile>();
-        }, new LoggerFactory());
-        _mapper = mapperConfig.CreateMapper();
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
-    private EngagementsController CreateSut(string scopeClaimValue)
+    private EngagementsController CreateSut(string scopeClaimValue, string ownerOid = "test-oid-12345", bool isSiteAdmin = false)
     {
         var controller = new EngagementsController(_engagementManagerMock.Object, _engagementSocialMediaPlatformDataStoreMock.Object, _loggerMock.Object, _mapper)
         {
-            ControllerContext = CreateControllerContext(scopeClaimValue),
+            ControllerContext = CreateControllerContext(scopeClaimValue, ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
@@ -55,17 +51,37 @@ public class EngagementsControllerTests
     /// Both the short "scp" claim and the full URI claim type are set for maximum
     /// compatibility with different versions of Microsoft.Identity.Web.
     /// </summary>
-    private static ControllerContext CreateControllerContext(string scopeClaimValue)
+    private static ControllerContext CreateControllerContext(string scopeClaimValue, string ownerOid = "test-oid-12345", bool isSiteAdmin = false)
     {
-        var user = new ClaimsPrincipal(new ClaimsIdentity(
-        [
+        var claims = new List<Claim>
+        {
             new Claim("scp", scopeClaimValue),
-            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue)
-        ], "TestAuthentication"));
+            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue),
+            new Claim(Domain.Constants.ApplicationClaimTypes.EntraObjectId, ownerOid)
+        };
+        if (isSiteAdmin)
+            claims.Add(new Claim(ClaimTypes.Role, Domain.Constants.RoleNames.SiteAdministrator));
 
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthentication"));
         var httpContext = new DefaultHttpContext { User = user };
         return new ControllerContext { HttpContext = httpContext };
     }
+
+    /// <summary>
+    /// Builds an <see cref="Engagement"/> with <see cref="Engagement.CreatedByEntraOid"/>
+    /// matching the default owner OID used in <see cref="CreateControllerContext"/> so that
+    /// ownership checks inside the controller pass without requiring a SiteAdministrator role.
+    /// </summary>
+    private static Engagement BuildEngagement(int id, string oid = "test-oid-12345") => new()
+    {
+        Id = id,
+        Name = $"Conference {id}",
+        Url = $"https://conf-{id}.example.com",
+        StartDateTime = DateTimeOffset.UtcNow,
+        EndDateTime = DateTimeOffset.UtcNow.AddDays(id),
+        TimeZoneId = "UTC",
+        CreatedByEntraOid = oid
+    };
 
     // -------------------------------------------------------------------------
     // GetEngagementsAsync
@@ -77,10 +93,10 @@ public class EngagementsControllerTests
         // Arrange
         var engagements = new List<Engagement>
         {
-            new() { Id = 1, Name = "Conference A", Url = "https://conf-a.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(2), TimeZoneId = "UTC" },
-            new() { Id = 2, Name = "Conference B", Url = "https://conf-b.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(3), TimeZoneId = "UTC" }
+            new() { Id = 1, Name = "Conference A", Url = "https://conf-a.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(2), TimeZoneId = "UTC", CreatedByEntraOid = "test-oid-12345" },
+            new() { Id = 2, Name = "Conference B", Url = "https://conf-b.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(3), TimeZoneId = "UTC", CreatedByEntraOid = "test-oid-12345" }
         };
-        _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+        _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
             .ReturnsAsync(new PagedResult<Engagement> { Items = engagements, TotalCount = engagements.Count });
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
@@ -95,14 +111,14 @@ public class EngagementsControllerTests
             .ExcludingMissingMembers()
             .Excluding(e => e.Talks));
         result.Value!.TotalCount.Should().Be(2);
-        _engagementManagerMock.Verify(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
+        _engagementManagerMock.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Once);
     }
 
     [Fact]
     public async Task GetEngagementsAsync_WhenNoEngagementsExist_ReturnsEmptyList()
     {
         // Arrange
-        _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+        _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
             .ReturnsAsync(new PagedResult<Engagement> { Items = new List<Engagement>(), TotalCount = 0 });
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
@@ -114,7 +130,7 @@ public class EngagementsControllerTests
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().BeEmpty();
         result.Value!.TotalCount.Should().Be(0);
-        _engagementManagerMock.Verify(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
+        _engagementManagerMock.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------
@@ -132,7 +148,9 @@ public class EngagementsControllerTests
             Url = "https://conf-a.example.com",
             StartDateTime = DateTimeOffset.UtcNow,
             EndDateTime = DateTimeOffset.UtcNow.AddDays(2),
-            TimeZoneId = "UTC"
+            TimeZoneId = "UTC",
+            // Must match the ownerOid from CreateControllerContext so the ownership check passes.
+            CreatedByEntraOid = "test-oid-12345"
         };
         _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(engagement);
 
@@ -286,6 +304,8 @@ public class EngagementsControllerTests
             EndDateTime = request.EndDateTime,
             TimeZoneId = request.TimeZoneId
         };
+        // GetAsync is called first to load the existing engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(BuildEngagement(1));
         _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(savedEngagement));
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
@@ -314,6 +334,8 @@ public class EngagementsControllerTests
             EndDateTime = DateTimeOffset.UtcNow.AddDays(1),
             TimeZoneId = "UTC"
         };
+        // GetAsync is called first to load the existing engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(BuildEngagement(1));
         _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Failure("Save failed"));
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
@@ -334,6 +356,8 @@ public class EngagementsControllerTests
     public async Task DeleteEngagementAsync_WhenEngagementExists_ReturnsNoContent()
     {
         // Arrange
+        // GetAsync is called first to load the existing engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(BuildEngagement(1));
         _engagementManagerMock.Setup(m => m.DeleteAsync(1)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
@@ -346,11 +370,13 @@ public class EngagementsControllerTests
         _engagementManagerMock.Verify(m => m.DeleteAsync(1), Times.Once);
     }
 
-    [Fact]
+        [Fact]
     public async Task DeleteEngagementAsync_WhenEngagementNotFound_ReturnsNotFound()
     {
         // Arrange
-        _engagementManagerMock.Setup(m => m.DeleteAsync(99)).ReturnsAsync(OperationResult<bool>.Failure("Not found"));
+        // The controller now fetches the engagement first (ownership check).  When
+        // GetAsync returns null it short-circuits with NotFound - DeleteAsync is never invoked.
+        _engagementManagerMock.Setup(m => m.GetAsync(99)).Returns(Task.FromResult<Engagement?>(null));
 
         var sut = CreateSut(Domain.Scopes.Engagements.All);
 
@@ -359,7 +385,8 @@ public class EngagementsControllerTests
 
         // Assert
         result.Result.Should().BeOfType<NotFoundResult>();
-        _engagementManagerMock.Verify(m => m.DeleteAsync(99), Times.Once);
+        _engagementManagerMock.Verify(m => m.GetAsync(99), Times.Once);
+        _engagementManagerMock.Verify(m => m.DeleteAsync(It.IsAny<int>()), Times.Never);
     }
 
     // -------------------------------------------------------------------------
@@ -375,6 +402,8 @@ public class EngagementsControllerTests
             new() { Id = 1, EngagementId = 10, Name = "Talk 1", UrlForConferenceTalk = "https://conf.example.com/talk1", UrlForTalk = "https://example.com/talk1", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddHours(1) },
             new() { Id = 2, EngagementId = 10, Name = "Talk 2", UrlForConferenceTalk = "https://conf.example.com/talk2", UrlForTalk = "https://example.com/talk2", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddHours(1) }
         };
+        // GetAsync is called first to load the engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.GetTalksForEngagementAsync(10, It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<Talk> { Items = talks, TotalCount = talks.Count });
 
@@ -395,6 +424,8 @@ public class EngagementsControllerTests
     public async Task GetTalksForEngagementAsync_WhenNoTalksExist_ReturnsEmptyList()
     {
         // Arrange
+        // GetAsync is called first to load the engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.GetTalksForEngagementAsync(10, It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<Talk> { Items = new List<Talk>(), TotalCount = 0 });
 
@@ -452,6 +483,8 @@ public class EngagementsControllerTests
             StartDateTime = request.StartDateTime,
             EndDateTime = request.EndDateTime
         };
+        // GetAsync is called first to load the engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(OperationResult<Talk>.Success(savedTalk));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
@@ -480,6 +513,8 @@ public class EngagementsControllerTests
             StartDateTime = DateTimeOffset.UtcNow,
             EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
         };
+        // GetAsync is called first to load the engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(OperationResult<Talk>.Failure("Save failed"));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
@@ -534,6 +569,8 @@ public class EngagementsControllerTests
             StartDateTime = request.StartDateTime,
             EndDateTime = request.EndDateTime
         };
+        // GetAsync is called first to load the engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(OperationResult<Talk>.Success(savedTalk));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
@@ -560,6 +597,8 @@ public class EngagementsControllerTests
             StartDateTime = DateTimeOffset.UtcNow,
             EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
         };
+        // GetAsync is called first to load the engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(OperationResult<Talk>.Failure("Save failed"));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
@@ -590,6 +629,8 @@ public class EngagementsControllerTests
             StartDateTime = DateTimeOffset.UtcNow,
             EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
         };
+        // GetAsync is called first to load the engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.GetTalkAsync(5)).ReturnsAsync(talk);
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
@@ -607,6 +648,8 @@ public class EngagementsControllerTests
     public async Task GetTalkAsync_WhenTalkNotFound_ReturnsNotFound()
     {
         // Arrange
+        // GetAsync is called first to load the engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.GetTalkAsync(99)).Returns(Task.FromResult<Talk?>(null));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
@@ -633,6 +676,8 @@ public class EngagementsControllerTests
             StartDateTime = DateTimeOffset.UtcNow,
             EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
         };
+        // GetAsync is called first to load the engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.GetTalkAsync(5)).ReturnsAsync(talk);
 
         var sut = CreateSut(Domain.Scopes.Talks.View);
@@ -653,6 +698,8 @@ public class EngagementsControllerTests
     public async Task DeleteTalkAsync_WhenTalkExists_ReturnsNoContent()
     {
         // Arrange
+        // GetAsync is called first to load the engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.RemoveTalkFromEngagementAsync(5)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
@@ -669,6 +716,8 @@ public class EngagementsControllerTests
     public async Task DeleteTalkAsync_WhenTalkNotFound_ReturnsNotFound()
     {
         // Arrange
+        // GetAsync is called first to load the engagement for the ownership check.
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.RemoveTalkFromEngagementAsync(99)).ReturnsAsync(OperationResult<bool>.Failure("Not found"));
 
         var sut = CreateSut(Domain.Scopes.Talks.All);
@@ -679,5 +728,214 @@ public class EngagementsControllerTests
         // Assert
         result.Result.Should().BeOfType<NotFoundResult>();
         _engagementManagerMock.Verify(m => m.RemoveTalkFromEngagementAsync(99), Times.Once);
+    }
+
+    // -------------------------------------------------------------------------
+    // Security: non-owner → 403 ForbidResult
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetEngagementAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Entity is owned by "owner-oid-12345"; the calling user has a different OID.
+        var engagement = BuildEngagement(1, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(engagement);
+
+        var sut = CreateSut(Domain.Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.GetEngagementAsync(1);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.GetAsync(1), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateEngagementAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        var engagement = BuildEngagement(1, oid: "owner-oid-12345");
+        var request = new EngagementRequest
+        {
+            Name = "Updated Conference",
+            Url = "https://updated-conf.example.com",
+            StartDateTime = DateTimeOffset.UtcNow,
+            EndDateTime = DateTimeOffset.UtcNow.AddDays(2),
+            TimeZoneId = "UTC"
+        };
+        _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(engagement);
+
+        var sut = CreateSut(Domain.Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.UpdateEngagementAsync(1, request);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteEngagementAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        var engagement = BuildEngagement(1, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(engagement);
+
+        var sut = CreateSut(Domain.Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.DeleteEngagementAsync(1);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.DeleteAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    // -------------------------------------------------------------------------
+    // Security: non-owner → 403 ForbidResult (Talks sub-actions)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetTalksForEngagementAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Entity is owned by "owner-oid-12345"; the calling user has a different OID.
+        var engagement = BuildEngagement(10, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
+
+        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.GetTalksForEngagementAsync(10);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(
+            m => m.GetTalksForEngagementAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task GetTalkAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Entity is owned by "owner-oid-12345"; the calling user has a different OID.
+        var engagement = BuildEngagement(10, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
+
+        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.GetTalkAsync(10, 5);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.GetTalkAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateTalkAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Entity is owned by "owner-oid-12345"; the calling user has a different OID.
+        var engagement = BuildEngagement(10, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
+
+        var request = new TalkRequest
+        {
+            Name = "New Talk",
+            UrlForConferenceTalk = "https://conf.example.com/talk",
+            UrlForTalk = "https://example.com/talk",
+            StartDateTime = DateTimeOffset.UtcNow,
+            EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
+        };
+        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.CreateTalkAsync(10, request);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.SaveTalkAsync(It.IsAny<Talk>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateTalkAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Entity is owned by "owner-oid-12345"; the calling user has a different OID.
+        var engagement = BuildEngagement(10, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
+
+        var request = new TalkRequest
+        {
+            Name = "Updated Talk",
+            UrlForConferenceTalk = "https://conf.example.com/talk",
+            UrlForTalk = "https://example.com/talk",
+            StartDateTime = DateTimeOffset.UtcNow,
+            EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
+        };
+        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.UpdateTalkAsync(10, 5, request);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.SaveTalkAsync(It.IsAny<Talk>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteTalkAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Entity is owned by "owner-oid-12345"; the calling user has a different OID.
+        var engagement = BuildEngagement(10, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
+
+        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.DeleteTalkAsync(10, 5);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.RemoveTalkFromEngagementAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    // -------------------------------------------------------------------------
+    // Security: SiteAdmin list → unfiltered GetAll
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetEngagementsAsync_WhenSiteAdmin_CallsUnfilteredGetAll()
+    {
+        // Arrange
+        var engagements = new List<Engagement> { BuildEngagement(1) };
+        // Set up the unfiltered overload (no ownerOid, first param is int page).
+        _engagementManagerMock
+            .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(new PagedResult<Engagement> { Items = engagements, TotalCount = engagements.Count });
+
+        var sut = CreateSut(Domain.Scopes.Engagements.All, isSiteAdmin: true);
+
+        // Act
+        var result = await sut.GetEngagementsAsync();
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.TotalCount.Should().Be(1);
+
+        // Unfiltered overload must be invoked exactly once …
+        _engagementManagerMock.Verify(
+            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()),
+            Times.Once);
+        // … and the owner-filtered overload must never be called.
+        _engagementManagerMock.Verify(
+            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()),
+            Times.Never);
     }
 }

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
@@ -44,6 +45,17 @@ public class MessageTemplatesController : ControllerBase
     private static string SanitizeForLog(string? value) =>
         value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty;
 
+    private string GetOwnerOid()
+    {
+        return User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
+            ?? throw new InvalidOperationException("Entra Object ID claim not found");
+    }
+
+    private bool IsSiteAdministrator()
+    {
+        return User.IsInRole(RoleNames.SiteAdministrator);
+    }
+
     /// <summary>
     /// Gets all message templates
     /// </summary>
@@ -62,7 +74,18 @@ public class MessageTemplatesController : ControllerBase
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.List, Domain.Scopes.MessageTemplates.All);
-        var result = await _messageTemplateDataStore.GetAllAsync(page, pageSize);
+
+        PagedResult<MessageTemplate> result;
+        if (IsSiteAdministrator())
+        {
+            result = await _messageTemplateDataStore.GetAllAsync(page, pageSize);
+        }
+        else
+        {
+            var ownerOid = GetOwnerOid();
+            result = await _messageTemplateDataStore.GetAllAsync(ownerOid, page, pageSize);
+        }
+
         var items = _mapper.Map<List<MessageTemplateResponse>>(result.Items);
         
         return new PagedResponse<MessageTemplateResponse>
@@ -104,6 +127,12 @@ public class MessageTemplatesController : ControllerBase
             _logger.LogWarning("MessageTemplate not found for PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, SanitizeForLog(messageType));
             return NotFound();
         }
+
+        if (!IsSiteAdministrator() && template.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
+
         return _mapper.Map<MessageTemplateResponse>(template);
     }
 
@@ -141,13 +170,26 @@ public class MessageTemplatesController : ControllerBase
             return NotFound();
         }
 
+        var existing = await _messageTemplateDataStore.GetAsync(socialMediaPlatform.Id, messageType);
+        if (existing is null)
+        {
+            _logger.LogWarning("MessageTemplate not found for update: PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, SanitizeForLog(messageType));
+            return NotFound();
+        }
+
+        if (!IsSiteAdministrator() && existing.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
+
         var messageTemplate = _mapper.Map<MessageTemplate>(request);
         messageTemplate.SocialMediaPlatformId = socialMediaPlatform.Id;
         messageTemplate.MessageType = messageType;
+        messageTemplate.CreatedByEntraOid = existing.CreatedByEntraOid;
         var updated = await _messageTemplateDataStore.UpdateAsync(messageTemplate);
         if (updated is null)
         {
-            _logger.LogWarning("MessageTemplate not found for update: PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, SanitizeForLog(messageType));
+            _logger.LogWarning("MessageTemplate update failed: PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, SanitizeForLog(messageType));
             return NotFound();
         }
 
