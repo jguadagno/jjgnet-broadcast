@@ -35,11 +35,11 @@ public class EngagementsControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private EngagementsController CreateSut(string scopeClaimValue)
+    private EngagementsController CreateSut(string scopeClaimValue, string ownerOid = "test-oid-12345", bool isSiteAdmin = false)
     {
         var controller = new EngagementsController(_engagementManagerMock.Object, _engagementSocialMediaPlatformDataStoreMock.Object, _loggerMock.Object, _mapper)
         {
-            ControllerContext = CreateControllerContext(scopeClaimValue),
+            ControllerContext = CreateControllerContext(scopeClaimValue, ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
@@ -51,15 +51,18 @@ public class EngagementsControllerTests
     /// Both the short "scp" claim and the full URI claim type are set for maximum
     /// compatibility with different versions of Microsoft.Identity.Web.
     /// </summary>
-    private static ControllerContext CreateControllerContext(string scopeClaimValue, string ownerOid = "test-oid-12345")
+    private static ControllerContext CreateControllerContext(string scopeClaimValue, string ownerOid = "test-oid-12345", bool isSiteAdmin = false)
     {
-        var user = new ClaimsPrincipal(new ClaimsIdentity(
-        [
+        var claims = new List<Claim>
+        {
             new Claim("scp", scopeClaimValue),
             new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue),
             new Claim(Domain.Constants.ApplicationClaimTypes.EntraObjectId, ownerOid)
-        ], "TestAuthentication"));
+        };
+        if (isSiteAdmin)
+            claims.Add(new Claim(ClaimTypes.Role, Domain.Constants.RoleNames.SiteAdministrator));
 
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthentication"));
         var httpContext = new DefaultHttpContext { User = user };
         return new ControllerContext { HttpContext = httpContext };
     }
@@ -725,5 +728,102 @@ public class EngagementsControllerTests
         // Assert
         result.Result.Should().BeOfType<NotFoundResult>();
         _engagementManagerMock.Verify(m => m.RemoveTalkFromEngagementAsync(99), Times.Once);
+    }
+
+    // -------------------------------------------------------------------------
+    // Security: non-owner → 403 ForbidResult
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetEngagementAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Entity is owned by "owner-oid-12345"; the calling user has a different OID.
+        var engagement = BuildEngagement(1, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(engagement);
+
+        var sut = CreateSut(Domain.Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.GetEngagementAsync(1);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.GetAsync(1), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateEngagementAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        var engagement = BuildEngagement(1, oid: "owner-oid-12345");
+        var request = new EngagementRequest
+        {
+            Name = "Updated Conference",
+            Url = "https://updated-conf.example.com",
+            StartDateTime = DateTimeOffset.UtcNow,
+            EndDateTime = DateTimeOffset.UtcNow.AddDays(2),
+            TimeZoneId = "UTC"
+        };
+        _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(engagement);
+
+        var sut = CreateSut(Domain.Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.UpdateEngagementAsync(1, request);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteEngagementAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        var engagement = BuildEngagement(1, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(engagement);
+
+        var sut = CreateSut(Domain.Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.DeleteEngagementAsync(1);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.DeleteAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    // -------------------------------------------------------------------------
+    // Security: SiteAdmin list → unfiltered GetAll
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetEngagementsAsync_WhenSiteAdmin_CallsUnfilteredGetAll()
+    {
+        // Arrange
+        var engagements = new List<Engagement> { BuildEngagement(1) };
+        // Set up the unfiltered overload (no ownerOid, first param is int page).
+        _engagementManagerMock
+            .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(new PagedResult<Engagement> { Items = engagements, TotalCount = engagements.Count });
+
+        var sut = CreateSut(Domain.Scopes.Engagements.All, isSiteAdmin: true);
+
+        // Act
+        var result = await sut.GetEngagementsAsync();
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.TotalCount.Should().Be(1);
+
+        // Unfiltered overload must be invoked exactly once …
+        _engagementManagerMock.Verify(
+            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()),
+            Times.Once);
+        // … and the owner-filtered overload must never be called.
+        _engagementManagerMock.Verify(
+            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()),
+            Times.Never);
     }
 }

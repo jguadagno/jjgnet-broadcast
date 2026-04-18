@@ -33,11 +33,11 @@ public class SchedulesControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private SchedulesController CreateSut(string scopeClaimValue)
+    private SchedulesController CreateSut(string scopeClaimValue, string ownerOid = "test-oid-12345", bool isSiteAdmin = false)
     {
         var controller = new SchedulesController(_scheduledItemManagerMock.Object, _loggerMock.Object, _mapper)
         {
-            ControllerContext = CreateControllerContext(scopeClaimValue),
+            ControllerContext = CreateControllerContext(scopeClaimValue, ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
@@ -49,15 +49,18 @@ public class SchedulesControllerTests
     /// Both the short "scp" claim and the full URI claim type are set for maximum
     /// compatibility with different versions of Microsoft.Identity.Web.
     /// </summary>
-    private static ControllerContext CreateControllerContext(string scopeClaimValue, string ownerOid = "test-oid-12345")
+    private static ControllerContext CreateControllerContext(string scopeClaimValue, string ownerOid = "test-oid-12345", bool isSiteAdmin = false)
     {
-        var user = new ClaimsPrincipal(new ClaimsIdentity(
-        [
+        var claims = new List<Claim>
+        {
             new Claim("scp", scopeClaimValue),
             new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue),
             new Claim(Domain.Constants.ApplicationClaimTypes.EntraObjectId, ownerOid)
-        ], "TestAuthentication"));
+        };
+        if (isSiteAdmin)
+            claims.Add(new Claim(ClaimTypes.Role, Domain.Constants.RoleNames.SiteAdministrator));
 
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthentication"));
         var httpContext = new DefaultHttpContext { User = user };
         return new ControllerContext { HttpContext = httpContext };
     }
@@ -341,6 +344,96 @@ public class SchedulesControllerTests
         result.Result.Should().BeOfType<NotFoundResult>();
         _scheduledItemManagerMock.Verify(m => m.GetAsync(99), Times.Once);
         _scheduledItemManagerMock.Verify(m => m.DeleteAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    // -------------------------------------------------------------------------
+    // Security: non-owner → 403 ForbidResult
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetScheduledItemAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Item is owned by "owner-oid-12345"; the calling user has a different OID.
+        var item = BuildScheduledItem(5, oid: "owner-oid-12345");
+        _scheduledItemManagerMock.Setup(m => m.GetAsync(5)).ReturnsAsync(item);
+
+        var sut = CreateSut(Domain.Scopes.Schedules.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.GetScheduledItemAsync(5);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _scheduledItemManagerMock.Verify(m => m.GetAsync(5), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateScheduledItemAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        var item = BuildScheduledItem(5, oid: "owner-oid-12345");
+        var request = BuildScheduledItemRequest(5);
+        _scheduledItemManagerMock.Setup(m => m.GetAsync(5)).ReturnsAsync(item);
+
+        var sut = CreateSut(Domain.Scopes.Schedules.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.UpdateScheduledItemAsync(5, request);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _scheduledItemManagerMock.Verify(m => m.SaveAsync(It.IsAny<ScheduledItem>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteScheduledItemAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        var item = BuildScheduledItem(5, oid: "owner-oid-12345");
+        _scheduledItemManagerMock.Setup(m => m.GetAsync(5)).ReturnsAsync(item);
+
+        var sut = CreateSut(Domain.Scopes.Schedules.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.DeleteScheduledItemAsync(5);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _scheduledItemManagerMock.Verify(m => m.DeleteAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    // -------------------------------------------------------------------------
+    // Security: SiteAdmin list → unfiltered GetAll
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetScheduledItemsAsync_WhenSiteAdmin_CallsUnfilteredGetAll()
+    {
+        // Arrange
+        var items = new List<ScheduledItem> { BuildScheduledItem(1) };
+        // Set up the unfiltered overload (no ownerOid, first param is int page).
+        _scheduledItemManagerMock
+            .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = items, TotalCount = items.Count });
+
+        var sut = CreateSut(Domain.Scopes.Schedules.All, isSiteAdmin: true);
+
+        // Act
+        var result = await sut.GetScheduledItemsAsync();
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.TotalCount.Should().Be(1);
+
+        // Unfiltered overload must be invoked exactly once …
+        _scheduledItemManagerMock.Verify(
+            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()),
+            Times.Once);
+        // … and the owner-filtered overload must never be called.
+        _scheduledItemManagerMock.Verify(
+            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()),
+            Times.Never);
     }
 
     // -------------------------------------------------------------------------
