@@ -8,6 +8,16 @@
 
 ## Learnings
 
+### 2026-07-14 — PR #752 Directive Compliance Pass (canonical OIDs + helper)
+
+- **Task:** Apply directive-mandated canonical OIDs (`"owner-oid-12345"`, `"non-owner-oid-99999"`) and `CreateNonOwnerControllerContext()` helper to all non-owner ownership rejection tests, per the `security-test-checklist` SKILL.
+- **Outcome:** ✅ Committed and pushed to `issue-741-742`; 170 tests, 0 failures.
+- **What I changed:**
+  - `TalksControllerTests.cs` — `Edit_Post_WhenUserIsNotOwnerAndNotAdmin_ShouldRedirectWithError`: replaced `"other-user-oid"` with `"owner-oid-12345"` on the entity, removed the inline `List<Claim>` block, replaced with `CreateNonOwnerControllerContext()` (helper was already present at line 63).
+  - `SchedulesControllerTests.cs` — no changes needed; the prior fix commit had already applied `CreateNonOwnerControllerContext()` and canonical OIDs to the single non-owner test in that file.
+- **Key finding:** When the task says "fix both files", verify by grepping — the prior commit may have already fixed one of them. Only the file with remaining violations (`other-user-oid`, `attacker-oid`) needed editing.
+- **Pattern to remember:** `CreateNonOwnerControllerContext()` is the required helper for all Web MVC ownership rejection tests. It encapsulates the canonical non-owner OID `"non-owner-oid-99999"` so tests don't inline magic strings.
+
 ### Sprint 19 — Issues #741 & #742: Per-User Isolation + Edit POST Ownership
 
 - **Task:** (1) Filter Index/list endpoints by owner OID for per-user isolation (#741). (2) Add ownership re-verification on Edit POST actions (#742).
