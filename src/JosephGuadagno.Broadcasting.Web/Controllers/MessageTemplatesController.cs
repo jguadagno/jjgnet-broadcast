@@ -5,6 +5,8 @@ using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using System.Security.Claims;
+
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
 
 /// <summary>
@@ -62,6 +64,17 @@ public class MessageTemplatesController : Controller
         {
             return NotFound();
         }
+
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || template.CreatedByEntraOid == null || template.CreatedByEntraOid != currentUserOid)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to edit this message template.";
+                return RedirectToAction("Index");
+            }
+        }
+
         return View(_mapper.Map<MessageTemplateViewModel>(template));
     }
 

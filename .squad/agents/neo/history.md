@@ -35,24 +35,86 @@
 
 ---
 
-## Learnings — PR #739 Final Review (2026-04-18)
+## 2026-04-18 — PR #739: Final Review (Round 3) — APPROVED & MERGED
 
-**Context:** Third and final review of PR #739 (feat(#729): enforce owner isolation in API controllers). Previous rejections were for missing non-owner 403 tests (Round 1: zero tests, Round 2: Talks/Platforms sub-actions missing).
+**Status:** ✅ COMPLETE  
+**PR:** #739 (feat(#729): enforce owner isolation in API controllers)  
+**Issue:** #729
 
-**Final state after Tank's Round 2 additions:**
-- **Total tests:** 93/93 passing
-- **Security tests added:** 20 total (11 Round 1 + 9 Round 2)
+### Work Summary
 
-**Coverage verified:**
-- All 17 `Forbid()` call sites across 3 controllers now have non-owner `ForbidResult` tests
-- All 3 `IsSiteAdministrator()` branching locations have SiteAdmin unfiltered-overload tests
-- Entity OID (`owner-oid-12345`) ≠ User OID (`non-owner-oid-99999`) pattern consistently applied
-- No magic strings — all constants from `Domain.Constants.*` and `Domain.Scopes.*`
-- Moq patterns correct (`Times.Never` on side-effectful calls when authorization fails)
+Conducted final (third) review of PR #739 after two previous rejection rounds. All 17 Forbid() call sites now have comprehensive non-owner ForbidResult tests. Total security test suite: 20 tests across three rounds (11 Round 1 + 9 Round 2 added by Tank).
 
-**Platforms test design note:** The `EngagementsController_PlatformsTests` constructor sets up a default mock returning `BuildEngagement(id)` with OID `test-oid-12345`. Security tests then create the SUT with `ownerOid: "non-owner-oid-99999"` to ensure the ownership check fails. This is a clean pattern that avoids per-test mock setup boilerplate.
+### Coverage Verified
+- All 17 `Forbid()` call sites across 3 controllers (EngagementsController, TalksController, PlatformsController) have non-owner ForbidResult tests
+- All 3 `IsSiteAdministrator()` branching locations verified
+- Entity OID (`owner-oid-12345`) ≠ user OID (`non-owner-oid-99999`) pattern applied consistently
+- No magic strings — all constants from Domain.Constants and Domain.Scopes
+- Moq patterns correct (`Times.Never` on side-effectful calls)
 
-**Verdict:** ✅ APPROVED — All ownership-guarded paths covered. Ready for Joseph to merge.
+### Test Results
+- **Total:** 93/93 passing
+- **Security tests:** 20 total
+- **Pattern:** EngagementsController (6), TalksController (4), PlatformsController (4), SiteAdmin overloads (6)
+
+### Decision
+✅ **APPROVED** — Ready for merge. All ownership-guarded paths covered.
+
+### Outcome
+Joseph merged PR #739 to main. Security test coverage complete.
+
+### Related
+- **Round 1:** Zero tests → rejected
+- **Round 2:** 9 missing Talks/Platforms tests → Tank added coverage → rejected (but closer)
+- **Round 3:** Final verification → approved and merged
+
+---
+
+## 2026-04-18 — Session: Neo Setup Experience Spec & Tank Test Fixes
+
+**Status:** ✅ COMPLETE (Background Agent)  
+**Focus:** Architecture spec for multi-user setup experience (issue #609)
+
+### Work Summary
+
+Produced comprehensive architecture specification for new user setup experience — the wizard that runs after a user is approved and before they access the main application.
+
+**Deliverable:** `setup-experience-spec.md` (90 pages) + architectural decisions document
+
+### Key Deliverables
+
+1. **Feature Spec**
+   - Problem statement: approved users have no path to configure personal collectors/publishers
+   - 8-step user flow: approval → setup welcome → collectors → publishers → review → complete
+   - UI requirements (YouTube, SyndicationFeed collectors; Bluesky, Twitter, LinkedIn, Facebook publishers)
+   - Database schema (UserCollectorSettings JSON blob, HasCompletedSetup flag on ApplicationUsers)
+   - Middleware placement (after approval gate, before authorization)
+
+2. **7 Architectural Decisions**
+   - JSON blob storage (consistency with #731 UserPublisherSettings)
+   - Setup middleware placement (after approval, before auth)
+   - HasCompletedSetup boolean column on ApplicationUsers
+   - Data Protection API encryption (MVP), Key Vault (future)
+   - Soft redirect + skip option + persistent banner enforcement
+   - Direct credentials (MVP), OAuth (future)
+   - Named type constants + SQL CHECK constraints
+
+3. **3 Open Questions (Team Feedback Incorporated)**
+   - Test connection buttons: Yes (recommendation)
+   - Partial config UX: validation error (recommendation)
+   - Re-enterable setup: Yes, via Settings page (recommendation)
+
+### Related Issues
+
+- Epic #609: Multi-tenancy — per-user content, publishers, and social tokens
+- Issue #731: Per-user publisher settings
+- Sprint 15 (pending prioritization)
+
+### Decision Document
+
+All architectural choices documented in decisions.md with full context and rationale.
+
+---
 
 ## Core Context
 
@@ -68,6 +130,8 @@
 - Breaking DB migrations (PK rebuilds): Code deploys first -> maintenance window -> migration script
 - Functions DI: Remove .ValidateOnStart() from Functions projects (causes startup activation failures)
 - Email queue: AddMessageWithBase64EncodingAsync (Base64 required for Azure Functions queue triggers)
+- Ownership checks (tests): Must include OID claim on ControllerContext AND matching CreatedByEntraOid on mock entities
+- Moq CancellationToken: Use non-generic Returns(Delegate) form with explicit matchers, not Returns<T1, T2>(lambda)
 
 **Epic #667 Architecture Decisions:**
 - SocialMediaPlatforms: Id, Name, Url, Icon, IsActive (soft delete)

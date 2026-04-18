@@ -62,8 +62,16 @@ public class SchedulesControllerTests
     public async Task Details_WhenScheduledItemFound_ShouldReturnViewWithScheduledItemViewModel()
     {
         // Arrange
-        var scheduledItem = new ScheduledItem { Id = 1 };
+        var scheduledItem = new ScheduledItem { Id = 1, CreatedByEntraOid = "test-oid" };
         var viewModel = new ScheduledItemViewModel { Id = 1 };
+
+        var claims = new List<Claim> { new Claim(ApplicationClaimTypes.EntraObjectId, "test-oid") };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(scheduledItem);
         _mapper.Setup(m => m.Map<ScheduledItemViewModel>(It.IsAny<object>())).Returns(viewModel);
 
@@ -93,8 +101,16 @@ public class SchedulesControllerTests
     public async Task Edit_Get_WhenScheduledItemFound_ShouldReturnViewWithScheduledItemViewModel()
     {
         // Arrange
-        var scheduledItem = new ScheduledItem { Id = 1 };
+        var scheduledItem = new ScheduledItem { Id = 1, CreatedByEntraOid = "test-oid" };
         var viewModel = new ScheduledItemViewModel { Id = 1 };
+
+        var claims = new List<Claim> { new Claim(ApplicationClaimTypes.EntraObjectId, "test-oid") };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(scheduledItem);
         _mapper.Setup(m => m.Map<ScheduledItemViewModel>(It.IsAny<object>())).Returns(viewModel);
 
@@ -159,8 +175,16 @@ public class SchedulesControllerTests
     public async Task Delete_Get_ShouldReturnConfirmationView()
     {
         // Arrange
-        var scheduledItem = new ScheduledItem { Id = 1 };
+        var scheduledItem = new ScheduledItem { Id = 1, CreatedByEntraOid = "test-oid" };
         var viewModel = new ScheduledItemViewModel { Id = 1 };
+
+        var claims = new List<Claim> { new Claim(ApplicationClaimTypes.EntraObjectId, "test-oid") };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(scheduledItem);
         _mapper.Setup(m => m.Map<ScheduledItemViewModel>(It.IsAny<object>())).Returns(viewModel);
 

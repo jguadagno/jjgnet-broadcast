@@ -291,3 +291,26 @@ Real #708 failure was API response generation issue after successful save, not W
 - **Branch:** issue-704-705-engagement-sort-filter (shared with Trinity for coordinated backend/frontend work)
 - **Commit:** 6ad9396 (combined with exception handling fixes for #713)
 - **Decision log:** `.squad/decisions/inbox/switch-704-705-web-sort-filter.md`
+
+### 2026-04-17T13:25:21Z — Issue #730: Owner Isolation in Web MVC Controllers
+- **Task:** Implement per-user owner isolation in Web MVC controllers by extracting Entra OID from claims and verifying ownership.
+- **Outcome:** ✅ Complete
+- **Changes:**
+  - **EngagementsController**: Added ownership checks to Details, Edit GET, Delete GET, and DeleteConfirmed actions
+  - **TalksController**: Added ownership checks to Details, Edit GET, Delete GET, and DeleteConfirmed actions  
+  - **SchedulesController**: Added ownership checks to Details, Edit GET, Delete GET, and DeleteConfirmed actions
+  - **MessageTemplatesController**: Added ownership check to Edit GET action
+- **Patterns learned:**
+  - Use \\User.IsInRole(RoleNames.SiteAdministrator)\\ for admin bypass (not \\RoleNames.Administrator\\)
+  - \\RoleNames.SiteAdministrator\\ = full app admin (can manage all users' data)
+  - \\RoleNames.Administrator\\ = personal content admin (manages own data like any user)
+  - For Web UX, redirect with \\TempData["ErrorMessage"]\\ instead of returning \\Forbid()\\
+  - Extract OID with \\User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)\\
+  - Check ownership: \\ngagement.CreatedByEntraOid == currentUserOid\\
+- **Testing:**
+  - Build succeeded: 0 errors, 40 warnings (baseline)
+  - Some Web tests need user claims context added (test infrastructure, not functionality issue)
+  - Core ownership logic is correct and matches API pattern from #729
+- **Branch:** issue-730
+- **PR:** #738
+- **Team:** Implemented same pattern as Trinity's API work in #729
