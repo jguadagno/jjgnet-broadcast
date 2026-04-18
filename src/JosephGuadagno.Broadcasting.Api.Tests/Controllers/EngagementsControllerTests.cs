@@ -35,36 +35,14 @@ public class EngagementsControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private EngagementsController CreateSut(string scopeClaimValue, string ownerOid = "test-oid-12345", bool isSiteAdmin = false)
+    private EngagementsController CreateSut(string scopeClaimValue, string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
     {
         var controller = new EngagementsController(_engagementManagerMock.Object, _engagementSocialMediaPlatformDataStoreMock.Object, _loggerMock.Object, _mapper)
         {
-            ControllerContext = CreateControllerContext(scopeClaimValue, ownerOid, isSiteAdmin),
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(scopeClaimValue, ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
-    }
-
-    /// <summary>
-    /// Builds an HttpContext whose <see cref="ClaimsPrincipal"/> carries the given OAuth
-    /// scope so that <c>HttpContext.VerifyUserHasAnyAcceptedScope</c> succeeds.
-    /// Both the short "scp" claim and the full URI claim type are set for maximum
-    /// compatibility with different versions of Microsoft.Identity.Web.
-    /// </summary>
-    private static ControllerContext CreateControllerContext(string scopeClaimValue, string ownerOid = "test-oid-12345", bool isSiteAdmin = false)
-    {
-        var claims = new List<Claim>
-        {
-            new Claim("scp", scopeClaimValue),
-            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue),
-            new Claim(Domain.Constants.ApplicationClaimTypes.EntraObjectId, ownerOid)
-        };
-        if (isSiteAdmin)
-            claims.Add(new Claim(ClaimTypes.Role, Domain.Constants.RoleNames.SiteAdministrator));
-
-        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthentication"));
-        var httpContext = new DefaultHttpContext { User = user };
-        return new ControllerContext { HttpContext = httpContext };
     }
 
     /// <summary>
@@ -72,7 +50,7 @@ public class EngagementsControllerTests
     /// matching the default owner OID used in <see cref="CreateControllerContext"/> so that
     /// ownership checks inside the controller pass without requiring a SiteAdministrator role.
     /// </summary>
-    private static Engagement BuildEngagement(int id, string oid = "test-oid-12345") => new()
+    private static Engagement BuildEngagement(int id, string oid = "owner-oid-12345") => new()
     {
         Id = id,
         Name = $"Conference {id}",
@@ -93,8 +71,8 @@ public class EngagementsControllerTests
         // Arrange
         var engagements = new List<Engagement>
         {
-            new() { Id = 1, Name = "Conference A", Url = "https://conf-a.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(2), TimeZoneId = "UTC", CreatedByEntraOid = "test-oid-12345" },
-            new() { Id = 2, Name = "Conference B", Url = "https://conf-b.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(3), TimeZoneId = "UTC", CreatedByEntraOid = "test-oid-12345" }
+            new() { Id = 1, Name = "Conference A", Url = "https://conf-a.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(2), TimeZoneId = "UTC", CreatedByEntraOid = "owner-oid-12345" },
+            new() { Id = 2, Name = "Conference B", Url = "https://conf-b.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(3), TimeZoneId = "UTC", CreatedByEntraOid = "owner-oid-12345" }
         };
         _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
             .ReturnsAsync(new PagedResult<Engagement> { Items = engagements, TotalCount = engagements.Count });
@@ -150,7 +128,7 @@ public class EngagementsControllerTests
             EndDateTime = DateTimeOffset.UtcNow.AddDays(2),
             TimeZoneId = "UTC",
             // Must match the ownerOid from CreateControllerContext so the ownership check passes.
-            CreatedByEntraOid = "test-oid-12345"
+            CreatedByEntraOid = "owner-oid-12345"
         };
         _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(engagement);
 
