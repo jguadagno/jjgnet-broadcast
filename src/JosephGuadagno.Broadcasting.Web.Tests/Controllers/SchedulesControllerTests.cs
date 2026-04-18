@@ -66,6 +66,9 @@ public class SchedulesControllerTests
     /// </summary>
     private static ControllerContext CreateNonOwnerControllerContext(string role = RoleNames.Contributor) =>
         CreateControllerContext(ownerOid: "non-owner-oid-99999", role: role);
+
+    [Fact]
+    public async Task Index_ShouldReturnViewWithScheduledItemViewModels()
     {
         // Arrange
         var scheduledItems = new List<ScheduledItem> { new ScheduledItem { Id = 1 } };
@@ -248,18 +251,10 @@ public class SchedulesControllerTests
     {
         // Arrange — issue #742: ownership re-verification prevents save by non-owner
         var viewModel = new ScheduledItemViewModel { Id = 1 };
-        var existingItem = new ScheduledItem { Id = 1, CreatedByEntraOid = "other-user-oid" };
+        var existingItem = new ScheduledItem { Id = 1, CreatedByEntraOid = "owner-oid-12345" };
 
-        var claims = new List<Claim>
-        {
-            new Claim(ApplicationClaimTypes.EntraObjectId, "attacker-oid"),
-            new Claim(ClaimTypes.Role, RoleNames.Contributor)
-        };
-        var identity = new ClaimsIdentity(claims, "TestAuth");
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-        };
+        // User OID "non-owner-oid-99999" does not match entity's "owner-oid-12345".
+        _controller.ControllerContext = CreateNonOwnerControllerContext();
 
         _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(existingItem);
 
