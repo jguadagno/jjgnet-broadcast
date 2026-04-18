@@ -10986,6 +10986,184 @@ exceptions
 4. After #636 merges, create first sub-issue for #637 (Phase 1: App Insights + Log Analytics)
 
 
+---
+
+# Decision: Sprint 18 Retro Debrief — 2026-04-18
+
+**Author:** Neo  
+**Date:** 2026-04-18  
+**Status:** Completed — awaiting Joseph's direction on §5
+
+## Context
+
+Sprint 18 retro debrief conducted with Joseph. Both PRs (#738, #739) merged,
+all branches cleaned up, security enforcement is live. 18 retro items reviewed,
+6 action items already filed as issues in Sprint 19 (#743–#748).
+
+## Key Findings Confirmed
+
+- 12/18 failures trace to **inadequate pre-submission validation**
+- 5 directive violations — the directive "run tests before committing" was
+  written but had no enforcement mechanism
+- 6 HIGH severity items all share a common thread: missing security test coverage
+  on a security feature
+
+## Decisions / Direction from Joseph
+
+- *(Pending — Joseph's answer to the training-vs-enforcement question in §5
+  will determine P1 priority order for Sprint 19)*
+
+## Actions Confirmed
+
+All 6 action items are filed and tagged `sprint:19`:
+- **P1:** #743 (security checklist), #744 (test-pass gate), #747 (Tank history checklist)
+- **P2:** #745 (non-owner context helper), #746 (PR comment formatting), #748 (mock overload docs)
+
+## Open Question
+
+Should the "run tests before committing" gap be addressed as:
+1. **Training** — better checklists/tools for Tank (prioritize #743, #747 first), or
+2. **Enforcement** — CI gate that blocks PRs with failures (prioritize #744 first)?
+
+Joseph's answer shapes the Sprint 19 priority order.
+
+
+---
+
+# Decision: Security Test Checklist Skill Established
+
+**Date:** 2026-04-18  
+**Author:** Tank (Tester)  
+**Issues:** #743, #747  
+**Confidence:** `high`
+
+## Summary
+
+The security test checklist skill has been created at `.squad/skills/security-test-checklist/SKILL.md`.
+
+This skill codifies the ownership enforcement / Forbid() coverage pattern established during Sprint 18 across Issues #729, #730, #738, and #739. It covers 20+ security tests written across three API controllers (`EngagementsController`, `SchedulesController`, `TalksController`/`PlatformsController`).
+
+## Confidence Rationale
+
+Rated `high` because:
+- Pattern was applied successfully across 3+ controllers in Sprint 18
+- 20 tests passing covering all Forbid() call sites
+- Pattern is mechanically reproducible via grep → matrix → test
+- Admin bypass branching is verified and documented
+
+## Skill Location
+
+`.squad/skills/security-test-checklist/SKILL.md`
+
+## Tank History Update
+
+A condensed checklist section has been prepended to `.squad/agents/tank/history.md` under the heading:
+
+```
+## Ownership Test Checklist (Sprint 18 Established — 2026-04-18)
+```
+
+## Permanent Team Rules Established
+
+1. ALWAYS run `dotnet test` before committing
+2. ZERO test failures before opening PR
+3. For any security/ownership feature: grep `Forbid()` first, build matrix, write test per site
+4. When controller signatures add `ownerOid` parameter: update mock `.Setup()` overload immediately
+
+
+---
+
+# Copilot Directive: Retro Timing
+
+### 2026-04-18T16-52-12Z: User directive
+**By:** Joseph (via Copilot)
+**What:** Do not run retrospectives until the current sprint work is fully complete (all PRs merged). Wait until the sprint is done before spinning up the retro.
+**Why:** User request — captured for team memory
+
+
+---
+
+# Neo Retro Action Items — 2026-04-18
+
+**Source:** Sprint Retrospective Issue #740  
+**Priority:** P1 (all three items)  
+**Status:** PROPOSED — requires team sign-off
+
+---
+
+## Action Item 1: Security Test Checklist (Mandatory)
+
+**Directive:**  
+For ANY feature that adds `Forbid()`, `return 403`, or ownership enforcement:
+
+1. **Before coding tests:** Grep the controller for ALL `Forbid()` / `return Forbid()` call sites
+2. **Create coverage matrix:** List every call site with line number and corresponding test name
+3. **Test pattern:** Entity OID ≠ User OID, verify `ForbidResult`, verify side-effects `Times.Never`
+4. **Submit matrix with PR:** Include the coverage matrix in the PR description
+
+**Example grep command:**
+```bash
+grep -n "Forbid()" src/JosephGuadagno.Broadcasting.Api/Controllers/*.cs
+```
+
+**Rationale:** PR #739 required 3 review rounds because Tank didn't enumerate all Forbid() paths before submission.
+
+---
+
+## Action Item 2: Test-Pass Gate Before Push (Enforced)
+
+**Directive:**  
+PRs with known test failures are REJECTED without review.
+
+**Enforcement:**
+- PR body must NOT contain "tests still need updating" or similar disclaimers
+- Run `dotnet test` BEFORE creating PR
+- 0 failures required for review to begin
+
+**Violation consequence:** Auto-rejection; Tank must fix and re-request review.
+
+**Rationale:** PR #738 was submitted with explicit "Note on Remaining Test Failures" — this wastes reviewer time.
+
+---
+
+## Action Item 3: Add Non-Owner Context Helper
+
+**Directive:**  
+Add this helper to all API controller test base classes:
+
+```csharp
+/// <summary>
+/// Creates controller context where user OID does NOT match entity CreatedByEntraOid.
+/// Use for testing ownership rejection (403 Forbid).
+/// </summary>
+private static ControllerContext CreateNonOwnerControllerContext(string scopeClaimValue) =>
+    CreateControllerContext(scopeClaimValue, ownerOid: "non-owner-oid-99999");
+```
+
+**Rationale:** 38 API + 5 Web test failures occurred because this pattern wasn't standardized in test infrastructure.
+
+---
+
+## Proposed Team Rules
+
+Add to `.squad/decisions.md`:
+
+```markdown
+### 2026-04-18: Security Test Directive (Post-Retro)
+**By:** Neo (Lead Architect)
+**What:** For any Forbid()/403 enforcement feature, Tank MUST:
+1. Grep all Forbid() call sites before writing tests
+2. Create one test per Forbid() path
+3. Include coverage matrix in PR description
+4. Run `dotnet test` with 0 failures before PR creation
+**Why:** PR #739 required 3 review rounds due to incomplete coverage; PR #738 submitted with known failures.
+```
+
+---
+
+**Sign-off required:** Joseph Guadagno
+
+
 
 ---
 
