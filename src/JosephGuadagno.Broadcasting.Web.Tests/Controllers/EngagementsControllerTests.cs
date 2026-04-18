@@ -541,6 +541,92 @@ public class EngagementsControllerTests
     }
 
     [Fact]
+    public async Task Details_WhenUserIsNotOwnerAndNotAdmin_RedirectsWithError()
+    {
+        // Arrange
+        var engagement = new Engagement { Id = 1, CreatedByEntraOid = "different-user-oid" };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid-12345"),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(engagement);
+
+        // Act
+        var result = await _controller.Details(1);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("You do not have permission to view this engagement.", _controller.TempData["ErrorMessage"]);
+    }
+
+    [Fact]
+    public async Task Edit_Get_WhenUserIsNotOwnerAndNotAdmin_RedirectsWithError()
+    {
+        // Arrange
+        var engagement = new Engagement { Id = 1, CreatedByEntraOid = "different-user-oid" };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid-12345"),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(engagement);
+
+        // Act
+        var result = await _controller.Edit(1);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("You do not have permission to edit this engagement.", _controller.TempData["ErrorMessage"]);
+        _engagementService.Verify(s => s.GetPlatformsForEngagementAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Delete_Get_WhenUserIsNotOwnerAndNotAdmin_RedirectsWithError()
+    {
+        // Arrange
+        var engagement = new Engagement { Id = 1, CreatedByEntraOid = "different-user-oid" };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid-12345"),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(engagement);
+
+        // Act
+        var result = await _controller.Delete(1);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("You do not have permission to delete this engagement.", _controller.TempData["ErrorMessage"]);
+        _mapper.Verify(m => m.Map<EngagementViewModel>(It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Add_Post_SetsCreatedByEntraOid()
     {
         // Arrange

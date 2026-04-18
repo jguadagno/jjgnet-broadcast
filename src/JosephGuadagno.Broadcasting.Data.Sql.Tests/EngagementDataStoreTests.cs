@@ -36,7 +36,7 @@ public class EngagementDataStoreTests : IDisposable
         _context.Dispose();
     }
 
-    private Engagement CreateEngagement(int id = 0, string name = "Test Conference") => new Engagement
+    private Engagement CreateEngagement(int id = 0, string name = "Test Conference", string? ownerOid = null) => new Engagement
     {
         Id = id,
         Name = name,
@@ -44,6 +44,7 @@ public class EngagementDataStoreTests : IDisposable
         StartDateTime = new DateTimeOffset(2025, 6, 1, 9, 0, 0, TimeSpan.Zero),
         EndDateTime = new DateTimeOffset(2025, 6, 3, 17, 0, 0, TimeSpan.Zero),
         TimeZoneId = "UTC",
+        CreatedByEntraOid = ownerOid,
         CreatedOn = DateTimeOffset.UtcNow,
         LastUpdatedOn = DateTimeOffset.UtcNow
     };
@@ -108,6 +109,58 @@ public class EngagementDataStoreTests : IDisposable
         // Assert
         Assert.NotNull(result);
         Assert.Equal(3, result.Count);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOid_ReturnsOnlyMatchingEngagements()
+    {
+        // Arrange
+        _context.Engagements.AddRange(
+            CreateEngagement(name: "Owner A", ownerOid: "owner-1"),
+            CreateEngagement(name: "Owner B", ownerOid: "owner-1"),
+            CreateEngagement(name: "Other Owner", ownerOid: "owner-2"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetAllAsync("owner-1");
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.All(result, item => Assert.Equal("owner-1", item.CreatedByEntraOid));
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOid_WhenNoMatchesExist_ReturnsEmptyList()
+    {
+        // Arrange
+        _context.Engagements.Add(CreateEngagement(name: "Other Owner", ownerOid: "owner-2"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetAllAsync("owner-1");
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOidAndPaging_ReturnsOnlyMatchingPage()
+    {
+        // Arrange
+        _context.Engagements.AddRange(
+            CreateEngagement(name: "Owner A", ownerOid: "owner-1"),
+            CreateEngagement(name: "Owner B", ownerOid: "owner-1"),
+            CreateEngagement(name: "Owner C", ownerOid: "owner-1"),
+            CreateEngagement(name: "Other Owner", ownerOid: "owner-2"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetAllAsync("owner-1", 1, 2);
+
+        // Assert
+        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(2, result.Items.Count);
+        Assert.All(result.Items, item => Assert.Equal("owner-1", item.CreatedByEntraOid));
     }
 
     [Fact]

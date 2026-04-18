@@ -221,6 +221,35 @@ public class EngagementsControllerTests
     }
 
     [Fact]
+    public async Task CreateEngagementAsync_WhenCalled_StampsCreatedByEntraOidFromClaims()
+    {
+        // Arrange
+        var request = new EngagementRequest
+        {
+            Name = "New Conference",
+            Url = "https://new-conf.example.com",
+            StartDateTime = DateTimeOffset.UtcNow,
+            EndDateTime = DateTimeOffset.UtcNow.AddDays(2),
+            TimeZoneId = "UTC"
+        };
+        Engagement? capturedEngagement = null;
+        _engagementManagerMock
+            .Setup(m => m.SaveAsync(It.IsAny<Engagement>()))
+            .Callback<Engagement, CancellationToken>((engagement, _) => capturedEngagement = engagement)
+            .ReturnsAsync(OperationResult<Engagement>.Success(new Engagement { Id = 42, CreatedByEntraOid = "owner-1" }));
+
+        var sut = CreateSut(Domain.Scopes.Engagements.All, ownerOid: "owner-1");
+
+        // Act
+        var result = await sut.CreateEngagementAsync(request);
+
+        // Assert
+        result.Result.Should().BeOfType<CreatedAtActionResult>();
+        capturedEngagement.Should().NotBeNull();
+        capturedEngagement!.CreatedByEntraOid.Should().Be("owner-1");
+    }
+
+    [Fact]
     public async Task CreateEngagementAsync_WhenSaveFails_ReturnsInternalServerError()
     {
         // Arrange

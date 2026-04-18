@@ -63,6 +63,40 @@ public class ScheduledItemManagerTests
     }
 
     [Fact]
+    public async Task GetAllAsync_WithOwnerOid_ShouldCallOwnerFilteredRepository()
+    {
+        // Arrange
+        var scheduledItems = new List<ScheduledItem> { new ScheduledItem { Id = 1, CreatedByEntraOid = "owner-1" } };
+        _repository.Setup(r => r.GetAllAsync("owner-1", default)).ReturnsAsync(scheduledItems);
+
+        // Act
+        var result = await _scheduledItemManager.GetAllAsync("owner-1");
+
+        // Assert
+        Assert.Equal(scheduledItems, result);
+        _repository.Verify(r => r.GetAllAsync("owner-1", default), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOidAndPaging_ShouldCallOwnerFilteredRepository()
+    {
+        // Arrange
+        var pagedResult = new PagedResult<ScheduledItem>
+        {
+            Items = new List<ScheduledItem> { new ScheduledItem { Id = 1, CreatedByEntraOid = "owner-1" } },
+            TotalCount = 1
+        };
+        _repository.Setup(r => r.GetAllAsync("owner-1", 2, 5, default)).ReturnsAsync(pagedResult);
+
+        // Act
+        var result = await _scheduledItemManager.GetAllAsync("owner-1", 2, 5);
+
+        // Assert
+        Assert.Equal(pagedResult, result);
+        _repository.Verify(r => r.GetAllAsync("owner-1", 2, 5, default), Times.Once);
+    }
+
+    [Fact]
     public async Task DeleteAsync_Entity_ShouldCallRepository()
     {
         // Arrange
@@ -122,6 +156,21 @@ public class ScheduledItemManagerTests
     }
 
     [Fact]
+    public async Task GetUnsentScheduledItemsAsync_WithOwnerOid_ShouldCallOwnerFilteredRepository()
+    {
+        // Arrange
+        var scheduledItems = new List<ScheduledItem> { new ScheduledItem { Id = 1, CreatedByEntraOid = "owner-1" } };
+        _repository.Setup(r => r.GetUnsentScheduledItemsAsync("owner-1", default)).ReturnsAsync(scheduledItems);
+
+        // Act
+        var result = await _scheduledItemManager.GetUnsentScheduledItemsAsync("owner-1");
+
+        // Assert
+        Assert.Equal(scheduledItems, result);
+        _repository.Verify(r => r.GetUnsentScheduledItemsAsync("owner-1", default), Times.Once);
+    }
+
+    [Fact]
     public async Task GetScheduledItemsByCalendarMonthAsync_ShouldCallRepository()
     {
         // Arrange
@@ -134,6 +183,21 @@ public class ScheduledItemManagerTests
         // Assert
         Assert.Equal(scheduledItems, result);
         _repository.Verify(r => r.GetScheduledItemsByCalendarMonthAsync(2022, 1), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetScheduledItemsByCalendarMonthAsync_WithOwnerOid_ShouldCallOwnerFilteredRepository()
+    {
+        // Arrange
+        var scheduledItems = new List<ScheduledItem> { new ScheduledItem { Id = 1, CreatedByEntraOid = "owner-1" } };
+        _repository.Setup(r => r.GetScheduledItemsByCalendarMonthAsync("owner-1", 2022, 1, default)).ReturnsAsync(scheduledItems);
+
+        // Act
+        var result = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync("owner-1", 2022, 1);
+
+        // Assert
+        Assert.Equal(scheduledItems, result);
+        _repository.Verify(r => r.GetScheduledItemsByCalendarMonthAsync("owner-1", 2022, 1, default), Times.Once);
     }
 
     [Fact]
@@ -163,5 +227,20 @@ public class ScheduledItemManagerTests
         // Assert
         Assert.True(result);
         _repository.Verify(r => r.SentScheduledItemAsync(1, sentOn), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetOrphanedScheduledItemsAsync_WithOwnerOid_ShouldCallOwnerFilteredRepository()
+    {
+        // Arrange
+        var scheduledItems = new List<ScheduledItem> { new ScheduledItem { Id = 1, CreatedByEntraOid = "owner-1" } };
+        _repository.Setup(r => r.GetOrphanedScheduledItemsAsync("owner-1", default)).ReturnsAsync(scheduledItems);
+
+        // Act
+        var result = await _scheduledItemManager.GetOrphanedScheduledItemsAsync("owner-1");
+
+        // Assert
+        Assert.Equal(scheduledItems, result);
+        _repository.Verify(r => r.GetOrphanedScheduledItemsAsync("owner-1", default), Times.Once);
     }
 }

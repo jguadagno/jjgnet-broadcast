@@ -54,12 +54,14 @@ public class MessageTemplateDataStoreTests : IDisposable
         int platformId,
         string messageType,
         string template = "{{ title }} - {{ url }}",
-        string? description = null) => new()
+        string? description = null,
+        string? ownerOid = null) => new()
     {
         SocialMediaPlatformId = platformId,
         MessageType = messageType,
         Template = template,
-        Description = description
+        Description = description,
+        CreatedByEntraOid = ownerOid
     };
 
     [Fact]
@@ -183,5 +185,64 @@ public class MessageTemplateDataStoreTests : IDisposable
 
         // Assert
         Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOid_ReturnsOnlyMatchingTemplates()
+    {
+        // Arrange
+        var twitterId = await GetOrCreatePlatformIdAsync("Twitter");
+        var facebookId = await GetOrCreatePlatformIdAsync("Facebook");
+
+        _context.MessageTemplates.AddRange(
+            CreateMessageTemplate(twitterId, "RandomPost", ownerOid: "owner-1"),
+            CreateMessageTemplate(facebookId, "NewPost", ownerOid: "owner-1"),
+            CreateMessageTemplate(twitterId, "Reminder", ownerOid: "owner-2"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetAllAsync("owner-1");
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.All(result, template => Assert.Equal("owner-1", template.CreatedByEntraOid));
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOid_WhenNoMatchesExist_ReturnsEmptyList()
+    {
+        // Arrange
+        var twitterId = await GetOrCreatePlatformIdAsync("Twitter");
+        _context.MessageTemplates.Add(CreateMessageTemplate(twitterId, "RandomPost", ownerOid: "owner-2"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetAllAsync("owner-1");
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOidAndPaging_ReturnsOnlyMatchingPage()
+    {
+        // Arrange
+        var twitterId = await GetOrCreatePlatformIdAsync("Twitter");
+        var facebookId = await GetOrCreatePlatformIdAsync("Facebook");
+
+        _context.MessageTemplates.AddRange(
+            CreateMessageTemplate(twitterId, "RandomPost", ownerOid: "owner-1"),
+            CreateMessageTemplate(facebookId, "NewPost", ownerOid: "owner-1"),
+            CreateMessageTemplate(twitterId, "Reminder", ownerOid: "owner-1"),
+            CreateMessageTemplate(facebookId, "Weekly", ownerOid: "owner-2"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetAllAsync("owner-1", 1, 2);
+
+        // Assert
+        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(2, result.Items.Count);
+        Assert.All(result.Items, template => Assert.Equal("owner-1", template.CreatedByEntraOid));
     }
 }
