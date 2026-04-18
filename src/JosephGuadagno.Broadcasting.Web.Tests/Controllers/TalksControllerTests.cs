@@ -37,8 +37,16 @@ public class TalksControllerTests
     public async Task Details_WhenTalkFound_ShouldReturnViewWithTalkViewModel()
     {
         // Arrange
-        var talk = new Talk { Id = 10, EngagementId = 1 };
+        var talk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "test-oid" };
         var viewModel = new TalkViewModel { Id = 10, EngagementId = 1 };
+
+        var claims = new List<Claim> { new Claim(ApplicationClaimTypes.EntraObjectId, "test-oid") };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(talk);
         _mapper.Setup(m => m.Map<TalkViewModel>(It.IsAny<object>())).Returns(viewModel);
 
@@ -68,8 +76,16 @@ public class TalksControllerTests
     public async Task Edit_Get_WhenTalkFound_ShouldReturnViewWithTalkViewModel()
     {
         // Arrange
-        var talk = new Talk { Id = 10, EngagementId = 1 };
+        var talk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "test-oid" };
         var viewModel = new TalkViewModel { Id = 10, EngagementId = 1 };
+
+        var claims = new List<Claim> { new Claim(ApplicationClaimTypes.EntraObjectId, "test-oid") };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
         _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(talk);
         _mapper.Setup(m => m.Map<TalkViewModel>(It.IsAny<object>())).Returns(viewModel);
 
