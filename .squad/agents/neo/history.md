@@ -1,5 +1,40 @@
 # Neo - History
 
+## PR #738 Review — Web MVC Ownership Enforcement (2026-04-18)
+
+**Context:** First review of PR #738 (feat(#730): enforce owner isolation in Web MVC controllers). This is the companion PR to #739 (API ownership) which was merged earlier today.
+
+**Branch state issue:** The `issue-730` branch was created from a local state that included API changes before PR #739 was merged. Now that #739 is on main, there are merge conflicts in the API test files.
+
+**Conflicts detected:**
+- `src/JosephGuadagno.Broadcasting.Api.Tests/Controllers/EngagementsControllerTests.cs`
+- `src/JosephGuadagno.Broadcasting.Api.Tests/Controllers/EngagementsController_PlatformsTests.cs`
+- `src/JosephGuadagno.Broadcasting.Api.Tests/Controllers/SchedulesControllerTests.cs`
+
+**Web MVC implementation review (the actual PR content):**
+
+✅ **Correct pattern applied:**
+- Uses `User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)` for current user
+- Uses `RoleNames.SiteAdministrator` constant for admin bypass (not `Administrator`)
+- Returns friendly redirect + `TempData["ErrorMessage"]` instead of raw `Forbid()`
+- Proper layering: controllers → services → managers (no direct data store access)
+
+✅ **Controllers covered:**
+- EngagementsController: Details, Edit (GET), Delete (GET), DeleteConfirmed, Add (sets OID)
+- SchedulesController: Details, Edit (GET), Delete (GET), DeleteConfirmed, Add (sets OID)
+- TalksController: Details, Edit (GET), Delete (GET), DeleteConfirmed, Add (sets OID)
+- MessageTemplatesController: Edit (GET)
+
+✅ **Tests updated:** Web tests correctly set up user claims with matching `CreatedByEntraOid`
+
+✅ **CI passing:** All 4 checks green (CodeQL, build-and-test, GitGuardian, CodeQL Analysis)
+
+**Verdict:** ❌ CHANGES REQUESTED — Rebase required to resolve API test conflicts. Once rebased, the Web MVC implementation is correct and ready to merge.
+
+**Action posted:** PR comment #738 with detailed review and rebase instructions.
+
+---
+
 ## Learnings — PR #739 Final Review (2026-04-18)
 
 **Context:** Third and final review of PR #739 (feat(#729): enforce owner isolation in API controllers). Previous rejections were for missing non-owner 403 tests (Round 1: zero tests, Round 2: Talks/Platforms sub-actions missing).
