@@ -37,8 +37,35 @@ public class SchedulesControllerTests
         _controller.TempData = tempDataDictionaryFactory.GetTempData(httpContext);
     }
 
-    [Fact]
-    public async Task Index_ShouldReturnViewWithScheduledItemViewModels()
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Builds a <see cref="ControllerContext"/> whose <see cref="ClaimsPrincipal"/>
+    /// carries the given <paramref name="ownerOid"/> and optional <paramref name="role"/>.
+    /// </summary>
+    private static ControllerContext CreateControllerContext(string ownerOid, string role = RoleNames.Contributor)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, ownerOid),
+            new Claim(ClaimTypes.Role, role)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        return new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+    }
+
+    /// <summary>
+    /// Creates a controller context where the user OID does NOT match the entity's
+    /// <c>CreatedByEntraOid</c>.  Use for testing ownership rejection scenarios
+    /// (Web MVC redirects with an error message rather than returning ForbidResult).
+    /// </summary>
+    private static ControllerContext CreateNonOwnerControllerContext(string role = RoleNames.Contributor) =>
+        CreateControllerContext(ownerOid: "non-owner-oid-99999", role: role);
     {
         // Arrange
         var scheduledItems = new List<ScheduledItem> { new ScheduledItem { Id = 1 } };
@@ -140,8 +167,23 @@ public class SchedulesControllerTests
     public async Task Edit_Post_WhenSaveSucceeds_ShouldRedirectToDetails()
     {
         // Arrange
+        var userOid = "test-user-oid";
         var viewModel = new ScheduledItemViewModel { Id = 1 };
+        var existingItem = new ScheduledItem { Id = 1, CreatedByEntraOid = userOid };
         var savedItem = new ScheduledItem { Id = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(existingItem);
         _mapper.Setup(m => m.Map<ScheduledItem>(It.IsAny<object>())).Returns(new ScheduledItem());
         _scheduledItemService.Setup(s => s.SaveScheduledItemAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(savedItem);
 
@@ -158,7 +200,22 @@ public class SchedulesControllerTests
     public async Task Edit_Post_WhenSaveFails_ShouldRedirectBackToEdit()
     {
         // Arrange
+        var userOid = "test-user-oid";
         var viewModel = new ScheduledItemViewModel { Id = 7 };
+        var existingItem = new ScheduledItem { Id = 7, CreatedByEntraOid = userOid };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _scheduledItemService.Setup(s => s.GetScheduledItemAsync(7)).ReturnsAsync(existingItem);
         _mapper.Setup(m => m.Map<ScheduledItem>(It.IsAny<object>())).Returns(new ScheduledItem());
         _scheduledItemService.Setup(s => s.SaveScheduledItemAsync(It.IsAny<ScheduledItem>())).ReturnsAsync((ScheduledItem?)null);
 
@@ -169,6 +226,83 @@ public class SchedulesControllerTests
         var redirectResult = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Edit", redirectResult.ActionName);
         Assert.Equal(7, redirectResult.RouteValues?["id"]);
+    }
+
+    [Fact]
+    public async Task Edit_Post_WhenScheduledItemNotFound_ShouldReturnNotFound()
+    {
+        // Arrange — issue #742: defence-in-depth fetch returns NotFound
+        var viewModel = new ScheduledItemViewModel { Id = 99 };
+        _scheduledItemService.Setup(s => s.GetScheduledItemAsync(99)).ReturnsAsync((ScheduledItem?)null);
+
+        // Act
+        var result = await _controller.Edit(viewModel);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+        _scheduledItemService.Verify(s => s.SaveScheduledItemAsync(It.IsAny<ScheduledItem>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Edit_Post_WhenUserIsNotOwnerAndNotAdmin_ShouldRedirectWithError()
+    {
+        // Arrange — issue #742: ownership re-verification prevents save by non-owner
+        var viewModel = new ScheduledItemViewModel { Id = 1 };
+        var existingItem = new ScheduledItem { Id = 1, CreatedByEntraOid = "other-user-oid" };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "attacker-oid"),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(existingItem);
+
+        // Act
+        var result = await _controller.Edit(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("You do not have permission to edit this scheduled item.", _controller.TempData["ErrorMessage"]);
+        _scheduledItemService.Verify(s => s.SaveScheduledItemAsync(It.IsAny<ScheduledItem>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Edit_Post_WhenUserIsSiteAdministrator_ShouldAllowSaveRegardlessOfOwnership()
+    {
+        // Arrange — issue #742: SiteAdministrators bypass ownership check
+        var viewModel = new ScheduledItemViewModel { Id = 1 };
+        var existingItem = new ScheduledItem { Id = 1, CreatedByEntraOid = "another-user-oid" };
+        var savedItem = new ScheduledItem { Id = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "admin-oid"),
+            new Claim(ClaimTypes.Role, RoleNames.SiteAdministrator)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(existingItem);
+        _mapper.Setup(m => m.Map<ScheduledItem>(It.IsAny<object>())).Returns(new ScheduledItem());
+        _scheduledItemService.Setup(s => s.SaveScheduledItemAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(savedItem);
+
+        // Act
+        var result = await _controller.Edit(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Details", redirectResult.ActionName);
+        _scheduledItemService.Verify(s => s.SaveScheduledItemAsync(It.IsAny<ScheduledItem>()), Times.Once);
     }
 
     [Fact]

@@ -134,6 +134,23 @@ public class EngagementsController : Controller
     [Authorize(Policy = "RequireContributor")]
     public async Task<IActionResult> Edit(EngagementViewModel engagementViewModel)
     {
+        // Defence-in-depth: re-verify ownership before saving (issue #742)
+        var existingEngagement = await _engagementService.GetEngagementAsync(engagementViewModel.Id);
+        if (existingEngagement == null)
+        {
+            return NotFound();
+        }
+
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || existingEngagement.CreatedByEntraOid == null || existingEngagement.CreatedByEntraOid != currentUserOid)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to edit this engagement.";
+                return RedirectToAction("Index");
+            }
+        }
+
         var engagementToEdit = _mapper.Map<Domain.Models.Engagement>(engagementViewModel);
         var savedEngagement = await _engagementService.SaveEngagementAsync(engagementToEdit);
         if (savedEngagement == null)

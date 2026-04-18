@@ -97,6 +97,27 @@ public class TalksController : Controller
     [Route("{talkId:int}")]
     public async Task<IActionResult> Edit(TalkViewModel talkViewModel)
     {
+        // Defence-in-depth: re-verify ownership before saving (issue #742)
+        if (talkViewModel.EngagementId == null)
+        {
+            return NotFound();
+        }
+        var existingTalk = await _engagementService.GetEngagementTalkAsync(talkViewModel.EngagementId.Value, talkViewModel.Id);
+        if (existingTalk == null)
+        {
+            return NotFound();
+        }
+
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || existingTalk.CreatedByEntraOid == null || existingTalk.CreatedByEntraOid != currentUserOid)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to edit this talk.";
+                return RedirectToAction("Edit", "Engagements", new { id = talkViewModel.EngagementId });
+            }
+        }
+
         var talkToEdit = _mapper.Map<Domain.Models.Talk>(talkViewModel);
         var savedTalk = await _engagementService.SaveEngagementTalkAsync(talkToEdit);
         if (savedTalk == null)
