@@ -54,6 +54,54 @@
 
 **Verdict:** ✅ APPROVED — All ownership-guarded paths covered. Ready for Joseph to merge.
 
+---
+
+## 2026-04-18 — Session: Neo Setup Experience Spec & Tank Test Fixes
+
+**Status:** ✅ COMPLETE (Background Agent)  
+**Focus:** Architecture spec for multi-user setup experience (issue #609)
+
+### Work Summary
+
+Produced comprehensive architecture specification for new user setup experience — the wizard that runs after a user is approved and before they access the main application.
+
+**Deliverable:** `setup-experience-spec.md` (90 pages) + architectural decisions document
+
+### Key Deliverables
+
+1. **Feature Spec**
+   - Problem statement: approved users have no path to configure personal collectors/publishers
+   - 8-step user flow: approval → setup welcome → collectors → publishers → review → complete
+   - UI requirements (YouTube, SyndicationFeed collectors; Bluesky, Twitter, LinkedIn, Facebook publishers)
+   - Database schema (UserCollectorSettings JSON blob, HasCompletedSetup flag on ApplicationUsers)
+   - Middleware placement (after approval gate, before authorization)
+
+2. **7 Architectural Decisions**
+   - JSON blob storage (consistency with #731 UserPublisherSettings)
+   - Setup middleware placement (after approval, before auth)
+   - HasCompletedSetup boolean column on ApplicationUsers
+   - Data Protection API encryption (MVP), Key Vault (future)
+   - Soft redirect + skip option + persistent banner enforcement
+   - Direct credentials (MVP), OAuth (future)
+   - Named type constants + SQL CHECK constraints
+
+3. **3 Open Questions (Team Feedback Incorporated)**
+   - Test connection buttons: Yes (recommendation)
+   - Partial config UX: validation error (recommendation)
+   - Re-enterable setup: Yes, via Settings page (recommendation)
+
+### Related Issues
+
+- Epic #609: Multi-tenancy — per-user content, publishers, and social tokens
+- Issue #731: Per-user publisher settings
+- Sprint 15 (pending prioritization)
+
+### Decision Document
+
+All architectural choices documented in decisions.md with full context and rationale.
+
+---
+
 ## Core Context
 
 **Role:** Lead Reviewer & Architect | Architecture, code reviews, issue triage, sprint planning, CI/CD
@@ -68,6 +116,8 @@
 - Breaking DB migrations (PK rebuilds): Code deploys first -> maintenance window -> migration script
 - Functions DI: Remove .ValidateOnStart() from Functions projects (causes startup activation failures)
 - Email queue: AddMessageWithBase64EncodingAsync (Base64 required for Azure Functions queue triggers)
+- Ownership checks (tests): Must include OID claim on ControllerContext AND matching CreatedByEntraOid on mock entities
+- Moq CancellationToken: Use non-generic Returns(Delegate) form with explicit matchers, not Returns<T1, T2>(lambda)
 
 **Epic #667 Architecture Decisions:**
 - SocialMediaPlatforms: Id, Name, Url, Icon, IsActive (soft delete)

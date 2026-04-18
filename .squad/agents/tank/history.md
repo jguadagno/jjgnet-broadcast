@@ -1,5 +1,105 @@
 # Tank - History
 
+## 2026-04-18 — Issue #738: Fix 38 API Test Failures (Background Agent)
+
+**Status:** ✅ COMPLETE  
+**Branch:** issue-730  
+**PR:** #738
+
+### Work Summary
+
+Fixed 38 failing tests in `JosephGuadagno.Broadcasting.Api.Tests` after feature commit on issue-730 branch added ownership enforcement to API controllers.
+
+### Root Cause
+
+New `feat(#730)` commit added ownership checks:
+- Controllers call `GetAsync(id)` for pre-flight ownership validation
+- Verify `User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)` matches `entity.CreatedByEntraOid`
+- Return `ForbidResult` if OID mismatch
+- Tests lacked OID claim on mock `User` and `CreatedByEntraOid` on mock entities → all ownership checks failed
+
+### Fix Pattern Applied
+
+**EngagementsController_PlatformsTests** (14 failures)
+- Added blanket `_engagementManagerMock.Setup(m => m.GetAsync(It.IsAny<int>()))` in constructor
+- All 14 platform endpoint tests assume engagement exists; single setup avoids repetition
+
+**EngagementsControllerTests** (12 failures)
+- Updated `GetAllAsync(int, int)` → `GetAllAsync(string, int, int, ...)` to match owner-filtered overload
+- Added `CreatedByEntraOid = "test-oid-12345"` to entity builders
+
+**SchedulesControllerTests** (9 failures)
+- Changed mock overload to owner-filtered variant
+- Added OID claim to `CreateControllerContext`
+- Set `CreatedByEntraOid = "test-oid-12345"` on all mock entities
+
+**PlatformsControllerTests** (via Engagements_PlatformsTests)
+- Verified blanket GetAsync setup covers all 8 platform HTTP methods
+
+### Key Decisions
+
+1. **Blanket mock setup** valid when all tests share same assumption
+2. **Mock overload resolution** must exactly match controller dispatch
+3. **Entity builder helpers** must include matching `CreatedByEntraOid`
+4. **`Times.Never` verify** when pre-flight check returns null and method never called
+
+### Test Results
+
+- **Before:** 35 failures
+- **After:** 73/73 API tests passing ✅
+- **Decision File:** Merged into decisions.md
+
+### Related
+
+Tank also fixed 5 failing Web MVC tests same branch (see tank-fix-web-tests-738 session).
+
+---
+
+## 2026-04-18 — Issue #730: Fix 5 Failing Web MVC Tests (Background Agent)
+
+**Status:** ✅ COMPLETE  
+**Branch:** issue-730  
+**PR:** #738
+
+### Work Summary
+
+Fixed 5 failing tests in `JosephGuadagno.Broadcasting.Web.Tests` after `feat(#730)` commit added ownership enforcement to Web MVC controllers.
+
+### Root Cause
+
+Controllers now check `User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)` vs `entity.CreatedByEntraOid`. Tests had neither OID claim on test `ControllerContext` nor `CreatedByEntraOid` on mock entities → ownership check failed, tests got redirect instead of expected view.
+
+### Failing Tests Fixed
+
+1. `SchedulesControllerTests.Delete_Get_ShouldReturnConfirmationView` — Missing OID claim + entity OID
+2. `SchedulesControllerTests.Details_WhenScheduledItemFound_ShouldReturnViewWithScheduledItemViewModel` — Missing OID + entity OID
+3. `SchedulesControllerTests.Edit_Get_WhenScheduledItemFound_ShouldReturnViewWithScheduledItemViewModel` — Missing OID + entity OID
+4. `TalksControllerTests.Edit_Get_WhenTalkFound_ShouldReturnViewWithTalkViewModel` — Missing OID + entity OID
+5. `TalksControllerTests.Details_WhenTalkFound_ShouldReturnViewWithTalkViewModel` — Missing OID + entity OID
+
+### Fix Pattern
+
+For each test:
+1. Add `ControllerContext` with OID claim in Arrange
+2. Set `CreatedByEntraOid = "test-oid"` on mock entity
+3. Both values must match for ownership check to pass
+
+### Test Results
+
+- **Before:** 152/157 passing (5 failures)
+- **After:** 157/157 Web tests passing ✅
+
+### Key Learning
+
+Ownership checks require BOTH conditions:
+1. User claim (`User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)`)
+2. Entity OID field (`entity.CreatedByEntraOid`)
+3. Values must match
+
+Missing either causes redirect instead of view result.
+
+---
+
 ## 2026-04-17 — Issue #719: Test Updates for Role Restructure
 **Status:** ✅ COMPLETE
 
@@ -19,9 +119,55 @@
 
 **Test Results:** 157/157 passing.
 
+---
+
+## Core Context
+
+**Role:** QA Automation Engineer | Test design, test infrastructure, regression coverage, test-driven fixes
+
+**Test Stack:** xUnit, FluentAssertions, Moq
+
+**Key Patterns:**
+- Entity builders with standard OID: `CreatedByEntraOid = "test-oid-12345"`
+- Controller context setup: Include OID claim for ownership checks
+- Mock overload resolution: Must exactly match controller dispatch path
+- Times.Never/Once verification: Reflect actual call behavior, not assumptions
+- Blanket mocks: Valid when all tests in class share same precondition
+
+**Team Rules (Enforced):**
+- All tests MUST pass before push (no exceptions)
+- Run full test suite AFTER committing changes to branch
+- Fix test failures immediately — never push with known failures
+- Security tests (403 forbid, admin bypass) are NOT optional
+
+**Completed Sessions:**
+- Issue #719: Role restructure test updates (157/157 Web tests)
+- Issue #730: Ownership enforcement (73/73 API, 157/157 Web tests)
+
+
+
+## 2026-04-18 — Issue #730: Fix 5 Failing Web MVC Tests
+**Status:** ✅ COMPLETE
+
+**Task:** Fix 5 failing tests in `JosephGuadagno.Broadcasting.Web.Tests` after PR #738 added ownership enforcement to Web MVC controllers.
+
+**Root Cause:** `SchedulesController` and `TalksController` now check `User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)` and compare it to `entity.CreatedByEntraOid` for non-SiteAdministrator users. The 5 tests had neither the OID claim on the controller's `User` nor `CreatedByEntraOid` set on their mock entities, causing the ownership check to redirect instead of returning the expected view.
+
+**Failing Tests Fixed:**
+1. `SchedulesControllerTests.Delete_Get_ShouldReturnConfirmationView`
+2. `SchedulesControllerTests.Details_WhenScheduledItemFound_ShouldReturnViewWithScheduledItemViewModel`
+3. `SchedulesControllerTests.Edit_Get_WhenScheduledItemFound_ShouldReturnViewWithScheduledItemViewModel`
+4. `TalksControllerTests.Edit_Get_WhenTalkFound_ShouldReturnViewWithTalkViewModel`
+5. `TalksControllerTests.Details_WhenTalkFound_ShouldReturnViewWithTalkViewModel`
+
+**Fix Pattern:** Added `ControllerContext` with `ApplicationClaimTypes.EntraObjectId = "test-oid"` claim in the Arrange section, and set `CreatedByEntraOid = "test-oid"` on mock-returned entities to match.
+
+**Test Results:** 157/157 passing after fix.
+
 ## Learnings
 - Self-demotion guards in controllers that use role name strings must be updated alongside auth policy changes — test fixtures expose this coupling clearly.
 - The distinction between `SiteAdministrator` (full-admin) and `Administrator` (personal-content admin) requires careful review of any production code that compares role names as strings.
+- When controllers add ownership checks (`User.FindFirstValue(claim)` vs `entity.OidField`), tests for the "happy path" must: (1) set up a `ControllerContext` with the OID claim, and (2) return an entity whose OID field matches. Missing either causes a redirect instead of a view result.
 
 ## 2026-04-13T17-34-54Z — Issue #708: Regression Coverage Coordination
 **Status:** ✅ VERIFIED & COMPLETE

@@ -15216,3 +15216,115 @@ public class BlueskySettingsViewModel
 ---
 
 **Confidence:** High. This approach aligns with every pattern I found in the existing codebase and avoids unnecessary abstraction for a fixed set of platforms.
+
+---
+
+## New User Setup Experience — Architectural Decisions (2026-04-17)
+
+**Author:** Neo  
+**Status:** Pending team review  
+**Related Epic:** #609 (Multi-tenancy — per-user content, publishers, and social tokens)  
+**Related Issues:** #731 (Per-user publisher settings)
+
+Setup experience for approved users. Decisions: JSON blob storage, middleware after approval gate, HasCompletedSetup column on ApplicationUsers, Data Protection API encryption (MVP), soft redirect enforcement, direct credentials (MVP), named type constants.
+
+Open questions: test connection buttons, partial config UX, re-enterable setup (all pending team feedback).
+
+---
+
+## PR #738: API & Web Test Fixes (2026-04-18)
+
+**Author:** Tank (Tester)  
+**Branch:** issue-730  
+**Status:** All 73 API tests + 157 Web tests passing
+
+Fixed 38 API test failures and 5 Web test failures. Root cause: controllers added ownership checks requiring OID claim on ControllerContext and CreatedByEntraOid on mock entities.
+
+Key patterns: blanket GetAsync mocks in PlatformsTests, Times.Never for pre-flight failures, mock overload resolution must match controller's actual calls, entity builders must include matching OID.
+
+---
+
+## API Owner Isolation Pattern (#729) (2026-04-17)
+
+**Author:** Trinity (Backend Dev)  
+**Status:** Implemented — PR #739 (pending test coverage)
+
+Controllers enforce per-user isolation via GetOwnerOid() and IsSiteAdministrator() helpers. GET list dispatches to admin (unfiltered) or owner (filtered) manager overload. All CRUD actions check ownership before proceeding. HTTP 404 for missing, 403 for forbidden.
+
+Controllers modified: EngagementsController (11 endpoints), SchedulesController (4), MessageTemplatesController (3). SocialMediaPlatformsController unchanged (global catalog).
+
+---
+
+## Issue #730: Web MVC Owner Isolation (2026-04-17)
+
+**Author:** Switch  
+**Status:** Implemented  
+
+Web MVC follows same pattern as API #729. Uses SiteAdministrator (not Administrator) for admin bypass. Redirects to Index with TempData message on ownership violation (better UX than Forbid). Ownership checks on GET actions (Details/Edit/Delete) plus POSTs. Tests must include ControllerContext with OID + role claims.
+
+---
+
+## Moq CancellationToken Default Parameter Pattern (2026-04-17)
+
+**Author:** Trinity
+
+For async methods with CancellationToken = default, use non-generic Returns(Delegate) with explicit matchers for ALL parameters, not Returns<T1, T2>(lambda). Generic form can match unexpected overloads.
+
+---
+
+## PR #739 Review: API Owner Isolation (2026-04-14)
+
+**Author:** Neo  
+**Verdict:** REJECTED — Implementation architecturally correct. Security-critical rejection paths (403) and admin bypass have zero test coverage. Not acceptable.
+
+Must add: *_WhenNonOwner_ReturnsForbid and GetAll_WhenSiteAdmin_CallsUnfilteredMethod tests (~6 total). Assignee: Tank.
+
+Non-blocking: utility endpoints lack filtering (Trinity, medium), GetOwnerOid() throws on missing claim (Trinity, low).
+
+---
+
+## Test Infrastructure: Verify on Correct Branch (2026-04-17)
+
+Pattern: Do not report passing tests until verified AFTER all changes committed to branch. Run dotnet test AFTER committing, verify exit code 0, THEN push. No exceptions.
+
+Why: PR #738/739 reported passing yet CI showed failures — tests run on wrong branch state or before staged changes.
+
+---
+
+## Team Rule: All Tests Must Pass Before Push (2026-04-17)
+
+Rule: All tests MUST pass locally before pushing. No exceptions — not even for infrastructure issues. If tests fail at push time, fix first. Never push with known failures.
+
+Why: PR #738 pushed with explicit test failure notes, causing CI failure and follow-up fixes.
+
+---
+
+## Key Vault Secrets Already in Production (2026-04-18)
+
+**By:** jguadagno (user feedback)
+
+Settings marked "(should be Key Vault)" are ALREADY in Azure Key Vault. App loads via environment settings. Locally: user secrets (not Key Vault).
+
+Applies to: YouTube ApiKey, Bluesky password, Twitter credentials, etc.
+
+---
+
+## Publisher Config: Direct Credentials First, OAuth Later (2026-04-18)
+
+**By:** jguadagno (user feedback)
+
+For new user setup experience, start with direct credential entry (matches current architecture). OAuth deferred as follow-on. Not all providers support OAuth.
+
+---
+
+## Azure Functions: Deployment Push Trigger Disabled (2026-04-17)
+
+**Author:** Cypher (DevOps)
+
+Disabled push trigger on Functions workflow. Epic #609 will break Functions until #732 merges (incomplete OID threading in managers).
+
+File: .github/workflows/main_jjgnet-broadcast.yml
+
+Re-enable: After #732 merges and Functions validated working.
+
+Related: Epic #609, #728 (OID threading), #732 (final integration).
