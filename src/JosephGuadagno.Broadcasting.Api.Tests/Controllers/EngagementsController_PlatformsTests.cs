@@ -54,31 +54,15 @@ public class EngagementsController_PlatformsTests
     // Helpers
     // =========================================================================
 
-    /// <summary>
-    /// Creates the SUT (controller) with an HttpContext whose ClaimsPrincipal
-    /// carries the supplied OAuth scope value so that
-    /// <c>HttpContext.VerifyUserHasAnyAcceptedScope</c> succeeds.
-    /// </summary>
-    private EngagementsController CreateSut(string scopeClaimValue, string ownerOid = "test-oid-12345")
+    private EngagementsController CreateSut(string scopeClaimValue, string ownerOid = "owner-oid-12345")
     {
-        var user = new ClaimsPrincipal(new ClaimsIdentity(
-        [
-            new Claim("scp", scopeClaimValue),
-            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue),
-            // Required: GetOwnerOid() reads this claim; must match BuildEngagement(id).CreatedByEntraOid.
-            new Claim(Domain.Constants.ApplicationClaimTypes.EntraObjectId, ownerOid)
-        ], "TestAuthentication"));
-
-        var httpContext = new DefaultHttpContext { User = user };
-        var controllerContext = new ControllerContext { HttpContext = httpContext };
-
         return new EngagementsController(
             _engagementManagerMock.Object,
             _dataStoreMock.Object,
             _loggerMock.Object,
             _mapper)
         {
-            ControllerContext = controllerContext,
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(scopeClaimValue, ownerOid),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
     }
@@ -89,7 +73,7 @@ public class EngagementsController_PlatformsTests
     /// matching the default owner OID set in <see cref="CreateSut"/>.
     /// Used as the default return value of <c>GetAsync</c> so the per-endpoint ownership check passes.
     /// </summary>
-    private static Engagement BuildEngagement(int id, string oid = "test-oid-12345") => new()
+    private static Engagement BuildEngagement(int id, string oid = "owner-oid-12345") => new()
     {
         Id = id,
         Name = $"Conference {id}",
@@ -596,7 +580,7 @@ public class EngagementsController_PlatformsTests
 
     // =========================================================================
     // Security: non-owner → 403 ForbidResult (Platforms sub-actions)
-    // The constructor default mock returns BuildEngagement(id) with OID "test-oid-12345".
+    // The constructor default mock returns BuildEngagement(id) with OID "owner-oid-12345".
     // Creating the SUT with ownerOid "non-owner-oid-99999" ensures the ownership check fails.
     // =========================================================================
 
@@ -604,7 +588,7 @@ public class EngagementsController_PlatformsTests
     public async Task GetPlatformsForEngagementAsync_WhenNonOwner_ReturnsForbid()
     {
         // Arrange
-        // Default mock returns engagement owned by "test-oid-12345"; user carries "non-owner-oid-99999".
+        // Default mock returns engagement owned by "owner-oid-12345"; user carries "non-owner-oid-99999".
         var sut = CreateSut(Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
 
         // Act
@@ -621,7 +605,7 @@ public class EngagementsController_PlatformsTests
     public async Task GetPlatformForEngagementAsync_WhenNonOwner_ReturnsForbid()
     {
         // Arrange
-        // Default mock returns engagement owned by "test-oid-12345"; user carries "non-owner-oid-99999".
+        // Default mock returns engagement owned by "owner-oid-12345"; user carries "non-owner-oid-99999".
         var sut = CreateSut(Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
 
         // Act
@@ -638,7 +622,7 @@ public class EngagementsController_PlatformsTests
     public async Task AddPlatformToEngagementAsync_WhenNonOwner_ReturnsForbid()
     {
         // Arrange
-        // Default mock returns engagement owned by "test-oid-12345"; user carries "non-owner-oid-99999".
+        // Default mock returns engagement owned by "owner-oid-12345"; user carries "non-owner-oid-99999".
         var request = new EngagementSocialMediaPlatformRequest
         {
             SocialMediaPlatformId = 2,
@@ -660,7 +644,7 @@ public class EngagementsController_PlatformsTests
     public async Task RemovePlatformFromEngagementAsync_WhenNonOwner_ReturnsForbid()
     {
         // Arrange
-        // Default mock returns engagement owned by "test-oid-12345"; user carries "non-owner-oid-99999".
+        // Default mock returns engagement owned by "owner-oid-12345"; user carries "non-owner-oid-99999".
         var sut = CreateSut(Scopes.Engagements.Delete, ownerOid: "non-owner-oid-99999");
 
         // Act

@@ -11,6 +11,7 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Controllers;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
+using JosephGuadagno.Broadcasting.Web.Tests.Helpers;
 
 namespace JosephGuadagno.Broadcasting.Web.Tests.Controllers;
 
@@ -32,6 +33,10 @@ public class TalksControllerTests
         var tempDataDictionaryFactory = new TempDataDictionaryFactory(tempDataProvider.Object);
         _controller.TempData = tempDataDictionaryFactory.GetTempData(httpContext);
     }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
 
     [Fact]
     public async Task Details_WhenTalkFound_ShouldReturnViewWithTalkViewModel()
@@ -198,18 +203,10 @@ public class TalksControllerTests
     {
         // Arrange — issue #742: ownership re-verification prevents save by non-owner
         var viewModel = new TalkViewModel { Id = 10, EngagementId = 1 };
-        var existingTalk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "other-user-oid" };
+        var existingTalk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "owner-oid-12345" };
 
-        var claims = new List<Claim>
-        {
-            new Claim(ApplicationClaimTypes.EntraObjectId, "attacker-oid"),
-            new Claim(ClaimTypes.Role, RoleNames.Contributor)
-        };
-        var identity = new ClaimsIdentity(claims, "TestAuth");
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-        };
+        // User OID "non-owner-oid-99999" does not match entity's "owner-oid-12345".
+        _controller.ControllerContext = WebControllerTestHelpers.CreateNonOwnerControllerContext();
 
         _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(existingTalk);
 

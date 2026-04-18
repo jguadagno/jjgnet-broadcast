@@ -12,6 +12,7 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Controllers;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
+using JosephGuadagno.Broadcasting.Web.Tests.Helpers;
 
 namespace JosephGuadagno.Broadcasting.Web.Tests.Controllers;
 
@@ -39,32 +40,6 @@ public class EngagementsControllerTests
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Builds a <see cref="ControllerContext"/> whose <see cref="ClaimsPrincipal"/>
-    /// carries the given <paramref name="ownerOid"/> and optional <paramref name="role"/>.
-    /// </summary>
-    private static ControllerContext CreateControllerContext(string ownerOid, string role = RoleNames.Contributor)
-    {
-        var claims = new List<Claim>
-        {
-            new Claim(ApplicationClaimTypes.EntraObjectId, ownerOid),
-            new Claim(ClaimTypes.Role, role)
-        };
-        var identity = new ClaimsIdentity(claims, "TestAuth");
-        return new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-        };
-    }
-
-    /// <summary>
-    /// Creates a controller context where the user OID does NOT match the entity's
-    /// <c>CreatedByEntraOid</c>.  Use for testing ownership rejection scenarios
-    /// (Web MVC redirects with an error message rather than returning ForbidResult).
-    /// </summary>
-    private static ControllerContext CreateNonOwnerControllerContext(string role = RoleNames.Contributor) =>
-        CreateControllerContext(ownerOid: "non-owner-oid-99999", role: role);
 
     [Fact]
     public async Task Index_ShouldReturnViewWithEngagementViewModels()
@@ -267,7 +242,7 @@ public class EngagementsControllerTests
         var existingEngagement = new Engagement { Id = 1, CreatedByEntraOid = "owner-oid-12345" };
 
         // User OID "non-owner-oid-99999" does not match entity's "owner-oid-12345".
-        _controller.ControllerContext = CreateNonOwnerControllerContext();
+        _controller.ControllerContext = WebControllerTestHelpers.CreateNonOwnerControllerContext();
 
         _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(existingEngagement);
 
@@ -550,7 +525,7 @@ public class EngagementsControllerTests
         };
 
         // User OID "non-owner-oid-99999" does not match entity's "owner-oid-12345".
-        _controller.ControllerContext = CreateNonOwnerControllerContext();
+        _controller.ControllerContext = WebControllerTestHelpers.CreateNonOwnerControllerContext();
 
         _engagementService.Setup(s => s.GetEngagementAsync(engagementId)).ReturnsAsync(engagement);
 
