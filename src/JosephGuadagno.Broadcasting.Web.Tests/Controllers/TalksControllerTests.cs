@@ -33,6 +33,36 @@ public class TalksControllerTests
         _controller.TempData = tempDataDictionaryFactory.GetTempData(httpContext);
     }
 
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Builds a <see cref="ControllerContext"/> whose <see cref="ClaimsPrincipal"/>
+    /// carries the given <paramref name="ownerOid"/> and optional <paramref name="role"/>.
+    /// </summary>
+    private static ControllerContext CreateControllerContext(string ownerOid, string role = RoleNames.Contributor)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, ownerOid),
+            new Claim(ClaimTypes.Role, role)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        return new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+    }
+
+    /// <summary>
+    /// Creates a controller context where the user OID does NOT match the entity's
+    /// <c>CreatedByEntraOid</c>.  Use for testing ownership rejection scenarios
+    /// (Web MVC redirects with an error message rather than returning ForbidResult).
+    /// </summary>
+    private static ControllerContext CreateNonOwnerControllerContext(string role = RoleNames.Contributor) =>
+        CreateControllerContext(ownerOid: "non-owner-oid-99999", role: role);
+
     [Fact]
     public async Task Details_WhenTalkFound_ShouldReturnViewWithTalkViewModel()
     {
@@ -198,18 +228,10 @@ public class TalksControllerTests
     {
         // Arrange — issue #742: ownership re-verification prevents save by non-owner
         var viewModel = new TalkViewModel { Id = 10, EngagementId = 1 };
-        var existingTalk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "other-user-oid" };
+        // Entity is owned by "owner-oid-12345"; caller has a different OID — ownership check must reject it.
+        var existingTalk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "owner-oid-12345" };
 
-        var claims = new List<Claim>
-        {
-            new Claim(ApplicationClaimTypes.EntraObjectId, "attacker-oid"),
-            new Claim(ClaimTypes.Role, RoleNames.Contributor)
-        };
-        var identity = new ClaimsIdentity(claims, "TestAuth");
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-        };
+        _controller.ControllerContext = CreateNonOwnerControllerContext();
 
         _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(existingTalk);
 
