@@ -769,3 +769,21 @@ This provides regression coverage as close to the actual bug as the existing tes
 23. **Test constructors must match updated production code signatures.** After commit 6ad9396 (issue #713), all DataStore classes added `ILogger<T>` parameters. Test setup must include `var logger = new Mock<ILogger<XDataStore>>()` and pass `logger.Object` to constructors. EngagementManager similarly requires `ILogger<EngagementManager>` in its constructor.
 
 24. **Extension methods for fluent test object modification are helpful.** When setting up test data with varying properties (e.g., different `StartDateTime` values for sort tests), a `With()` extension method allows chaining: `CreateEngagement(name: "Conf A").With(e => e.StartDateTime = ...)`. Declared as `file static class` to keep it scoped to the test file.
+
+## Ownership Test Checklist
+
+Before writing any test for a security/ownership feature:
+
+1. Grep ALL `Forbid()` call sites in the target controller(s)
+2. List every call site with: file path, line number, intended test name
+3. For EACH call site, write a test that:
+   a. Sets `entity.CreatedByEntraOid = "owner-oid-12345"`
+   b. Sets user claim OID = `"non-owner-oid-99999"` (different from entity)
+   c. Verifies result is `ForbidResult`
+   d. Verifies service method was NOT called (`Times.Never`)
+4. Run `dotnet test` — must be 0 failures BEFORE creating PR
+5. Include the coverage matrix in the PR description
+
+### Standard OIDs
+- **Owner OID:** `"owner-oid-12345"` — used in entity mocks
+- **Non-owner OID:** `"non-owner-oid-99999"` — used in user claim for rejection tests
