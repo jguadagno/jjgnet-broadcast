@@ -1,0 +1,183 @@
+using System.Security.Claims;
+using AutoMapper;
+using FluentAssertions;
+using JosephGuadagno.Broadcasting.Api.Controllers;
+using JosephGuadagno.Broadcasting.Api.Dtos;
+using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
+using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Moq;
+
+namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
+
+public class MessageTemplatesControllerTests
+{
+    private readonly Mock<IMessageTemplateDataStore> _messageTemplateDataStoreMock;
+    private readonly Mock<ISocialMediaPlatformManager> _socialMediaPlatformManagerMock;
+    private readonly Mock<ILogger<MessageTemplatesController>> _loggerMock;
+
+    // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
+    // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
+    private static readonly IMapper _mapper = ApiTestMapper.Instance;
+
+    public MessageTemplatesControllerTests()
+    {
+        _messageTemplateDataStoreMock = new Mock<IMessageTemplateDataStore>();
+        _socialMediaPlatformManagerMock = new Mock<ISocialMediaPlatformManager>();
+        _loggerMock = new Mock<ILogger<MessageTemplatesController>>();
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private MessageTemplatesController CreateSut(string scopeClaimValue, string ownerOid = "test-oid-12345", bool isSiteAdmin = false)
+    {
+        var controller = new MessageTemplatesController(
+            _messageTemplateDataStoreMock.Object,
+            _socialMediaPlatformManagerMock.Object,
+            _loggerMock.Object,
+            _mapper)
+        {
+            ControllerContext = CreateControllerContext(scopeClaimValue, ownerOid, isSiteAdmin),
+            ProblemDetailsFactory = new TestProblemDetailsFactory()
+        };
+        return controller;
+    }
+
+    /// <summary>
+    /// Builds an HttpContext whose <see cref="ClaimsPrincipal"/> carries the given OAuth
+    /// scope so that <c>HttpContext.VerifyUserHasAnyAcceptedScope</c> succeeds.
+    /// Both the short "scp" claim and the full URI claim type are set for maximum
+    /// compatibility with different versions of Microsoft.Identity.Web.
+    /// </summary>
+    private static ControllerContext CreateControllerContext(string scopeClaimValue, string ownerOid = "test-oid-12345", bool isSiteAdmin = false)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim("scp", scopeClaimValue),
+            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue),
+            new Claim(Domain.Constants.ApplicationClaimTypes.EntraObjectId, ownerOid)
+        };
+        if (isSiteAdmin)
+            claims.Add(new Claim(ClaimTypes.Role, Domain.Constants.RoleNames.SiteAdministrator));
+
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthentication"));
+        var httpContext = new DefaultHttpContext { User = user };
+        return new ControllerContext { HttpContext = httpContext };
+    }
+
+    private static SocialMediaPlatform BuildPlatform(int id = 1, string name = "TestPlatform") => new()
+    {
+        Id = id,
+        Name = name,
+        IsActive = true
+    };
+
+    private static MessageTemplate BuildTemplate(string oid = "test-oid-12345") => new()
+    {
+        SocialMediaPlatformId = 1,
+        MessageType = "RandomPost",
+        Template = "Check out {{ title }}!",
+        CreatedByEntraOid = oid
+    };
+
+    // -------------------------------------------------------------------------
+    // Security: GetAsync — non-owner returns 403
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Template is owned by "owner-oid-12345"; the calling user has a different OID.
+        var platform = BuildPlatform();
+        var template = BuildTemplate(oid: "owner-oid-12345");
+
+        _socialMediaPlatformManagerMock
+            .Setup(m => m.GetByNameAsync("TestPlatform", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(platform);
+        _messageTemplateDataStoreMock
+            .Setup(m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(template);
+
+        var sut = CreateSut(Domain.Scopes.MessageTemplates.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.GetAsync("TestPlatform", "RandomPost");
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _messageTemplateDataStoreMock.Verify(
+            m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    // -------------------------------------------------------------------------
+    // Security: UpdateAsync — non-owner returns 403
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task UpdateAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        var platform = BuildPlatform();
+        var template = BuildTemplate(oid: "owner-oid-12345");
+        var request = new MessageTemplateRequest { Template = "Updated {{ title }}!" };
+
+        _socialMediaPlatformManagerMock
+            .Setup(m => m.GetByNameAsync("TestPlatform", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(platform);
+        _messageTemplateDataStoreMock
+            .Setup(m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(template);
+
+        var sut = CreateSut(Domain.Scopes.MessageTemplates.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.UpdateAsync("TestPlatform", "RandomPost", request);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _messageTemplateDataStoreMock.Verify(
+            m => m.UpdateAsync(It.IsAny<MessageTemplate>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    // -------------------------------------------------------------------------
+    // Security: GetAllAsync — SiteAdmin calls unfiltered overload
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetAllAsync_WhenSiteAdmin_CallsUnfilteredGetAll()
+    {
+        // Arrange
+        var templates = new List<MessageTemplate> { BuildTemplate() };
+        // Set up the unfiltered overload (no ownerOid — first param is int page).
+        _messageTemplateDataStoreMock
+            .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<MessageTemplate> { Items = templates, TotalCount = templates.Count });
+
+        var sut = CreateSut(Domain.Scopes.MessageTemplates.All, isSiteAdmin: true);
+
+        // Act
+        var result = await sut.GetAllAsync();
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.TotalCount.Should().Be(1);
+
+        // Unfiltered overload must be invoked exactly once …
+        _messageTemplateDataStoreMock.Verify(
+            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+        // … and the owner-filtered overload must never be called.
+        _messageTemplateDataStoreMock.Verify(
+            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+}

@@ -31,7 +31,10 @@ public class EngagementsController_PlatformsTests
     private readonly Mock<IEngagementManager> _engagementManagerMock;
     private readonly Mock<IEngagementSocialMediaPlatformDataStore> _dataStoreMock;
     private readonly Mock<ILogger<EngagementsController>> _loggerMock;
-    private readonly IMapper _mapper;
+
+    // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
+    // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
+    private static readonly IMapper _mapper = ApiTestMapper.Instance;
 
     public EngagementsController_PlatformsTests()
     {
@@ -39,11 +42,12 @@ public class EngagementsController_PlatformsTests
         _dataStoreMock = new Mock<IEngagementSocialMediaPlatformDataStore>();
         _loggerMock = new Mock<ILogger<EngagementsController>>();
 
-        var mapperConfig = new MapperConfiguration(cfg =>
-        {
-            cfg.AddProfile<JosephGuadagno.Broadcasting.Api.MappingProfiles.ApiBroadcastingProfile>();
-        }, new LoggerFactory());
-        _mapper = mapperConfig.CreateMapper();
+        // Every platform endpoint fetches the engagement first for the ownership check.
+        // Set up a default that returns a valid owned engagement for any ID so tests
+        // don't need per-test boilerplate.  Individual tests may override for specific IDs.
+        _engagementManagerMock
+            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Returns((int id, CancellationToken _) => Task.FromResult<Engagement?>(BuildEngagement(id)));
     }
 
     // =========================================================================
@@ -55,12 +59,14 @@ public class EngagementsController_PlatformsTests
     /// carries the supplied OAuth scope value so that
     /// <c>HttpContext.VerifyUserHasAnyAcceptedScope</c> succeeds.
     /// </summary>
-    private EngagementsController CreateSut(string scopeClaimValue)
+    private EngagementsController CreateSut(string scopeClaimValue, string ownerOid = "test-oid-12345")
     {
         var user = new ClaimsPrincipal(new ClaimsIdentity(
         [
             new Claim("scp", scopeClaimValue),
-            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue)
+            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue),
+            // Required: GetOwnerOid() reads this claim; must match BuildEngagement(id).CreatedByEntraOid.
+            new Claim(Domain.Constants.ApplicationClaimTypes.EntraObjectId, ownerOid)
         ], "TestAuthentication"));
 
         var httpContext = new DefaultHttpContext { User = user };
@@ -76,6 +82,23 @@ public class EngagementsController_PlatformsTests
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
     }
+
+
+    /// <summary>
+    /// Builds a minimal <see cref="Engagement"/> with <see cref="Engagement.CreatedByEntraOid"/>
+    /// matching the default owner OID set in <see cref="CreateSut"/>.
+    /// Used as the default return value of <c>GetAsync</c> so the per-endpoint ownership check passes.
+    /// </summary>
+    private static Engagement BuildEngagement(int id, string oid = "test-oid-12345") => new()
+    {
+        Id = id,
+        Name = $"Conference {id}",
+        Url = $"https://conf-{id}.example.com",
+        StartDateTime = DateTimeOffset.UtcNow,
+        EndDateTime = DateTimeOffset.UtcNow.AddDays(id),
+        TimeZoneId = "UTC",
+        CreatedByEntraOid = oid
+    };
 
     /// <summary>Builds a minimal <see cref="EngagementSocialMediaPlatform"/> for testing.</summary>
     private static EngagementSocialMediaPlatform BuildEsmp(
@@ -569,5 +592,84 @@ public class EngagementsController_PlatformsTests
         // Assert
         _dataStoreMock.Verify(d => d.GetByEngagementIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         _dataStoreMock.Verify(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // =========================================================================
+    // Security: non-owner → 403 ForbidResult (Platforms sub-actions)
+    // The constructor default mock returns BuildEngagement(id) with OID "test-oid-12345".
+    // Creating the SUT with ownerOid "non-owner-oid-99999" ensures the ownership check fails.
+    // =========================================================================
+
+    [Fact]
+    public async Task GetPlatformsForEngagementAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Default mock returns engagement owned by "test-oid-12345"; user carries "non-owner-oid-99999".
+        var sut = CreateSut(Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.GetPlatformsForEngagementAsync(1);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _dataStoreMock.Verify(
+            d => d.GetByEngagementIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task GetPlatformForEngagementAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Default mock returns engagement owned by "test-oid-12345"; user carries "non-owner-oid-99999".
+        var sut = CreateSut(Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.GetPlatformForEngagementAsync(1, 2);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _dataStoreMock.Verify(
+            d => d.GetAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task AddPlatformToEngagementAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Default mock returns engagement owned by "test-oid-12345"; user carries "non-owner-oid-99999".
+        var request = new EngagementSocialMediaPlatformRequest
+        {
+            SocialMediaPlatformId = 2,
+            Handle = "@handle"
+        };
+        var sut = CreateSut(Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.AddPlatformToEngagementAsync(1, request);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _dataStoreMock.Verify(
+            d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task RemovePlatformFromEngagementAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Default mock returns engagement owned by "test-oid-12345"; user carries "non-owner-oid-99999".
+        var sut = CreateSut(Scopes.Engagements.Delete, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.RemovePlatformFromEngagementAsync(1, 2);
+
+        // Assert
+        result.Should().BeOfType<ForbidResult>();
+        _dataStoreMock.Verify(
+            d => d.DeleteAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 }

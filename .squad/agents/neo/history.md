@@ -1,5 +1,24 @@
 # Neo - History
 
+## Learnings — PR #739 Final Review (2026-04-18)
+
+**Context:** Third and final review of PR #739 (feat(#729): enforce owner isolation in API controllers). Previous rejections were for missing non-owner 403 tests (Round 1: zero tests, Round 2: Talks/Platforms sub-actions missing).
+
+**Final state after Tank's Round 2 additions:**
+- **Total tests:** 93/93 passing
+- **Security tests added:** 20 total (11 Round 1 + 9 Round 2)
+
+**Coverage verified:**
+- All 17 `Forbid()` call sites across 3 controllers now have non-owner `ForbidResult` tests
+- All 3 `IsSiteAdministrator()` branching locations have SiteAdmin unfiltered-overload tests
+- Entity OID (`owner-oid-12345`) ≠ User OID (`non-owner-oid-99999`) pattern consistently applied
+- No magic strings — all constants from `Domain.Constants.*` and `Domain.Scopes.*`
+- Moq patterns correct (`Times.Never` on side-effectful calls when authorization fails)
+
+**Platforms test design note:** The `EngagementsController_PlatformsTests` constructor sets up a default mock returning `BuildEngagement(id)` with OID `test-oid-12345`. Security tests then create the SUT with `ownerOid: "non-owner-oid-99999"` to ensure the ownership check fails. This is a clean pattern that avoids per-test mock setup boilerplate.
+
+**Verdict:** ✅ APPROVED — All ownership-guarded paths covered. Ready for Joseph to merge.
+
 ## Core Context
 
 **Role:** Lead Reviewer & Architect | Architecture, code reviews, issue triage, sprint planning, CI/CD
@@ -255,3 +274,48 @@ For breaking database migrations involving PK rebuilds or column drops:
 - Cross-check claimed scope against actual diff
 
 **Verdict:** REJECTED — Assigned to Morpheus to fix (Trinity lockout per rejection rules).
+
+## Learnings — PR #736 Code Review (2026-04-17)
+
+**Context:** Review of PR #736 (feat(#728): Thread owner OID through manager business logic) — Sprint 17 of Epic #609 per-user data isolation.
+
+**Scope:** 25 files, +448/-66 lines. Manager interfaces + implementations, reader interfaces + implementations, Functions Settings, collector Functions, and tests.
+
+**Key review points verified:**
+1. **Reader overload pattern:** New `ownerOid` overloads call parameterless version, then apply `ApplyOwnerOid()` helper that sets `CreatedByEntraOid = ownerOid`
+2. **Manager pass-through:** All manager `ownerEntraOid` overloads are single-line delegations to data stores — no OID resolution logic
+3. **Functions Settings:** `ISettings.OwnerEntraOid` added as `required string` with XML docs — fails fast if config missing
+4. **Collector updates:** All 4 collectors (LoadAllPosts, LoadNewPosts, LoadAllVideos, LoadNewVideos) pass `settingsOptions.Value.OwnerEntraOid`
+5. **Backward compatibility:** Parameterless methods preserved with `string.Empty` for admin/background processing contexts
+6. **Test updates:** All 4 collector test files updated mock setups to pass `OwnerEntraOid` constant
+
+**Pattern confirmed:**
+- For owner-aware overloads: call existing parameterless method, then post-process to apply ownership
+- This preserves existing behavior while adding new capability
+- `required string` on Settings properties catches missing config at startup, not runtime
+
+**Verdict:** ✅ APPROVED — Clean implementation, all acceptance criteria met, no invariant violations.
+
+## Learnings — PR #739 Follow-up Review (2026-04-18)
+
+**Context:** Re-review of PR #739 (feat(#729): enforce owner isolation in API controllers) after Tank added 11 security tests across 3 test files on branch `issue-729`. Previous rejection was for zero 403/ForbidResult and SiteAdmin bypass tests.
+
+**Test run:** 84/84 green. All new tests pass correctly.
+
+**What Tank got right:**
+- `SchedulesController`: All 4 guarded actions covered (GetScheduledItem, UpdateScheduledItem, DeleteScheduledItem non-owner + GetAll SiteAdmin) ✅
+- `MessageTemplatesController`: All 3 guarded actions covered (Get, Update non-owner + GetAll SiteAdmin) ✅ (new test file)
+- `EngagementsController` top-level CRUD: All 4 covered (GetEngagement, UpdateEngagement, DeleteEngagement non-owner + GetEngagements SiteAdmin) ✅
+- Correct pattern: entity OID ≠ user OID → `ForbidResult`, side-effectful calls verified `Times.Never` ✅
+- No magic strings — `Domain.Constants.ApplicationClaimTypes.EntraObjectId`, `RoleNames.SiteAdministrator`, `Domain.Scopes.*` constants used ✅
+- Moq `It.IsAny<CancellationToken>()` pattern correct ✅
+
+**What Tank missed — BLOCKERS:**
+`EngagementsController` has 9 more ownership-guarded actions with zero non-owner 403 tests:
+- **Talks sub-actions (5):** `GetTalksForEngagementAsync`, `CreateTalkAsync`, `UpdateTalkAsync`, `GetTalkAsync`, `DeleteTalkAsync`
+- **Platforms sub-actions (4):** `GetPlatformsForEngagementAsync`, `GetPlatformForEngagementAsync`, `AddPlatformToEngagementAsync`, `RemovePlatformFromEngagementAsync`
+All 9 have the identical `if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid()) return Forbid();` pattern, but no non-owner test exercises it.
+
+**Verdict:** ❌ REJECTED — Talks and Platforms sub-resource ownership paths uncovered. PR comment #739 posted with specific tests required.
+
+**Pattern reinforced:** When reviewing ownership-guarded controllers, grep for ALL `Forbid()` call sites, not just the primary CRUD actions. Sub-resource actions on the same entity share the same ownership gate and need the same test coverage.

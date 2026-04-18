@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
@@ -35,6 +36,17 @@ public class SchedulesController: ControllerBase
         _logger = logger;
         _mapper = mapper;
     }
+
+    private string GetOwnerOid()
+    {
+        return User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
+            ?? throw new InvalidOperationException("Entra Object ID claim not found");
+    }
+
+    private bool IsSiteAdministrator()
+    {
+        return User.IsInRole(RoleNames.SiteAdministrator);
+    }
     
     /// <summary>
     /// Returns all the scheduled items
@@ -54,7 +66,18 @@ public class SchedulesController: ControllerBase
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
-        var result = await _scheduledItemManager.GetAllAsync(page, pageSize);
+
+        PagedResult<ScheduledItem> result;
+        if (IsSiteAdministrator())
+        {
+            result = await _scheduledItemManager.GetAllAsync(page, pageSize);
+        }
+        else
+        {
+            var ownerOid = GetOwnerOid();
+            result = await _scheduledItemManager.GetAllAsync(ownerOid, page, pageSize);
+        }
+
         var items = _mapper.Map<List<ScheduledItemResponse>>(result.Items);
         
         return new PagedResponse<ScheduledItemResponse>
@@ -88,6 +111,12 @@ public class SchedulesController: ControllerBase
         var item = await _scheduledItemManager.GetAsync(scheduledItemId);
         if (item is null)
             return NotFound();
+
+        if (!IsSiteAdministrator() && item.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
+
         return Ok(_mapper.Map<ScheduledItemResponse>(item));
     }
 
@@ -114,6 +143,7 @@ public class SchedulesController: ControllerBase
         }
 
         var scheduledItem = _mapper.Map<ScheduledItem>(request);
+        scheduledItem.CreatedByEntraOid = GetOwnerOid();
         var result = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (result.IsSuccess && result.Value != null)
         {
@@ -148,8 +178,18 @@ public class SchedulesController: ControllerBase
             return BadRequest(ModelState);
         }
 
+        var existing = await _scheduledItemManager.GetAsync(scheduledItemId);
+        if (existing is null)
+            return NotFound();
+
+        if (!IsSiteAdministrator() && existing.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
+
         var scheduledItem = _mapper.Map<ScheduledItem>(request);
         scheduledItem.Id = scheduledItemId;
+        scheduledItem.CreatedByEntraOid = existing.CreatedByEntraOid;
         var result = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (result.IsSuccess && result.Value != null)
         {
@@ -177,6 +217,18 @@ public class SchedulesController: ControllerBase
     public async Task<ActionResult<bool>> DeleteScheduledItemAsync(int scheduledItemId)
     {
         HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Delete, Domain.Scopes.Schedules.All);
+
+        var scheduledItem = await _scheduledItemManager.GetAsync(scheduledItemId);
+        if (scheduledItem is null)
+        {
+            _logger.LogWarning("ScheduledItem {ScheduledItemId} not found for deletion", scheduledItemId);
+            return new NotFoundResult();
+        }
+
+        if (!IsSiteAdministrator() && scheduledItem.CreatedByEntraOid != GetOwnerOid())
+        {
+            return Forbid();
+        }
         
         var wasDeleted = await _scheduledItemManager.DeleteAsync(scheduledItemId);
         if (wasDeleted.IsSuccess)
@@ -184,7 +236,7 @@ public class SchedulesController: ControllerBase
             _logger.LogInformation("ScheduledItem {ScheduledItemId} deleted successfully", scheduledItemId);
             return new NoContentResult();
         }
-        _logger.LogWarning("ScheduledItem {ScheduledItemId} not found for deletion", scheduledItemId);
+        _logger.LogWarning("ScheduledItem {ScheduledItemId} deletion failed", scheduledItemId);
         return new NotFoundResult();
     }
     
