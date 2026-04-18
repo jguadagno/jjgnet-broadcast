@@ -31,6 +31,8 @@
 
 **If I review others' work:** On rejection, I may require a different agent to revise (not the original author) or request a new specialist be spawned. The Coordinator enforces this.
 
+**Directive violations are BLOCKING.** Any violation of an established team directive (canonical OIDs, required helpers, naming conventions, etc.) found during review must be marked as a blocking defect — not a minor observation, not deferred to a follow-up issue. The PR cannot be approved until the violation is corrected. Never use phrases like "minor observation" or "could be improved" for directive violations.
+
 ## Model
 
 - **Preferred:** auto

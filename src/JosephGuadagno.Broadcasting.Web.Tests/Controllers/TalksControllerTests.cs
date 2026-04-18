@@ -33,6 +33,36 @@ public class TalksControllerTests
         _controller.TempData = tempDataDictionaryFactory.GetTempData(httpContext);
     }
 
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Builds a <see cref="ControllerContext"/> whose <see cref="ClaimsPrincipal"/>
+    /// carries the given <paramref name="ownerOid"/> and optional <paramref name="role"/>.
+    /// </summary>
+    private static ControllerContext CreateControllerContext(string ownerOid, string role = RoleNames.Contributor)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, ownerOid),
+            new Claim(ClaimTypes.Role, role)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        return new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+    }
+
+    /// <summary>
+    /// Creates a controller context where the user OID does NOT match the entity's
+    /// <c>CreatedByEntraOid</c>.  Use for testing ownership rejection scenarios
+    /// (Web MVC redirects with an error message rather than returning ForbidResult).
+    /// </summary>
+    private static ControllerContext CreateNonOwnerControllerContext(string role = RoleNames.Contributor) =>
+        CreateControllerContext(ownerOid: "non-owner-oid-99999", role: role);
+
     [Fact]
     public async Task Details_WhenTalkFound_ShouldReturnViewWithTalkViewModel()
     {
@@ -115,8 +145,23 @@ public class TalksControllerTests
     public async Task Edit_Post_WhenSaveSucceeds_ShouldRedirectToDetails()
     {
         // Arrange
+        var userOid = "test-user-oid";
         var viewModel = new TalkViewModel { Id = 10, EngagementId = 1 };
+        var existingTalk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = userOid };
         var savedTalk = new Talk { Id = 10, EngagementId = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(existingTalk);
         _mapper.Setup(m => m.Map<Talk>(It.IsAny<object>())).Returns(new Talk());
         _engagementService.Setup(s => s.SaveEngagementTalkAsync(It.IsAny<Talk>())).ReturnsAsync(savedTalk);
 
@@ -134,7 +179,22 @@ public class TalksControllerTests
     public async Task Edit_Post_WhenSaveFails_ShouldRedirectBackToEdit()
     {
         // Arrange
+        var userOid = "test-user-oid";
         var viewModel = new TalkViewModel { Id = 10, EngagementId = 1 };
+        var existingTalk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = userOid };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(existingTalk);
         _mapper.Setup(m => m.Map<Talk>(It.IsAny<object>())).Returns(new Talk());
         _engagementService.Setup(s => s.SaveEngagementTalkAsync(It.IsAny<Talk>())).ReturnsAsync((Talk?)null);
 
@@ -146,6 +206,77 @@ public class TalksControllerTests
         Assert.Equal("Edit", redirectResult.ActionName);
         Assert.Equal(1, redirectResult.RouteValues?["engagementId"]);
         Assert.Equal(10, redirectResult.RouteValues?["talkId"]);
+    }
+
+    [Fact]
+    public async Task Edit_Post_WhenTalkNotFound_ShouldReturnNotFound()
+    {
+        // Arrange — issue #742: defence-in-depth fetch returns NotFound
+        var viewModel = new TalkViewModel { Id = 99, EngagementId = 1 };
+        _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 99)).ReturnsAsync((Talk?)null);
+
+        // Act
+        var result = await _controller.Edit(viewModel);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+        _engagementService.Verify(s => s.SaveEngagementTalkAsync(It.IsAny<Talk>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Edit_Post_WhenUserIsNotOwnerAndNotAdmin_ShouldRedirectWithError()
+    {
+        // Arrange — issue #742: ownership re-verification prevents save by non-owner
+        var viewModel = new TalkViewModel { Id = 10, EngagementId = 1 };
+        // Entity is owned by "owner-oid-12345"; caller has a different OID — ownership check must reject it.
+        var existingTalk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "owner-oid-12345" };
+
+        _controller.ControllerContext = CreateNonOwnerControllerContext();
+
+        _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(existingTalk);
+
+        // Act
+        var result = await _controller.Edit(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Edit", redirectResult.ActionName);
+        Assert.Equal("Engagements", redirectResult.ControllerName);
+        Assert.Equal(1, redirectResult.RouteValues?["id"]);
+        Assert.Equal("You do not have permission to edit this talk.", _controller.TempData["ErrorMessage"]);
+        _engagementService.Verify(s => s.SaveEngagementTalkAsync(It.IsAny<Talk>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Edit_Post_WhenUserIsSiteAdministrator_ShouldAllowSaveRegardlessOfOwnership()
+    {
+        // Arrange — issue #742: SiteAdministrators bypass ownership check
+        var viewModel = new TalkViewModel { Id = 10, EngagementId = 1 };
+        var existingTalk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "another-user-oid" };
+        var savedTalk = new Talk { Id = 10, EngagementId = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "admin-oid"),
+            new Claim(ClaimTypes.Role, RoleNames.SiteAdministrator)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(existingTalk);
+        _mapper.Setup(m => m.Map<Talk>(It.IsAny<object>())).Returns(new Talk());
+        _engagementService.Setup(s => s.SaveEngagementTalkAsync(It.IsAny<Talk>())).ReturnsAsync(savedTalk);
+
+        // Act
+        var result = await _controller.Edit(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Details", redirectResult.ActionName);
+        _engagementService.Verify(s => s.SaveEngagementTalkAsync(It.IsAny<Talk>()), Times.Once);
     }
 
     [Fact]

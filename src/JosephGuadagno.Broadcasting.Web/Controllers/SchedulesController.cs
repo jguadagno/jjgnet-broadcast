@@ -140,6 +140,23 @@ public class SchedulesController : Controller
     [HttpPost]
     public async Task<IActionResult> Edit(ScheduledItemViewModel scheduledItemViewModel)
     {
+        // Defence-in-depth: re-verify ownership before saving (issue #742)
+        var existingItem = await _scheduledItemService.GetScheduledItemAsync(scheduledItemViewModel.Id);
+        if (existingItem == null)
+        {
+            return NotFound();
+        }
+
+        if (!User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
+            if (currentUserOid == null || existingItem.CreatedByEntraOid == null || existingItem.CreatedByEntraOid != currentUserOid)
+            {
+                TempData["ErrorMessage"] = "You do not have permission to edit this scheduled item.";
+                return RedirectToAction("Index");
+            }
+        }
+
         var scheduledItemToEdit = _mapper.Map<Domain.Models.ScheduledItem>(scheduledItemViewModel);
         var savedScheduledItem = await _scheduledItemService.SaveScheduledItemAsync(scheduledItemToEdit);
         if (savedScheduledItem == null)

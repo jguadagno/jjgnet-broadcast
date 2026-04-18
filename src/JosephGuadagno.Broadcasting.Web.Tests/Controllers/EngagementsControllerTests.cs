@@ -36,6 +36,36 @@ public class EngagementsControllerTests
         _controller.TempData = tempDataDictionaryFactory.GetTempData(httpContext);
     }
 
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Builds a <see cref="ControllerContext"/> whose <see cref="ClaimsPrincipal"/>
+    /// carries the given <paramref name="ownerOid"/> and optional <paramref name="role"/>.
+    /// </summary>
+    private static ControllerContext CreateControllerContext(string ownerOid, string role = RoleNames.Contributor)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, ownerOid),
+            new Claim(ClaimTypes.Role, role)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        return new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+    }
+
+    /// <summary>
+    /// Creates a controller context where the user OID does NOT match the entity's
+    /// <c>CreatedByEntraOid</c>.  Use for testing ownership rejection scenarios
+    /// (Web MVC redirects with an error message rather than returning ForbidResult).
+    /// </summary>
+    private static ControllerContext CreateNonOwnerControllerContext(string role = RoleNames.Contributor) =>
+        CreateControllerContext(ownerOid: "non-owner-oid-99999", role: role);
+
     [Fact]
     public async Task Index_ShouldReturnViewWithEngagementViewModels()
     {
@@ -153,8 +183,23 @@ public class EngagementsControllerTests
     public async Task Edit_Post_WhenSaveSucceeds_ShouldRedirectToDetails()
     {
         // Arrange
+        var userOid = "test-user-oid";
         var viewModel = new EngagementViewModel { Id = 1 };
+        var existingEngagement = new Engagement { Id = 1, CreatedByEntraOid = userOid };
         var savedEngagement = new Engagement { Id = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(existingEngagement);
         _mapper.Setup(m => m.Map<Engagement>(It.IsAny<object>())).Returns(new Engagement());
         _engagementService.Setup(s => s.SaveEngagementAsync(It.IsAny<Engagement>())).ReturnsAsync(savedEngagement);
 
@@ -171,7 +216,22 @@ public class EngagementsControllerTests
     public async Task Edit_Post_WhenSaveFails_ShouldRedirectBackToEdit()
     {
         // Arrange
+        var userOid = "test-user-oid";
         var viewModel = new EngagementViewModel { Id = 5 };
+        var existingEngagement = new Engagement { Id = 5, CreatedByEntraOid = userOid };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementAsync(5)).ReturnsAsync(existingEngagement);
         _mapper.Setup(m => m.Map<Engagement>(It.IsAny<object>())).Returns(new Engagement());
         _engagementService.Setup(s => s.SaveEngagementAsync(It.IsAny<Engagement>())).ReturnsAsync((Engagement?)null);
 
@@ -182,6 +242,75 @@ public class EngagementsControllerTests
         var redirectResult = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Edit", redirectResult.ActionName);
         Assert.Equal(5, redirectResult.RouteValues?["id"]);
+    }
+
+    [Fact]
+    public async Task Edit_Post_WhenEngagementNotFound_ShouldReturnNotFound()
+    {
+        // Arrange — issue #742: defence-in-depth fetch returns NotFound
+        var viewModel = new EngagementViewModel { Id = 99 };
+        _engagementService.Setup(s => s.GetEngagementAsync(99)).ReturnsAsync((Engagement?)null);
+
+        // Act
+        var result = await _controller.Edit(viewModel);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+        _engagementService.Verify(s => s.SaveEngagementAsync(It.IsAny<Engagement>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Edit_Post_WhenUserIsNotOwnerAndNotAdmin_ShouldRedirectWithError()
+    {
+        // Arrange — issue #742: ownership re-verification prevents save by non-owner
+        var viewModel = new EngagementViewModel { Id = 1 };
+        var existingEngagement = new Engagement { Id = 1, CreatedByEntraOid = "owner-oid-12345" };
+
+        // User OID "non-owner-oid-99999" does not match entity's "owner-oid-12345".
+        _controller.ControllerContext = CreateNonOwnerControllerContext();
+
+        _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(existingEngagement);
+
+        // Act
+        var result = await _controller.Edit(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("You do not have permission to edit this engagement.", _controller.TempData["ErrorMessage"]);
+        _engagementService.Verify(s => s.SaveEngagementAsync(It.IsAny<Engagement>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Edit_Post_WhenUserIsSiteAdministrator_ShouldAllowSaveRegardlessOfOwnership()
+    {
+        // Arrange — issue #742: SiteAdministrators bypass ownership check
+        var viewModel = new EngagementViewModel { Id = 1 };
+        var existingEngagement = new Engagement { Id = 1, CreatedByEntraOid = "another-user-oid" };
+        var savedEngagement = new Engagement { Id = 1 };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "admin-oid"),
+            new Claim(ClaimTypes.Role, RoleNames.SiteAdministrator)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementAsync(1)).ReturnsAsync(existingEngagement);
+        _mapper.Setup(m => m.Map<Engagement>(It.IsAny<object>())).Returns(new Engagement());
+        _engagementService.Setup(s => s.SaveEngagementAsync(It.IsAny<Engagement>())).ReturnsAsync(savedEngagement);
+
+        // Act
+        var result = await _controller.Edit(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Details", redirectResult.ActionName);
+        _engagementService.Verify(s => s.SaveEngagementAsync(It.IsAny<Engagement>()), Times.Once);
     }
 
     [Fact]
@@ -414,23 +543,14 @@ public class EngagementsControllerTests
     {
         // Arrange
         var engagementId = 1;
-        var userOid = "user-oid-12345";
         var engagement = new Engagement
         {
             Id = engagementId,
-            CreatedByEntraOid = "different-user-oid"
+            CreatedByEntraOid = "owner-oid-12345"
         };
 
-        var claims = new List<Claim>
-        {
-            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
-            new Claim(ClaimTypes.Role, RoleNames.Contributor)
-        };
-        var identity = new ClaimsIdentity(claims, "TestAuth");
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-        };
+        // User OID "non-owner-oid-99999" does not match entity's "owner-oid-12345".
+        _controller.ControllerContext = CreateNonOwnerControllerContext();
 
         _engagementService.Setup(s => s.GetEngagementAsync(engagementId)).ReturnsAsync(engagement);
 
@@ -961,6 +1081,130 @@ public class EngagementsControllerTests
         Assert.Equal(false, _controller.ViewBag.SortDescending);
         Assert.Equal("code", _controller.ViewBag.Filter);
         _engagementService.Verify(s => s.GetEngagementsAsync(2, It.IsAny<int?>(), "enddate", false, "code"), Times.Once);
+    }
+
+    #endregion
+
+    #region GetCalendarEvents Tests (Issue #741)
+
+    [Fact]
+    public async Task GetCalendarEvents_WhenEngagementsExist_ShouldReturnJsonCalendarEvents()
+    {
+        // Arrange — issue #741: calendar events are filtered transparently by the API via bearer token
+        var startTime = new DateTimeOffset(2025, 6, 1, 9, 0, 0, TimeSpan.Zero);
+        var endTime = new DateTimeOffset(2025, 6, 1, 17, 0, 0, TimeSpan.Zero);
+        var engagements = new List<Engagement>
+        {
+            new Engagement { Id = 1, Name = "Tech Summit", StartDateTime = startTime, EndDateTime = endTime, Url = "https://example.com" }
+        };
+        var pagedResult = new PagedResult<Engagement> { Items = engagements, TotalCount = 1 };
+        _engagementService
+            .Setup(s => s.GetEngagementsAsync(It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(pagedResult);
+
+        // Act
+        var result = await _controller.GetCalendarEvents();
+
+        // Assert
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        _engagementService.Verify(
+            s => s.GetEngagementsAsync(It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()),
+            Times.Once);
+        Assert.NotNull(jsonResult.Value);
+    }
+
+    [Fact]
+    public async Task GetCalendarEvents_WhenNoEngagements_ShouldReturnEmptyJsonArray()
+    {
+        // Arrange
+        var emptyResult = new PagedResult<Engagement> { Items = new List<Engagement>(), TotalCount = 0 };
+        _engagementService
+            .Setup(s => s.GetEngagementsAsync(It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(emptyResult);
+
+        // Act
+        var result = await _controller.GetCalendarEvents();
+
+        // Assert
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        var emptyArray = Assert.IsAssignableFrom<object[]>(jsonResult.Value);
+        Assert.Empty(emptyArray);
+    }
+
+    #endregion
+
+    #region Index Filtering Tests (Issue #741)
+
+    [Fact]
+    public async Task Index_FilteringIsDelegatedToService_ServiceCalledForAuthenticatedUser()
+    {
+        // Arrange — issue #741: the Web controller delegates filtering to the service (which calls the API).
+        // The API transparently filters by the caller's bearer token OID, so no explicit ownerOid is
+        // passed from the Web controller — per-user isolation is enforced at the API layer.
+        var userOid = "contributor-oid";
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, userOid),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        var pagedResult = new PagedResult<Engagement> { Items = new List<Engagement>(), TotalCount = 0 };
+        _engagementService
+            .Setup(s => s.GetEngagementsAsync(It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(pagedResult);
+        _mapper.Setup(m => m.Map<List<EngagementViewModel>>(It.IsAny<object>())).Returns(new List<EngagementViewModel>());
+
+        // Act
+        var result = await _controller.Index();
+
+        // Assert — service was called once; API layer applies per-user OID filter via bearer token
+        Assert.IsType<ViewResult>(result);
+        _engagementService.Verify(
+            s => s.GetEngagementsAsync(It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Index_ForSiteAdministrator_ServiceIsCalledAndCanReturnAllRecords()
+    {
+        // Arrange — issue #741: SiteAdministrators see all records (API returns unfiltered for admins)
+        var adminOid = "admin-oid";
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, adminOid),
+            new Claim(ClaimTypes.Role, RoleNames.SiteAdministrator)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        var allEngagements = new List<Engagement>
+        {
+            new Engagement { Id = 1, CreatedByEntraOid = "user-a" },
+            new Engagement { Id = 2, CreatedByEntraOid = "user-b" }
+        };
+        var pagedResult = new PagedResult<Engagement> { Items = allEngagements, TotalCount = 2 };
+        _engagementService
+            .Setup(s => s.GetEngagementsAsync(It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(pagedResult);
+        _mapper
+            .Setup(m => m.Map<List<EngagementViewModel>>(It.IsAny<object>()))
+            .Returns(new List<EngagementViewModel> { new EngagementViewModel { Id = 1 }, new EngagementViewModel { Id = 2 } });
+
+        // Act
+        var result = await _controller.Index();
+
+        // Assert — admin receives engagements from all users (API returns unfiltered set)
+        var viewResult = Assert.IsType<ViewResult>(result);
+        var model = Assert.IsAssignableFrom<List<EngagementViewModel>>(viewResult.Model);
+        Assert.Equal(2, model.Count);
     }
 
     #endregion
