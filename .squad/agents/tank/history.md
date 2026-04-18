@@ -1,5 +1,53 @@
 # Tank - History
 
+## 2026-04-18 — PR #739: Add 9 Security Tests (Round 2) — MERGED
+
+**Status:** ✅ COMPLETE  
+**PR:** #739 (feat(#729): enforce owner isolation in API controllers)  
+**Issue:** #729
+
+### Work Summary
+
+Added 9 missing security tests for Talks and Platforms sub-actions in PR #739 after Neo's Round 2 rejection. Tests complete the coverage matrix for non-owner 403 rejections across all three controllers.
+
+### Tests Added (Round 2)
+
+**TalksController (4 tests):**
+- GetTalksByEngagementId — non-owner ForbidResult
+- CreateTalk — non-owner ForbidResult
+- UpdateTalk — non-owner ForbidResult
+- DeleteTalk — non-owner ForbidResult
+
+**PlatformsController (4 tests):**
+- GetPlatformsByEngagementId — non-owner ForbidResult
+- CreatePlatform — non-owner ForbidResult
+- UpdatePlatform — non-owner ForbidResult
+- DeletePlatform — non-owner ForbidResult
+
+**Additional:**
+- SiteAdmin unfiltered-overload tests refined across all controllers
+
+### Test Pattern
+- Entity created with owner OID: `test-oid-12345`
+- SUT initialized with different OID: `non-owner-oid-99999`
+- All Moq side-effects verified as `Times.Never` during authorization failures
+- All constants from Domain.Constants and Domain.Scopes (no magic strings)
+
+### Test Results
+- **Total:** 93/93 passing
+- **Round 1:** 11 tests (Engagements + initial Talks/Platforms)
+- **Round 2:** 9 tests (remaining Talks/Platforms sub-actions)
+- **Overall security suite:** 20 tests across three rounds
+
+### Outcome
+Neo approved after Round 3 verification. Joseph merged PR #739 to main. Security coverage now complete.
+
+### Related
+- **Tank's contribution:** Closed the 9-test gap identified by Neo in Round 2
+- **Neo's feedback loop:** Clear identification of missing coverage accelerated completion
+
+---
+
 ## 2026-04-18 — Issue #738: Fix 38 API Test Failures (Background Agent)
 
 **Status:** ✅ COMPLETE  
