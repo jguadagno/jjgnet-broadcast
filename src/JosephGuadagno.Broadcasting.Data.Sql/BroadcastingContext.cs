@@ -46,6 +46,7 @@ public partial class BroadcastingContext : DbContext
     public virtual DbSet<SourceTag> SourceTags { get; set; } = null!;
     public virtual DbSet<SocialMediaPlatform> SocialMediaPlatforms { get; set; } = null!;
     public virtual DbSet<EngagementSocialMediaPlatform> EngagementSocialMediaPlatforms { get; set; } = null!;
+    public virtual DbSet<UserPublisherSetting> UserPublisherSettings { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -496,6 +497,44 @@ public partial class BroadcastingContext : DbContext
             entity.Property(e => e.IsActive)
                 .IsRequired()
                 .HasDefaultValueSql("1");
+        });
+
+        modelBuilder.Entity<UserPublisherSetting>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_UserPublisherSettings")
+                .IsClustered();
+
+            entity.HasIndex(e => new { e.CreatedByEntraOid, e.SocialMediaPlatformId }, "UQ_UserPublisherSettings_User_Platform")
+                .IsUnique();
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.SocialMediaPlatformId)
+                .IsRequired();
+
+            entity.Property(e => e.IsEnabled)
+                .IsRequired()
+                .HasDefaultValueSql("0");
+
+            entity.Property(e => e.Settings);
+
+            entity.Property(e => e.CreatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.HasOne(e => e.SocialMediaPlatform)
+                .WithMany(platform => platform.UserPublisherSettings)
+                .HasForeignKey(e => e.SocialMediaPlatformId)
+                .HasConstraintName("FK_UserPublisherSettings_SocialMediaPlatforms");
         });
 
         modelBuilder.Entity<EngagementSocialMediaPlatform>(entity =>

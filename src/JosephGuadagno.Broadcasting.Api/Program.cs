@@ -214,6 +214,8 @@ void ConfigureRepositories(IServiceCollection services)
     // SocialMediaPlatform
     services.TryAddScoped<ISocialMediaPlatformDataStore, SocialMediaPlatformDataStore>();
     services.TryAddScoped<ISocialMediaPlatformManager, SocialMediaPlatformManager>();
+    services.TryAddScoped<IUserPublisherSettingDataStore, UserPublisherSettingDataStore>();
+    services.TryAddScoped<IUserPublisherSettingManager, UserPublisherSettingManager>();
     
     services.TryAddScoped<IEngagementSocialMediaPlatformDataStore, EngagementSocialMediaPlatformDataStore>();
 

@@ -32,6 +32,7 @@ public class BroadcastingContextTests : IDisposable
         Assert.NotNull(_context.TokenRefreshes);
         Assert.NotNull(_context.SyndicationFeedSources);
         Assert.NotNull(_context.YouTubeSources);
+        Assert.NotNull(_context.UserPublisherSettings);
     }
 
     [Fact]
@@ -211,5 +212,43 @@ public class BroadcastingContextTests : IDisposable
         var retrieved = await _context.YouTubeSources.FindAsync(youTubeSource.Id);
         Assert.NotNull(retrieved);
         Assert.Equal("abc123", retrieved.VideoId);
+    }
+
+    [Fact]
+    public async Task BroadcastingContext_AddUserPublisherSetting_CanBeRetrieved()
+    {
+        // Arrange
+        var platform = new SocialMediaPlatform
+        {
+            Name = "BlueSky",
+            Url = "https://bsky.app",
+            Icon = "bi-bluesky",
+            IsActive = true
+        };
+        _context.SocialMediaPlatforms.Add(platform);
+        await _context.SaveChangesAsync();
+
+        var setting = new UserPublisherSetting
+        {
+            CreatedByEntraOid = "owner-oid",
+            SocialMediaPlatformId = platform.Id,
+            IsEnabled = true,
+            Settings = """{"BlueskyUserName":"@jjgnet"}""",
+            CreatedOn = DateTimeOffset.UtcNow,
+            LastUpdatedOn = DateTimeOffset.UtcNow
+        };
+
+        // Act
+        _context.UserPublisherSettings.Add(setting);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var retrieved = await _context.UserPublisherSettings
+            .Include(item => item.SocialMediaPlatform)
+            .FirstOrDefaultAsync(item => item.Id == setting.Id);
+        Assert.NotNull(retrieved);
+        Assert.Equal("owner-oid", retrieved.CreatedByEntraOid);
+        Assert.Equal("BlueSky", retrieved.SocialMediaPlatform.Name);
+        Assert.True(retrieved.IsEnabled);
     }
 }

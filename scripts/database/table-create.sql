@@ -317,6 +317,29 @@ create nonclustered index IX_EngagementSocialMediaPlatforms_SocialMediaPlatformI
     on dbo.EngagementSocialMediaPlatforms (SocialMediaPlatformId)
 go
 
+-- Create the UserPublisherSettings table (Issue #731)
+create table dbo.UserPublisherSettings
+(
+    Id                    int identity
+        constraint PK_UserPublisherSettings
+            primary key clustered,
+    CreatedByEntraOid     nvarchar(36)   not null,
+    SocialMediaPlatformId int            not null
+        constraint FK_UserPublisherSettings_SocialMediaPlatforms
+            references dbo.SocialMediaPlatforms,
+    IsEnabled             bit default 0  not null,
+    Settings              nvarchar(max)  null,
+    CreatedOn             datetimeoffset not null
+        constraint DF_UserPublisherSettings_CreatedOn
+            default (getutcdate()),
+    LastUpdatedOn         datetimeoffset not null
+        constraint DF_UserPublisherSettings_LastUpdatedOn
+            default (getutcdate()),
+    constraint UQ_UserPublisherSettings_User_Platform
+        unique (CreatedByEntraOid, SocialMediaPlatformId)
+)
+go
+
 -- Add FK constraint from ScheduledItems to SocialMediaPlatforms (Epic #667)
 ALTER TABLE dbo.ScheduledItems
     ADD CONSTRAINT FK_ScheduledItems_SocialMediaPlatforms

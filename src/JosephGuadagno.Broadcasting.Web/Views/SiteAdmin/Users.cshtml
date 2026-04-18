@@ -126,15 +126,22 @@
                                     <td>@user.DisplayName</td>
                                     <td>@user.Email</td>
                                     <td><local-time value="@user.CreatedAt" /></td>
-                                    <td>
-                                        <a asp-action="ManageRoles" asp-route-userId="@user.Id" 
-                                           class="btn btn-sm btn-primary" 
-                                           title="Manage user roles">
-                                            <i class="bi bi-person-badge me-1"></i>Manage Roles
-                                        </a>
-                                    </td>
-                                </tr>
-                            }
+                                     <td>
+                                         <div class="btn-group" role="group">
+                                             <a asp-action="ManageRoles" asp-route-userId="@user.Id" 
+                                                class="btn btn-sm btn-primary" 
+                                                title="Manage user roles">
+                                                 <i class="bi bi-person-badge me-1"></i>Manage Roles
+                                             </a>
+                                             <a asp-controller="PublisherSettings" asp-action="Index" asp-route-userOid="@user.EntraObjectId"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                title="Manage publisher settings">
+                                                 <i class="bi bi-broadcast-pin me-1"></i>Publisher Settings
+                                             </a>
+                                         </div>
+                                     </td>
+                                 </tr>
+                             }
                         </tbody>
                     </table>
                 </div>

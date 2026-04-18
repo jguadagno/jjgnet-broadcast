@@ -1,0 +1,80 @@
+@model JosephGuadagno.Broadcasting.Web.Models.TwitterPublisherSettingsViewModel
+
+<div class="card h-100 shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <i class="bi @(string.IsNullOrWhiteSpace(Model.PlatformIcon) ? "bi-broadcast" : Model.PlatformIcon) me-2"></i>
+            <strong>@Model.PlatformName / X</strong>
+        </div>
+        <span class="badge @(Model.IsEnabled ? "text-bg-success" : "text-bg-secondary")">
+            @(Model.IsEnabled ? "Enabled" : "Disabled")
+        </span>
+    </div>
+    <div class="card-body">
+        <form asp-action="SaveTwitter" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <input asp-for="Id" type="hidden" />
+            <input asp-for="CreatedByEntraOid" type="hidden" />
+            <input asp-for="SocialMediaPlatformId" type="hidden" />
+            <input asp-for="PlatformName" type="hidden" />
+            <input asp-for="PlatformIcon" type="hidden" />
+            <input asp-for="HasConsumerKey" type="hidden" />
+            <input asp-for="HasConsumerSecret" type="hidden" />
+            <input asp-for="HasAccessToken" type="hidden" />
+            <input asp-for="HasAccessTokenSecret" type="hidden" />
+
+            <div class="form-check form-switch mb-3">
+                <input asp-for="IsEnabled" class="form-check-input" />
+                <label asp-for="IsEnabled" class="form-check-label">Enable @Model.PlatformName publishing</label>
+            </div>
+
+            <div class="rounded border p-3 bg-body-tertiary">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h2 class="h6 mb-0">Credentials</h2>
+                    @if (Model.HasConsumerKey || Model.HasConsumerSecret || Model.HasAccessToken || Model.HasAccessTokenSecret)
+                    {
+                        <span class="badge text-bg-secondary">Stored</span>
+                    }
+                </div>
+                <ul class="small text-muted mb-3 ps-3">
+                    <li>Consumer key: @(Model.HasConsumerKey ? Model.MaskedValue : "Not set")</li>
+                    <li>Consumer secret: @(Model.HasConsumerSecret ? Model.MaskedValue : "Not set")</li>
+                    <li>Access token: @(Model.HasAccessToken ? Model.MaskedValue : "Not set")</li>
+                    <li>Access token secret: @(Model.HasAccessTokenSecret ? Model.MaskedValue : "Not set")</li>
+                </ul>
+                <div class="form-check mb-3">
+                    <input asp-for="ChangeCredentials" class="form-check-input" />
+                    <label asp-for="ChangeCredentials" class="form-check-label">Change credentials</label>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label asp-for="ConsumerKey" class="form-label"></label>
+                        <input asp-for="ConsumerKey" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored consumer key" />
+                        <span asp-validation-for="ConsumerKey" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="ConsumerSecret" class="form-label"></label>
+                        <input asp-for="ConsumerSecret" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored consumer secret" />
+                        <span asp-validation-for="ConsumerSecret" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="AccessToken" class="form-label"></label>
+                        <input asp-for="AccessToken" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored access token" />
+                        <span asp-validation-for="AccessToken" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="AccessTokenSecret" class="form-label"></label>
+                        <input asp-for="AccessTokenSecret" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored access token secret" />
+                        <span asp-validation-for="AccessTokenSecret" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-floppy me-2"></i>Save
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

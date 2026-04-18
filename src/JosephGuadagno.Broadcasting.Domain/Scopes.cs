@@ -77,6 +77,30 @@ public static class Scopes
     }
 
     /// <summary>
+    /// Contains the scopes for the UserPublisherSettings API
+    /// </summary>
+    public static class UserPublisherSettings
+    {
+        public static readonly string All = "UserPublisherSettings.All";
+        public static readonly string Delete = "UserPublisherSettings.Delete";
+        public static readonly string List = "UserPublisherSettings.List";
+        public static readonly string Modify = "UserPublisherSettings.Modify";
+        public static readonly string View = "UserPublisherSettings.View";
+
+        public static Dictionary<string, string> ToDictionary()
+        {
+            return new Dictionary<string, string>
+            {
+                { All, All },
+                { Delete, Delete },
+                { List, List },
+                { Modify, Modify },
+                { View, View }
+            };
+        }
+    }
+
+    /// <summary>
     /// Contains the scopes for the Schedule API
     /// </summary>
     public static class Schedules
@@ -186,6 +210,11 @@ public static class Scopes
             allScopes.Add(scopeUrl + scope.Key, scope.Value);
         }
 
+        foreach (var scope in UserPublisherSettings.ToDictionary())
+        {
+            allScopes.Add(scopeUrl + scope.Key, scope.Value);
+        }
+
         return allScopes;
     }
 
@@ -197,7 +226,8 @@ public static class Scopes
             { scopeUri + Talks.All, Talks.All },
             { scopeUri + Schedules.All, Schedules.All },
             { scopeUri + MessageTemplates.All, MessageTemplates.All },
-            { scopeUri + SocialMediaPlatforms.All, SocialMediaPlatforms.All }
+            { scopeUri + SocialMediaPlatforms.All, SocialMediaPlatforms.All },
+            { scopeUri + UserPublisherSettings.All, UserPublisherSettings.All }
         };
 
         return scopes;
