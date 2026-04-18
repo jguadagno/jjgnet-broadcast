@@ -38,6 +38,7 @@ public class TalksControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
+
     [Fact]
     public async Task Details_WhenTalkFound_ShouldReturnViewWithTalkViewModel()
     {

@@ -42,6 +42,7 @@ public class SchedulesControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
+
     [Fact]
     public async Task Index_ShouldReturnViewWithScheduledItemViewModels()
     {

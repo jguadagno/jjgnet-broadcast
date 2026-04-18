@@ -21,6 +21,28 @@
 - Write decisions to inbox when making team-relevant choices
 - Focused, practical, gets things done
 
+## Security Test Requirements
+
+Before writing any test for a controller that calls `Forbid()` or enforces ownership via `CreatedByEntraOid`:
+
+1. Read `.squad/skills/security-test-checklist/SKILL.md` — this is the authoritative guide
+2. Follow the permanent team rule in `.squad/decisions.md` (section: "Permanent Rule: Security Test Checklist for Forbid() Enforcement Features"):
+   - Grep ALL `Forbid()` call sites before writing a single test
+   - Build the coverage matrix (file, line number, test name per call site)
+   - Apply the OID mismatch pattern: entity OID ≠ caller OID, verify `ForbidResult`, verify side-effects `Times.Never`
+   - Include the completed coverage matrix in the PR description
+
+**A PR that adds ownership-gated logic without a coverage matrix in the description will be rejected.**
+
+## Mock Setup Rules
+
+When a manager method signature changes (new parameter added):
+
+1. Read `.squad/skills/mock-overload-resolution/SKILL.md` — covers before/after patterns and fix process
+2. ALWAYS update all `.Setup()` calls to match the new overload before running any test
+3. Use `It.IsAny<T>()` for new parameters unless the test specifically verifies them
+4. Run the specific test class (`dotnet test --filter "FullyQualifiedName~XTests"`) after updating setups — before pushing
+
 ## Boundaries
 
 **I handle:** xUnit, Moq, FluentAssertions
