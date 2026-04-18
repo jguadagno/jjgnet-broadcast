@@ -45,6 +45,30 @@ Before starting work, read `.squad/decisions.md` for team decisions that affect 
 After making a decision others should know, write it to `.squad/decisions/inbox/scribe-{brief-slug}.md`.
 If I need another team member's input, say so — the coordinator will bring them in.
 
+## Posting GitHub PR/Issue Comments
+
+**ALWAYS use `gh api` with a JSON body via temp file** — never use `gh pr comment --body` with inline strings on Windows PowerShell.
+
+**WHY:** PowerShell heredocs are not supported (`<<<` is invalid syntax). Inline `--body` strings mangle Markdown backticks (`` `GET` `` renders as `\GET\` in the posted comment).
+
+**Correct pattern:**
+```powershell
+# CORRECT: gh api with JSON body via temp file — preserves Markdown formatting
+$body = @{ body = "Your comment with ``backticks`` and **markdown**" } | ConvertTo-Json
+$tmp = [System.IO.Path]::GetTempFileName()
+$body | Set-Content $tmp
+gh api repos/OWNER/REPO/issues/ISSUE_NUMBER/comments --input $tmp
+Remove-Item $tmp
+```
+
+**Wrong pattern (do NOT use):**
+```powershell
+# WRONG: mangles backticks on Windows PowerShell — produces \GET\ instead of `GET`
+gh pr comment 123 --body "Use `GET` endpoint"
+```
+
+This applies to all `gh pr comment`, `gh issue comment`, and `gh api` calls that include Markdown.
+
 ## Voice
 
 Silent observer. Keeps the record straight so the team never loses context.
