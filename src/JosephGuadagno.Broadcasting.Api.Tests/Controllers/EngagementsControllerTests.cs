@@ -795,6 +795,118 @@ public class EngagementsControllerTests
     }
 
     // -------------------------------------------------------------------------
+    // Security: non-owner → 403 ForbidResult (Talks sub-actions)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetTalksForEngagementAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Entity is owned by "owner-oid-12345"; the calling user has a different OID.
+        var engagement = BuildEngagement(10, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
+
+        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.GetTalksForEngagementAsync(10);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(
+            m => m.GetTalksForEngagementAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task GetTalkAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Entity is owned by "owner-oid-12345"; the calling user has a different OID.
+        var engagement = BuildEngagement(10, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
+
+        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.GetTalkAsync(10, 5);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.GetTalkAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateTalkAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Entity is owned by "owner-oid-12345"; the calling user has a different OID.
+        var engagement = BuildEngagement(10, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
+
+        var request = new TalkRequest
+        {
+            Name = "New Talk",
+            UrlForConferenceTalk = "https://conf.example.com/talk",
+            UrlForTalk = "https://example.com/talk",
+            StartDateTime = DateTimeOffset.UtcNow,
+            EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
+        };
+        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.CreateTalkAsync(10, request);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.SaveTalkAsync(It.IsAny<Talk>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateTalkAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Entity is owned by "owner-oid-12345"; the calling user has a different OID.
+        var engagement = BuildEngagement(10, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
+
+        var request = new TalkRequest
+        {
+            Name = "Updated Talk",
+            UrlForConferenceTalk = "https://conf.example.com/talk",
+            UrlForTalk = "https://example.com/talk",
+            StartDateTime = DateTimeOffset.UtcNow,
+            EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
+        };
+        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.UpdateTalkAsync(10, 5, request);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.SaveTalkAsync(It.IsAny<Talk>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteTalkAsync_WhenNonOwner_ReturnsForbid()
+    {
+        // Arrange
+        // Entity is owned by "owner-oid-12345"; the calling user has a different OID.
+        var engagement = BuildEngagement(10, oid: "owner-oid-12345");
+        _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
+
+        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+
+        // Act
+        var result = await sut.DeleteTalkAsync(10, 5);
+
+        // Assert
+        result.Result.Should().BeOfType<ForbidResult>();
+        _engagementManagerMock.Verify(m => m.RemoveTalkFromEngagementAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    // -------------------------------------------------------------------------
     // Security: SiteAdmin list → unfiltered GetAll
     // -------------------------------------------------------------------------
 
