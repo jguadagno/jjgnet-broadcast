@@ -15506,3 +15506,175 @@ File: .github/workflows/main_jjgnet-broadcast.yml
 Re-enable: After #732 merges and Functions validated working.
 
 Related: Epic #609, #728 (OID threading), #732 (final integration).
+
+
+--- From: neo-743-security-test-checklist.md ---
+---
+date: 2026-04-18
+author: Neo
+issue: 743
+status: permanent-rule
+retro: PR #739 required 3 review rounds because Tank had no documented process for enumerating Forbid() call sites before writing tests. Round 1 had zero non-owner rejection tests on a security feature.
+---
+
+# Permanent Rule: Security Test Checklist for Forbid() Enforcement Features
+
+## Rule
+
+**Every PR that introduces or modifies ownership-gated controller actions MUST follow the Forbid() Security Test Checklist before it can be opened for review.**
+
+This rule is permanent. It applies to all team members. Reviewers must reject PRs that do not include a coverage matrix in the PR description.
+
+---
+
+## Checklist (Required — Not Optional)
+
+### Step 1 — Grep ALL `Forbid()` Call Sites Before Writing a Single Test
+
+Before writing any test, run the following to enumerate every `Forbid()` site in the target controller:
+
+```powershell
+# All controllers:
+Select-String -Path ".\src\**\*Controller.cs" -Pattern "Forbid\(\)" -Recurse
+
+# Specific controller (preferred — scope to the PR's controller):
+Select-String -Path ".\src\JosephGuadagno.Broadcasting.Api\Controllers\SchedulesController.cs" -Pattern "Forbid\(\)"
+```
+
+**Rule:** Do not guess the count. Run the grep. One non-owner 403 test is required per `Forbid()` call site. If grep finds 5 sites, there must be 5 non-owner tests.
+
+---
+
+### Step 2 — Build the Coverage Matrix
+
+Create this table before writing any code. Fill in each row from the grep output:
+
+| Action Method | HTTP Verb | File | Line | Non-Owner Test Name | Status |
+|---|---|---|---|---|---|
+| `GetItemAsync` | GET | `SchedulesController.cs` | 47 | `GetItemAsync_WhenNonOwner_ReturnsForbid` | not written |
+| `UpdateItemAsync` | PUT | `SchedulesController.cs` | 89 | `UpdateItemAsync_WhenNonOwner_ReturnsForbid` | not written |
+| `DeleteItemAsync` | DELETE | `SchedulesController.cs` | 112 | `DeleteItemAsync_WhenNonOwner_ReturnsForbid` | not written |
+
+Mark cells as done only after the test is written and green. **A PR may not be opened while any cell is not done.**
+
+---
+
+### Step 3 — Apply the OID Mismatch Test Pattern
+
+The canonical pattern for **API controllers** — entity OID must differ from caller OID:
+
+```csharp
+[Fact]
+public async Task UpdateItemAsync_WhenNonOwner_ReturnsForbid()
+{
+    // Arrange
+    // Entity owned by "owner-oid-12345"; caller OID is different -> ownership check must reject.
+    var item = BuildItem(5, oid: "owner-oid-12345");
+    _managerMock.Setup(m => m.GetAsync(5)).ReturnsAsync(item);
+
+    var sut = CreateSut(Domain.Scopes.Schedules.All, ownerOid: "non-owner-oid-99999");
+
+    // Act
+    var result = await sut.UpdateItemAsync(5, request);
+
+    // Assert
+    result.Result.Should().BeOfType<ForbidResult>();
+    // Side-effect must not fire - authorization short-circuits before any mutation.
+    _managerMock.Verify(m => m.SaveAsync(It.IsAny<Item>()), Times.Never);
+}
+```
+
+**Required invariants:**
+- Entity OID ("owner-oid-12345") != caller OID ("non-owner-oid-99999") -- they must be different strings
+- `Times.Never` on every side-effect mock (delete, save, update) that must not fire during a 403
+- No magic strings -- use `Domain.Scopes.*` and `Domain.Constants.*` constants throughout
+
+---
+
+### Step 4 — Include the Coverage Matrix in the PR Description
+
+The PR description must contain the completed coverage matrix (all cells done) before the PR is opened. Reviewers are required to check the matrix against the grep output from Step 1.
+
+**Reviewer gate:** If the PR description is missing the matrix, or if the matrix has cells that do not map to actual tests in the diff, the PR must be rejected immediately (no partial credit).
+
+---
+
+## Full Checklist Reference
+
+The full 7-step checklist -- including the Web MVC redirect variant, admin bypass verification, helper structure, and anti-patterns -- is in:
+
+```
+.squad/skills/security-test-checklist/SKILL.md
+```
+
+Tank must read this SKILL.md before writing any ownership-enforcement tests. The SKILL.md is the authoritative implementation guide; this decisions.md entry is the permanent team rule that makes following it mandatory.
+
+---
+
+## Why This Rule Exists
+
+PR #739 (Epic #729 -- ownership enforcement) required three review rounds:
+- Round 1: Zero non-owner 403 tests on a PR that added 17 Forbid() call sites
+- Round 2: 9 of 17 sites covered; 8 still missing
+- Round 3: All 17 covered -> approved and merged
+
+The delay was caused by Tank not enumerating call sites before writing tests, leading to systematic gaps. This checklist prevents recurrence by making the coverage matrix a hard gate, not a courtesy.
+
+---
+
+## Ownership
+
+- Rule author: Neo (Lead)
+- Primary user: Tank (Tester)
+- Enforced by: PR reviewer (any agent or Joseph)
+- Skill reference: `.squad/skills/security-test-checklist/SKILL.md`
+
+
+--- From: neo-748-mock-overload-resolution.md ---
+---
+date: 2026-04-18
+author: Neo
+issue: 748
+status: documented
+---
+
+# Mock Overload Resolution Pattern for Manager Signature Changes
+
+## Problem
+
+When a controller call changes from `GetAllAsync(page, size)` to `GetAllAsync(ownerOid, page, size, ...)` (as happened in Epic #609), tests using the old mock setup fail with `MockException` or silently match the wrong overload. This is a **silent failure mode**: the test compiles, may even pass, but is not testing what you think it's testing.
+
+## Rule
+
+**ALWAYS update mock setups when the controller call signature changes.** Moq setups are resolved at runtime, not compile time. A setup for the wrong overload compiles without warning.
+
+## Quick Reference
+
+### Before (Broken)
+```csharp
+// Targets old 2-parameter overload; controller now calls 3-parameter overload
+_managerMock
+    .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+    .ReturnsAsync(result);
+```
+
+### After (Fixed)
+```csharp
+// Matches the 3-parameter owner-filtered overload the controller actually calls
+_managerMock
+    .Setup(m => m.GetAllAsync(
+        It.IsAny<string>(),  // ownerOid -- new parameter
+        It.IsAny<int>(),     // page
+        It.IsAny<int>()))    // pageSize
+    .ReturnsAsync(result);
+```
+
+Use `It.IsAny<T>()` for new parameters unless the test specifically needs to verify their value.
+
+## Full Pattern Reference
+
+See `.squad/skills/mock-overload-resolution/SKILL.md` for:
+- Full before/after code examples with Epic #609 context
+- Step-by-step fix process (grep, update, run specific test class, run suite)
+- Admin bypass dual-overload pattern
+- Anti-patterns and when to use explicit parameter values vs. It.IsAny<T>()
