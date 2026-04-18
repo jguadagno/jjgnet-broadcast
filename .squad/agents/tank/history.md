@@ -1,5 +1,61 @@
 # Tank - History
 
+## Ownership Test Checklist (Sprint 18 Established — 2026-04-18)
+
+> Formal checklist extracted from sprint 18 work (Issues #729, #730, #738, #739).
+> Full SKILL.md: `.squad/skills/security-test-checklist/SKILL.md`
+
+### Step-by-Step (Condensed)
+
+1. **Grep Forbid() sites first** — count before writing a single test
+2. **Build coverage matrix** — one row per `Forbid()` site; one test column per row
+3. **Write non-owner test** per site using the OID mismatch pattern
+4. **Assert ForbidResult + Times.Never** on all side-effect mocks
+5. **Write admin bypass test** if controller has `IsSiteAdministrator()` branch
+6. **Run `dotnet test`** — zero failures before opening PR
+
+### Grep Command
+
+```powershell
+Select-String -Path ".\src\**\*Controller.cs" -Pattern "Forbid\(\)" -Recurse
+```
+
+### OID Setup Pattern
+
+```csharp
+// Entity is owned by "owner-oid-12345" …
+var item = BuildScheduledItem(5, oid: "owner-oid-12345");
+_managerMock.Setup(m => m.GetAsync(5)).ReturnsAsync(item);
+
+// … caller has a different OID — ownership check must reject it
+var sut = CreateSut(Domain.Scopes.Schedules.All, ownerOid: "non-owner-oid-99999");
+
+var result = await sut.UpdateScheduledItemAsync(5, request);
+
+result.Result.Should().BeOfType<ForbidResult>();
+_managerMock.Verify(m => m.SaveAsync(It.IsAny<ScheduledItem>()), Times.Never);
+```
+
+### Web MVC Pattern (Redirect vs ForbidResult)
+
+| Layer | Forbidden Response |
+|---|---|
+| API Controller | `result.Result.Should().BeOfType<ForbidResult>()` |
+| Web MVC Controller | `result.Should().BeOfType<RedirectToActionResult>()` + `TempData["ErrorMessage"].Should().NotBeNull()` |
+
+### Team Rules (Permanent)
+
+- **ALWAYS run `dotnet test` before committing** — no exceptions
+- **ZERO test failures before opening PR** — failing tests block the PR
+- **For any security/ownership feature:** grep `Forbid()` first, build matrix, write test per site
+- **When controller signatures add `ownerOid` parameter:** update mock `.Setup()` overload immediately — mismatched overloads silently miss setups
+
+### Mock Overload Resolution Note
+
+When a controller method signature changes to add an `ownerOid` parameter, Moq will silently skip mismatched `.Setup()` calls rather than throwing. This causes the mock to return null and tests to behave incorrectly. Always verify the exact parameter types match the controller dispatch path.
+
+---
+
 ## 2026-04-18 — PR #739: Add 9 Security Tests (Round 2) — MERGED
 
 **Status:** ✅ COMPLETE  

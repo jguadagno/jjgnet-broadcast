@@ -418,3 +418,100 @@ All 9 have the identical `if (!IsSiteAdministrator() && engagement.CreatedByEntr
 **Verdict:** ❌ REJECTED — Talks and Platforms sub-resource ownership paths uncovered. PR comment #739 posted with specific tests required.
 
 **Pattern reinforced:** When reviewing ownership-guarded controllers, grep for ALL `Forbid()` call sites, not just the primary CRUD actions. Sub-resource actions on the same entity share the same ownership gate and need the same test coverage.
+
+## 2026-04-18: Sprint 18 Retrospective Debrief (Completed)
+
+**Status:** ✅ COMPLETE  
+**Session:** Retro follow-up with Joseph Guadagno
+
+### Work Summary
+
+Conducted Sprint 18 retrospective debrief with Joseph. All 18 retro items reviewed and categorized:
+- 12 failures traced to **inadequate pre-submission validation** (PRs #738, #739 required multiple review rounds)
+- 5 directive violations — "run tests before committing" was written but had no enforcement mechanism
+- 6 HIGH severity items all related to missing security test coverage on a security feature
+
+### Action Items Filed (Sprint 19)
+
+All 6 action items filed as issues #743–#748 with `sprint:19` label:
+
+**P1 (Training/Enforcement):**
+- **#743:** Security test checklist skill (Tank) — Establish mandatory Forbid() coverage pattern
+- **#744:** Test-pass gate before push (Neo) — Decide: training vs. enforcement? Branch protection? PR template? Pre-push hook?
+- **#747:** Tank history checklist update (Tank) — Document ownership test checklist ownership
+
+**P2 (Enhancement):**
+- **#745:** Non-owner context helper (Trinity) — Add helper to API test base classes
+- **#746:** PR comment formatting (Neo) — Improve clarity of code review feedback
+- **#748:** Mock overload docs (Tank) — Document `.Setup()` pattern for controllers with ownerOid param
+
+### Open Question for Joseph
+
+**Should the "run tests before committing" gap be addressed as:**
+1. **Training** — better checklists/tools for Tank (prioritize #743, #747 first), or
+2. **Enforcement** — CI gate that blocks PRs with failures (prioritize #744 first)?
+
+Joseph's answer determines P1 priority order.
+
+### Decisions Documented
+
+Tank's security checklist skill (@.squad/skills/security-test-checklist/SKILL.md) now captures the ownership enforcement pattern:
+- Grep Forbid() sites first
+- Build coverage matrix
+- Write one test per Forbid() path
+- Include matrix in PR description
+- Run `dotnet test` with 0 failures before PR creation
+
+**Permanent team rules established:**
+1. ALWAYS run `dotnet test` before committing
+2. ZERO test failures before opening PR
+3. For any security/ownership feature: grep `Forbid()` first, build matrix, write test per site
+4. When controller signatures add `ownerOid` parameter: update mock `.Setup()` overload immediately
+
+### Outcome
+
+Sprint 18 fully retrospected. Sprint 19 ready to address identified gaps. Awaiting Joseph's decision on enforcement approach for #744 to finalize P1 prioritization.
+
+## 2026-04-18: Issue #744 Advisor Role (Background)
+
+**Status:** ✅ COMPLETE (Background Agent)  
+**Role:** Architecture advisor
+
+### Work Summary
+
+Advised Joseph on three options for implementing test-pass gate on PR #744:
+
+1. **Branch Protection Rule** (GitHub UI)
+   - Prevents merge until PR checks pass (including tests)
+   - Built-in, no code needed
+   - Requires GitHub repository admin access
+   - Applies to all PRs uniformly
+
+2. **PR Template** (Markdown file)
+   - Prompts submitter to confirm tests were run
+   - Non-blocking (user can ignore prompt)
+   - Good for training/awareness
+   - Works with existing CI/CD
+
+3. **Pre-push Hook** (Git local setup)
+   - Developer machine runs tests before push
+   - Fastest feedback (before network round-trip)
+   - Requires developer buy-in and proper setup
+   - Can be bypassed with `git push --no-verify`
+
+### Background Findings
+
+Neo researched each option:
+- Branch Protection: GitHub-native, strongest enforcement, requires admin
+- PR Template: Low friction, good for onboarding, reminder-based
+- Pre-push Hook: Fastest local feedback, but human-dependent
+
+Joseph to decide which option(s) align with team workflow.
+
+### Decision Impact
+
+The chosen enforcement mechanism will shape Sprint 19 priority order:
+- **Training-first approach:** #743 (checklist skill), #747 (Tank history) first, then consider #744
+- **Enforcement-first approach:** Implement #744 first, then training artifacts as reinforcement
+
+---
