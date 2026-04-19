@@ -16783,3 +16783,110 @@ Epic #609 decomposed into sub-issues #725–#731 targeting the first round of mu
 **Why:** User request — captured for team memory
 
 
+--- From: neo-auth-scope-consolidation.md ---
+---
+date: 2026-04-20
+author: Neo
+status: proposed
+tags: [authentication, authorization, architecture]
+---
+
+# Decision: Decouple Fine-Grained Authorization from Entra Delegated Scopes
+
+## Problem
+
+The app currently defines **42 custom delegated scopes** (Engagements.Add, Engagements.List, Talks.Delete, etc.) in the Entra app registration. The Web app requests **37 of them** (36 API scopes + 1 Graph scope) at sign-in via `EnableTokenAcquisitionToCallDownstreamApi`. Microsoft Entra imposes a practical limit on the number of scopes that can be consented for personal Microsoft accounts, and the current scope surface has hit or is approaching that limit.
+
+## Current Auth Architecture (Summary)
+
+| Layer | Mechanism |
+|-------|-----------|
+| **Web sign-in** | `AddMicrosoftIdentityWebAppAuthentication` → OpenID Connect with Entra |
+| **Web → API calls** | `IDownstreamApi.GetForUserAsync` acquires OBO tokens with all 37 scopes |
+| **API token validation** | `AddMicrosoftIdentityWebApiAuthentication` validates Entra-issued JWTs |
+| **API authorization** | `HttpContext.VerifyUserHasAnyAcceptedScope(...)` checks delegated scopes per action |
+| **Web authorization** | `EntraClaimsTransformation` adds app-managed roles from SQL; `[Authorize]` policies use `RoleNames.*` |
+| **Ownership** | `GetOwnerOid()` + `IsSiteAdministrator()` pattern on every mutating endpoint |
+| **Approval gate** | `UserApprovalMiddleware` gates unapproved users before `UseAuthorization()` |
+
+Key observation: **The Web layer already performs authorization via app-managed roles (SiteAdministrator, Administrator, Contributor, Viewer)** stored in SQL and injected into claims by `EntraClaimsTransformation`. The fine-grained Entra scopes are only enforced at the API layer.
+
+## Options Evaluated
+
+### Option A: Keep Entra Delegated Scopes, Trim/Consolidate
+
+Collapse the 42 scopes down to ~6 coarse scopes (e.g., `Engagements.ReadWrite`, `Schedules.ReadWrite`, or a single `api://.../.default`).
+
+| Dimension | Assessment |
+|-----------|------------|
+| **Security** | Equivalent — fine-grained checks were already `VerifyUserHasAnyAcceptedScope(X, X.All)`, meaning anyone with `.All` bypasses the granular scope anyway |
+| **Complexity** | Low migration cost (update Entra registration + Scopes.cs + appsettings) |
+| **Scope limit fix** | Partial — reduces count but doesn't eliminate the dependency on Entra scope consent for personal accounts |
+| **Fit** | Temporary fix; doesn't address the root tension (authorization-via-scope on a platform designed for resource-consent) |
+
+### Option B: Entra for AuthN Only, App-Managed AuthZ (RECOMMENDED)
+
+Keep Entra for sign-in and token issuance. The API continues to validate Entra-issued JWT Bearer tokens (signature, audience, issuer). Remove fine-grained scope enforcement; replace with the **same role-based claims** the Web already uses.
+
+| Dimension | Assessment |
+|-----------|------------|
+| **Security** | Stronger — roles are managed in your SQL database, not in Entra app manifest. Same `EntraClaimsTransformation` pattern. Ownership checks remain. |
+| **Complexity** | Medium — API controllers replace `VerifyUserHasAnyAcceptedScope(...)` calls with `[Authorize(Policy = "RequireContributor")]`-style policies, mirroring the Web layer |
+| **Scope limit fix** | Complete — Web requests only `user.read` + a single API audience scope (or `.default`) at consent time |
+| **Fit** | Excellent — the role model (`RoleNames.*`) already exists, is battle-tested, and the Web layer already authorizes this way |
+| **Migration cost** | ~2-3 sprints: add `EntraClaimsTransformation` (or equivalent) to the API, replace scope checks with role/policy checks, reduce Entra scopes to 1-2, update Scalar/OpenAPI config |
+
+### Option C: Replace Entra JWT with First-Party JWTs
+
+After Entra sign-in, mint our own JWT from the Web app, and the API validates those instead.
+
+| Dimension | Assessment |
+|-----------|------------|
+| **Security** | Risky — we become responsible for key management, token signing, refresh, revocation. No OIDC discovery for the API. |
+| **Complexity** | High — new token endpoint, signing key rotation, new trust relationship |
+| **Scope limit fix** | Complete |
+| **Fit** | Poor — duplicates what Entra already provides. The Web-to-API trust boundary is better served by OBO or client-credential tokens Entra already handles. |
+| **Migration cost** | 4+ sprints, high risk of security regressions |
+
+### Option D: Different Identity Product (Auth0, Keycloak, etc.)
+
+| Dimension | Assessment |
+|-----------|------------|
+| **Security** | Comparable — external IdPs have their own scope/permission models |
+| **Complexity** | Very high — re-plumb both Web and API, new tenant setup, user migration |
+| **Scope limit fix** | Depends on provider |
+| **Fit** | Poor — this app is Azure-native (Aspire, Key Vault, Azure Communications). Entra is the natural fit for identity. |
+| **Migration cost** | 6+ sprints, new operational dependency |
+
+## Recommendation
+
+**Option B: Entra for authentication, app-managed roles for authorization.**
+
+This is the right near-term path because:
+
+1. **The role model is already built.** `EntraClaimsTransformation`, `RoleNames`, `UserApprovalMiddleware`, `RequireSiteAdministrator`/`RequireContributor` policies — all exist and are tested in the Web layer.
+2. **The scope explosion is the root cause, not Entra itself.** Entra token validation (issuer, audience, signature, expiry) remains rock-solid and free. Only the *scope-as-authorization* pattern needs to change.
+3. **One consent prompt.** Personal accounts consent to `user.read` + one API audience scope. No more AADSTS650052/AADSTS70011 errors.
+4. **Single authorization model.** Both Web and API enforce the same role hierarchy instead of today's split (roles in Web, scopes in API).
+5. **Ownership checks are untouched.** `GetOwnerOid()` and `IsSiteAdministrator()` already work with the OID claim from Entra tokens.
+
+## Migration Sketch
+
+1. Register `EntraClaimsTransformation` (or a lightweight API variant that reads roles from the DB using the OID from the Entra JWT) in the API's DI.
+2. Add the same `RequireContributor`, `RequireAdministrator`, etc. authorization policies to the API.
+3. Replace every `VerifyUserHasAnyAcceptedScope(...)` call with the appropriate `[Authorize(Policy = ...)]` attribute or `HttpContext.User.IsInRole(...)` check.
+4. Consolidate Entra scopes: keep only `user_impersonation` (or use `.default`) + `User.Read` for Graph.
+5. Update `Scopes.cs` — remove fine-grained scope constants, keep only the audience/impersonation scope.
+6. Update `appsettings.Development.json` downstream API config to request the single scope.
+7. Update Scalar/OpenAPI OAuth2 config accordingly.
+
+## What Stays the Same
+
+- Entra app registration (just fewer scopes exposed)
+- `AddMicrosoftIdentityWebAppAuthentication` / `AddMicrosoftIdentityWebApiAuthentication`
+- OBO token flow (Web acquires token for API audience, API validates it)
+- All cookie/session/OIDC configuration
+- Ownership enforcement (`GetOwnerOid()`, `IsSiteAdministrator()`)
+- `UserApprovalMiddleware` and approval flow
+
+

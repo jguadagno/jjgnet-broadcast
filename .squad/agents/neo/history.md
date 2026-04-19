@@ -1,3 +1,31 @@
+## 2026-04-20 — Auth Architecture Review: Entra Scope Limits with Personal Accounts
+
+**Status:** ✅ COMPLETE (Read-Only Analysis)  
+**Artifact:** `.squad/decisions.md` (merged from inbox)
+
+### Findings
+
+- App defines **42 custom delegated scopes** in `Scopes.cs`; Web requests **37** at consent time
+- Microsoft Entra has practical scope limits for personal (MSA) accounts — this is the blocker
+- Web layer **already uses app-managed roles** (SQL-backed, via `EntraClaimsTransformation`) — the role model is battle-tested
+- API layer enforces authorization via `VerifyUserHasAnyAcceptedScope(...)` — this is the only place scopes are consumed for authZ
+- Ownership enforcement (`GetOwnerOid()`, `IsSiteAdministrator()`) is scope-independent and stays intact
+
+### Recommendation
+
+**Option B: Keep Entra for authentication (token issuance + validation), move authorization to app-managed roles in the API.** Replace scope-based checks with role-based policies matching the Web layer pattern. Collapse Entra scopes to 1-2 (audience + `User.Read`).
+
+### Key Files
+
+- `src\JosephGuadagno.Broadcasting.Domain\Scopes.cs` — 42 scope constants (to be reduced)
+- `src\JosephGuadagno.Broadcasting.Web\EntraClaimsTransformation.cs` — Role injection from SQL (model to replicate in API)
+- `src\JosephGuadagno.Broadcasting.Web\Program.cs` lines 103-111 — Scope union + downstream API registration
+- `src\JosephGuadagno.Broadcasting.Web\appsettings.Development.json` — 36 API scopes configured
+- `src\JosephGuadagno.Broadcasting.Api\Controllers\*.cs` — All `VerifyUserHasAnyAcceptedScope` call sites (to be replaced)
+- `src\JosephGuadagno.Broadcasting.Domain\Constants\RoleNames.cs` — Existing role hierarchy
+
+---
+
 ## 2026-04-19 — Architectural Analysis: #731 Settings Design (Read-Only)
 
 **Status:** ✅ COMPLETE  
