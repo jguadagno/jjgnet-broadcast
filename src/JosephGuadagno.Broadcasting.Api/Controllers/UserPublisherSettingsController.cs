@@ -20,6 +20,9 @@ public class UserPublisherSettingsController(
     ILogger<UserPublisherSettingsController> logger,
     IMapper mapper) : ControllerBase
 {
+    private static string SanitizeForLog(string? value) =>
+        value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty;
+
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UserPublisherSettingResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -56,7 +59,10 @@ public class UserPublisherSettingsController(
         var setting = await userPublisherSettingManager.GetByUserAndPlatformAsync(resolvedOwnerOid, platformId);
         if (setting is null)
         {
-            logger.LogWarning("User publisher settings not found for owner {OwnerOid} and platform {PlatformId}", resolvedOwnerOid, platformId);
+            logger.LogWarning(
+                "User publisher settings not found for owner {OwnerOid} and platform {PlatformId}",
+                SanitizeForLog(resolvedOwnerOid),
+                platformId);
             return NotFound();
         }
 
@@ -94,7 +100,10 @@ public class UserPublisherSettingsController(
         var saved = await userPublisherSettingManager.SaveAsync(setting);
         if (saved is null)
         {
-            logger.LogWarning("Failed to save user publisher settings for owner {OwnerOid} and platform {PlatformId}", resolvedOwnerOid, platformId);
+            logger.LogWarning(
+                "Failed to save user publisher settings for owner {OwnerOid} and platform {PlatformId}",
+                SanitizeForLog(resolvedOwnerOid),
+                platformId);
             return BadRequest("Unable to save publisher settings");
         }
 
@@ -119,7 +128,10 @@ public class UserPublisherSettingsController(
         var deleted = await userPublisherSettingManager.DeleteAsync(resolvedOwnerOid, platformId);
         if (!deleted)
         {
-            logger.LogWarning("User publisher settings not found for delete for owner {OwnerOid} and platform {PlatformId}", resolvedOwnerOid, platformId);
+            logger.LogWarning(
+                "User publisher settings not found for delete for owner {OwnerOid} and platform {PlatformId}",
+                SanitizeForLog(resolvedOwnerOid),
+                platformId);
             return NotFound();
         }
 

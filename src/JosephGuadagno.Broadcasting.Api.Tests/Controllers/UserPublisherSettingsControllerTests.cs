@@ -98,6 +98,61 @@ public class UserPublisherSettingsControllerTests
             Times.Once);
     }
 
+    [Fact]
+    public async Task GetAsync_WhenSettingMissing_ShouldLogSanitizedOwnerOid()
+    {
+        _manager
+            .Setup(manager => manager.GetByUserAndPlatformAsync("owner-spoof", 3, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserPublisherSetting?)null);
+
+        var sut = CreateSut(Domain.Scopes.UserPublisherSettings.View, "owner-\r\nspoof");
+
+        var result = await sut.GetAsync(3);
+
+        result.Result.Should().BeOfType<NotFoundResult>();
+        VerifyLoggedOwnerWasSanitized(LogLevel.Warning, "owner-spoof");
+    }
+
+    [Fact]
+    public async Task SaveAsync_WhenManagerReturnsNull_ShouldLogSanitizedOwnerOid()
+    {
+        _manager
+            .Setup(manager => manager.SaveAsync(It.IsAny<UserPublisherSettingUpdate>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserPublisherSetting?)null);
+
+        var sut = CreateSut(Domain.Scopes.UserPublisherSettings.Modify, "owner-\r\nspoof");
+
+        var result = await sut.SaveAsync(3, null, new UserPublisherSettingRequest
+        {
+            IsEnabled = true,
+            LinkedIn = new LinkedInPublisherSettingRequest
+            {
+                AuthorId = "author-1",
+                ClientId = "client-1",
+                ClientSecret = "secret",
+                AccessToken = "token"
+            }
+        });
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+        VerifyLoggedOwnerWasSanitized(LogLevel.Warning, "owner-spoof");
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenSettingMissing_ShouldLogSanitizedOwnerOid()
+    {
+        _manager
+            .Setup(manager => manager.DeleteAsync("owner-spoof", 3, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var sut = CreateSut(Domain.Scopes.UserPublisherSettings.Delete, "owner-\r\nspoof");
+
+        var result = await sut.DeleteAsync(3);
+
+        result.Should().BeOfType<NotFoundResult>();
+        VerifyLoggedOwnerWasSanitized(LogLevel.Warning, "owner-spoof");
+    }
+
     private UserPublisherSettingsController CreateSut(string scopeClaimValue, string ownerOid, bool isSiteAdministrator = false)
     {
         return new UserPublisherSettingsController(_manager.Object, _logger.Object, _mapper)
@@ -123,5 +178,20 @@ public class UserPublisherSettingsControllerTests
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthentication"));
         return new ControllerContext { HttpContext = new DefaultHttpContext { User = user } };
+    }
+
+    private void VerifyLoggedOwnerWasSanitized(LogLevel logLevel, string sanitizedOwnerOid)
+    {
+        _logger.Verify(
+            logger => logger.Log(
+                logLevel,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((state, _) =>
+                    state.ToString()!.Contains(sanitizedOwnerOid, StringComparison.Ordinal)
+                    && !state.ToString()!.Contains('\r')
+                    && !state.ToString()!.Contains('\n')),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 }

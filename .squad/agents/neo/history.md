@@ -515,3 +515,12 @@ The chosen enforcement mechanism will shape Sprint 19 priority order:
 - **Enforcement-first approach:** Implement #744 first, then training artifacts as reinforcement
 
 ---
+
+## Learnings — PR #756 Recovery Push (2026-04-19)
+
+- Recovered the issue #731 fixes onto `issue-731-user-publisher-settings` safely via a dedicated worktree rooted at `.worktrees\issue-731-recovery`, leaving the original dirty branch untouched.
+- The decisive integration fixes live in:
+  - `src\JosephGuadagno.Broadcasting.Web\Services\UserPublisherSettingService.cs` — align Web `IDownstreamApi` calls to `/UserPublisherSettings`, map typed request/response DTOs, preserve masked write-only secrets.
+  - `src\JosephGuadagno.Broadcasting.Api\Controllers\UserPublisherSettingsController.cs` and `src\JosephGuadagno.Broadcasting.Data.Sql\UserPublisherSettingDataStore.cs` — sanitize owner OIDs before warning/error logs.
+  - `src\JosephGuadagno.Broadcasting.Web.Tests\Services\UserPublisherSettingServiceTests.cs`, `src\JosephGuadagno.Broadcasting.Api.Tests\Controllers\UserPublisherSettingsControllerTests.cs`, and `src\JosephGuadagno.Broadcasting.Data.Sql.Tests\UserPublisherSettingDataStoreTests.cs` — lock the contract with route, payload-shape, write-only masking, and log-sanitization coverage.
+- For a PR authored by the same GitHub user account, Neo should leave a regular PR comment summarizing readiness instead of attempting a formal approval review.

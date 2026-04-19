@@ -10,6 +10,7 @@ namespace JosephGuadagno.Broadcasting.Data.Sql.Tests;
 public class UserPublisherSettingDataStoreTests : IDisposable
 {
     private readonly BroadcastingContext _context;
+    private readonly Mock<ILogger<UserPublisherSettingDataStore>> _logger = new();
     private readonly UserPublisherSettingDataStore _dataStore;
 
     public UserPublisherSettingDataStoreTests()
@@ -28,7 +29,7 @@ public class UserPublisherSettingDataStoreTests : IDisposable
         _dataStore = new UserPublisherSettingDataStore(
             _context,
             mapperConfiguration.CreateMapper(),
-            Mock.Of<ILogger<UserPublisherSettingDataStore>>());
+            _logger.Object);
     }
 
     public void Dispose()
@@ -165,5 +166,87 @@ public class UserPublisherSettingDataStoreTests : IDisposable
 
         Assert.True(deleted);
         Assert.Empty(_context.UserPublisherSettings);
+    }
+
+    [Fact]
+    public async Task SaveAsync_WhenSaveFails_LogsSanitizedOwnerOidAndReturnsNull()
+    {
+        var options = new DbContextOptionsBuilder<BroadcastingContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        var mockContext = new Mock<BroadcastingContext>(options) { CallBase = true };
+        mockContext
+            .Setup(context => context.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("boom"));
+
+        var mapperConfiguration = new MapperConfiguration(cfg =>
+        {
+            cfg.AddProfile<MappingProfiles.BroadcastingProfile>();
+        }, new LoggerFactory());
+        var logger = new Mock<ILogger<UserPublisherSettingDataStore>>();
+        var dataStore = new UserPublisherSettingDataStore(mockContext.Object, mapperConfiguration.CreateMapper(), logger.Object);
+
+        var result = await dataStore.SaveAsync(new Domain.Models.UserPublisherSetting
+        {
+            CreatedByEntraOid = "owner-\r\nspoof",
+            SocialMediaPlatformId = 3,
+            Settings = new Dictionary<string, string?>()
+        });
+
+        Assert.Null(result);
+        VerifyLoggedOwnerWasSanitized(logger, "owner-spoof");
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenSaveFails_LogsSanitizedOwnerOidAndReturnsFalse()
+    {
+        var options = new DbContextOptionsBuilder<BroadcastingContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using (var seedContext = new BroadcastingContext(options))
+        {
+            seedContext.UserPublisherSettings.Add(new UserPublisherSetting
+            {
+                CreatedByEntraOid = "owner-\r\nspoof",
+                SocialMediaPlatformId = 3,
+                IsEnabled = true,
+                CreatedOn = DateTimeOffset.UtcNow,
+                LastUpdatedOn = DateTimeOffset.UtcNow
+            });
+            await seedContext.SaveChangesAsync();
+        }
+
+        var mockContext = new Mock<BroadcastingContext>(options) { CallBase = true };
+        mockContext
+            .Setup(context => context.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("boom"));
+
+        var mapperConfiguration = new MapperConfiguration(cfg =>
+        {
+            cfg.AddProfile<MappingProfiles.BroadcastingProfile>();
+        }, new LoggerFactory());
+        var logger = new Mock<ILogger<UserPublisherSettingDataStore>>();
+        var dataStore = new UserPublisherSettingDataStore(mockContext.Object, mapperConfiguration.CreateMapper(), logger.Object);
+
+        var deleted = await dataStore.DeleteAsync("owner-\r\nspoof", 3);
+
+        Assert.False(deleted);
+        VerifyLoggedOwnerWasSanitized(logger, "owner-spoof");
+    }
+
+    private static void VerifyLoggedOwnerWasSanitized(Mock<ILogger<UserPublisherSettingDataStore>> logger, string sanitizedOwnerOid)
+    {
+        logger.Verify(
+            target => target.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((state, _) =>
+                    state.ToString()!.Contains(sanitizedOwnerOid, StringComparison.Ordinal)
+                    && !state.ToString()!.Contains('\r')
+                    && !state.ToString()!.Contains('\n')),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 }
