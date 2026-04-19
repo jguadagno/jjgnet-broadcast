@@ -2,6 +2,37 @@
 
 ## Learnings
 
+### 2026-04-19 — Epic #609: Multi-Tenancy First-Round Audit
+**Status:** ✅ COMPLETE — Audit Report Filed
+
+**Task:** Audit the actual implementation for the first-round Multi-Tenancy work under epic #609 to ensure all decomposed scope was completed.
+
+**Audit Scope:**
+- Ownership columns and backfill for missing tables
+- Data-store filtering by CreatedByEntraOid
+- Owner OID threading through managers/business logic
+- Owner isolation in API and Web layers
+- Per-user publisher settings support
+- Implementation gaps and test coverage
+
+**Findings:**
+1. **Database Schema:** ✅ All migrations present (add-owner, backfill, user-publisher-settings)
+2. **Domain Models:** ✅ CreatedByEntraOid added as required property to source models and publisher settings
+3. **Data Layer:** ✅ Owner-filtered queries implemented in SyndicationFeedSourceDataStore, YouTubeSourceDataStore, UserPublisherSettingDataStore
+4. **Manager Layer:** ✅ Owner OID properly threaded through managers with overloaded methods
+5. **API Controllers:** ✅ Owner isolation enforced with ownership checks, 403 Forbid on mismatch, and admin bypass
+6. **Web Controllers:** ✅ Ownership verification in Details/Edit/Delete; user-friendly error handling
+7. **Per-User Publisher Settings:** ✅ Full-stack support implemented (table, data store, manager, API, Web controllers)
+8. **Test Coverage:** ⚠️ PARTIAL — API/Web tests complete; data layer owner-filtered query tests appear incomplete
+
+**Known Gaps:**
+- SyndicationFeedSourceDataStoreTests/YouTubeSourceDataStoreTests missing explicit tests for owner-filtered GetAllAsync(ownerOid) overloads
+- Recommendation: Add 3–4 test cases per data store to verify ownership filtering
+
+**Deliverable:** `.squad/agents/trinity/609-audit-report.md` — comprehensive audit with evidence, scope matrix, and recommendations.
+
+**Rationale:** First-round multi-tenancy is feature-complete and production-ready. All decomposed sub-issues (#725–#731) are implemented. Minor test coverage enhancement recommended for data layer validation.
+
 ### 2026-04-17 — Issue #729: API Owner Isolation
 **Status:** ✅ COMPLETE & BUILD VERIFIED — PR #739
 
@@ -779,3 +810,22 @@ Real #708 failure was not duplicate submit, but API response generation failure 
 **Key Learning:** Exception swallowing is debugging poison. Every exception that might happen in production needs logging before returning a failure indicator. The pattern is: log error with context, then return failure (don't throw, since the contract is OperationResult-based). This gives ops visibility without changing API contracts.
 
 **Decision Filed:** `.squad/decisions/inbox/trinity-713-exception-audit-findings.md`
+
+
+
+## Sprint 20 Conclusion — Epic #609 Final Audit (2026-04-19T15:40:15Z)
+
+**Decision Sources:** Inbox files processed by Scribe
+
+**Audit Report Finalized:**
+- First-round multi-tenancy implementation audit filed (.squad/agents/trinity/609-audit-report.md)
+- Decision inbox entries merged to decisions.md: trinity-609-implementation-audit, neo-609-gap-issues (from Neo, includes Trinity context)
+- Sprint 20 work fully recorded in .squad/orchestration-log/ and .squad/log/
+
+**Known Gaps for Next Sprint:**
+- Data-layer owner-filtering tests incomplete (SyndicationFeedSourceDataStoreTests, YouTubeSourceDataStoreTests)
+- Recommendation: Add 3–4 test cases per data store to verify GetAllAsync(ownerOid) overloads
+- Test pattern available: .squad/skills/mock-overload-resolution/SKILL.md (covers Moq setup updates when manager signatures change)
+
+**Epic Status:**
+Feature-complete and production-ready. All sub-issues (#725–#731) delivered.

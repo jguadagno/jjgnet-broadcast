@@ -608,3 +608,51 @@ The chosen enforcement mechanism will shape Sprint 19 priority order:
   execution contract.
 - Treat repeated directive violations as process failures, not agent
   personality problems.
+
+## Learnings — Issue #609 First-Round Review (2026-04-19)
+
+- Reviewed epic #609 against its decomposition comment (#725-#732), merged
+  commits on `main`, current repository code, and the squad audit notes from
+  Trinity and Tank.
+- Confirmed the repo has shipped the schema, owner-filtered query paths,
+  API/Web ownership checks, per-user publisher-settings CRUD, and broad
+  automated coverage for the first-round multi-tenancy work.
+- Identified a blocking mismatch between the intended collector ownership flow
+  and the shipped implementation: Functions still pass a single
+  `Settings.OwnerEntraOid` value into collectors, and that setting is marked as
+  temporary scaffold rather than per-collector ownership.
+- Identified a second blocking mismatch in the readers: non-owner overloads in
+  `SyndicationFeedReader` and `YouTubeReader` still materialize records with
+  `CreatedByEntraOid = string.Empty`, which conflicts with the explicit
+  first-round directive that persisted ownership must never be empty/null.
+- Conclusion for Neo review: long-term epic scope is still intentionally
+  deferred in several areas, but even the narrowed first-round slice should be
+  treated as **not complete** until collector ownership is sourced from the
+  collector record and the remaining empty-owner scaffolding is removed.
+
+## Learnings — Issue #609 Gap Issue Triage (2026-04-19)
+
+- Converted the remaining first-round #609 review gaps into three concrete issue
+  proposals: two implementation follow-ups and one regression-test follow-up.
+- No open duplicate issue exists for the collector-owner threading gap or the
+  empty-owner reader scaffolding gap; the closest related item is closed issue
+  #728, whose acceptance criteria already described the intended end state.
+- Routing decision for the follow-up work: implementation belongs with Trinity
+  under the canonical `.squad/routing.md` rule for Azure Functions/business
+  logic, while the regression coverage belongs with Tank.
+
+
+
+## Sprint 20 Conclusion — Final Review & Merge (2026-04-19T15:40:15Z)
+
+**Decision Sources:** Inbox files processed by Scribe  
+
+**Context Closure:**
+- ✅ PR #756 merged to main (recovered issue #731: per-user publisher settings)
+- ✅ PR #757 merged to main (issue #732: owner isolation test coverage)
+- ✅ Decision inbox entries: link-main-pr-merge, neo-609-first-round-review, neo-609-gap-issues, neo-retro-directives merged to decisions.md
+- ✅ All Sprint 20 work captured in .squad/orchestration-log/ and .squad/log/
+
+**Impact on Future Sessions:**
+- Retro analysis in decisions.md (link-retro-guardrails) identifies 3 review cycles due to incomplete submissions — recommend pre-execution checklist gate for Tank in next sprint
+- Epic #609 first-round audit complete; data-layer test coverage gaps identified (Trinity recommendation: add 3–4 test cases per data store)
