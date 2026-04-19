@@ -109,6 +109,61 @@ public class EngagementManagerTests
     }
 
     [Fact]
+    public async Task GetAllAsync_WithOwnerOid_ShouldCallOwnerFilteredRepository()
+    {
+        // Arrange
+        var engagements = new List<Engagement> { new Engagement { Id = 1, CreatedByEntraOid = "owner-1" } };
+        _repository.Setup(r => r.GetAllAsync("owner-1", default)).ReturnsAsync(engagements);
+
+        // Act
+        var result = await _engagementManager.GetAllAsync("owner-1");
+
+        // Assert
+        Assert.Equal(engagements, result);
+        _repository.Verify(r => r.GetAllAsync("owner-1", default), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOidAndPaging_ShouldCallOwnerFilteredRepository()
+    {
+        // Arrange
+        var pagedResult = new PagedResult<Engagement>
+        {
+            Items = new List<Engagement> { new Engagement { Id = 1, CreatedByEntraOid = "owner-1" } },
+            TotalCount = 1
+        };
+        _repository.Setup(r => r.GetAllAsync("owner-1", 2, 10, "name", false, "conf", default))
+            .ReturnsAsync(pagedResult);
+
+        // Act
+        var result = await _engagementManager.GetAllAsync("owner-1", 2, 10, "name", false, "conf");
+
+        // Assert
+        Assert.Equal(pagedResult, result);
+        _repository.Verify(r => r.GetAllAsync("owner-1", 2, 10, "name", false, "conf", default), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithPaging_ShouldCallUnfilteredRepository()
+    {
+        // Arrange
+        var pagedResult = new PagedResult<Engagement>
+        {
+            Items = new List<Engagement> { new Engagement { Id = 1 } },
+            TotalCount = 1
+        };
+        _repository.Setup(r => r.GetAllAsync(1, 25, "startdate", true, "conf", default))
+            .ReturnsAsync(pagedResult);
+
+        // Act
+        var result = await _engagementManager.GetAllAsync(1, 25, "startdate", true, "conf");
+
+        // Assert
+        Assert.Equal(pagedResult, result);
+        _repository.Verify(r => r.GetAllAsync(1, 25, "startdate", true, "conf", default), Times.Once);
+    }
+
+    [Fact]
     public async Task DeleteAsync_Entity_ShouldCallRepository()
     {
         // Arrange

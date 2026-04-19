@@ -412,4 +412,123 @@ public class TalksControllerTests
         var redirectResult = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Add", redirectResult.ActionName);
     }
+
+    [Fact]
+    public async Task Details_WhenUserIsNotOwnerAndNotAdmin_RedirectsWithError()
+    {
+        // Arrange
+        var talk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "different-user-oid" };
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid-12345"),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(talk);
+
+        // Act
+        var result = await _controller.Details(1, 10);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Edit", redirectResult.ActionName);
+        Assert.Equal("Engagements", redirectResult.ControllerName);
+        Assert.Equal("You do not have permission to view this talk.", _controller.TempData["ErrorMessage"]);
+        _mapper.Verify(m => m.Map<TalkViewModel>(It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Edit_Get_WhenUserIsNotOwnerAndNotAdmin_RedirectsWithError()
+    {
+        // Arrange
+        var talk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "different-user-oid" };
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid-12345"),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(talk);
+
+        // Act
+        var result = await _controller.Edit(1, 10);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Edit", redirectResult.ActionName);
+        Assert.Equal("Engagements", redirectResult.ControllerName);
+        Assert.Equal("You do not have permission to edit this talk.", _controller.TempData["ErrorMessage"]);
+        _mapper.Verify(m => m.Map<TalkViewModel>(It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Delete_Get_WhenUserIsNotOwnerAndNotAdmin_RedirectsWithError()
+    {
+        // Arrange
+        var talk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = "different-user-oid" };
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid-12345"),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _engagementService.Setup(s => s.GetEngagementTalkAsync(1, 10)).ReturnsAsync(talk);
+
+        // Act
+        var result = await _controller.Delete(1, 10);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Edit", redirectResult.ActionName);
+        Assert.Equal("Engagements", redirectResult.ControllerName);
+        Assert.Equal("You do not have permission to delete this talk.", _controller.TempData["ErrorMessage"]);
+        _mapper.Verify(m => m.Map<TalkViewModel>(It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Add_Post_SetsCreatedByEntraOid()
+    {
+        // Arrange
+        var userOid = "user-oid-67890";
+        var viewModel = new TalkViewModel { Id = 0, EngagementId = 1 };
+        var savedTalk = new Talk { Id = 10, EngagementId = 1, CreatedByEntraOid = userOid };
+
+        var claims = new List<Claim> { new Claim(ApplicationClaimTypes.EntraObjectId, userOid) };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        Talk? capturedTalk = null;
+        _mapper.Setup(m => m.Map<Talk>(It.IsAny<object>())).Returns(new Talk());
+        _engagementService
+            .Setup(s => s.SaveEngagementTalkAsync(It.IsAny<Talk>()))
+            .Callback<Talk>(talk => capturedTalk = talk)
+            .ReturnsAsync(savedTalk);
+
+        // Act
+        var result = await _controller.Add(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Details", redirectResult.ActionName);
+        Assert.NotNull(capturedTalk);
+        Assert.Equal(userOid, capturedTalk!.CreatedByEntraOid);
+    }
 }

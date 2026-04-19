@@ -37,13 +37,15 @@ public class ScheduledItemDataStoreTests : IDisposable
     private ScheduledItem CreateScheduledItem(
         string message = "Test Message",
         DateTimeOffset? sendOn = null,
-        bool messageSent = false) => new ScheduledItem
+        bool messageSent = false,
+        string? ownerOid = null) => new ScheduledItem
     {
         ItemTableName = "Engagements",
         ItemPrimaryKey = 1,
         Message = message,
         SendOnDateTime = sendOn ?? DateTimeOffset.UtcNow.AddHours(1),
-        MessageSent = messageSent
+        MessageSent = messageSent,
+        CreatedByEntraOid = ownerOid
     };
 
     [Fact]
@@ -90,6 +92,58 @@ public class ScheduledItemDataStoreTests : IDisposable
         // Assert
         Assert.NotNull(result);
         Assert.Equal(3, result.Count);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOid_ReturnsOnlyMatchingScheduledItems()
+    {
+        // Arrange
+        _context.ScheduledItems.AddRange(
+            CreateScheduledItem("Owner 1 Item 1", ownerOid: "owner-1"),
+            CreateScheduledItem("Owner 1 Item 2", ownerOid: "owner-1"),
+            CreateScheduledItem("Owner 2 Item", ownerOid: "owner-2"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetAllAsync("owner-1");
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.All(result, item => Assert.Equal("owner-1", item.CreatedByEntraOid));
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOid_WhenNoMatchesExist_ReturnsEmptyList()
+    {
+        // Arrange
+        _context.ScheduledItems.Add(CreateScheduledItem("Other Owner Item", ownerOid: "owner-2"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetAllAsync("owner-1");
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOidAndPaging_ReturnsOnlyMatchingPage()
+    {
+        // Arrange
+        _context.ScheduledItems.AddRange(
+            CreateScheduledItem("Owner 1 Item 1", ownerOid: "owner-1"),
+            CreateScheduledItem("Owner 1 Item 2", ownerOid: "owner-1"),
+            CreateScheduledItem("Owner 1 Item 3", ownerOid: "owner-1"),
+            CreateScheduledItem("Owner 2 Item", ownerOid: "owner-2"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetAllAsync("owner-1", 1, 2);
+
+        // Assert
+        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(2, result.Items.Count);
+        Assert.All(result.Items, item => Assert.Equal("owner-1", item.CreatedByEntraOid));
     }
 
     [Fact]
@@ -232,6 +286,25 @@ public class ScheduledItemDataStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task GetUnsentScheduledItemsAsync_WithOwnerOid_ReturnsOnlyMatchingOwnerItems()
+    {
+        // Arrange
+        _context.ScheduledItems.AddRange(
+            CreateScheduledItem("Owner 1 Unsent", messageSent: false, ownerOid: "owner-1"),
+            CreateScheduledItem("Owner 1 Sent", messageSent: true, ownerOid: "owner-1"),
+            CreateScheduledItem("Owner 2 Unsent", messageSent: false, ownerOid: "owner-2"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetUnsentScheduledItemsAsync("owner-1");
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("owner-1", result[0].CreatedByEntraOid);
+        Assert.False(result[0].MessageSent);
+    }
+
+    [Fact]
     public async Task GetScheduledItemsByCalendarMonthAsync_ReturnsItemsInSpecifiedMonth()
     {
         // Arrange
@@ -249,6 +322,25 @@ public class ScheduledItemDataStoreTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal(2, result.Count);
         Assert.All(result, r => Assert.Contains("June", r.Message));
+    }
+
+    [Fact]
+    public async Task GetScheduledItemsByCalendarMonthAsync_WithOwnerOid_ReturnsOnlyMatchingOwnerItems()
+    {
+        // Arrange
+        _context.ScheduledItems.AddRange(
+            CreateScheduledItem("Owner 1 June", new DateTimeOffset(2025, 6, 15, 10, 0, 0, TimeSpan.Zero), ownerOid: "owner-1"),
+            CreateScheduledItem("Owner 1 July", new DateTimeOffset(2025, 7, 15, 10, 0, 0, TimeSpan.Zero), ownerOid: "owner-1"),
+            CreateScheduledItem("Owner 2 June", new DateTimeOffset(2025, 6, 20, 10, 0, 0, TimeSpan.Zero), ownerOid: "owner-2"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetScheduledItemsByCalendarMonthAsync("owner-1", 2025, 6);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("owner-1", result[0].CreatedByEntraOid);
+        Assert.Equal("Owner 1 June", result[0].Message);
     }
 
     [Fact]

@@ -63,6 +63,21 @@ public class YouTubeSourceManagerTests
     }
 
     [Fact]
+    public async Task GetAllAsync_WithOwnerOid_ShouldCallOwnerFilteredRepository()
+    {
+        // Arrange
+        var sources = new List<YouTubeSource> { new YouTubeSource { Id = 1, CreatedByEntraOid = "owner-1" } };
+        _repository.Setup(r => r.GetAllAsync("owner-1", default)).ReturnsAsync(sources);
+
+        // Act
+        var result = await _youTubeSourceManager.GetAllAsync("owner-1");
+
+        // Assert
+        Assert.Equal(sources, result);
+        _repository.Verify(r => r.GetAllAsync("owner-1", default), Times.Once);
+    }
+
+    [Fact]
     public async Task DeleteAsync_Entity_ShouldCallRepository()
     {
         // Arrange
