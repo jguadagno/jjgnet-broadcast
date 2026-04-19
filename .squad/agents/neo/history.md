@@ -1,3 +1,26 @@
+## Sprint 20 Final — PR #756 & #757 Merge & Session Close (2026-04-19)
+
+**Status:** ✅ COMPLETE  
+**PRs:** #756, #757  
+**Issues:** #731, #732
+
+### Work Summary
+
+Final review and merge cycle for Sprint 20 completion:
+- PR #756 (feat(#731): add per-user publisher settings) — Recovered from `neo/pr-recovery-731-732`, pushed to branch, reviewed, ready to merge
+- PR #757 (test(#732): owner isolation coverage) — Reviewed, squad approved, regular comment posted for author merge
+
+Both PRs passed squad review. Local cleanup completed by Link: branches deleted, main synced to `0bcc1fe`, working tree clean.
+
+### Decisions Recorded
+
+Three sprint wrap decisions merged into `.squad/decisions.md`:
+1. **link-sprint20-cleanup** — Branch deletion and main sync details
+2. **neo-pr-756-push-and-comment** — Recovery strategy for #731
+3. **neo-pr-757-github-comment** — Comment vs. review decision for #757
+
+Session logs and orchestration log recorded.
+
 # Neo - History
 
 ## PR #738 Review — Web MVC Ownership Enforcement (2026-04-18)
