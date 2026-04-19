@@ -1,3 +1,60 @@
+## 2026-04-20 — Scope-to-Role Migration: GitHub Issues Created
+
+**Status:** ✅ COMPLETE (Issue Triage & Creation)
+
+### Issues Created (7 total, dependency-ordered)
+
+| # | Phase | Title | Labels | Squad |
+|---|---|---|---|---|
+| #763 | 0 | Extract EntraClaimsTransformation to shared project | scope-removed-phase-0 | neo, trinity |
+| #764 | 0 | Add role-based authorization policies to API Program.cs | scope-removed-phase-0 | trinity |
+| #765 | 1 | Replace 37 scope checks with role-based policies in API controllers | scope-removed-phase-1 | trinity |
+| #766 | 2 | Migrate 90+ API test scope references to role-based claims | scope-removed-phase-2 | tank |
+| #767 | 3 | Remove scope constants from Domain and simplify API + Web config | scope-removed-phase-3 | trinity, switch |
+| #768 | 4 | Remove 42 custom delegated scopes from Azure Entra app registration | scope-removed-phase-4 | Joe |
+| #769 | 4 | Azure Portal cleanup: remove stale scope-related configuration | scope-removed-phase-4 | Joe |
+
+### Labels Created
+- `scope-removed-phase-0` through `scope-removed-phase-4`
+
+### Learnings
+- Phase labels (`scope-removed-phase-N`) provide clear sequencing for multi-phase migrations
+- Portal/ops work (#768, #769) labeled `squad:Joe` since it requires Azure Portal access
+- Phase 3 kept as single issue despite touching Domain/API/Web — changes are atomic (removing Scopes.cs breaks dependents simultaneously)
+- Dependency chain: #763 → #764 → #765 → #766 → #767 → #768 → #769
+
+---
+
+## 2026-04-20 — Scope-to-Role Migration Plan
+
+**Status:** ✅ COMPLETE (Read-Only Planning)  
+**Artifact:** `.squad/decisions/inbox/neo-scope-to-role-migration.md`
+
+### Findings
+
+- **37 `VerifyUserHasAnyAcceptedScope` call sites** across 5 API controllers (Engagements: 18, Schedules: 10, SocialMediaPlatforms: 5, UserPublisherSettings: 4, MessageTemplates: 3)
+- **90+ test references** to `Domain.Scopes.*` in API test files
+- **36 scopes** configured in Web `appsettings.Development.json` under `DownstreamApis:JosephGuadagnoBroadcastingApi:Scopes`
+- Web layer already has battle-tested role model: `EntraClaimsTransformation` + 4 authorization policies
+- `GetOwnerOid()` / `IsSiteAdministrator()` are scope-independent — unaffected by migration
+- `XmlDocumentTransformer` and Scalar config both enumerate all 42 scopes for OpenAPI docs
+
+### Architecture Decision
+
+5-phase migration: (0) Add role infra to API, (1) Replace scope checks with role checks, (2) Update tests, (3) Remove scope constants/config, (4) Clean Entra app registration. Key decision point: extract `EntraClaimsTransformation` to shared project since it only depends on `IUserApprovalManager`.
+
+### Key Files (Migration Surface)
+
+- `src\JosephGuadagno.Broadcasting.Domain\Scopes.cs` — 42 scope constants to remove (keep MicrosoftGraph)
+- `src\JosephGuadagno.Broadcasting.Api\Program.cs` — Needs `IClaimsTransformation` + `AddAuthorization`
+- `src\JosephGuadagno.Broadcasting.Api\Controllers\*.cs` — 37 scope check call sites
+- `src\JosephGuadagno.Broadcasting.Api\XmlDocumentTransformer.cs` — Scope enumeration in OpenAPI
+- `src\JosephGuadagno.Broadcasting.Api.Tests\Helpers\ApiControllerTestHelpers.cs` — Scope claim setup
+- `src\JosephGuadagno.Broadcasting.Web\appsettings.Development.json` — 36 API scope entries
+- `src\JosephGuadagno.Broadcasting.Web\EntraClaimsTransformation.cs` — Model to replicate/share
+
+---
+
 ## 2026-04-20 — Auth Architecture Review: Entra Scope Limits with Personal Accounts
 
 **Status:** ✅ COMPLETE (Read-Only Analysis)  

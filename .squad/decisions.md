@@ -16890,3 +16890,198 @@ This is the right near-term path because:
 - `UserApprovalMiddleware` and approval flow
 
 
+
+--- From: copilot-directive-20260419-102009.md ---
+### 2026-04-19T10:20:09-07:00: User directive
+**By:** Copilot (via Copilot)
+**What:** #724 is a future. We will tackle that at another time.
+**Why:** User request — captured for team memory
+
+
+--- From: copilot-directive-20260419-104451-portal-cleanup.md ---
+### 2026-04-19T10:44:51-07:00: User directive
+**By:** Copilot (via Copilot)
+**What:** Include issues for removing the related settings and configuration in the Azure Portal.
+**Why:** User request — captured for team memory
+
+
+--- From: neo-609-gap-issues-created.md ---
+---
+date: 2026-04-19
+author: Neo
+issue: 609
+status: decided
+---
+
+# Decision: Created the concrete GitHub issues for the remaining #609 Round 1 gaps
+
+## Context
+
+The Round 1 completeness gaps for epic #609 had already been reviewed and split into three follow-up work items in squad notes, but they were not yet represented as actual GitHub issues. The repo needed the real issues so implementation and testing work can be routed and tracked in GitHub.
+
+## Decision
+
+Create three narrow GitHub issues and keep the previously chosen ownership split:
+
+1. #760 — `feat: Source collector owner OID from collector records in Round 1 Functions flow`
+2. #761 — `feat: Remove empty-owner reader scaffolding from SyndicationFeedReader and YouTubeReader`
+3. #762 — `test: Add regression coverage for collector owner threading and persisted owner OIDs`
+
+## Why
+
+This keeps the remaining #609 Round 1 work concrete, reviewable, and aligned with the earlier Neo triage decision. The issue split stays narrow: one Functions ownership-threading defect, one reader-scaffolding defect, and one regression-test lock-down issue.
+
+## Routing
+
+- #760 and #761 -> `squad:trinity`
+- #762 -> `squad:tank`
+
+
+--- From: neo-scope-to-role-migration.md ---
+---
+date: 2026-04-20
+author: Neo
+status: proposed
+scope: API, Domain, Web, Tests, Entra Config
+---
+
+# Decision: Migrate API Authorization from Entra Delegated Scopes to App-Managed Roles
+
+## Context
+
+The API currently enforces authorization via 42 Entra delegated scopes (`VerifyUserHasAnyAcceptedScope`). This hits practical scope limits for personal Microsoft accounts (MSA), causes consent UX friction, and duplicates the role-based model already working in the Web layer via `EntraClaimsTransformation`.
+
+The Web layer already uses SQL-backed roles (SiteAdministrator, Administrator, Contributor, Viewer) enforced through `IClaimsTransformation` + ASP.NET Core authorization policies. This is the proven model.
+
+## Decision
+
+**Replace all scope-based authorization in the API with the same SQL-backed role model used by the Web layer.** Collapse Entra scopes from 42 to 1-2 (audience access + `User.Read`). Ownership enforcement (`GetOwnerOid`, `IsSiteAdministrator`) is scope-independent and remains unchanged.
+
+## Migration Plan
+
+### Phase 0 — Foundation (1 PR)
+Add `EntraClaimsTransformation` to the API's DI pipeline. The API already registers `IUserApprovalManager`, `IApplicationUserDataStore`, and `IRoleDataStore`. Wire `IClaimsTransformation` in `Program.cs`, add role-based authorization policies (same as Web: `RequireSiteAdministrator`, `RequireAdministrator`, `RequireContributor`, `RequireViewer`). At this point both scope checks AND role checks are active (dual enforcement).
+
+**Files changed:**
+- `src\JosephGuadagno.Broadcasting.Api\Program.cs` — Register `IClaimsTransformation`, add `AddAuthorization` policies
+- Possibly a shared `EntraClaimsTransformation` if we extract it from Web to a shared location, OR just reference the same class
+
+### Phase 1 — Controller Migration (1 PR per controller, or 1 combined PR)
+Replace every `HttpContext.VerifyUserHasAnyAcceptedScope(...)` call with an `[Authorize(Policy = "...")]` attribute or an equivalent inline `User.IsInRole(...)` check. Map existing scope semantics to role requirements:
+
+| Scope Operation | Required Role |
+|---|---|
+| `*.List`, `*.View` | Viewer (or higher) |
+| `*.Add`, `*.Modify` | Contributor (or higher) |
+| `*.Delete` | Administrator (or higher) |
+
+**Controllers affected (37 VerifyUserHasAnyAcceptedScope call sites):**
+- `EngagementsController` — 18 calls (engagements + talks sub-resources)
+- `SchedulesController` — 10 calls
+- `SocialMediaPlatformsController` — 5 calls
+- `UserPublisherSettingsController` — 4 calls
+- `MessageTemplatesController` — 3 calls
+
+### Phase 2 — Test Migration (1 PR)
+Update `ApiControllerTestHelpers.CreateControllerContext` to set role claims instead of `scp` claims. Update all test call sites (90+ references to `Domain.Scopes.*` in test files).
+
+**Test files affected:**
+- `Api.Tests\Helpers\ApiControllerTestHelpers.cs`
+- `Api.Tests\Controllers\EngagementsControllerTests.cs`
+- `Api.Tests\Controllers\EngagementsController_PlatformsTests.cs`
+- `Api.Tests\Controllers\SchedulesControllerTests.cs`
+- `Api.Tests\Controllers\SocialMediaPlatformsControllerTests.cs`
+- `Api.Tests\Controllers\MessageTemplatesControllerTests.cs`
+- `Api.Tests\Controllers\UserPublisherSettingsControllerTests.cs`
+
+### Phase 3 — Scope Cleanup & Config Reduction (1 PR)
+Remove `Scopes.cs` resource-specific classes. Retain only `Scopes.MicrosoftGraph` (for `User.Read`, `openid`, `profile`, `email`). Collapse Web `DownstreamApis:JosephGuadagnoBroadcastingApi:Scopes` from 36 entries to 1-2 (audience access). Update `XmlDocumentTransformer` and Scalar config to remove scope enumerations. Clean `ApiScopeUrl` usage.
+
+**Files changed:**
+- `src\JosephGuadagno.Broadcasting.Domain\Scopes.cs` — Remove entity-specific nested classes + `ToDictionary` helpers; keep `MicrosoftGraph`
+- `src\JosephGuadagno.Broadcasting.Api\XmlDocumentTransformer.cs` — Simplify OAuth flow to 1-2 scopes
+- `src\JosephGuadagno.Broadcasting.Api\Program.cs` — Simplify Scalar OAuth config
+- `src\JosephGuadagno.Broadcasting.Api\Models\Settings.cs` — `ApiScopeUrl` may become simpler or removable
+- `src\JosephGuadagno.Broadcasting.Web\appsettings.Development.json` — Collapse 36 API scopes to 1-2
+- `src\JosephGuadagno.Broadcasting.Web\appsettings.json` — Same
+- `src\JosephGuadagno.Broadcasting.Web\Program.cs` — Simplify `allScopes` union logic (lines 104-106)
+
+### Phase 4 — Entra App Registration Update (ops/manual)
+Update the Azure Entra app registration to remove the 42 custom delegated scopes. Define 1-2 remaining scopes (e.g., `api://{client-id}/access_as_user`). This is a portal/Bicep change, not a code change.
+
+## Non-Goals
+
+- **Not changing the Web layer's authorization model** — It already uses roles and works correctly.
+- **Not removing Entra authentication** — Entra remains the identity provider for token issuance and validation.
+- **Not changing ownership enforcement** — `GetOwnerOid()` and `IsSiteAdministrator()` are scope-independent and stay as-is.
+- **Not introducing a new permission/claim type** — We use the existing `RoleNames` constants and the proven `EntraClaimsTransformation` pattern.
+
+## Issue/PR Breakdown (Dependency Order)
+
+`
+Issue 1: [Phase 0] Add role-based auth infrastructure to API
+  └─ PR: Register EntraClaimsTransformation + authorization policies in API Program.cs
+  
+Issue 2: [Phase 1] Replace scope checks with role checks in API controllers
+  └─ Depends on: Issue 1
+  └─ PR: Replace all 37 VerifyUserHasAnyAcceptedScope calls with [Authorize] policies or role checks
+
+Issue 3: [Phase 2] Update API test infrastructure for role-based auth
+  └─ Depends on: Issue 2
+  └─ PR: Update ApiControllerTestHelpers + all 90+ test scope references
+
+Issue 4: [Phase 3] Remove scope constants and simplify config
+  └─ Depends on: Issue 3
+  └─ PR: Delete Scopes.cs entity classes, simplify OpenAPI/Scalar config, collapse Web appsettings scopes
+
+Issue 5: [Phase 4] Update Entra app registration (ops)
+  └─ Depends on: Issue 4 deployed to production
+  └─ Task: Remove custom scopes from Entra portal, keep audience scope only
+`
+
+## Risks & Mitigations
+
+| Risk | Mitigation |
+|---|---|
+| **Dual enforcement window** — During Phase 0-1, both scopes and roles are checked | Phase 0 adds roles alongside scopes; Phase 1 removes scopes. Keep the window short. |
+| **Existing tokens still carry scope claims** — Cached tokens from before migration won't have role claims | `EntraClaimsTransformation` adds role claims at request time from SQL, not from the token. Roles work immediately for any valid bearer token. |
+| **Functions app calls API** — If Functions uses scoped tokens, those break | Verify Functions' API calls use client credentials (app-only), not delegated scopes. If delegated, migrate those call sites too. |
+| **Entra scope removal breaks existing clients** — Third-party or Scalar clients that request specific scopes | Phase 4 (Entra cleanup) happens last, after all code is deployed. During transition, extra scopes are harmless — they're just ignored. |
+| **Role mapping mismatch** — A scope like `Schedules.ScheduledToSend` has no obvious role equivalent | Map all list/view operations to Viewer, all mutations to Contributor/Administrator. The granularity loss is intentional — the scope model was over-specified. |
+
+## Rollout Strategy
+
+1. **Phase 0 can ship independently** — It's additive. Roles are populated but not enforced.
+2. **Phase 1 is the breaking change** — Must go out with Phase 0 already deployed. Can be tested in dev/staging with the existing Entra scopes still configured (harmless).
+3. **Phase 2 and 3 are cleanup** — Safe to batch into one PR if desired.
+4. **Phase 4 is ops-only** — Do this after Phase 3 is deployed and validated in production. It's the only change that's hard to reverse.
+
+## Backward Compatibility
+
+- Tokens with scope claims continue to work during the transition (scopes are simply not checked anymore after Phase 1).
+- Role claims are injected at runtime by `EntraClaimsTransformation`, so no token reissuance is needed.
+- The Web layer is unaffected — it already uses roles exclusively for authorization.
+
+## What Gets Removed at the End
+
+- `Domain\Scopes.cs`: All entity-specific nested classes (`Engagements`, `Talks`, `Schedules`, `MessageTemplates`, `SocialMediaPlatforms`, `UserPublisherSettings`) + `ToDictionary()`, `AllAccessToDictionary()`
+- `Domain\Scopes.MicrosoftGraph`: **Kept** (still needed for OIDC token acquisition)
+- All `VerifyUserHasAnyAcceptedScope` calls (37 call sites across 5 controllers)
+- `Api\Models\Settings.ApiScopeUrl` — Simplified or removed
+- `XmlDocumentTransformer` scope enumeration — Simplified to 1-2 scopes
+- `Web\appsettings.*.json` `DownstreamApis:JosephGuadagnoBroadcastingApi:Scopes` — Collapsed from 36 to 1-2
+- `Web\Program.cs` scope union logic (lines 104-106) — Simplified
+- `Api.Tests\Helpers\ApiControllerTestHelpers.cs` scope claims — Replaced with role claims
+- 90+ test references to `Domain.Scopes.*` — Replaced with `RoleNames.*`
+
+## Recommended First Issue
+
+**Issue 1 (Phase 0): Add role-based auth infrastructure to API.** This is low-risk, additive, and unblocks everything else. The implementation is straightforward:
+
+1. Register `IClaimsTransformation` → `EntraClaimsTransformation` in API `Program.cs` (the class already exists in the Web project — decide whether to share or duplicate)
+2. Add `AddAuthorization` with the same 4 policies as Web
+3. Verify existing scope checks still pass (dual enforcement)
+4. Add one integration-style test confirming role claims are populated
+
+**Decision point for Issue 1:** Should `EntraClaimsTransformation` be extracted to a shared project (e.g., `Domain` or a new `Infrastructure` project), or duplicated in the API? Recommendation: extract to `Domain` or `Managers` since it depends only on `IUserApprovalManager` which is already in `Domain.Interfaces`.
+
