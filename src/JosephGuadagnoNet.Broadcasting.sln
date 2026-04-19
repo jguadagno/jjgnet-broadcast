@@ -141,6 +141,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Workflows", "Workflows", "{
 		..\.github\workflows\main_api-jjgnet-broadcast.yml = ..\.github\workflows\main_api-jjgnet-broadcast.yml
 		..\.github\workflows\main_jjgnet-broadcast.yml = ..\.github\workflows\main_jjgnet-broadcast.yml
 		..\.github\workflows\main_web-jjgnet-broadcast.yml = ..\.github\workflows\main_web-jjgnet-broadcast.yml
+		..\.github\pull_request_template.md = ..\.github\pull_request_template.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Api.Tests", "JosephGuadagno.Broadcasting.Api.Tests\JosephGuadagno.Broadcasting.Api.Tests.csproj", "{F2531CC0-1A58-4C3A-88EA-30CEC164C74B}"
@@ -183,6 +184,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Squad", "Squad", "{00FC7229
 		..\.squad\decisions.md = ..\.squad\decisions.md
 		..\.squad\routing.md = ..\.squad\routing.md
 		..\.github\agents\squad.agent.md = ..\.github\agents\squad.agent.md
+		..\.squad\ceremonies.md = ..\.squad\ceremonies.md
 	EndProjectSection
 EndProject
 Global
