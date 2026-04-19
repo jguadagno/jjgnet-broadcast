@@ -11,6 +11,11 @@ public class ApplicationUserViewModel
     public int Id { get; set; }
 
     /// <summary>
+    /// The Microsoft Entra object identifier for the user
+    /// </summary>
+    public string? EntraObjectId { get; set; }
+
+    /// <summary>
     /// The display name of the user
     /// </summary>
     public string? DisplayName { get; set; }

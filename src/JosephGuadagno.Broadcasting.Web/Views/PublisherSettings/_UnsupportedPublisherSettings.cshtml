@@ -1,0 +1,14 @@
+@model JosephGuadagno.Broadcasting.Web.Models.UnsupportedPublisherSettingsViewModel
+
+<div class="card h-100 border-secondary-subtle">
+    <div class="card-header">
+        <i class="bi @(string.IsNullOrWhiteSpace(Model.PlatformIcon) ? "bi-broadcast" : Model.PlatformIcon) me-2"></i>
+        <strong>@Model.PlatformName</strong>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-0">
+            A dedicated settings editor for this publisher has not been added yet.
+            The platform remains visible here so users can see the current catalog.
+        </p>
+    </div>
+</div>

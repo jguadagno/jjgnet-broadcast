@@ -1,0 +1,102 @@
+@model JosephGuadagno.Broadcasting.Web.Models.FacebookPublisherSettingsViewModel
+
+<div class="card h-100 shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <i class="bi @(string.IsNullOrWhiteSpace(Model.PlatformIcon) ? "bi-broadcast" : Model.PlatformIcon) me-2"></i>
+            <strong>@Model.PlatformName</strong>
+        </div>
+        <span class="badge @(Model.IsEnabled ? "text-bg-success" : "text-bg-secondary")">
+            @(Model.IsEnabled ? "Enabled" : "Disabled")
+        </span>
+    </div>
+    <div class="card-body">
+        <form asp-action="SaveFacebook" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <input asp-for="Id" type="hidden" />
+            <input asp-for="CreatedByEntraOid" type="hidden" />
+            <input asp-for="SocialMediaPlatformId" type="hidden" />
+            <input asp-for="PlatformName" type="hidden" />
+            <input asp-for="PlatformIcon" type="hidden" />
+            <input asp-for="GraphApiVersion" type="hidden" />
+            <input asp-for="GraphApiRootUrl" type="hidden" />
+            <input asp-for="HasPageAccessToken" type="hidden" />
+            <input asp-for="HasAppSecret" type="hidden" />
+            <input asp-for="HasClientToken" type="hidden" />
+            <input asp-for="HasShortLivedAccessToken" type="hidden" />
+            <input asp-for="HasLongLivedAccessToken" type="hidden" />
+
+            <div class="form-check form-switch mb-3">
+                <input asp-for="IsEnabled" class="form-check-input" />
+                <label asp-for="IsEnabled" class="form-check-label">Enable @Model.PlatformName publishing</label>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-12">
+                    <label asp-for="PageId" class="form-label"></label>
+                    <input asp-for="PageId" class="form-control" autocomplete="off" />
+                    <span asp-validation-for="PageId" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="AppId" class="form-label"></label>
+                    <input asp-for="AppId" class="form-control" autocomplete="off" />
+                    <span asp-validation-for="AppId" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="rounded border p-3 bg-body-tertiary">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h2 class="h6 mb-0">Credentials</h2>
+                    @if (Model.HasPageAccessToken || Model.HasAppSecret || Model.HasClientToken || Model.HasShortLivedAccessToken || Model.HasLongLivedAccessToken)
+                    {
+                        <span class="badge text-bg-secondary">Stored</span>
+                    }
+                </div>
+                <ul class="small text-muted mb-3 ps-3">
+                    <li>Page access token: @(Model.HasPageAccessToken ? Model.MaskedValue : "Not set")</li>
+                    <li>App secret: @(Model.HasAppSecret ? Model.MaskedValue : "Not set")</li>
+                    <li>Client token: @(Model.HasClientToken ? Model.MaskedValue : "Not set")</li>
+                    <li>Short-lived access token: @(Model.HasShortLivedAccessToken ? Model.MaskedValue : "Not set")</li>
+                    <li>Long-lived access token: @(Model.HasLongLivedAccessToken ? Model.MaskedValue : "Not set")</li>
+                </ul>
+                <div class="form-check mb-3">
+                    <input asp-for="ChangeCredentials" class="form-check-input" />
+                    <label asp-for="ChangeCredentials" class="form-check-label">Change credentials</label>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label asp-for="PageAccessToken" class="form-label"></label>
+                        <input asp-for="PageAccessToken" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored page access token" />
+                        <span asp-validation-for="PageAccessToken" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="AppSecret" class="form-label"></label>
+                        <input asp-for="AppSecret" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored app secret" />
+                        <span asp-validation-for="AppSecret" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="ClientToken" class="form-label"></label>
+                        <input asp-for="ClientToken" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored client token" />
+                        <span asp-validation-for="ClientToken" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="ShortLivedAccessToken" class="form-label"></label>
+                        <input asp-for="ShortLivedAccessToken" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored short-lived access token" />
+                        <span asp-validation-for="ShortLivedAccessToken" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="LongLivedAccessToken" class="form-label"></label>
+                        <input asp-for="LongLivedAccessToken" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored long-lived access token" />
+                        <span asp-validation-for="LongLivedAccessToken" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-floppy me-2"></i>Save
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
