@@ -1,3 +1,26 @@
+## Sprint 20 Final — PR #756 & #757 Merge & Session Close (2026-04-19)
+
+**Status:** ✅ COMPLETE  
+**PRs:** #756, #757  
+**Issues:** #731, #732
+
+### Work Summary
+
+Final review and merge cycle for Sprint 20 completion:
+- PR #756 (feat(#731): add per-user publisher settings) — Recovered from `neo/pr-recovery-731-732`, pushed to branch, reviewed, ready to merge
+- PR #757 (test(#732): owner isolation coverage) — Reviewed, squad approved, regular comment posted for author merge
+
+Both PRs passed squad review. Local cleanup completed by Link: branches deleted, main synced to `0bcc1fe`, working tree clean.
+
+### Decisions Recorded
+
+Three sprint wrap decisions merged into `.squad/decisions.md`:
+1. **link-sprint20-cleanup** — Branch deletion and main sync details
+2. **neo-pr-756-push-and-comment** — Recovery strategy for #731
+3. **neo-pr-757-github-comment** — Comment vs. review decision for #757
+
+Session logs and orchestration log recorded.
+
 # Neo - History
 
 ## PR #738 Review — Web MVC Ownership Enforcement (2026-04-18)
@@ -524,3 +547,64 @@ The chosen enforcement mechanism will shape Sprint 19 priority order:
   - `src\JosephGuadagno.Broadcasting.Api\Controllers\UserPublisherSettingsController.cs` and `src\JosephGuadagno.Broadcasting.Data.Sql\UserPublisherSettingDataStore.cs` — sanitize owner OIDs before warning/error logs.
   - `src\JosephGuadagno.Broadcasting.Web.Tests\Services\UserPublisherSettingServiceTests.cs`, `src\JosephGuadagno.Broadcasting.Api.Tests\Controllers\UserPublisherSettingsControllerTests.cs`, and `src\JosephGuadagno.Broadcasting.Data.Sql.Tests\UserPublisherSettingDataStoreTests.cs` — lock the contract with route, payload-shape, write-only masking, and log-sanitization coverage.
 - For a PR authored by the same GitHub user account, Neo should leave a regular PR comment summarizing readiness instead of attempting a formal approval review.
+
+---
+
+## 2026-04-19 — Retro: Directive Drift and Token Waste
+
+**Status:** ✅ COMPLETE  
+**Scope:** Three-sprint retrospective with focus on Sprint 20 PR recovery (#756/#757)
+
+### What Went Wrong
+
+- Team-critical directives were documented, but not enforced at spawn
+  time or push time.
+- Review-state language drifted between "approved", "review comment",
+  and "regular PR comment", creating confusion about whether the result
+  was local-only or actually visible on GitHub.
+- Branch-of-record drifted during Sprint 20 recovery: handoff text
+  referenced `feat/731-user-publisher-settings`, while the actual PR
+  branch of record was `issue-731-user-publisher-settings`.
+- Expensive work started before cheap validation, so the team paid for
+  re-reviews, repeat reads, and recovery orchestration.
+
+### Root Causes
+
+1. **No execution-time gate on directives** — rules in `decisions.md`,
+   skills, and history were treated as reference material instead of
+   hard preflight checks.
+2. **No single operational source of truth per PR** — branch, review
+   artifact type, blocker state, and next owner were spread across
+   logs, decisions, and agent memory.
+3. **Coordinator routing lacked a preflight contract** — agents were
+   spawned without first fixing ambiguity around branch,
+   GitHub-visible output, and readiness conditions.
+4. **Terminology was loose** — "review", "comment", "approval", and
+   "ready to merge" were used interchangeably even when they implied
+   different external effects.
+
+### Recommended Changes
+
+1. **Hard rule:** Coordinator must set a preflight contract before
+   every agent turn: branch of record, desired GitHub artifact,
+   expected validation, and handoff owner.
+2. **Hard rule:** Convert process-critical directives into verified
+   gates. If the gate cannot be proven, the work does not start.
+3. **Hard rule:** Maintain one PR state record with branch, artifact
+   mode (`review` vs `comment`), blocker status, and latest owner;
+   update it on every handoff.
+4. **Hard rule:** Run cheap checks before expensive actions: local
+   branch/readiness checks first, GitHub/API reads second, agent spawns
+   last.
+5. **Soft habit:** End each orchestration turn with an explicit "state
+   changed" note so the next turn does not infer status from narrative
+   text.
+
+### Coordinator Direction
+
+- Stop assuming agents will reconcile conflicting instructions on their
+  own.
+- Reject ambiguous requests before spawn and restate them as an
+  execution contract.
+- Treat repeated directive violations as process failures, not agent
+  personality problems.
