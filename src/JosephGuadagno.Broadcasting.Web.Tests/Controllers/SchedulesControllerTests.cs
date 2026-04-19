@@ -549,4 +549,119 @@ public class SchedulesControllerTests
         Assert.Equal(viewModels, viewResult.Model);
         _scheduledItemService.Verify(s => s.GetScheduledItemsToSendAsync(It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
     }
+
+    [Fact]
+    public async Task Details_WhenUserIsNotOwnerAndNotAdmin_RedirectsWithError()
+    {
+        // Arrange
+        var scheduledItem = new ScheduledItem { Id = 1, CreatedByEntraOid = "different-user-oid" };
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid-12345"),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(scheduledItem);
+
+        // Act
+        var result = await _controller.Details(1);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("You do not have permission to view this scheduled item.", _controller.TempData["ErrorMessage"]);
+    }
+
+    [Fact]
+    public async Task Edit_Get_WhenUserIsNotOwnerAndNotAdmin_RedirectsWithError()
+    {
+        // Arrange
+        var scheduledItem = new ScheduledItem { Id = 1, CreatedByEntraOid = "different-user-oid" };
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid-12345"),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(scheduledItem);
+
+        // Act
+        var result = await _controller.Edit(1);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("You do not have permission to edit this scheduled item.", _controller.TempData["ErrorMessage"]);
+        _mapper.Verify(m => m.Map<ScheduledItemViewModel>(It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Delete_Get_WhenUserIsNotOwnerAndNotAdmin_RedirectsWithError()
+    {
+        // Arrange
+        var scheduledItem = new ScheduledItem { Id = 1, CreatedByEntraOid = "different-user-oid" };
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectId, "user-oid-12345"),
+            new Claim(ClaimTypes.Role, RoleNames.Contributor)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        _scheduledItemService.Setup(s => s.GetScheduledItemAsync(1)).ReturnsAsync(scheduledItem);
+
+        // Act
+        var result = await _controller.Delete(1);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("You do not have permission to delete this scheduled item.", _controller.TempData["ErrorMessage"]);
+        _mapper.Verify(m => m.Map<ScheduledItemViewModel>(It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Add_Post_SetsCreatedByEntraOid()
+    {
+        // Arrange
+        var userOid = "user-oid-67890";
+        var viewModel = new ScheduledItemViewModel { Id = 0 };
+        var savedItem = new ScheduledItem { Id = 55, CreatedByEntraOid = userOid };
+
+        var claims = new List<Claim> { new Claim(ApplicationClaimTypes.EntraObjectId, userOid) };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+
+        ScheduledItem? capturedItem = null;
+        _mapper.Setup(m => m.Map<ScheduledItem>(It.IsAny<object>())).Returns(new ScheduledItem());
+        _scheduledItemService
+            .Setup(s => s.SaveScheduledItemAsync(It.IsAny<ScheduledItem>()))
+            .Callback<ScheduledItem>(item => capturedItem = item)
+            .ReturnsAsync(savedItem);
+
+        // Act
+        var result = await _controller.Add(viewModel);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Details", redirectResult.ActionName);
+        Assert.NotNull(capturedItem);
+        Assert.Equal(userOid, capturedItem!.CreatedByEntraOid);
+    }
 }

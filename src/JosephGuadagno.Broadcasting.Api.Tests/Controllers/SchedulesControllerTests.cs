@@ -199,6 +199,28 @@ public class SchedulesControllerTests
     }
 
     [Fact]
+    public async Task CreateScheduledItemAsync_WhenCalled_StampsCreatedByEntraOidFromClaims()
+    {
+        // Arrange
+        var request = BuildScheduledItemRequest(4);
+        ScheduledItem? capturedItem = null;
+        _scheduledItemManagerMock
+            .Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>()))
+            .Callback<ScheduledItem, CancellationToken>((item, _) => capturedItem = item)
+            .ReturnsAsync(OperationResult<ScheduledItem>.Success(BuildScheduledItem(4, oid: "owner-1")));
+
+        var sut = CreateSut(Domain.Scopes.Schedules.All, ownerOid: "owner-1");
+
+        // Act
+        var result = await sut.CreateScheduledItemAsync(request);
+
+        // Assert
+        result.Result.Should().BeOfType<CreatedAtActionResult>();
+        capturedItem.Should().NotBeNull();
+        capturedItem!.CreatedByEntraOid.Should().Be("owner-1");
+    }
+
+    [Fact]
     public async Task CreateScheduledItemAsync_WhenSaveFails_ReturnsInternalServerError()
     {
         // Arrange

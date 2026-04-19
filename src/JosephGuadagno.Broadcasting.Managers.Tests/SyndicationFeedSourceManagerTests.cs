@@ -63,6 +63,21 @@ public class SyndicationFeedSourceManagerTests
     }
 
     [Fact]
+    public async Task GetAllAsync_WithOwnerOid_ShouldCallOwnerFilteredRepository()
+    {
+        // Arrange
+        var sources = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "owner-1" } };
+        _repository.Setup(r => r.GetAllAsync("owner-1", default)).ReturnsAsync(sources);
+
+        // Act
+        var result = await _syndicationFeedSourceManager.GetAllAsync("owner-1");
+
+        // Assert
+        Assert.Equal(sources, result);
+        _repository.Verify(r => r.GetAllAsync("owner-1", default), Times.Once);
+    }
+
+    [Fact]
     public async Task DeleteAsync_Entity_ShouldCallRepository()
     {
         // Arrange
@@ -121,6 +136,23 @@ public class SyndicationFeedSourceManagerTests
         // Assert
         Assert.Equal(source, result);
         _repository.Verify(r => r.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories, default), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetRandomSyndicationDataAsync_WithOwnerOid_ShouldCallOwnerFilteredRepository()
+    {
+        // Arrange
+        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "owner-1" };
+        var cutoffDate = DateTimeOffset.UtcNow;
+        var excludedCategories = new List<string> { "Exclude" };
+        _repository.Setup(r => r.GetRandomSyndicationDataAsync("owner-1", cutoffDate, excludedCategories, default)).ReturnsAsync(source);
+
+        // Act
+        var result = await _syndicationFeedSourceManager.GetRandomSyndicationDataAsync("owner-1", cutoffDate, excludedCategories);
+
+        // Assert
+        Assert.Equal(source, result);
+        _repository.Verify(r => r.GetRandomSyndicationDataAsync("owner-1", cutoffDate, excludedCategories, default), Times.Once);
     }
 
     [Fact]
