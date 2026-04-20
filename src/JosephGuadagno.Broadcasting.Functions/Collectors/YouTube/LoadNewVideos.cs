@@ -2,6 +2,7 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Functions.Collectors;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
@@ -49,10 +50,19 @@ public class LoadNewVideos(
                             ) ??
                             new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue };
 
+            var ownerOid = await CollectorOwnerOidResolver.ResolveAsync(
+                youTubeSourceManager,
+                logger,
+                ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos);
+            if (string.IsNullOrWhiteSpace(ownerOid))
+            {
+                return new BadRequestObjectResult("Unable to resolve collector owner OID from YouTube source records.");
+            }
+
             // Check for new items
             logger.LogDebug("Checking playlist for videos since '{LastItemAddedOrUpdated}'",
                 feedCheck.LastItemAddedOrUpdated);
-            var newItems = await youTubeReader.GetAsync(settingsOptions.Value.OwnerEntraOid, feedCheck.LastItemAddedOrUpdated);
+            var newItems = await youTubeReader.GetAsync(ownerOid, feedCheck.LastItemAddedOrUpdated);
 
             // If there is nothing new, save the last checked value and exit
             if (newItems.Count == 0)

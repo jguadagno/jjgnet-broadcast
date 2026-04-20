@@ -2,6 +2,7 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Functions.Collectors;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
@@ -47,8 +48,17 @@ public class LoadAllVideos(
 
         try
         {
+            var ownerOid = await CollectorOwnerOidResolver.ResolveAsync(
+                youTubeSourceManager,
+                logger,
+                ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos);
+            if (string.IsNullOrWhiteSpace(ownerOid))
+            {
+                return new BadRequestObjectResult("Unable to resolve collector owner OID from YouTube source records.");
+            }
+
             logger.LogDebug("Getting all items from YouTube for the playlist since '{DateToCheckFrom}'", dateToCheckFrom);
-            var newItems = await youTubeReader.GetAsync(settingsOptions.Value.OwnerEntraOid, dateToCheckFrom);
+            var newItems = await youTubeReader.GetAsync(ownerOid, dateToCheckFrom);
 
             // If there is nothing new, save the last checked value and exit
             if (newItems.Count == 0)

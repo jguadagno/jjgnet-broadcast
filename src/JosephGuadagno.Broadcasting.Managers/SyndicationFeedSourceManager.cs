@@ -58,6 +58,11 @@ public class SyndicationFeedSourceManager : ISyndicationFeedSourceManager
         return await _syndicationFeedSourceDataStore.GetByFeedIdentifierAsync(feedIdentifier, cancellationToken);
     }
 
+    public async Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default)
+    {
+        return await _syndicationFeedSourceDataStore.GetCollectorOwnerOidAsync(cancellationToken);
+    }
+
     public async Task<SyndicationFeedSource?> GetRandomSyndicationDataAsync(DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default)
     {
         return await _syndicationFeedSourceDataStore.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories, cancellationToken);

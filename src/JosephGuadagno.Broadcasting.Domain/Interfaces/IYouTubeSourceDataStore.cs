@@ -4,6 +4,7 @@ public interface IYouTubeSourceDataStore : IDataStore<Domain.Models.YouTubeSourc
 {
     public Task<Domain.Models.YouTubeSource?> GetByUrlAsync(string url, CancellationToken cancellationToken = default);
     Task<Domain.Models.YouTubeSource?> GetByVideoIdAsync(string videoId, CancellationToken cancellationToken = default);
-    
+
+    Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default);
     Task<List<Domain.Models.YouTubeSource>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default);
 }

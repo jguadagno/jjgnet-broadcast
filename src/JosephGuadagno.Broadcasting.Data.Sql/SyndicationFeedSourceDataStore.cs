@@ -155,6 +155,18 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
         return dbSyndicationFeedSource is null ? null : mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
     }
 
+    public async Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default)
+    {
+        var ownerOid = await broadcastingContext.SyndicationFeedSources
+            .AsNoTracking()
+            .Where(source => source.CreatedByEntraOid != string.Empty)
+            .OrderByDescending(source => source.LastUpdatedOn)
+            .Select(source => source.CreatedByEntraOid)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return string.IsNullOrWhiteSpace(ownerOid) ? null : ownerOid;
+    }
+
     public async Task<Domain.Models.SyndicationFeedSource?> GetRandomSyndicationDataAsync(DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default)
     {
         var query = broadcastingContext.SyndicationFeedSources

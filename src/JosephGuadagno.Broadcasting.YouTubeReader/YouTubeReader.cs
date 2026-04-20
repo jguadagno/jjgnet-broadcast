@@ -56,18 +56,14 @@ public class YouTubeReader: IYouTubeReader
         _youTubeService = youTubeService;
     }
 
-    public List<YouTubeSource> GetSinceDate(DateTimeOffset sinceWhen)
-    {
-        return GetAsync(sinceWhen).Result;
-    }
-
     public List<YouTubeSource> GetSinceDate(string ownerOid, DateTimeOffset sinceWhen)
     {
         return GetAsync(ownerOid, sinceWhen).Result;
     }
 
-    public async Task<List<YouTubeSource>> GetAsync(DateTimeOffset sinceWhen)
+    public async Task<List<YouTubeSource>> GetAsync(string ownerOid, DateTimeOffset sinceWhen)
     {
+        ValidateOwnerOid(ownerOid);
         var currentTime = DateTime.Now;
         var videoItems = new List<YouTubeSource>();
             
@@ -104,12 +100,12 @@ public class YouTubeReader: IYouTubeReader
                                 PublicationDate = publishedAt.UtcDateTime,
                                 LastUpdatedOn = publishedAt.UtcDateTime,
                                 //Text = searchResult.Snippet.Description,
-                                Title = playlistItem.Snippet.Title,
-                                Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",
-                                AddedOn = currentTime,
-                                CreatedByEntraOid = string.Empty
-                            });
-                        }
+                                 Title = playlistItem.Snippet.Title,
+                                 Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",
+                                 AddedOn = currentTime,
+                                 CreatedByEntraOid = ownerOid
+                             });
+                         }
                         else
                         {
                             // Need to break out of the for loop when the publishDate is less than sinceWhen
@@ -133,19 +129,11 @@ public class YouTubeReader: IYouTubeReader
         return videoItems;
     }
 
-    public async Task<List<YouTubeSource>> GetAsync(string ownerOid, DateTimeOffset sinceWhen)
+    private static void ValidateOwnerOid(string ownerOid)
     {
-        var items = await GetAsync(sinceWhen);
-        return ApplyOwnerOid(items, ownerOid);
-    }
-
-    private static List<YouTubeSource> ApplyOwnerOid(List<YouTubeSource> items, string ownerOid)
-    {
-        foreach (var item in items)
+        if (string.IsNullOrWhiteSpace(ownerOid))
         {
-            item.CreatedByEntraOid = ownerOid;
+            throw new ArgumentException("The owner OID is required.", nameof(ownerOid));
         }
-
-        return items;
     }
 }
