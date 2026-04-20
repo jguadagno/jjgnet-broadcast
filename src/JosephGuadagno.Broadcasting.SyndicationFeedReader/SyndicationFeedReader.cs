@@ -31,8 +31,9 @@ public class SyndicationFeedReader: ISyndicationFeedReader
         _logger = logger;
     }
 
-    public List<SyndicationFeedSource> GetSinceDate(DateTimeOffset sinceWhen)
+    public List<SyndicationFeedSource> GetSinceDate(string ownerOid, DateTimeOffset sinceWhen)
     {
+        ValidateOwnerOid(ownerOid);
         var currentTime = DateTime.UtcNow;
 
         _logger.LogDebug("Checking syndication feed '{FeedUrl}' for new posts since '{SinceWhen:u}'",
@@ -68,31 +69,20 @@ public class SyndicationFeedReader: ISyndicationFeedReader
                 Url = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri ?? string.Empty,
                 AddedOn = currentTime,
                 LastUpdatedOn = currentTime,
-                CreatedByEntraOid = string.Empty,
+                CreatedByEntraOid = ownerOid,
                 Tags = syndicationItem.Categories?.Select(c => c.Name).ToList() ?? []
             })
             .ToList();
     }
 
-    public List<SyndicationFeedSource> GetSinceDate(string ownerOid, DateTimeOffset sinceWhen)
-    {
-        var items = GetSinceDate(sinceWhen);
-        return ApplyOwnerOid(items, ownerOid);
-    }
-
-    public async Task<List<SyndicationFeedSource>> GetAsync(DateTimeOffset sinceWhen)
-    {
-        return await Task.Run(() => GetSinceDate(sinceWhen));
-    }
-
     public async Task<List<SyndicationFeedSource>> GetAsync(string ownerOid, DateTimeOffset sinceWhen)
     {
-        var items = await GetAsync(sinceWhen);
-        return ApplyOwnerOid(items, ownerOid);
+        return await Task.Run(() => GetSinceDate(ownerOid, sinceWhen));
     }
 
-    public List<SyndicationFeedSource> GetSyndicationItems(DateTimeOffset sinceWhen, List<string> excludeCategories = null)
+    public List<SyndicationFeedSource> GetSyndicationItems(string ownerOid, DateTimeOffset sinceWhen, List<string>? excludeCategories = null)
     {
+        ValidateOwnerOid(ownerOid);
         _logger.LogDebug("Checking syndication feed '{FeedUrl}' for posts since '{SinceWhen:u}'",
             _syndicationFeedReaderSettings.FeedUrl, sinceWhen);
 
@@ -136,26 +126,20 @@ public class SyndicationFeedReader: ISyndicationFeedReader
                 Url = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri ?? string.Empty,
                 AddedOn = currentTime,
                 LastUpdatedOn = currentTime,
-                CreatedByEntraOid = string.Empty,
+                CreatedByEntraOid = ownerOid,
                 Tags = syndicationItem.Categories?.Select(c => c.Name).ToList() ?? []
             })
             .ToList();
     }
 
-    public List<SyndicationFeedSource> GetSyndicationItems(string ownerOid, DateTimeOffset sinceWhen, List<string>? excludeCategories = null)
-    {
-        var items = GetSyndicationItems(sinceWhen, excludeCategories);
-        return ApplyOwnerOid(items, ownerOid);
-    }
-
-    public SyndicationFeedSource GetRandomSyndicationItem(DateTimeOffset sinceWhen, List<string> excludeCategories = null)
+    public SyndicationFeedSource? GetRandomSyndicationItem(string ownerOid, DateTimeOffset sinceWhen, List<string>? excludeCategories = null)
     {
         _logger.LogDebug("Getting random syndication item from feed '{FeedUrl}' since '{SinceWhen:u}'",
             _syndicationFeedReaderSettings.FeedUrl, sinceWhen);
 
         excludeCategories ??= [];
 
-        var items = GetSyndicationItems(sinceWhen, excludeCategories);
+        var items = GetSyndicationItems(ownerOid, sinceWhen, excludeCategories);
 
         if (items.Count == 0)
         {
@@ -171,25 +155,11 @@ public class SyndicationFeedReader: ISyndicationFeedReader
         return randomItem;
     }
 
-    public SyndicationFeedSource? GetRandomSyndicationItem(string ownerOid, DateTimeOffset sinceWhen, List<string>? excludeCategories = null)
+    private static void ValidateOwnerOid(string ownerOid)
     {
-        var item = GetRandomSyndicationItem(sinceWhen, excludeCategories);
-        if (item is null)
+        if (string.IsNullOrWhiteSpace(ownerOid))
         {
-            return null;
+            throw new ArgumentException("The owner OID is required.", nameof(ownerOid));
         }
-
-        item.CreatedByEntraOid = ownerOid;
-        return item;
-    }
-
-    private static List<SyndicationFeedSource> ApplyOwnerOid(List<SyndicationFeedSource> items, string ownerOid)
-    {
-        foreach (var item in items)
-        {
-            item.CreatedByEntraOid = ownerOid;
-        }
-
-        return items;
     }
 }

@@ -12,6 +12,8 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests;
 /// </summary>
 public class SyndicationFeedReaderOfflineTests
 {
+    private const string OwnerEntraOid = "owner-entra-oid";
+
     // ==================== XML Fixtures ====================
     
     /// <summary>RSS feed with CDATA content in title and description</summary>
@@ -184,7 +186,7 @@ public class SyndicationFeedReaderOfflineTests
         var sinceDate = new DateTimeOffset(2026, 3, 19, 0, 0, 0, TimeSpan.Zero);
 
         // Act
-        var result = reader.GetSinceDate(sinceDate);
+        var result = reader.GetSinceDate(OwnerEntraOid, sinceDate);
 
         // Assert
         result.Should().NotBeEmpty("feed contains items after the specified date");
@@ -212,7 +214,7 @@ public class SyndicationFeedReaderOfflineTests
         var sinceDate = new DateTimeOffset(2026, 3, 19, 0, 0, 0, TimeSpan.Zero);
 
         // Act
-        var result = reader.GetSinceDate(sinceDate);
+        var result = reader.GetSinceDate(OwnerEntraOid, sinceDate);
 
         // Assert
         result.Should().NotBeEmpty("feed contains items after the specified date");
@@ -241,7 +243,7 @@ public class SyndicationFeedReaderOfflineTests
         var sinceDate = new DateTimeOffset(2026, 3, 19, 0, 0, 0, TimeSpan.Zero);
 
         // Act
-        var result = reader.GetSinceDate(sinceDate);
+        var result = reader.GetSinceDate(OwnerEntraOid, sinceDate);
 
         // Assert
         // Items without pubDate should still be processed (PublishDate defaults to DateTimeOffset.MinValue)
@@ -267,7 +269,7 @@ public class SyndicationFeedReaderOfflineTests
         var sinceDate = new DateTimeOffset(2026, 3, 19, 0, 0, 0, TimeSpan.Zero);
 
         // Act
-        var result = reader.GetSinceDate(sinceDate);
+        var result = reader.GetSinceDate(OwnerEntraOid, sinceDate);
 
         // Assert
         result.Should().NotBeEmpty("feed contains items");
@@ -293,7 +295,7 @@ public class SyndicationFeedReaderOfflineTests
         var sinceDate = new DateTimeOffset(2026, 3, 19, 0, 0, 0, TimeSpan.Zero);
 
         // Act
-        var result = reader.GetSinceDate(sinceDate);
+        var result = reader.GetSinceDate(OwnerEntraOid, sinceDate);
 
         // Assert
         result.Should().BeEmpty("empty channel should return no items");
@@ -313,7 +315,7 @@ public class SyndicationFeedReaderOfflineTests
         var sinceDate = new DateTimeOffset(2026, 3, 19, 0, 0, 0, TimeSpan.Zero);
 
         // Act
-        var result = reader.GetSyndicationItems(sinceDate);
+        var result = reader.GetSyndicationItems(OwnerEntraOid, sinceDate);
 
         // Assert
         result.Should().NotBeEmpty("feed contains items");
@@ -335,7 +337,7 @@ public class SyndicationFeedReaderOfflineTests
         var excludeCategories = new List<string> { "tech" }; // Case-insensitive
 
         // Act
-        var result = reader.GetSyndicationItems(sinceDate, excludeCategories);
+        var result = reader.GetSyndicationItems(OwnerEntraOid, sinceDate, excludeCategories);
 
         // Assert
         // Note: Category filtering depends on .Categories being populated by XML parser
@@ -358,7 +360,7 @@ public class SyndicationFeedReaderOfflineTests
         var sinceDate = new DateTimeOffset(2026, 3, 19, 0, 0, 0, TimeSpan.Zero);
 
         // Act
-        var result = reader.GetSyndicationItems(sinceDate);
+        var result = reader.GetSyndicationItems(OwnerEntraOid, sinceDate);
 
         // Assert
         result.Should().BeEmpty();
@@ -378,7 +380,7 @@ public class SyndicationFeedReaderOfflineTests
         var sinceDate = new DateTimeOffset(2026, 3, 19, 0, 0, 0, TimeSpan.Zero);
 
         // Act
-        var result = reader.GetRandomSyndicationItem(sinceDate);
+        var result = reader.GetRandomSyndicationItem(OwnerEntraOid, sinceDate);
 
         // Assert
         result.Should().NotBeNull("random item should be returned from non-empty feed");
@@ -398,7 +400,7 @@ public class SyndicationFeedReaderOfflineTests
         var sinceDate = new DateTimeOffset(2026, 3, 19, 0, 0, 0, TimeSpan.Zero);
 
         // Act
-        var result = reader.GetRandomSyndicationItem(sinceDate);
+        var result = reader.GetRandomSyndicationItem(OwnerEntraOid, sinceDate);
 
         // Assert
         result.Should().BeNull("empty channel should return null");
@@ -418,11 +420,31 @@ public class SyndicationFeedReaderOfflineTests
         var sinceDate = new DateTimeOffset(2026, 3, 19, 0, 0, 0, TimeSpan.Zero);
 
         // Act
-        var result = await reader.GetAsync(sinceDate);
+        var result = await reader.GetAsync(OwnerEntraOid, sinceDate);
 
         // Assert
         result.Should().NotBeEmpty();
         result.Should().HaveCount(2);
+
+        // Cleanup
+        File.Delete(xmlPath);
+    }
+
+    [Fact]
+    public async Task GetAsync_WithOwnerOid_ShouldApplyNonEmptyOwnerToEveryItem()
+    {
+        // Arrange
+        var xmlPath = CreateTempXmlFile(RssFeedWithCdata);
+        var reader = CreateReader(xmlPath);
+        var sinceDate = new DateTimeOffset(2026, 3, 19, 0, 0, 0, TimeSpan.Zero);
+
+        // Act
+        var result = await reader.GetAsync(OwnerEntraOid, sinceDate);
+
+        // Assert
+        result.Should().NotBeEmpty();
+        result.Should().OnlyContain(item => item.CreatedByEntraOid == OwnerEntraOid);
+        result.Should().NotContain(item => string.IsNullOrWhiteSpace(item.CreatedByEntraOid));
 
         // Cleanup
         File.Delete(xmlPath);
