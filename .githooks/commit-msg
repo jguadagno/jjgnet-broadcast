@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -eu
+
+message_file="$1"
+first_line="$(sed -n '1p' "$message_file")"
+
+case "$first_line" in
+  Merge\ *|Revert\ *|fixup!\ *|squash!\ *)
+    exit 0
+    ;;
+esac
+
+if printf '%s' "$first_line" | grep -Eq '^(feat|fix|docs|style|refactor|perf|test|chore)(\([^)]+\))?(!)?: .+'; then
+  exit 0
+fi
+
+echo "Commit message must follow Conventional Commits."
+echo "Expected: <type>[optional scope]: <description>"
+echo "Example: chore(hooks): add PR guardrails"
+exit 1

@@ -258,3 +258,8 @@ Session logs and orchestration log recorded.
 - PR #771 (`issue-760`) currently removes `Settings.OwnerEntraOid` in `src\JosephGuadagno.Broadcasting.Functions\Models\Settings.cs` and `src\JosephGuadagno.Broadcasting.Functions\Interfaces\ISettings.cs`, but its branch still fails in `src\JosephGuadagno.Broadcasting.Functions.Tests\Collectors\LoadAllPostsTests.cs`, `LoadAllVideosTests.cs`, `LoadNewPostsTests.cs`, `LoadNewVideosTests.cs`, and `src\JosephGuadagno.Broadcasting.Functions.Tests\Startup.cs` because those tests still reference the deleted scaffold.
 - Fresh-environment bootstrap is still blocked independently of the PR stack: `scripts\database\data-seed.sql` seeds `SyndicationFeedSources` without `CreatedByEntraOid`, so the new fail-closed owner resolution cannot resolve an owner on a clean database until SQL seed data is aligned.
 - PR #772 (`issue-762`) validated green locally once stacked (`dotnet build .\src\ --no-restore --configuration Release` and CI-aligned `dotnet test`), but it also carries unrelated Web config drift in `src\JosephGuadagno.Broadcasting.Web\appsettings.Development.json`; that kind of cross-issue payload is a blocking review defect under the one-PR-per-issue rule.
+
+### 2026-04-20 — Local + CI PR guardrail package
+- Enforce the same single-issue rule in both places: local hooks for fast feedback, CI metadata validation for merge protection.
+- Branch names now standardize on `issue-<number>-<slug>` or `feature/<number>-<slug>` so the issue number is machine-readable.
+- PR titles must use `<type>(#<issue>): <summary>` and the PR body must carry exactly one matching closing issue reference.

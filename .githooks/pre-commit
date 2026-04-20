@@ -1,0 +1,32 @@
+#!/bin/sh
+
+set -eu
+
+branch_name="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+
+if [ -z "$branch_name" ]; then
+  exit 0
+fi
+
+if [ "$branch_name" = "main" ]; then
+  echo "Direct commits to 'main' are blocked. Create an issue branch and open a PR."
+  exit 1
+fi
+
+case "$branch_name" in
+  issue-[0-9]*|feature/[0-9]*)
+    ;;
+  *)
+    echo "Branch '$branch_name' does not follow the required issue naming convention."
+    echo "Use 'issue-<number>-<slug>' or 'feature/<number>-<slug>' (one issue per branch)."
+    exit 1
+    ;;
+esac
+
+if printf '%s' "$branch_name" | grep -Eq '(^issue-[0-9]+(-[a-z][a-z0-9]*)*$)|(^feature/[0-9]+(-[a-z][a-z0-9]*)*$)'; then
+  exit 0
+fi
+
+echo "Branch '$branch_name' must contain exactly one issue number and optional text slugs."
+echo "Examples: issue-774, issue-774-pr-guardrails, feature/774-pr-guardrails"
+exit 1
