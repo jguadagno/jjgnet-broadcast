@@ -1,3 +1,32 @@
+## 2026-04-20 — Branch/PR Policy Remediation
+
+**Status:** ✅ COMPLETE (Remediation)
+
+### Issue
+
+Sprint 21 work was done directly on `main` instead of feature branches — third violation of `.squad/routing.md` directive.
+
+### Actions
+
+1. Stashed all uncommitted changes safely
+2. Created stacked branches from origin/main:
+   - `issue-761` → PR #770 (base: main)
+   - `issue-760` → PR #771 (base: issue-761)
+   - `issue-762` → PR #772 (base: issue-760)
+3. Split changes by issue ownership:
+   - #761: Reader empty-owner cleanup (10 files)
+   - #760: Collector owner OID resolution (13 files)
+   - #762: Regression test coverage (6 files)
+4. Pushed all branches and created PRs with proper stacking
+
+### Learnings
+
+- **Stash-and-split pattern**: Safe way to remediate policy violations without data loss
+- **Stacked PRs**: Use when issues have dependencies; merge in order, retarget after each merge
+- **Prevention**: Agents must read decisions.md before starting work — directive was already recorded twice
+
+---
+
 ## 2026-04-20 — Sprint 21 Kickoff & Milestone Planning
 
 **Status:** ✅ COMPLETE (Sprint Planning)
