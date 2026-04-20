@@ -42,7 +42,7 @@ public class LoadNewPostsTests
 
         _sut = new LoadNewPosts(
             _feedReader.Object,
-            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com" }),
+            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com", OwnerEntraOid = OwnerEntraOid }),
             _feedSourceManager.Object,
             _feedCheckManager.Object,
             _urlShortener.Object,

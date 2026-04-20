@@ -42,7 +42,7 @@ public class LoadNewVideosTests
 
         _sut = new LoadNewVideos(
             _youTubeReader.Object,
-            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com" }),
+            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com", OwnerEntraOid = OwnerEntraOid }),
             _feedCheckManager.Object,
             _youTubeSourceManager.Object,
             _urlShortener.Object,

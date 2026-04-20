@@ -69,7 +69,8 @@ public class Startup
         var settings =
             new JosephGuadagno.Broadcasting.Functions.Models.Settings
             {
-                ShortenedDomainToUse = null!
+                ShortenedDomainToUse = null!,
+                OwnerEntraOid = null!
             };
         config.Bind("Settings", settings);
         services.TryAddSingleton<ISettings>(settings);
