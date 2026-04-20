@@ -248,6 +248,18 @@ Session logs and orchestration log recorded.
 
 ## Learnings
 
+### 2026-04-20 — Neo PR Comment Template (Canonical Standard)
+
+- **Pattern**: Two-mode comment structure ensures consistency across Neo reviews
+  - Formal Review: comprehensive, audit-trail quality, for multi-finding PRs
+  - Quick Finding: minimal, targeted, for single blockers or guidance
+- **Template location**: `.squad/skills/neo-pr-comment/TEMPLATE.md`
+- **Decision framework**: `.squad/skills/neo-pr-comment/DECISION-TREE.md`
+- **Key principle**: Formal reviews use checklist + subsystem breakdown; verdict at end (APPROVED/BLOCKED/NEEDS REVISION)
+- **Production anchors**: PR #736 (Formal Review pattern), PR #771 (Quick Finding pattern)
+- **Posting**: Always use PowerShell `gh api` on Windows — produces visible comment (required for squad protocol)
+- **Directive enforcement**: Violations are BLOCKING (not "could be improved"); findings are always actionable
+
 ### 2026-04-20 — Visible PR comment workflow for stacked reviews
 - For author-owned PRs, Neo should post a regular PR comment instead of a formal review so the finding is visible without using an approval artifact the author cannot meaningfully self-consume.
 - Current Sprint 21 stack status: #770 merged first; #771 is blocked by `scripts\database\data-seed.sql` lacking bootstrap `CreatedByEntraOid` values for collector source rows; #772 is blocked by unrelated drift in `src\JosephGuadagno.Broadcasting.Web\appsettings.Development.json`.
