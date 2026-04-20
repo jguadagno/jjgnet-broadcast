@@ -360,3 +360,15 @@ All architectural choices documented in decisions.md with full context and ratio
 - Monitor Trinity merges for regression test suite compliance
 - Bootstrap blocker: Track data-seed.sql alignment before final Sprint 21 close
 
+## Learnings
+
+### 2026-04-20 — Visible PR comment workflow for stacked reviews
+- For author-owned PRs, Neo should post a regular PR comment instead of a formal review so the finding is visible without using an approval artifact the author cannot meaningfully self-consume.
+- Current Sprint 21 stack status: #770 merged first; #771 is blocked by `scripts\database\data-seed.sql` lacking bootstrap `CreatedByEntraOid` values for collector source rows; #772 is blocked by unrelated drift in `src\JosephGuadagno.Broadcasting.Web\appsettings.Development.json`.
+- For stacked PRs, after each upstream merge the next PR should be retargeted to `main` and revalidated before clearing it.
+
+### 2026-04-20 — Open PR Review (#770, #771, #772)
+- Stacked PR review gate: each PR must build and test against its current base; a downstream PR cannot be the fix for an upstream branch break.
+- PR #771 (`issue-760`) currently removes `Settings.OwnerEntraOid` in `src\JosephGuadagno.Broadcasting.Functions\Models\Settings.cs` and `src\JosephGuadagno.Broadcasting.Functions\Interfaces\ISettings.cs`, but its branch still fails in `src\JosephGuadagno.Broadcasting.Functions.Tests\Collectors\LoadAllPostsTests.cs`, `LoadAllVideosTests.cs`, `LoadNewPostsTests.cs`, `LoadNewVideosTests.cs`, and `src\JosephGuadagno.Broadcasting.Functions.Tests\Startup.cs` because those tests still reference the deleted scaffold.
+- Fresh-environment bootstrap is still blocked independently of the PR stack: `scripts\database\data-seed.sql` seeds `SyndicationFeedSources` without `CreatedByEntraOid`, so the new fail-closed owner resolution cannot resolve an owner on a clean database until SQL seed data is aligned.
+- PR #772 (`issue-762`) validated green locally once stacked (`dotnet build .\src\ --no-restore --configuration Release` and CI-aligned `dotnet test`), but it also carries unrelated Web config drift in `src\JosephGuadagno.Broadcasting.Web\appsettings.Development.json`; that kind of cross-issue payload is a blocking review defect under the one-PR-per-issue rule.

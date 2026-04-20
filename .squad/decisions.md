@@ -17222,3 +17222,179 @@ User request — captured for team memory and future sprint planning decisions.
 - Issue assignment to future sprints uses milestone assignment, not label assignment
 - Scope migration phases (#763–#769) scheduled across dedicated milestones to prevent Sprint 21 clutter
 
+
+---
+
+## Sprint 21 — PR #770–#772 Review & Policy Enforcement (2026-04-20)
+
+### User Directives Captured
+
+#### Directive 1: Branch & PR Organization
+**Timestamp:** 2026-04-20T11:45:27.348-07:00  
+**Source:** User (via Copilot)  
+**Decision:** All work must be done on branches; each block of work must have its own PR; Sprint 21 work must be separated with one PR per issue.  
+**Rationale:** User request — captured for team memory
+
+#### Directive 2: PR Review Comments
+**Timestamp:** 2026-04-20 13:20:44-07:00  
+**Source:** User (via Copilot)  
+**Decision:** Neo must add PR review findings as comments on the pull requests he reviews.  
+**Rationale:** User request — captured for team memory
+
+#### Directive 3: Markdown Backticks in Comments
+**Timestamp:** 2026-04-20 13:24:00-07:00  
+**Source:** User (via Copilot)  
+**Decision:** Use Markdown backticks for code names in PR comments; do not use backslash escaping.  
+**Rationale:** User request — captured for team memory
+
+#### Directive 4: Seed Bootstrap & PR Comment Formatting (PR #771)
+**Timestamp:** 2026-04-20 13:28:37-07:00  
+**Source:** User (via Copilot)  
+**Decision:** PR comments must use Markdown backticks for code identifiers. PR #771 should bootstrap seeded Entra OIDs via a variable in scripts\database\data-seed.sql with a TODO replacement note.  
+**Rationale:** User request — captured for team memory
+
+---
+
+### Agent Outcomes (2026-04-20)
+
+#### Scribe: Comment Formatting Fix (PR #771)
+- Fixed GitHub comment 4284036318 to use proper Markdown backticks for code identifiers
+- Status: ✅ COMPLETE
+
+#### Morpheus: Seed Bootstrap Patch (PR #771)
+- Patched scripts\database\data-seed.sql with placeholder Entra OID variable
+- Reused across seeded owner-aware records for fresh-database collector resolution
+- Commit: 978fc73
+- Validation: Docs lint clean; pre-existing Functions.Tests compile errors remain unrelated
+- Status: ✅ COMPLETE
+
+---
+
+## Decision: Repository Enforcement Model (2026-04-20)
+
+**Author:** Neo (Lead)  
+**Status:** PROPOSED  
+
+### Problem Statement
+
+The .squad/routing.md PR Policy has been violated multiple times (3rd violation). Branch protection blocks direct pushes to main but does NOT prevent:
+1. Local dirty work on main
+2. Mixed-issue changes before branching
+3. Missing PR linkage
+4. Stacked PR drift
+
+### Solution: 3-Layer Enforcement Model
+
+1. **Local Git Hooks** — Pre-commit blocks main commits; commit-msg requires conventional commits + issue reference
+2. **GitHub Actions** — PR title lint validates <type>(#issue) pattern
+3. **Branch Protection** — Existing hard block (preserved)
+4. **Coordinator Process** — Human + agent review-time enforcement
+
+### Minimum Implementation Package
+
+- .githooks/pre-commit — Blocks commits on main
+- .githooks/commit-msg — Requires conventional commits with issue footer
+- PR title lint workflow — Validates Conventional Commit format with issue reference
+- CONTRIBUTING.md update — Documents hook setup
+- PR template update — Adds branch policy checkbox
+
+### Decision
+
+Adopt 3-layer enforcement: local hooks (early feedback) + CI action (server-side gate) + branch protection (hard block).
+
+### Rationale
+
+- **Cost-benefit:** Git hooks catch violations at commit time with zero dependencies
+- **Escape hatch:** Developers can --no-verify for emergencies; CI still catches
+- **Squad workflow:** Agents can be configured at spawn to enable hooks
+- **Existing infra:** Leverages current CI structure
+
+---
+
+## Decision: Link PR Metadata Guardrails (2026-04-20)
+
+**Owner:** Link  
+**Scope:** GitHub Actions CI + PR template enforcement
+
+### Rules
+
+1. Branch names must be issue-<number> or eature/<number>-<slug>
+2. PR titles must follow <type>(#<number>): short description
+3. PR titles must reference exactly one issue
+4. Branch name issue number must match PR title issue number
+
+### Rationale
+
+- Enforcement in GitHub ensures policy applies consistently even if local hooks are missing
+- Scope limited to pull requests preserves existing push-to-main CI behavior
+- Aligns with Conventional Commit intent in CONTRIBUTING.md
+
+---
+
+## Decision: Commit Message Issue Linkage (2026-04-20)
+
+**Author:** Neo (Lead)
+
+### Decision
+
+Keep commit header as standard Conventional Commit and require issue reference in single footer line: Refs #NNN, Fixes #NNN, or Closes #NNN.
+
+### Why
+
+- Header stays focused on change intent and optional component scope
+- PR title already carries issue in header form
+- Single footer issue to single branch issue creates fail-closed local check without overloading scope field
+
+### Enforcement
+
+- .githooks/commit-msg validates Conventional Commit header
+- .githooks/commit-msg requires exactly one issue footer
+- .githooks/commit-msg rejects footer/branch issue mismatches
+
+---
+
+## Decision: Branch/PR Policy Remediation Pattern (2026-04-20)
+
+**Author:** Neo (Lead)
+
+### Pattern
+
+When work is accidentally committed to main:
+1. Stash all uncommitted changes with descriptive message
+2. Create branches from origin/main (not local main)
+3. Pop stash and selectively stage files per issue
+4. Use stacked PRs when issues have dependencies
+5. Leave local main intact for squad docs
+
+### Sprint 21 Application
+
+- Stash: Sprint21-uncommitted-work-backup
+- Branch chain: issue-761 → issue-760 → issue-762
+- PR chain: #770 (base: main) → #771 (base: issue-761) → #772 (base: issue-760)
+- Merge order: #770 first, then #771 (retarget to main), then #772 (retarget to main)
+
+### Prevention
+
+This is the third violation. The directive exists in .squad/routing.md and was reinforced in prior decisions. Agents must read decisions.md before starting work.
+
+---
+
+## Decision: Open PR Review Stack Order (#770, #771, #772)
+
+**Date:** 2026-04-20  
+**Status:** ✅ COMPLETE (Review)
+
+### Merge Order: Remains #770 → #771 → #772
+
+#### PR #770
+- Status: Ready in current stack order
+
+#### PR #771
+- **Blocked:** Fresh-environment bootstrap broken; scripts\database\data-seed.sql seeds collector source rows without CreatedByEntraOid
+- **New fail-closed owner resolution cannot resolve owner on clean database**
+- **Follow-up:** After #770 merges, rebase/retarget #771 onto updated base and rerun validation before merge
+
+#### PR #772
+- **Blocked:** Cross-issue payload; changes src\JosephGuadagno.Broadcasting.Web\appsettings.Development.json even though this PR is collector regression coverage only
+- **Follow-up:** After #771 merges, retarget #772 to new base and remove unrelated Web config drift before merge
+

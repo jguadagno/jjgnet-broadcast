@@ -137,3 +137,16 @@
 - **Scope:** Added owner-filtered overloads to 5 data stores: `SyndicationFeedSourceDataStore`, `YouTubeSourceDataStore`, `EngagementDataStore`, `ScheduledItemDataStore`, `MessageTemplateDataStore`.
 - **Branch:** `squad/727-filter-datasources-by-owner` → PR #735
 - **Commit:** `9558b20` — 275 insertions (12 files changed: 5 interfaces, 5 implementations, 2 test files)
+
+### Session: PR #771 Seed Bootstrap Patch (2026-04-20)
+
+- **Work:** Fix fresh-environment database bootstrap for collector owner resolution
+  - Patched scripts\database\data-seed.sql with placeholder Entra OID variable \\
+  - Applied variable across seeded owner-aware records: Sources, Engagements, ScheduledItems, Talks, MessageTemplates
+  - Reused same variable consistently to enable single TodoItem search-and-replace during fresh environment setup
+  
+- **Outcome:** Fresh-database seeding now includes CreatedByEntraOid on all owner-aware records; new fail-closed owner resolution can resolve collectors at startup
+- **Commit:** 978fc73
+- **Validation:** Docs lint clean; pre-existing Functions.Tests compile errors on issue-760 remain unrelated to seed changes
+- **Status:** ✅ COMPLETE
+
