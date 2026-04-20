@@ -11,6 +11,70 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  pr-metadata:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR metadata
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+
+          branch_pattern='^(issue-[0-9]+(-[a-z][a-z0-9]*)*|feature/[0-9]+(-[a-z][a-z0-9]*)*)$'
+          title_pattern='^(feat|fix|docs|style|refactor|perf|test|chore)\(#([0-9]+)\): .+'
+
+          if [[ ! "$BRANCH_NAME" =~ $branch_pattern ]]; then
+            echo "PR branch '$BRANCH_NAME' must follow 'issue-<number>-<slug>' or 'feature/<number>-<slug>' and contain exactly one issue number."
+            exit 1
+          fi
+
+          if [[ "$BRANCH_NAME" =~ ^issue/ ]]; then
+            echo "PR branch '$BRANCH_NAME' is invalid. Use 'issue-' instead of 'issue/'."
+            exit 1
+          fi
+
+          if [[ "$BRANCH_NAME" =~ ^issue-([0-9]+)(-[a-z][a-z0-9]*)*$ ]]; then
+            branch_issue="${BASH_REMATCH[1]}"
+          elif [[ "$BRANCH_NAME" =~ ^feature/([0-9]+)(-[a-z][a-z0-9]*)*$ ]]; then
+            branch_issue="${BASH_REMATCH[1]}"
+          else
+            echo "Unable to determine the issue number from branch '$BRANCH_NAME'."
+            exit 1
+          fi
+
+          if [[ ! "$PR_TITLE" =~ $title_pattern ]]; then
+            echo "PR title '$PR_TITLE' must follow '<type>(#<issue>): <summary>'."
+            exit 1
+          fi
+
+          title_issue="${BASH_REMATCH[2]}"
+
+          if [[ "$branch_issue" != "$title_issue" ]]; then
+            echo "Branch issue #$branch_issue does not match PR title issue #$title_issue."
+            exit 1
+          fi
+
+          mapfile -t linked_issues < <(printf '%s' "$PR_BODY" | grep -ioE '(close[sd]?|fix(e[sd])?|resolve[sd]?) #[0-9]+' | grep -oE '[0-9]+' || true)
+          unique_linked_issues="$(printf '%s\n' "${linked_issues[@]}" | sed '/^$/d' | sort -u)"
+          unique_issue_count="$(printf '%s\n' "$unique_linked_issues" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+          if [[ "$unique_issue_count" != "1" ]]; then
+            echo "PR body must link exactly one issue with Closes/Fixes/Resolves #<number>."
+            exit 1
+          fi
+
+          linked_issue="$(printf '%s\n' "$unique_linked_issues" | sed -n '1p')"
+
+          if [[ "$branch_issue" != "$linked_issue" ]]; then
+            echo "Branch issue #$branch_issue does not match linked PR body issue #$linked_issue."
+            exit 1
+          fi
+
+          echo "PR metadata validated for issue #$branch_issue."
+
   build-and-test:
     runs-on: ubuntu-latest
     steps:
