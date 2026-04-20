@@ -770,6 +770,8 @@ This provides regression coverage as close to the actual bug as the existing tes
 
 24. **Extension methods for fluent test object modification are helpful.** When setting up test data with varying properties (e.g., different `StartDateTime` values for sort tests), a `With()` extension method allows chaining: `CreateEngagement(name: "Conf A").With(e => e.StartDateTime = ...)`. Declared as `file static class` to keep it scoped to the test file.
 
+25. **When a `Settings` options class gains a `required` member, every test-side `new Settings { ... }` initializer must be updated immediately.** Compile breaks can hide in collector tests and test startup helpers, so grep the whole test project for `new Settings` and fix both direct `Options.Create(...)` calls and any bound startup fixtures.
+
 ## Ownership Test Checklist
 
 Before writing any test for a security/ownership feature:

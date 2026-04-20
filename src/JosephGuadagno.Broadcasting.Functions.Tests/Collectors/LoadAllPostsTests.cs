@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -21,6 +22,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Collectors;
 public class LoadAllPostsTests
 {
     private const string OwnerEntraOid = "owner-entra-oid";
+    private const string CollectorOwnerEntraOid = "collector-owner-entra-oid";
     private readonly Mock<ISyndicationFeedReader> _syndicationFeedReader;
     private readonly Mock<ISyndicationFeedSourceManager> _syndicationFeedSourceManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
@@ -33,6 +35,7 @@ public class LoadAllPostsTests
         _syndicationFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
         _urlShortener = new Mock<IUrlShortener>();
+        _syndicationFeedSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>())).ReturnsAsync(OwnerEntraOid);
 
         _sut = new LoadAllPosts(
             _syndicationFeedReader.Object,
@@ -105,6 +108,64 @@ public class LoadAllPostsTests
         _syndicationFeedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("1", okResult.Value!.ToString());
+    }
+
+    [Fact]
+    public async Task RunAsync_PreservesReaderOwnerOid_WhenSavingPost()
+    {
+        // Arrange
+        var item = CreateFeedSource("owned-post-123");
+        item.CreatedByEntraOid = CollectorOwnerEntraOid;
+
+        var savedItem = CreateFeedSource("owned-post-123");
+        savedItem.Id = 42;
+        savedItem.CreatedByEntraOid = CollectorOwnerEntraOid;
+
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>()))
+            .ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
+        _syndicationFeedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<SyndicationFeedSource> { item });
+        _syndicationFeedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("owned-post-123"))
+            .ReturnsAsync((SyndicationFeedSource?)null);
+        _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync("https://short.example.com/owned");
+        _syndicationFeedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p =>
+                p.FeedIdentifier == "owned-post-123" &&
+                p.CreatedByEntraOid == CollectorOwnerEntraOid &&
+                !string.IsNullOrWhiteSpace(p.CreatedByEntraOid))))
+            .ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedItem));
+
+        var request = CreateHttpRequest();
+
+        // Act
+        await _sut.RunAsync(request, null);
+
+        // Assert
+        _syndicationFeedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p =>
+            p.FeedIdentifier == "owned-post-123" &&
+            p.CreatedByEntraOid == CollectorOwnerEntraOid &&
+            !string.IsNullOrWhiteSpace(p.CreatedByEntraOid))), Times.Once);
+    }
+
+    [Fact]
+    public async Task RunAsync_UsesCollectorOwnerOid_WhenReadingPosts()
+    {
+        // Arrange
+        SetupFeedCheck();
+        _syndicationFeedSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CollectorOwnerEntraOid);
+        _syndicationFeedReader.Setup(r => r.GetAsync(CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<SyndicationFeedSource>());
+
+        var request = CreateHttpRequest();
+
+        // Act
+        await _sut.RunAsync(request, null);
+
+        // Assert
+        _syndicationFeedSourceManager.Verify(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _syndicationFeedReader.Verify(r => r.GetAsync(CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()), Times.Once);
     }
 
     [Fact]

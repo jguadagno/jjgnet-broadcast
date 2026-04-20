@@ -2,6 +2,7 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Functions.Collectors;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
@@ -47,8 +48,17 @@ public class LoadAllPosts(
 
         try
         {
+            var ownerOid = await CollectorOwnerOidResolver.ResolveAsync(
+                syndicationFeedSourceManager,
+                logger,
+                ConfigurationFunctionNames.CollectorsFeedLoadAllPosts);
+            if (string.IsNullOrWhiteSpace(ownerOid))
+            {
+                return new BadRequestObjectResult("Unable to resolve collector owner OID from syndication feed source records.");
+            }
+
             logger.LogDebug("Getting all items from feed from '{DateToCheckFrom}'", dateToCheckFrom);
-            var newItems = await syndicationFeedReader.GetAsync(settingsOptions.Value.OwnerEntraOid, dateToCheckFrom);
+            var newItems = await syndicationFeedReader.GetAsync(ownerOid, dateToCheckFrom);
 
             // If there is nothing new, save the last checked value and exit
             if (newItems is null || newItems.Count == 0)

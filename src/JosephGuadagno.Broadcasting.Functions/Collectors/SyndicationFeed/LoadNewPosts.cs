@@ -2,6 +2,7 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Functions.Collectors;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
@@ -49,9 +50,18 @@ public class LoadNewPosts(
                                 ) ??
                                 new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue };
 
+            var ownerOid = await CollectorOwnerOidResolver.ResolveAsync(
+                syndicationFeedSourceManager,
+                logger,
+                ConfigurationFunctionNames.CollectorsFeedLoadNewPosts);
+            if (string.IsNullOrWhiteSpace(ownerOid))
+            {
+                return new BadRequestObjectResult("Unable to resolve collector owner OID from syndication feed source records.");
+            }
+
             // Check for new items
             logger.LogDebug("Checking the syndication feed for posts since '{LastItemAddedOrUpdated}'", feedCheck.LastItemAddedOrUpdated);
-            var newItems = await syndicationFeedReader.GetAsync(settingsOptions.Value.OwnerEntraOid, feedCheck.LastItemAddedOrUpdated);
+            var newItems = await syndicationFeedReader.GetAsync(ownerOid, feedCheck.LastItemAddedOrUpdated);
 
             // If there is nothing new, save the last checked value and exit
             if (newItems == null || newItems.Count == 0)

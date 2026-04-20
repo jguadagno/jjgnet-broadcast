@@ -56,4 +56,9 @@ public class YouTubeSourceManager : IYouTubeSourceManager
     {
         return await _youTubeSourceDataStore.GetByVideoIdAsync(videoId, cancellationToken);
     }
+
+    public async Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default)
+    {
+        return await _youTubeSourceDataStore.GetCollectorOwnerOidAsync(cancellationToken);
+    }
 }
