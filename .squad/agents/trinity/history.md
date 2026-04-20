@@ -2,6 +2,20 @@
 
 ## Learnings
 
+### 2026-04-20 — PR #770 / Issue #761: Scope Boundary for Settings Scaffold
+**Status:** ✅ COMPLETE & BUILD FIXED
+
+**Task:** Repair PR #770 so the issue #761 branch builds independently against `main`.
+
+**Changes Made:**
+1. Restored `OwnerEntraOid` on `src\JosephGuadagno.Broadcasting.Functions\Interfaces\ISettings.cs`
+2. Restored `OwnerEntraOid` on `src\JosephGuadagno.Broadcasting.Functions\Models\Settings.cs`
+3. Left the reader overload cleanup intact in the reader projects; only removed the accidental cross-PR dependency
+
+**Key Decision:** The temporary Functions settings scaffold stays in issue #761 until issue #760 lands the collector-side owner resolution. Removing the scaffold earlier breaks the collectors on `main` and violates one-PR-per-issue isolation.
+
+**Validation:** Confirmed the pre-fix repo build failed with CS1061 in the four Functions collectors, then re-ran the Release restore/build and CI-aligned test pass after restoring the property.
+
 ### 2026-04-17 — Issue #729: API Owner Isolation
 **Status:** ✅ COMPLETE & BUILD VERIFIED — PR #739
 
