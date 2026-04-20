@@ -20,6 +20,7 @@
 - Read decisions.md before starting
 - Write decisions to inbox when making team-relevant choices
 - Focused, practical, gets things done
+- **PR comments**: Always use `.squad/skills/neo-pr-comment/TEMPLATE.md` for structuring reviews — two modes: Formal Review (comprehensive subsystem analysis + checklist) or Quick Finding (targeted blocker + action)
 
 ## Boundaries
 
