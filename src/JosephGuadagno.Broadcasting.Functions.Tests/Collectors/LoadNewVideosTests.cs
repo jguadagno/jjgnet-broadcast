@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -19,6 +20,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Collectors;
 public class LoadNewVideosTests
 {
     private const string OwnerEntraOid = "owner-entra-oid";
+    private const string CollectorOwnerEntraOid = "collector-owner-entra-oid";
     private readonly Mock<IYouTubeReader> _youTubeReader;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly Mock<IYouTubeSourceManager> _youTubeSourceManager;
@@ -36,10 +38,11 @@ public class LoadNewVideosTests
 
         _eventPublisher.Setup(e => e.PublishYouTubeEventsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<YouTubeSource>>()))
             .Returns(Task.CompletedTask);
+        _youTubeSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>())).ReturnsAsync(OwnerEntraOid);
 
         _sut = new LoadNewVideos(
             _youTubeReader.Object,
-            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com", OwnerEntraOid = OwnerEntraOid }),
+            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com" }),
             _feedCheckManager.Object,
             _youTubeSourceManager.Object,
             _urlShortener.Object,
@@ -122,6 +125,62 @@ public class LoadNewVideosTests
             Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("1", okResult.Value!.ToString());
+    }
+
+    [Fact]
+    public async Task RunAsync_PreservesReaderOwnerOid_WhenSavingVideo()
+    {
+        // Arrange
+        var item = CreateVideoSource("owned-video-id");
+        item.CreatedByEntraOid = CollectorOwnerEntraOid;
+
+        var savedItem = CreateVideoSource("owned-video-id");
+        savedItem.Id = 55;
+        savedItem.CreatedByEntraOid = CollectorOwnerEntraOid;
+
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>()))
+            .ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
+        _youTubeReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<YouTubeSource> { item });
+        _youTubeSourceManager.Setup(m => m.GetByVideoIdAsync("owned-video-id"))
+            .ReturnsAsync((YouTubeSource?)null);
+        _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync("https://short.example.com/owned");
+        _youTubeSourceManager.Setup(m => m.SaveAsync(It.Is<YouTubeSource>(v =>
+                v.VideoId == "owned-video-id" &&
+                v.CreatedByEntraOid == CollectorOwnerEntraOid &&
+                !string.IsNullOrWhiteSpace(v.CreatedByEntraOid))))
+            .ReturnsAsync(OperationResult<YouTubeSource>.Success(savedItem));
+
+        // Act
+        await _sut.RunAsync(null!);
+
+        // Assert
+        _youTubeSourceManager.Verify(m => m.SaveAsync(It.Is<YouTubeSource>(v =>
+            v.VideoId == "owned-video-id" &&
+            v.CreatedByEntraOid == CollectorOwnerEntraOid &&
+            !string.IsNullOrWhiteSpace(v.CreatedByEntraOid))), Times.Once);
+    }
+
+    [Fact]
+    public async Task RunAsync_UsesCollectorOwnerOid_WhenReadingNewVideos()
+    {
+        // Arrange
+        SetupFeedCheck();
+        _youTubeSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CollectorOwnerEntraOid);
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>()))
+            .ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
+        _youTubeReader.Setup(r => r.GetAsync(CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<YouTubeSource>());
+
+        // Act
+        await _sut.RunAsync(null!);
+
+        // Assert
+        _youTubeSourceManager.Verify(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _youTubeReader.Verify(r => r.GetAsync(CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()), Times.Once);
     }
 
     [Fact]
@@ -234,5 +293,22 @@ public class LoadNewVideosTests
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Never);
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task RunAsync_ReturnsBadRequest_WhenCollectorOwnerOidCannotBeResolved()
+    {
+        // Arrange
+        SetupFeedCheck();
+        _youTubeSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
+
+        // Act
+        var result = await _sut.RunAsync(null!);
+
+        // Assert
+        _youTubeReader.Verify(r => r.GetAsync(It.IsAny<string>(), It.IsAny<DateTimeOffset>()), Times.Never);
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains("owner OID", badRequestResult.Value!.ToString());
     }
 }
