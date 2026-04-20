@@ -1,64 +1,55 @@
 # Team Focus — Now
 
-**Last updated:** 2026-04-10  
-**Sprint:** 13 (complete) → ready for Sprint 14  
-**Status:** All Sprint 13 issues closed. Main is up to date.  
-**Next:** Awaiting Sprint 14 feature planning from jguadagno.
+**Last updated:** 2026-04-20  
+**Sprint:** 21 (active)  
+**Status:** Sprint planning complete. Ready to start collector owner work.  
+**Next:** Begin implementation of #760, #761, #762 (collector owner OID threading).
 
 ## Current Focus
 
-Epic #667 is complete. All PRs merged, all issues closed. Team is now in post-epic maintenance mode.
+**Sprint 21 — Collector Owner OID Completeness (Epic #609 Round 1)**
 
-## Open Work
+Close the remaining Round 1 ownership gaps in the Functions collector flow:
 
-- #689: In-memory caching for SocialMediaPlatformManager (enhancement, not started)
+| Issue | Title | Squad |
+|---|---|---|
+| #760 | Source collector owner OID from collector records | trinity |
+| #761 | Remove empty-owner reader scaffolding | trinity |
+| #762 | Add regression coverage for collector owner threading | tank |
 
-## Last Completed
+**Goal:** All collector-triggered persistence paths thread a real owner OID from the source/collector record — no more global scaffold or empty-string fallbacks.
 
-Epic #667 — Social Media Platform Management System — fully shipped 2026-04-10
+## Future Sprints
 
-**PRs merged (Sprint 3):**
-1. ✅ #686 — Domain/data layer (SocialMediaPlatform model + repository)
-2. ✅ #685 — API endpoints + tests (EngagementsController platform sub-resources)
-3. ✅ #687 — Web Admin UI (SocialMediaPlatforms CRUD)
-4. ✅ #688 — Engagement edit page with platform selector
+The scope-to-role migration (#763–#769) is now scheduled across dedicated sprints:
 
-**Issues closed:**
-- #667 (epic) — completed
-- #682 (cleanup tracker) — completed
-- #53, #54, #536, #537 — closed as not planned (superseded)
+| Sprint | Phase | Issues |
+|---|---|---|
+| Sprint 22 | Phase 0 — Foundation | #763, #764 |
+| Sprint 23 | Phases 1-2 — Controller + test migration | #765, #766 |
+| Sprint 24 | Phases 3-4 — Cleanup + Entra portal | #767, #768, #769 |
 
-**Build Status:** Clean. All tests passing.  
-**Branch Status:** Main up to date. All feature branches deleted.
+## Standing Work
 
-## Key Patterns Established (Epic #667)
+- #689: In-memory caching for SocialMediaPlatformManager (backlog)
 
-1. **Social platform CRUD:** Full Web → Service → API → Manager → DataStore chain with ISocialMediaPlatformManager
-2. **includeInactive propagation:** When a filter capability exists at data layer, it must thread through every layer up to the Web controller call site
-3. **Details mirrors Edit:** Any ViewModel property loaded in `Edit` GET must also be loaded in `Details` GET if the view renders it
-4. **Test patterns:** Real `IMapper` in tests (not mocked); Manager tests use `default` CancellationToken; Controller tests use `It.IsAny<CancellationToken>()`
-5. **Process:** Full `dotnet test` required before every push — no exceptions, including after rebases
+## Key Patterns (Sprint 21)
+
+1. **Owner OID threading:** Collectors load owner OID from the collector/source record and pass it through `LoadNewPosts`, `LoadAllPosts`, `LoadNewVideos`, `LoadAllVideos`.
+2. **No empty-owner persistence:** Readers must require a non-empty `CreatedByEntraOid` on persisted records.
+3. **Regression tests:** Tests must fail if implementation falls back to removed scaffolding.
 
 ## Team Composition
 
-**Epic #667 Collaborators:**
-- Switch — Web layer (PR #687, #688 fixes)
-- Neo — Code review and tech lead decisions
-- Tank — Test automation
-- Coordinator — GitHub operations and branch management
-- Scribe — Session logging and decisions
+**Sprint 21:**
+- Trinity — Collector implementation (#760, #761)
+- Tank — Test coverage (#762)
+- Neo — Review & architecture
 
 **Rotating Roles:** Squad roster available in `.squad/team.md`
 
-## Metrics
-
-- **Epic #667 PRs:** 4 (#685, #686, #687, #688)
-- **Issues Closed:** 6 (#667, #682, #53, #54, #536, #537)
-- **Branches Deleted:** 5 local + remote pruned
-- **Build Status:** Clean (0 errors)
-
 ---
 
-**Last Updated:** 2026-04-10  
-**Epic Closed:** #667 (Social Media Platform Management)  
-**Next Decision Point:** Assign #689 (caching) or begin new epic
+**Last Updated:** 2026-04-20  
+**Sprint:** 21 (Collector Owner OID)  
+**Next Decision Point:** Sprint 22 kickoff after Sprint 21 closes

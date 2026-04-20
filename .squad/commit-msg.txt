@@ -1,10 +1,10 @@
-chore(.squad): merge createdbyentraoid inbox decision, add orchestration and session logs
+docs(.squad): merge scope-removal migration decisions into team record
 
-- Migrate morpheus-createdbyentraoid-not-null.md from inbox to decisions.md
-- Add orchestration log: 2026-04-17T165400-morpheus.md (22 files fixed, PR #734)
-- Add session log: 2026-04-17T165400-not-null-migration.md (brief summary)
-- Delete inbox file (now deduplicated in decisions.md)
-
-Related: #725, #726, PR #734
+- Merged 4 inbox entries into decisions.md
+- Added Neo scope-removal-migration plan (#763-#769 issues)
+- Added 2 user directives: #724 future, Azure Portal cleanup
+- Added #609 Round 1 gap issues decision (#760-#762)
+- Deleted inbox files after merge
+- Updated Neo agent history.md
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

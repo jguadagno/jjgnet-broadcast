@@ -124,3 +124,13 @@
 - **History updated:** Sparks history.md appended with session completion note
 - **Outcome:** Issue #708 fully resolved; decisions consolidated for team reference
 
+
+### Session: PR #771 Comment Formatting Fix (2026-04-20)
+
+- **Work:** Fix PR #771 GitHub comment with proper Markdown formatting
+  - Updated existing GitHub comment 4284036318 to use Markdown backticks for code identifiers, paths, and PR references
+  - Preserved all substantive feedback while correcting formatting violations
+  
+- **Outcome:** PR #771 comment now uses \path\`, \identifier\`, and #PR notation per team directive
+- **Status:** ✅ COMPLETE
+

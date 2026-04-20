@@ -4,6 +4,7 @@
 
 | Date | Task | Outcome |
 |------|------|---------|
+| 2026-04-19 | **PR #759 Merge: Sprint 20 Wrap Docs to main** — Convert 4 unpushed commits on local main into GitHub PR and merge after CI passes. Protect uncommitted `.squad` changes in working tree. | ✅ PR #759 created from temporary branch `link/sprint20-wrapup-pr`, pushed to remote. All CI checks passed (build-and-test 2m21s, CodeQL 6m18s, GitGuardian). Merged with normal merge commit (not squash) at `33154c5`. Local main fast-forwarded. Uncommitted `.squad` changes left untouched in working tree. |
 | 2026-04-19 | **Retro Guardrails: Reducing Token Waste & Directive Drift** — Analyze three sprints of repeated failures (PR #738, #739 multi-round reviews); propose operational guardrails to prevent duplicate work, enforce pre-submission validation, and reduce expensive GitHub API polling | ✅ Proposal written to `.squad/decisions/inbox/link-retro-guardrails.md`. Key findings: 6 waste patterns identified; ~6,000 tokens wasted per 3-cycle review due to missing pre-checks. Guardrails target: (1) pre-execution checklist gate, (2) orchestration log deduplication, (3) cheap checks before expensive work, (4) SOP for branch readiness. Implementation priority: P1 pre-hook + coordinator gate this week; P2 skill doc next sprint; P3 task tracking + webhook handling later. |
 | 2026-04-19 | **Sprint 20 Wrap — Branch Cleanup & Orchestration** — Delete local branches after PR #756 and #757 merged; update main from origin/main; prune remote-tracking branches; record orchestration log | ✅ Deleted `issue-731-user-publisher-settings`, `issue-732-owner-isolation-tests`, `issue-745`, `neo/pr-recovery-731-732`. Pruned remote tracking branches. Local main now at `0bcc1fe` (origin/main HEAD) with clean working tree. Orchestration log recorded at `.squad/orchestration-log/2026-04-19T14-47-26Z-link-sprint20-cleanup.md`. |
 | 2026-04-01 | **Serilog Configuration Deduplication (#314)** — Extract duplicate Serilog bootstrap from Api/Functions/Web into shared `LoggingExtensions.ConfigureSerilog()` method; Web gains OpenTelemetry sink | ✅ PR #594 opened, targets `issue-591-reduce-production-logging` branch (depends on PR #592). Web/Program.cs now has `WriteTo.OpenTelemetry()` enabled. |
@@ -14,6 +15,7 @@
 
 ## Learnings
 
+- **Dirty worktree branch creation**: When the working tree has uncommitted changes but you need to convert unpushed commits to a PR, use `git branch <name> <sha>` (without switching branches) to create a new branch from HEAD without staging dirty content. This preserves uncommitted changes while allowing you to push a clean feature branch from the desired commit.
 - **Branch-behind-main CI failures**: When a PR branch pre-dates a merge to main that renames symbols (controllers, methods), the CI merge commit will fail to compile. Fix is always `git merge origin/main --no-edit` on the feature branch — no rebase needed when the changes are non-overlapping.
 - **Stash pop conflicts in shared workflow files**: Workflow files (`.github/workflows/*.yml`) change frequently across branches. When popping a stash onto a branch that has received main updates, expect conflicts in workflow steps. Always favour the `origin/main` version of vuln-scan logic since those decisions are made intentionally and tracked in PRs.
 - **Stash hygiene**: After a conflicted stash pop, git leaves the stash entry in the list. Always `git stash drop stash@{N}` after manually committing the resolution.
@@ -55,3 +57,19 @@
 - Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
 - Charter updated with enforcement rule (## How I Work)
 - Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code
+
+
+## Sprint 20 Conclusion — Orchestration & Decisions Management (2026-04-19T15:40:15Z)
+
+**Decision Source:** Scribe processing (20260419T154015-link.md)
+
+**Wrap-up Tasks Completed:**
+- ✅ Merged PR #759 (4 unpushed commits from local main) after full CI pass
+- ✅ Wrote .squad/orchestration-log/20260419T154015-link.md
+- ✅ Wrote .squad/log/20260419T154015-pr-759-merge.md
+- ✅ Merged 9 decision inbox files into .squad/decisions.md
+- ✅ Deleted all .squad/decisions/inbox/*.md files
+- ✅ Updated team member history files with Sprint 20 context
+- ✅ Verified decisions.md size (738,980 bytes) — no immediate archival needed
+
+**Retro Guardrails Proposal:** Recorded in decisions.md as part of Sprint 20 retrospective. Document outlines 6 waste patterns from sprint 18–20 reviews and proposes operational gates (pre-execution checklist, orchestration log dedup, cheap pre-checks) to reduce token cost per cycle from ~6,000 to near-baseline.
