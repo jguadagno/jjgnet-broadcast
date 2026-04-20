@@ -77,6 +77,12 @@
 
 ## Learnings
 
+### 2026-04-20 — Issue #760: Bootstrap owner OID seed for fail-closed collectors
+
+- **Problem:** PR #771 made collector owner resolution fail closed by reading the newest non-blank `CreatedByEntraOid` from persisted source rows, but a clean database had no bootstrap owner path because `data-seed.sql` did not populate seeded ownership columns.
+- **Fix:** Added a single `@SeededOwnerEntraOid` variable near the top of `scripts/database/data-seed.sql` with a TODO to replace the placeholder GUID, then threaded that variable through all seeded owner-aware records in the bootstrap script (Engagements, Talks, ScheduledItems, SyndicationFeedSources, YouTubeSources, and MessageTemplates).
+- **Pattern:** When a feature begins resolving ownership from seeded content, the base seed script must expose one explicit, reusable owner OID variable instead of scattering literals or leaving owner columns null/blank. This keeps AppHost fresh-database bootstrap deterministic and gives operators one place to swap in a real Entra object ID.
+
 ### 2026-04-17 — Issue #726: CreatedByEntraOid Promoted to NOT NULL
 
 - **Pattern:** Nullable-to-NOT NULL promotion follows a deliberate two-step approach for the project: (1) add column as NULL with a backfill migration (PR #733), confirm all rows updated, then (2) tighten to NOT NULL in a separate migration after confirmation. This avoids data-loss risk on active environments.
