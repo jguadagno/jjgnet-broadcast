@@ -1,3 +1,31 @@
+## 2026-04-20 — Sprint 21 Kickoff & Milestone Planning
+
+**Status:** ✅ COMPLETE (Sprint Planning)
+
+### Sprint 21 — Collector Owner OID Completeness
+
+Assigned 3 issues to Sprint 21 (focused on Round 1 #609 gaps):
+- #760: Source collector owner OID from collector records (squad:trinity)
+- #761: Remove empty-owner reader scaffolding (squad:trinity) — moved from Sprint 20
+- #762: Add regression coverage for collector owner threading (squad:tank)
+
+### Scope-to-Role Migration Scheduling
+
+Created 3 new milestones and assigned 7 issues across future sprints:
+
+| Sprint | Phase | Issues |
+|---|---|---|
+| Sprint 22 | Phase 0 | #763, #764 |
+| Sprint 23 | Phases 1-2 | #765, #766 |
+| Sprint 24 | Phases 3-4 | #767, #768, #769 |
+
+### Learnings
+- Milestones are the source of truth for sprint planning (not labels)
+- Scope migration phases respect dependency chain: Phase N unblocks Phase N+1
+- Sprint 21 stays focused on collector owner work — one coherent deliverable
+
+---
+
 ## 2026-04-20 — Scope-to-Role Migration: GitHub Issues Created
 
 **Status:** ✅ COMPLETE (Issue Triage & Creation)
@@ -282,3 +310,24 @@ All architectural choices documented in decisions.md with full context and ratio
 ---
 
 *See history-archive.md for prior work.*
+
+## 2026-04-20 — Sprint 21 Kickoff & Milestone Planning (Updated)
+
+**Status:** ✅ COMPLETE (Sprint Planning + Orchestration)
+
+### Outcome Summary (Session: Sprint 21 Kickoff)
+- ✅ **Milestones finalized:** Sprint 21 (3 issues), Sprint 22-24 (7 issues across phases)
+- ✅ **Trinity deliverable:** Collector owner threading implementation (#760, #761)
+- ✅ **Tank deliverable:** Regression coverage for #762 with fail-closed + happy-path tests
+- ✅ **Bootstrap blocker:** data-seed.sql needs owner-bearing source records alignment
+
+### Orchestration Log
+- Generated: .squad/orchestration-log/2026-04-20T18-39-46Z-neo.md
+- Session Log: .squad/log/2026-04-20T18-39-46Z-sprint-21-kickoff.md
+- Decisions merged: 4 inbox files → decisions.md (neo-sprint21-milestone-plan, trinity-collector-owner-bootstrap-blocker, tank-762-regression-coverage, copilot-directive)
+
+### Next Phase
+- Sprint 21 execution: Trinity (#760, #761), Tank (#762), Neo review support
+- Monitor Trinity merges for regression test suite compliance
+- Bootstrap blocker: Track data-seed.sql alignment before final Sprint 21 close
+

@@ -924,3 +924,62 @@ Before writing any test for a security/ownership feature:
 - Link's retro proposal (decisions.md) identifies pre-submission validation as highest-priority guardrail
 - Recommend: pre-push hook validating dotnet test pass; coordinator gate requiring confirmation of test pass before Tank spawn
 - Cost savings: ~1,000 tokens per avoided re-review cycle
+
+## Learnings
+
+25. **Collector owner threading needs two assertions, not one.** For the Round 1 ownership collectors, one test should prove the Function resolves owner OID from `GetCollectorOwnerOidAsync(...)` and passes that exact value into the reader, and a second test should prove `SaveAsync(...)` receives records whose `CreatedByEntraOid` stays non-empty. The key files are `src\JosephGuadagno.Broadcasting.Functions.Tests\Collectors\LoadNewPostsTests.cs`, `LoadAllPostsTests.cs`, `LoadNewVideosTests.cs`, and `LoadAllVideosTests.cs`.
+
+26. **Owner-aware reader interfaces require test-suite follow-through.** Once `ISyndicationFeedReader` and `IYouTubeReader` expose only owner-aware overloads, even manually skipped integration tests must compile against the owner-aware signatures or repo-wide builds fail. The follow-through files are `src\JosephGuadagno.Broadcasting.SyndicationFeedReader.IntegrationTests\SyndicationFeedReaderTests.cs` and `src\JosephGuadagno.Broadcasting.YouTubeReader.IntegrationTests\YouTubeReaderTests.cs`.
+
+## 2026-04-20 — Sprint 21 Kickoff: Collector Owner Regression Coverage (Updated)
+
+**Status:** ✅ COMPLETE (Test Implementation + Orchestration)
+
+### Outcome Summary (Session: Sprint 21 Kickoff)
+- ✅ **Test scope locked:** Fail-closed + happy-path coverage for #762
+- ✅ **Regression suite:** 8 test files covering collector owner threading
+- ✅ **Reader integration alignment:** Updated manually skipped tests to owner-aware overloads
+- ✅ **Bootstrap aware:** Tests properly documented for data-seed.sql alignment requirement
+- ✅ **Buildable state:** All Trinity + Tank changes integrated; repo builds green
+
+### Regression Coverage Scope
+1. **Collector owner threading (happy path)**
+   - LoadNewPosts: Stub GetCollectorOwnerOidAsync(), verify reader receives exact owner OID
+   - LoadAllPosts: Same verification pattern
+   - LoadNewVideos: YouTube syndication owner threading
+   - LoadAllVideos: Persist non-empty CreatedByEntraOid verification
+
+2. **Fail-closed path (no owner-bearing source)**
+   - Collector returns failure result
+   - Reader is never called
+
+3. **Reader integration alignment**
+   - SyndicationFeedReader.IntegrationTests: Updated to owner-aware overloads
+   - YouTubeReader.IntegrationTests: Updated to owner-aware overloads
+
+### Test Suite Files Modified
+- src\JosephGuadagno.Broadcasting.Functions.Tests\Collectors\LoadNewPostsTests.cs
+- src\JosephGuadagno.Broadcasting.Functions.Tests\Collectors\LoadAllPostsTests.cs
+- src\JosephGuadagno.Broadcasting.Functions.Tests\Collectors\LoadNewVideosTests.cs
+- src\JosephGuadagno.Broadcasting.Functions.Tests\Collectors\LoadAllVideosTests.cs
+- src\JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests\SyndicationFeedReaderOfflineTests.cs
+- src\JosephGuadagno.Broadcasting.YouTubeReader.Tests\YouTubeReaderFetchTests.cs
+- src\JosephGuadagno.Broadcasting.SyndicationFeedReader.IntegrationTests\SyndicationFeedReaderTests.cs
+- src\JosephGuadagno.Broadcasting.YouTubeReader.IntegrationTests\YouTubeReaderTests.cs
+
+### Deliverables
+- Test implementation: All 8 files with Sprint 21 regression coverage
+- Decisions: .squad/decisions/inbox/tank-762-regression-coverage.md (merged to decisions.md)
+- Orchestration log: .squad/orchestration-log/2026-04-20T18-39-46Z-tank.md
+- Session log: .squad/log/2026-04-20T18-39-46Z-sprint-21-kickoff.md
+
+### Key Awareness
+- Bootstrap blocker: data-seed.sql currently seeds rows without CreatedByEntraOid
+- Test setup may require manual source-record backfill or fixture data for happy-path verification
+- All tests pass in buildable state; integration with Trinity's changes confirmed
+
+### Next Steps
+- Sprint 21 execution phase: Monitor test suite stability during Trinity's implementation merges
+- Coordinate bootstrap data alignment when data-seed.sql updated
+- Neo provides architecture review support during merge phase
+

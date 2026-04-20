@@ -17085,3 +17085,140 @@ Issue 5: [Phase 4] Update Entra app registration (ops)
 
 **Decision point for Issue 1:** Should `EntraClaimsTransformation` be extracted to a shared project (e.g., `Domain` or a new `Infrastructure` project), or duplicated in the API? Recommendation: extract to `Domain` or `Managers` since it depends only on `IUserApprovalManager` which is already in `Domain.Interfaces`.
 
+
+---
+
+# Decision: Sprint 21 Milestone Plan & Scope Migration Scheduling
+
+**Date:** 2026-04-20  
+**Author:** Neo  
+**Status:** Approved & Applied
+
+## Context
+
+Sprint 21 was created with #760 and #762 assigned. Issue #761 was incorrectly assigned to Sprint 20. Additionally, 7 scope-to-role migration issues (#763–#769) needed milestone assignments to avoid cluttering Sprint 21.
+
+## Decision
+
+### Sprint 21 — Collector Owner OID (Active)
+Focus: Close Round 1 #609 ownership gaps in Functions collector flow.
+
+| Issue | Title |
+|---|---|
+| #760 | Source collector owner OID from collector records |
+| #761 | Remove empty-owner reader scaffolding |
+| #762 | Add regression coverage for collector owner threading |
+
+**Change:** Moved #761 from Sprint 20 → Sprint 21 (it belongs with the collector owner work).
+
+### Scope-to-Role Migration (Future Sprints)
+
+Created 3 new milestones and assigned the 7 migration issues based on dependency order:
+
+| Sprint | Phase | Issues | Description |
+|---|---|---|---|
+| Sprint 22 | Phase 0 | #763, #764 | Foundation: Extract EntraClaimsTransformation + add role policies |
+| Sprint 23 | Phases 1-2 | #765, #766 | Replace 37 scope checks + migrate 90+ test references |
+| Sprint 24 | Phases 3-4 | #767, #768, #769 | Remove scope constants + Entra portal cleanup |
+
+## Rationale
+
+1. **Sprint 21 stays focused** on collector owner work — one coherent deliverable.
+2. **Scope migration is sequenced** by dependency chain: Phase 0 unblocks Phase 1, Phase 1 unblocks Phase 2, etc.
+3. **Milestones are source of truth** for sprint planning per user directive.
+
+## Actions Taken
+
+- ✅ Moved #761 to Sprint 21 milestone
+- ✅ Created Sprint 22 milestone (Phase 0)
+- ✅ Created Sprint 23 milestone (Phases 1-2)
+- ✅ Created Sprint 24 milestone (Phases 3-4)
+- ✅ Assigned #763–#769 to appropriate milestones
+- ✅ Updated .squad/identity/now.md with new focus
+
+---
+
+# Decision: Collector owner resolution now fails closed and needs explicit missing-owner coverage
+
+**Date:** 2026-04-20  
+**Author:** Trinity  
+**Related Issues:** #760, #761, #762, #609
+
+## Decision
+
+Round 1 collector ownership now resolves from persisted source records and **does not** fall back to Settings.OwnerEntraOid. If no source record yields a non-empty owner OID, the collector returns a failure result instead of creating ownerless content.
+
+## Why
+
+This closes the remaining Round 1 ownership gap: persisted syndication and YouTube records must carry a real CreatedByEntraOid. Silent fallback or empty-string stamping would reintroduce the same defect under a different code path.
+
+## Test-plan impact for Tank
+
+Tank should add regression coverage for both:
+
+1. **Happy path:** collector resolves owner OID from persisted source records and passes it to the reader.
+2. **Fail-closed path:** collector returns failure and does not call the reader when no owner-bearing source record exists.
+
+## Blocker noted
+
+scripts/database/data-seed.sql still seeds source rows without CreatedByEntraOid, while current source-table schema expects owner-bearing rows. Until SQL bootstrap is aligned, tests that rely on a fresh seeded database should not assume collector happy paths can resolve an owner without additional setup/backfill.
+
+---
+
+# Decision: Lock collector owner threading with source-manager and reader regression tests
+
+## Context
+
+Issue #762 asked for Sprint 21 regression coverage around the Round 1 #609 ownership gap. During implementation, the current code shape already included collector owner resolution through GetCollectorOwnerOidAsync(...) and CollectorOwnerOidResolver, but the regression suite did not yet prove two critical points: the collectors actually pass the resolved owner into the readers, and the persisted records created by that path do not carry empty owner OIDs.
+
+## Decision
+
+Add focused tests in the Functions collector suites that:
+
+1. stub GetCollectorOwnerOidAsync(...) with a distinct owner OID and verify the matching reader call uses that exact value; and
+2. verify SaveAsync(...) receives newly materialized syndication/video records with a non-empty CreatedByEntraOid.
+
+Also update the manually skipped reader integration tests to call the owner-aware overloads so the repo build stays green now that the interfaces require ownerOid.
+
+## Impact
+
+- Covers syndication and YouTube collector owner threading in both LoadNew* and LoadAll* paths.
+- Covers non-empty persisted ownership in the affected Round 1 collector save path.
+- Keeps the solution buildable while Trinity's ownership changes are in-tree.
+
+## Files
+
+- src\JosephGuadagno.Broadcasting.Functions.Tests\Collectors\LoadNewPostsTests.cs
+- src\JosephGuadagno.Broadcasting.Functions.Tests\Collectors\LoadAllPostsTests.cs
+- src\JosephGuadagno.Broadcasting.Functions.Tests\Collectors\LoadNewVideosTests.cs
+- src\JosephGuadagno.Broadcasting.Functions.Tests\Collectors\LoadAllVideosTests.cs
+- src\JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests\SyndicationFeedReaderOfflineTests.cs
+- src\JosephGuadagno.Broadcasting.YouTubeReader.Tests\YouTubeReaderFetchTests.cs
+- src\JosephGuadagno.Broadcasting.SyndicationFeedReader.IntegrationTests\SyndicationFeedReaderTests.cs
+- src\JosephGuadagno.Broadcasting.YouTubeReader.IntegrationTests\YouTubeReaderTests.cs
+
+---
+
+# Decision: User directive — Milestones as source of truth
+
+**Date:** 2026-04-20  
+**Timestamp:** 2026-04-20T11:12:58.467-07:00  
+**By:** Copilot  
+**Topic:** Sprint 21 kickoff and team process update
+
+## Decision
+
+**We are using milestones now for sprint work.**
+
+This user request replaces label-based sprint planning with GitHub milestone-based sprint planning. Milestones are the source of truth for sprint boundaries and issue scope.
+
+## Rationale
+
+User request — captured for team memory and future sprint planning decisions.
+
+## Impact
+
+- Scribe and coordinators reference .squad/identity/now.md for active sprint milestone name
+- Issue assignment to future sprints uses milestone assignment, not label assignment
+- Scope migration phases (#763–#769) scheduled across dedicated milestones to prevent Sprint 21 clutter
+

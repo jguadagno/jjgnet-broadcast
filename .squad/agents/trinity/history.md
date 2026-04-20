@@ -829,3 +829,58 @@ Real #708 failure was not duplicate submit, but API response generation failure 
 
 **Epic Status:**
 Feature-complete and production-ready. All sub-issues (#725–#731) delivered.
+
+## Learnings - Sprint 21 Collector Owner OID Closeout (2026-04-20)
+
+**Status:** ✅ IMPLEMENTATION COMPLETE
+
+**Backend Decisions:**
+- Collector owner resolution now fails closed in Functions instead of falling back to `Settings.OwnerEntraOid`.
+- `LoadNewPosts`, `LoadAllPosts`, `LoadNewVideos`, and `LoadAllVideos` now resolve owner OID from existing persisted source records through `GetCollectorOwnerOidAsync`.
+- `SyndicationFeedReader` and `YouTubeReader` now require a non-empty owner OID on every content-materialization path used for persistence.
+
+**Patterns Established:**
+- For background collectors with no authenticated user, resolve ownership from an existing persisted source/config record, then thread that OID into the reader.
+- Reader APIs that construct persistable domain models should fail fast on blank owner OIDs instead of creating ownerless records.
+- A small manager/data-store helper (`GetCollectorOwnerOidAsync`) is enough to bridge Round 1 ownership without broadening into OAuth/runtime token work.
+
+**Key File Paths:**
+- `src/JosephGuadagno.Broadcasting.Functions/Collectors/CollectorOwnerOidResolver.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/Collectors/SyndicationFeed/LoadNewPosts.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/Collectors/SyndicationFeed/LoadAllPosts.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/Collectors/YouTube/LoadNewVideos.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/Collectors/YouTube/LoadAllVideos.cs`
+- `src/JosephGuadagno.Broadcasting.SyndicationFeedReader/SyndicationFeedReader.cs`
+- `src/JosephGuadagno.Broadcasting.YouTubeReader/YouTubeReader.cs`
+
+**Testing Note:**
+- Fresh-environment collector happy paths still depend on source rows already carrying `CreatedByEntraOid`; `scripts/database/data-seed.sql` does not currently seed that column for source tables, so fail-closed coverage matters until SQL bootstrap is aligned.
+
+## 2026-04-20 — Sprint 21 Kickoff: Collector Owner OID Implementation (Updated)
+
+**Status:** ✅ COMPLETE (Implementation + Orchestration)
+
+### Outcome Summary (Session: Sprint 21 Kickoff)
+- ✅ **Implemented #760/#761:** Collector owner OID resolution from persisted source records
+- ✅ **Removed fallback paths:** No more Settings.OwnerEntraOid or empty-string persistence
+- ✅ **Fail-closed design:** Collectors return failure when no owner-bearing source record exists
+- ✅ **Test-plan coordination:** Provided Tank with explicit fail-closed + happy-path coverage requirements
+- ✅ **Bootstrap blocker identified:** scripts/database/data-seed.sql needs owner-bearing source records
+
+### Critical Design Decisions
+1. **Ownership resolution priority:** Persisted source record → no fallback → return failure
+2. **Persistence guarantee:** All collector persistence paths require non-empty CreatedByEntraOid
+3. **Test coverage expectation:** Regression tests must verify both happy path and fail-closed behavior
+4. **Bootstrap alignment:** SQL seed data must provide owner-bearing rows before tests assume happy paths
+
+### Deliverables
+- Implementation: #760 collector owner sourcing + #761 scaffold removal
+- Decisions: .squad/decisions/inbox/trinity-collector-owner-bootstrap-blocker.md (merged to decisions.md)
+- Skill document: .squad/skills/collector-owner-oid-resolution/SKILL.md
+- Orchestration log: .squad/orchestration-log/2026-04-20T18-39-46Z-trinity.md
+
+### Next Steps
+- Monitor Tank's regression test implementation for fail-closed path coverage
+- Coordinate bootstrap data alignment with SQL team before Sprint 21 close
+- Support Neo's architecture review during Tank's test merges
+
