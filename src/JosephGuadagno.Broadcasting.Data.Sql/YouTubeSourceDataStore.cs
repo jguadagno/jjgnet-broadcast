@@ -154,6 +154,18 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
         return dbYouTubeSource is null ? null : mapper.Map<Domain.Models.YouTubeSource>(dbYouTubeSource);
     }
 
+    public async Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default)
+    {
+        var ownerOid = await broadcastingContext.YouTubeSources
+            .AsNoTracking()
+            .Where(source => source.CreatedByEntraOid != string.Empty)
+            .OrderByDescending(source => source.LastUpdatedOn)
+            .Select(source => source.CreatedByEntraOid)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return string.IsNullOrWhiteSpace(ownerOid) ? null : ownerOid;
+    }
+
     private async Task ExecuteWithOptionalTransactionAsync(Func<Task> operation, CancellationToken cancellationToken)
     {
         if (broadcastingContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
