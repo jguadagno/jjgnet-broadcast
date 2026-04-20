@@ -2,19 +2,36 @@
 
 ## Learnings
 
-### 2026-04-20 — PR #770 / Issue #761: Scope Boundary for Settings Scaffold
-**Status:** ✅ COMPLETE & BUILD FIXED
+### 2026-04-19 — Epic #609: Multi-Tenancy First-Round Audit
+**Status:** ✅ COMPLETE — Audit Report Filed
 
-**Task:** Repair PR #770 so the issue #761 branch builds independently against `main`.
+**Task:** Audit the actual implementation for the first-round Multi-Tenancy work under epic #609 to ensure all decomposed scope was completed.
 
-**Changes Made:**
-1. Restored `OwnerEntraOid` on `src\JosephGuadagno.Broadcasting.Functions\Interfaces\ISettings.cs`
-2. Restored `OwnerEntraOid` on `src\JosephGuadagno.Broadcasting.Functions\Models\Settings.cs`
-3. Left the reader overload cleanup intact in the reader projects; only removed the accidental cross-PR dependency
+**Audit Scope:**
+- Ownership columns and backfill for missing tables
+- Data-store filtering by CreatedByEntraOid
+- Owner OID threading through managers/business logic
+- Owner isolation in API and Web layers
+- Per-user publisher settings support
+- Implementation gaps and test coverage
 
-**Key Decision:** The temporary Functions settings scaffold stays in issue #761 until issue #760 lands the collector-side owner resolution. Removing the scaffold earlier breaks the collectors on `main` and violates one-PR-per-issue isolation.
+**Findings:**
+1. **Database Schema:** ✅ All migrations present (add-owner, backfill, user-publisher-settings)
+2. **Domain Models:** ✅ CreatedByEntraOid added as required property to source models and publisher settings
+3. **Data Layer:** ✅ Owner-filtered queries implemented in SyndicationFeedSourceDataStore, YouTubeSourceDataStore, UserPublisherSettingDataStore
+4. **Manager Layer:** ✅ Owner OID properly threaded through managers with overloaded methods
+5. **API Controllers:** ✅ Owner isolation enforced with ownership checks, 403 Forbid on mismatch, and admin bypass
+6. **Web Controllers:** ✅ Ownership verification in Details/Edit/Delete; user-friendly error handling
+7. **Per-User Publisher Settings:** ✅ Full-stack support implemented (table, data store, manager, API, Web controllers)
+8. **Test Coverage:** ⚠️ PARTIAL — API/Web tests complete; data layer owner-filtered query tests appear incomplete
 
-**Validation:** Confirmed the pre-fix repo build failed with CS1061 in the four Functions collectors, then re-ran the Release restore/build and CI-aligned test pass after restoring the property.
+**Known Gaps:**
+- SyndicationFeedSourceDataStoreTests/YouTubeSourceDataStoreTests missing explicit tests for owner-filtered GetAllAsync(ownerOid) overloads
+- Recommendation: Add 3–4 test cases per data store to verify ownership filtering
+
+**Deliverable:** `.squad/agents/trinity/609-audit-report.md` — comprehensive audit with evidence, scope matrix, and recommendations.
+
+**Rationale:** First-round multi-tenancy is feature-complete and production-ready. All decomposed sub-issues (#725–#731) are implemented. Minor test coverage enhancement recommended for data layer validation.
 
 ### 2026-04-17 — Issue #729: API Owner Isolation
 **Status:** ✅ COMPLETE & BUILD VERIFIED — PR #739
@@ -793,3 +810,77 @@ Real #708 failure was not duplicate submit, but API response generation failure 
 **Key Learning:** Exception swallowing is debugging poison. Every exception that might happen in production needs logging before returning a failure indicator. The pattern is: log error with context, then return failure (don't throw, since the contract is OperationResult-based). This gives ops visibility without changing API contracts.
 
 **Decision Filed:** `.squad/decisions/inbox/trinity-713-exception-audit-findings.md`
+
+
+
+## Sprint 20 Conclusion — Epic #609 Final Audit (2026-04-19T15:40:15Z)
+
+**Decision Sources:** Inbox files processed by Scribe
+
+**Audit Report Finalized:**
+- First-round multi-tenancy implementation audit filed (.squad/agents/trinity/609-audit-report.md)
+- Decision inbox entries merged to decisions.md: trinity-609-implementation-audit, neo-609-gap-issues (from Neo, includes Trinity context)
+- Sprint 20 work fully recorded in .squad/orchestration-log/ and .squad/log/
+
+**Known Gaps for Next Sprint:**
+- Data-layer owner-filtering tests incomplete (SyndicationFeedSourceDataStoreTests, YouTubeSourceDataStoreTests)
+- Recommendation: Add 3–4 test cases per data store to verify GetAllAsync(ownerOid) overloads
+- Test pattern available: .squad/skills/mock-overload-resolution/SKILL.md (covers Moq setup updates when manager signatures change)
+
+**Epic Status:**
+Feature-complete and production-ready. All sub-issues (#725–#731) delivered.
+
+## Learnings - Sprint 21 Collector Owner OID Closeout (2026-04-20)
+
+**Status:** ✅ IMPLEMENTATION COMPLETE
+
+**Backend Decisions:**
+- Collector owner resolution now fails closed in Functions instead of falling back to `Settings.OwnerEntraOid`.
+- `LoadNewPosts`, `LoadAllPosts`, `LoadNewVideos`, and `LoadAllVideos` now resolve owner OID from existing persisted source records through `GetCollectorOwnerOidAsync`.
+- `SyndicationFeedReader` and `YouTubeReader` now require a non-empty owner OID on every content-materialization path used for persistence.
+
+**Patterns Established:**
+- For background collectors with no authenticated user, resolve ownership from an existing persisted source/config record, then thread that OID into the reader.
+- Reader APIs that construct persistable domain models should fail fast on blank owner OIDs instead of creating ownerless records.
+- A small manager/data-store helper (`GetCollectorOwnerOidAsync`) is enough to bridge Round 1 ownership without broadening into OAuth/runtime token work.
+
+**Key File Paths:**
+- `src/JosephGuadagno.Broadcasting.Functions/Collectors/CollectorOwnerOidResolver.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/Collectors/SyndicationFeed/LoadNewPosts.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/Collectors/SyndicationFeed/LoadAllPosts.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/Collectors/YouTube/LoadNewVideos.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/Collectors/YouTube/LoadAllVideos.cs`
+- `src/JosephGuadagno.Broadcasting.SyndicationFeedReader/SyndicationFeedReader.cs`
+- `src/JosephGuadagno.Broadcasting.YouTubeReader/YouTubeReader.cs`
+
+**Testing Note:**
+- Fresh-environment collector happy paths still depend on source rows already carrying `CreatedByEntraOid`; `scripts/database/data-seed.sql` does not currently seed that column for source tables, so fail-closed coverage matters until SQL bootstrap is aligned.
+
+## 2026-04-20 — Sprint 21 Kickoff: Collector Owner OID Implementation (Updated)
+
+**Status:** ✅ COMPLETE (Implementation + Orchestration)
+
+### Outcome Summary (Session: Sprint 21 Kickoff)
+- ✅ **Implemented #760/#761:** Collector owner OID resolution from persisted source records
+- ✅ **Removed fallback paths:** No more Settings.OwnerEntraOid or empty-string persistence
+- ✅ **Fail-closed design:** Collectors return failure when no owner-bearing source record exists
+- ✅ **Test-plan coordination:** Provided Tank with explicit fail-closed + happy-path coverage requirements
+- ✅ **Bootstrap blocker identified:** scripts/database/data-seed.sql needs owner-bearing source records
+
+### Critical Design Decisions
+1. **Ownership resolution priority:** Persisted source record → no fallback → return failure
+2. **Persistence guarantee:** All collector persistence paths require non-empty CreatedByEntraOid
+3. **Test coverage expectation:** Regression tests must verify both happy path and fail-closed behavior
+4. **Bootstrap alignment:** SQL seed data must provide owner-bearing rows before tests assume happy paths
+
+### Deliverables
+- Implementation: #760 collector owner sourcing + #761 scaffold removal
+- Decisions: .squad/decisions/inbox/trinity-collector-owner-bootstrap-blocker.md (merged to decisions.md)
+- Skill document: .squad/skills/collector-owner-oid-resolution/SKILL.md
+- Orchestration log: .squad/orchestration-log/2026-04-20T18-39-46Z-trinity.md
+
+### Next Steps
+- Monitor Tank's regression test implementation for fail-closed path coverage
+- Coordinate bootstrap data alignment with SQL team before Sprint 21 close
+- Support Neo's architecture review during Tank's test merges
+
