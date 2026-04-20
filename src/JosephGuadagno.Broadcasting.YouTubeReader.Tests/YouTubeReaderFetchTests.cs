@@ -11,6 +11,8 @@ namespace JosephGuadagno.Broadcasting.YouTubeReader.Tests;
 
 public class YouTubeReaderFetchTests
 {
+    private const string OwnerEntraOid = "owner-entra-oid";
+
     private class QueueMessageHandler : HttpMessageHandler
     {
         private readonly Queue<Func<HttpResponseMessage>> _responses;
@@ -100,7 +102,7 @@ public class YouTubeReaderFetchTests
         var sinceWhen = new DateTimeOffset(2026, 2, 22, 0, 0, 0, TimeSpan.Zero);
 
         // Act
-        var results = await reader.GetAsync(sinceWhen);
+        var results = await reader.GetAsync(OwnerEntraOid, sinceWhen);
 
         // Assert
         Assert.Single(results);
@@ -126,7 +128,7 @@ public class YouTubeReaderFetchTests
         var reader = new YouTubeReader(settings.Object, logger.Object, service);
 
         // Act
-        var results = await reader.GetAsync(DateTimeOffset.UtcNow.AddDays(-10));
+        var results = await reader.GetAsync(OwnerEntraOid, DateTimeOffset.UtcNow.AddDays(-10));
 
         // Assert
         Assert.Empty(results);
@@ -145,7 +147,7 @@ public class YouTubeReaderFetchTests
         var reader = new YouTubeReader(settings.Object, logger.Object, service);
 
         // Act
-        var results = await reader.GetAsync(DateTimeOffset.UtcNow.AddDays(-10));
+        var results = await reader.GetAsync(OwnerEntraOid, DateTimeOffset.UtcNow.AddDays(-10));
 
         // Assert
         Assert.Empty(results);
@@ -162,7 +164,7 @@ public class YouTubeReaderFetchTests
         var reader = new YouTubeReader(settings.Object, logger.Object, service);
 
         // Act & Assert
-        await Assert.ThrowsAsync<HttpRequestException>(() => reader.GetAsync(DateTimeOffset.UtcNow.AddDays(-1)));
+        await Assert.ThrowsAsync<HttpRequestException>(() => reader.GetAsync(OwnerEntraOid, DateTimeOffset.UtcNow.AddDays(-1)));
     }
 
     [Fact]
@@ -178,10 +180,38 @@ public class YouTubeReaderFetchTests
         var reader = new YouTubeReader(settings.Object, logger.Object, service);
 
         // Act
-        var results = reader.GetSinceDate(DateTimeOffset.UtcNow.AddDays(-30));
+        var results = reader.GetSinceDate(OwnerEntraOid, DateTimeOffset.UtcNow.AddDays(-30));
 
         // Assert
         Assert.NotNull(results);
         Assert.Empty(results);
+    }
+
+    [Fact]
+    public async Task GetAsync_WithOwnerOid_ShouldApplyNonEmptyOwnerToEveryItem()
+    {
+        // Arrange
+        var json = "{ \"kind\": \"youtube#playlistItemListResponse\", \"nextPageToken\": null, \"items\": [ { \"kind\": \"youtube#playlistItem\", \"snippet\": { \"publishedAt\": \"2026-02-24T12:00:00Z\", \"title\": \"Owned Video\", \"channelTitle\": \"MyChannel\", \"resourceId\": { \"kind\": \"youtube#video\", \"videoId\": \"owned-vid\" } } } ] }";
+        var page = () => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+
+        var handler = new QueueMessageHandler(new[] { page });
+        var service = BuildService(handler);
+        var settings = CreateSettings();
+        var logger = CreateLogger();
+        var reader = new YouTubeReader(settings.Object, logger.Object, service);
+
+        // Act
+        var results = await reader.GetAsync(OwnerEntraOid, new DateTimeOffset(2026, 2, 22, 0, 0, 0, TimeSpan.Zero));
+
+        // Assert
+        Assert.Single(results);
+        Assert.All(results, item =>
+        {
+            Assert.Equal(OwnerEntraOid, item.CreatedByEntraOid);
+            Assert.False(string.IsNullOrWhiteSpace(item.CreatedByEntraOid));
+        });
     }
 }
