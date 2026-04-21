@@ -30,18 +30,20 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
     {
         try
         {
-            var dbSyndicationFeedSource = mapper.Map<Models.SyndicationFeedSource>(entity);
-            broadcastingContext.Entry(dbSyndicationFeedSource).State =
-                dbSyndicationFeedSource.Id == 0 ? EntityState.Added : EntityState.Modified;
-
-            await broadcastingContext.ExecuteInTransactionIfSupportedAsync(async () =>
+            var sourceId = await broadcastingContext.ExecuteInTransactionIfSupportedAsync(async ct =>
             {
-                await broadcastingContext.SaveChangesAsync(cancellationToken);
-                await SyncSourceTagsAsync(dbSyndicationFeedSource.Id, entity.Tags, cancellationToken);
+                var dbSyndicationFeedSource = mapper.Map<Models.SyndicationFeedSource>(entity);
+                broadcastingContext.Entry(dbSyndicationFeedSource).State =
+                    dbSyndicationFeedSource.Id == 0 ? EntityState.Added : EntityState.Modified;
+
+                await broadcastingContext.SaveChangesAsync(ct);
+                await SyncSourceTagsAsync(dbSyndicationFeedSource.Id, entity.Tags, ct);
+
+                return dbSyndicationFeedSource.Id;
             }, cancellationToken);
 
             var saved = await broadcastingContext.SyndicationFeedSources
-                .FirstOrDefaultAsync(s => s.Id == dbSyndicationFeedSource.Id, cancellationToken);
+                .FirstOrDefaultAsync(s => s.Id == sourceId, cancellationToken);
 
             if (saved is not null)
             {

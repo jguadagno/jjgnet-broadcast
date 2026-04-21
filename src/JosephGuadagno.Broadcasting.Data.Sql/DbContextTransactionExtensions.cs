@@ -9,16 +9,36 @@ internal static class DbContextTransactionExtensions
         this BroadcastingContext context,
         Func<Task> operation,
         CancellationToken cancellationToken)
+        => context.ExecuteInTransactionIfSupportedAsync(
+            _ => operation(),
+            cancellationToken);
+
+    public static Task ExecuteInTransactionIfSupportedAsync(
+        this BroadcastingContext context,
+        Func<CancellationToken, Task> operation,
+        CancellationToken cancellationToken)
+        => context.ExecuteInTransactionIfSupportedAsync(
+            async ct =>
+            {
+                await operation(ct);
+                return true;
+            },
+            cancellationToken);
+
+    public static Task<TResult> ExecuteInTransactionIfSupportedAsync<TResult>(
+        this BroadcastingContext context,
+        Func<CancellationToken, Task<TResult>> operation,
+        CancellationToken cancellationToken)
     {
         if (context.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
         {
-            return operation();
+            return operation(cancellationToken);
         }
 
         return ExecuteInTransactionIfSupportedAsync(
             context.Database.CreateExecutionStrategy(),
             ct => context.Database.BeginTransactionAsync(ct),
-            ct => operation(),
+            operation,
             cancellationToken);
     }
 
@@ -27,15 +47,30 @@ internal static class DbContextTransactionExtensions
         Func<CancellationToken, Task<IDbContextTransaction>> beginTransactionAsync,
         Func<CancellationToken, Task> operation,
         CancellationToken cancellationToken)
+        => ExecuteInTransactionIfSupportedAsync(
+            executionStrategy,
+            beginTransactionAsync,
+            async ct =>
+            {
+                await operation(ct);
+                return true;
+            },
+            cancellationToken);
+
+    internal static Task<TResult> ExecuteInTransactionIfSupportedAsync<TResult>(
+        IExecutionStrategy executionStrategy,
+        Func<CancellationToken, Task<IDbContextTransaction>> beginTransactionAsync,
+        Func<CancellationToken, Task<TResult>> operation,
+        CancellationToken cancellationToken)
     {
-        return executionStrategy.ExecuteAsync<object?, bool>(
+        return executionStrategy.ExecuteAsync<object?, TResult>(
             null,
             async (_, _, ct) =>
             {
                 await using var transaction = await beginTransactionAsync(ct);
-                await operation(ct);
+                var result = await operation(ct);
                 await transaction.CommitAsync(ct);
-                return true;
+                return result;
             },
             null,
             cancellationToken);
