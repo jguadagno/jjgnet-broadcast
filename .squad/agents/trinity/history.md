@@ -889,3 +889,21 @@ Feature-complete and production-ready. All sub-issues (#725–#731) delivered.
 - Coordinate bootstrap data alignment with SQL team before Sprint 21 close
 - Support Neo's architecture review during Tank's test merges
 
+## Learnings - Issue #765 API Controller Policy Migration (2026-04-21)
+
+**Status:** ✅ IMPLEMENTATION COMPLETE
+
+**What changed:**
+- Replaced API controller-level `VerifyUserHasAnyAcceptedScope(...)` checks in `EngagementsController`, `SchedulesController`, `SocialMediaPlatformsController`, `UserPublisherSettingsController`, and `MessageTemplatesController` with action-level `[Authorize(Policy = ...)]` attributes.
+- Kept the class-level `[Authorize]` attributes in place so authentication gating remains unchanged.
+- Left ownership enforcement (`GetOwnerOid`, `IsSiteAdministrator`, per-resource ownership checks) untouched.
+
+**Pattern established:**
+- Map read/list/get endpoints to `RequireViewer`, add/update/modify endpoints to `RequireContributor`, and delete endpoints to `RequireAdministrator`.
+- For Phase 1 controller migrations, add a reflection-based authorization test that asserts each action's expected policy instead of rewriting behavior tests that directly invoke controller methods.
+- Remove `Microsoft.Identity.Web.Resource` and resource scope references from migrated controllers once the method-level policies are in place.
+
+**Validation:**
+- `dotnet restore .\src\`
+- `dotnet build .\src\ --no-restore --configuration Release`
+- `dotnet test .\src\ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"`

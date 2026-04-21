@@ -6,7 +6,6 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Identity.Web.Resource;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers;
 
@@ -65,6 +64,7 @@ public class MessageTemplatesController : ControllerBase
     /// <response code="200">If the call was successful</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
+    [Authorize(Policy = "RequireViewer")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<MessageTemplateResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<MessageTemplateResponse>>> GetAllAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
@@ -73,8 +73,6 @@ public class MessageTemplatesController : ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.List, Domain.Scopes.MessageTemplates.All);
-
         PagedResult<MessageTemplate> result;
         if (IsSiteAdministrator())
         {
@@ -107,13 +105,12 @@ public class MessageTemplatesController : ControllerBase
     /// <response code="404">If the item was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{platform}/{messageType}")]
+    [Authorize(Policy = "RequireViewer")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MessageTemplateResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<MessageTemplateResponse>> GetAsync(string platform, string messageType)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.View, Domain.Scopes.MessageTemplates.All);
-        
         var socialMediaPlatform = await _socialMediaPlatformManager.GetByNameAsync(platform);
         if (socialMediaPlatform is null)
         {
@@ -148,6 +145,7 @@ public class MessageTemplatesController : ControllerBase
     /// <response code="404">If the item was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPut("{platform}/{messageType}")]
+    [Authorize(Policy = "RequireContributor")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MessageTemplateResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -155,8 +153,6 @@ public class MessageTemplatesController : ControllerBase
     public async Task<ActionResult<MessageTemplateResponse>> UpdateAsync(string platform, string messageType,
         [FromBody] MessageTemplateRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.MessageTemplates.Modify, Domain.Scopes.MessageTemplates.All);
-
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("UpdateAsync called with invalid model state");

@@ -4,7 +4,6 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Identity.Web.Resource;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers;
 
@@ -46,12 +45,11 @@ public class SocialMediaPlatformsController : ControllerBase
     /// <response code="200">If the call was successful</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
+    [Authorize(Policy = "RequireViewer")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SocialMediaPlatformResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<SocialMediaPlatformResponse>>> GetAllAsync([FromQuery] bool includeInactive = false)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.SocialMediaPlatforms.List, Domain.Scopes.SocialMediaPlatforms.All);
-
         var platforms = includeInactive
             ? await _socialMediaPlatformManager.GetAllIncludingInactiveAsync()
             : await _socialMediaPlatformManager.GetAllAsync();
@@ -68,13 +66,12 @@ public class SocialMediaPlatformsController : ControllerBase
     /// <response code="404">If the item was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "RequireViewer")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SocialMediaPlatformResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<SocialMediaPlatformResponse>> GetAsync(int id)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.SocialMediaPlatforms.View, Domain.Scopes.SocialMediaPlatforms.All);
-
         var platform = await _socialMediaPlatformManager.GetByIdAsync(id);
         if (platform is null)
         {
@@ -94,13 +91,12 @@ public class SocialMediaPlatformsController : ControllerBase
     /// <response code="400">If the request is invalid</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPost]
+    [Authorize(Policy = "RequireContributor")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(SocialMediaPlatformResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<SocialMediaPlatformResponse>> CreateAsync([FromBody] SocialMediaPlatformRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.SocialMediaPlatforms.Add, Domain.Scopes.SocialMediaPlatforms.All);
-
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("CreateAsync called with invalid model state");
@@ -131,14 +127,13 @@ public class SocialMediaPlatformsController : ControllerBase
     /// <response code="404">If the item was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "RequireContributor")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SocialMediaPlatformResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<SocialMediaPlatformResponse>> UpdateAsync(int id, [FromBody] SocialMediaPlatformRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.SocialMediaPlatforms.Modify, Domain.Scopes.SocialMediaPlatforms.All);
-
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("UpdateAsync called with invalid model state");
@@ -167,13 +162,12 @@ public class SocialMediaPlatformsController : ControllerBase
     /// <response code="404">If the item was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "RequireAdministrator")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DeleteAsync(int id)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.SocialMediaPlatforms.Delete, Domain.Scopes.SocialMediaPlatforms.All);
-
         var deleted = await _socialMediaPlatformManager.DeleteAsync(id);
         if (!deleted)
         {

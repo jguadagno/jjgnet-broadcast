@@ -6,7 +6,6 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Identity.Web.Resource;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers;
 
@@ -57,6 +56,7 @@ public class SchedulesController: ControllerBase
     /// <response code="200">Upon success</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
+    [Authorize(Policy = "RequireViewer")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetScheduledItemsAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
@@ -65,8 +65,6 @@ public class SchedulesController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
-
         PagedResult<ScheduledItem> result;
         if (IsSiteAdministrator())
         {
@@ -99,6 +97,7 @@ public class SchedulesController: ControllerBase
     /// <response code="404">Returned if an <see cref="ScheduledItem"/> was not found for the specified id</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{scheduledItemId:int}")]
+    [Authorize(Policy = "RequireViewer")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScheduledItemResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -106,8 +105,6 @@ public class SchedulesController: ControllerBase
     [ActionName(nameof(GetScheduledItemAsync))]
     public async Task<ActionResult<ScheduledItemResponse>> GetScheduledItemAsync(int scheduledItemId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.View, Domain.Scopes.Schedules.All);
-        
         var item = await _scheduledItemManager.GetAsync(scheduledItemId);
         if (item is null)
             return NotFound();
@@ -129,13 +126,12 @@ public class SchedulesController: ControllerBase
     /// <response code="400">If the data provided failed validation</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPost]
+    [Authorize(Policy = "RequireContributor")]
     [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(ScheduledItemResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ScheduledItemResponse>> CreateScheduledItemAsync(ScheduledItemRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify, Domain.Scopes.Schedules.All);
-
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("CreateScheduledItemAsync called with invalid model state");
@@ -165,13 +161,12 @@ public class SchedulesController: ControllerBase
     /// <response code="400">If the data provided failed validation or the id does not match</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPut("{scheduledItemId:int}")]
+    [Authorize(Policy = "RequireContributor")]
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(ScheduledItemResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ScheduledItemResponse>> UpdateScheduledItemAsync(int scheduledItemId, ScheduledItemRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Modify, Domain.Scopes.Schedules.All);
-
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("UpdateScheduledItemAsync called with invalid model state");
@@ -210,14 +205,13 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If a scheduled item with the specified identifier was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpDelete("{scheduledItemId:int}")]
+    [Authorize(Policy = "RequireAdministrator")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<bool>> DeleteScheduledItemAsync(int scheduledItemId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.Delete, Domain.Scopes.Schedules.All);
-
         var scheduledItem = await _scheduledItemManager.GetAsync(scheduledItemId);
         if (scheduledItem is null)
         {
@@ -250,6 +244,7 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If there are no items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("unsent")]
+    [Authorize(Policy = "RequireViewer")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -259,7 +254,6 @@ public class SchedulesController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UnsentScheduled, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         var result = await _scheduledItemManager.GetUnsentScheduledItemsAsync(page, pageSize);
         if (result.TotalCount == 0)
         {
@@ -287,6 +281,7 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If there are not items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("upcoming")]
+    [Authorize(Policy = "RequireViewer")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -296,7 +291,6 @@ public class SchedulesController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.ScheduledToSend, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         var result = await _scheduledItemManager.GetScheduledItemsToSendAsync(page, pageSize);
         if (result.TotalCount == 0)
         {
@@ -326,6 +320,7 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If there are not items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("calendar/{year:int}/{month:int}")]
+    [Authorize(Policy = "RequireViewer")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -335,7 +330,6 @@ public class SchedulesController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.UpcomingScheduled, Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         var result = await _scheduledItemManager.GetScheduledItemsByCalendarMonthAsync(year, month, page, pageSize);
         if (result.TotalCount == 0)
         {
@@ -363,6 +357,7 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If there are no orphaned scheduled items</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("orphaned")]
+    [Authorize(Policy = "RequireViewer")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -372,7 +367,6 @@ public class SchedulesController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Schedules.List, Domain.Scopes.Schedules.All);
         var result = await _scheduledItemManager.GetOrphanedScheduledItemsAsync(page, pageSize);
         if (result.TotalCount == 0)
         {
