@@ -12204,7 +12204,44 @@ dotnet build --no-incremental
 
 ## Conclusion
 
-**Neo's Suggestion S3 (PR #662):** "Confirm all Function callers migrated to IList<string>? overload"  
+**Neo's Suggestion S3 (PR #662):** "Confirm all Function callers migrated to IList<string>? overload"
+
+
+--- From: neo-pr801-rereview.md ---
+
+## 2026-04-21 — PR #801 Re-Review: Blocked on Process Gates
+
+**Status:** BLOCKED
+
+### Summary
+
+The restored Phase 0 API RBAC implementation is technically sound: the API now
+registers the shared `EntraClaimsTransformation`, mirrors the Web role-policy
+hierarchy, preserves scope-based controller checks for dual enforcement, and
+passes both GitHub checks and local CI-aligned validation. The PR is still not
+ready to merge because two process gates remain open.
+
+### Blocking Findings
+
+1. **Reviewer lockout violation**
+   - PR #801 was previously rejected by Neo.
+   - The new revision was produced by Trinity again.
+   - Under strict reviewer lockout, the rejected artifact must be revised by a
+     different agent for the next cycle.
+
+2. **Branch is stale against `main`**
+   - PR #800 merged the shared-claims extraction into `main`.
+   - PR #801 head `68c75aa` is still behind `main`, so the visible diff still
+     carries already-merged Phase 0 dependency files and stale `.squad/`
+     history drift.
+   - Refresh the branch against `main`, resolve the history drift, and rerun
+     validation on the updated head before asking for merge clearance.
+
+### Outcome
+
+PR #801 is **BLOCKED** for this review cycle. Reassign the revision to a
+non-Trinity agent, refresh the branch on top of current `main`, rerun checks,
+and return for Neo review.  
 **Trinity's Verdict:** ✅ VERIFIED — All callers correctly migrated via type system enforcement
 
 **Actions Taken:**
