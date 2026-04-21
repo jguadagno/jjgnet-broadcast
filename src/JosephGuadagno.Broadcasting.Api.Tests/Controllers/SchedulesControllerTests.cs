@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
 using JosephGuadagno.Broadcasting.Domain;
-using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -34,11 +33,11 @@ public class SchedulesControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private SchedulesController CreateSut(string roleName = RoleNames.Contributor, string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
+    private SchedulesController CreateSut(string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
     {
         var controller = new SchedulesController(_scheduledItemManagerMock.Object, _loggerMock.Object, _mapper)
         {
-            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(roleName, ownerOid, isSiteAdmin),
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
@@ -333,7 +332,7 @@ public class SchedulesControllerTests
     {
         // Arrange
         // The controller now fetches the item first (ownership check).  When GetAsync
-        // returns null it short-circuits with NotFound — DeleteAsync is never invoked.
+        // returns null it short-circuits with NotFound ΓÇö DeleteAsync is never invoked.
         _scheduledItemManagerMock.Setup(m => m.GetAsync(99)).Returns(Task.FromResult<ScheduledItem?>(null));
 
         var sut = CreateSut();
@@ -348,7 +347,7 @@ public class SchedulesControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // Security: non-owner → 403 ForbidResult
+    // Security: non-owner ΓåÆ 403 ForbidResult
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -405,7 +404,7 @@ public class SchedulesControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // Security: SiteAdmin list → unfiltered GetAll
+    // Security: SiteAdmin list ΓåÆ unfiltered GetAll
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -427,11 +426,11 @@ public class SchedulesControllerTests
         result.Value.Should().NotBeNull();
         result.Value!.TotalCount.Should().Be(1);
 
-        // Unfiltered overload must be invoked exactly once …
+        // Unfiltered overload must be invoked exactly once ΓÇª
         _scheduledItemManagerMock.Verify(
             m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()),
             Times.Once);
-        // … and the owner-filtered overload must never be called.
+        // ΓÇª and the owner-filtered overload must never be called.
         _scheduledItemManagerMock.Verify(
             m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()),
             Times.Never);

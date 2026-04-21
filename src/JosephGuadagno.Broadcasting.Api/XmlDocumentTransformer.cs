@@ -1,4 +1,3 @@
-using JosephGuadagno.Broadcasting.Api.Models;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
 using Microsoft.AspNetCore.OpenApi;
@@ -10,11 +9,10 @@ namespace JosephGuadagno.Broadcasting.Api;
 /// <summary>
 /// Transforms OpenAPI document to include XML documentation comments.
 /// </summary>
-public sealed class XmlDocumentTransformer(IOptions<Settings> settingsOptions, IOptions<AzureAdSettings> azureAdSettingsOptions) : IOpenApiDocumentTransformer
+public sealed class XmlDocumentTransformer(IOptions<AzureAdSettings> azureAdSettingsOptions) : IOpenApiDocumentTransformer
 {
     public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
-        var settings = settingsOptions.Value;
         var azureAdSettings = azureAdSettingsOptions.Value;
         // Set document metadata
         document.Info = new OpenApiInfo()
@@ -32,11 +30,8 @@ public sealed class XmlDocumentTransformer(IOptions<Settings> settingsOptions, I
         };
 
         var authority = $"{azureAdSettings.Instance}/{azureAdSettings.TenantId}";
-        var audience = settings.ApiScopeUrl;
         var schemaKey = "OAuth2"; // This name is used as a key and could be anything as long as you are consistent.
-
-        var scopes = Domain.Scopes.ToDictionary(audience);
-        scopes.Add($"{audience}user_impersonation", "Access application on user behalf");
+        var scopes = GetApiScopes(azureAdSettings.ClientId);
 
         var securitySchemes = new Dictionary<string, IOpenApiSecurityScheme>
         {
@@ -67,5 +62,19 @@ public sealed class XmlDocumentTransformer(IOptions<Settings> settingsOptions, I
         document.Security = [securityRequirement];
 
         return Task.CompletedTask;
+    }
+
+    private static Dictionary<string, string> GetApiScopes(string? clientId)
+    {
+        if (string.IsNullOrWhiteSpace(clientId))
+        {
+            return [];
+        }
+
+        var accessAsUserScope = $"api://{clientId}/access_as_user";
+        return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            [accessAsUserScope] = "Access the Broadcasting API as the signed-in user"
+        };
     }
 }

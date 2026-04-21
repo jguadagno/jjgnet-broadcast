@@ -56,7 +56,7 @@ public class ApiAuthorizationServiceCollectionExtensionsTests
     public async Task AddBroadcastingApiAuthorization_ClaimsTransformation_AddsRoleClaimsWithoutDroppingScopeClaims()
     {
         const string entraObjectId = "entra-oid-12345";
-        const string scopeValue = "scope-value-under-test";
+        const string scopeValue = "api://test-client/access_as_user";
         var approvedUser = new ApplicationUser
         {
             Id = 42,
