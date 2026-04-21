@@ -378,6 +378,11 @@ Response:
 - **Task:** CRUD endpoints for SocialMediaPlatforms and EngagementSocialMediaPlatforms; DTOs and AutoMapper profiles
 - **Dependency:** Morpheus DB work must complete first (blocked on Joseph's architecture answers)
 - **Status:** 🔴 BLOCKED — waiting on Morpheus
+
+### 2026-04-21 — Issue #763: Shared claims transformation build fix
+- Extracting `EntraClaimsTransformation` into `src\JosephGuadagno.Broadcasting.Managers\` requires the Managers project to carry `<FrameworkReference Include="Microsoft.AspNetCore.App" />`, because `IClaimsTransformation` lives in ASP.NET Core auth abstractions and CI will fail without that framework reference.
+- Once the shared Managers implementation exists, the old host-local copy in `src\JosephGuadagno.Broadcasting.Web\EntraClaimsTransformation.cs` must be removed; otherwise `Program.cs` sees ambiguous `EntraClaimsTransformation` types between Web and Managers.
+- Web-side tests that exercise the shared transformer should import `JosephGuadagno.Broadcasting.Managers` explicitly. Key files for this pattern: `src\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj`, `src\JosephGuadagno.Broadcasting.Managers\EntraClaimsTransformation.cs`, `src\JosephGuadagno.Broadcasting.Web.Tests\EntraClaimsTransformationTests.cs`.
 - **Triage source:** Neo (issue #667)
 
 
