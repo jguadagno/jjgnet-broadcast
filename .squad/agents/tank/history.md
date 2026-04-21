@@ -983,18 +983,3 @@ Before writing any test for a security/ownership feature:
 - Coordinate bootstrap data alignment when data-seed.sql updated
 - Neo provides architecture review support during merge phase
 
-
-## 2026-04-21 — Issue #766: API Role-Claim Test Migration
-
-**Status:** ✅ COMPLETE  
-**Branch:** `issue-766-api-test-role-claims`
-
-### Outcome
-- Migrated API controller test helpers from scope claims to role claims.
-- Removed the phase-1 scope constant references from API controller tests and aligned helper usage with the role/policy model from #764/#765.
-- Verified `JosephGuadagno.Broadcasting.Api.Tests` and the repo-wide Release test pass both stayed green.
-
-## Learnings
-- API controller unit tests now rely on `src\JosephGuadagno.Broadcasting.Api.Tests\Helpers\ApiControllerTestHelpers.cs` to seed `ClaimTypes.Role` plus `ApplicationClaimTypes.EntraObjectId`; scope claims are no longer the default controller-test setup.
-- For the phase-2 migration, the touchpoints were the API controller suites under `src\JosephGuadagno.Broadcasting.Api.Tests\Controllers\` plus `src\JosephGuadagno.Broadcasting.Api.Tests\Infrastructure\ApiAuthorizationServiceCollectionExtensionsTests.cs` for the remaining scope-preservation assertion.
-- When doing broad auth-fixture replacements, re-check invalid-model tests immediately: several controller tests depend on explicit `ModelState.AddModelError(...)` setup, and losing that setup changes failures from `BadRequest` to `NotFound`/500 quickly.
