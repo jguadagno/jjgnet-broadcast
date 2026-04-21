@@ -2,22 +2,6 @@
 
 ## Learnings
 
-### 2026-04-21 — PR #801 Revision: API RBAC Phase 0 Restored
-**Status:** ✅ COMPLETE — shared API auth foundation restored and verified
-
-**What changed:**
-- Restored the canonical `EntraClaimsTransformation` into `src\JosephGuadagno.Broadcasting.Managers\EntraClaimsTransformation.cs` and added the required `Microsoft.AspNetCore.App` framework reference in `src\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj`.
-- Added `src\JosephGuadagno.Broadcasting.Api\Infrastructure\ApiAuthorizationServiceCollectionExtensions.cs` so `Program.cs` can register the shared claims transformer plus the four hierarchical Phase 0 role policies through one API-specific extension.
-- Added `src\JosephGuadagno.Broadcasting.Api.Tests\Infrastructure\ApiAuthorizationServiceCollectionExtensionsTests.cs` to verify DI registration, policy role chains, and a smoke-level transformation that preserves the original `scp` scope claim.
-- Added `src\JosephGuadagno.Broadcasting.Api\Properties\AssemblyInfo.cs` so API internals remain testable, and cleaned `SocialMediaPlatformsControllerTests` to reuse `ApiControllerTestHelpers`.
-
-**Validation:**
-- `dotnet restore .\src\`
-- `dotnet build .\src\ --no-restore --configuration Release`
-- `dotnet test .\src\ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"`
-
-**Pattern:** For Phase 0 scope-to-role work, keep controller scope checks intact and prove the new RBAC foundation at the DI layer with infrastructure tests.
-
 ### 2026-04-19 — Epic #609: Multi-Tenancy First-Round Audit
 **Status:** ✅ COMPLETE — Audit Report Filed
 
