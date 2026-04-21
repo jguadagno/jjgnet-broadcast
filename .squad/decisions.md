@@ -17398,3 +17398,62 @@ This is the third violation. The directive exists in .squad/routing.md and was r
 - **Blocked:** Cross-issue payload; changes src\JosephGuadagno.Broadcasting.Web\appsettings.Development.json even though this PR is collector regression coverage only
 - **Follow-up:** After #771 merges, retarget #772 to new base and remove unrelated Web config drift before merge
 
+---
+
+## Decision: Bootstrap Owner OID Seed for Issue #760
+
+**Date:** 2026-04-20  
+**Agent:** Morpheus  
+
+PR #771 resolves collector ownership by reading the newest persisted source record owner OID and failing closed when no owner can be found. On a fresh database, the base seed script created source rows but did not assign any owner OID values, leaving the new resolver without a bootstrap path.
+
+### Decision
+
+Use one seed-script variable near the top of `scripts/database/data-seed.sql` as the single source of truth for seeded ownership:
+
+```sql
+DECLARE @SeededOwnerEntraOid nvarchar(36) = N'00000000-0000-0000-0000-000000000000';
+```
+
+Add a TODO comment directly above it telling operators to replace the placeholder with a real Entra object ID when they want seeded ownership to map to a real user. Reuse that variable everywhere the bootstrap seed creates owner-aware records.
+
+### Why
+
+1. **Fresh-database bootstrap must succeed.** `SyndicationFeedSources` and `YouTubeSources` now require a usable owner path for fail-closed collector resolution.
+2. **One replacement point beats scattered literals.** Operators can update one obvious value instead of hunting through hundreds of seed rows.
+3. **Scope stays narrow.** This fixes the clean-environment gap without changing resolver behavior, schema-loading order, or introducing migrations.
+
+### Consequences
+
+- Fresh environments get deterministic seeded ownership immediately.
+- Operators still need to replace the placeholder GUID with a real Entra object ID when they want seeded records to belong to a real user.
+- Future seed additions to owner-aware tables should reuse `@SeededOwnerEntraOid` instead of embedding a new literal.
+
+---
+
+## Decision: Restore API RBAC Phase 0 as Host Wiring plus Infrastructure Tests
+
+**Date:** 2026-04-21  
+**Agent:** Trinity  
+**PR:** #801  
+**Issue:** #764  
+**Status:** Implemented
+
+PR #801 had lost its product implementation and only preserved a skill artifact. Sprint 22 Phase 0 for issue #764 is intentionally additive: the API needs shared claims transformation and hierarchical role policies without removing the existing scope checks yet.
+
+### Decision
+
+Restore Phase 0 by moving the canonical `EntraClaimsTransformation` into Managers, registering it from the API through `AddBroadcastingApiAuthorization()`, and verifying that registration with infrastructure tests instead of controller rewrites.
+
+### Why
+
+- Phase 0 should not change controller authorization behavior beyond adding the host foundation.
+- Existing `VerifyUserHasAnyAcceptedScope(...)` calls stay in place for deliberate dual enforcement.
+- A small API infrastructure extension keeps `Program.cs` thin and gives tests one real seam to validate.
+
+### Consequences
+
+- API and Web now consume the same claims-transformation implementation.
+- PR #801 now matches the intended acceptance criteria for issue #764.
+- Later scope-to-role phases can update controller policies without revisiting DI setup.
+

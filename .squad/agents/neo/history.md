@@ -275,3 +275,62 @@ Session logs and orchestration log recorded.
 - Enforce the same single-issue rule in both places: local hooks for fast feedback, CI metadata validation for merge protection.
 - Branch names now standardize on `issue-<number>-<slug>` or `feature/<number>-<slug>` so the issue number is machine-readable.
 - PR titles must use `<type>(#<issue>): <summary>` and the PR body must carry exactly one matching closing issue reference.
+
+---
+
+## 2026-04-21 — PR #801 Revision: API RBAC Phase 0 Restored (Awaiting Re-Review)
+
+**Status:** ✅ COMPLETE (Trinity Implementation + Validation) | ⏳ PENDING (Neo Re-Review)  
+**Issue:** #764 (API RBAC Phase 0)  
+**Branch:** `issue-764-api-rbac`  
+**Dependency:** PR #800 merged
+
+### Context
+
+PR #801 had been rejected because it lost its product implementation and only preserved a skill artifact. The acceptance criteria for issue #764 required a full Phase 0 MVP: API-side claims transformation registration, role policy wiring, and infrastructure-layer test seams.
+
+### Trinity's Restoration
+
+**Commit:** 68c75aa  
+**Components Restored:**
+
+1. **API auth registration extension** (`AddBroadcastingApiAuthorization()`)
+   - Thin DI wrapper in `src\.../Api/Authentication/ServiceCollectionExtensions.cs`
+   - Registers `EntraClaimsTransformation` (now from Managers via PR #800 merge)
+   - Keeps `Program.cs` clean
+
+2. **Four hierarchical role policies**
+   - `IsOwner`, `IsModerator`, `IsMember`, `IsGuest`
+   - Matches Web layer pattern
+   - Ready for Phase 1 scope-to-role controller migration
+
+3. **Infrastructure + policy tests**
+   - `ApiAuthenticationTests.cs` — Validates DI registration and claims transformation
+   - `ApiAuthorizationPoliciesTests.cs` — Validates policy enforcement
+   - Public test helpers for reuse
+
+4. **Test helper unification**
+   - Cleaned `SocialMediaPlatformsControllerTests` to reuse `ApiControllerTestHelpers`
+   - Reduced duplication across test projects
+
+5. **PR metadata fixes**
+   - Corrected base branch, target milestone
+   - PR #801 now properly positioned in Sprint 22 Phase 0
+
+### Phase 0 Design Rationale
+
+**Intentionally additive, not disruptive:**
+- Controller-level `VerifyUserHasAnyAcceptedScope(...)` checks **remain in place** for deliberate dual enforcement
+- No controller policy rewrites in Phase 0
+- API gains the host foundation (`EntraClaimsTransformation`, role policies) without changing authorization behavior
+- Later Phase 1-4 will migrate controllers to role-based checks
+
+### Validation
+
+- ✅ `dotnet restore .\src\`
+- ✅ `dotnet build .\src\ --no-restore --configuration Release`
+- ✅ `dotnet test .\src\ --no-build --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"` — All tests pass
+
+### Awaiting
+
+Neo re-review on PR #801 for approval and merge clearance.
