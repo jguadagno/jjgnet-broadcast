@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
 using JosephGuadagno.Broadcasting.Domain;
-using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -55,7 +54,7 @@ public class EngagementsController_PlatformsTests
     // Helpers
     // =========================================================================
 
-    private EngagementsController CreateSut(string roleName = RoleNames.Contributor, string ownerOid = "owner-oid-12345")
+    private EngagementsController CreateSut(string ownerOid = "owner-oid-12345")
     {
         return new EngagementsController(
             _engagementManagerMock.Object,
@@ -63,7 +62,7 @@ public class EngagementsController_PlatformsTests
             _loggerMock.Object,
             _mapper)
         {
-            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(roleName, ownerOid),
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(ownerOid),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
     }
@@ -291,7 +290,7 @@ public class EngagementsController_PlatformsTests
     [Fact]
     public async Task AddPlatformToEngagement_WithNullHandle_ShouldReturn201Created()
     {
-        // Arrange — handle is optional per the domain model
+        // Arrange ΓÇö handle is optional per the domain model
         const int engagementId = 3;
         var request = new EngagementSocialMediaPlatformRequest
         {
@@ -343,7 +342,7 @@ public class EngagementsController_PlatformsTests
     [Fact]
     public async Task AddPlatformToEngagement_WhenDataStoreReturnsNull_ShouldReturn500ProblemDetails()
     {
-        // Arrange — data store signals failure by returning null (e.g. DB constraint violation)
+        // Arrange ΓÇö data store signals failure by returning null (e.g. DB constraint violation)
         var request = new EngagementSocialMediaPlatformRequest
         {
             SocialMediaPlatformId = 2,
@@ -370,7 +369,7 @@ public class EngagementsController_PlatformsTests
     [Fact]
     public async Task AddPlatformToEngagement_WhenDuplicatePlatform_ShouldReturn409ConflictProblemDetails()
     {
-        // Arrange — duplicate is surfaced explicitly from the data store
+        // Arrange ΓÇö duplicate is surfaced explicitly from the data store
         var request = new EngagementSocialMediaPlatformRequest { SocialMediaPlatformId = 2 };
 
         _dataStoreMock
@@ -394,7 +393,7 @@ public class EngagementsController_PlatformsTests
     [Fact]
     public async Task AddPlatformToEngagement_WhenDuplicateAddIsAttempted_ShouldReturn409ConflictOnSecondRequest()
     {
-        // Arrange — Issue #708: first submit succeeds, duplicate follow-up is rejected
+        // Arrange ΓÇö Issue #708: first submit succeeds, duplicate follow-up is rejected
         const int engagementId = 1;
         var request = new EngagementSocialMediaPlatformRequest
         {
@@ -435,7 +434,7 @@ public class EngagementsController_PlatformsTests
     [Fact]
     public async Task AddPlatformToEngagement_ShouldSetEngagementIdFromRoute_NotFromRequest()
     {
-        // Arrange — verify the route engagementId is stamped on the entity, not any request field
+        // Arrange ΓÇö verify the route engagementId is stamped on the entity, not any request field
         const int routeEngagementId = 42;
         var request = new EngagementSocialMediaPlatformRequest
         {
@@ -504,7 +503,7 @@ public class EngagementsController_PlatformsTests
     [Fact]
     public async Task RemovePlatformFromEngagement_ShouldPassBothIdsToDataStore()
     {
-        // Arrange — verify the correct composite key is forwarded to the data store
+        // Arrange ΓÇö verify the correct composite key is forwarded to the data store
         _dataStoreMock
             .Setup(d => d.DeleteAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
@@ -521,7 +520,7 @@ public class EngagementsController_PlatformsTests
     }
 
     // =========================================================================
-    // Data store interaction — verify no cross-contamination between operations
+    // Data store interaction ΓÇö verify no cross-contamination between operations
     // =========================================================================
 
     [Fact]
@@ -580,7 +579,7 @@ public class EngagementsController_PlatformsTests
     }
 
     // =========================================================================
-    // Security: non-owner → 403 ForbidResult (Platforms sub-actions)
+    // Security: non-owner ΓåÆ 403 ForbidResult (Platforms sub-actions)
     // The constructor default mock returns BuildEngagement(id) with OID "owner-oid-12345".
     // Creating the SUT with ownerOid "non-owner-oid-99999" ensures the ownership check fails.
     // =========================================================================

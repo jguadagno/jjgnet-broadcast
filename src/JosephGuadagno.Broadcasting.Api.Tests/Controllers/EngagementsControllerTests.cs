@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
 using JosephGuadagno.Broadcasting.Domain;
-using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -36,11 +35,11 @@ public class EngagementsControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private EngagementsController CreateSut(string roleName = RoleNames.Contributor, string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
+    private EngagementsController CreateSut(string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
     {
         var controller = new EngagementsController(_engagementManagerMock.Object, _engagementSocialMediaPlatformDataStoreMock.Object, _loggerMock.Object, _mapper)
         {
-            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(roleName, ownerOid, isSiteAdmin),
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
@@ -100,7 +99,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
             .ReturnsAsync(new PagedResult<Engagement> { Items = new List<Engagement>(), TotalCount = 0 });
 
-        var sut = CreateSut(roleName: RoleNames.Viewer);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetEngagementsAsync();
@@ -641,7 +640,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.GetTalkAsync(5)).ReturnsAsync(talk);
 
-        var sut = CreateSut(roleName: RoleNames.Viewer);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetTalkAsync(10, 5);
@@ -671,9 +670,9 @@ public class EngagementsControllerTests
     }
 
     [Fact]
-    public async Task GetTalkAsync_WithViewerRole_ReturnsTalk()
+    public async Task GetTalkAsync_WithViewScope_ReturnsTalk()
     {
-        // Arrange - verifies a viewer role can access the read-only talk endpoint.
+        // Arrange - verifies Talks.View (fine-grained) is accepted, not just Talks.All
         var talk = new Talk
         {
             Id = 5,
@@ -688,7 +687,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.GetTalkAsync(5)).ReturnsAsync(talk);
 
-        var sut = CreateSut(roleName: RoleNames.Viewer);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetTalkAsync(10, 5);
@@ -739,7 +738,7 @@ public class EngagementsControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // Security: non-owner → 403 ForbidResult
+    // Security: non-owner ΓåÆ 403 ForbidResult
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -803,7 +802,7 @@ public class EngagementsControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // Security: non-owner → 403 ForbidResult (Talks sub-actions)
+    // Security: non-owner ΓåÆ 403 ForbidResult (Talks sub-actions)
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -915,7 +914,7 @@ public class EngagementsControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // Security: SiteAdmin list → unfiltered GetAll
+    // Security: SiteAdmin list ΓåÆ unfiltered GetAll
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -937,11 +936,11 @@ public class EngagementsControllerTests
         result.Value.Should().NotBeNull();
         result.Value!.TotalCount.Should().Be(1);
 
-        // Unfiltered overload must be invoked exactly once …
+        // Unfiltered overload must be invoked exactly once ΓÇª
         _engagementManagerMock.Verify(
             m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()),
             Times.Once);
-        // … and the owner-filtered overload must never be called.
+        // ΓÇª and the owner-filtered overload must never be called.
         _engagementManagerMock.Verify(
             m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()),
             Times.Never);

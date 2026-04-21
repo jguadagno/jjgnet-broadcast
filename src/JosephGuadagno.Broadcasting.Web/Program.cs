@@ -33,7 +33,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-// Conditionally add Azure Key Vault health check (Web only — Key Vault is not used by the API)
+// Conditionally add Azure Key Vault health check (Web only ΓÇö Key Vault is not used by the API)
 var keyVaultUri = builder.Configuration["KeyVault:vaultUri"];
 if (!string.IsNullOrWhiteSpace(keyVaultUri))
 {
@@ -101,9 +101,11 @@ builder.Services.AddAutoMapper(config =>
 }, typeof(Program));
 
 // Configure Microsoft Identity
-IEnumerable<string>? initialScopes = builder.Configuration.GetSection("DownstreamApis:MicrosoftGraph:Scopes").Get<IEnumerable<string>>();
-IEnumerable<string>? downstreamApiScopes = builder.Configuration.GetSection("DownstreamApis:JosephGuadagnoBroadcastingApi:Scopes").Get<IEnumerable<string>>();
-var allScopes = initialScopes?.Union(downstreamApiScopes!);
+var allScopes = builder.Configuration.GetSection("DownstreamApis")
+    .GetChildren()
+    .SelectMany(section => section.GetSection("Scopes").Get<string[]>() ?? [])
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
 
 builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
     .EnableTokenAcquisitionToCallDownstreamApi(allScopes)
@@ -248,7 +250,7 @@ void ConfigureApplication(IServiceCollection services)
 {
     services.AddHttpClient();
     
-    // Register BroadcastingContext via transitive dependency (Managers → Data.Sql)
+    // Register BroadcastingContext via transitive dependency (Managers ΓåÆ Data.Sql)
     // Note: BroadcastingContext type is fully qualified to avoid needing "using Data.Sql"
     builder.AddSqlServerDbContext<JosephGuadagno.Broadcasting.Data.Sql.BroadcastingContext>("JJGNetDatabaseSqlServer");
     

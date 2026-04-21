@@ -25,7 +25,7 @@ builder.Services.AddHttpLogging(
 
 // Read for inline startup use
 var settings = builder.Configuration.GetSection("Settings").Get<Settings>()
-    ?? new Settings { ApiScopeUrl = string.Empty, ScalarClientId = string.Empty };
+    ?? new Settings { ScalarClientId = string.Empty };
 var autoMapperSettings = builder.Configuration.GetSection("AutoMapper").Get<AutoMapperSettings>()
     ?? new AutoMapperSettings();
 
@@ -79,11 +79,11 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddControllers(options =>
 {
-    // API uses Bearer token auth — antiforgery tokens are not applicable
+    // API uses Bearer token auth ΓÇö antiforgery tokens are not applicable
     options.Filters.Add(new IgnoreAntiforgeryTokenAttribute());
 });
 
-// Rate limiting — 100 requests per minute (fixed window), applied globally
+// Rate limiting ΓÇö 100 requests per minute (fixed window), applied globally
 builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter(RateLimitingPolicies.FixedWindow, limiterOptions =>
@@ -130,8 +130,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference("/scalar", options =>
     {
         // Configure OAuth2 security
-        var scopes = JosephGuadagno.Broadcasting.Domain.Scopes.ToDictionary(settings.ApiScopeUrl);
-        scopes.Add($"{settings.ApiScopeUrl}user_impersonation", "Access application on user behalf");
+        var scopes = GetApiScopes(builder.Configuration["AzureAd:ClientId"]);
 
         options
             .AddPreferredSecuritySchemes("OAuth2") // This is the schemaKey from above
@@ -140,8 +139,7 @@ if (app.Environment.IsDevelopment())
                 flow =>
                 {
                     flow.ClientId = settings.ScalarClientId;
-                    // Same scopes as defined in the OpenApi transformer!
-                    flow.SelectedScopes = scopes.Keys.ToArray();
+                    flow.SelectedScopes = scopes;
                 }
             );
     });
@@ -161,6 +159,16 @@ app.UseRateLimiter();
 app.MapControllers().RequireRateLimiting(RateLimitingPolicies.FixedWindow);
 
 app.Run();
+
+static string[] GetApiScopes(string? clientId)
+{
+    if (string.IsNullOrWhiteSpace(clientId))
+    {
+        return [];
+    }
+
+    return [$"api://{clientId}/access_as_user"];
+}
 
 void ConfigureTelemetryAndLogging(IServiceCollection services, string logPath, string applicationName)
 {
@@ -184,7 +192,7 @@ void ConfigureRepositories(IServiceCollection services)
     // We own the retry policy exclusively via configureDbContextOptions.
     // With DisableRetry = false, Aspire calls EnableRetryOnFailure() with its defaults (6 retries,
     // 30 s max) inside UseSqlServer, and although configureDbContextOptions runs after and should
-    // override it, in practice the Aspire-default schedule (≈14–20 s for 3 transient retries)
+    // override it, in practice the Aspire-default schedule (Γëê14ΓÇô20 s for 3 transient retries)
     // was still observed.  Setting DisableRetry = true removes that ambiguity entirely.
     builder.AddSqlServerDbContext<BroadcastingContext>(
         "JJGNetDatabaseSqlServer",

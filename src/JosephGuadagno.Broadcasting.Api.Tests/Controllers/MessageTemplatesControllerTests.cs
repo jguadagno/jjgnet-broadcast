@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
 using JosephGuadagno.Broadcasting.Domain;
-using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -36,7 +35,7 @@ public class MessageTemplatesControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private MessageTemplatesController CreateSut(string roleName = RoleNames.Contributor, string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
+    private MessageTemplatesController CreateSut(string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
     {
         var controller = new MessageTemplatesController(
             _messageTemplateDataStoreMock.Object,
@@ -44,7 +43,7 @@ public class MessageTemplatesControllerTests
             _loggerMock.Object,
             _mapper)
         {
-            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(roleName, ownerOid, isSiteAdmin),
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
@@ -66,7 +65,7 @@ public class MessageTemplatesControllerTests
     };
 
     // -------------------------------------------------------------------------
-    // Security: GetAsync — non-owner returns 403
+    // Security: GetAsync ΓÇö non-owner returns 403
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -97,7 +96,7 @@ public class MessageTemplatesControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // Security: UpdateAsync — non-owner returns 403
+    // Security: UpdateAsync ΓÇö non-owner returns 403
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -128,7 +127,7 @@ public class MessageTemplatesControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // Security: GetAllAsync — SiteAdmin calls unfiltered overload
+    // Security: GetAllAsync ΓÇö SiteAdmin calls unfiltered overload
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -136,7 +135,7 @@ public class MessageTemplatesControllerTests
     {
         // Arrange
         var templates = new List<MessageTemplate> { BuildTemplate() };
-        // Set up the unfiltered overload (no ownerOid — first param is int page).
+        // Set up the unfiltered overload (no ownerOid ΓÇö first param is int page).
         _messageTemplateDataStoreMock
             .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<MessageTemplate> { Items = templates, TotalCount = templates.Count });
@@ -150,11 +149,11 @@ public class MessageTemplatesControllerTests
         result.Value.Should().NotBeNull();
         result.Value!.TotalCount.Should().Be(1);
 
-        // Unfiltered overload must be invoked exactly once …
+        // Unfiltered overload must be invoked exactly once ΓÇª
         _messageTemplateDataStoreMock.Verify(
             m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
             Times.Once);
-        // … and the owner-filtered overload must never be called.
+        // ΓÇª and the owner-filtered overload must never be called.
         _messageTemplateDataStoreMock.Verify(
             m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
             Times.Never);
