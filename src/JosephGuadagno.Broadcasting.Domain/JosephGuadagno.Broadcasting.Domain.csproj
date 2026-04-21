@@ -31,6 +31,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.6" />
   </ItemGroup>
 </Project>

@@ -1,10 +1,9 @@
-docs(.squad): merge scope-removal migration decisions into team record
+docs: squad session orchestration for issue #784 cleanup
 
-- Merged 4 inbox entries into decisions.md
-- Added Neo scope-removal-migration plan (#763-#769 issues)
-- Added 2 user directives: #724 future, Azure Portal cleanup
-- Added #609 Round 1 gap issues decision (#760-#762)
-- Deleted inbox files after merge
-- Updated Neo agent history.md
+- Merged 9 inbox decisions into decisions.md (deduped)
+- Deleted inbox files post-merge: Dependabot bypass, PR cleanup safety, Neo review ownership, Trinity #784 decisions
+- Updated agent history: Neo (standing rules), Link (CI/cleanup), Trinity (EF retry patterns)
+- Session log: 2026-04-21T03:55:01Z-784-cleanup.md
+- Orchestration log: 2026-04-21T03:55:01Z-link.md
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
