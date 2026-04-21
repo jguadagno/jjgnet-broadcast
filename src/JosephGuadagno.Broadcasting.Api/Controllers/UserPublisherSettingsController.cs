@@ -10,6 +10,9 @@ using Microsoft.Identity.Web.Resource;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers;
 
+/// <summary>
+/// Manages per-user publisher settings for each social media platform.
+/// </summary>
 [ApiController]
 [Authorize]
 [IgnoreAntiforgeryToken]
@@ -23,6 +26,16 @@ public class UserPublisherSettingsController(
     private static string SanitizeForLog(string? value) =>
         value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty;
 
+    /// <summary>
+    /// Gets every publisher setting visible to the current caller.
+    /// </summary>
+    /// <param name="ownerOid">
+    /// Optional Entra object ID to query. Non-admin callers can only query their own settings.
+    /// </param>
+    /// <returns>A list of publisher settings for the resolved owner.</returns>
+    /// <response code="200">Returns the publisher settings for the resolved owner.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to query the requested owner.</response>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UserPublisherSettingResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -41,6 +54,18 @@ public class UserPublisherSettingsController(
         return Ok(mapper.Map<List<UserPublisherSettingResponse>>(settings));
     }
 
+    /// <summary>
+    /// Gets the publisher settings for a single social media platform.
+    /// </summary>
+    /// <param name="platformId">The social media platform identifier.</param>
+    /// <param name="ownerOid">
+    /// Optional Entra object ID to query. Non-admin callers can only query their own settings.
+    /// </param>
+    /// <returns>The publisher settings for the requested platform.</returns>
+    /// <response code="200">Returns the publisher settings for the platform.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to query the requested owner.</response>
+    /// <response code="404">No publisher settings exist for the resolved owner and platform.</response>
     [HttpGet("{platformId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserPublisherSettingResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -69,6 +94,19 @@ public class UserPublisherSettingsController(
         return Ok(mapper.Map<UserPublisherSettingResponse>(setting));
     }
 
+    /// <summary>
+    /// Creates or updates the publisher settings for a social media platform.
+    /// </summary>
+    /// <param name="platformId">The social media platform identifier.</param>
+    /// <param name="ownerOid">
+    /// Optional Entra object ID to target. Non-admin callers can only save their own settings.
+    /// </param>
+    /// <param name="request">The publisher settings payload to save.</param>
+    /// <returns>The saved publisher settings.</returns>
+    /// <response code="200">Returns the saved publisher settings.</response>
+    /// <response code="400">The request payload was invalid or the settings could not be saved.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to save settings for the requested owner.</response>
     [HttpPut("{platformId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserPublisherSettingResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -110,6 +148,18 @@ public class UserPublisherSettingsController(
         return Ok(mapper.Map<UserPublisherSettingResponse>(saved));
     }
 
+    /// <summary>
+    /// Deletes the publisher settings for a social media platform.
+    /// </summary>
+    /// <param name="platformId">The social media platform identifier.</param>
+    /// <param name="ownerOid">
+    /// Optional Entra object ID to target. Non-admin callers can only delete their own settings.
+    /// </param>
+    /// <returns>No content when the delete succeeds.</returns>
+    /// <response code="204">The publisher settings were deleted.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to delete settings for the requested owner.</response>
+    /// <response code="404">No publisher settings exist for the resolved owner and platform.</response>
     [HttpDelete("{platformId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
