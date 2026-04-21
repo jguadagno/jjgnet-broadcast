@@ -13,21 +13,22 @@ public static class ApiControllerTestHelpers
 {
     /// <summary>
     /// Builds an <see cref="HttpContext"/> whose <see cref="ClaimsPrincipal"/> carries the
-    /// role claims needed by the API authorization policies and the current owner OID.
-    /// Tests can elevate to site administrator by setting <paramref name="isSiteAdmin"/>.
+    /// minimum claims needed by the controller unit tests. These tests assert owner checks
+    /// and site-administrator bypass behavior; they no longer depend on API scope claims.
     /// </summary>
     public static ControllerContext CreateControllerContext(
-        string roleName = Domain.Constants.RoleNames.Contributor,
         string ownerOid = "owner-oid-12345",
         bool isSiteAdmin = false)
     {
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Role, roleName),
             new Claim(Domain.Constants.ApplicationClaimTypes.EntraObjectId, ownerOid)
         };
-        if (isSiteAdmin && roleName != Domain.Constants.RoleNames.SiteAdministrator)
+
+        if (isSiteAdmin)
+        {
             claims.Add(new Claim(ClaimTypes.Role, Domain.Constants.RoleNames.SiteAdministrator));
+        }
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthentication"));
         var httpContext = new DefaultHttpContext { User = user };
@@ -39,6 +40,6 @@ public static class ApiControllerTestHelpers
     /// <c>CreatedByEntraOid</c>.
     /// Use for testing ownership rejection (403 Forbid).
     /// </summary>
-    public static ControllerContext CreateNonOwnerControllerContext(string roleName = Domain.Constants.RoleNames.Contributor) =>
-        CreateControllerContext(roleName, ownerOid: "non-owner-oid-99999");
+    public static ControllerContext CreateNonOwnerControllerContext() =>
+        CreateControllerContext(ownerOid: "non-owner-oid-99999");
 }

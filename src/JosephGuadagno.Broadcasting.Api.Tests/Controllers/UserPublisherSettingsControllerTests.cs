@@ -27,7 +27,7 @@ public class UserPublisherSettingsControllerTests
             .Setup(manager => manager.GetByUserAsync("current-user-oid", It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        var sut = CreateSut(ownerOid: "current-user-oid");
+        var sut = CreateSut("current-user-oid");
 
         var result = await sut.GetAllAsync();
 
@@ -38,7 +38,7 @@ public class UserPublisherSettingsControllerTests
     [Fact]
     public async Task GetAllAsync_WhenTargetingAnotherUserWithoutAdminRole_ShouldReturnForbid()
     {
-        var sut = CreateSut(ownerOid: "current-user-oid");
+        var sut = CreateSut("current-user-oid");
 
         var result = await sut.GetAllAsync("other-user-oid");
 
@@ -67,7 +67,7 @@ public class UserPublisherSettingsControllerTests
                 }
             });
 
-        var sut = CreateSut(ownerOid: "admin-user-oid", isSiteAdministrator: true);
+        var sut = CreateSut("admin-user-oid", isSiteAdministrator: true);
 
         var result = await sut.SaveAsync(3, "target-user-oid", new UserPublisherSettingRequest
         {
@@ -105,7 +105,7 @@ public class UserPublisherSettingsControllerTests
             .Setup(manager => manager.GetByUserAndPlatformAsync("owner-spoof", 3, It.IsAny<CancellationToken>()))
             .ReturnsAsync((UserPublisherSetting?)null);
 
-        var sut = CreateSut(ownerOid: "owner-\r\nspoof");
+        var sut = CreateSut("owner-\r\nspoof");
 
         var result = await sut.GetAsync(3);
 
@@ -120,7 +120,7 @@ public class UserPublisherSettingsControllerTests
             .Setup(manager => manager.SaveAsync(It.IsAny<UserPublisherSettingUpdate>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((UserPublisherSetting?)null);
 
-        var sut = CreateSut(ownerOid: "owner-\r\nspoof");
+        var sut = CreateSut("owner-\r\nspoof");
 
         var result = await sut.SaveAsync(3, null, new UserPublisherSettingRequest
         {
@@ -145,7 +145,7 @@ public class UserPublisherSettingsControllerTests
             .Setup(manager => manager.DeleteAsync("owner-spoof", 3, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var sut = CreateSut(ownerOid: "owner-\r\nspoof");
+        var sut = CreateSut("owner-\r\nspoof");
 
         var result = await sut.DeleteAsync(3);
 
@@ -153,15 +153,30 @@ public class UserPublisherSettingsControllerTests
         VerifyLoggedOwnerWasSanitized(LogLevel.Warning, "owner-spoof");
     }
 
-    private UserPublisherSettingsController CreateSut(string roleName = RoleNames.Contributor, string ownerOid = "owner-oid-12345", bool isSiteAdministrator = false)
+    private UserPublisherSettingsController CreateSut(string ownerOid, bool isSiteAdministrator = false)
     {
         return new UserPublisherSettingsController(_manager.Object, _logger.Object, _mapper)
         {
-            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(roleName, ownerOid, isSiteAdministrator),
+            ControllerContext = CreateControllerContext(ownerOid, isSiteAdministrator),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
     }
 
+    private static ControllerContext CreateControllerContext(string ownerOid, bool isSiteAdministrator)
+    {
+        var claims = new List<Claim>
+        {
+            new(ApplicationClaimTypes.EntraObjectId, ownerOid)
+        };
+
+        if (isSiteAdministrator)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, RoleNames.SiteAdministrator));
+        }
+
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthentication"));
+        return new ControllerContext { HttpContext = new DefaultHttpContext { User = user } };
+    }
 
     private void VerifyLoggedOwnerWasSanitized(LogLevel logLevel, string sanitizedOwnerOid)
     {

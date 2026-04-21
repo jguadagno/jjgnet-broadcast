@@ -3,7 +3,6 @@ using FluentAssertions;
 using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
-using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -32,21 +31,21 @@ public class SocialMediaPlatformsControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private SocialMediaPlatformsController CreateSut(string roleName = RoleNames.Contributor)
+    private SocialMediaPlatformsController CreateSut()
     {
         var controller = new SocialMediaPlatformsController(
             _managerMock.Object,
             _loggerMock.Object,
             _mapper)
         {
-            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(roleName),
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
     }
 
     // -------------------------------------------------------------------------
-    // GetAllAsync — GET /
+    // GetAllAsync ΓÇö GET /
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -94,7 +93,7 @@ public class SocialMediaPlatformsControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // GetAsync — GET /{id}
+    // GetAsync ΓÇö GET /{id}
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -137,7 +136,7 @@ public class SocialMediaPlatformsControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // CreateAsync — POST /
+    // CreateAsync ΓÇö POST /
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -179,7 +178,7 @@ public class SocialMediaPlatformsControllerTests
         _managerMock.Verify(m => m.AddAsync(It.IsAny<SocialMediaPlatform>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-        [Fact]
+    [Fact]
     public async Task CreateAsync_WithInvalidModelState_ShouldReturn400()
     {
         // Arrange
@@ -214,7 +213,7 @@ public class SocialMediaPlatformsControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // UpdateAsync — PUT /{id}
+    // UpdateAsync ΓÇö PUT /{id}
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -288,7 +287,7 @@ public class SocialMediaPlatformsControllerTests
     }
 
     // -------------------------------------------------------------------------
-    // DeleteAsync — DELETE /{id}
+    // DeleteAsync ΓÇö DELETE /{id}
     // -------------------------------------------------------------------------
 
     [Fact]
