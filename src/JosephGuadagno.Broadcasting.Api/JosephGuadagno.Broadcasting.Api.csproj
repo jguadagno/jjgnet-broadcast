@@ -43,7 +43,7 @@
     <PackageReference Include="Aspire.Azure.Storage.Queues" Version="13.2.2" />
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.2.2" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.4.0" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
     <PackageReference Include="Microsoft.Identity.Web" Version="4.7.0" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.2" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.13.22" />
