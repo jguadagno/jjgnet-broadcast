@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using AutoMapper;
 using FluentAssertions;
 using JosephGuadagno.Broadcasting.Api.Controllers;
@@ -39,28 +38,10 @@ public class SocialMediaPlatformsControllerTests
             _loggerMock.Object,
             _mapper)
         {
-            ControllerContext = CreateControllerContext(scopeClaimValue),
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(scopeClaimValue),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
-    }
-
-    /// <summary>
-    /// Builds an HttpContext whose <see cref="ClaimsPrincipal"/> carries the given OAuth
-    /// scope so that <c>HttpContext.VerifyUserHasAnyAcceptedScope</c> succeeds.
-    /// Both the short "scp" claim and the full URI claim type are set for maximum
-    /// compatibility with different versions of Microsoft.Identity.Web.
-    /// </summary>
-    private static ControllerContext CreateControllerContext(string scopeClaimValue)
-    {
-        var user = new ClaimsPrincipal(new ClaimsIdentity(
-        [
-            new Claim("scp", scopeClaimValue),
-            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue)
-        ], "TestAuthentication"));
-
-        var httpContext = new DefaultHttpContext { User = user };
-        return new ControllerContext { HttpContext = httpContext };
     }
 
     // -------------------------------------------------------------------------

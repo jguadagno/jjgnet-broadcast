@@ -177,3 +177,12 @@ builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.Authentic
 ---
 
 ## GitHub Comment Formatting Skill Added
+
+## Learnings
+
+### 2026-04-21 — Issue #764 / PR #801 Reassignment
+
+- Phase 0 API RBAC must stay additive: `src\JosephGuadagno.Broadcasting.Api\Program.cs` should wire `AddBroadcastingApiAuthorization()` while every API controller keeps its existing `VerifyUserHasAnyAcceptedScope(...)` checks for dual enforcement.
+- The API host keeps its role-policy registration in `src\JosephGuadagno.Broadcasting.Api\Infrastructure\ApiAuthorizationServiceCollectionExtensions.cs`; `src\JosephGuadagno.Broadcasting.Api\Properties\AssemblyInfo.cs` exposes that internal helper to `JosephGuadagno.Broadcasting.Api.Tests`.
+- The safest auth smoke test lives in `src\JosephGuadagno.Broadcasting.Api.Tests\Infrastructure\ApiAuthorizationServiceCollectionExtensionsTests.cs`: resolve `IClaimsTransformation`, transform an authenticated principal, assert the original `scp` claim survives, and verify hierarchical role claims are added.
+- `src\JosephGuadagno.Broadcasting.Api.Tests\Helpers\ApiControllerTestHelpers.cs` is now the shared source of truth for API controller claim setup, including scope, owner OID, and optional site-admin role claims.
