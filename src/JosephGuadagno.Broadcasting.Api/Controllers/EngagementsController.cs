@@ -7,7 +7,6 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Identity.Web.Resource;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers;
 
@@ -66,6 +65,7 @@ public class EngagementsController: ControllerBase
     /// <response code="400">If the request is poorly formatted</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response> 
     [HttpGet]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(PagedResponse<EngagementResponse>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -75,8 +75,6 @@ public class EngagementsController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.List, Domain.Scopes.Engagements.All);
-
         PagedResult<Engagement> result;
         if (IsSiteAdministrator())
         {
@@ -109,6 +107,7 @@ public class EngagementsController: ControllerBase
     /// <response code="404">If the requested id was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>             
     [HttpGet("{engagementId:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ActionName(nameof(GetEngagementAsync))]
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(EngagementResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -116,8 +115,6 @@ public class EngagementsController: ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<EngagementResponse>> GetEngagementAsync(int engagementId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.View, Domain.Scopes.Engagements.All);
-
         var engagement = await _engagementManager.GetAsync(engagementId);
         if (engagement is null)
             return NotFound();
@@ -139,13 +136,12 @@ public class EngagementsController: ControllerBase
     /// <response code="400">If the engagement is null or there are data violations</response>     
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>       
     [HttpPost]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(EngagementResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<EngagementResponse>> CreateEngagementAsync(EngagementRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify, Domain.Scopes.Engagements.All);
-
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("CreateEngagementAsync called with invalid model state");
@@ -175,13 +171,12 @@ public class EngagementsController: ControllerBase
     /// <response code="400">If the engagement is null, the id does not match, or there are data violations</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPut("{engagementId:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(EngagementResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<EngagementResponse>> UpdateEngagementAsync(int engagementId, EngagementRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify, Domain.Scopes.Engagements.All);
-
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("UpdateEngagementAsync called with invalid model state");
@@ -220,14 +215,13 @@ public class EngagementsController: ControllerBase
     /// <response code="404">If the requested id was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>            
     [HttpDelete("{engagementId:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireAdministrator)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<bool>> DeleteEngagementAsync(int engagementId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Delete, Domain.Scopes.Engagements.All);
-
         var engagement = await _engagementManager.GetAsync(engagementId);
         if (engagement is null)
         {
@@ -260,6 +254,7 @@ public class EngagementsController: ControllerBase
     /// <response code="200">Upon success</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{engagementId:int}/talks")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(PagedResponse<TalkResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<TalkResponse>>> GetTalksForEngagementAsync(int engagementId, int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
@@ -268,8 +263,6 @@ public class EngagementsController: ControllerBase
         if (pageSize < 1) pageSize = 1;
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.List, Domain.Scopes.Talks.All);
-
         var engagement = await _engagementManager.GetAsync(engagementId);
         if (engagement is null)
             return NotFound();
@@ -301,13 +294,12 @@ public class EngagementsController: ControllerBase
     /// <response code="400">If the data provided is null or there are data violations</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>      
     [HttpPost("{engagementId:int}/talks")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(TalkResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<TalkResponse>> CreateTalkAsync(int engagementId, TalkRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify, Domain.Scopes.Talks.All);
-
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("CreateTalkAsync called with invalid model state");
@@ -347,13 +339,12 @@ public class EngagementsController: ControllerBase
     /// <response code="400">If the data provided is null, the id does not match, or there are data violations</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPut("{engagementId:int}/talks/{talkId:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(TalkResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<TalkResponse>> UpdateTalkAsync(int engagementId, int talkId, TalkRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Modify, Domain.Scopes.Talks.All);
-
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("UpdateTalkAsync called with invalid model state");
@@ -393,6 +384,7 @@ public class EngagementsController: ControllerBase
     /// <response code="404">If the requested id was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>   
     [HttpGet("{engagementId:int}/talks/{talkId:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(TalkResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -400,8 +392,6 @@ public class EngagementsController: ControllerBase
     [ActionName(nameof(GetTalkAsync))]
     public async Task<ActionResult<TalkResponse>> GetTalkAsync(int engagementId, int talkId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.View, Domain.Scopes.Talks.All);
-
         var engagement = await _engagementManager.GetAsync(engagementId);
         if (engagement is null)
             return NotFound();
@@ -428,14 +418,13 @@ public class EngagementsController: ControllerBase
     /// <response code="404">If the requested id was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>   
     [HttpDelete("{engagementId:int}/talks/{talkId:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireAdministrator)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<bool>> DeleteTalkAsync(int engagementId, int talkId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Talks.Delete, Domain.Scopes.Talks.All);
-
         var engagement = await _engagementManager.GetAsync(engagementId);
         if (engagement is null)
             return NotFound();
@@ -468,12 +457,11 @@ public class EngagementsController: ControllerBase
     /// <response code="200">Returns the list of platform associations</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{engagementId:int}/platforms")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EngagementSocialMediaPlatformResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<EngagementSocialMediaPlatformResponse>>> GetPlatformsForEngagementAsync(int engagementId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.View, Domain.Scopes.Engagements.All);
-
         var engagement = await _engagementManager.GetAsync(engagementId);
         if (engagement is null)
             return NotFound();
@@ -503,14 +491,13 @@ public class EngagementsController: ControllerBase
     /// with a 500 "No route matches the supplied values" error. See issue #708.
     /// </remarks>
     [HttpGet("{engagementId:int}/platforms/{platformId:int}", Name = "GetPlatformForEngagement")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ActionName(nameof(GetPlatformForEngagementAsync))]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(EngagementSocialMediaPlatformResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<EngagementSocialMediaPlatformResponse>> GetPlatformForEngagementAsync(int engagementId, int platformId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.View, Domain.Scopes.Engagements.All);
-
         var engagement = await _engagementManager.GetAsync(engagementId);
         if (engagement is null)
             return NotFound();
@@ -540,6 +527,7 @@ public class EngagementsController: ControllerBase
     /// <response code="409">If the platform is already assigned to the engagement</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPost("{engagementId:int}/platforms")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(EngagementSocialMediaPlatformResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -548,8 +536,6 @@ public class EngagementsController: ControllerBase
         int engagementId,
         [FromBody] EngagementSocialMediaPlatformRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Modify, Domain.Scopes.Engagements.All);
-
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("AddPlatformToEngagementAsync called with invalid model state for engagement {EngagementId}", engagementId);
@@ -611,13 +597,12 @@ public class EngagementsController: ControllerBase
     /// <response code="404">If the association was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpDelete("{engagementId:int}/platforms/{platformId:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireAdministrator)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RemovePlatformFromEngagementAsync(int engagementId, int platformId)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.Engagements.Delete, Domain.Scopes.Engagements.All);
-
         var engagement = await _engagementManager.GetAsync(engagementId);
         if (engagement is null)
             return NotFound();

@@ -672,7 +672,7 @@ public class EngagementsControllerTests
         Assert.NotEmpty(attributes);
         var authorizeAttribute = attributes.First() as AuthorizeAttribute;
         Assert.NotNull(authorizeAttribute);
-        Assert.Equal("RequireViewer", authorizeAttribute!.Policy);
+        Assert.Equal(AuthorizationPolicyNames.RequireViewer, authorizeAttribute!.Policy);
     }
 
     [Fact]
@@ -687,7 +687,7 @@ public class EngagementsControllerTests
         Assert.NotEmpty(attributes);
         var authorizeAttribute = attributes.First() as AuthorizeAttribute;
         Assert.NotNull(authorizeAttribute);
-        Assert.Equal("RequireContributor", authorizeAttribute!.Policy);
+        Assert.Equal(AuthorizationPolicyNames.RequireContributor, authorizeAttribute!.Policy);
     }
 
     [Fact]
@@ -702,7 +702,7 @@ public class EngagementsControllerTests
         Assert.NotEmpty(attributes);
         var authorizeAttribute = attributes.First() as AuthorizeAttribute;
         Assert.NotNull(authorizeAttribute);
-        Assert.Equal("RequireContributor", authorizeAttribute!.Policy);
+        Assert.Equal(AuthorizationPolicyNames.RequireContributor, authorizeAttribute!.Policy);
     }
 
     [Fact]
@@ -717,7 +717,7 @@ public class EngagementsControllerTests
         Assert.NotEmpty(attributes);
         var authorizeAttribute = attributes.First() as AuthorizeAttribute;
         Assert.NotNull(authorizeAttribute);
-        Assert.Equal("RequireContributor", authorizeAttribute!.Policy);
+        Assert.Equal(AuthorizationPolicyNames.RequireContributor, authorizeAttribute!.Policy);
     }
 
     #region AddPlatform Tests (Issue #708 Regression Coverage)

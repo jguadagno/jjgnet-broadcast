@@ -186,3 +186,9 @@ builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.Authentic
 - The API host keeps its role-policy registration in `src\JosephGuadagno.Broadcasting.Api\Infrastructure\ApiAuthorizationServiceCollectionExtensions.cs`; `src\JosephGuadagno.Broadcasting.Api\Properties\AssemblyInfo.cs` exposes that internal helper to `JosephGuadagno.Broadcasting.Api.Tests`.
 - The safest auth smoke test lives in `src\JosephGuadagno.Broadcasting.Api.Tests\Infrastructure\ApiAuthorizationServiceCollectionExtensionsTests.cs`: resolve `IClaimsTransformation`, transform an authenticated principal, assert the original `scp` claim survives, and verify hierarchical role claims are added.
 - `src\JosephGuadagno.Broadcasting.Api.Tests\Helpers\ApiControllerTestHelpers.cs` is now the shared source of truth for API controller claim setup, including scope, owner OID, and optional site-admin role claims.
+
+### 2026-04-21 — PR #804 Policy Name Constants
+
+- Shared authorization policy names now live in `src\JosephGuadagno.Broadcasting.Domain\Constants\AuthorizationPolicyNames.cs`; use those constants everywhere instead of repeating `"Require*"` literals.
+- Keep API and Web policy registration aligned by referencing `AuthorizationPolicyNames` in `src\JosephGuadagno.Broadcasting.Api\Infrastructure\ApiAuthorizationServiceCollectionExtensions.cs` and `src\JosephGuadagno.Broadcasting.Web\Program.cs`.
+- Reflection-based authorization tests should assert against `AuthorizationPolicyNames` constants so controller attributes and policy registration can be renamed safely in one place.

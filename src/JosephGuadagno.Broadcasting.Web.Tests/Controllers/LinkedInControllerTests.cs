@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Controllers;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Models.LinkedIn;
@@ -254,6 +255,6 @@ public class LinkedInControllerTests
         Assert.NotEmpty(attributes);
         var authorizeAttribute = attributes.First() as AuthorizeAttribute;
         Assert.NotNull(authorizeAttribute);
-        Assert.Equal("RequireContributor", authorizeAttribute!.Policy);
+        Assert.Equal(AuthorizationPolicyNames.RequireContributor, authorizeAttribute!.Policy);
     }
 }

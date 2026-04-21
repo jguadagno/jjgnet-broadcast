@@ -13,7 +13,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// This is the controller for managing the engagements.
 /// </summary>
-[Authorize(Policy = "RequireViewer")]
+[Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
 public class EngagementsController : Controller
 {
     private readonly IEngagementService _engagementService;
@@ -96,7 +96,7 @@ public class EngagementsController : Controller
     /// </summary>
     /// <param name="id">The id of the engagement</param>
     /// <returns>An <see cref="EngagementViewModel"/></returns>
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(int id)
     {
         var engagement = await _engagementService.GetEngagementAsync(id);
@@ -131,7 +131,7 @@ public class EngagementsController : Controller
     /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, redirects to the <see cref="Edit(int)"/> page.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(EngagementViewModel engagementViewModel)
     {
         // Defence-in-depth: re-verify ownership before saving (issue #742)
@@ -168,7 +168,7 @@ public class EngagementsController : Controller
     /// <param name="id">The identity of an engagement</param>
     /// <returns>The delete confirmation view.</returns>
     [HttpGet]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Delete(int id)
     {
         var engagement = await _engagementService.GetEngagementAsync(id);
@@ -199,7 +199,7 @@ public class EngagementsController : Controller
     [HttpPost]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var engagement = await _engagementService.GetEngagementAsync(id);
@@ -256,7 +256,7 @@ public class EngagementsController : Controller
     /// Adds a new engagement.
     /// </summary>
     /// <returns>The add new engagement view.</returns>
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public IActionResult Add()
     {
         return View(new EngagementViewModel
@@ -270,7 +270,7 @@ public class EngagementsController : Controller
     /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, redirects to the <see cref="Edit(int)"/> page.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<RedirectToActionResult> Add(EngagementViewModel engagementViewModel)
     {
         var engagementToAdd = _mapper.Map<Domain.Models.Engagement>(engagementViewModel);
@@ -291,7 +291,7 @@ public class EngagementsController : Controller
     /// <param name="engagementId">The identity of the engagement</param>
     /// <returns>The add platform view.</returns>
     [HttpGet]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> AddPlatform(int engagementId)
     {
         var allPlatforms = await _socialMediaPlatformService.GetAllAsync(includeInactive: true);
@@ -306,7 +306,7 @@ public class EngagementsController : Controller
     /// <returns>Upon success, redirects to the Edit page.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> AddPlatform(EngagementSocialMediaPlatformViewModel vm)
     {
         if (!ModelState.IsValid)
@@ -352,7 +352,7 @@ public class EngagementsController : Controller
     /// <returns>Redirects to the Edit page.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> RemovePlatform(int engagementId, int platformId)
     {
         var result = await _engagementService.RemovePlatformFromEngagementAsync(engagementId, platformId);

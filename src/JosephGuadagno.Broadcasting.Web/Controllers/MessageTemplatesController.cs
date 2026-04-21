@@ -12,7 +12,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// The controller for managing message templates.
 /// </summary>
-[Authorize(Policy = "RequireContributor")]
+[Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
 public class MessageTemplatesController : Controller
 {
     private readonly IMessageTemplateService _messageTemplateService;

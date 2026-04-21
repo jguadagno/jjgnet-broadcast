@@ -6,7 +6,6 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Identity.Web.Resource;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers;
 
@@ -37,13 +36,12 @@ public class UserPublisherSettingsController(
     /// <response code="401">The caller is not authenticated.</response>
     /// <response code="403">The caller is not allowed to query the requested owner.</response>
     [HttpGet]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UserPublisherSettingResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<List<UserPublisherSettingResponse>>> GetAllAsync([FromQuery] string? ownerOid = null)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.UserPublisherSettings.List, Domain.Scopes.UserPublisherSettings.All);
-
         var resolvedOwnerOid = ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
         if (resolvedOwnerOid is null)
         {
@@ -67,14 +65,13 @@ public class UserPublisherSettingsController(
     /// <response code="403">The caller is not allowed to query the requested owner.</response>
     /// <response code="404">No publisher settings exist for the resolved owner and platform.</response>
     [HttpGet("{platformId:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserPublisherSettingResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserPublisherSettingResponse>> GetAsync(int platformId, [FromQuery] string? ownerOid = null)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.UserPublisherSettings.View, Domain.Scopes.UserPublisherSettings.All);
-
         var resolvedOwnerOid = ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
         if (resolvedOwnerOid is null)
         {
@@ -108,6 +105,7 @@ public class UserPublisherSettingsController(
     /// <response code="401">The caller is not authenticated.</response>
     /// <response code="403">The caller is not allowed to save settings for the requested owner.</response>
     [HttpPut("{platformId:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserPublisherSettingResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -117,8 +115,6 @@ public class UserPublisherSettingsController(
         [FromQuery] string? ownerOid,
         [FromBody] UserPublisherSettingRequest request)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.UserPublisherSettings.Modify, Domain.Scopes.UserPublisherSettings.All);
-
         if (!ModelState.IsValid)
         {
             logger.LogWarning("SaveAsync called with invalid model state");
@@ -161,14 +157,13 @@ public class UserPublisherSettingsController(
     /// <response code="403">The caller is not allowed to delete settings for the requested owner.</response>
     /// <response code="404">No publisher settings exist for the resolved owner and platform.</response>
     [HttpDelete("{platformId:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireAdministrator)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteAsync(int platformId, [FromQuery] string? ownerOid = null)
     {
-        HttpContext.VerifyUserHasAnyAcceptedScope(Domain.Scopes.UserPublisherSettings.Delete, Domain.Scopes.UserPublisherSettings.All);
-
         var resolvedOwnerOid = ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
         if (resolvedOwnerOid is null)
         {
