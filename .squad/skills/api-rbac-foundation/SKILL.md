@@ -13,6 +13,7 @@ Use this when the API host needs role-based authorization infrastructure before 
 - Keep Phase 0 additive: register role infrastructure in the host, but do not remove `VerifyUserHasAnyAcceptedScope(...)` calls yet.
 - Put API-specific RBAC wiring in a small infrastructure extension (for example `AddBroadcastingApiAuthorization()`) so `Program.cs` stays thin and tests can verify the real registration path.
 - Register `IClaimsTransformation` to the shared `JosephGuadagno.Broadcasting.Managers.EntraClaimsTransformation` implementation rather than duplicating claims logic in the API host.
+- If the registration helper stays internal, expose API internals through `Properties/AssemblyInfo.cs` so the test project can verify the real extension method instead of recreating the setup.
 - Mirror the Web host’s cumulative role chain exactly:
   - `RequireSiteAdministrator` → Site Administrator
   - `RequireAdministrator` → Site Administrator, Administrator

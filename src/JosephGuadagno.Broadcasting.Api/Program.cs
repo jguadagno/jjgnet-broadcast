@@ -55,6 +55,7 @@ builder.Services.Configure<AzureAdSettings>(builder.Configuration.GetSection("Az
 builder.Services.AddOptions<AzureAdSettings>().ValidateDataAnnotations().ValidateOnStart();
 
 builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
+builder.Services.AddBroadcastingApiAuthorization();
 
 // Configure the telemetry and logging
 var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
