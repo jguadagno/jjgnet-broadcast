@@ -29,18 +29,20 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
     {
         try
         {
-            var dbYouTubeSource = mapper.Map<Models.YouTubeSource>(entity);
-            broadcastingContext.Entry(dbYouTubeSource).State =
-                dbYouTubeSource.Id == 0 ? EntityState.Added : EntityState.Modified;
-
-            await ExecuteWithOptionalTransactionAsync(async () =>
+            var sourceId = await broadcastingContext.ExecuteInTransactionIfSupportedAsync(async ct =>
             {
-                await broadcastingContext.SaveChangesAsync(cancellationToken);
-                await SyncSourceTagsAsync(dbYouTubeSource.Id, entity.Tags, cancellationToken);
+                var dbYouTubeSource = mapper.Map<Models.YouTubeSource>(entity);
+                broadcastingContext.Entry(dbYouTubeSource).State =
+                    dbYouTubeSource.Id == 0 ? EntityState.Added : EntityState.Modified;
+
+                await broadcastingContext.SaveChangesAsync(ct);
+                await SyncSourceTagsAsync(dbYouTubeSource.Id, entity.Tags, ct);
+
+                return dbYouTubeSource.Id;
             }, cancellationToken);
 
             var saved = await broadcastingContext.YouTubeSources
-                .FirstOrDefaultAsync(y => y.Id == dbYouTubeSource.Id, cancellationToken);
+                .FirstOrDefaultAsync(y => y.Id == sourceId, cancellationToken);
 
             if (saved is not null)
             {
@@ -164,19 +166,6 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
             .FirstOrDefaultAsync(cancellationToken);
 
         return string.IsNullOrWhiteSpace(ownerOid) ? null : ownerOid;
-    }
-
-    private async Task ExecuteWithOptionalTransactionAsync(Func<Task> operation, CancellationToken cancellationToken)
-    {
-        if (broadcastingContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
-        {
-            await operation();
-            return;
-        }
-
-        await using var tx = await broadcastingContext.Database.BeginTransactionAsync(cancellationToken);
-        await operation();
-        await tx.CommitAsync(cancellationToken);
     }
 
     private async Task SyncSourceTagsAsync(int sourceId, IList<string> tags, CancellationToken cancellationToken)

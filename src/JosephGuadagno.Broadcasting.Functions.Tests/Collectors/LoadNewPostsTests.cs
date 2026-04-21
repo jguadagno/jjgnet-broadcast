@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.SyndicationFeed;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
@@ -277,6 +277,48 @@ public class LoadNewPostsTests
         // Assert
         _urlShortener.Verify(u => u.GetShortenedUrlAsync(item.Url, "short.example.com"), Times.Once);
         _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.ShortenedUrl == "https://short.example.com/abc")), Times.Once);
+    }
+
+    [Fact]
+    public async Task RunAsync_ContinuesWhenSaveThrowsExecutionStrategyTransactionError()
+    {
+        // Arrange
+        var failedItem = CreateFeedSource("transaction-failure");
+        var successfulItem = CreateFeedSource("transaction-success");
+        var savedItem = CreateFeedSource("transaction-success");
+        savedItem.Id = 77;
+
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>()))
+            .ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
+        _feedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<SyndicationFeedSource> { failedItem, successfulItem });
+        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("transaction-failure"))
+            .ReturnsAsync((SyndicationFeedSource?)null);
+        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("transaction-success"))
+            .ReturnsAsync((SyndicationFeedSource?)null);
+        _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync("https://short.example.com/txn");
+        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "transaction-failure")))
+            .ThrowsAsync(new InvalidOperationException("The configured execution strategy 'SqlServerRetryingExecutionStrategy' does not support user-initiated transactions."));
+        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "transaction-success")))
+            .ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedItem));
+
+        // Act
+        var result = await _sut.RunAsync(null!);
+
+        // Assert
+        _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "transaction-failure")), Times.Exactly(4));
+        _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "transaction-success")), Times.Once);
+        _eventPublisher.Verify(
+            e => e.PublishSyndicationFeedEventsAsync(
+                It.IsAny<string>(),
+                It.Is<IReadOnlyCollection<SyndicationFeedSource>>(items =>
+                    items.Count == 1 && items.Single().FeedIdentifier == "transaction-success")),
+            Times.Once);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Contains("Loaded 1 of 2 post(s)", okResult.Value!.ToString());
     }
 
     [Fact]
