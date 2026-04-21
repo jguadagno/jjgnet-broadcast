@@ -33,7 +33,7 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
             broadcastingContext.Entry(dbYouTubeSource).State =
                 dbYouTubeSource.Id == 0 ? EntityState.Added : EntityState.Modified;
 
-            await ExecuteWithOptionalTransactionAsync(async () =>
+            await broadcastingContext.ExecuteInTransactionIfSupportedAsync(async () =>
             {
                 await broadcastingContext.SaveChangesAsync(cancellationToken);
                 await SyncSourceTagsAsync(dbYouTubeSource.Id, entity.Tags, cancellationToken);
@@ -164,19 +164,6 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
             .FirstOrDefaultAsync(cancellationToken);
 
         return string.IsNullOrWhiteSpace(ownerOid) ? null : ownerOid;
-    }
-
-    private async Task ExecuteWithOptionalTransactionAsync(Func<Task> operation, CancellationToken cancellationToken)
-    {
-        if (broadcastingContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
-        {
-            await operation();
-            return;
-        }
-
-        await using var tx = await broadcastingContext.Database.BeginTransactionAsync(cancellationToken);
-        await operation();
-        await tx.CommitAsync(cancellationToken);
     }
 
     private async Task SyncSourceTagsAsync(int sourceId, IList<string> tags, CancellationToken cancellationToken)
