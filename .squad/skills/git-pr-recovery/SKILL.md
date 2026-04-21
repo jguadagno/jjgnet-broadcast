@@ -13,6 +13,7 @@ Use this when the right code already exists in a dirty local branch, but the rea
 ## Patterns
 
 - Create or reuse a dedicated worktree for the target PR branch instead of checking it out in the dirty workspace.
+- When a reviewer reports that a prerequisite PR is missing from `main`, verify with `git fetch`, `git rev-parse origin/main`, and `git merge-base HEAD origin/main` before rebasing; stale local refs can create a false blocker.
 - Copy only the issue-scoped files into the worktree, then validate there with the repo's normal build/test command before committing.
 - If the recovery also needs a visible review note and the PR is effectively under the same GitHub user account, post a regular PR comment instead of a formal approval review.
 - Record the recovery decision in .squad/decisions/inbox/ so the team knows the branch was repaired intentionally.

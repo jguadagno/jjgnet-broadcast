@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
 using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -33,11 +34,11 @@ public class SchedulesControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private SchedulesController CreateSut(string scopeClaimValue, string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
+    private SchedulesController CreateSut(string roleName = RoleNames.Contributor, string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
     {
         var controller = new SchedulesController(_scheduledItemManagerMock.Object, _loggerMock.Object, _mapper)
         {
-            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(scopeClaimValue, ownerOid, isSiteAdmin),
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(roleName, ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
@@ -79,7 +80,7 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = items, TotalCount = items.Count });
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetScheduledItemsAsync();
@@ -99,7 +100,7 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 });
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetScheduledItemsAsync();
@@ -122,7 +123,7 @@ public class SchedulesControllerTests
         var item = BuildScheduledItem(7);
         _scheduledItemManagerMock.Setup(m => m.GetAsync(7)).ReturnsAsync(item);
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetScheduledItemAsync(7);
@@ -139,7 +140,7 @@ public class SchedulesControllerTests
         // Arrange
         _scheduledItemManagerMock.Setup(m => m.GetAsync(99)).Returns(Task.FromResult<ScheduledItem?>(null));
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetScheduledItemAsync(99);
@@ -158,7 +159,7 @@ public class SchedulesControllerTests
     {
         // Arrange
         var request = new ScheduledItemRequest { ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 0, Message = "Test", SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1) };
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
         sut.ModelState.AddModelError("Message", "Message is required");
 
         // Act
@@ -184,7 +185,7 @@ public class SchedulesControllerTests
         savedItem.Message = request.Message;
         _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(OperationResult<ScheduledItem>.Success(savedItem));
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.CreateScheduledItemAsync(request);
@@ -209,7 +210,7 @@ public class SchedulesControllerTests
             .Callback<ScheduledItem, CancellationToken>((item, _) => capturedItem = item)
             .ReturnsAsync(OperationResult<ScheduledItem>.Success(BuildScheduledItem(4, oid: "owner-1")));
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All, ownerOid: "owner-1");
+        var sut = CreateSut(ownerOid: "owner-1");
 
         // Act
         var result = await sut.CreateScheduledItemAsync(request);
@@ -233,7 +234,7 @@ public class SchedulesControllerTests
         };
         _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(OperationResult<ScheduledItem>.Failure("Save failed"));
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.CreateScheduledItemAsync(request);
@@ -252,7 +253,7 @@ public class SchedulesControllerTests
     {
         // Arrange
         var request = BuildScheduledItemRequest(5);
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
         sut.ModelState.AddModelError("Message", "Message is required");
 
         // Act
@@ -274,7 +275,7 @@ public class SchedulesControllerTests
         savedItem.Message = "Updated message";
         _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(OperationResult<ScheduledItem>.Success(savedItem));
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.UpdateScheduledItemAsync(5, request);
@@ -295,7 +296,7 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock.Setup(m => m.GetAsync(5)).ReturnsAsync(BuildScheduledItem(5));
         _scheduledItemManagerMock.Setup(m => m.SaveAsync(It.IsAny<ScheduledItem>())).ReturnsAsync(OperationResult<ScheduledItem>.Failure("Save failed"));
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.UpdateScheduledItemAsync(5, request);
@@ -317,7 +318,7 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(BuildScheduledItem(1));
         _scheduledItemManagerMock.Setup(m => m.DeleteAsync(1)).ReturnsAsync(OperationResult<bool>.Success(true));
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.DeleteScheduledItemAsync(1);
@@ -335,7 +336,7 @@ public class SchedulesControllerTests
         // returns null it short-circuits with NotFound — DeleteAsync is never invoked.
         _scheduledItemManagerMock.Setup(m => m.GetAsync(99)).Returns(Task.FromResult<ScheduledItem?>(null));
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.DeleteScheduledItemAsync(99);
@@ -358,7 +359,7 @@ public class SchedulesControllerTests
         var item = BuildScheduledItem(5, oid: "owner-oid-12345");
         _scheduledItemManagerMock.Setup(m => m.GetAsync(5)).ReturnsAsync(item);
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.GetScheduledItemAsync(5);
@@ -376,7 +377,7 @@ public class SchedulesControllerTests
         var request = BuildScheduledItemRequest(5);
         _scheduledItemManagerMock.Setup(m => m.GetAsync(5)).ReturnsAsync(item);
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.UpdateScheduledItemAsync(5, request);
@@ -393,7 +394,7 @@ public class SchedulesControllerTests
         var item = BuildScheduledItem(5, oid: "owner-oid-12345");
         _scheduledItemManagerMock.Setup(m => m.GetAsync(5)).ReturnsAsync(item);
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.DeleteScheduledItemAsync(5);
@@ -417,7 +418,7 @@ public class SchedulesControllerTests
             .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = items, TotalCount = items.Count });
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All, isSiteAdmin: true);
+        var sut = CreateSut(isSiteAdmin: true);
 
         // Act
         var result = await sut.GetScheduledItemsAsync();
@@ -452,7 +453,7 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock.Setup(m => m.GetUnsentScheduledItemsAsync(It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = unsentItems, TotalCount = unsentItems.Count });
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetUnsentScheduledItemsAsync();
@@ -472,7 +473,7 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock.Setup(m => m.GetUnsentScheduledItemsAsync(It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 });
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetUnsentScheduledItemsAsync();
@@ -498,7 +499,7 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock.Setup(m => m.GetScheduledItemsToSendAsync(It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = upcomingItems, TotalCount = upcomingItems.Count });
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetScheduledItemsToSendAsync();
@@ -518,7 +519,7 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock.Setup(m => m.GetScheduledItemsToSendAsync(It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 });
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetScheduledItemsToSendAsync();
@@ -545,7 +546,7 @@ public class SchedulesControllerTests
             .Setup(m => m.GetScheduledItemsByCalendarMonthAsync(2025, 8, It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = calendarItems, TotalCount = calendarItems.Count });
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetUpcomingScheduledItemsForCalendarMonthAsync(2025, 8);
@@ -566,7 +567,7 @@ public class SchedulesControllerTests
             .Setup(m => m.GetScheduledItemsByCalendarMonthAsync(2025, 1, It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 });
 
-        var sut = CreateSut(Domain.Scopes.Schedules.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetUpcomingScheduledItemsForCalendarMonthAsync(2025, 1);

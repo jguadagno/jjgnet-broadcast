@@ -192,3 +192,9 @@ builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.Authentic
 - Shared authorization policy names now live in `src\JosephGuadagno.Broadcasting.Domain\Constants\AuthorizationPolicyNames.cs`; use those constants everywhere instead of repeating `"Require*"` literals.
 - Keep API and Web policy registration aligned by referencing `AuthorizationPolicyNames` in `src\JosephGuadagno.Broadcasting.Api\Infrastructure\ApiAuthorizationServiceCollectionExtensions.cs` and `src\JosephGuadagno.Broadcasting.Web\Program.cs`.
 - Reflection-based authorization tests should assert against `AuthorizationPolicyNames` constants so controller attributes and policy registration can be renamed safely in one place.
+
+### 2026-04-21 — PR #805 Revision Under Reviewer Lockout
+
+- Before rewriting a stacked Phase 2 branch, verify the prerequisite merge on `origin/main` with `git fetch`, `git merge-base HEAD origin/main`, and the current `origin/main` head; Neo's blocker on PR #805 was stale once PR #804 appeared on the fetched remote.
+- Keep recovery work isolated in `\_worktrees\issue-766-api-test-role-claims` so a dirty root workspace and reviewer-lockout reassignment do not leak unrelated changes onto the PR branch.
+- For API RBAC test migration, `src\JosephGuadagno.Broadcasting.Api.Tests\Helpers\ApiControllerTestHelpers.cs` should seed only role and owner-OID claims, while `src\JosephGuadagno.Broadcasting.Api.Tests\Infrastructure\ApiAuthorizationServiceCollectionExtensionsTests.cs` remains the single place that still asserts `scp` preservation through claims transformation.

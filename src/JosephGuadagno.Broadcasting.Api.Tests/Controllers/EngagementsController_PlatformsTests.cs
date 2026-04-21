@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
 using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -54,7 +55,7 @@ public class EngagementsController_PlatformsTests
     // Helpers
     // =========================================================================
 
-    private EngagementsController CreateSut(string scopeClaimValue, string ownerOid = "owner-oid-12345")
+    private EngagementsController CreateSut(string roleName = RoleNames.Contributor, string ownerOid = "owner-oid-12345")
     {
         return new EngagementsController(
             _engagementManagerMock.Object,
@@ -62,7 +63,7 @@ public class EngagementsController_PlatformsTests
             _loggerMock.Object,
             _mapper)
         {
-            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(scopeClaimValue, ownerOid),
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(roleName, ownerOid),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
     }
@@ -122,7 +123,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.GetByEngagementIdAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(platforms);
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetPlatformsForEngagementAsync(1);
@@ -150,7 +151,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.GetByEngagementIdAsync(99, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<EngagementSocialMediaPlatform>());
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetPlatformsForEngagementAsync(99);
@@ -173,7 +174,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.GetByEngagementIdAsync(5, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<EngagementSocialMediaPlatform> { esmp });
 
-        var sut = CreateSut(Scopes.Engagements.View);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetPlatformsForEngagementAsync(5);
@@ -204,7 +205,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.GetAsync(1, 2, It.IsAny<CancellationToken>()))
             .ReturnsAsync(esmp);
 
-        var sut = CreateSut(Scopes.Engagements.View);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetPlatformForEngagementAsync(1, 2);
@@ -231,7 +232,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.GetAsync(1, 99, It.IsAny<CancellationToken>()))
             .ReturnsAsync((EngagementSocialMediaPlatform?)null);
 
-        var sut = CreateSut(Scopes.Engagements.View);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetPlatformForEngagementAsync(1, 99);
@@ -261,7 +262,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(savedEsmp);
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.AddPlatformToEngagementAsync(engagementId, request);
@@ -303,7 +304,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(savedEsmp);
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.AddPlatformToEngagementAsync(engagementId, request);
@@ -326,7 +327,7 @@ public class EngagementsController_PlatformsTests
     {
         // Arrange
         var request = new EngagementSocialMediaPlatformRequest { SocialMediaPlatformId = 0 };
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
         sut.ModelState.AddModelError("SocialMediaPlatformId", "SocialMediaPlatformId is required");
 
         // Act
@@ -353,7 +354,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((EngagementSocialMediaPlatform?)null);
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.AddPlatformToEngagementAsync(1, request);
@@ -376,7 +377,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new DuplicateEngagementSocialMediaPlatformException(1, 2));
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.AddPlatformToEngagementAsync(1, request);
@@ -407,7 +408,7 @@ public class EngagementsController_PlatformsTests
             .ReturnsAsync(savedEsmp)
             .ThrowsAsync(new DuplicateEngagementSocialMediaPlatformException(engagementId, request.SocialMediaPlatformId));
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var firstResult = await sut.AddPlatformToEngagementAsync(engagementId, request);
@@ -449,7 +450,7 @@ public class EngagementsController_PlatformsTests
             .Callback<EngagementSocialMediaPlatform, CancellationToken>((e, _) => capturedEntity = e)
             .ReturnsAsync(savedEsmp);
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         await sut.AddPlatformToEngagementAsync(routeEngagementId, request);
@@ -472,7 +473,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.DeleteAsync(1, 2, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.RemovePlatformFromEngagementAsync(1, 2);
@@ -490,7 +491,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.DeleteAsync(1, 99, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.RemovePlatformFromEngagementAsync(1, 99);
@@ -508,7 +509,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.DeleteAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var sut = CreateSut(Scopes.Engagements.Delete);
+        var sut = CreateSut();
 
         // Act
         await sut.RemovePlatformFromEngagementAsync(7, 13);
@@ -531,7 +532,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.GetByEngagementIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<EngagementSocialMediaPlatform>());
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         await sut.GetPlatformsForEngagementAsync(1);
@@ -550,7 +551,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.AddAsync(It.IsAny<EngagementSocialMediaPlatform>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(BuildEsmp());
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         await sut.AddPlatformToEngagementAsync(1, request);
@@ -568,7 +569,7 @@ public class EngagementsController_PlatformsTests
             .Setup(d => d.DeleteAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var sut = CreateSut(Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         await sut.RemovePlatformFromEngagementAsync(1, 2);
@@ -589,7 +590,7 @@ public class EngagementsController_PlatformsTests
     {
         // Arrange
         // Default mock returns engagement owned by "owner-oid-12345"; user carries "non-owner-oid-99999".
-        var sut = CreateSut(Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.GetPlatformsForEngagementAsync(1);
@@ -606,7 +607,7 @@ public class EngagementsController_PlatformsTests
     {
         // Arrange
         // Default mock returns engagement owned by "owner-oid-12345"; user carries "non-owner-oid-99999".
-        var sut = CreateSut(Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.GetPlatformForEngagementAsync(1, 2);
@@ -628,7 +629,7 @@ public class EngagementsController_PlatformsTests
             SocialMediaPlatformId = 2,
             Handle = "@handle"
         };
-        var sut = CreateSut(Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.AddPlatformToEngagementAsync(1, request);
@@ -645,7 +646,7 @@ public class EngagementsController_PlatformsTests
     {
         // Arrange
         // Default mock returns engagement owned by "owner-oid-12345"; user carries "non-owner-oid-99999".
-        var sut = CreateSut(Scopes.Engagements.Delete, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.RemovePlatformFromEngagementAsync(1, 2);

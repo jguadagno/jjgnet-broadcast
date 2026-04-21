@@ -56,7 +56,7 @@ public class ApiAuthorizationServiceCollectionExtensionsTests
     public async Task AddBroadcastingApiAuthorization_ClaimsTransformation_AddsRoleClaimsWithoutDroppingScopeClaims()
     {
         const string entraObjectId = "entra-oid-12345";
-        var scopeValue = Domain.Scopes.SocialMediaPlatforms.All;
+        const string scopeValue = "scope-value-under-test";
         var approvedUser = new ApplicationUser
         {
             Id = 42,

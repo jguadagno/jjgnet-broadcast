@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
 using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -35,11 +36,11 @@ public class EngagementsControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private EngagementsController CreateSut(string scopeClaimValue, string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
+    private EngagementsController CreateSut(string roleName = RoleNames.Contributor, string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
     {
         var controller = new EngagementsController(_engagementManagerMock.Object, _engagementSocialMediaPlatformDataStoreMock.Object, _loggerMock.Object, _mapper)
         {
-            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(scopeClaimValue, ownerOid, isSiteAdmin),
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(roleName, ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
@@ -77,7 +78,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
             .ReturnsAsync(new PagedResult<Engagement> { Items = engagements, TotalCount = engagements.Count });
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetEngagementsAsync();
@@ -99,7 +100,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
             .ReturnsAsync(new PagedResult<Engagement> { Items = new List<Engagement>(), TotalCount = 0 });
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        var sut = CreateSut(roleName: RoleNames.Viewer);
 
         // Act
         var result = await sut.GetEngagementsAsync();
@@ -132,7 +133,7 @@ public class EngagementsControllerTests
         };
         _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(engagement);
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetEngagementAsync(1);
@@ -151,7 +152,7 @@ public class EngagementsControllerTests
         // Arrange
         _engagementManagerMock.Setup(m => m.GetAsync(99)).Returns(Task.FromResult<Engagement?>(null));
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetEngagementAsync(99);
@@ -170,7 +171,7 @@ public class EngagementsControllerTests
     {
         // Arrange
         var request = new EngagementRequest { Name = "New Conference", Url = "https://new-conf.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(2), TimeZoneId = "UTC" };
-        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        var sut = CreateSut();
         sut.ModelState.AddModelError("Name", "Name is required");
 
         // Act
@@ -204,7 +205,7 @@ public class EngagementsControllerTests
         };
         _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(savedEngagement));
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.CreateEngagementAsync(request);
@@ -238,7 +239,7 @@ public class EngagementsControllerTests
             .Callback<Engagement, CancellationToken>((engagement, _) => capturedEngagement = engagement)
             .ReturnsAsync(OperationResult<Engagement>.Success(new Engagement { Id = 42, CreatedByEntraOid = "owner-1" }));
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All, ownerOid: "owner-1");
+        var sut = CreateSut(ownerOid: "owner-1");
 
         // Act
         var result = await sut.CreateEngagementAsync(request);
@@ -263,7 +264,7 @@ public class EngagementsControllerTests
         };
         _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Failure("Save failed"));
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.CreateEngagementAsync(request);
@@ -279,7 +280,7 @@ public class EngagementsControllerTests
     {
         // Arrange
         var request = new EngagementRequest { Name = "Conference A", Url = "https://conf-a.example.com", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddDays(2), TimeZoneId = "UTC" };
-        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        var sut = CreateSut();
         sut.ModelState.AddModelError("Name", "Name is required");
 
         // Act
@@ -315,7 +316,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(BuildEngagement(1));
         _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(savedEngagement));
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.UpdateEngagementAsync(1, request);
@@ -345,7 +346,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(BuildEngagement(1));
         _engagementManagerMock.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Failure("Save failed"));
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.UpdateEngagementAsync(1, request);
@@ -367,7 +368,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(BuildEngagement(1));
         _engagementManagerMock.Setup(m => m.DeleteAsync(1)).ReturnsAsync(OperationResult<bool>.Success(true));
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.DeleteEngagementAsync(1);
@@ -385,7 +386,7 @@ public class EngagementsControllerTests
         // GetAsync returns null it short-circuits with NotFound - DeleteAsync is never invoked.
         _engagementManagerMock.Setup(m => m.GetAsync(99)).Returns(Task.FromResult<Engagement?>(null));
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.DeleteEngagementAsync(99);
@@ -414,7 +415,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetTalksForEngagementAsync(10, It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<Talk> { Items = talks, TotalCount = talks.Count });
 
-        var sut = CreateSut(Domain.Scopes.Talks.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetTalksForEngagementAsync(10);
@@ -436,7 +437,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetTalksForEngagementAsync(10, It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new PagedResult<Talk> { Items = new List<Talk>(), TotalCount = 0 });
 
-        var sut = CreateSut(Domain.Scopes.Talks.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetTalksForEngagementAsync(10);
@@ -457,7 +458,7 @@ public class EngagementsControllerTests
     {
         // Arrange
         var request = new TalkRequest { Name = "Test Talk", UrlForConferenceTalk = "https://conf.example.com/talk", UrlForTalk = "https://example.com/talk", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddHours(1) };
-        var sut = CreateSut(Domain.Scopes.Talks.All);
+        var sut = CreateSut();
         sut.ModelState.AddModelError("Name", "Name is required");
 
         // Act
@@ -494,7 +495,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(OperationResult<Talk>.Success(savedTalk));
 
-        var sut = CreateSut(Domain.Scopes.Talks.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.CreateTalkAsync(10, request);
@@ -524,7 +525,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(OperationResult<Talk>.Failure("Save failed"));
 
-        var sut = CreateSut(Domain.Scopes.Talks.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.CreateTalkAsync(10, request);
@@ -543,7 +544,7 @@ public class EngagementsControllerTests
     {
         // Arrange
         var request = new TalkRequest { Name = "Test Talk", UrlForConferenceTalk = "https://conf.example.com/talk", UrlForTalk = "https://example.com/talk", StartDateTime = DateTimeOffset.UtcNow, EndDateTime = DateTimeOffset.UtcNow.AddHours(1) };
-        var sut = CreateSut(Domain.Scopes.Talks.All);
+        var sut = CreateSut();
         sut.ModelState.AddModelError("Name", "Name is required");
 
         // Act
@@ -580,7 +581,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(OperationResult<Talk>.Success(savedTalk));
 
-        var sut = CreateSut(Domain.Scopes.Talks.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.UpdateTalkAsync(10, 5, request);
@@ -608,7 +609,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.SaveTalkAsync(It.IsAny<Talk>())).ReturnsAsync(OperationResult<Talk>.Failure("Save failed"));
 
-        var sut = CreateSut(Domain.Scopes.Talks.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.UpdateTalkAsync(10, 5, request);
@@ -640,7 +641,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.GetTalkAsync(5)).ReturnsAsync(talk);
 
-        var sut = CreateSut(Domain.Scopes.Talks.All);
+        var sut = CreateSut(roleName: RoleNames.Viewer);
 
         // Act
         var result = await sut.GetTalkAsync(10, 5);
@@ -659,7 +660,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.GetTalkAsync(99)).Returns(Task.FromResult<Talk?>(null));
 
-        var sut = CreateSut(Domain.Scopes.Talks.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetTalkAsync(10, 99);
@@ -670,9 +671,9 @@ public class EngagementsControllerTests
     }
 
     [Fact]
-    public async Task GetTalkAsync_WithViewScope_ReturnsTalk()
+    public async Task GetTalkAsync_WithViewerRole_ReturnsTalk()
     {
-        // Arrange - verifies Talks.View (fine-grained) is accepted, not just Talks.All
+        // Arrange - verifies a viewer role can access the read-only talk endpoint.
         var talk = new Talk
         {
             Id = 5,
@@ -687,7 +688,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.GetTalkAsync(5)).ReturnsAsync(talk);
 
-        var sut = CreateSut(Domain.Scopes.Talks.View);
+        var sut = CreateSut(roleName: RoleNames.Viewer);
 
         // Act
         var result = await sut.GetTalkAsync(10, 5);
@@ -709,7 +710,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.RemoveTalkFromEngagementAsync(5)).ReturnsAsync(OperationResult<bool>.Success(true));
 
-        var sut = CreateSut(Domain.Scopes.Talks.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.DeleteTalkAsync(10, 5);
@@ -727,7 +728,7 @@ public class EngagementsControllerTests
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(BuildEngagement(10));
         _engagementManagerMock.Setup(m => m.RemoveTalkFromEngagementAsync(99)).ReturnsAsync(OperationResult<bool>.Failure("Not found"));
 
-        var sut = CreateSut(Domain.Scopes.Talks.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.DeleteTalkAsync(10, 99);
@@ -749,7 +750,7 @@ public class EngagementsControllerTests
         var engagement = BuildEngagement(1, oid: "owner-oid-12345");
         _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(engagement);
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.GetEngagementAsync(1);
@@ -774,7 +775,7 @@ public class EngagementsControllerTests
         };
         _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(engagement);
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.UpdateEngagementAsync(1, request);
@@ -791,7 +792,7 @@ public class EngagementsControllerTests
         var engagement = BuildEngagement(1, oid: "owner-oid-12345");
         _engagementManagerMock.Setup(m => m.GetAsync(1)).ReturnsAsync(engagement);
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.DeleteEngagementAsync(1);
@@ -813,7 +814,7 @@ public class EngagementsControllerTests
         var engagement = BuildEngagement(10, oid: "owner-oid-12345");
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
 
-        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.GetTalksForEngagementAsync(10);
@@ -833,7 +834,7 @@ public class EngagementsControllerTests
         var engagement = BuildEngagement(10, oid: "owner-oid-12345");
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
 
-        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.GetTalkAsync(10, 5);
@@ -859,7 +860,7 @@ public class EngagementsControllerTests
             StartDateTime = DateTimeOffset.UtcNow,
             EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
         };
-        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.CreateTalkAsync(10, request);
@@ -885,7 +886,7 @@ public class EngagementsControllerTests
             StartDateTime = DateTimeOffset.UtcNow,
             EndDateTime = DateTimeOffset.UtcNow.AddHours(1)
         };
-        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.UpdateTalkAsync(10, 5, request);
@@ -903,7 +904,7 @@ public class EngagementsControllerTests
         var engagement = BuildEngagement(10, oid: "owner-oid-12345");
         _engagementManagerMock.Setup(m => m.GetAsync(10)).ReturnsAsync(engagement);
 
-        var sut = CreateSut(Domain.Scopes.Talks.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.DeleteTalkAsync(10, 5);
@@ -927,7 +928,7 @@ public class EngagementsControllerTests
             .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
             .ReturnsAsync(new PagedResult<Engagement> { Items = engagements, TotalCount = engagements.Count });
 
-        var sut = CreateSut(Domain.Scopes.Engagements.All, isSiteAdmin: true);
+        var sut = CreateSut(isSiteAdmin: true);
 
         // Act
         var result = await sut.GetEngagementsAsync();

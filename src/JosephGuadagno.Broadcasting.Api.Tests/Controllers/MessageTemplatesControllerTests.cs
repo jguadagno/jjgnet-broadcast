@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
 using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -35,7 +36,7 @@ public class MessageTemplatesControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private MessageTemplatesController CreateSut(string scopeClaimValue, string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
+    private MessageTemplatesController CreateSut(string roleName = RoleNames.Contributor, string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
     {
         var controller = new MessageTemplatesController(
             _messageTemplateDataStoreMock.Object,
@@ -43,7 +44,7 @@ public class MessageTemplatesControllerTests
             _loggerMock.Object,
             _mapper)
         {
-            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(scopeClaimValue, ownerOid, isSiteAdmin),
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(roleName, ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
@@ -83,7 +84,7 @@ public class MessageTemplatesControllerTests
             .Setup(m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<CancellationToken>()))
             .ReturnsAsync(template);
 
-        var sut = CreateSut(Domain.Scopes.MessageTemplates.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.GetAsync("TestPlatform", "RandomPost");
@@ -114,7 +115,7 @@ public class MessageTemplatesControllerTests
             .Setup(m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<CancellationToken>()))
             .ReturnsAsync(template);
 
-        var sut = CreateSut(Domain.Scopes.MessageTemplates.All, ownerOid: "non-owner-oid-99999");
+        var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
         var result = await sut.UpdateAsync("TestPlatform", "RandomPost", request);
@@ -140,7 +141,7 @@ public class MessageTemplatesControllerTests
             .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<MessageTemplate> { Items = templates, TotalCount = templates.Count });
 
-        var sut = CreateSut(Domain.Scopes.MessageTemplates.All, isSiteAdmin: true);
+        var sut = CreateSut(isSiteAdmin: true);
 
         // Act
         var result = await sut.GetAllAsync();

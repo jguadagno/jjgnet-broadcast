@@ -13,22 +13,20 @@ public static class ApiControllerTestHelpers
 {
     /// <summary>
     /// Builds an <see cref="HttpContext"/> whose <see cref="ClaimsPrincipal"/> carries the
-    /// given OAuth scope so that <c>HttpContext.VerifyUserHasAnyAcceptedScope</c> succeeds.
-    /// Both the short "scp" claim and the full URI claim type are set for maximum
-    /// compatibility with different versions of Microsoft.Identity.Web.
+    /// role claims needed by the API authorization policies and the current owner OID.
+    /// Tests can elevate to site administrator by setting <paramref name="isSiteAdmin"/>.
     /// </summary>
     public static ControllerContext CreateControllerContext(
-        string scopeClaimValue,
+        string roleName = Domain.Constants.RoleNames.Contributor,
         string ownerOid = "owner-oid-12345",
         bool isSiteAdmin = false)
     {
         var claims = new List<Claim>
         {
-            new Claim("scp", scopeClaimValue),
-            new Claim("http://schemas.microsoft.com/identity/claims/scope", scopeClaimValue),
+            new Claim(ClaimTypes.Role, roleName),
             new Claim(Domain.Constants.ApplicationClaimTypes.EntraObjectId, ownerOid)
         };
-        if (isSiteAdmin)
+        if (isSiteAdmin && roleName != Domain.Constants.RoleNames.SiteAdministrator)
             claims.Add(new Claim(ClaimTypes.Role, Domain.Constants.RoleNames.SiteAdministrator));
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthentication"));
@@ -41,6 +39,6 @@ public static class ApiControllerTestHelpers
     /// <c>CreatedByEntraOid</c>.
     /// Use for testing ownership rejection (403 Forbid).
     /// </summary>
-    public static ControllerContext CreateNonOwnerControllerContext(string scopeClaimValue) =>
-        CreateControllerContext(scopeClaimValue, ownerOid: "non-owner-oid-99999");
+    public static ControllerContext CreateNonOwnerControllerContext(string roleName = Domain.Constants.RoleNames.Contributor) =>
+        CreateControllerContext(roleName, ownerOid: "non-owner-oid-99999");
 }

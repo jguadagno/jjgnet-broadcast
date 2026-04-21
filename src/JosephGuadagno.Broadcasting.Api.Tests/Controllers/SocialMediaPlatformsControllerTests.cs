@@ -3,6 +3,7 @@ using FluentAssertions;
 using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -31,14 +32,14 @@ public class SocialMediaPlatformsControllerTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private SocialMediaPlatformsController CreateSut(string scopeClaimValue)
+    private SocialMediaPlatformsController CreateSut(string roleName = RoleNames.Contributor)
     {
         var controller = new SocialMediaPlatformsController(
             _managerMock.Object,
             _loggerMock.Object,
             _mapper)
         {
-            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(scopeClaimValue),
+            ControllerContext = ApiControllerTestHelpers.CreateControllerContext(roleName),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
         };
         return controller;
@@ -60,7 +61,7 @@ public class SocialMediaPlatformsControllerTests
         };
         _managerMock.Setup(m => m.GetAllAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>())).ReturnsAsync(platforms);
 
-        var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetAllAsync();
@@ -80,7 +81,7 @@ public class SocialMediaPlatformsControllerTests
         _managerMock.Setup(m => m.GetAllAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<SocialMediaPlatform>());
 
-        var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.List);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetAllAsync();
@@ -103,7 +104,7 @@ public class SocialMediaPlatformsControllerTests
         var platform = new SocialMediaPlatform { Id = 42, Name = "Mastodon", Url = "https://mastodon.social", IsActive = true };
         _managerMock.Setup(m => m.GetByIdAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(platform);
 
-        var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.View);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetAsync(42);
@@ -125,7 +126,7 @@ public class SocialMediaPlatformsControllerTests
         _managerMock.Setup(m => m.GetByIdAsync(99, It.IsAny<CancellationToken>()))
             .ReturnsAsync((SocialMediaPlatform?)null);
 
-        var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetAsync(99);
@@ -162,7 +163,7 @@ public class SocialMediaPlatformsControllerTests
             .Setup(m => m.AddAsync(It.IsAny<SocialMediaPlatform>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(created);
 
-        var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.Add);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.CreateAsync(request);
@@ -178,11 +179,11 @@ public class SocialMediaPlatformsControllerTests
         _managerMock.Verify(m => m.AddAsync(It.IsAny<SocialMediaPlatform>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Fact]
+        [Fact]
     public async Task CreateAsync_WithInvalidModelState_ShouldReturn400()
     {
         // Arrange
-        var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.All);
+        var sut = CreateSut();
         sut.ModelState.AddModelError("Name", "Name is required");
 
         // Act
@@ -202,7 +203,7 @@ public class SocialMediaPlatformsControllerTests
             .Setup(m => m.AddAsync(It.IsAny<SocialMediaPlatform>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((SocialMediaPlatform?)null);
 
-        var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.Add);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.CreateAsync(request);
@@ -239,7 +240,7 @@ public class SocialMediaPlatformsControllerTests
             .Setup(m => m.UpdateAsync(It.Is<SocialMediaPlatform>(p => p.Id == 5), It.IsAny<CancellationToken>()))
             .ReturnsAsync(updated);
 
-        var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.Modify);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.UpdateAsync(5, request);
@@ -261,7 +262,7 @@ public class SocialMediaPlatformsControllerTests
             .Setup(m => m.UpdateAsync(It.IsAny<SocialMediaPlatform>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((SocialMediaPlatform?)null);
 
-        var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.UpdateAsync(999, request);
@@ -275,7 +276,7 @@ public class SocialMediaPlatformsControllerTests
     public async Task UpdateAsync_WithInvalidModelState_ShouldReturn400()
     {
         // Arrange
-        var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.All);
+        var sut = CreateSut();
         sut.ModelState.AddModelError("Name", "Name is required");
 
         // Act
@@ -296,7 +297,7 @@ public class SocialMediaPlatformsControllerTests
         // Arrange
         _managerMock.Setup(m => m.DeleteAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.Delete);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.DeleteAsync(7);
@@ -312,7 +313,7 @@ public class SocialMediaPlatformsControllerTests
         // Arrange
         _managerMock.Setup(m => m.DeleteAsync(404, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var sut = CreateSut(Domain.Scopes.SocialMediaPlatforms.All);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.DeleteAsync(404);
