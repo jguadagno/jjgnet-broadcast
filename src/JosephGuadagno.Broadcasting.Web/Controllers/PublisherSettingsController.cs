@@ -12,7 +12,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// Controller for per-user publisher settings.
 /// </summary>
-[Authorize(Policy = "RequireContributor")]
+[Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
 public class PublisherSettingsController : Controller
 {
     private readonly IUserPublisherSettingService _userPublisherSettingService;

@@ -11,6 +11,7 @@ Use this when an ASP.NET Core API controller currently calls `VerifyUserHasAnyAc
 
 ## Patterns
 - Keep the controller's class-level `[Authorize]` attribute so authentication still gates every action.
+- Define shared policy-name constants in `src\JosephGuadagno.Broadcasting.Domain\Constants\AuthorizationPolicyNames.cs` and consume them from policy registration, controller attributes, and reflection tests instead of repeating string literals.
 - Replace in-method scope checks with action-level `[Authorize(Policy = ...)]` attributes.
 - Use the cumulative role chain consistently:
   - `RequireViewer` for list/view/get/read actions
@@ -21,10 +22,12 @@ Use this when an ASP.NET Core API controller currently calls `VerifyUserHasAnyAc
 - Add a reflection-based test that asserts the expected policy per action so Phase 1 can verify the migration without rewriting direct controller behavior tests.
 
 ## Examples
+- Shared constants: `src\JosephGuadagno.Broadcasting.Domain\Constants\AuthorizationPolicyNames.cs`
 - Controllers: `src\JosephGuadagno.Broadcasting.Api\Controllers\EngagementsController.cs`, `SchedulesController.cs`, `SocialMediaPlatformsController.cs`, `UserPublisherSettingsController.cs`, `MessageTemplatesController.cs`
 - Tests: `src\JosephGuadagno.Broadcasting.Api.Tests\Controllers\ControllerAuthorizationPolicyTests.cs`
 
 ## Anti-Patterns
+- Hard-coding `"RequireViewer"` / `"RequireContributor"` / similar policy names in attributes, startup registration, or tests.
 - Removing class-level `[Authorize]` while adding policy attributes.
 - Mixing policy attributes with leftover `VerifyUserHasAnyAcceptedScope(...)` calls in the same controller.
 - Folding ownership logic changes into the policy migration phase.

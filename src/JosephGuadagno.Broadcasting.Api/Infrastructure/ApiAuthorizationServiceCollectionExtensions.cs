@@ -13,16 +13,16 @@ internal static class ApiAuthorizationServiceCollectionExtensions
 
         services.AddAuthorization(options =>
         {
-            options.AddPolicy("RequireSiteAdministrator", policy =>
+            options.AddPolicy(AuthorizationPolicyNames.RequireSiteAdministrator, policy =>
                 policy.RequireRole(RoleNames.SiteAdministrator));
 
-            options.AddPolicy("RequireAdministrator", policy =>
+            options.AddPolicy(AuthorizationPolicyNames.RequireAdministrator, policy =>
                 policy.RequireRole(RoleNames.SiteAdministrator, RoleNames.Administrator));
 
-            options.AddPolicy("RequireContributor", policy =>
+            options.AddPolicy(AuthorizationPolicyNames.RequireContributor, policy =>
                 policy.RequireRole(RoleNames.SiteAdministrator, RoleNames.Administrator, RoleNames.Contributor));
 
-            options.AddPolicy("RequireViewer", policy =>
+            options.AddPolicy(AuthorizationPolicyNames.RequireViewer, policy =>
                 policy.RequireRole(RoleNames.SiteAdministrator, RoleNames.Administrator, RoleNames.Contributor, RoleNames.Viewer));
         });
 

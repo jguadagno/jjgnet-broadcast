@@ -36,7 +36,7 @@ public class UserPublisherSettingsController(
     /// <response code="401">The caller is not authenticated.</response>
     /// <response code="403">The caller is not allowed to query the requested owner.</response>
     [HttpGet]
-    [Authorize(Policy = "RequireViewer")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UserPublisherSettingResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -65,7 +65,7 @@ public class UserPublisherSettingsController(
     /// <response code="403">The caller is not allowed to query the requested owner.</response>
     /// <response code="404">No publisher settings exist for the resolved owner and platform.</response>
     [HttpGet("{platformId:int}")]
-    [Authorize(Policy = "RequireViewer")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserPublisherSettingResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -105,7 +105,7 @@ public class UserPublisherSettingsController(
     /// <response code="401">The caller is not authenticated.</response>
     /// <response code="403">The caller is not allowed to save settings for the requested owner.</response>
     [HttpPut("{platformId:int}")]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserPublisherSettingResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -157,7 +157,7 @@ public class UserPublisherSettingsController(
     /// <response code="403">The caller is not allowed to delete settings for the requested owner.</response>
     /// <response code="404">No publisher settings exist for the resolved owner and platform.</response>
     [HttpDelete("{platformId:int}")]
-    [Authorize(Policy = "RequireAdministrator")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireAdministrator)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

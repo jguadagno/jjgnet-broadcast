@@ -56,7 +56,7 @@ public class SchedulesController: ControllerBase
     /// <response code="200">Upon success</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
-    [Authorize(Policy = "RequireViewer")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetScheduledItemsAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
@@ -97,7 +97,7 @@ public class SchedulesController: ControllerBase
     /// <response code="404">Returned if an <see cref="ScheduledItem"/> was not found for the specified id</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{scheduledItemId:int}")]
-    [Authorize(Policy = "RequireViewer")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScheduledItemResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -126,7 +126,7 @@ public class SchedulesController: ControllerBase
     /// <response code="400">If the data provided failed validation</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPost]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status201Created, Type=typeof(ScheduledItemResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -161,7 +161,7 @@ public class SchedulesController: ControllerBase
     /// <response code="400">If the data provided failed validation or the id does not match</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPut("{scheduledItemId:int}")]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type=typeof(ScheduledItemResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -205,7 +205,7 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If a scheduled item with the specified identifier was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpDelete("{scheduledItemId:int}")]
-    [Authorize(Policy = "RequireAdministrator")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireAdministrator)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -244,7 +244,7 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If there are no items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("unsent")]
-    [Authorize(Policy = "RequireViewer")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -281,7 +281,7 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If there are not items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("upcoming")]
-    [Authorize(Policy = "RequireViewer")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -320,7 +320,7 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If there are not items that need to be sent</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("calendar/{year:int}/{month:int}")]
-    [Authorize(Policy = "RequireViewer")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -357,7 +357,7 @@ public class SchedulesController: ControllerBase
     /// <response code="404">If there are no orphaned scheduled items</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("orphaned")]
-    [Authorize(Policy = "RequireViewer")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

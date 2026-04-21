@@ -11,7 +11,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// Controller for administrative functions (user approval, role management)
 /// </summary>
-[Authorize(Policy = "RequireSiteAdministrator")]
+[Authorize(Policy = AuthorizationPolicyNames.RequireSiteAdministrator)]
 public class SiteAdminController : Controller
 {
     private readonly IUserApprovalManager _userApprovalManager;

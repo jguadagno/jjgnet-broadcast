@@ -64,7 +64,7 @@ public class MessageTemplatesController : ControllerBase
     /// <response code="200">If the call was successful</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
-    [Authorize(Policy = "RequireViewer")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<MessageTemplateResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<MessageTemplateResponse>>> GetAllAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
@@ -105,7 +105,7 @@ public class MessageTemplatesController : ControllerBase
     /// <response code="404">If the item was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{platform}/{messageType}")]
-    [Authorize(Policy = "RequireViewer")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MessageTemplateResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -145,7 +145,7 @@ public class MessageTemplatesController : ControllerBase
     /// <response code="404">If the item was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPut("{platform}/{messageType}")]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MessageTemplateResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

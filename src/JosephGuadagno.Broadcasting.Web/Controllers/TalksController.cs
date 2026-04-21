@@ -12,7 +12,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// The controller for the talks.
 /// </summary>
-[Authorize(Policy = "RequireContributor")]
+[Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
 [Route("engagements/{engagementId:int}/[controller]/[action]")]
 public class TalksController : Controller
 {

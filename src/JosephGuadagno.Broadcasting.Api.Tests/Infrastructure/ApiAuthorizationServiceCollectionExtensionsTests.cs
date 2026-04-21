@@ -31,10 +31,10 @@ public class ApiAuthorizationServiceCollectionExtensionsTests
     }
 
     [Theory]
-    [InlineData("RequireSiteAdministrator", RoleNames.SiteAdministrator)]
-    [InlineData("RequireAdministrator", RoleNames.SiteAdministrator, RoleNames.Administrator)]
-    [InlineData("RequireContributor", RoleNames.SiteAdministrator, RoleNames.Administrator, RoleNames.Contributor)]
-    [InlineData("RequireViewer", RoleNames.SiteAdministrator, RoleNames.Administrator, RoleNames.Contributor, RoleNames.Viewer)]
+    [InlineData(AuthorizationPolicyNames.RequireSiteAdministrator, RoleNames.SiteAdministrator)]
+    [InlineData(AuthorizationPolicyNames.RequireAdministrator, RoleNames.SiteAdministrator, RoleNames.Administrator)]
+    [InlineData(AuthorizationPolicyNames.RequireContributor, RoleNames.SiteAdministrator, RoleNames.Administrator, RoleNames.Contributor)]
+    [InlineData(AuthorizationPolicyNames.RequireViewer, RoleNames.SiteAdministrator, RoleNames.Administrator, RoleNames.Contributor, RoleNames.Viewer)]
     public void AddBroadcastingApiAuthorization_RegistersHierarchicalPolicies(
         string policyName,
         params string[] expectedRoles)

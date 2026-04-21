@@ -1,4 +1,5 @@
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +10,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// <summary>
 /// Controller for managing social media platforms in the admin UI.
 /// </summary>
-[Authorize(Policy = "RequireViewer")]
+[Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
 public class SocialMediaPlatformsController : Controller
 {
     private readonly ISocialMediaPlatformService _platformService;
@@ -37,7 +38,7 @@ public class SocialMediaPlatformsController : Controller
     /// <summary>
     /// Shows the form to add a new social media platform.
     /// </summary>
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public IActionResult Add()
     {
         return View(new SocialMediaPlatformViewModel { IsActive = true });
@@ -48,7 +49,7 @@ public class SocialMediaPlatformsController : Controller
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Add(SocialMediaPlatformViewModel viewModel)
     {
         if (!ModelState.IsValid)
@@ -71,7 +72,7 @@ public class SocialMediaPlatformsController : Controller
     /// <summary>
     /// Shows the edit form for a social media platform.
     /// </summary>
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(int id)
     {
         var platform = await _platformService.GetByIdAsync(id);
@@ -89,7 +90,7 @@ public class SocialMediaPlatformsController : Controller
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(SocialMediaPlatformViewModel viewModel)
     {
         if (!ModelState.IsValid)
@@ -114,7 +115,7 @@ public class SocialMediaPlatformsController : Controller
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> ToggleActive(int id)
     {
         var success = await _platformService.ToggleActiveAsync(id);
@@ -134,7 +135,7 @@ public class SocialMediaPlatformsController : Controller
     /// Shows the delete confirmation page for a social media platform.
     /// </summary>
     [HttpGet]
-    [Authorize(Policy = "RequireSiteAdministrator")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireSiteAdministrator)]
     public async Task<IActionResult> Delete(int id)
     {
         var platform = await _platformService.GetByIdAsync(id);
@@ -153,7 +154,7 @@ public class SocialMediaPlatformsController : Controller
     [HttpPost]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    [Authorize(Policy = "RequireSiteAdministrator")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireSiteAdministrator)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var result = await _platformService.DeleteAsync(id);

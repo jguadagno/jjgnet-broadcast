@@ -1,5 +1,6 @@
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Api.Dtos;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -45,7 +46,7 @@ public class SocialMediaPlatformsController : ControllerBase
     /// <response code="200">If the call was successful</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
-    [Authorize(Policy = "RequireViewer")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SocialMediaPlatformResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<SocialMediaPlatformResponse>>> GetAllAsync([FromQuery] bool includeInactive = false)
@@ -66,7 +67,7 @@ public class SocialMediaPlatformsController : ControllerBase
     /// <response code="404">If the item was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet("{id:int}")]
-    [Authorize(Policy = "RequireViewer")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SocialMediaPlatformResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -91,7 +92,7 @@ public class SocialMediaPlatformsController : ControllerBase
     /// <response code="400">If the request is invalid</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPost]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(SocialMediaPlatformResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -127,7 +128,7 @@ public class SocialMediaPlatformsController : ControllerBase
     /// <response code="404">If the item was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPut("{id:int}")]
-    [Authorize(Policy = "RequireContributor")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SocialMediaPlatformResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -162,7 +163,7 @@ public class SocialMediaPlatformsController : ControllerBase
     /// <response code="404">If the item was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpDelete("{id:int}")]
-    [Authorize(Policy = "RequireAdministrator")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireAdministrator)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

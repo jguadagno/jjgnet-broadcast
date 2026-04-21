@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Moq;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Controllers;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
@@ -377,7 +378,7 @@ public class SocialMediaPlatformsControllerTests
         // Assert
         attributes.Should().NotBeEmpty();
         var authorizeAttribute = (AuthorizeAttribute)attributes.First();
-        authorizeAttribute.Policy.Should().Be("RequireViewer");
+        authorizeAttribute.Policy.Should().Be(AuthorizationPolicyNames.RequireViewer);
     }
 
     [Fact]
@@ -391,7 +392,7 @@ public class SocialMediaPlatformsControllerTests
         var attributes = method!.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: false);
         attributes.Should().NotBeEmpty();
         var authorizeAttribute = (AuthorizeAttribute)attributes.First();
-        authorizeAttribute.Policy.Should().Be("RequireContributor");
+        authorizeAttribute.Policy.Should().Be(AuthorizationPolicyNames.RequireContributor);
     }
 
     [Fact]
@@ -405,6 +406,6 @@ public class SocialMediaPlatformsControllerTests
         var attributes = method!.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: false);
         attributes.Should().NotBeEmpty();
         var authorizeAttribute = (AuthorizeAttribute)attributes.First();
-        authorizeAttribute.Policy.Should().Be("RequireSiteAdministrator");
+        authorizeAttribute.Policy.Should().Be(AuthorizationPolicyNames.RequireSiteAdministrator);
     }
 }
