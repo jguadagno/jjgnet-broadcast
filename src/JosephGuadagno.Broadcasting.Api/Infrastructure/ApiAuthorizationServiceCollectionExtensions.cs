@@ -9,7 +9,10 @@ internal static class ApiAuthorizationServiceCollectionExtensions
 {
     internal static IServiceCollection AddBroadcastingApiAuthorization(this IServiceCollection services)
     {
-        services.TryAddScoped<IClaimsTransformation, EntraClaimsTransformation>();
+        // Use AddScoped (not TryAddScoped) — AddMicrosoftIdentityWebApiAuthentication registers its own
+        // IClaimsTransformation first, so TryAdd would silently no-op and EntraClaimsTransformation
+        // would never run. AddScoped ensures our implementation is the one the pipeline uses.
+        services.AddScoped<IClaimsTransformation, EntraClaimsTransformation>();
 
         services.AddAuthorization(options =>
         {

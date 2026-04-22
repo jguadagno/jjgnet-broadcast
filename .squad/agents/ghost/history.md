@@ -198,3 +198,14 @@ builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.Authentic
 - Before rewriting a stacked Phase 2 branch, verify the prerequisite merge on `origin/main` with `git fetch`, `git merge-base HEAD origin/main`, and the current `origin/main` head; Neo's blocker on PR #805 was stale once PR #804 appeared on the fetched remote.
 - Keep recovery work isolated in `\_worktrees\issue-766-api-test-role-claims` so a dirty root workspace and reviewer-lockout reassignment do not leak unrelated changes onto the PR branch.
 - For API RBAC test migration, `src\JosephGuadagno.Broadcasting.Api.Tests\Helpers\ApiControllerTestHelpers.cs` should seed only role and owner-OID claims, while `src\JosephGuadagno.Broadcasting.Api.Tests\Infrastructure\ApiAuthorizationServiceCollectionExtensionsTests.cs` remains the single place that still asserts `scp` preservation through claims transformation.
+
+### 2026-05-01 — MI.Web v4 OID Claim Mapping Fix
+
+- **Root cause:** `Microsoft.Identity.Web` v2+ (v4.8.0 specifically) uses `JsonWebTokenHandler` for JWT bearer token validation. Unlike the legacy `JwtSecurityTokenHandler`, `JsonWebTokenHandler` does **not** perform claim type mapping from short RFC names to XML schema URIs. The `oid` claim in a real Entra access token therefore arrives as `"oid"`, not `"http://schemas.microsoft.com/identity/claims/objectidentifier"`.
+- **Effect:** `EntraClaimsTransformation` looked only for the URI form, so `objectIdClaim` was always null in the API's JWT bearer context → no role claims added → all `[Authorize(Policy = "RequireXxx")]` checks returned 403. The Web app was unaffected because `AddMicrosoftIdentityWebApp` uses the OIDC handler which **does** map claims in the ID token / cookie identity.
+- **Fix pattern:** Check both forms with null-coalescing: `FindFirst(EntraObjectId) ?? FindFirst(EntraObjectIdShort)`. Always check the URI form first (for OIDC/cookie contexts where mapping is performed), then fall back to the short form (for JWT bearer contexts).
+- **Files changed:**
+  - `src\JosephGuadagno.Broadcasting.Domain\Constants\ApplicationClaimTypes.cs` — added `EntraObjectIdShort = "oid"` constant
+  - `src\JosephGuadagno.Broadcasting.Managers\EntraClaimsTransformation.cs` — updated OID lookup to check both forms
+  - `src\JosephGuadagno.Broadcasting.Api.Tests\Infrastructure\ApiAuthorizationServiceCollectionExtensionsTests.cs` — added short-form OID test
+  - `src\JosephGuadagno.Broadcasting.Web.Tests\EntraClaimsTransformationTests.cs` — added short-form OID test

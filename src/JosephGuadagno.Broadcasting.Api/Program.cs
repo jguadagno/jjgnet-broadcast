@@ -11,6 +11,7 @@ using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.AzureHelpers.Storage;
 using JosephGuadagno.AzureHelpers.Storage.Interfaces;
+using JosephGuadagno.Broadcasting.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
@@ -68,7 +69,7 @@ builder.AddAzureQueueServiceClient("QueueAccount");
 builder.Services.AddAutoMapper(config =>
 {
     config.LicenseKey = autoMapperSettings.LicenseKey;
-    config.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
+    config.AddDataSqlMappingProfiles();
     config.AddProfile<JosephGuadagno.Broadcasting.Api.MappingProfiles.ApiBroadcastingProfile>();
 }, typeof(Program));
 
@@ -167,7 +168,7 @@ static string[] GetApiScopes(string? clientId)
         return [];
     }
 
-    return [$"api://{clientId}/access_as_user"];
+    return [$"api://{clientId}/{Scopes.MicrosoftGraph.UserImpersonation}"];
 }
 
 void ConfigureTelemetryAndLogging(IServiceCollection services, string logPath, string applicationName)

@@ -260,6 +260,7 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
+    services.TryAddScoped<IScheduledItemValidationService, ScheduledItemValidationService>();
     services.TryAddScoped<IUserPublisherSettingService, UserPublisherSettingService>();
     services.TryAddScoped<IMessageTemplateService, MessageTemplateService>();
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();

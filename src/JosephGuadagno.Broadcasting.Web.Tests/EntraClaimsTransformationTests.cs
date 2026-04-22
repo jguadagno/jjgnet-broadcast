@@ -235,6 +235,61 @@ public class EntraClaimsTransformationTests
     }
 
     [Fact]
+    public async Task TransformAsync_WithShortFormOidClaim_AddsClaimsAndRoles()
+    {
+        // Arrange — mirrors the JWT bearer scenario where MI.Web v2+ (JsonWebTokenHandler)
+        // delivers "oid" without mapping it to the full URI form.
+        var entraObjectId = "short-oid-55555";
+        var displayName = "JWT Bearer User";
+        var email = "jwt@example.com";
+
+        var claims = new List<Claim>
+        {
+            new Claim(ApplicationClaimTypes.EntraObjectIdShort, entraObjectId),
+            new Claim(ClaimTypes.Name, displayName),
+            new Claim(ClaimTypes.Email, email)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        var principal = new ClaimsPrincipal(identity);
+
+        var approvedUser = new ApplicationUser
+        {
+            Id = 5,
+            EntraObjectId = entraObjectId,
+            DisplayName = displayName,
+            Email = email,
+            ApprovalStatus = ApprovalStatus.Approved.ToString(),
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        var roles = new List<Role>
+        {
+            new Role { Id = 1, Name = "SiteAdministrator", Description = "Site admin" }
+        };
+
+        _mockUserApprovalManager
+            .Setup(x => x.GetOrCreateUserAsync(entraObjectId, displayName, email))
+            .ReturnsAsync(approvedUser);
+
+        _mockUserApprovalManager
+            .Setup(x => x.GetUserRolesAsync(approvedUser.Id))
+            .ReturnsAsync(roles);
+
+        // Act
+        var result = await _sut.TransformAsync(principal);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.FindFirst(ApplicationClaimTypes.ApprovalStatus).Should().NotBeNull()
+            .And.Subject.As<Claim>().Value.Should().Be(ApprovalStatus.Approved.ToString());
+
+        result.FindAll(ClaimTypes.Role).Should().ContainSingle(c => c.Value == "SiteAdministrator");
+
+        _mockUserApprovalManager.Verify(x => x.GetOrCreateUserAsync(entraObjectId, displayName, email), Times.Once);
+    }
+
+    [Fact]
     public async Task TransformAsync_WithMissingOidClaim_ReturnsOriginalPrincipal()
     {
         // Arrange

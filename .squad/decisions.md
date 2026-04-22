@@ -17398,3 +17398,398 @@ This is the third violation. The directive exists in .squad/routing.md and was r
 - **Blocked:** Cross-issue payload; changes src\JosephGuadagno.Broadcasting.Web\appsettings.Development.json even though this PR is collector regression coverage only
 - **Follow-up:** After #771 merges, retarget #772 to new base and remove unrelated Web config drift before merge
 
+
+---
+
+--- From: ghost-764-reassignment.md ---
+# Decision: Rebase PR #801 on main and keep Phase 0 dual enforcement intact
+
+**Date:** 2026-04-21  
+**Author:** Ghost  
+**Issue:** 764  
+**PR:** 801  
+**Status:** Completed
+
+## Context
+
+PR #801 was blocked after #800 merged because the branch was stale and the next revision cycle could not stay with Trinity under reviewer-lockout rules. The API RBAC foundation still needed a fresh validation pass on top of current main.
+
+## Decision
+
+Rebase issue-764-api-rbac on the latest origin/main, keep the Phase 0 API change additive, and validate the real DI wiring plus smoke-level claims transformation tests without replacing any existing scope checks in API controllers.
+
+## Why
+
+- Rebased history removes already-merged dependency noise from PR #800 and makes the remaining review surface explicit.
+- Phase 0 is security-sensitive because changing scope enforcement early would weaken backward compatibility; keeping VerifyUserHasAnyAcceptedScope(...) in place preserves dual enforcement while role infrastructure lands.
+- Infrastructure-level tests are the least risky proof point for this phase because they verify policy registration and shared claims transformation without prematurely coupling controller behavior to role policies.
+
+## Validation
+
+- dotnet restore .\src\
+- dotnet build .\src\ --no-restore --configuration Release
+- dotnet test .\src\ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"
+
+---
+
+--- From: ghost-oid-claim-mapping-fix.md ---
+# Decision: OID Claim Mapping Fix for JWT Bearer Context
+
+**Date:** 2026-05-01  
+**Author:** Ghost (Security & Identity Specialist)  
+**Status:** Implemented
+
+## Root Cause
+
+Microsoft.Identity.Web v2+ (v4.8.0 specifically) uses JsonWebTokenHandler internally when processing JWT bearer tokens via AddMicrosoftIdentityWebApiAuthentication. Unlike the legacy JwtSecurityTokenHandler, JsonWebTokenHandler does **not** perform claim type mapping from short RFC names to XML schema URIs.
+
+As a result, the oid claim in a real Entra access token arrives at the API as "oid" (short form), not "http://schemas.microsoft.com/identity/claims/objectidentifier" (URI form).
+
+EntraClaimsTransformation in JosephGuadagno.Broadcasting.Managers was looking for only the URI form:
+
+`csharp
+var objectIdClaim = principal.FindFirst(ApplicationClaimTypes.EntraObjectId);
+// ApplicationClaimTypes.EntraObjectId = "http://schemas.microsoft.com/identity/claims/objectidentifier"
+`
+
+In the API (JWT bearer), oid never maps to the URI form → objectIdClaim is null → transformation returns without adding role claims → all [Authorize(Policy = "RequireXxx")] checks fail → **HTTP 403**.
+
+## Why Web Works but API Didn't
+
+The Web app uses AddMicrosoftIdentityWebApp, which registers the OpenID Connect (OIDC) handler. The OIDC handler processes the **ID token** and builds a ClaimsIdentity from the cookie — and it **does** perform claim type mapping, converting oid to the full URI form. The resulting cookie identity contains the URI-form claim, so EntraClaimsTransformation finds it correctly.
+
+The API uses AddMicrosoftIdentityWebApiAuthentication, which registers the JWT bearer handler backed by JsonWebTokenHandler. No claim type mapping is performed, so oid remains "oid".
+
+## The Fix
+
+### 1. New constant in ApplicationClaimTypes
+
+Added EntraObjectIdShort = "oid" to src\JosephGuadagno.Broadcasting.Domain\Constants\ApplicationClaimTypes.cs to represent the short form delivered by JWT bearer tokens.
+
+### 2. Dual lookup in EntraClaimsTransformation
+
+Updated line 31 of src\JosephGuadagno.Broadcasting.Managers\EntraClaimsTransformation.cs:
+
+`csharp
+// Before
+var objectIdClaim = principal.FindFirst(ApplicationClaimTypes.EntraObjectId);
+
+// After
+var objectIdClaim = principal.FindFirst(ApplicationClaimTypes.EntraObjectId)
+    ?? principal.FindFirst(ApplicationClaimTypes.EntraObjectIdShort);
+`
+
+URI form is checked first (OIDC/cookie context), then short form (JWT bearer context). All downstream logic is unchanged.
+
+### 3. Test coverage
+
+- src\JosephGuadagno.Broadcasting.Api.Tests\Infrastructure\ApiAuthorizationServiceCollectionExtensionsTests.cs — added AddBroadcastingApiAuthorization_ClaimsTransformation_AddsRoleClaimsFromShortFormOidClaim mirroring the real JWT bearer scenario.
+- src\JosephGuadagno.Broadcasting.Web.Tests\EntraClaimsTransformationTests.cs — added TransformAsync_WithShortFormOidClaim_AddsClaimsAndRoles directly testing the EntraClaimsTransformation class with the short-form claim.
+
+## Impact
+
+- API RBAC authorization policies now function correctly for real Entra-issued access tokens.
+- Web app behavior is unchanged (URI form still matched first).
+- Fix is purely additive — no breaking changes to the contract.
+
+---
+
+--- From: link-pr-806-scope-cleanup.md ---
+# Decision: PR #806 Payload Cleanup — One Issue Per Branch
+
+**Date:** 2026-04-21  
+**Author:** Link  
+**Status:** Implemented
+
+## Context
+
+PR #806 (issue-767-scope-cleanup) was blocked for merge with message: _"Neo review outcome: blocked because unrelated .squad/agents/*/history.md files are included in the PR and violate one-PR-per-issue"_
+
+The PR had accumulated history file changes from at least 3 team members' agents (Switch, Tank, Trinity) plus infrastructure docs (Ghost history, SKILL file) during the conflict resolution process.
+
+## Problem
+
+- PR should contain **only** issue #767 scope cleanup implementation
+- Unrelated .squad/ changes violate the "one issue per branch" rule
+- The payload included 6 files that do not belong:
+   - .squad/agents/switch/history.md (modified)
+   - .squad/agents/tank/history.md (modified)
+   - .squad/agents/trinity/history.md (modified)
+   - .squad/agents/ghost/history.md (added)
+   - .squad/decisions/inbox/trinity-806-merge-conflict-resolution.md (added)
+   - .squad/skills/git-pr-recovery/SKILL.md (added)
+
+## Solution
+
+Rebuilt the branch as a **single clean commit** containing only the intended implementation:
+
+**Files retained (14 total):**
+- Domain: src/.../Domain/Scopes.cs (1)
+- API: src/.../Api/{Program.cs, Interfaces/ISettings.cs, Models/Settings.cs, XmlDocumentTransformer.cs, appsettings*.json} (5)
+- Web: src/.../Web/{Program.cs, appsettings*.json} (3)
+- API Tests: src/.../Api.Tests/{Controllers/*, Helpers/ApiControllerTestHelpers.cs, Infrastructure/*} (4)
+
+**Execution:**
+1. Reset local to origin/main
+2. Manually extracted issue-767 implementation files from remote branch
+3. Staged clean payload (src/ only, no .squad/)
+4. Committed with original PR message + Co-authored-by trailer
+5. Force-pushed to origin/issue-767-scope-cleanup
+
+**Result:** PR now shows 14 changed files (down from 20+), all related to issue #767. Ready for merge.
+
+## Learnings
+
+- **Squad file edits during merge conflict resolution**: When conflicts arise on a feature branch, avoid committing temporary .squad/ housekeeping files. Merge conflicts should be resolved on source code only; squad updates belong in separate commit/PR if needed.
+- **One-branch-per-issue enforcement**: The rule exists to keep PR payloads clean and reviewable. When accumulated unrelated changes appear, strip them before merge rather than letting them accumulate.
+- **Force-push for payload cleanup**: A force-push after rebuilding the branch is acceptable when the goal is **payload cleanup** (removing unrelated files), not history rewrite. The feature implementation (the actual code changes) remains identical.
+
+## Related Issues
+
+- Closes issue #767 (via PR #806)
+- Completes Neo's blocking review condition
+
+---
+
+--- From: link-sprint24-cleanup.md ---
+# Decision: Sprint 24/25 Local Repo Cleanup
+
+**Date:** 2026-04-21  
+**By:** Link (Platform & DevOps)  
+**Decision Type:** Operational (Post-Sprint Hygiene)
+
+## Summary
+
+After PR #805/#806 merged at end of Sprint 24, local repo had accumulated mixed state:
+- User in-flight work on issue-767-scope-cleanup (scope removal pilot)
+- Local main branch tracking +1 housekeeping commit
+- Backup branches and stale reflog artifacts
+- 3 pending decision inbox files
+
+User is taking manual scope/role migration work offline for testing; squad cleaned local state conservatively.
+
+## What We Cleaned
+
+✅ **Stale reflog artifacts** — Deleted efs/original/refs/heads/{linkedin,main} and efs/original/refs/remotes/origin/main  
+  Reason: These are orphaned backup refs from prior reflog-based recovery. No active recovery needed.
+
+✅ **Remote-tracking sync** — Pruned origin/issue-767-scope-cleanup (branch deleted on remote)  
+  Reason: PR #806 closed the remote branch; local tracking config remains but branch is now local-only.
+
+✅ **Reflog and object cleanup** — Expired all reflog entries; ran git gc --prune=now  
+  Reason: Cleanup reduces git object store size and removes unreachable dangling refs.
+
+## What We Preserved (Intentional)
+
+✅ **issue-767-scope-cleanup branch** — 4 commits ahead of remote  
+  Reason: User work in progress required for manual scope removal testing. User will resume with this branch.
+
+✅ **ackup/issue-767-premerge branch** — Local backup point  
+  Reason: User may need recovery point during testing. Deletion is user's call post-testing.
+
+✅ **Local main +1 commit vs origin/main** — Housekeeping commit 7dba1e8  
+  Reason: Documents PR #806 payload scope cleanup. Can fast-forward safely when user pulls later.
+
+✅ **.squad/decisions/inbox/* (3 files)** — Pending decision merge  
+  Reason: These are active work awaiting next sprint cycle decision merge. Not stale.
+
+## Recommendation for Next Sprint
+
+- **After user completes manual testing:** User can delete ackup/issue-767-premerge (no longer needed as recovery point)
+- **Before resuming main work:** User should run git pull origin main to fast-forward local main and sync with merged #805/#806 work
+- **Decision merge cycle:** Next squad session should merge .squad/decisions/inbox/* into decisions.md as part of standard sprint wrap
+
+## Rationale
+
+This cleanup applied the **conservative** principle: preserve user work and uncertain changes rather than removing them. Stale artifacts (reflog backups, orphaned refs) were removed safely; active work and backup branches were preserved for user decision.
+
+---
+
+--- From: morpheus-bootstrap-owner-oid-seed.md ---
+# Decision: Bootstrap owner OID seed for issue #760
+
+**Date:** 2026-04-20  
+**Owner:** Morpheus
+
+## Context
+
+PR #771 resolves collector ownership by reading the newest persisted source record owner OID and failing closed when no owner can be found. On a fresh database, the base seed script created source rows but did not assign any owner OID values, leaving the new resolver without a bootstrap path.
+
+## Decision
+
+Use one seed-script variable near the top of scripts/database/data-seed.sql as the single source of truth for seeded ownership:
+
+`sql
+DECLARE @SeededOwnerEntraOid nvarchar(36) = N'00000000-0000-0000-0000-000000000000';
+`
+
+Add a TODO comment directly above it telling operators to replace the placeholder with a real Entra object ID when they want seeded ownership to map to a real user. Reuse that variable everywhere the bootstrap seed creates owner-aware records.
+
+## Why
+
+1. **Fresh-database bootstrap must succeed.**
+   SyndicationFeedSources and YouTubeSources now require a usable owner path for fail-closed collector resolution.
+2. **One replacement point beats scattered literals.**
+   Operators can update one obvious value instead of hunting through hundreds of seed rows.
+3. **Scope stays narrow.**
+   This fixes the clean-environment gap without changing resolver behavior, schema-loading order, or introducing migrations.
+
+## Consequences
+
+- Fresh environments get deterministic seeded ownership immediately.
+- Operators still need to replace the placeholder GUID with a real Entra object ID when they want seeded records to belong to a real user.
+- Future seed additions to owner-aware tables should reuse @SeededOwnerEntraOid instead of embedding a new literal.
+
+---
+
+--- From: neo-squad-file-handling-policy.md ---
+# Squad File Handling Policy — End-of-Sprint and Global Updates
+
+**Date:** 2026-04-21  
+**Author:** Neo  
+**Title:** Squad File Handling Policy – End-of-Sprint and Global Updates  
+**Status:** DECIDED  
+**Issue:** #PROCESS
+
+## The User's Question
+
+> Then how should the end of sprint or more global .squad files be handled? A separate issue and PR post Sprint?
+
+## Short Answer
+
+**Yes. Global .squad updates belong in a dedicated process PR, separate from feature work.**
+
+## Policy Recommendation
+
+### Three Categories of .squad Files
+
+#### Category 1: Issue-Specific Decisions ✅ Ship with the feature PR
+- **Pattern:** decisions/inbox/{agent}-{ISSUE_NUMBER}-*.md
+- **Scope:** Decisions made *for* that specific issue
+- **Lifecycle:** Lives in inbox during work; merges to decisions.md when the issue PR merges
+- **Rationale:** These files document the *why* behind code changes and tradeoffs. They are work product, not meta-documentation.
+- **Example:** decisions/inbox/neo-806-scope-migration-phase-3.md ships with PR #806
+
+#### Category 2: Ambient Agent History and Logs ❌ Never in feature PRs
+- **Pattern:** .squad/agents/{agent}/history.md, .squad/log/, .squad/orchestration-log/
+- **Scope:** Cross-issue session notes, learnings, metadata, orchestration records
+- **Rationale:** These span multiple issues and multiple sprints. Including them in a feature PR creates false "this PR owns this learning" signals and pollutes the commit history.
+- **Example:** PR #806 included tank, switch, and trinity history files — wrong, even if relevant
+
+#### Category 3: Global Process Updates ❌ Batch in dedicated PRs at sprint boundaries
+- **Pattern:** .squad/routing.md updates, .squad/team.md roster changes, team-wide policy docs
+- **Scope:** Decisions that affect the whole team or multiple future sprints
+- **Cadence:** End of sprint (or when a new policy emerges that will guide many PRs going forward)
+- **Rationale:** Process updates should be reviewed and approved separately from feature work, with clear visibility that "this is a team process change"
+- **Example:** Updating .squad/routing.md with the two-tier squad-file rule
+
+## Operating Rules for Each Sprint
+
+### During the Sprint (Features)
+1. **Reviewers accept Tier 1 files** (decisions/inbox/*-ISSUE-*.md) in feature PRs
+2. **Reviewers reject Tier 2 files** (agent history, logs, orchestration) in feature PRs
+3. **Enforce one-PR-per-issue:** Feature PRs should contain code + issue-specific decisions, nothing else
+
+### At Sprint Boundary (End-of-Sprint)
+1. **Agent history updates** (history.md learnings/checklists for the upcoming sprint)
+   - Batch them into **one dedicated PR** per agent or **one shared team PR** (preferred)
+   - Title: docs: sprint {N} closeout — agent history updates
+   - No feature code; only .squad/agents/*/history.md changes
+   - Includes session-log archive refs and orchestration metadata cleanup
+   - This PR should **not be tied to an issue** (it's process, not a feature)
+
+2. **Policy updates** (routing, team process, global conventions)
+   - If a new policy emerged during the sprint, ship it in the **history/process PR** or a separate policy PR
+   - Example: This two-tier .squad-file rule should be added to .squad/routing.md as part of a sprint-boundary process update
+   - Single, clear approval; team-wide visibility
+
+3. **Archive old session logs** (if they exist)
+   - .squad/log/ files from prior sprints can be archived or cleaned up in the process PR
+   - Keeps the repo clean and focused on current/recent work
+
+## Concrete Example: End of Sprint 21
+
+Assume sprint 21 ends with issues #760, #761, #762 merged and feature PRs clean:
+
+### Feature PRs (during sprint)
+- **PR #760** — includes decisions/inbox/trinity-760-owner-ooid.md ✅ *Allowed*
+- **PR #761** — includes decisions/inbox/trinity-761-scaffolding-removal.md ✅ *Allowed*
+- **PR #762** — includes decisions/inbox/tank-762-regression-coverage.md ✅ *Allowed*
+
+### Sprint Closeout PR (post sprint, before Sprint 22 kickoff)
+- **PR #XYZ** — docs: sprint 21 closeout — agent history updates & policy additions
+   - Updates: .squad/agents/trinity/history.md (learnings from #760, #761)
+   - Updates: .squad/agents/tank/history.md (learnings from #762)
+   - Updates: .squad/routing.md (add two-tier squad-file rule)
+   - Includes: .squad/log/ archive refs if needed
+   - **Tied to:** No issue (it's process) — or a standing "PROCESS" issue if preferred
+   - **Review:** Squad reviews for accuracy; single approval; merge before Sprint 22 kickoff
+
+This way:
+- **Feature work is clean** (code + issue decisions, nothing else)
+- **Process changes are visible** (dedicated PR with clear team communication)
+- **History is accurate** (sprint learnings recorded *after* all work completes, not mid-sprint)
+- **Commit history is readable** (sprint boundaries are clear; agent learnings grouped together)
+
+## Implementation
+
+### 1. Update .squad/routing.md
+Add the two-tier squad-file rule (from prior analysis, already drafted).
+
+### 2. Update Reviewer Guidelines
+- Neo and other reviewers: accept Tier 1, reject Tier 2 in feature PRs
+- Enforce cleanly with reference to .squad/routing.md section
+
+### 3. Establish Sprint Boundary Cadence
+- After final feature PR merges in a sprint, create a **single process PR** for history + policy updates
+- Title convention: docs: sprint {N} closeout — ...
+- Publish before sprint kickoff (so Sprint {N+1} agents have up-to-date learnings)
+
+### 4. Archive Old Logs (Optional but Recommended)
+- End of sprint, compress or archive .squad/log/ entries older than 2 sprints
+- Keeps the active workspace clean
+
+## Why This Works
+
+1. **Feature PRs stay focused** — code + decisions, no meta-noise
+2. **Process changes are deliberate** — separate PR, separate review, clear communication
+3. **History is accurate** — learnings recorded after work completes, not during chaos
+4. **Commit history is readable** — "feature work" vs. "process updates" are visually distinct
+5. **Scaling** — as the team grows, this pattern keeps .squad/ organized and searchable
+6. **Reviewers have clear rules** — two tiers, easy to remember, easy to enforce
+
+## Decision
+
+✅ **APPROVED** (Self as Lead)
+
+This policy is now **team directive**. Update .squad/routing.md section 3 with the two-tier rule and implement starting with the next sprint.
+
+**Next Step:** Create sprint 21 closeout PR before sprint 22 kickoff with history + routing.md policy updates.
+
+---
+
+--- From: trinity-763-shared-claims-framework-ref.md ---
+# Decision: Shared auth transformer in Managers needs ASP.NET Core framework reference
+
+**Date:** 2026-04-21  
+**Author:** Trinity  
+**Issue:** 763  
+**Status:** Implemented
+
+## Context
+
+PR #800 moves EntraClaimsTransformation into JosephGuadagno.Broadcasting.Managers so Web and API can share one implementation. CI failed because the Managers class library did not reference the ASP.NET Core shared framework that provides Microsoft.AspNetCore.Authentication and IClaimsTransformation.
+
+## Decision
+
+Add <FrameworkReference Include="Microsoft.AspNetCore.App" /> to src\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj and remove the stale Web-local EntraClaimsTransformation copy.
+
+## Why
+
+- The shared transformer now legitimately depends on ASP.NET Core auth abstractions.
+- Keeping the old Web copy alongside the Managers copy creates an ambiguous EntraClaimsTransformation type in the Web host.
+- This preserves the Sprint 22 decision that Managers is the canonical home for the shared claims transformation.
+
+## Outcome
+
+Release build and the normal CI-aligned test pass now succeed on issue-763-entra-extraction.

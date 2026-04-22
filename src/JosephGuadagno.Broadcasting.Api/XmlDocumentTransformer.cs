@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
 using Microsoft.AspNetCore.OpenApi;
@@ -71,10 +72,9 @@ public sealed class XmlDocumentTransformer(IOptions<AzureAdSettings> azureAdSett
             return [];
         }
 
-        var accessAsUserScope = $"api://{clientId}/access_as_user";
         return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            [accessAsUserScope] = "Access the Broadcasting API as the signed-in user"
+            { $"api://{clientId}/{Scopes.MicrosoftGraph.UserImpersonation}", "Access the Broadcasting API as another user" }
         };
     }
 }

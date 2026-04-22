@@ -73,3 +73,24 @@
 - ✅ Verified decisions.md size (738,980 bytes) — no immediate archival needed
 
 **Retro Guardrails Proposal:** Recorded in decisions.md as part of Sprint 20 retrospective. Document outlines 6 waste patterns from sprint 18–20 reviews and proposes operational gates (pre-execution checklist, orchestration log dedup, cheap pre-checks) to reduce token cost per cycle from ~6,000 to near-baseline.
+
+## Sprint 24/25 Transition — Post-#806 Local Repo Cleanup (2026-04-{DATE})
+
+**Context:** After PR #805/#806 merged, local repo has mixed state: user work on `issue-767-scope-cleanup`, local main tracking changes, backup branches. User is taking manual scope/role work offline; squad cleans local state conservatively.
+
+**Cleanup Completed:**
+- ✅ Deleted stale `refs/original/*` backup refs (reflog artifacts from prior rebase recovery)
+- ✅ Expired reflog entries; ran `git gc --prune=now` for orphaned object cleanup
+- ✅ Pruned `origin/issue-767-scope-cleanup` remote-tracking ref (branch deleted on remote post-Sprint 24)
+
+**Preserved (Intentional, Not Deleted):**
+- ✅ `issue-767-scope-cleanup` local branch with 4 commits ahead of remote — **user work in progress, required for manual scope migration testing**
+- ✅ `backup/issue-767-premerge` local branch — backup point for user testing recovery
+- ✅ Local `main` at `7dba1e8` (+1 commit vs origin/main) — housekeeping commit documenting PR #806 payload cleanup; can fast-forward when user resumes
+- ✅ `.squad/decisions/inbox/*` inbox files (3 files) — awaiting decision merge in next sprint cycle
+
+**State After Cleanup:**
+- Local branches: `backup/issue-767-premerge`, `issue-767-scope-cleanup` (checked out), `main`
+- Remote tracking: `origin/main` (protected), `origin/HEAD`
+- Worktree: single, no stale worktree clutter
+- Git object store: clean, no orphaned refs
