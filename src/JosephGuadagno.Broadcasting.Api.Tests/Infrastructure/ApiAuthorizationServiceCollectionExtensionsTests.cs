@@ -56,7 +56,7 @@ public class ApiAuthorizationServiceCollectionExtensionsTests
     public async Task AddBroadcastingApiAuthorization_ClaimsTransformation_AddsRoleClaimsWithoutDroppingScopeClaims()
     {
         const string entraObjectId = "entra-oid-12345";
-        const string scopeValue = "api://test-client/access_as_user";
+        const string scopeValue = "api://test-client/user_impersonation";
         var approvedUser = new ApplicationUser
         {
             Id = 42,
@@ -110,7 +110,7 @@ public class ApiAuthorizationServiceCollectionExtensionsTests
     public async Task AddBroadcastingApiAuthorization_ClaimsTransformation_AddsRoleClaimsFromShortFormOidClaim()
     {
         const string entraObjectId = "entra-oid-12345";
-        const string scopeValue = "api://test-client/access_as_user";
+        const string scopeValue = "api://test-client/user_impersonation";
         var approvedUser = new ApplicationUser
         {
             Id = 42,
@@ -145,7 +145,7 @@ public class ApiAuthorizationServiceCollectionExtensionsTests
 
         var transformation = scope.ServiceProvider.GetRequiredService<IClaimsTransformation>();
         // Use the short-form "oid" claim — the form JWT bearer tokens carry when processed
-        // by Microsoft.Identity.Web v2+ (JsonWebTokenHandler, no claim type mapping).
+        // by Microsoft.Identity.Web v4+ (JsonWebTokenHandler, no claim type mapping).
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
             new Claim(ApplicationClaimTypes.EntraObjectIdShort, entraObjectId),
