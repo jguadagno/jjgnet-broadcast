@@ -28,7 +28,8 @@ public class EntraClaimsTransformation(
             return principal;
         }
 
-        var objectIdClaim = principal.FindFirst(ApplicationClaimTypes.EntraObjectId);
+        var objectIdClaim = principal.FindFirst(ApplicationClaimTypes.EntraObjectId)
+            ?? principal.FindFirst(ApplicationClaimTypes.EntraObjectIdShort);
         if (objectIdClaim is null)
         {
             logger.LogWarning(

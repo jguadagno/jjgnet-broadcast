@@ -11,6 +11,13 @@ public static class ApplicationClaimTypes
     public const string EntraObjectId = "http://schemas.microsoft.com/identity/claims/objectidentifier";
 
     /// <summary>
+    /// Short form of the Microsoft Entra object identifier claim.
+    /// JWT bearer tokens processed by Microsoft.Identity.Web v2+ (JsonWebTokenHandler) deliver
+    /// this claim as "oid" rather than the full URI form.
+    /// </summary>
+    public const string EntraObjectIdShort = "oid";
+
+    /// <summary>
     /// Application approval status claim type
     /// </summary>
     public const string ApprovalStatus = "approval_status";

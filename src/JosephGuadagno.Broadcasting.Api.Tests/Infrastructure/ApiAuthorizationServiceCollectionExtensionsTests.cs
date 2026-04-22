@@ -106,6 +106,62 @@ public class ApiAuthorizationServiceCollectionExtensionsTests
             .Should().Contain(RoleNames.SiteAdministrator);
     }
 
+    [Fact]
+    public async Task AddBroadcastingApiAuthorization_ClaimsTransformation_AddsRoleClaimsFromShortFormOidClaim()
+    {
+        const string entraObjectId = "entra-oid-12345";
+        const string scopeValue = "api://test-client/access_as_user";
+        var approvedUser = new ApplicationUser
+        {
+            Id = 42,
+            EntraObjectId = entraObjectId,
+            DisplayName = "API Admin",
+            Email = "api-admin@example.com",
+            ApprovalStatus = nameof(ApprovalStatus.Approved),
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        var userApprovalManager = new Mock<IUserApprovalManager>();
+        userApprovalManager
+            .Setup(manager => manager.GetOrCreateUserAsync(entraObjectId, approvedUser.DisplayName, approvedUser.Email))
+            .ReturnsAsync(approvedUser);
+        userApprovalManager
+            .Setup(manager => manager.GetUserRolesAsync(approvedUser.Id))
+            .ReturnsAsync(
+            [
+                new Role
+                {
+                    Id = 7,
+                    Name = RoleNames.SiteAdministrator,
+                    Description = "Site administrator"
+                }
+            ]);
+
+        var services = CreateServices(userApprovalManager);
+
+        using var serviceProvider = services.BuildServiceProvider(validateScopes: true);
+        using var scope = serviceProvider.CreateScope();
+
+        var transformation = scope.ServiceProvider.GetRequiredService<IClaimsTransformation>();
+        // Use the short-form "oid" claim — the form JWT bearer tokens carry when processed
+        // by Microsoft.Identity.Web v2+ (JsonWebTokenHandler, no claim type mapping).
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim(ApplicationClaimTypes.EntraObjectIdShort, entraObjectId),
+            new Claim(ClaimTypes.Name, approvedUser.DisplayName),
+            new Claim(ClaimTypes.Email, approvedUser.Email),
+            new Claim("scp", scopeValue)
+        ], "TestAuthentication"));
+
+        var transformed = await transformation.TransformAsync(principal);
+
+        transformed.FindFirst("scp")!.Value.Should().Be(scopeValue);
+        transformed.FindFirst(ApplicationClaimTypes.ApprovalStatus)!.Value.Should().Be(nameof(ApprovalStatus.Approved));
+        transformed.FindAll(ClaimTypes.Role).Select(claim => claim.Value)
+            .Should().Contain(RoleNames.SiteAdministrator);
+    }
+
     private static ServiceCollection CreateServices(Mock<IUserApprovalManager>? userApprovalManager = null)
     {
         var services = new ServiceCollection();
