@@ -21,8 +21,7 @@ Closes #
       are active
 - [ ] I ran `dotnet restore .\src\`
 - [ ] I ran `dotnet build .\src\ --no-restore --configuration Release`
-- [ ] I ran `dotnet test .\src\ --no-build --verbosity normal --configuration
-      Release --filter "FullyQualifiedName!~SyndicationFeedReader"`
+- [ ] I ran `dotnet test .\src\ --no-build --verbosity normal --configuration Release`
 - [ ] Zero test failures — I have not included known failures in this PR
 - [ ] This PR contains changes for exactly one issue
 - [ ] No "Note on Remaining Test Failures" or similar acknowledgments in this
