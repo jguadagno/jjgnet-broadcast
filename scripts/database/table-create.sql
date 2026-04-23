@@ -294,7 +294,8 @@ create table dbo.SocialMediaPlatforms
             unique,
     Url      nvarchar(500) null,
     Icon     nvarchar(100) null,
-    IsActive bit default 1 not null
+    IsActive bit default 1 not null,
+    CredentialSetupDocumentationUrl nvarchar(500) null
 )
 go
 
