@@ -93,6 +93,10 @@ public class SchedulesController: ControllerBase
         }
 
         var items = _mapper.Map<List<ScheduledItemResponse>>(result.Items);
+        foreach (var item in items)
+        {
+            item.SourceItemDisplayName = await ResolveDisplayNameAsync(item.ItemType, item.ItemPrimaryKey);
+        }
         
         return new PagedResponse<ScheduledItemResponse>
         {
@@ -130,7 +134,9 @@ public class SchedulesController: ControllerBase
             return Forbid();
         }
 
-        return Ok(_mapper.Map<ScheduledItemResponse>(item));
+        var response = _mapper.Map<ScheduledItemResponse>(item);
+        response.SourceItemDisplayName = await ResolveDisplayNameAsync(response.ItemType, response.ItemPrimaryKey);
+        return Ok(response);
     }
 
     /// <summary>
@@ -277,6 +283,10 @@ public class SchedulesController: ControllerBase
         }
 
         var items = _mapper.Map<List<ScheduledItemResponse>>(result.Items);
+        foreach (var item in items)
+        {
+            item.SourceItemDisplayName = await ResolveDisplayNameAsync(item.ItemType, item.ItemPrimaryKey);
+        }
         
         return new PagedResponse<ScheduledItemResponse>
         {
@@ -314,6 +324,10 @@ public class SchedulesController: ControllerBase
         }
 
         var items = _mapper.Map<List<ScheduledItemResponse>>(result.Items);
+        foreach (var item in items)
+        {
+            item.SourceItemDisplayName = await ResolveDisplayNameAsync(item.ItemType, item.ItemPrimaryKey);
+        }
         
         return new PagedResponse<ScheduledItemResponse>
         {
@@ -353,6 +367,10 @@ public class SchedulesController: ControllerBase
         }
 
         var items = _mapper.Map<List<ScheduledItemResponse>>(result.Items);
+        foreach (var item in items)
+        {
+            item.SourceItemDisplayName = await ResolveDisplayNameAsync(item.ItemType, item.ItemPrimaryKey);
+        }
         
         return new PagedResponse<ScheduledItemResponse>
         {
@@ -364,7 +382,7 @@ public class SchedulesController: ControllerBase
     }
 
     /// <summary>
-    /// Gets a list of orphaned scheduled items (items whose source no longer exists)
+    /// Gets a list of orphaned scheduled items(items whose source no longer exists)
     /// </summary>
     /// <param name="page">The page number (default: 1)</param>
     /// <param name="pageSize">The page size (default: 25)</param>
@@ -390,6 +408,10 @@ public class SchedulesController: ControllerBase
         }
 
         var items = _mapper.Map<List<ScheduledItemResponse>>(result.Items);
+        foreach (var item in items)
+        {
+            item.SourceItemDisplayName = await ResolveDisplayNameAsync(item.ItemType, item.ItemPrimaryKey);
+        }
         
         return new PagedResponse<ScheduledItemResponse>
         {
@@ -401,7 +423,7 @@ public class SchedulesController: ControllerBase
     }
 
     /// <summary>
-    /// Validates that a source item exists for the given type and primary key.
+    /// Validates that a source item existsfor the given type and primary key.
     /// Used by the Web project's AJAX validation.
     /// </summary>
     /// <param name="itemType">The type of item (Engagements, Talks, SyndicationFeedSources, YouTubeSources)</param>
@@ -515,5 +537,60 @@ public class SchedulesController: ControllerBase
             ItemTitle = source.Title,
             ItemDetails = source.Author
         });
+    }
+
+    // ── Display-name resolution ───────────────────────────────────────────────
+
+    private async Task<string?> ResolveDisplayNameAsync(ScheduledItemType itemType, int itemPrimaryKey)
+    {
+        try
+        {
+            return itemType switch
+            {
+                ScheduledItemType.Engagements => await ResolveEngagementNameAsync(itemPrimaryKey),
+                ScheduledItemType.Talks => await ResolveTalkNameAsync(itemPrimaryKey),
+                ScheduledItemType.SyndicationFeedSources => await ResolveSyndicationFeedSourceNameAsync(itemPrimaryKey),
+                ScheduledItemType.YouTubeSources => await ResolveYouTubeSourceNameAsync(itemPrimaryKey),
+                _ => null
+            };
+        }
+        catch
+        {
+            // Name resolution failure must never break the list response
+            return null;
+        }
+    }
+
+    private async Task<string?> ResolveEngagementNameAsync(int id)
+    {
+        var engagement = await _engagementManager.GetAsync(id);
+        return engagement?.Name;
+    }
+
+    private async Task<string?> ResolveTalkNameAsync(int talkId)
+    {
+        var talk = await _engagementManager.GetTalkAsync(talkId);
+        if (talk is null) return null;
+
+        if (talk.EngagementId > 0)
+        {
+            var engagement = await _engagementManager.GetAsync(talk.EngagementId);
+            if (engagement is not null)
+                return $"{engagement.Name} - {talk.Name}";
+        }
+
+        return talk.Name;
+    }
+
+    private async Task<string?> ResolveSyndicationFeedSourceNameAsync(int id)
+    {
+        var source = await _syndicationFeedSourceManager.GetAsync(id);
+        return source?.Title;
+    }
+
+    private async Task<string?> ResolveYouTubeSourceNameAsync(int id)
+    {
+        var source = await _youTubeSourceManager.GetAsync(id);
+        return source?.Title;
     }
 }

@@ -84,6 +84,11 @@ public class ScheduledItemViewModel
     public string? MessageType { get; set; }
 
     /// <summary>
+    /// Resolved human-readable name for the source item (Engagement name, Talk name, feed title, etc.)
+    /// </summary>
+    public string? SourceItemDisplayName { get; set; }
+
+    /// <summary>
     /// Returns a Dictionary&lt;string, string&gt; representation of the properties
     /// </summary>
     /// <returns></returns>
