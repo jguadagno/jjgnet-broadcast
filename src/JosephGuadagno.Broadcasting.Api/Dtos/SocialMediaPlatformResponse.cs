@@ -10,4 +10,5 @@ public class SocialMediaPlatformResponse
     public string? Url { get; set; }
     public string? Icon { get; set; }
     public bool IsActive { get; set; }
+    public string? CredentialSetupDocumentationUrl { get; set; }
 }
