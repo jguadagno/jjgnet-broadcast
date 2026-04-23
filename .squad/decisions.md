@@ -18517,3 +18517,273 @@ test(#820): add unit tests for YouTubeSourcesController and SyndicationFeedSourc
 **What:** Tank MUST run `dotnet test .\src\ --no-build --verbosity normal --configuration Release` locally and confirm pass before committing or pushing any PR. This is a recurring violation — PRs #837 and #838 both failed CI with a MappingProfile_IsValid test that would have caught the issue locally.
 **Why:** Repeat violation — PRs failing CI due to untested AutoMapper mappings. Pre-submission test run is mandatory.
 
+
+## Sprint 26 Decisions (2026-04-23)
+
+### Neo Comment Format Directive (2026-04-23T10:36)
+
+### 2026-04-23T10-36-34Z: User directive
+**By:** Joe (via Copilot)
+**What:** Neo must NEVER use `gh pr review --body` or `gh pr comment --body` inline strings. PowerShell mangles Markdown backtick fences. Always write body to a temp JSON file and post via `gh api --input <tmpfile>`. Code samples in review comments must use triple-backtick fences inside the JSON body.
+**Why:** User feedback — Neo's review comments lost all code formatting (missing triple backticks). Captured for team memory. Charter updated.
+
+### GetAll Paging Directive (2026-04-23T14:54)
+
+### 2026-04-23T14:54: User directive
+**By:** Joseph Guadagno (via Copilot)
+**What:** All GetAll methods across managers and data stores should support server-side filtering and paging, consistent with the pattern already established in IEngagementManager / EngagementManager (paged overload with page, pageSize, sortBy, sortDescending, ilter parameters). This applies to ISyndicationFeedSourceManager, IYouTubeSourceManager, ITalkManager (if it exists), and any other manager whose GetAll currently returns an unfiltered list.
+**Why:** User request — captured for team memory. Relevant to #810 (AJAX source item search) and any future feature that lists these item types.
+
+### Tank Pre-Submit Gate Directive (2026-04-23T15:25)
+
+### 2026-04-23T15:25: User directive
+**By:** Joseph (via Copilot)
+**What:** Tank (Tester) MUST run `dotnet test .\src\ --no-build --verbosity normal --configuration Release` locally and confirm all tests pass BEFORE committing or pushing test code. A build-breaking test submission is a pre-submit gate violation, not a CI failure to fix after the fact.
+**Why:** PR #844 failed CI with CS0021 because Tank submitted tests that were never locally executed. This is the third sprint with repeated pre-submission validation failures.
+
+### PR #840 Initial Review Verdict (BLOCKED)
+
+---
+date: 2026-04-23
+author: Neo
+pr: 840
+issue: 813
+branch: issue-813-publisher-settings-doc-link
+status: BLOCKED
+---
+
+# PR #840 Review Verdict — Issue #813: Publisher Settings Doc Link
+
+## Verdict: 🔴 BLOCKED
+
+Two defects must be fixed before this PR can be approved and merged.
+
+---
+
+## Blocking Defects
+
+### BLOCKER 1 — PR title format violates Conventional Commits
+
+- **Current title:** `feat: display credential-setup doc link on publisher settings provider cards (#813)`
+- **Required title:** `feat(#813): display credential-setup doc link on publisher settings provider cards`
+
+The issue number must be in the scope parentheses `(#813)` immediately after the type, not at the end of the summary. The `pr-metadata` CI check validates this exact pattern and is currently failing because of it. The `mergeable_state` on the PR is `unstable` as a result.
+
+### BLOCKER 2 — Missing space between HTML attributes in 4 Razor partials
+
+In the Bluesky, Facebook, LinkedIn, and Twitter `_Settings.cshtml` partials, a whitespace character was accidentally removed between `asp-action` and `method` attributes on the form tag:
+
+```html
+<!-- Wrong (as submitted) -->
+<form asp-action="SaveBluesky"method="post" novalidate>
+
+<!-- Correct -->
+<form asp-action="SaveBluesky" method="post" novalidate>
+```
+
+This is malformed HTML introduced by this PR. While the build passes (lenient Razor/browser parsers survive it), it is a clear defect and must be corrected.
+
+---
+
+## Passing Checks
+
+| Checklist Item | Result |
+|---|---|
+| `CredentialSetupDocumentationUrl` is nullable `string?` on base class | ✅ PASS |
+| Mapped in all 5 `CreateViewModel` branches | ✅ PASS |
+| All 5 partials guard with `!string.IsNullOrWhiteSpace` (no empty anchors) | ✅ PASS |
+| `target="_blank"` has `rel="noopener noreferrer"` (tab-napping prevention) | ✅ PASS |
+| Bootstrap `btn btn-sm btn-outline-info ms-2` consistent across cards | ✅ PASS |
+| `_UnsupportedPublisherSettings` upgraded to `d-flex` layout | ✅ PASS |
+| `build-and-test` CI check | ✅ PASS |
+| CodeQL Analysis | ⏳ In progress at review time |
+| `pr-metadata` CI check | ❌ FAIL (Blocker 1) |
+
+---
+
+## Next Steps
+
+1. Author fixes Blocker 1 (rename PR title) and Blocker 2 (restore spaces in 4 form tags).
+2. CI re-runs; `pr-metadata` must pass green.
+3. Neo re-reviews and approves.
+4. Merge via squash, delete branch.
+
+### PR #841 Initial Review Verdict (BLOCKED)
+
+---
+date: 2026-04-23
+author: Neo
+pr: 841
+issue: 814
+branch: issue-814-help-pages
+status: BLOCKED
+---
+
+# PR #841 Review Verdict — Help Pages / Credential Setup Documentation
+
+## Decision: BLOCKED — Do NOT merge
+
+---
+
+## Checklist Results
+
+| # | Check | Result |
+|---|-------|--------|
+| 1 | Auth policy — `[Authorize]` only, no role requirement | ✅ PASS |
+| 2 | 404 for unknown slugs; valid set = bluesky/twitter/linkedin/facebook/mastodon | ✅ PASS |
+| 3 | Route: `GET /Help/SocialMediaPlatforms/{platform}` via `[Route]` attribute | ✅ PASS |
+| 4 | External links: `target="_blank" rel="noopener noreferrer"` | ✅ PASS |
+| 5 | Content quality (Bluesky + LinkedIn checked) — meaningful step-by-step instructions | ✅ PASS |
+| 6 | Breadcrumb back to Publisher Settings (breadcrumb + back button) | ✅ PASS |
+| 7 | Bootstrap 5 card layout, consistent with shared `_Layout.cshtml` | ✅ PASS |
+| 8 | CI regressions — build-and-test/CodeQL still in progress; `pr-metadata` **FAILED** | ❌ FAIL |
+| 9 | PR title Conventional Commits format `feat(#814): ...` | ❌ FAIL |
+
+---
+
+## Blockers
+
+### BLOCKER 1 — PR title violates Conventional Commits + team policy
+
+**Current title:**
+```
+feat: add HelpController and credential-setup help pages for all social media platforms (#814)
+```
+
+**Required format** (from `pr-metadata` CI check, `title_pattern='^(feat|fix|...)\\(#([0-9]+)\\): .+'`):
+```
+feat(#814): add HelpController and credential-setup help pages for all social media platforms
+```
+
+The `pr-metadata` CI check explicitly failed with:
+> PR title '...' must follow '<type>(#<issue>): <summary>'.
+
+The issue number must appear in parentheses immediately after the type, not at the end of the description. This is a hard CI gate and a team directive. **Rename the PR title before this can be merged.**
+
+---
+
+## What Passed
+
+- Controller is clean: `[Authorize]` only (no policy lock-out), 5-platform dictionary with `OrdinalIgnoreCase`, `NotFound()` on miss, correct `[Route]` attribute.
+- Views (Bluesky, LinkedIn verified): real credential instructions, correct `target="_blank" rel="noopener noreferrer"` on all external links, breadcrumb + back-button on every page, Bootstrap 5 card layout.
+- No placeholder Lorem ipsum — content is production-quality.
+
+---
+
+## Required Action
+
+Author must rename PR title to:
+```
+feat(#814): add HelpController and credential-setup help pages for all social media platforms
+```
+
+Re-run CI after rename. Once `pr-metadata` goes green and `build-and-test`/CodeQL complete without failures, this PR is ready to approve and squash-merge.
+
+### PR #840 + #841 Final Approval
+
+---
+date: 2026-04-23
+author: Neo (Lead)
+prs: 840, 841
+issues: 813, 814
+status: approved
+---
+
+# Decision: Approve PR #840 and PR #841 — Publisher Settings Help Pages
+
+## Context
+
+PR #840 (issue #813) adds conditional "Setup guide" links to all five publisher settings provider cards, mapped from `SocialMediaPlatform.CredentialSetupDocumentationUrl`.
+
+PR #841 (issue #814) implements `HelpController` with five credential-setup help pages (Bluesky, Twitter, LinkedIn, Facebook, Mastodon) under `/help/socialMediaPlatforms/{platform}`.
+
+## Review Findings
+
+### PR #840 — Documentation Link Display
+
+**✅ Approved** — Clean implementation, no issues found:
+- ViewModel layer correctly adds `CredentialSetupDocumentationUrl` to base class and maps it in all 5 concrete view models
+- View layer applies conditional rendering uniformly across all 5 provider card partials
+- Edge case handled: `_UnsupportedPublisherSettings.cshtml` was restructured to match the `d-flex` card-header pattern
+- No security concerns: no POST actions, no logging, no CSRF/log injection risk
+- Build: 645 warnings (pre-existing), 0 errors
+
+### PR #841 — Help Controller and Views
+
+**✅ Approved** — Complete implementation, secure, production-ready:
+- Controller is GET-only with `[Authorize]` (no role restriction), platform slug matched case-insensitively via service, returns 404 for unknown platforms
+- All 5 views follow consistent Bootstrap 5 card layout with breadcrumb navigation and external documentation links
+- Content quality is high: each page documents the correct OAuth flow for that platform with exact field mappings to Publisher Settings form
+- No security concerns: GET-only controller, no logging, no user-controlled strings in logs, all external links use `target="_blank" rel="noopener noreferrer"`
+- Build: 645 warnings (pre-existing), 0 errors
+
+## Decision
+
+**Approve both PRs for merge.**
+
+Both implementations are clean, secure, and meet all acceptance criteria. No blocking issues found. No directive violations detected.
+
+## Learnings for Team
+
+1. **GET-only controller security:** Controllers with no POST actions and no logging have no CSRF or log injection risk. Route parameters that are never logged do not need `LogSanitizer.Sanitize()`.
+
+2. **View resolution from subdirectory:** When views live in a subdirectory (e.g., `Views/Help/SocialMediaPlatforms/`), controller must use explicit sub-path: `View("SocialMediaPlatforms/LinkedIn")` not `View("linkedin")`.
+
+3. **Conditional rendering pattern:** `@if (!string.IsNullOrWhiteSpace(Model.Property))` is the correct guard for optional URL properties in Razor views to avoid rendering empty anchor tags.
+
+4. **Template application across partials:** When applying a templated change across multiple view partials, always check each partial's structure independently. In this case, `_UnsupportedPublisherSettings.cshtml` had a different card-header layout than the other four partials.
+
+## Impact
+
+- End users now have contextual links to credential-setup documentation directly from publisher settings cards (PR #840)
+- End users now have comprehensive, platform-specific credential-setup help pages accessible via "Setup guide" links (PR #841)
+- Both features improve user experience and reduce support burden for credential configuration questions
+
+### PR #844 Review — APPROVED
+
+# Neo — PR #844 Review Decision
+
+**Date:** 2026-04-23
+**PR:** #844 — `feat(#809,#811): display resolved source item name in Schedules views`
+**Branch:** `issue-809-schedules-source-name`
+**Reviewer:** Neo (Lead)
+
+## Outcome
+
+**APPROVED ✅**
+
+## Summary
+
+PR closes #809 (Index view) and #811 (Details view). Implementation is clean across all five layers: Domain, Data.Sql mapping, API DTO + controller, Web ViewModel, and Views.
+
+## Key Findings
+
+- **Security baseline:** Clean. No log injection risk (catch block has no logging), no CSRF exposure (GET-only API changes).
+- **AutoMapper:** Correct `Ignore()` entries in both `BroadcastingProfile` (Data.Sql, EF→Domain) and `ApiBroadcastingProfile` (Request→Domain). Convention handles `ScheduledItem → ScheduledItemResponse` and Web mapping chain. `AssertConfigurationIsValid()` tests pass.
+- **Graceful degradation:** `ResolveDisplayNameAsync` catch wraps the full switch — all four resolver paths and the Talk parent-engagement lookup are protected. Returns null on any failure; list response is never broken.
+- **N+1 accepted:** Sequential `await` inside `foreach` on list endpoints is an explicit trade-off per issues #809/#811. No Web-layer N+1.
+- **Tests:** 9 new unit tests cover all 4 item types, null/not-found paths, Talk fallback logic, and graceful degradation via `ThrowsAsync`. Test 8 is slightly redundant (calls SUT twice) but correctly exercises the catch branch.
+- **Views:** Index fallback `TypeName #KeyValue` is useful for orphaned items. Details em-dash fallback is clean. Pre-existing `<dt>`-only pattern (no `<dd>`) in Details.cshtml is noted but not introduced by this PR.
+
+## Minor Observations (non-blocking)
+
+1. Two XML doc comment typos in `SchedulesController.cs`: missing spaces in `GetOrphanedScheduledItemsAsync` summary and `ValidateSourceItemAsync` summary. Author can fix before merge or in follow-on.
+2. Pre-existing `<dt>/<dd>` inconsistency in Details.cshtml — logged for future cleanup, not assigned to this PR.
+
+## No Directives Violated
+
+- Conventional Commits: PR title uses dual-issue form `feat(#809,#811):` — explicitly accepted by Joseph.
+- No DB schema changes; no manual production steps required.
+
+### Pre-Submit Test Gate — HARD GATE for All Agents
+
+**Decided:** Sprint 26 (2026-04-23)
+**Source:** Joseph Guadagno (via Copilot directive after PR #844 CI failure)
+
+The pre-submit test gate is a **HARD GATE** for every agent on the squad:
+
+> Every agent **MUST** run `dotnet test .\src\ --no-build --verbosity normal --configuration Release` locally and confirm all tests pass **BEFORE** committing or pushing code that touches tests or compilable source.
+
+- All 12 existing agent charters already contain the ⛔ HARD GATE section (verified Sprint 26).
+- Any future agent spawned by the Coordinator **must** also have this gate in their charter.
+- Submitting test code that has never been locally executed is a **pre-submit gate violation**, not a CI failure to fix after the fact.
