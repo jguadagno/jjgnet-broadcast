@@ -1,0 +1,73 @@
+@model JosephGuadagno.Broadcasting.Web.Models.YouTubeSourceViewModel
+@{
+    ViewData["Title"] = "YouTube Source Details";
+}
+
+<div class="container">
+    <h1 class="display-4 mb-4">YouTube Source Details</h1>
+    
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    
+    <div class="card">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Title</dt>
+                <dd class="col-sm-9">@Model.Title</dd>
+                
+                <dt class="col-sm-3">Author</dt>
+                <dd class="col-sm-9">@Model.Author</dd>
+                
+                <dt class="col-sm-3">Video ID</dt>
+                <dd class="col-sm-9">@Model.VideoId</dd>
+                
+                <dt class="col-sm-3">URL</dt>
+                <dd class="col-sm-9">
+                    <a href="@Model.Url" target="_blank" rel="noopener noreferrer">@Model.Url</a>
+                </dd>
+                
+                @if (!string.IsNullOrEmpty(Model.ShortenedUrl))
+                {
+                    <dt class="col-sm-3">Shortened URL</dt>
+                    <dd class="col-sm-9">
+                        <a href="@Model.ShortenedUrl" target="_blank" rel="noopener noreferrer">@Model.ShortenedUrl</a>
+                    </dd>
+                }
+                
+                @if (!string.IsNullOrEmpty(Model.Tags))
+                {
+                    <dt class="col-sm-3">Tags</dt>
+                    <dd class="col-sm-9">@Model.Tags</dd>
+                }
+                
+                <dt class="col-sm-3">Publication Date</dt>
+                <dd class="col-sm-9">@Model.PublicationDate.ToString("F")</dd>
+                
+                <dt class="col-sm-3">Added On</dt>
+                <dd class="col-sm-9">@Model.AddedOn.ToString("F")</dd>
+                
+                <dt class="col-sm-3">Last Updated</dt>
+                <dd class="col-sm-9">@Model.LastUpdatedOn.ToString("F")</dd>
+            </dl>
+        </div>
+    </div>
+    
+    <div class="mt-3">
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Back to List
+        </a>
+        @if (User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.Contributor) || 
+             User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.Administrator) || 
+             User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.SiteAdministrator))
+        {
+            <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                <i class="bi bi-trash me-1"></i>Delete
+            </a>
+        }
+    </div>
+</div>

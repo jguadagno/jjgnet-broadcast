@@ -59,5 +59,14 @@ public class WebMappingProfile: Profile
         CreateMap<Domain.Models.SocialMediaPlatform, Models.SocialMediaPlatformViewModel>();
         CreateMap<Models.SocialMediaPlatformViewModel, Domain.Models.SocialMediaPlatform>();
 
+        // YouTubeSource mappings (Issue #818)
+        CreateMap<Domain.Models.YouTubeSource, Models.YouTubeSourceViewModel>()
+            .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => string.Join(", ", src.Tags)));
+        CreateMap<Models.YouTubeSourceViewModel, Domain.Models.YouTubeSource>()
+            .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => 
+                string.IsNullOrWhiteSpace(src.Tags) ? new List<string>() : src.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList()))
+            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore())
+            .ForMember(dest => dest.ItemLastUpdatedOn, opt => opt.Ignore());
+
     }
 }
