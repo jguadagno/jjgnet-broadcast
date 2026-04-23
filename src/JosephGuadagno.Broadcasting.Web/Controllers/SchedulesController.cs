@@ -138,6 +138,7 @@ public class SchedulesController : Controller
     /// <param name="scheduledItemViewModel">The <see cref="ScheduledItemViewModel"/></param>
     /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, reloads the page.</returns>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(ScheduledItemViewModel scheduledItemViewModel)
     {
         // Defence-in-depth: re-verify ownership before saving (issue #742)
@@ -246,6 +247,7 @@ public class SchedulesController : Controller
     /// <param name="scheduledItemViewModel">The <see cref="ScheduledItemViewModel"/> to be added</param>
     /// <returns>Upon success, redirects to the <see cref="Details"/>. Upon failure, reloads the page</returns>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<RedirectToActionResult> Add(ScheduledItemViewModel scheduledItemViewModel)
     {
         var scheduledItemToAdd = _mapper.Map<Domain.Models.ScheduledItem>(scheduledItemViewModel);

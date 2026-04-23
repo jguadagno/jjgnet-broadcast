@@ -94,6 +94,7 @@ public class TalksController : Controller
     /// <param name="talkViewModel">The <see cref="TalkViewModel"/> to edit</param>
     /// <returns>Upon success, redirected to the <see cref="Details"/>. Upon failure, the view will be reloaded</returns>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     [Route("{talkId:int}")]
     public async Task<IActionResult> Edit(TalkViewModel talkViewModel)
     {
@@ -221,6 +222,7 @@ public class TalksController : Controller
     /// <param name="talkViewModel">The <see cref="TalkViewModel"/></param>
     /// <returns>Upon success, redirects to the <see cref="Details"/> page. Upon failure, reloads the page.</returns>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     [Route("")]
     public async Task<RedirectToActionResult> Add(TalkViewModel talkViewModel)
     {
