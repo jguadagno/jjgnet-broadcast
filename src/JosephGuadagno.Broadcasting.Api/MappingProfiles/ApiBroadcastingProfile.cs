@@ -9,7 +9,7 @@ public class ApiBroadcastingProfile : Profile
     public ApiBroadcastingProfile()
     {
         // Domain → Response DTOs
-        CreateMap<SyndicationFeedSource, SyndicationFeedSourceResponse>();
+        CreateMap<YouTubeSource, YouTubeSourceResponse>();
         CreateMap<Engagement, EngagementResponse>();
         CreateMap<Talk, TalkResponse>();
         CreateMap<ScheduledItem, ScheduledItemResponse>();
@@ -23,7 +23,7 @@ public class ApiBroadcastingProfile : Profile
         CreateMap<LinkedInPublisherSetting, LinkedInPublisherSettingResponse>();
 
         // Request DTOs → Domain
-        CreateMap<SyndicationFeedSourceRequest, SyndicationFeedSource>()
+        CreateMap<YouTubeSourceRequest, YouTubeSource>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.AddedOn, o => o.Ignore())
             .ForMember(d => d.ItemLastUpdatedOn, o => o.Ignore())
