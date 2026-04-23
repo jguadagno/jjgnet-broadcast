@@ -73,6 +73,8 @@ builder.Services.AddAutoMapper(config =>
     config.AddProfile<JosephGuadagno.Broadcasting.Api.MappingProfiles.ApiBroadcastingProfile>();
 }, typeof(Program));
 
+builder.Services.AddMemoryCache();
+
 ConfigureApplication(builder.Services);
 
 // ASP.NET Core API stuff
