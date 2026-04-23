@@ -74,6 +74,9 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="MessageTemplates" asp-action="Index">Message Templates</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="YouTubeSources" asp-action="Index">YouTube Sources</a>
+                        </li>
                         @if (User.IsInRole(RoleNames.SiteAdministrator) || User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Contributor))
                         {
                             <li class="nav-item dropdown">
