@@ -17,6 +17,8 @@ public partial class SocialMediaPlatform
 
     public bool IsActive { get; set; }
 
+    public string CredentialSetupDocumentationUrl { get; set; }
+
     public virtual ICollection<EngagementSocialMediaPlatform> EngagementSocialMediaPlatforms { get; set; } = new List<EngagementSocialMediaPlatform>();
 
     public virtual ICollection<UserPublisherSetting> UserPublisherSettings { get; set; } = new List<UserPublisherSetting>();

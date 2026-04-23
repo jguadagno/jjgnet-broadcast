@@ -36,4 +36,11 @@ public class SocialMediaPlatformViewModel
     /// Indicates if the platform is active (soft delete)
     /// </summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// URL to the credential setup documentation for the platform
+    /// </summary>
+    [Url(ErrorMessage = "Please enter a valid URL")]
+    [MaxLength(500, ErrorMessage = "Credential setup documentation URL cannot exceed 500 characters")]
+    public string? CredentialSetupDocumentationUrl { get; set; }
 }
