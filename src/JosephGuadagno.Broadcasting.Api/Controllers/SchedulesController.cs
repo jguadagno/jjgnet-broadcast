@@ -2,6 +2,7 @@ using System.Security.Claims;
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -20,6 +21,9 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 public class SchedulesController: ControllerBase
 {
     private readonly IScheduledItemManager _scheduledItemManager;
+    private readonly IEngagementManager _engagementManager;
+    private readonly ISyndicationFeedSourceManager _syndicationFeedSourceManager;
+    private readonly IYouTubeSourceManager _youTubeSourceManager;
     private readonly ILogger<SchedulesController> _logger;
     private readonly IMapper _mapper;
 
@@ -27,11 +31,23 @@ public class SchedulesController: ControllerBase
     /// The constructor
     /// </summary>
     /// <param name="scheduledItemManager">The scheduled item manager</param>
+    /// <param name="engagementManager">The engagement manager</param>
+    /// <param name="syndicationFeedSourceManager">The syndication feed source manager</param>
+    /// <param name="youTubeSourceManager">The YouTube source manager</param>
     /// <param name="logger">The logger to use</param>
     /// <param name="mapper">The AutoMapper instance</param>
-    public SchedulesController(IScheduledItemManager scheduledItemManager, ILogger<SchedulesController> logger, IMapper mapper)
+    public SchedulesController(
+        IScheduledItemManager scheduledItemManager,
+        IEngagementManager engagementManager,
+        ISyndicationFeedSourceManager syndicationFeedSourceManager,
+        IYouTubeSourceManager youTubeSourceManager,
+        ILogger<SchedulesController> logger,
+        IMapper mapper)
     {
         _scheduledItemManager = scheduledItemManager;
+        _engagementManager = engagementManager;
+        _syndicationFeedSourceManager = syndicationFeedSourceManager;
+        _youTubeSourceManager = youTubeSourceManager;
         _logger = logger;
         _mapper = mapper;
     }
@@ -382,5 +398,122 @@ public class SchedulesController: ControllerBase
             PageSize = pageSize,
             TotalCount = result.TotalCount
         };
+    }
+
+    /// <summary>
+    /// Validates that a source item exists for the given type and primary key.
+    /// Used by the Web project's AJAX validation.
+    /// </summary>
+    /// <param name="itemType">The type of item (Engagements, Talks, SyndicationFeedSources, YouTubeSources)</param>
+    /// <param name="itemPrimaryKey">The primary key of the item to validate</param>
+    /// <returns>A <see cref="SourceItemValidationResponse"/> with validation status and item details</returns>
+    /// <response code="200">Upon success, returns validation result (IsValid may be false when item not found)</response>
+    /// <response code="400">If the parameters are invalid</response>
+    /// <response code="401">If the current user was unauthorized to access this endpoint</response>
+    [HttpGet("validate-source-item")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SourceItemValidationResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SourceItemValidationResponse>> ValidateSourceItemAsync(
+        [FromQuery] ScheduledItemType itemType,
+        [FromQuery] int itemPrimaryKey)
+    {
+        if (itemPrimaryKey <= 0)
+        {
+            return BadRequest("itemPrimaryKey must be greater than 0");
+        }
+
+        try
+        {
+            return itemType switch
+            {
+                ScheduledItemType.Engagements => await ValidateEngagementAsync(itemPrimaryKey),
+                ScheduledItemType.Talks => await ValidateTalkAsync(itemPrimaryKey),
+                ScheduledItemType.SyndicationFeedSources => await ValidateSyndicationFeedSourceAsync(itemPrimaryKey),
+                ScheduledItemType.YouTubeSources => await ValidateYouTubeSourceAsync(itemPrimaryKey),
+                _ => BadRequest($"Unknown item type: {itemType}")
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating source item type={ItemType} key={ItemPrimaryKey}",
+                itemType, itemPrimaryKey);
+            return Ok(new SourceItemValidationResponse
+            {
+                IsValid = false,
+                ErrorMessage = "An error occurred while validating the item"
+            });
+        }
+    }
+
+    private async Task<ActionResult<SourceItemValidationResponse>> ValidateEngagementAsync(int id)
+    {
+        var engagement = await _engagementManager.GetAsync(id);
+        if (engagement is null)
+        {
+            return Ok(new SourceItemValidationResponse { IsValid = false, ErrorMessage = "Item not found" });
+        }
+
+        return Ok(new SourceItemValidationResponse
+        {
+            IsValid = true,
+            ItemTitle = engagement.Name,
+            ItemDetails = $"{engagement.StartDateTime:d} – {engagement.EndDateTime:d}"
+        });
+    }
+
+    private async Task<ActionResult<SourceItemValidationResponse>> ValidateTalkAsync(int talkId)
+    {
+        var talk = await _engagementManager.GetTalkAsync(talkId);
+        if (talk is null)
+        {
+            return Ok(new SourceItemValidationResponse { IsValid = false, ErrorMessage = "Item not found" });
+        }
+
+        Engagement? engagement = null;
+        if (talk.EngagementId > 0)
+        {
+            engagement = await _engagementManager.GetAsync(talk.EngagementId);
+        }
+
+        return Ok(new SourceItemValidationResponse
+        {
+            IsValid = true,
+            ItemTitle = talk.Name,
+            ItemDetails = engagement is not null ? engagement.Name : null
+        });
+    }
+
+    private async Task<ActionResult<SourceItemValidationResponse>> ValidateSyndicationFeedSourceAsync(int id)
+    {
+        var source = await _syndicationFeedSourceManager.GetAsync(id);
+        if (source is null)
+        {
+            return Ok(new SourceItemValidationResponse { IsValid = false, ErrorMessage = "Item not found" });
+        }
+
+        return Ok(new SourceItemValidationResponse
+        {
+            IsValid = true,
+            ItemTitle = source.Title,
+            ItemDetails = source.Author
+        });
+    }
+
+    private async Task<ActionResult<SourceItemValidationResponse>> ValidateYouTubeSourceAsync(int id)
+    {
+        var source = await _youTubeSourceManager.GetAsync(id);
+        if (source is null)
+        {
+            return Ok(new SourceItemValidationResponse { IsValid = false, ErrorMessage = "Item not found" });
+        }
+
+        return Ok(new SourceItemValidationResponse
+        {
+            IsValid = true,
+            ItemTitle = source.Title,
+            ItemDetails = source.Author
+        });
     }
 }
