@@ -75,6 +75,11 @@ public class ScheduledItem
     /// </summary>
     public string? CreatedByEntraOid { get; set; }
 
+    /// <summary>
+    /// Resolved display name for the source item. Populated by the API on read; not persisted.
+    /// </summary>
+    public string? SourceItemDisplayName { get; set; }
+
     public Dictionary<string, string> ToDictionary()
     {
         return new Dictionary<string, string>

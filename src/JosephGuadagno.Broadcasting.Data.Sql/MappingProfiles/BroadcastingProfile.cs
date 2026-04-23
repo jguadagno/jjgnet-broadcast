@@ -13,7 +13,10 @@ public class BroadcastingProfile: Profile
         CreateMap<Models.ScheduledItem, Domain.Models.ScheduledItem>()
             .ForMember(
                 destination => destination.ItemType,
-                options => options.MapFrom(source => Enum.Parse<ScheduledItemType>(source.ItemTableName)));
+                options => options.MapFrom(source => Enum.Parse<ScheduledItemType>(source.ItemTableName)))
+            .ForMember(
+                destination => destination.SourceItemDisplayName,
+                options => options.Ignore());
         CreateMap<Models.FeedCheck, Domain.Models.FeedCheck>().ReverseMap();
         CreateMap<Models.MessageTemplate, Domain.Models.MessageTemplate>().ReverseMap();
         CreateMap<Models.TokenRefresh, Domain.Models.TokenRefresh>().ReverseMap();

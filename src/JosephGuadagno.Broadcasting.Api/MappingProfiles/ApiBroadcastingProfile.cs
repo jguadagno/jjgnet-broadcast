@@ -44,7 +44,8 @@ public class ApiBroadcastingProfile : Profile
         CreateMap<ScheduledItemRequest, ScheduledItem>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.MessageSent, o => o.Ignore())
-            .ForMember(d => d.MessageSentOn, o => o.Ignore());
+            .ForMember(d => d.MessageSentOn, o => o.Ignore())
+            .ForMember(d => d.SourceItemDisplayName, o => o.Ignore());
 
         CreateMap<MessageTemplateRequest, MessageTemplate>()
             .ForMember(d => d.SocialMediaPlatformId, o => o.Ignore())
