@@ -17793,3 +17793,307 @@ Add <FrameworkReference Include="Microsoft.AspNetCore.App" /> to src\JosephGuada
 ## Outcome
 
 Release build and the normal CI-aligned test pass now succeed on issue-763-entra-extraction.
+
+--- From: neo-backlog-reprioritization.md ---
+# Backlog Reprioritization — April 2026
+
+**Date:** 2026-04-23  
+**Decision Maker:** Neo (Lead)  
+**Context:** #769 (Azure Portal cleanup) and #609 (multi-tenancy phase 1) are CLOSED. Joseph requested full backlog reprioritization with guidance on multi-tenancy phase 2, schedule UX, and stale issues.
+
+---
+
+## Key Findings
+
+### Multi-Tenancy Phase 1 vs Phase 2 Status
+
+**#777 and #778 are PHASE 2 (not required for production acceptance of #609).**
+
+**Justification:**
+- #609 Round 1 achieved ~95% feature completeness and production-ready status (ref: neo-609-audit.md)
+- #777 (Per-user OAuth/token runtime) and #778 (Per-user collector onboarding/configuration) extend #609 but represent **new capability**, not gap closure
+- Both are assigned to **Sprint 25** (not current sprints), indicating they are scheduled but not blocking
+- #777 depends on #609 collector owner OID foundation (Sprint 21, complete) — **prerequisite met but not urgent**
+- #778 depends on both #609 foundation AND #777 — **sequenced correctly but lower priority**
+- Production is running with #609 Round 1; these enhancements can follow in Q2
+
+**Recommendation:** Treat #777 and #778 as P2 (Blocked/Needs Foundation) — schedule for Sprint 25 after current Schedule UX and Publisher Settings work complete.
+
+---
+
+### Stale/Superseded Issues Assessment
+
+Old issues (created 2020-2023) analyzed:
+
+| # | Created | Last Activity | Assessment | Recommendation |
+|---|---------|---------------|-----------|---|
+| 9 | 2020-09 | 2026-03 | Refactor naming (social → publishers) — active label relevance (squad:sparks assigned) | **KEEP** — P3 (refactor work, squad assigned) |
+| 12, 13, 14 | 2020-08,09 | Not checked recently | Documentation for credential setup | **SUPERSEDED** by #812/#814 — New issues are better scoped and actionable. **CLOSE as duplicate.** |
+| 45, 46 | 2022-02 | 2026-04 | Tweet/Facebook composition refactors — mentioned in #581 (template work) | **KEEP** — P3 (may be addressed by templating work in #581) |
+| 55 | 2022-02 | 2026-03 | Scheduled image with alt text — feature request, squad:switch assigned | **KEEP** — P3 (valid UX enhancement, dependent on Schedule UX fixes) |
+| 69 | 2022-05 | 2026-03 | Message customization/templating | **MERGED INTO #581** (database/Scriban templating work). **KEEP** as reference but note #581 supersedes. |
+| 78 | 2022-06 | 2026-04 | Add caching to WebApi — squad:morpheus assigned | **KEEP** — P3 (valid performance work, not blocking) |
+| 94, 102 | 2023-08,09 | 2026-04 | Exception handling + LinkedIn message refactor — squad:sparks assigned | **KEEP** — P4 (very low ROI relative to other work, legacy code cleanup) |
+
+**Actions:**
+- **CLOSE #12, #13, #14** — link to #812/#814 as proper successors
+- **KEEP all others** — assign appropriate priority tier
+
+---
+
+## Prioritized Backlog
+
+### P1 — Do Next (Sprint-Ready, Unblocked, High Value)
+
+| # | Title | Rationale | Squad | Notes |
+|---|-------|-----------|-------|-------|
+| 812 | SocialMediaPlatforms: add CredentialSetupDocumentationUrl column | Foundation for credential doc feature (813/814 depend on it); small scope; enables UX improvement | squad:trinity + squad:morpheus | DB + domain layer only; 4-6 hours |
+| 808 | ScheduledItemValidationService: redesign to call API instead of managers | Architectural fix; unblocks Schedule UX improvements (809/810/811); known design flaw with stub in place | squad:trinity | High-value; fixes fundamental layering violation |
+| 689 | Add in-memory caching to SocialMediaPlatformManager | Low-hanging performance win; lookup table is read-heavy, rarely changes; identified in code review | squad:trinity | 3–4 hours; meaningful DB round-trip reduction |
+| 802 | Update PR metadata to allow PRs from dependabot | Unblocked; improves dependency management UX; priority:medium flagged | squad:link | 1–2 hours |
+
+---
+
+### P2 — Blocked / Needs Foundation
+
+| # | Title | Blockers | Squad | Unblock Date |
+|---|-------|----------|-------|--------------|
+| 813 | Publisher Settings: display dynamic credential-setup docs link | **Blocked by #812** (API DTO must expose field) | squad:switch + squad:sparks | After #812 merges (est. Sprint 22) |
+| 814 | Help pages: create credential-setup documentation | **Independent of #812/#813** (can build in parallel) but ship together for UX completeness | squad:sparks | Can start now; coordinate ship date with #812 |
+| 809 | Schedules: Display meaningful source name on Index page | **Blocked by #808** (API endpoint must exist first) | squad:trinity | After #808 merges (est. Sprint 22) |
+| 810 | Schedules Add/Edit: Add source item lookup/search | **Blocked by #808** (API endpoint required) | squad:switch | After #808 merges (est. Sprint 22) |
+| 811 | Schedule Details: Relabel 'Table' to 'Type' + display name | **Blocked by #808** and shares logic with #809 | squad:sparks | After #808 merges (est. Sprint 22) |
+| 777 | Per-user OAuth/token runtime: replace shared Key Vault pattern | **Dependency met** (#609 R1 complete) but **lower priority** — scheduled Sprint 25; Phase 2 of multi-tenancy | squad:trinity | Sprint 25 (Q2) |
+| 778 | Per-user collector onboarding/configuration | **Blocked by #777** (OAuth runtime must exist first); Phase 2 multi-tenancy | squad:trinity | Sprint 25 (Q2), after #777 |
+
+---
+
+### P3 — Important but Not Urgent
+
+| # | Title | Rationale | Squad | Notes |
+|---|-------|-----------|-------|-------|
+| 9 | Rename 'social media' plugins as 'publishers' | Valid refactoring; impacts naming consistency; squad assigned but no blockers | squad:sparks | Architectural consistency; defer to Q2 |
+| 45 | Refactor out Tweet composition to Manager | Dependency of message templating (#581); may be addressed by #581's generic approach | squad:sparks | Revisit after #581 complete |
+| 55 | For scheduled engagement, add custom image with alt text | Valid UX enhancement; depends on Schedule UX fixes; squad:switch assigned | squad:switch | Tier after #809–#811 complete |
+| 69 | For social publishers, allow message customization | **Subsumed by #581** (database/Scriban templating work); keep for historical reference | squad:sparks | See #581 for templating foundation |
+| 46 | Refactor out Facebook Status composition | Similar to #45; low ROI vs templating/composition refactors | squad:sparks | Q2 or later |
+| 78 | Add caching to WebApi | Valid performance enhancement but no immediate user impact; squad:morpheus assigned | squad:morpheus | After P1/P2; cache strategy review needed |
+| 689 | ~~Add in-memory caching to SocialMediaPlatformManager~~ | **MOVED TO P1** | squad:trinity | High-value, easy win |
+| 581 | Use database/Scriban templating for actual messages | Foundational for #45, #46, #69; depends on existing manager layer; orphaned (no squad assigned yet) | squad:sparks | Foundation for composition refactors; unblock after P1 |
+
+---
+
+### P4 — Old/Low Value / Consider Closing
+
+| # | Title | Assessment | Action |
+|---|-------|-----------|--------|
+| 94 | Create a custom FacebookPostException | Exception wrapper; low ROI; legacy code cleanup | **CLOSE** — too narrow; can be addressed in larger refactor if needed |
+| 102 | Refactor LinkedIn Message composition from Azure Function | Narrow scope; tied to old hardcoded message patterns; overlaps with #69/#581 | **CLOSE** — subsumed by #581 templating work |
+| **12** | Create documentation for getting Twitter Credentials | **SUPERSEDED by #814** (Help pages: create credential-setup documentation) | **CLOSE** — link to #814 |
+| **13** | Create documentation for getting Bitly Credentials | Bitly no longer relevant to JJG; **stale/out of scope** | **CLOSE** — not a social platform in current system |
+| **14** | Create documentation for getting Facebook credentials | **SUPERSEDED by #814** | **CLOSE** — link to #814 |
+| 579 | Validate posting works for each social media platform | Manual validation checklist; no active development work; QA scope | **CLOSE** — Move to QA runbook/checklist instead of standing issue |
+| 580 | Validate all Event Grid topics run | Infrastructure validation; Joseph assigned; production-ready state achieved | **CLOSE** — Move to QA runbook; monitor via production metrics |
+| 582 | Validate saving of Syndication Items works | Manual QA; same category as #579/#580 | **CLOSE** — Move to QA runbook |
+| 724 | Multi-user teams/groups for shared sources/publishers | **FUTURE EPIC** — cannot start until #609 R1 validated; not a standing backlog item | **DEFER to Planning Committee** — revisit in 2–3 months after #609 R1 stabilizes in production |
+| 803 | Create/update rules for .squad updates from main | Low priority (priority:low); administrative; can wait until Q2 | **KEEP in P4** — schedule for Q2 planning |
+| 807 | Update PR template to remove unneeded extra test | Minimal impact; squad:link assigned | **KEEP in P4** — coordinate with #802 |
+
+---
+
+## Summary of Changes
+
+### Closing (6 issues)
+- **#12, #13, #14**: Documentation — replaced by modern #814
+- **#94**: FacebookPostException — too narrow
+- **#102**: LinkedIn refactor — subsumed by #581
+
+### Moving to QA Runbook (3 issues)
+- **#579, #580, #582**: Infrastructure validation; no development work required
+
+### Deferring (1 issue)
+- **#724**: Multi-user teams — future epic after #609 R1 stabilizes
+
+### Keeping (20 issues)
+- **P1: 4 issues** (#812, #808, #689, #802)
+- **P2: 7 issues** (#813, #814, #809, #810, #811, #777, #778)
+- **P3: 7 issues** (#9, #45, #55, #69, #46, #78, #581)
+- **P4: 2 issues** (#803, #807)
+
+---
+
+## Sprint Planning Recommendation
+
+**Sprint 22 (starting next week):**
+- **P1 baseline:** #812 (DB layer), #808 (API endpoint), #689 (caching)
+- **Bonus:** #814 (Help pages — can run in parallel with #812) or #802 (dependabot rules)
+
+**Sprint 23 (following):**
+- **P2 unblocking:** #809 (Index display), #810 (Search), #811 (Details)
+- **Parallel:** #813 (Publisher Settings link — depends on #812, likely merged by Sprint 23)
+
+**Sprint 25 (Q2):**
+- **Phase 2 multi-tenancy:** #777 (Per-user OAuth), #778 (Collector onboarding)
+
+---
+
+## Squad Assignments
+
+**Assigned issues now have clear owners; unassigned issues should go to Planning Committee.**
+
+- **squad:trinity** — Primary: #812, #808, #689, #809, #777, #778
+- **squad:sparks** — Primary: #814, #811, #581; secondary #9, #45, #46, #69
+- **squad:switch** — Primary: #813, #810; secondary #55
+- **squad:morpheus** — Primary: #78; secondary #812
+- **squad:link** — Primary: #802, #807
+- **squad:neo** — Admin: #803 (branch rules)
+
+---
+
+## Decisions Made
+
+1. **#777 and #778 are Phase 2, not blocking production.** Sprint 25 scheduling is correct.
+2. **#812 is the foundation** — must land before #813 (depends on API DTO). Ship both with #814 in Sprint 22–23.
+3. **#808 unblocks Schedule UX trifecta** (#809, #810, #811) — prioritize for early Sprint 22.
+4. **#689 is a win** — easy performance improvement, include in P1.
+5. **Close 6 stale issues** to reduce backlog noise.
+6. **QA validation issues (#579, #580, #582) → runbook** instead of standing backlog.
+7. **#724 deferred to Planning** — revisit after #609 R1 production validation (2–3 months).
+
+---
+
+## Risks & Mitigations
+
+| Risk | Mitigation |
+|------|-----------|
+| #808 API endpoint design delays Schedule UX work | Spike technical design in early Sprint 22; pre-review design doc with squad:trinity |
+| #777/#778 scope creep delays other work | Lock Sprint 25 scope; quarterly planning review |
+| Stale issues resurface | Archive closed issues to historical database; link to current replacement issues |
+| Multi-tenancy R1 instability in production | Monitor #609 stability metrics; hold Phase 2 start until R1 validated (2+ weeks production soak) |
+
+
+
+---
+
+--- From: neo-source-crud-design.md ---
+# Decision: YouTubeSource and SyndicationFeedSource CRUD Design
+
+**Date:** 2026-04-27  
+**Author:** Neo  
+**Status:** Accepted  
+
+---
+
+## Context
+
+Joseph wants full CRUD (list, view/details, create, delete) for `YouTubeSource` and `SyndicationFeedSource` in both the API and Web layers, with the same multi-tenancy permission pattern already used by Engagements and ScheduledItems.
+
+### Codebase state before this work
+
+- Domain models exist: `YouTubeSource.cs`, `SyndicationFeedSource.cs` — both carry `CreatedByEntraOid` (string, required, 36 chars)
+- Manager interfaces exist: `IYouTubeSourceManager`, `ISyndicationFeedSourceManager` — both have `GetAllAsync(ownerEntraOid)` and base `IManager<T>` methods
+- Manager implementations exist: `YouTubeSourceManager`, `SyndicationFeedSourceManager`
+- Data stores exist: `IYouTubeSourceDataStore`, `ISyndicationFeedSourceDataStore` with owner-filtered `GetAllAsync`
+- **API controllers: NONE** — no `YouTubeSourcesController` or `SyndicationFeedSourcesController`
+- **API DTOs: NONE** — no Request/Response types for either source type
+- **Web services: NONE** — no `IYouTubeSourceService`, `ISyndicationFeedSourceService`
+- **Web controllers: NONE** — no `YouTubeSourcesController`, `SyndicationFeedSourcesController`
+
+---
+
+## Decisions
+
+### 1. API Layer: Full CRUD controllers required
+
+Both `YouTubeSourcesController` and `SyndicationFeedSourcesController` must be created from scratch. Pattern follows `EngagementsController`:
+
+- `[ApiController]`, `[Authorize]`, `[IgnoreAntiforgeryToken]`, `[Route("[controller]")]`
+- Private `GetOwnerOid()` and `IsSiteAdministrator()` helpers
+- Admin bypass: `IsSiteAdministrator()` skips owner filter on list; all single-item, update, delete ops check ownership and return `403 Forbid` on mismatch
+- DTOs: `YouTubeSourceRequest` / `YouTubeSourceResponse` and `SyndicationFeedSourceRequest` / `SyndicationFeedSourceResponse`
+- Endpoints per controller: `GET /` (list), `GET /{id}` (single), `POST /` (create), `DELETE /{id}` (delete)
+- **No PUT (update) in this sprint** — sources are managed by collectors; manual edits are not in scope
+
+#### Pagination note
+
+`IYouTubeSourceManager` and `ISyndicationFeedSourceManager` do not expose paged `GetAllAsync` overloads (only owner-filtered `List<T>` returns). For the initial implementation, the list endpoint returns all items for the user (no pagination). Pagination can be added in a follow-up sprint by extending the manager interface and data store.
+
+### 2. Web Layer: Services and controllers mirror Engagements pattern
+
+**Service interfaces** (`IYouTubeSourceService`, `ISyndicationFeedSourceService`) define:
+```
+Task<List<YouTubeSource>> GetAllAsync();
+Task<YouTubeSource?> GetAsync(int id);
+Task<YouTubeSource?> SaveAsync(YouTubeSource source);
+Task<bool> DeleteAsync(int id);
+```
+
+**Service implementations** call the API via `IDownstreamApi` (`GetForUserAsync`, `PostForUserAsync`, `CallApiForUserAsync`). The bearer token is passed through automatically — no manual OID injection in the Web service.
+
+**Controllers** (`YouTubeSourcesController`, `SyndicationFeedSourcesController`):
+- `[Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]` at class level
+- Actions: `Index`, `Details/{id}`, `Add` (GET + POST), `Delete/{id}` (GET + POST confirmed)
+- Ownership check in Web controller (defense-in-depth): non-admins redirected if `CreatedByEntraOid != currentUserOid`
+- On Add (POST): set `CreatedByEntraOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)`
+
+**Views** (one folder each):
+```
+Views/YouTubeSources/Index.cshtml
+Views/YouTubeSources/Details.cshtml
+Views/YouTubeSources/Add.cshtml
+Views/YouTubeSources/Delete.cshtml
+
+Views/SyndicationFeedSources/Index.cshtml
+Views/SyndicationFeedSources/Details.cshtml
+Views/SyndicationFeedSources/Add.cshtml
+Views/SyndicationFeedSources/Delete.cshtml
+```
+
+**Registration in Web `Program.cs`** (in `ConfigureApplication`):
+```csharp
+services.TryAddScoped<IYouTubeSourceService, YouTubeSourceService>();
+services.TryAddScoped<ISyndicationFeedSourceService, SyndicationFeedSourceService>();
+```
+
+### 3. Ownership model
+
+The API enforces ownership at every endpoint. The Web controller adds a second ownership check (consistent with Engagements pattern) as defense-in-depth. No admin-bypass logic needs to exist in the Web service layer — only in controllers.
+
+### 4. Fields to show
+
+**List view** (Index):
+- YouTubeSource: Title, Author, VideoId, PublicationDate, AddedOn, actions (Details / Delete)
+- SyndicationFeedSource: Title, Author, FeedIdentifier, PublicationDate, AddedOn, actions
+
+**Detail view**:
+- All fields including Tags, ShortenedUrl, Url, LastUpdatedOn, ItemLastUpdatedOn, CreatedByEntraOid (hidden or truncated for non-admins)
+
+**Add form**:
+- YouTubeSource: VideoId (required), Author (required), Title (required), Url (required), PublicationDate (required), Tags (optional), ShortenedUrl (optional)
+- SyndicationFeedSource: FeedIdentifier (required), Author (required), Title (required), Url (required), PublicationDate (required), Tags (optional), ShortenedUrl (optional)
+- AddedOn and LastUpdatedOn set server-side; CreatedByEntraOid set from authenticated user
+
+### 5. Navigation
+
+Add links to the main nav (e.g., `_Layout.cshtml`) for "YouTube Sources" and "Syndication Feed Sources" — routed to `YouTubeSources/Index` and `SyndicationFeedSources/Index` respectively.
+
+---
+
+## Risks
+
+1. **Manager pagination gap**: `IYouTubeSourceManager.GetAllAsync(ownerEntraOid)` returns a flat `List<T>`. If a user has thousands of sources, this will load all in memory. Accepted for initial implementation; add pagination in a follow-up.
+2. **Tags storage**: The `Tags` property is `IList<string>` in the domain model. The data store handles serialization. Verify the Add form can handle comma-separated or multi-select tag input.
+3. **No Edit (Update) endpoint**: Sources are primarily collector-managed. Omitting Update keeps scope tight. If manual correction of metadata is needed, add a follow-up issue.
+
+---
+
+## Squad Assignments
+
+| Issue | Work Type | Agent |
+|-------|-----------|-------|
+| API CRUD — YouTubeSource | API endpoints | Trinity |
+| API CRUD — SyndicationFeedSource | API endpoints | Trinity |
+| Web CRUD — YouTubeSource | MVC controller + views | Switch + Sparks |
+| Web CRUD — SyndicationFeedSource | MVC controller + views | Switch + Sparks |
+| Unit tests — Web controllers | xUnit/Moq/FluentAssertions | Tank |
+
