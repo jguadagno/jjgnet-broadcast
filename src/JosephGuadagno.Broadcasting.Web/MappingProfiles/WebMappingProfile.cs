@@ -65,7 +65,8 @@ public class WebMappingProfile: Profile
         CreateMap<Models.YouTubeSourceViewModel, Domain.Models.YouTubeSource>()
             .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => 
                 string.IsNullOrWhiteSpace(src.Tags) ? new List<string>() : src.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList()))
-            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore());
+            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore())
+            .ForMember(dest => dest.ItemLastUpdatedOn, opt => opt.Ignore());
 
     }
 }
