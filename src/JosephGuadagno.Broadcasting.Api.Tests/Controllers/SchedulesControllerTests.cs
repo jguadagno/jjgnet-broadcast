@@ -17,6 +17,9 @@ namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
 public class SchedulesControllerTests
 {
     private readonly Mock<IScheduledItemManager> _scheduledItemManagerMock;
+    private readonly Mock<IEngagementManager> _engagementManagerMock;
+    private readonly Mock<ISyndicationFeedSourceManager> _syndicationFeedSourceManagerMock;
+    private readonly Mock<IYouTubeSourceManager> _youTubeSourceManagerMock;
     private readonly Mock<ILogger<SchedulesController>> _loggerMock;
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
@@ -26,6 +29,9 @@ public class SchedulesControllerTests
     public SchedulesControllerTests()
     {
         _scheduledItemManagerMock = new Mock<IScheduledItemManager>();
+        _engagementManagerMock = new Mock<IEngagementManager>();
+        _syndicationFeedSourceManagerMock = new Mock<ISyndicationFeedSourceManager>();
+        _youTubeSourceManagerMock = new Mock<IYouTubeSourceManager>();
         _loggerMock = new Mock<ILogger<SchedulesController>>();
     }
 
@@ -35,7 +41,13 @@ public class SchedulesControllerTests
 
     private SchedulesController CreateSut(string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
     {
-        var controller = new SchedulesController(_scheduledItemManagerMock.Object, _loggerMock.Object, _mapper)
+        var controller = new SchedulesController(
+            _scheduledItemManagerMock.Object,
+            _engagementManagerMock.Object,
+            _syndicationFeedSourceManagerMock.Object,
+            _youTubeSourceManagerMock.Object,
+            _loggerMock.Object,
+            _mapper)
         {
             ControllerContext = ApiControllerTestHelpers.CreateControllerContext(ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
