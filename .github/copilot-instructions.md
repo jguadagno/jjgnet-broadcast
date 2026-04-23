@@ -101,3 +101,36 @@ libman restore
 - Secrets belong in user secrets for the API, Web, and Functions projects.
   `src\JosephGuadagno.Broadcasting.Functions\local.settings.json` is a template,
   not a source of real credentials.
+
+## Security baseline
+
+### CSRF (`cs/web/missing-token-validation`)
+- All `[HttpPost]` methods in the **Web** MVC project (`JosephGuadagno.Broadcasting.Web`)
+  **must** have `[ValidateAntiForgeryToken]`.
+- API controllers (`JosephGuadagno.Broadcasting.Api`) use Bearer token auth and are
+  not vulnerable to CSRF. They **must** have `[IgnoreAntiforgeryToken]` at the class
+  level; do **not** add `[ValidateAntiForgeryToken]` to API controllers.
+- This is a **hard pre-commit gate**: any PR that adds a Web `[HttpPost]` without
+  `[ValidateAntiForgeryToken]` will be rejected.
+
+### Log injection (`cs/log-forging`)
+- Never pass user-controlled strings (route params, query strings, request-body
+  fields, model properties) directly into `_logger.Log*()` calls.
+- Always sanitize using the centralized utility:
+  ```csharp
+  using JosephGuadagno.Broadcasting.Domain.Utilities;
+
+  // ...
+  _logger.LogWarning("Platform not found: {Platform}", LogSanitizer.Sanitize(platform));
+  ```
+- `LogSanitizer.Sanitize()` lives in `JosephGuadagno.Broadcasting.Domain.Utilities.LogSanitizer`
+  and strips all ASCII control characters (0x00–0x1F, 0x7F) using a compiled regex.
+- Do **not** add per-file inline `SanitizeForLog()` helpers; use the shared utility.
+- This is a **hard pre-commit gate**: any PR introducing unsanitized user-controlled
+  strings in log calls will be rejected.
+
+### Manual production steps
+- Any PR that requires a manual human action (DB migration, config change, new
+  permission/role, secret rotation) **must** also create a GitHub issue with the
+  `squad:Joe` label containing step-by-step instructions. Reference the issue in
+  the PR description.

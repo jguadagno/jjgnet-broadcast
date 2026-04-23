@@ -1,5 +1,6 @@
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -83,6 +84,7 @@ public class MessageTemplatesController : Controller
     /// </summary>
     /// <param name="model">The updated message template view model</param>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(MessageTemplateViewModel model)
     {
         if (!ModelState.IsValid)
@@ -95,7 +97,7 @@ public class MessageTemplatesController : Controller
         if (saved is null)
         {
             _logger.LogWarning("Failed to save MessageTemplate for Platform={Platform}, MessageType={MessageType}",
-                model.Platform, model.MessageType);
+                LogSanitizer.Sanitize(model.Platform), LogSanitizer.Sanitize(model.MessageType));
             ModelState.AddModelError(string.Empty, "Failed to save the message template.");
             return View(model);
         }

@@ -1,6 +1,7 @@
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
@@ -13,8 +14,6 @@ public class UserPublisherSettingDataStore(
     ILogger<UserPublisherSettingDataStore> logger) : IUserPublisherSettingDataStore
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
-    private static string SanitizeForLog(string? value) =>
-        value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty;
 
     public async Task<List<UserPublisherSetting>> GetByUserAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
@@ -83,7 +82,7 @@ public class UserPublisherSettingDataStore(
             logger.LogError(
                 ex,
                 "Failed to save user publisher settings for owner {OwnerOid} and platform {PlatformId}",
-                SanitizeForLog(setting.CreatedByEntraOid),
+                LogSanitizer.Sanitize(setting.CreatedByEntraOid),
                 setting.SocialMediaPlatformId);
             return null;
         }
@@ -114,7 +113,7 @@ public class UserPublisherSettingDataStore(
             logger.LogError(
                 ex,
                 "Failed to delete user publisher settings for owner {OwnerOid} and platform {PlatformId}",
-                SanitizeForLog(ownerOid),
+                LogSanitizer.Sanitize(ownerOid),
                 platformId);
             return false;
         }
