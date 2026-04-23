@@ -23,6 +23,12 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Dependabot PRs use `dependabot/{ecosystem}/{package}` naming — bypass all metadata checks.
+          if [[ "$BRANCH_NAME" =~ ^dependabot/ ]]; then
+            echo "Dependabot PR detected on branch '$BRANCH_NAME' — skipping branch/title metadata validation."
+            exit 0
+          fi
+
           branch_pattern='^(issue-[0-9]+(-[a-z][a-z0-9]*)*|feature/[0-9]+(-[a-z][a-z0-9]*)*)$'
           title_pattern='^(feat|fix|docs|style|refactor|perf|test|chore)\(#([0-9]+)\): .+'
 
