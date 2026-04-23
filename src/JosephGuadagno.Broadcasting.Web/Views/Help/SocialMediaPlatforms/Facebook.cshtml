@@ -1,0 +1,125 @@
+@{
+    ViewData["Title"] = "Facebook Credential Setup";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="PublisherSettings" asp-action="Index">Publisher Settings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Facebook Help</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-facebook fs-2 text-primary"></i>
+    <h1 class="mb-0">Facebook — Credential Setup</h1>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <i class="bi bi-key me-2"></i><strong>What You Need</strong>
+            </div>
+            <div class="card-body">
+                <p>Publishing to a Facebook Page requires several credentials from the Meta for Developers portal:</p>
+                <ul class="mb-0">
+                    <li><strong>Page ID</strong> — the numeric ID of your Facebook Page</li>
+                    <li><strong>App ID</strong> — identifies your Meta / Facebook app</li>
+                    <li><strong>App Secret</strong> — authenticates your Meta app</li>
+                    <li><strong>Client Token</strong> — a per-app-user token for client-side calls</li>
+                    <li><strong>Short-Lived Access Token</strong> — temporary user token (expires in ~1 hour)</li>
+                    <li><strong>Long-Lived Access Token</strong> — extended user token (expires in ~60 days)</li>
+                    <li><strong>Page Access Token</strong> — token scoped to your page (never expires if generated from a long-lived token)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <i class="bi bi-list-ol me-2"></i><strong>Step-by-Step Instructions</strong>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li class="mb-2">Go to <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer">Meta for Developers — Apps <i class="bi bi-box-arrow-up-right small"></i></a> and sign in.</li>
+                    <li class="mb-2">Click <strong>Create App</strong>. Choose the <strong>Business</strong> type and follow the wizard.</li>
+                    <li class="mb-2">Once the app is created, go to <strong>Settings → Basic</strong> to copy the <strong>App ID</strong> and <strong>App Secret</strong>.</li>
+                    <li class="mb-2">In the left sidebar find <strong>Settings → Advanced</strong> and copy the <strong>Client Token</strong>.</li>
+                    <li class="mb-2">Add the <strong>Facebook Login</strong> product to your app, then use the <strong>Graph API Explorer</strong> (<a href="https://developers.facebook.com/tools/explorer" target="_blank" rel="noopener noreferrer">developers.facebook.com/tools/explorer <i class="bi bi-box-arrow-up-right small"></i></a>) to generate a <strong>Short-Lived User Access Token</strong> with <code>pages_manage_posts</code> and <code>pages_read_engagement</code> permissions.</li>
+                    <li class="mb-2">Exchange the short-lived token for a <strong>Long-Lived User Access Token</strong> using the <a href="https://developers.facebook.com/tools/access-token" target="_blank" rel="noopener noreferrer">Access Token Tool <i class="bi bi-box-arrow-up-right small"></i></a> or via the Graph API: <code>GET /oauth/access_token?grant_type=fb_exchange_token&amp;client_id={app-id}&amp;client_secret={app-secret}&amp;fb_exchange_token={short-lived-token}</code>.</li>
+                    <li class="mb-2">Use the long-lived user token to fetch a <strong>Page Access Token</strong>: <code>GET /{page-id}?fields=access_token</code>. This token does not expire.</li>
+                    <li>Your <strong>Page ID</strong> is visible in your Facebook Page's <strong>About</strong> section or in the URL when you manage the page.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-input-cursor-text me-2"></i><strong>Where Each Value Goes in Publisher Settings</strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Field in Publisher Settings</th>
+                            <th>Value from Meta Developer Portal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Page ID</strong></td>
+                            <td>Numeric Facebook Page ID</td>
+                        </tr>
+                        <tr>
+                            <td><strong>App ID</strong></td>
+                            <td>App ID from Settings → Basic</td>
+                        </tr>
+                        <tr>
+                            <td><strong>App Secret</strong></td>
+                            <td>App Secret from Settings → Basic</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Client Token</strong></td>
+                            <td>Client Token from Settings → Advanced</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Short-Lived Access Token</strong></td>
+                            <td>User token from Graph API Explorer</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Long-Lived Access Token</strong></td>
+                            <td>Exchanged token (valid ~60 days)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Page Access Token</strong></td>
+                            <td>Page-scoped token (non-expiring)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card shadow-sm border-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-link-45deg me-2"></i><strong>Official Documentation</strong>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Create and manage your Meta / Facebook apps:</p>
+                <a href="https://developers.facebook.com/apps"
+                   target="_blank" rel="noopener noreferrer"
+                   class="btn btn-outline-primary w-100">
+                    <i class="bi bi-box-arrow-up-right me-2"></i>Meta for Developers
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-4">
+            <div class="card-body text-center">
+                <a asp-controller="PublisherSettings" asp-action="Index" class="btn btn-secondary w-100">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Publisher Settings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

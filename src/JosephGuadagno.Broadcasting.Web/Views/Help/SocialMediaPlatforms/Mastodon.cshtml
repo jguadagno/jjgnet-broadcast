@@ -1,0 +1,99 @@
+@{
+    ViewData["Title"] = "Mastodon Credential Setup";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="PublisherSettings" asp-action="Index">Publisher Settings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Mastodon Help</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-mastodon fs-2 text-primary"></i>
+    <h1 class="mb-0">Mastodon — Credential Setup</h1>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <i class="bi bi-key me-2"></i><strong>What You Need</strong>
+            </div>
+            <div class="card-body">
+                <p>To publish to Mastodon you need an OAuth 2.0 access token generated from your Mastodon instance:</p>
+                <ul class="mb-0">
+                    <li><strong>Instance URL</strong> — the base URL of your Mastodon server (e.g. <code>https://mastodon.social</code>)</li>
+                    <li><strong>Access Token</strong> — an OAuth 2.0 bearer token with permission to post statuses</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <i class="bi bi-list-ol me-2"></i><strong>Step-by-Step Instructions</strong>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li class="mb-2">Sign in to your Mastodon instance (e.g. <a href="https://mastodon.social" target="_blank" rel="noopener noreferrer">mastodon.social <i class="bi bi-box-arrow-up-right small"></i></a>).</li>
+                    <li class="mb-2">Go to <strong>Preferences → Development</strong> (usually at <code>https://&lt;your-instance&gt;/settings/applications</code>).</li>
+                    <li class="mb-2">Click <strong>New Application</strong>.</li>
+                    <li class="mb-2">Enter an application name (e.g. <em>JJGNet Broadcasting</em>). The redirect URI can be left as <code>urn:ietf:wg:oauth:2.0:oob</code> for out-of-band flow.</li>
+                    <li class="mb-2">Under <strong>Scopes</strong>, ensure <strong>write:statuses</strong> is checked (at minimum). Click <strong>Submit</strong>.</li>
+                    <li class="mb-2">Open the newly created application. You will see the <strong>Your access token</strong> field at the bottom. Copy that value.</li>
+                    <li>Note the <strong>Instance URL</strong> — it is the root of the Mastodon server you are signed into.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-input-cursor-text me-2"></i><strong>Where Each Value Goes in Publisher Settings</strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Field in Publisher Settings</th>
+                            <th>Value from your Mastodon instance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Instance URL</strong></td>
+                            <td>Root URL of your Mastodon server (e.g. <code>https://mastodon.social</code>)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Access Token</strong></td>
+                            <td>Token shown at the bottom of your application settings</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card shadow-sm border-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-link-45deg me-2"></i><strong>Official Documentation</strong>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Learn about obtaining access tokens from the Mastodon API docs:</p>
+                <a href="https://docs.joinmastodon.org/client/token/"
+                   target="_blank" rel="noopener noreferrer"
+                   class="btn btn-outline-primary w-100">
+                    <i class="bi bi-box-arrow-up-right me-2"></i>Mastodon API — Client Tokens
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-4">
+            <div class="card-body text-center">
+                <a asp-controller="PublisherSettings" asp-action="Index" class="btn btn-secondary w-100">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Publisher Settings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

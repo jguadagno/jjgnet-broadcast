@@ -1,0 +1,109 @@
+@{
+    ViewData["Title"] = "LinkedIn Credential Setup";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="PublisherSettings" asp-action="Index">Publisher Settings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">LinkedIn Help</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-linkedin fs-2 text-primary"></i>
+    <h1 class="mb-0">LinkedIn — Credential Setup</h1>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <i class="bi bi-key me-2"></i><strong>What You Need</strong>
+            </div>
+            <div class="card-body">
+                <p>To publish to LinkedIn you need the following values from the LinkedIn Developer portal:</p>
+                <ul class="mb-0">
+                    <li><strong>Author ID</strong> — your LinkedIn member URN (e.g. <code>urn:li:person:XXXXXXXX</code>)</li>
+                    <li><strong>Client ID</strong> — identifies your LinkedIn application</li>
+                    <li><strong>Client Secret</strong> — authenticates your LinkedIn application</li>
+                    <li><strong>Access Token</strong> — OAuth 2.0 token authorizing posts on your behalf</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <i class="bi bi-list-ol me-2"></i><strong>Step-by-Step Instructions</strong>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li class="mb-2">Go to the <a href="https://www.linkedin.com/developers/apps" target="_blank" rel="noopener noreferrer">LinkedIn Developer Apps <i class="bi bi-box-arrow-up-right small"></i></a> page and sign in.</li>
+                    <li class="mb-2">Click <strong>Create App</strong> and fill in the required fields (app name, LinkedIn page, logo).</li>
+                    <li class="mb-2">On your app's <strong>Auth</strong> tab, copy the <strong>Client ID</strong> and <strong>Client Secret</strong>.</li>
+                    <li class="mb-2">On the <strong>Products</strong> tab, request access to <strong>Share on LinkedIn</strong> and <strong>Sign In with LinkedIn using OpenID Connect</strong>.</li>
+                    <li class="mb-2">Add <code>https://localhost</code> (or your app's redirect URL) to the <strong>Authorized redirect URLs</strong> list on the Auth tab.</li>
+                    <li class="mb-2">Use the LinkedIn OAuth 2.0 flow (or the <strong>LinkedIn Token Generator</strong> in the developer portal) to obtain an <strong>Access Token</strong> with the <code>w_member_social</code> scope.</li>
+                    <li>To find your <strong>Author ID</strong>, call the LinkedIn API: <code>GET https://api.linkedin.com/v2/userinfo</code> using the access token. The <code>sub</code> field is your member ID; format it as <code>urn:li:person:{sub}</code>.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-input-cursor-text me-2"></i><strong>Where Each Value Goes in Publisher Settings</strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Field in Publisher Settings</th>
+                            <th>Value from LinkedIn Developer Portal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Author ID</strong></td>
+                            <td>Your member URN (e.g. <code>urn:li:person:XXXXXXXX</code>)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Client ID</strong></td>
+                            <td>Client ID from the Auth tab</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Client Secret</strong></td>
+                            <td>Client Secret from the Auth tab</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Access Token</strong></td>
+                            <td>OAuth 2.0 access token with <code>w_member_social</code> scope</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card shadow-sm border-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-link-45deg me-2"></i><strong>Official Documentation</strong>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Create and manage your LinkedIn apps:</p>
+                <a href="https://www.linkedin.com/developers/apps"
+                   target="_blank" rel="noopener noreferrer"
+                   class="btn btn-outline-primary w-100">
+                    <i class="bi bi-box-arrow-up-right me-2"></i>LinkedIn Developer Apps
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-4">
+            <div class="card-body text-center">
+                <a asp-controller="PublisherSettings" asp-action="Index" class="btn btn-secondary w-100">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Publisher Settings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
