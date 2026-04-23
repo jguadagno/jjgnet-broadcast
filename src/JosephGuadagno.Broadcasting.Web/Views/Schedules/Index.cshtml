@@ -17,8 +17,7 @@
     <table class="table table-striped">
         <thead class="thead-dark">
         <tr>
-            <th scope="col">Table Name</th>
-            <th scope="col">Key</th>
+            <th scope="col">Source Item</th>
             <th scope="col">Schedule Send DateTime</th>
             <th scope="col">Was Sent</th>
             <th scope="col">&nbsp;</th>
@@ -29,8 +28,7 @@
         {
             <tr>
 
-                <td>@scheduledItem.ItemTableName</td>
-                <td>@scheduledItem.ItemPrimaryKey</td>
+                <td>@(scheduledItem.SourceItemDisplayName ?? $"{scheduledItem.ItemTableName} #{scheduledItem.ItemPrimaryKey}")</td>
                 <td><local-time value="@scheduledItem.SendOnDateTime" /></td>
                 <td>@if (scheduledItem.MessageSent)
                     {
