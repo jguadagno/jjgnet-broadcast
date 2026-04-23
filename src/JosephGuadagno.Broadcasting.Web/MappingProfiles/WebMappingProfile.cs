@@ -68,5 +68,13 @@ public class WebMappingProfile: Profile
             .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore())
             .ForMember(dest => dest.ItemLastUpdatedOn, opt => opt.Ignore());
 
+        // SyndicationFeedSource mappings (Issue #819)
+        CreateMap<Domain.Models.SyndicationFeedSource, Models.SyndicationFeedSourceViewModel>()
+            .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => string.Join(", ", src.Tags)));
+        CreateMap<Models.SyndicationFeedSourceViewModel, Domain.Models.SyndicationFeedSource>()
+            .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => 
+                string.IsNullOrWhiteSpace(src.Tags) ? new List<string>() : src.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList()))
+            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore());
+
     }
 }

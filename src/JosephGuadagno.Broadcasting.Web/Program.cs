@@ -266,6 +266,7 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IMessageTemplateService, MessageTemplateService>();
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
     services.TryAddScoped<IYouTubeSourceService, YouTubeSourceService>();
+    services.TryAddScoped<ISyndicationFeedSourceService, SyndicationFeedSourceService>();
 
     // RBAC Phase 1
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();

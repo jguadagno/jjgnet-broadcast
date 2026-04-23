@@ -1,0 +1,78 @@
+@model JosephGuadagno.Broadcasting.Web.Models.SyndicationFeedSourceViewModel
+@{
+    ViewData["Title"] = "Add Syndication Feed Source";
+}
+
+<div class="container">
+    <h1 class="display-4 mb-4">Add Syndication Feed Source</h1>
+    
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    
+    <div class="card">
+        <div class="card-body">
+            <form asp-action="Add" method="post">
+                <div class="mb-3">
+                    <label asp-for="FeedIdentifier" class="form-label"></label>
+                    <input asp-for="FeedIdentifier" class="form-control" />
+                    <span asp-validation-for="FeedIdentifier" class="text-danger"></span>
+                </div>
+                
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label"></label>
+                    <input asp-for="Title" class="form-control" />
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                </div>
+                
+                <div class="mb-3">
+                    <label asp-for="Author" class="form-label"></label>
+                    <input asp-for="Author" class="form-control" />
+                    <span asp-validation-for="Author" class="text-danger"></span>
+                </div>
+                
+                <div class="mb-3">
+                    <label asp-for="Url" class="form-label"></label>
+                    <input asp-for="Url" class="form-control" type="url" />
+                    <span asp-validation-for="Url" class="text-danger"></span>
+                </div>
+                
+                <div class="mb-3">
+                    <label asp-for="ShortenedUrl" class="form-label"></label>
+                    <input asp-for="ShortenedUrl" class="form-control" type="url" />
+                    <span asp-validation-for="ShortenedUrl" class="text-danger"></span>
+                </div>
+                
+                <div class="mb-3">
+                    <label asp-for="PublicationDate" class="form-label"></label>
+                    <input asp-for="PublicationDate" class="form-control" type="datetime-local" />
+                    <span asp-validation-for="PublicationDate" class="text-danger"></span>
+                </div>
+                
+                <div class="mb-3">
+                    <label asp-for="Tags" class="form-label"></label>
+                    <input asp-for="Tags" class="form-control" />
+                    <span asp-validation-for="Tags" class="text-danger"></span>
+                    <small class="form-text text-muted">Comma-separated tags</small>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-1"></i>Save
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-1"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
