@@ -9,9 +9,15 @@
         <span class="badge @(Model.IsEnabled ? "text-bg-success" : "text-bg-secondary")">
             @(Model.IsEnabled ? "Enabled" : "Disabled")
         </span>
+        @if (!string.IsNullOrWhiteSpace(Model.CredentialSetupDocumentationUrl))
+        {
+            <a href="@Model.CredentialSetupDocumentationUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-info ms-2">
+                <i class="bi bi-book"></i> Setup guide
+            </a>
+        }
     </div>
     <div class="card-body">
-        <form asp-action="SaveFacebook" method="post" novalidate>
+        <form asp-action="SaveFacebook"method="post" novalidate>
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
             <input asp-for="Id" type="hidden" />
             <input asp-for="CreatedByEntraOid" type="hidden" />

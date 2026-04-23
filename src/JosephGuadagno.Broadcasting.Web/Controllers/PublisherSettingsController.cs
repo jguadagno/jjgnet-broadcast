@@ -216,6 +216,7 @@ public class PublisherSettingsController : Controller
                 PlatformIcon = platform.Icon,
                 IsEnabled = setting?.IsEnabled ?? false,
                 IsManagedBySiteAdmin = isManagedBySiteAdmin,
+                CredentialSetupDocumentationUrl = platform.CredentialSetupDocumentationUrl,
                 UserName = GetSettingValue(setting, nameof(BlueskyPublisherSettings.BlueskyUserName)),
                 HasAppPassword = HasStoredValue(setting, nameof(BlueskyPublisherSettings.BlueskyPassword))
             },
@@ -228,6 +229,7 @@ public class PublisherSettingsController : Controller
                 PlatformIcon = platform.Icon,
                 IsEnabled = setting?.IsEnabled ?? false,
                 IsManagedBySiteAdmin = isManagedBySiteAdmin,
+                CredentialSetupDocumentationUrl = platform.CredentialSetupDocumentationUrl,
                 HasConsumerKey = HasStoredValue(setting, nameof(TwitterPublisherSettings.ConsumerKey)),
                 HasConsumerSecret = HasStoredValue(setting, nameof(TwitterPublisherSettings.ConsumerSecret)),
                 HasAccessToken = HasStoredValue(setting, nameof(TwitterPublisherSettings.OAuthToken)),
@@ -242,6 +244,7 @@ public class PublisherSettingsController : Controller
                 PlatformIcon = platform.Icon,
                 IsEnabled = setting?.IsEnabled ?? false,
                 IsManagedBySiteAdmin = isManagedBySiteAdmin,
+                CredentialSetupDocumentationUrl = platform.CredentialSetupDocumentationUrl,
                 PageId = GetSettingValue(setting, nameof(FacebookPublisherSettings.PageId)),
                 AppId = GetSettingValue(setting, nameof(FacebookPublisherSettings.AppId)),
                 GraphApiVersion = GetSettingValue(setting, nameof(FacebookPublisherSettings.GraphApiVersion)),
@@ -261,6 +264,7 @@ public class PublisherSettingsController : Controller
                 PlatformIcon = platform.Icon,
                 IsEnabled = setting?.IsEnabled ?? false,
                 IsManagedBySiteAdmin = isManagedBySiteAdmin,
+                CredentialSetupDocumentationUrl = platform.CredentialSetupDocumentationUrl,
                 AuthorId = GetSettingValue(setting, nameof(LinkedInPublisherSettings.AuthorId)),
                 ClientId = GetSettingValue(setting, nameof(LinkedInPublisherSettings.ClientId)),
                 AccessTokenUrl = GetSettingValue(setting, nameof(LinkedInPublisherSettings.AccessTokenUrl)),
@@ -275,7 +279,8 @@ public class PublisherSettingsController : Controller
                 PlatformName = platform.Name,
                 PlatformIcon = platform.Icon,
                 IsEnabled = setting?.IsEnabled ?? false,
-                IsManagedBySiteAdmin = isManagedBySiteAdmin
+                IsManagedBySiteAdmin = isManagedBySiteAdmin,
+                CredentialSetupDocumentationUrl = platform.CredentialSetupDocumentationUrl
             }
         };
     }
