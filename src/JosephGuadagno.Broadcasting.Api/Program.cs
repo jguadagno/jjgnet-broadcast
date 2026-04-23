@@ -249,4 +249,6 @@ void ConfigureRepositories(IServiceCollection services)
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
+    services.TryAddScoped<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
+    services.TryAddScoped<IYouTubeSourceManager, YouTubeSourceManager>();
 }

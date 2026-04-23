@@ -907,3 +907,25 @@ Feature-complete and production-ready. All sub-issues (#725–#731) delivered.
 - `dotnet restore .\src\`
 - `dotnet build .\src\ --no-restore --configuration Release`
 - `dotnet test .\src\ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"`
+
+### 2026-04-24 — Issue #816: YouTubeSourcesController CRUD Endpoints
+**Status:** ✅ COMPLETE — PR #825
+
+**Task:** Build `YouTubeSourcesController` in the API layer with GET (list + single), POST, and DELETE.
+
+**Changes Made:**
+1. **Controller:** `src/JosephGuadagno.Broadcasting.Api/Controllers/YouTubeSourcesController.cs`
+   - Follows `EngagementsController` pattern exactly
+   - `GetOwnerOid()` and `IsSiteAdministrator()` private helpers
+   - Admin bypass on list: admin → `GetAllAsync()`, user → `GetAllAsync(ownerOid)`
+   - Ownership check on GET single and DELETE (403 Forbid if not owner/admin)
+   - POST: sets `CreatedByEntraOid`, `AddedOn`, `LastUpdatedOn` from context
+2. **DTOs:** `YouTubeSourceRequest.cs` and `YouTubeSourceResponse.cs`
+3. **AutoMapper:** Added `YouTubeSource ↔ YouTubeSourceRequest/Response` mappings in `ApiBroadcastingProfile.cs`
+4. **DI:** Added `IYouTubeSourceDataStore` and `IYouTubeSourceManager` registrations to `Program.cs`
+5. **Tests:** Added `YouTubeSourcesController` to `ControllerAuthorizationPolicyTests` (controller-level auth + 4 action policies)
+
+**Test Results:** 157/157 API.Tests passing.
+
+**Decision Filed:** `.squad/decisions/inbox/trinity-816-youtube-api.md`
+
