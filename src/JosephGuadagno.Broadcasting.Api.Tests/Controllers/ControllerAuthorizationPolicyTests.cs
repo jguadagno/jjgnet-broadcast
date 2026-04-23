@@ -14,7 +14,8 @@ public class ControllerAuthorizationPolicyTests
         { typeof(SchedulesController), nameof(SchedulesController) },
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController) },
         { typeof(UserPublisherSettingsController), nameof(UserPublisherSettingsController) },
-        { typeof(MessageTemplatesController), nameof(MessageTemplatesController) }
+        { typeof(MessageTemplatesController), nameof(MessageTemplatesController) },
+        { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController) }
     };
 
     public static TheoryData<Type, string, string> ActionPolicies => new()
@@ -53,7 +54,11 @@ public class ControllerAuthorizationPolicyTests
         { typeof(UserPublisherSettingsController), nameof(UserPublisherSettingsController.DeleteAsync), AuthorizationPolicyNames.RequireAdministrator },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.GetAsync), AuthorizationPolicyNames.RequireViewer },
-        { typeof(MessageTemplatesController), nameof(MessageTemplatesController.UpdateAsync), AuthorizationPolicyNames.RequireContributor }
+        { typeof(MessageTemplatesController), nameof(MessageTemplatesController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.GetYouTubeSourcesAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.GetYouTubeSourceAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.CreateYouTubeSourceAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.DeleteYouTubeSourceAsync), AuthorizationPolicyNames.RequireAdministrator },
     };
 
     [Theory]
