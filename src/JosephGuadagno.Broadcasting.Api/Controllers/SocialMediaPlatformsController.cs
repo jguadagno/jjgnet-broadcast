@@ -3,6 +3,7 @@ using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -34,9 +35,6 @@ public class SocialMediaPlatformsController : ControllerBase
         _logger = logger;
         _mapper = mapper;
     }
-
-    private static string SanitizeForLog(string? value) =>
-        value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty;
 
     /// <summary>
     /// Gets social media platforms
@@ -108,7 +106,7 @@ public class SocialMediaPlatformsController : ControllerBase
         var created = await _socialMediaPlatformManager.AddAsync(platform);
         if (created is null)
         {
-            _logger.LogError("Failed to create social media platform: {Name}", SanitizeForLog(request.Name));
+            _logger.LogError("Failed to create social media platform: {Name}", LogSanitizer.Sanitize(request.Name));
             return BadRequest("Failed to create social media platform");
         }
 

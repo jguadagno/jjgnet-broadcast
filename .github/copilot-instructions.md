@@ -116,13 +116,16 @@ libman restore
 ### Log injection (`cs/log-forging`)
 - Never pass user-controlled strings (route params, query strings, request-body
   fields, model properties) directly into `_logger.Log*()` calls.
-- Always sanitize with the local `SanitizeForLog()` helper before logging:
+- Always sanitize using the centralized utility:
   ```csharp
-  private static string SanitizeForLog(string? value) =>
-      value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty;
+  using JosephGuadagno.Broadcasting.Domain.Utilities;
+
+  // ...
+  _logger.LogWarning("Platform not found: {Platform}", LogSanitizer.Sanitize(platform));
   ```
-- Add this helper to any controller that logs user-controlled strings. Do not
-  centralize it into a shared utility unless explicitly asked.
+- `LogSanitizer.Sanitize()` lives in `JosephGuadagno.Broadcasting.Domain.Utilities.LogSanitizer`
+  and strips all ASCII control characters (0x00–0x1F, 0x7F) using a compiled regex.
+- Do **not** add per-file inline `SanitizeForLog()` helpers; use the shared utility.
 - This is a **hard pre-commit gate**: any PR introducing unsanitized user-controlled
   strings in log calls will be rejected.
 

@@ -51,12 +51,21 @@ token-based flows.
 
 ### Rule
 
-Never pass user-controlled values directly to `_logger.Log*()`. Sanitize first:
+Never pass user-controlled values directly to `_logger.Log*()`. Sanitize first
+using the centralized utility:
 
 ```csharp
-private static string SanitizeForLog(string? value) =>
-    value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
+
+// ...
+
+_logger.LogWarning("Platform not found: {Platform}", LogSanitizer.Sanitize(platform));
 ```
+
+`LogSanitizer` lives at
+`src/JosephGuadagno.Broadcasting.Domain/Utilities/LogSanitizer.cs` and uses a
+compiled regex to strip **all** ASCII control characters (0x00–0x1F and 0x7F),
+not just CR/LF.
 
 ### What counts as user-controlled
 
@@ -80,11 +89,12 @@ private static string SanitizeForLog(string? value) =>
 _logger.LogInformation("Updated platform={Platform}", platform);
 
 // SAFE
-_logger.LogInformation("Updated platform={Platform}", SanitizeForLog(platform));
+_logger.LogInformation("Updated platform={Platform}", LogSanitizer.Sanitize(platform));
 ```
 
-Add `SanitizeForLog()` as a private static method in each controller that needs
-it. Do not centralize unless explicitly asked.
+Add `using JosephGuadagno.Broadcasting.Domain.Utilities;` to any controller or
+data store that needs to sanitize log values. Do not re-introduce per-file
+inline helpers.
 
 ---
 
@@ -95,6 +105,6 @@ Before committing any controller change:
 1. Search for `[HttpPost]` in the file — every one must have `[ValidateAntiForgeryToken]`
    (Web only).
 2. Search for `_logger.Log` in the file — every call that passes a string variable
-   must use `SanitizeForLog()` if that variable could come from user input.
+   must use `LogSanitizer.Sanitize()` if that variable could come from user input.
 3. Run `dotnet build src/` — must pass.
 4. Run `dotnet test src/ --no-build --configuration Release` — all tests must pass.

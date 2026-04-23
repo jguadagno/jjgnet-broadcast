@@ -4,6 +4,7 @@ using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,9 +23,6 @@ public class UserPublisherSettingsController(
     ILogger<UserPublisherSettingsController> logger,
     IMapper mapper) : ControllerBase
 {
-    private static string SanitizeForLog(string? value) =>
-        value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty;
-
     /// <summary>
     /// Gets every publisher setting visible to the current caller.
     /// </summary>
@@ -83,7 +81,7 @@ public class UserPublisherSettingsController(
         {
             logger.LogWarning(
                 "User publisher settings not found for owner {OwnerOid} and platform {PlatformId}",
-                SanitizeForLog(resolvedOwnerOid),
+                LogSanitizer.Sanitize(resolvedOwnerOid),
                 platformId);
             return NotFound();
         }
@@ -136,7 +134,7 @@ public class UserPublisherSettingsController(
         {
             logger.LogWarning(
                 "Failed to save user publisher settings for owner {OwnerOid} and platform {PlatformId}",
-                SanitizeForLog(resolvedOwnerOid),
+                LogSanitizer.Sanitize(resolvedOwnerOid),
                 platformId);
             return BadRequest("Unable to save publisher settings");
         }
@@ -175,7 +173,7 @@ public class UserPublisherSettingsController(
         {
             logger.LogWarning(
                 "User publisher settings not found for delete for owner {OwnerOid} and platform {PlatformId}",
-                SanitizeForLog(resolvedOwnerOid),
+                LogSanitizer.Sanitize(resolvedOwnerOid),
                 platformId);
             return NotFound();
         }
