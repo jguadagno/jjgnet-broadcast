@@ -741,3 +741,6 @@ infrastructure/discovery/*.bicep
 .squad/decisions/inbox/
 .squad/sessions/
 .squad-workstream
+
+# Squad worktree directories
+.worktree-*/
