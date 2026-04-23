@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,22 +8,16 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Controller for user-facing help pages.
 /// </summary>
 [Authorize]
-public class HelpController : Controller
+public class HelpController(ISocialMediaPlatformService socialMediaPlatformService) : Controller
 {
-    private static readonly Dictionary<string, string> PlatformViewMap = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["bluesky"]  = "SocialMediaPlatforms/Bluesky",
-        ["twitter"]  = "SocialMediaPlatforms/Twitter",
-        ["linkedin"] = "SocialMediaPlatforms/LinkedIn",
-        ["facebook"] = "SocialMediaPlatforms/Facebook",
-        ["mastodon"] = "SocialMediaPlatforms/Mastodon"
-    };
-
     [Route("Help/SocialMediaPlatforms/{platform}")]
-    public IActionResult SocialMediaPlatforms(string platform)
+    public async Task<IActionResult> SocialMediaPlatforms(string platform)
     {
-        if (!PlatformViewMap.TryGetValue(platform, out var viewName))
+        var platforms = await socialMediaPlatformService.GetAllAsync();
+        var match = platforms.FirstOrDefault(p =>
+            string.Equals(p.Name, platform, StringComparison.OrdinalIgnoreCase));
+        if (match is null)
             return NotFound();
-        return View(viewName);
+        return View($"SocialMediaPlatforms/{match.Name}");
     }
 }

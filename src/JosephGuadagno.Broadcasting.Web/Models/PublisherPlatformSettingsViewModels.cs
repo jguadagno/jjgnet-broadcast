@@ -16,6 +16,10 @@ public abstract class PublisherPlatformSettingsViewModel : IValidatableObject
 
     public string MaskedValue => "••••••••";
 
+    public virtual string DisplayName => PlatformName;
+
+    public virtual bool IsConfigured => true;
+
     public abstract string PartialViewName { get; }
 
     public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
@@ -80,6 +84,7 @@ public sealed class TwitterPublisherSettingsViewModel : PublisherPlatformSetting
     public string? AccessTokenSecret { get; set; }
 
     public override string PartialViewName => "_TwitterSettings";
+    public override string DisplayName => $"{PlatformName} / X";
 
     public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
@@ -249,4 +254,5 @@ public sealed class LinkedInPublisherSettingsViewModel : PublisherPlatformSettin
 public sealed class UnsupportedPublisherSettingsViewModel : PublisherPlatformSettingsViewModel
 {
     public override string PartialViewName => "_UnsupportedPublisherSettings";
+    public override bool IsConfigured => false;
 }
