@@ -33,6 +33,9 @@ public class MessageTemplatesController : Controller
         _logger = logger;
     }
 
+    private static string SanitizeForLog(string? value) =>
+        value?.Replace("\r", string.Empty).Replace("\n", string.Empty) ?? string.Empty;
+
     /// <summary>
     /// Lists all message templates grouped by platform.
     /// </summary>
@@ -83,6 +86,7 @@ public class MessageTemplatesController : Controller
     /// </summary>
     /// <param name="model">The updated message template view model</param>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(MessageTemplateViewModel model)
     {
         if (!ModelState.IsValid)
@@ -95,7 +99,7 @@ public class MessageTemplatesController : Controller
         if (saved is null)
         {
             _logger.LogWarning("Failed to save MessageTemplate for Platform={Platform}, MessageType={MessageType}",
-                model.Platform, model.MessageType);
+                SanitizeForLog(model.Platform), SanitizeForLog(model.MessageType));
             ModelState.AddModelError(string.Empty, "Failed to save the message template.");
             return View(model);
         }

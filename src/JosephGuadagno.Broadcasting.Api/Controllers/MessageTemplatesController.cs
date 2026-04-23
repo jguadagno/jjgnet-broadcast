@@ -189,7 +189,7 @@ public class MessageTemplatesController : ControllerBase
             return NotFound();
         }
 
-        _logger.LogInformation("MessageTemplate updated for Platform={Platform}, MessageType={MessageType}", platform, messageType);
+        _logger.LogInformation("MessageTemplate updated for Platform={Platform}, MessageType={MessageType}", SanitizeForLog(platform), SanitizeForLog(messageType));
         return _mapper.Map<MessageTemplateResponse>(updated);
     }
 }
