@@ -587,4 +587,307 @@ public class SchedulesControllerTests
         result.Result.Should().BeOfType<NotFoundResult>();
         _scheduledItemManagerMock.Verify(m => m.GetScheduledItemsByCalendarMonthAsync(2025, 1, It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
+
+    // ── SourceItemDisplayName resolution (issues #809 / #811) ───────────────
+
+    [Fact]
+    public async Task GetScheduledItemsAsync_WithEngagementItem_PopulatesEngagementName()
+    {
+        // Arrange
+        var item = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.Engagements,
+            ItemPrimaryKey = 5,
+            Message = "NDC Oslo talk!",
+            SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
+            CreatedByEntraOid = "owner-oid-12345"
+        };
+        _scheduledItemManagerMock
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
+        _engagementManagerMock
+            .Setup(m => m.GetAsync(5))
+            .ReturnsAsync(new Engagement { Id = 5, Name = "NDC Oslo" });
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.GetScheduledItemsAsync();
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.Items[0].SourceItemDisplayName.Should().Be("NDC Oslo");
+    }
+
+    [Fact]
+    public async Task GetScheduledItemsAsync_WithEngagementItem_WhenEngagementNotFound_SourceItemDisplayNameIsNull()
+    {
+        // Arrange
+        var item = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.Engagements,
+            ItemPrimaryKey = 5,
+            Message = "Missing engagement",
+            SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
+            CreatedByEntraOid = "owner-oid-12345"
+        };
+        _scheduledItemManagerMock
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
+        _engagementManagerMock
+            .Setup(m => m.GetAsync(5))
+            .ReturnsAsync((Engagement?)null);
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.GetScheduledItemsAsync();
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.Items[0].SourceItemDisplayName.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetScheduledItemsAsync_WithTalkItem_WhenEngagementExists_PopulatesCombinedName()
+    {
+        // Arrange
+        var item = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.Talks,
+            ItemPrimaryKey = 10,
+            Message = "Clean Architecture at NDC!",
+            SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
+            CreatedByEntraOid = "owner-oid-12345"
+        };
+        _scheduledItemManagerMock
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
+        _engagementManagerMock
+            .Setup(m => m.GetTalkAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Talk { Id = 10, Name = "Clean Architecture", EngagementId = 5 });
+        _engagementManagerMock
+            .Setup(m => m.GetAsync(5))
+            .ReturnsAsync(new Engagement { Id = 5, Name = "NDC Oslo" });
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.GetScheduledItemsAsync();
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.Items[0].SourceItemDisplayName.Should().Be("NDC Oslo - Clean Architecture");
+    }
+
+    [Fact]
+    public async Task GetScheduledItemsAsync_WithTalkItem_WhenEngagementNotFound_PopulatesTalkNameOnly()
+    {
+        // Arrange
+        var item = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.Talks,
+            ItemPrimaryKey = 10,
+            Message = "Talk without parent engagement",
+            SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
+            CreatedByEntraOid = "owner-oid-12345"
+        };
+        _scheduledItemManagerMock
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
+        _engagementManagerMock
+            .Setup(m => m.GetTalkAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Talk { Id = 10, Name = "Clean Architecture", EngagementId = 5 });
+        _engagementManagerMock
+            .Setup(m => m.GetAsync(5))
+            .ReturnsAsync((Engagement?)null);
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.GetScheduledItemsAsync();
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.Items[0].SourceItemDisplayName.Should().Be("Clean Architecture");
+    }
+
+    [Fact]
+    public async Task GetScheduledItemsAsync_WithTalkItem_WhenTalkNotFound_SourceItemDisplayNameIsNull()
+    {
+        // Arrange
+        var item = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.Talks,
+            ItemPrimaryKey = 99,
+            Message = "Talk not in DB",
+            SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
+            CreatedByEntraOid = "owner-oid-12345"
+        };
+        _scheduledItemManagerMock
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
+        _engagementManagerMock
+            .Setup(m => m.GetTalkAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Talk?)null);
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.GetScheduledItemsAsync();
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.Items[0].SourceItemDisplayName.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetScheduledItemsAsync_WithSyndicationFeedSourceItem_PopulatesFeedTitle()
+    {
+        // Arrange
+        var item = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemPrimaryKey = 7,
+            Message = "New blog post!",
+            SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
+            CreatedByEntraOid = "owner-oid-12345"
+        };
+        _scheduledItemManagerMock
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
+        _syndicationFeedSourceManagerMock
+            .Setup(m => m.GetAsync(7))
+            .ReturnsAsync(new SyndicationFeedSource
+            {
+                Id = 7,
+                Title = "Joseph's Blog",
+                FeedIdentifier = "josephguadagno-blog",
+                Author = "Joseph Guadagno",
+                Url = "https://josephguadagno.net/feed.rss",
+                CreatedByEntraOid = "test-oid",
+                PublicationDate = DateTimeOffset.UtcNow,
+                AddedOn = DateTimeOffset.UtcNow,
+                LastUpdatedOn = DateTimeOffset.UtcNow
+            });
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.GetScheduledItemsAsync();
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.Items[0].SourceItemDisplayName.Should().Be("Joseph's Blog");
+    }
+
+    [Fact]
+    public async Task GetScheduledItemsAsync_WithYouTubeSourceItem_PopulatesYouTubeTitle()
+    {
+        // Arrange
+        var item = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.YouTubeSources,
+            ItemPrimaryKey = 3,
+            Message = "New YouTube video!",
+            SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
+            CreatedByEntraOid = "owner-oid-12345"
+        };
+        _scheduledItemManagerMock
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
+        _youTubeSourceManagerMock
+            .Setup(m => m.GetAsync(3))
+            .ReturnsAsync(new YouTubeSource
+            {
+                Id = 3,
+                Title = "JosephGuadagno",
+                VideoId = "abc123",
+                Author = "Joseph Guadagno",
+                Url = "https://youtube.com/watch?v=abc123",
+                CreatedByEntraOid = "test-oid",
+                PublicationDate = DateTimeOffset.UtcNow,
+                AddedOn = DateTimeOffset.UtcNow,
+                LastUpdatedOn = DateTimeOffset.UtcNow
+            });
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.GetScheduledItemsAsync();
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.Items[0].SourceItemDisplayName.Should().Be("JosephGuadagno");
+    }
+
+    [Fact]
+    public async Task GetScheduledItemsAsync_WhenResolutionThrows_SourceItemDisplayNameIsNullAndNoException()
+    {
+        // Arrange
+        var item = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemPrimaryKey = 99,
+            Message = "Item with broken lookup",
+            SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
+            CreatedByEntraOid = "owner-oid-12345"
+        };
+        _scheduledItemManagerMock
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
+        _syndicationFeedSourceManagerMock
+            .Setup(m => m.GetAsync(99))
+            .ThrowsAsync(new Exception("DB error"));
+
+        var sut = CreateSut();
+
+        // Act
+        var act = async () => await sut.GetScheduledItemsAsync();
+
+        // Assert — must complete without throwing; display name must be null
+        await act.Should().NotThrowAsync();
+        var result = await sut.GetScheduledItemsAsync();
+        result.Value.Should().NotBeNull();
+        result.Value!.Items[0].SourceItemDisplayName.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetScheduledItemAsync_WithEngagementItem_PopulatesSourceItemDisplayName()
+    {
+        // Arrange
+        var item = new ScheduledItem
+        {
+            Id = 5,
+            ItemType = Domain.Enums.ScheduledItemType.Engagements,
+            ItemPrimaryKey = 5,
+            Message = "Engagement item",
+            SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
+            CreatedByEntraOid = "owner-oid-12345"
+        };
+        _scheduledItemManagerMock
+            .Setup(m => m.GetAsync(5))
+            .ReturnsAsync(item);
+        _engagementManagerMock
+            .Setup(m => m.GetAsync(5))
+            .ReturnsAsync(new Engagement { Id = 5, Name = "NDC Oslo" });
+
+        var sut = CreateSut(ownerOid: "owner-oid-12345");
+
+        // Act
+        var result = await sut.GetScheduledItemAsync(5);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<Api.Dtos.ScheduledItemResponse>().Subject;
+        response.SourceItemDisplayName.Should().Be("NDC Oslo");
+    }
 }
