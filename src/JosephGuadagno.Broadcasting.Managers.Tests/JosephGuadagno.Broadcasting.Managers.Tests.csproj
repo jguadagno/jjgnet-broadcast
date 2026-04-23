@@ -36,6 +36,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.Storage.Queues" Version="12.25.0" />
     <PackageReference Include="JosephGuadagno.AzureHelpers.Storage" Version="1.1.9" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.7" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
