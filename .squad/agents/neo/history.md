@@ -442,30 +442,31 @@ Joseph's brief says "no admin-bypass logic in Web layer — API handles it." How
 
 ---
 
-## 2026-04-23 — PR #839 Review: YouTubeSourcesController & SyndicationFeedSourcesController Tests
+## 2026-04-23 — PR #840 & #841 Review: Publisher Settings Help Pages
 
-**Status:** 🔴 BLOCKED (1 hard blocker)  
-**PR:** #839 | **Issue:** #820 | **Author:** Tank  
-**Artifact:** `.squad/decisions/inbox/neo-pr839-verdict.md`
+**Status:** ✅ BOTH APPROVED  
+**PRs:** #840 (issue #813) + #841 (issue #814) | **Author:** Switch (#840) + Sparks (#841)  
+**Artifact:** Reviews posted as GitHub comments
 
 ### Findings
 
-- **Test quality: excellent.** 18 tests × 2 controllers = 36. Full action coverage (Index, Details, Add GET/POST, Delete GET, DeleteConfirmed). No Edit exists on these controllers — 18 is correct, not a gap.
-- **Pattern consistency:** Matches EngagementsControllerTests exactly — xUnit `[Fact]`, Moq, TempData in constructor, `WebControllerTestHelpers`.
-- **Mock accuracy:** `GetAllAsync`, `GetAsync`, `SaveAsync`, `DeleteAsync` — all match actual interface and controller usage.
-- **Security coverage:** No `Forbid()` confirmed. Redirect+TempData ownership pattern verified against actual controller source. Non-owner redirect and admin bypass paths both tested.
-- **Build/test CI:** Green (157 passed, 0 failed).
+**PR #840 — Credential-setup documentation link on provider cards:**
+- **ViewModel layer:** `CredentialSetupDocumentationUrl` property added to `PublisherPlatformSettingsViewModel` base class; all 5 concrete view models map `platform.CredentialSetupDocumentationUrl` in `CreateViewModel`.
+- **View layer:** Conditional `<a>` button (`btn btn-sm btn-outline-info`) added to all 5 provider card headers (Bluesky, Twitter, LinkedIn, Facebook, Unsupported) with `target="_blank" rel="noopener noreferrer"`.
+- **Edge case:** `_UnsupportedPublisherSettings.cshtml` was restructured from plain card-header to `d-flex justify-content-between align-items-center` to match the pattern — good attention to detail.
+- **Security:** No POST actions, no logging, no CSRF/log injection concerns.
+- **Build:** 645 warnings, 0 errors (warnings are pre-existing).
 
-### Blocker
-
-**PR title format violation** — `pr-metadata` CI check fails. Current title uses `test: ... (#820)` (issue appended at end); required format is `test(#820): ...` (issue as Conventional Commits scope). Fix: rename to `test(#820): add unit tests for YouTubeSourcesController and SyndicationFeedSourcesController`.
-
-### Advisory (Non-Blocking)
-
-`SyndicationFeedSourcesController.Delete` and `DeleteConfirmed` use `[Authorize(Policy = AuthorizationPolicyNames.RequireAdministrator)]`. The OID check inside those actions for non-admin users is dead code in production (non-admins are blocked at policy filter). Tests correctly test the written code. The controller design discrepancy should be addressed in a follow-up issue against the SyndicationFeedSourcesController.
+**PR #841 — HelpController + credential-setup help pages:**
+- **Controller:** `HelpController` with single action `[Route("Help/SocialMediaPlatforms/{platform}")]`. Requires `[Authorize]` (no role restriction). Platform slug matched via `ISocialMediaPlatformService.GetAllAsync()` with case-insensitive compare. Returns HTTP 404 for unknown platforms.
+- **Views:** 5 Razor views (Bluesky, Twitter, LinkedIn, Facebook, Mastodon) under `Views/Help/SocialMediaPlatforms/`. Consistent Bootstrap 5 card layout: breadcrumb nav, icon + H1, 3-card main area ("What You Need", "Step-by-Step", "Field Mapping"), sidebar with official docs link + back button.
+- **Content quality:** Each page documents the correct OAuth flow for that platform (OAuth 1.0a for Twitter, OAuth 2.0 for LinkedIn/Mastodon/Bluesky app password, complex multi-token for Facebook).
+- **Security:** GET-only controller, no logging, no user-controlled strings in logs. All external links use `target="_blank" rel="noopener noreferrer"`.
+- **Build:** 645 warnings, 0 errors (warnings are pre-existing).
 
 ### Learnings
 
-- **PR title CI rule:** `<type>(#<issue>): <summary>` — issue number in parentheses as scope, not appended at end. Violation fails `pr-metadata` even when all 36 tests pass.
-- **Dead code from mismatched policy + OID check:** If `[Authorize]` policy requires Admin, any non-admin OID check inside the action body is unreachable. Design review should either lower the policy or remove the inner check.
-- **Author-owned PR workflow:** Cannot use `gh pr review --request-changes` on own PRs. Use `gh pr comment` for blocking findings (visible in comment thread, not review artifact).
+- **GET-only controller security:** Controllers with no POST actions and no logging have no CSRF or log injection risk. The route parameter `platform` is not logged, so no `LogSanitizer.Sanitize()` needed.
+- **View resolution from subdirectory:** When views live in a subdirectory (e.g., `Views/Help/SocialMediaPlatforms/`), must use explicit sub-path in controller: `View("SocialMediaPlatforms/LinkedIn")` not `View("linkedin")`.
+- **Conditional rendering pattern:** `@if (!string.IsNullOrWhiteSpace(Model.Property))` is the correct guard for optional URL properties in Razor views.
+- **Edge case awareness:** When applying a templated change across multiple partials, always check each partial independently — `_UnsupportedPublisherSettings.cshtml` had a different card-header structure than the other four.
