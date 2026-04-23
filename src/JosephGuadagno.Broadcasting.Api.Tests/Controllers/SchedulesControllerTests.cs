@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Security.Claims;
 using AutoMapper;
 using FluentAssertions;
@@ -617,7 +618,7 @@ public class SchedulesControllerTests
 
         // Assert
         result.Value.Should().NotBeNull();
-        result.Value!.Items[0].SourceItemDisplayName.Should().Be("NDC Oslo");
+        result.Value!.Items.First().SourceItemDisplayName.Should().Be("NDC Oslo");
     }
 
     [Fact]
@@ -647,7 +648,7 @@ public class SchedulesControllerTests
 
         // Assert
         result.Value.Should().NotBeNull();
-        result.Value!.Items[0].SourceItemDisplayName.Should().BeNull();
+        result.Value!.Items.First().SourceItemDisplayName.Should().BeNull();
     }
 
     [Fact]
@@ -680,7 +681,7 @@ public class SchedulesControllerTests
 
         // Assert
         result.Value.Should().NotBeNull();
-        result.Value!.Items[0].SourceItemDisplayName.Should().Be("NDC Oslo - Clean Architecture");
+        result.Value!.Items.First().SourceItemDisplayName.Should().Be("NDC Oslo - Clean Architecture");
     }
 
     [Fact]
@@ -713,7 +714,7 @@ public class SchedulesControllerTests
 
         // Assert
         result.Value.Should().NotBeNull();
-        result.Value!.Items[0].SourceItemDisplayName.Should().Be("Clean Architecture");
+        result.Value!.Items.First().SourceItemDisplayName.Should().Be("Clean Architecture");
     }
 
     [Fact]
@@ -743,7 +744,7 @@ public class SchedulesControllerTests
 
         // Assert
         result.Value.Should().NotBeNull();
-        result.Value!.Items[0].SourceItemDisplayName.Should().BeNull();
+        result.Value!.Items.First().SourceItemDisplayName.Should().BeNull();
     }
 
     [Fact]
@@ -784,7 +785,7 @@ public class SchedulesControllerTests
 
         // Assert
         result.Value.Should().NotBeNull();
-        result.Value!.Items[0].SourceItemDisplayName.Should().Be("Joseph's Blog");
+        result.Value!.Items.First().SourceItemDisplayName.Should().Be("Joseph's Blog");
     }
 
     [Fact]
@@ -825,7 +826,7 @@ public class SchedulesControllerTests
 
         // Assert
         result.Value.Should().NotBeNull();
-        result.Value!.Items[0].SourceItemDisplayName.Should().Be("JosephGuadagno");
+        result.Value!.Items.First().SourceItemDisplayName.Should().Be("JosephGuadagno");
     }
 
     [Fact]
@@ -857,7 +858,7 @@ public class SchedulesControllerTests
         await act.Should().NotThrowAsync();
         var result = await sut.GetScheduledItemsAsync();
         result.Value.Should().NotBeNull();
-        result.Value!.Items[0].SourceItemDisplayName.Should().BeNull();
+        result.Value!.Items.First().SourceItemDisplayName.Should().BeNull();
     }
 
     [Fact]
