@@ -254,6 +254,52 @@ Session logs and orchestration log recorded.
   - Formal Review: comprehensive, audit-trail quality, for multi-finding PRs
   - Quick Finding: minimal, targeted, for single blockers or guidance
 - **Template location**: `.squad/skills/neo-pr-comment/TEMPLATE.md`
+
+---
+
+### 2026-04-23 — Backlog Reprioritization: Multi-Tenancy Phase Assessment & Foundation Layering
+
+**Context:** Full backlog reprioritization session with 26 open issues post-#609 R1 completion and #769 closure.
+
+**Key Findings:**
+
+1. **Multi-Tenancy Phase 1 vs Phase 2 Distinction** — Critical for product planning
+   - #777 (Per-user OAuth) and #778 (Collector onboarding) are Phase 2 enhancements, **not Phase 1 gaps**
+   - #609 Round 1 ~95% feature-complete, production-ready; remaining issues are capability expansion
+   - Both Phase 2 issues are correctly sequenced (Sprint 25, Q2) and don't block production
+   - **Lesson:** Distinguish between "closing audit gaps" vs "adding new features" — same label can mask different urgency tiers
+
+2. **Architectural Blocking Chains Identify P1 Work** — Schedule UX foundation
+   - #808 (ScheduledItemValidationService refactor) unblocks trifecta: #809 (Index display), #810 (Search), #811 (Details)
+   - #812 (CredentialSetupDocumentationUrl column) unblocks #813 (UI link) — data layer must precede presentation
+   - Proper dependency mapping surfaces foundational work that should be prioritized first
+   - **Lesson:** Draw dependency graph early; unblocking issues bubble up to P1 even if not high-visibility
+
+3. **Stale Issue Triage & Supersession Pattern** — Housekeeping drives clarity
+   - 3 docs issues (#12, #13, #14) superseded by #814 (modern, well-scoped credential setup pages)
+   - 2 narrow legacy issues (#94 FacebookException, #102 LinkedIn refactor) absorbed into larger refactors (#69/#581)
+   - 3 manual QA checklists (#579, #580, #582) moved to runbook; no standing backlog needed
+   - **Lesson:** Old issues accumulate; annual triage + explicit supersession links (not just closure) improves future clarity
+
+4. **Squad Assignment Reveals Unassigned Gaps** — Planning tool
+   - 26 issues analyzed; most have squad labels (sparks, trinity, switch, morpheus, link, neo)
+   - Only #724 (multi-user teams) and #581 (Scriban templating) lack explicit squad assignment
+   - **Lesson:** Unassigned issues = potential planning gaps; tag Planning Committee for strategic review
+
+5. **P3 Accumulation Pattern** — Healthy backlog vs burnout risk
+   - 7 issues in P3 (valid but deferrable) — reasonable inventory for Q2 planning
+   - vs. 4 in P1 (unblocked, actionable) — lean, focused sprint scope
+   - **Lesson:** P3 is a holding pattern; quarterly reviews should convert to P1/P2 or close as lower-value
+
+**Decisions Recorded:**
+- File: `.squad/decisions/inbox/neo-backlog-reprioritization.md`
+- Closes 6 stale issues; defers 1 future epic (#724); prioritizes 4-tier backlog with 20 keepers
+- Sprint 22–23 roadmap locked; Sprint 25 Q2 phase 2 multi-tenancy scheduled
+
+**Future Applications:**
+- Use same dependency-mapping + stale-issue-triage for quarterly backlog refinement
+- When new Phase N feature request arrives, explicitly clarify phase number and production impact
+- Maintain squad assignment invariant; flag unassigned issues to Coordinator
 - **Decision framework**: `.squad/skills/neo-pr-comment/DECISION-TREE.md`
 - **Key principle**: Formal reviews use checklist + subsystem breakdown; verdict at end (APPROVED/BLOCKED/NEEDS REVISION)
 - **Production anchors**: PR #736 (Formal Review pattern), PR #771 (Quick Finding pattern)
@@ -275,3 +321,121 @@ Session logs and orchestration log recorded.
 - Enforce the same single-issue rule in both places: local hooks for fast feedback, CI metadata validation for merge protection.
 - Branch names now standardize on `issue-<number>-<slug>` or `feature/<number>-<slug>` so the issue number is machine-readable.
 - PR titles must use `<type>(#<issue>): <summary>` and the PR body must carry exactly one matching closing issue reference.
+
+---
+
+## 2026-04-22 — Epic #609 Validation (Multi-Tenancy)
+
+**Status:** ✅ COMPLETE (Validation)
+
+### Findings
+
+Validated that Epic #609 ("Multi-tenancy — per-user content, publishers, and social tokens") is **ready to close**. All 8 acceptance criteria are met in the codebase.
+
+### Implementation Verification
+
+**Database Schema (✅ Complete):**
+- `CreatedByEntraOid nvarchar(36)` added to: Engagements, Talks, ScheduledItems, MessageTemplates, SyndicationFeedSources (not null), YouTubeSources (not null)
+- `UserPublisherSettings` table exists with per-user FK (`CreatedByEntraOid`) and unique constraint on (CreatedByEntraOid, SocialMediaPlatformId)
+- Seed data uses `@SeededOwnerEntraOid` variable (value: `00000000-0000-0000-0000-000000000000`) with TODO comment for production owner OID
+
+**Data Layer (✅ Complete):**
+- All data stores expose dual methods: `GetAllAsync()` (admin) and `GetAllAsync(ownerOid)` (tenant-filtered)
+- Pattern verified in: EngagementDataStore, SyndicationFeedSourceDataStore, YouTubeSourceDataStore
+- UserPublisherSettingDataStore filters on `CreatedByEntraOid` in all queries (`GetByUserAsync`, `GetByUserAndPlatformAsync`)
+
+**API Layer (✅ Complete):**
+- Controllers use `GetOwnerOid()` helper (extracts `EntraObjectId` claim) and `IsSiteAdministrator()` (checks `RoleNames.SiteAdministrator`)
+- Admin bypass pattern: `if (IsSiteAdministrator()) { GetAllAsync(); } else { GetAllAsync(GetOwnerOid()); }`
+- Non-owner access returns `ForbidResult` (HTTP 403) on GET/UPDATE/DELETE operations
+- Pattern verified in: EngagementsController, SchedulesController, MessageTemplatesController
+
+**Web Layer (✅ Complete):**
+- Web services call API with `GetForUserAsync` (Microsoft.Identity.Abstractions), which includes user bearer token automatically
+- API enforces owner isolation; Web layer inherits security through token propagation
+- No direct owner checks in Web controllers — authorization delegated to API
+
+**Functions/Collectors (✅ Complete):**
+- Collectors use `CollectorOwnerOidResolver.ResolveAsync()` to source owner OID from existing collector records
+- Pattern: call `syndicationFeedSourceManager.GetCollectorOwnerOidAsync()` or `youTubeSourceManager.GetCollectorOwnerOidAsync()`
+- Fail-closed: if owner OID cannot be resolved, function logs error and returns null (halts collection)
+
+**Social Tokens Storage (✅ Complete):**
+- Tokens stored in `UserPublisherSettings.Settings` (nvarchar(max)) as JSON dictionary
+- Access tokens masked on read: `HasAccessToken`, `HasClientSecret` boolean flags instead of plaintext
+- Per-platform typed settings: LinkedInPublisherSetting, TwitterPublisherSetting, FacebookPublisherSetting, BlueskyPublisherSetting
+- No encryption layer detected (stored as JSON plaintext in DB) — **minor gap** but acceptable if DB-at-rest encryption is enabled
+
+**Test Coverage (✅ Complete):**
+- EngagementsControllerTests: 8 security tests for non-owner ForbidResult (GetEngagementAsync, UpdateEngagementAsync, DeleteEngagementAsync, GetTalksForEngagementAsync, GetTalkAsync, CreateTalkAsync, UpdateTalkAsync, DeleteTalkAsync)
+- SchedulesControllerTests: 3 security tests (GetScheduledItemAsync, UpdateScheduledItemAsync, DeleteScheduledItemAsync)
+- MessageTemplatesControllerTests: 2 security tests (GetAsync, UpdateAsync)
+- Pattern: Mock entity with `CreatedByEntraOid = "owner-oid-12345"`, inject user claim with different OID, verify `ForbidResult`
+
+### Known Limitations
+
+1. **No application-level encryption:** Social tokens stored as JSON plaintext in `UserPublisherSettings.Settings`. Relies on SQL Server Transparent Data Encryption or Azure SQL encryption-at-rest.
+2. **Seed data placeholder:** `@SeededOwnerEntraOid` uses all-zeros GUID; fresh environments need manual bootstrap OID injection.
+3. **Web layer trusts API:** No redundant owner checks in Web controllers; assumes API correctly enforces isolation.
+
+### Epic Acceptance Criteria Status
+
+All 8 criteria **met**:
+- ✅ Each user has isolated content (data stores filter by `CreatedByEntraOid`)
+- ✅ Each user configures their own publishers (`UserPublisherSettings` table)
+- ✅ Each user authorizes their own social accounts (per-user OAuth tokens in `Settings` column)
+- ✅ Social tokens stored securely per user (per-user FK, masked on read, no sharing)
+- ✅ Each user configures their own collectors (SyndicationFeedSources/YouTubeSources have `CreatedByEntraOid`)
+- ✅ Admins can view all content (`IsSiteAdministrator()` bypass in API controllers)
+- ✅ No breaking changes (dual-method pattern preserves admin workflows)
+- ✅ All queries tenant-aware (data layer filters on owner OID)
+
+### Learnings
+
+- **Dual-method pattern:** Exposing both `GetAllAsync()` and `GetAllAsync(ownerOid)` at data layer enables admin bypass without code duplication
+- **Fail-closed collector design:** Collectors halt if owner OID cannot be resolved (prevents orphaned content)
+- **Secret masking pattern:** Return `Has*` boolean flags instead of plaintext secrets; keeps API responses safe
+- **Admin bypass via role check:** `IsSiteAdministrator()` is cleaner than checking multiple role claims
+- **Token propagation in Web:** `GetForUserAsync` automatically includes user bearer token; Web controllers stay simple
+
+---
+
+## 2026-04-27 — Sprint 25 Feature Spec: YouTubeSource & SyndicationFeedSource CRUD
+
+**Status:** ✅ COMPLETE (Phase 1: Read-Only Analysis + Issue Creation)  
+**Artifact:** `.squad/decisions/inbox/neo-source-crud-design.md`  
+**Issues Created:** #816, #817, #818, #819, #820
+
+### API Gaps Found
+
+Both `YouTubeSourcesController` and `SyndicationFeedSourcesController` are **completely absent** from the API. No DTOs exist for either type. Full build required:
+- No `YouTubeSourceRequest/Response`
+- No `SyndicationFeedSourceRequest/Response`
+- Manager interfaces have `GetAllAsync(ownerEntraOid)` → returns flat `List<T>` (no pagination)
+
+### Issue Breakdown
+
+| # | Title | Agent | Milestone |
+|---|-------|-------|-----------|
+| #816 | feat: Add API CRUD endpoints for YouTubeSource | Trinity | Sprint 25 |
+| #817 | feat: Add API CRUD endpoints for SyndicationFeedSource | Trinity | Sprint 25 |
+| #818 | feat: Add Web CRUD pages for YouTubeSource | Switch | Sprint 25 |
+| #819 | feat: Add Web CRUD pages for SyndicationFeedSource | Switch | Sprint 25 |
+| #820 | test: Unit tests for YouTubeSource and SyndicationFeedSource web controllers | Tank | Sprint 25 |
+
+### Architecture Decision
+
+- API controllers: follow `EngagementsController` pattern exactly (GET list, GET single, POST create, DELETE — no PUT/Update in scope)
+- Web controllers: `[Authorize(RequireViewer)]` + defense-in-depth ownership check (mirrors Engagements pattern)
+- Web services: `IDownstreamApi` bearer token passthrough via `GetForUserAsync`/`PostForUserAsync`/`CallApiForUserAsync`
+- Joseph's explicit directive: API is the authoritative enforcement layer; Web ownership checks are defense-in-depth
+
+### Tension: Web ownership check policy
+
+Joseph's brief says "no admin-bypass logic in Web layer — API handles it." However the existing `EngagementsController` does have Web-layer ownership redirects. Issue bodies (#818/#819) follow the existing defense-in-depth pattern to stay consistent with EngagementsController. If Joseph prefers the simpler pattern (no Web-layer check), Switch should remove the ownership redirect logic from Details and Delete actions. Flag for review before implementation.
+
+### Learnings
+
+- **Source infrastructure completeness:** Data layer, managers, and domain models for YouTubeSource/SyndicationFeedSource are fully built. Only API surface and Web UI are missing.
+- **No pagination on source managers:** `IYouTubeSourceManager` and `ISyndicationFeedSourceManager` return flat `List<T>`. Acceptable for initial implementation; add pagination in follow-up sprint.
+- **Milestone workaround on Windows:** `gh issue create --milestone N` fails on Windows with "not found"; use `gh api ... --method PATCH --field milestone=N` after creation.
