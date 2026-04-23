@@ -1,0 +1,98 @@
+@{
+    ViewData["Title"] = "BlueSky Credential Setup";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="PublisherSettings" asp-action="Index">Publisher Settings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">BlueSky Help</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-clouds fs-2 text-primary"></i>
+    <h1 class="mb-0">BlueSky — Credential Setup</h1>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <i class="bi bi-key me-2"></i><strong>What You Need</strong>
+            </div>
+            <div class="card-body">
+                <p>To publish to BlueSky from this application you need two things:</p>
+                <ul class="mb-0">
+                    <li><strong>Username</strong> — your BlueSky handle (e.g. <code>you.bsky.social</code>)</li>
+                    <li><strong>App Password</strong> — a dedicated password created in your BlueSky account settings (not your login password)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <i class="bi bi-list-ol me-2"></i><strong>Step-by-Step Instructions</strong>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li class="mb-2">Sign in to <a href="https://bsky.app" target="_blank" rel="noopener noreferrer">bsky.app <i class="bi bi-box-arrow-up-right small"></i></a>.</li>
+                    <li class="mb-2">Click your avatar in the top-left, then choose <strong>Settings</strong>.</li>
+                    <li class="mb-2">Select <strong>Privacy and Security</strong>, then scroll to <strong>App Passwords</strong>.</li>
+                    <li class="mb-2">Click <strong>Add App Password</strong>, give it a descriptive name (e.g. <em>JJGNet Broadcasting</em>), and click <strong>Next</strong>.</li>
+                    <li class="mb-2">BlueSky will display your new app password. <strong>Copy it immediately</strong> — it will not be shown again.</li>
+                    <li>Your handle appears in the upper-left corner of the BlueSky interface (e.g. <code>@@you.bsky.social</code>).</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-input-cursor-text me-2"></i><strong>Where Each Value Goes in Publisher Settings</strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Field in Publisher Settings</th>
+                            <th>Value to enter</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Username</strong></td>
+                            <td>Your BlueSky handle (e.g. <code>you.bsky.social</code>)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>App Password</strong></td>
+                            <td>The app password you copied in step 5</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card shadow-sm border-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-link-45deg me-2"></i><strong>Official Documentation</strong>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Learn more about BlueSky App Passwords on the official blog:</p>
+                <a href="https://bsky.social/about/blog/02-22-2023-create-app-passwords"
+                   target="_blank" rel="noopener noreferrer"
+                   class="btn btn-outline-primary w-100">
+                    <i class="bi bi-box-arrow-up-right me-2"></i>BlueSky App Passwords Guide
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-4">
+            <div class="card-body text-center">
+                <a asp-controller="PublisherSettings" asp-action="Index" class="btn btn-secondary w-100">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Publisher Settings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

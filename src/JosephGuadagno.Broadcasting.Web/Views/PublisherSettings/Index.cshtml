@@ -29,7 +29,27 @@
     @foreach (var platform in Model.Platforms)
     {
         <div class="col-12 col-xl-6">
-            <partial name="@platform.PartialViewName" model="platform" />
+            <div class="card h-100 @(platform.IsConfigured ? "shadow-sm" : "border-secondary-subtle")">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi @(string.IsNullOrWhiteSpace(platform.PlatformIcon) ? "bi-broadcast" : platform.PlatformIcon) me-2"></i>
+                        <strong>@platform.DisplayName</strong>
+                    </div>
+                    @if (platform.IsConfigured)
+                    {
+                        <span class="badge @(platform.IsEnabled ? "text-bg-success" : "text-bg-secondary")">
+                            @(platform.IsEnabled ? "Enabled" : "Disabled")
+                        </span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(platform.CredentialSetupDocumentationUrl))
+                    {
+                        <a href="@platform.CredentialSetupDocumentationUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-info ms-2">
+                            <i class="bi bi-book"></i> Setup guide
+                        </a>
+                    }
+                </div>
+                <partial name="@platform.PartialViewName" model="platform" />
+            </div>
         </div>
     }
 </div>

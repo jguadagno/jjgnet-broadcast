@@ -1,0 +1,109 @@
+@{
+    ViewData["Title"] = "Twitter / X Credential Setup";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="PublisherSettings" asp-action="Index">Publisher Settings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Twitter / X Help</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-twitter-x fs-2 text-dark"></i>
+    <h1 class="mb-0">Twitter / X — Credential Setup</h1>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <i class="bi bi-key me-2"></i><strong>What You Need</strong>
+            </div>
+            <div class="card-body">
+                <p>Publishing to Twitter / X requires four OAuth 1.0a credentials from the X Developer Portal:</p>
+                <ul class="mb-0">
+                    <li><strong>Consumer Key</strong> (API Key) — identifies your app</li>
+                    <li><strong>Consumer Secret</strong> (API Key Secret) — authenticates your app</li>
+                    <li><strong>Access Token</strong> — identifies the account to post as</li>
+                    <li><strong>Access Token Secret</strong> — authenticates the account token</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <i class="bi bi-list-ol me-2"></i><strong>Step-by-Step Instructions</strong>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li class="mb-2">Go to the <a href="https://developer.x.com/en/portal/projects-and-apps" target="_blank" rel="noopener noreferrer">X Developer Portal <i class="bi bi-box-arrow-up-right small"></i></a> and sign in.</li>
+                    <li class="mb-2">Create a new project and app (or select an existing one).</li>
+                    <li class="mb-2">Under your app, go to <strong>Keys and Tokens</strong>.</li>
+                    <li class="mb-2">Under <strong>Consumer Keys</strong>, click <strong>Regenerate</strong> (or copy the existing values). This gives you the <strong>Consumer Key</strong> and <strong>Consumer Secret</strong>.</li>
+                    <li class="mb-2">Under <strong>Authentication Tokens</strong>, click <strong>Generate</strong> next to <em>Access Token and Secret</em>. This gives you the <strong>Access Token</strong> and <strong>Access Token Secret</strong>.</li>
+                    <li class="mb-2"><strong>Copy all four values immediately</strong> — secrets are only shown once.</li>
+                    <li>Ensure your app has <strong>Read and Write</strong> permissions in the app's <strong>Settings → User authentication settings</strong> section.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-input-cursor-text me-2"></i><strong>Where Each Value Goes in Publisher Settings</strong>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Field in Publisher Settings</th>
+                            <th>Value from X Developer Portal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Consumer Key</strong></td>
+                            <td>API Key (Consumer Keys section)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Consumer Secret</strong></td>
+                            <td>API Key Secret (Consumer Keys section)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Access Token</strong></td>
+                            <td>Access Token (Authentication Tokens section)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Access Token Secret</strong></td>
+                            <td>Access Token Secret (Authentication Tokens section)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card shadow-sm border-dark">
+            <div class="card-header bg-dark text-white">
+                <i class="bi bi-link-45deg me-2"></i><strong>Official Documentation</strong>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Manage your apps and credentials in the X Developer Portal:</p>
+                <a href="https://developer.x.com/en/portal/projects-and-apps"
+                   target="_blank" rel="noopener noreferrer"
+                   class="btn btn-outline-dark w-100">
+                    <i class="bi bi-box-arrow-up-right me-2"></i>X Developer Portal
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-4">
+            <div class="card-body text-center">
+                <a asp-controller="PublisherSettings" asp-action="Index" class="btn btn-secondary w-100">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Publisher Settings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

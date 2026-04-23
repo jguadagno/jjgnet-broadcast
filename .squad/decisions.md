@@ -18097,3 +18097,423 @@ Add links to the main nav (e.g., `_Layout.cshtml`) for "YouTube Sources" and "Sy
 | Web CRUD — SyndicationFeedSource | MVC controller + views | Switch + Sparks |
 | Unit tests — Web controllers | xUnit/Moq/FluentAssertions | Tank |
 
+
+---
+# Decision: Conditional documentation link on publisher-settings provider cards
+
+**Author:** Switch  
+**Issue:** #813  
+**PR:** #840  
+**Date:** 2026-04-23
+
+## Decision
+
+Each publisher-settings provider card now renders a conditional "Setup guide" button-link when the `SocialMediaPlatform.CredentialSetupDocumentationUrl` field is non-null/non-empty. When the field is empty the link is completely absent (no broken anchor).
+
+## Rationale
+
+`CredentialSetupDocumentationUrl` was added to the domain model in #812. Surfacing it in the UI removes a friction point for users who need to set up OAuth apps or API keys for each social platform.
+
+## Implementation notes
+
+- Property added to the `PublisherPlatformSettingsViewModel` **base class** so all 5 concrete types inherit it without duplication.
+- Mapping done in `PublisherSettingsController.CreateViewModel` for all 5 provider branches.
+- Link rendered with `target="_blank" rel="noopener noreferrer"` for safe external navigation.
+- The Unsupported partial had a plain `<div class="card-header">` (no `d-flex`) and was restructured to `d-flex justify-content-between align-items-center` to match the other four partials.
+
+---
+# Decision: Help page routing and view-subdirectory pattern (Issue #814)
+
+**Author:** Sparks  
+**Date:** 2026-05-02  
+**PR:** #841
+
+## Context
+
+Issue #814 added `HelpController` with per-platform credential-setup help pages under `/help/socialMediaPlatforms/{platform}`.
+
+## Decisions
+
+### 1. Use explicit `[Route]` attribute when MVC action parameter name differs from route template token
+
+The default route template is `{controller}/{action}/{id?}`. When an action uses a parameter name other than `id` (e.g., `string platform`), the default route does not bind the value automatically. Add an explicit `[Route]` attribute on the action:
+
+```csharp
+[Route("Help/SocialMediaPlatforms/{platform}")]
+public IActionResult SocialMediaPlatforms(string platform) { ... }
+```
+
+### 2. Use explicit sub-path when views live in a controller subdirectory
+
+When views are organized into a subdirectory under `Views/{Controller}/`, pass the full relative path to `View()`:
+
+```csharp
+return View("SocialMediaPlatforms/Bluesky");
+```
+
+Calling `View("Bluesky")` without the sub-path would look in `Views/Help/Bluesky.cshtml` and fail.
+
+### 3. Map platform slugs to view names via a Dictionary, not string manipulation
+
+Use a `Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)` to map URL slugs to exact view paths. This is more readable than string manipulation and handles non-trivial casing (e.g., "linkedin" → "LinkedIn").
+
+### 4. Help pages require only `[Authorize]`, not an admin role
+
+Help pages document how to obtain credentials. Any authenticated contributor should be able to access them. Do not add role checks.
+
+---
+# Decision: YouTubeSourcesController API Endpoints (Issue #816)
+**Date:** 2026-04-24  
+**Author:** Trinity  
+**Status:** Implemented — PR #825
+
+## Context
+Issue #816 requested full CRUD API endpoints for `YouTubeSource`. The `EngagementsController` was established as the canonical pattern for ownership-aware API controllers.
+
+## Decisions
+
+### 1. Followed EngagementsController pattern exactly
+Same class-level attributes (`[ApiController]`, `[Authorize]`, `[IgnoreAntiforgeryToken]`, `[Route("[controller]")]`), same `GetOwnerOid()` / `IsSiteAdministrator()` private helpers, same admin-bypass logic on list endpoints.
+
+### 2. No PUT endpoint
+Issue #816 specified only GET (list + single), POST, and DELETE. No update endpoint was requested. This matches the issue specification and can be added in a follow-up issue.
+
+### 3. AddedOn and LastUpdatedOn set in controller on POST
+The domain model requires both fields. Since the data store sets these on insert, they are set in the controller before calling `SaveAsync()` as a belt-and-suspenders approach. This ensures the values are populated even if the data store logic is revised.
+
+### 4. Tags mapped with null-coalescing
+`YouTubeSourceRequest.Tags` is `IList<string>?` (optional). AutoMapper maps it as `s.Tags ?? new List<string>()` to ensure the domain model's `IList<string>` never receives null.
+
+### 5. DI registrations added to Program.cs
+`IYouTubeSourceDataStore` and `IYouTubeSourceManager` were not previously registered in the API's DI container. Both added with `TryAddScoped`.
+
+### 6. Authorization policy tests extended
+`ControllerAuthorizationPolicyTests` now covers all four `YouTubeSourcesController` actions with their expected policies (RequireViewer × 2, RequireContributor × 1, RequireAdministrator × 1).
+
+---
+# Web CRUD Pattern for YouTubeSource and SyndicationFeedSource (#818, #819)
+
+**Date:** 2026-04-23  
+**Author:** Switch (Frontend Engineer)  
+**PRs:** #837 (YouTubeSource), #838 (SyndicationFeedSource)  
+**Status:** Implemented
+
+## Context
+
+Issues #818 and #819 required adding Web CRUD pages for YouTubeSource and SyndicationFeedSource. The API controllers had already been created in Wave 1, so this work focused on the Web layer (services, controllers, views, and navigation).
+
+## Decisions Made
+
+### 1. Service Pattern
+
+**Decision:** Use the EngagementService pattern with IDownstreamApi for API communication.
+
+**Rationale:**
+- Consistent with existing Web services
+- Bearer token forwarding handled by MSAL IDownstreamApi
+- Clean separation between Web and API layers
+- No direct HttpClient usage in controllers
+
+**Implementation:**
+- Services inherit from IDownstreamApi constructor parameter
+- Use `GetForUserAsync<T>`, `PostForUserAsync<T, TResult>`, and `CallApiForUserAsync<HttpResponseMessage>` for HTTP operations
+- Return Domain models (not DTOs) to controllers
+- Handle 404/null responses gracefully
+
+### 2. Controller Pattern
+
+**Decision:** Follow EngagementsController authorization and ownership patterns.
+
+**Rationale:**
+- Consistent security implementation across the application
+- Clear authorization hierarchy (Viewer for reads, Contributor for writes)
+- Ownership checks prevent unauthorized access to user-created content
+- Admin bypass for site administrators
+
+**Implementation:**
+- Class-level: `[Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]`
+- Write actions (Add, Delete): `[Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]`
+- POST actions: `[ValidateAntiForgeryToken]` for CSRF protection
+- Ownership checks in Details and Delete actions using `User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)`
+- TempData for success/error messages
+
+### 3. ViewModel Pattern
+
+**Decision:** Create dedicated ViewModels with validation attributes, separate from Domain models.
+
+**Rationale:**
+- Web layer should not directly reference Domain models in views
+- DataAnnotations provide client-side and server-side validation
+- Display attributes control form labels
+- Tags property as string for user-friendly comma-separated input
+
+**Implementation:**
+- ViewModels in `Models` folder
+- DataAnnotations: `[Required]`, `[StringLength]`, `[Url]`, `[Display(Name = "...")]`
+- AutoMapper profiles for Domain↔ViewModel conversion
+- Tags: `IList<string>` (Domain) ↔ comma-separated `string` (ViewModel)
+
+### 4. View Structure
+
+**Decision:** Create four views per entity: Index, Details, Add, Delete.
+
+**Rationale:**
+- Index provides table listing with filter and action buttons
+- Details shows read-only view of all fields
+- Add provides form for creating new records
+- Delete shows confirmation page before permanent deletion
+
+**Implementation:**
+- Bootstrap styling for consistent UI
+- Bootstrap Icons for action buttons
+- Role-based visibility for Add/Delete buttons
+- TempData alerts for user feedback
+- Form validation with client-side scripts (`_ValidationScriptsPartial`)
+
+### 5. Navigation
+
+**Decision:** Add main navigation links for both YouTube Sources and Syndication Feed Sources.
+
+**Rationale:**
+- These are primary content source management features
+- Direct access improves discoverability
+- Consistent with other entity links (Engagements, Message Templates)
+
+**Implementation:**
+- Added links to `_Layout.cshtml` main nav (not in dropdown)
+- Visible to authenticated users only
+- Positioned after Message Templates, before admin dropdown
+
+### 6. AutoMapper Tags Handling
+
+**Decision:** Map Tags as `IList<string>` in Domain, comma-separated string in ViewModel.
+
+**Rationale:**
+- Domain model uses structured list for programmatic access
+- Users expect comma-separated input in forms
+- Consistent with existing tag handling patterns in the codebase
+
+**Implementation:**
+```csharp
+// Domain → ViewModel
+.ForMember(dest => dest.Tags, opt => opt.MapFrom(src => string.Join(", ", src.Tags)))
+
+// ViewModel → Domain
+.ForMember(dest => dest.Tags, opt => opt.MapFrom(src => 
+    string.IsNullOrWhiteSpace(src.Tags) ? new List<string>() : 
+    src.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList()))
+```
+
+## Testing
+
+- Both implementations built successfully with 0 errors
+- Followed validated patterns from EngagementsController
+- All security requirements met per CodeQL baseline
+
+## Future Considerations
+
+- Unit tests for controllers and services can be added following the EngagementsControllerTests pattern
+- Edit functionality can be added if users request the ability to update existing sources
+- Bulk operations (import/export) could be added if managing many sources becomes common
+
+## References
+
+- Pattern source: `EngagementsController.cs`, `EngagementService.cs`, `EngagementViewModel.cs`
+- API endpoints: `YouTubeSourcesController.cs`, `SyndicationFeedSourcesController.cs`
+- Security baseline: `.squad/skills/codeql-security-baseline/SKILL.md`
+
+---
+# Decision: CSRF Protection Strategy for API vs Web Controllers
+
+**Date:** 2026-04-16  
+**Status:** Implemented  
+**Context:** Issue #834 - CodeQL alerts for missing CSRF token validation  
+**Author:** Oracle (Security Engineer)
+
+## Problem
+
+CodeQL identified 8 locations across 4 controllers with "Missing cross-site request forgery token validation" alerts. The alerts appeared in both API and Web controllers, requiring different approaches based on authentication mechanism.
+
+## Decision
+
+Implemented a two-tier CSRF protection strategy:
+
+### 1. API Controllers → `[IgnoreAntiforgeryToken]` (Class Level)
+
+**Controllers:**
+- `src\JosephGuadagno.Broadcasting.Api\Controllers\SchedulesController.cs`
+- `src\JosephGuadagno.Broadcasting.Api\Controllers\EngagementsController.cs`
+
+**Rationale:**
+- API controllers use Bearer token authentication (OAuth2 `Authorization` header)
+- Bearer tokens are not vulnerable to CSRF attacks (no automatic submission via browser)
+- Adding `[ValidateAntiForgeryToken]` would **break** legitimate API calls
+- Both controllers already had `[IgnoreAntiforgeryToken]` at class level — alerts were likely stale
+
+**Pattern:**
+```csharp
+[ApiController]
+[Authorize]
+[IgnoreAntiforgeryToken]  // ← Required for Bearer token APIs
+[Route("[controller]")]
+public class SchedulesController : ControllerBase
+```
+
+### 2. Web Controllers → `[ValidateAntiForgeryToken]` (Action Level)
+
+**Controllers:**
+- `src\JosephGuadagno.Broadcasting.Web\Controllers\SchedulesController.cs`
+  - `Edit` POST (line 141)
+  - `Add` POST (line 250)
+- `src\JosephGuadagno.Broadcasting.Web\Controllers\TalksController.cs`
+  - `Edit` POST (line 97)
+  - `Add` POST (line 225)
+
+**Rationale:**
+- Web MVC controllers use cookie-based authentication (session cookies)
+- Cookie-based auth is vulnerable to CSRF (browser automatically sends cookies)
+- All POST/PUT/DELETE actions that modify state MUST validate anti-forgery token
+- GET actions should NOT have `[ValidateAntiForgeryToken]` (read-only, idempotent)
+
+**Pattern:**
+```csharp
+[HttpPost]
+[ValidateAntiForgeryToken]  // ← Required for state-changing actions
+public async Task<IActionResult> Edit(ScheduledItemViewModel model)
+```
+
+**View Integration:**
+All affected views use ASP.NET Core tag helpers (`<form asp-action="...">`), which automatically inject anti-forgery tokens when the target action has `[ValidateAntiForgeryToken]`. No manual `@Html.AntiForgeryToken()` needed.
+
+## Consequences
+
+### Positive
+- ✅ Eliminates all 8 CodeQL CSRF alerts
+- ✅ Web MVC actions protected against CSRF attacks
+- ✅ API endpoints remain functional (no false CSRF validation)
+- ✅ Clear pattern: class-level exemption for APIs, action-level validation for Web
+- ✅ All 978 tests pass — no behavioral regressions
+
+### Considerations
+- New Web POST actions must include `[ValidateAntiForgeryToken]` (enforced by CodeQL)
+- New API controllers must include `[IgnoreAntiforgeryToken]` at class level to suppress alerts
+- Pre-commit checklist: Search for `[HttpPost]` → verify Web actions have `[ValidateAntiForgeryToken]`
+
+## Related Documents
+
+- **Canonical Reference:** `.squad/skills/codeql-security-baseline/SKILL.md`
+- **Implementation:** PR #836
+- **Issue:** #834
+- **History Entry:** `.squad/agents/oracle/history.md` (2026-04-16)
+
+## Summary
+
+**Use `[IgnoreAntiforgeryToken]` (class level) for API controllers with Bearer token auth.**  
+**Use `[ValidateAntiForgeryToken]` (action level) for Web POST/PUT/DELETE with cookie auth.**
+
+This distinction ensures CSRF protection where applicable while avoiding false positives for token-based APIs.
+
+---
+---
+date: 2026-05-XX
+author: Tank
+issue: 820
+pr: 839
+---
+
+# Tank Issue #820 — Source Controller Test Decisions
+
+## Context
+
+Wrote unit tests for `YouTubeSourcesController` and `SyndicationFeedSourcesController`, introduced in PRs #837 and #838.
+
+## Observations & Decisions
+
+### 1. Action name pattern: `Add`/`Delete`, not `Create`/`Edit`
+
+Both new source controllers use `Add()` (GET+POST) and `Delete()` (GET + `DeleteConfirmed` POST). There is no `Edit` or `Create` action. This differs from the `EngagementsController` pattern. Future test charters for similar controllers should verify actual action names before writing tests.
+
+### 2. `required` properties on domain models
+
+`YouTubeSource.CreatedByEntraOid` and `SyndicationFeedSource.CreatedByEntraOid` are `required string`. `SyndicationFeedSource.FeedIdentifier` is also `required string`. Test `BuildSource()` helpers must initialize all required properties or the compiler will reject object initializers. This is a C# 11 `required` member — not a validation attribute.
+
+### 3. No `Forbid()` in Web MVC source controllers
+
+Neither controller uses `Forbid()`. Ownership enforcement uses the redirect-with-TempData pattern consistent with Engagements and Talks. The security test checklist still applies — tests use OID mismatch + assert redirect + `Times.Never` on side-effect mocks.
+
+### 4. `SyndicationFeedSourcesController.Delete` uses `RequireAdministrator` (not `RequireContributor`)
+
+YouTube delete requires `RequireContributor`; syndication feed delete requires `RequireAdministrator`. These are authorization policy differences, but since tests bypass auth enforcement (no `TestServer`), they do not affect test behavior — just worth noting for documentation and integration tests.
+
+---
+---
+date: 2026-04-23
+author: Neo
+pr: 839
+issue: 820
+verdict: BLOCKED
+---
+
+# PR #839 Review Verdict
+
+**PR:** test: add unit tests for YouTubeSourcesController and SyndicationFeedSourcesController  
+**Branch:** `issue-820-controller-tests`  
+**Author:** Tank  
+**Verdict:** BLOCKED
+
+---
+
+## Summary
+
+36 new unit tests (18 per controller) for `YouTubeSourcesController` and `SyndicationFeedSourcesController`. Test quality is excellent across all dimensions except one CI blocker.
+
+---
+
+## Checklist Results
+
+| Criterion | Result | Notes |
+|---|---|---|
+| Test completeness | ✅ | Index, Details, Add GET/POST, Delete GET, DeleteConfirmed — full coverage. No Edit actions exist on these controllers. |
+| Pattern consistency | ✅ | Matches EngagementsControllerTests: xUnit, Moq, TempData in constructor, WebControllerTestHelpers. |
+| Mock accuracy | ✅ | GetAllAsync, GetAsync, SaveAsync, DeleteAsync — all match actual interface signatures. |
+| Security (no Forbid) | ✅ | Confirmed redirect+TempData pattern in both controllers. Non-owner and admin bypass paths tested. |
+| Test naming | ✅ | `ActionName_WhenCondition_ShouldResult` convention followed. |
+| CI green | ❌ | `build-and-test` passed. `pr-metadata` **FAILED**. |
+
+---
+
+## Blocker
+
+**PR title format violation** — `pr-metadata` CI check fails because the PR title:
+
+```
+test: add unit tests for YouTubeSourcesController and SyndicationFeedSourcesController (#820)
+```
+
+does not match the required Conventional Commits format `<type>(#<issue>): <summary>`. Correct form:
+
+```
+test(#820): add unit tests for YouTubeSourcesController and SyndicationFeedSourcesController
+```
+
+---
+
+## Advisory (Non-Blocking)
+
+`SyndicationFeedSourcesController.Delete` (GET) and `DeleteConfirmed` (POST) are gated by `[Authorize(Policy = AuthorizationPolicyNames.RequireAdministrator)]`, making the non-admin OID check inside those actions dead code in production. The tests correctly test the written code (unit tests bypass auth filters), but the controller has a design discrepancy. File a follow-up issue against the controller to either:
+- Change the policy to `RequireContributor` (align with YouTubeSourcesController pattern), or
+- Remove the OID check (since only admins reach the action, the check is redundant).
+
+---
+
+## Action Required
+
+1. Fix PR title to `test(#820): add unit tests for YouTubeSourcesController and SyndicationFeedSourcesController`
+2. Once `pr-metadata` CI passes → **approve and squash-merge**
+
+---
+### 2026-04-23: User directive — Tank must run tests before every PR
+**By:** Joseph (via Copilot)
+**What:** Tank MUST run `dotnet test .\src\ --no-build --verbosity normal --configuration Release` locally and confirm pass before committing or pushing any PR. This is a recurring violation — PRs #837 and #838 both failed CI with a MappingProfile_IsValid test that would have caught the issue locally.
+**Why:** Repeat violation — PRs failing CI due to untested AutoMapper mappings. Pre-submission test run is mandatory.
+

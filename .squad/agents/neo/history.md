@@ -439,3 +439,34 @@ Joseph's brief says "no admin-bypass logic in Web layer — API handles it." How
 - **Source infrastructure completeness:** Data layer, managers, and domain models for YouTubeSource/SyndicationFeedSource are fully built. Only API surface and Web UI are missing.
 - **No pagination on source managers:** `IYouTubeSourceManager` and `ISyndicationFeedSourceManager` return flat `List<T>`. Acceptable for initial implementation; add pagination in follow-up sprint.
 - **Milestone workaround on Windows:** `gh issue create --milestone N` fails on Windows with "not found"; use `gh api ... --method PATCH --field milestone=N` after creation.
+
+---
+
+## 2026-04-23 — PR #840 & #841 Review: Publisher Settings Help Pages
+
+**Status:** ✅ BOTH APPROVED  
+**PRs:** #840 (issue #813) + #841 (issue #814) | **Author:** Switch (#840) + Sparks (#841)  
+**Artifact:** Reviews posted as GitHub comments
+
+### Findings
+
+**PR #840 — Credential-setup documentation link on provider cards:**
+- **ViewModel layer:** `CredentialSetupDocumentationUrl` property added to `PublisherPlatformSettingsViewModel` base class; all 5 concrete view models map `platform.CredentialSetupDocumentationUrl` in `CreateViewModel`.
+- **View layer:** Conditional `<a>` button (`btn btn-sm btn-outline-info`) added to all 5 provider card headers (Bluesky, Twitter, LinkedIn, Facebook, Unsupported) with `target="_blank" rel="noopener noreferrer"`.
+- **Edge case:** `_UnsupportedPublisherSettings.cshtml` was restructured from plain card-header to `d-flex justify-content-between align-items-center` to match the pattern — good attention to detail.
+- **Security:** No POST actions, no logging, no CSRF/log injection concerns.
+- **Build:** 645 warnings, 0 errors (warnings are pre-existing).
+
+**PR #841 — HelpController + credential-setup help pages:**
+- **Controller:** `HelpController` with single action `[Route("Help/SocialMediaPlatforms/{platform}")]`. Requires `[Authorize]` (no role restriction). Platform slug matched via `ISocialMediaPlatformService.GetAllAsync()` with case-insensitive compare. Returns HTTP 404 for unknown platforms.
+- **Views:** 5 Razor views (Bluesky, Twitter, LinkedIn, Facebook, Mastodon) under `Views/Help/SocialMediaPlatforms/`. Consistent Bootstrap 5 card layout: breadcrumb nav, icon + H1, 3-card main area ("What You Need", "Step-by-Step", "Field Mapping"), sidebar with official docs link + back button.
+- **Content quality:** Each page documents the correct OAuth flow for that platform (OAuth 1.0a for Twitter, OAuth 2.0 for LinkedIn/Mastodon/Bluesky app password, complex multi-token for Facebook).
+- **Security:** GET-only controller, no logging, no user-controlled strings in logs. All external links use `target="_blank" rel="noopener noreferrer"`.
+- **Build:** 645 warnings, 0 errors (warnings are pre-existing).
+
+### Learnings
+
+- **GET-only controller security:** Controllers with no POST actions and no logging have no CSRF or log injection risk. The route parameter `platform` is not logged, so no `LogSanitizer.Sanitize()` needed.
+- **View resolution from subdirectory:** When views live in a subdirectory (e.g., `Views/Help/SocialMediaPlatforms/`), must use explicit sub-path in controller: `View("SocialMediaPlatforms/LinkedIn")` not `View("linkedin")`.
+- **Conditional rendering pattern:** `@if (!string.IsNullOrWhiteSpace(Model.Property))` is the correct guard for optional URL properties in Razor views.
+- **Edge case awareness:** When applying a templated change across multiple partials, always check each partial independently — `_UnsupportedPublisherSettings.cshtml` had a different card-header structure than the other four.

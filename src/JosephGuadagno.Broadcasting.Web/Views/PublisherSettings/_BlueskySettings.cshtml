@@ -1,23 +1,7 @@
 @model JosephGuadagno.Broadcasting.Web.Models.BlueskyPublisherSettingsViewModel
 
-<div class="card h-100 shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
-            <i class="bi @(string.IsNullOrWhiteSpace(Model.PlatformIcon) ? "bi-broadcast" : Model.PlatformIcon) me-2"></i>
-            <strong>@Model.PlatformName</strong>
-        </div>
-        <span class="badge @(Model.IsEnabled ? "text-bg-success" : "text-bg-secondary")">
-            @(Model.IsEnabled ? "Enabled" : "Disabled")
-        </span>
-        @if (!string.IsNullOrWhiteSpace(Model.CredentialSetupDocumentationUrl))
-        {
-            <a href="@Model.CredentialSetupDocumentationUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-info ms-2">
-                <i class="bi bi-book"></i> Setup guide
-            </a>
-        }
-    </div>
-    <div class="card-body">
-        <form asp-action="SaveBluesky" method="post" novalidate>
+<div class="card-body">
+    <form asp-action="SaveBluesky" method="post" novalidate>
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
             <input asp-for="Id" type="hidden" />
             <input asp-for="CreatedByEntraOid" type="hidden" />
@@ -70,4 +54,3 @@
             </div>
         </form>
     </div>
-</div>
