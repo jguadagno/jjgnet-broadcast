@@ -249,6 +249,7 @@ void ConfigureTelemetryAndLogging(IServiceCollection services, string logPath, s
 void ConfigureApplication(IServiceCollection services)
 {
     services.AddHttpClient();
+    services.AddMemoryCache();
     
     // Register BroadcastingContext via transitive dependency (Managers ΓåÆ Data.Sql)
     // Note: BroadcastingContext type is fully qualified to avoid needing "using Data.Sql"
