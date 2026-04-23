@@ -12,6 +12,7 @@ public abstract class PublisherPlatformSettingsViewModel : IValidatableObject
     public bool IsEnabled { get; set; }
     public bool ChangeCredentials { get; set; }
     public bool IsManagedBySiteAdmin { get; set; }
+    public string? CredentialSetupDocumentationUrl { get; set; }
 
     public string MaskedValue => "••••••••";
 
