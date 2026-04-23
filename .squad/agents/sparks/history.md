@@ -121,3 +121,15 @@ Established by Joseph Guadagno:
 - Orchestration log: `.squad/orchestration-log/2026-04-11T23-23-33Z-Sparks.md` — Final fix documented (asp-route-engagementId restored)
 - Session log: `.squad/log/2026-04-11T23-23-33Z-issue-708-save-400-web.md` — Web form routing fix logged
 - Status: ✅ Complete — Issue #708 fully resolved; Sparks' all fixes committed and documented
+
+### 2026-05-02 — Issue #814: Help Pages — Social Media Credential Setup
+- **Branch:** `issue-814-help-pages` | **PR:** #841
+- **Controller:** `HelpController` with `[Authorize]` and `[Route("Help/SocialMediaPlatforms/{platform}")]` action
+- **Route pattern:** Default MVC route is `{controller}/{action}/{id?}` — parameter name mismatch (`platform` vs `id`) required an explicit `[Route]` attribute on the action
+- **View resolution:** Because views live in a subdirectory (`Views/Help/SocialMediaPlatforms/`), must pass the relative sub-path to `View()` explicitly: `View("SocialMediaPlatforms/LinkedIn")` not `View("linkedin")`
+- **Platform → view name mapping:** Used a `Dictionary<string, string>` (case-insensitive) to map slug → exact view path; avoids issues with mixed casing (e.g., "LinkedIn" vs "linkedin")
+- **Views created:** Bluesky, Twitter, LinkedIn, Facebook, Mastodon — all in `Views/Help/SocialMediaPlatforms/`
+- **Layout:** Each view inherits the shared `_Layout.cshtml` via `_ViewStart.cshtml` (no explicit Layout assignment needed)
+- **Pattern:** Bootstrap 5 card layout with breadcrumb, credential table, step-by-step ordered list, and official docs link that opens in a new tab
+- **Unknown platform slug:** Returns HTTP 404 (dictionary miss)
+- **Status:** ✅ Complete — Build green, tests green, PR #841 open

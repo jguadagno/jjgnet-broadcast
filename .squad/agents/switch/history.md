@@ -8,7 +8,20 @@
 
 ## Learnings
 
-### 2026-07-14 — PR #752 Directive Compliance Pass (canonical OIDs + helper)
+### Issue #813 — Publisher Settings: credential-setup documentation link
+
+- **Task:** Add a conditional "Setup guide" link to all 5 publisher-settings provider cards when `CredentialSetupDocumentationUrl` is populated on the `SocialMediaPlatform`.
+- **Outcome:** ✅ PR #840 created; 165 tests, 0 failures.
+- **What I changed:**
+  - `PublisherPlatformSettingsViewModels.cs` — added `public string? CredentialSetupDocumentationUrl { get; set; }` to the `PublisherPlatformSettingsViewModel` base class.
+  - `PublisherSettingsController.cs` — mapped `platform.CredentialSetupDocumentationUrl` into all 5 concrete view model branches inside `CreateViewModel`.
+  - `_BlueskySettings.cshtml`, `_TwitterSettings.cshtml`, `_FacebookSettings.cshtml`, `_LinkedInSettings.cshtml` — added conditional `<a>` button after the enabled/disabled badge in the card-header `d-flex` row.
+  - `_UnsupportedPublisherSettings.cshtml` — its card-header was plain (no `d-flex`); restructured to `d-flex justify-content-between align-items-center` and added the same conditional link.
+- **Pattern to remember:** The Unsupported partial didn't follow the same `d-flex` card-header pattern as the other four partials — always check each partial independently before applying a templated change.
+- **Gotcha:** I was on a different branch (`issue-814-help-pages`) when I made the commit. Used `git cherry-pick` to land the commit on the correct branch before pushing.
+- **Branch:** `issue-813-publisher-settings-doc-link`; **PR:** #840.
+
+
 
 - **Task:** Apply directive-mandated canonical OIDs (`"owner-oid-12345"`, `"non-owner-oid-99999"`) and `CreateNonOwnerControllerContext()` helper to all non-owner ownership rejection tests, per the `security-test-checklist` SKILL.
 - **Outcome:** ✅ Committed and pushed to `issue-741-742`; 170 tests, 0 failures.

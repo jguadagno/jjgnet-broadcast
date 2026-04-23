@@ -104,6 +104,43 @@ Neo approved after Round 3 verification. Joseph merged PR #739 to main. Security
 
 ---
 
+## 2026-05-XX — Issue #820: Unit Tests for YouTubeSourcesController and SyndicationFeedSourcesController
+
+**Status:** ✅ COMPLETE  
+**Branch:** issue-820-controller-tests  
+**PR:** #839
+
+### Work Summary
+
+Added 36 unit tests across two new test files for the source management controllers introduced in PRs #837 and #838.
+
+### Controllers Tested
+
+- `YouTubeSourcesController` — 18 tests
+- `SyndicationFeedSourcesController` — 18 tests
+
+### Test Coverage
+
+Each controller: Index, Details (found/not-found/non-owner/admin), Add GET, Add POST (invalid/success/failure), Delete GET (found/not-found/non-owner/admin), DeleteConfirmed (not-found/non-owner/success/failure/admin).
+
+### Security Observations
+
+Neither controller uses `Forbid()`. Both use the Web MVC redirect pattern: non-owner access redirects to Index with `TempData["ErrorMessage"]`. Security coverage matrix built per checklist:
+- Details, Delete GET, and DeleteConfirmed each have a non-owner redirect test and an admin bypass test.
+
+### Key Facts
+
+- `YouTubeSource` and `SyndicationFeedSource` both have `required string CreatedByEntraOid` — must be set in `BuildSource()` helpers.
+- `SyndicationFeedSource` also has `required string FeedIdentifier`.
+- Both controllers use `Add`/`Delete` (not `Create`/`Edit`) as action names.
+- `SyndicationFeedSourcesController.Delete` requires `RequireAdministrator` policy (stricter than YouTube's `RequireContributor`).
+
+### Test Results
+
+- 36/36 new tests pass; full suite 157 passed, 0 failed.
+
+---
+
 ## 2026-04-18 — Issue #738: Fix 38 API Test Failures (Background Agent)
 
 **Status:** ✅ COMPLETE  

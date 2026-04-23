@@ -439,3 +439,33 @@ Joseph's brief says "no admin-bypass logic in Web layer — API handles it." How
 - **Source infrastructure completeness:** Data layer, managers, and domain models for YouTubeSource/SyndicationFeedSource are fully built. Only API surface and Web UI are missing.
 - **No pagination on source managers:** `IYouTubeSourceManager` and `ISyndicationFeedSourceManager` return flat `List<T>`. Acceptable for initial implementation; add pagination in follow-up sprint.
 - **Milestone workaround on Windows:** `gh issue create --milestone N` fails on Windows with "not found"; use `gh api ... --method PATCH --field milestone=N` after creation.
+
+---
+
+## 2026-04-23 — PR #839 Review: YouTubeSourcesController & SyndicationFeedSourcesController Tests
+
+**Status:** 🔴 BLOCKED (1 hard blocker)  
+**PR:** #839 | **Issue:** #820 | **Author:** Tank  
+**Artifact:** `.squad/decisions/inbox/neo-pr839-verdict.md`
+
+### Findings
+
+- **Test quality: excellent.** 18 tests × 2 controllers = 36. Full action coverage (Index, Details, Add GET/POST, Delete GET, DeleteConfirmed). No Edit exists on these controllers — 18 is correct, not a gap.
+- **Pattern consistency:** Matches EngagementsControllerTests exactly — xUnit `[Fact]`, Moq, TempData in constructor, `WebControllerTestHelpers`.
+- **Mock accuracy:** `GetAllAsync`, `GetAsync`, `SaveAsync`, `DeleteAsync` — all match actual interface and controller usage.
+- **Security coverage:** No `Forbid()` confirmed. Redirect+TempData ownership pattern verified against actual controller source. Non-owner redirect and admin bypass paths both tested.
+- **Build/test CI:** Green (157 passed, 0 failed).
+
+### Blocker
+
+**PR title format violation** — `pr-metadata` CI check fails. Current title uses `test: ... (#820)` (issue appended at end); required format is `test(#820): ...` (issue as Conventional Commits scope). Fix: rename to `test(#820): add unit tests for YouTubeSourcesController and SyndicationFeedSourcesController`.
+
+### Advisory (Non-Blocking)
+
+`SyndicationFeedSourcesController.Delete` and `DeleteConfirmed` use `[Authorize(Policy = AuthorizationPolicyNames.RequireAdministrator)]`. The OID check inside those actions for non-admin users is dead code in production (non-admins are blocked at policy filter). Tests correctly test the written code. The controller design discrepancy should be addressed in a follow-up issue against the SyndicationFeedSourcesController.
+
+### Learnings
+
+- **PR title CI rule:** `<type>(#<issue>): <summary>` — issue number in parentheses as scope, not appended at end. Violation fails `pr-metadata` even when all 36 tests pass.
+- **Dead code from mismatched policy + OID check:** If `[Authorize]` policy requires Admin, any non-admin OID check inside the action body is unreachable. Design review should either lower the policy or remove the inner check.
+- **Author-owned PR workflow:** Cannot use `gh pr review --request-changes` on own PRs. Use `gh pr comment` for blocking findings (visible in comment thread, not review artifact).
