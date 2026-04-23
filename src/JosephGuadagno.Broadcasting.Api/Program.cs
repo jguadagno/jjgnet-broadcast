@@ -231,6 +231,14 @@ void ConfigureRepositories(IServiceCollection services)
     
     services.TryAddScoped<IEngagementSocialMediaPlatformDataStore, EngagementSocialMediaPlatformDataStore>();
 
+    // SyndicationFeedSource
+    services.TryAddScoped<ISyndicationFeedSourceDataStore, SyndicationFeedSourceDataStore>();
+    services.TryAddScoped<ISyndicationFeedSourceManager, SyndicationFeedSourceManager>();
+
+    // YouTubeSource
+    services.TryAddScoped<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
+    services.TryAddScoped<IYouTubeSourceManager, YouTubeSourceManager>();
+
     // RBAC Phase 1
     services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
     services.TryAddScoped<IRoleDataStore, RoleDataStore>();
@@ -241,4 +249,6 @@ void ConfigureRepositories(IServiceCollection services)
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
+    services.TryAddScoped<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
+    services.TryAddScoped<IYouTubeSourceManager, YouTubeSourceManager>();
 }

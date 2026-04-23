@@ -19,4 +19,8 @@ public class SocialMediaPlatformRequest
     public string? Icon { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    [MaxLength(500)]
+    [Url]
+    public string? CredentialSetupDocumentationUrl { get; set; }
 }

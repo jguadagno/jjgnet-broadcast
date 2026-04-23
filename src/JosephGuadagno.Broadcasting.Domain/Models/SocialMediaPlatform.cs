@@ -37,4 +37,10 @@ public class SocialMediaPlatform
     /// Indicates if the platform is active (soft delete)
     /// </summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// URL to the credential setup documentation for the platform
+    /// </summary>
+    [MaxLength(500)]
+    public string? CredentialSetupDocumentationUrl { get; set; }
 }
