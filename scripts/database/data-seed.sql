@@ -97,6 +97,18 @@ IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Mast
     INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
     VALUES (N'Mastodon', N'https://mastodon.social', N'bi-mastodon', 1)
 
+-- Seed CredentialSetupDocumentationUrl for SocialMediaPlatforms (Issue #812)
+UPDATE JJGNet.dbo.SocialMediaPlatforms SET CredentialSetupDocumentationUrl = N'/help/socialMediaPlatforms/twitter'
+    WHERE CredentialSetupDocumentationUrl IS NULL AND Name = N'Twitter'
+UPDATE JJGNet.dbo.SocialMediaPlatforms SET CredentialSetupDocumentationUrl = N'/help/socialMediaPlatforms/bluesky'
+    WHERE CredentialSetupDocumentationUrl IS NULL AND Name = N'BlueSky'
+UPDATE JJGNet.dbo.SocialMediaPlatforms SET CredentialSetupDocumentationUrl = N'/help/socialMediaPlatforms/linkedin'
+    WHERE CredentialSetupDocumentationUrl IS NULL AND Name = N'LinkedIn'
+UPDATE JJGNet.dbo.SocialMediaPlatforms SET CredentialSetupDocumentationUrl = N'/help/socialMediaPlatforms/facebook'
+    WHERE CredentialSetupDocumentationUrl IS NULL AND Name = N'Facebook'
+UPDATE JJGNet.dbo.SocialMediaPlatforms SET CredentialSetupDocumentationUrl = N'/help/socialMediaPlatforms/mastodon'
+    WHERE CredentialSetupDocumentationUrl IS NULL AND Name = N'Mastodon'
+
 -- Seed the EmailTemplates table (Issue #615)
 IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.EmailTemplates WHERE Name = N'UserApproved')
     INSERT INTO JJGNet.dbo.EmailTemplates (Name, Subject, Body) VALUES (
