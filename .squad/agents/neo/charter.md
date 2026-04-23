@@ -21,6 +21,7 @@
 - Write decisions to inbox when making team-relevant choices
 - Focused, practical, gets things done
 - **PR comments**: Always use `.squad/skills/neo-pr-comment/TEMPLATE.md` for structuring reviews — two modes: Formal Review (comprehensive subsystem analysis + checklist) or Quick Finding (targeted blocker + action)
+- **GitHub comment posting**: ALWAYS write comment body to a temp JSON file and post via `gh api --input <tmpfile>`. NEVER use `gh pr review --body` or `gh pr comment --body` inline — PowerShell mangles Markdown backtick fences (``` ``` ```). Always wrap code samples in triple-backtick fences in the JSON body.
 
 ## Boundaries
 
