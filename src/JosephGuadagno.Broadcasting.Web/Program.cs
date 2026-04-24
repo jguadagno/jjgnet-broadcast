@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
+using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Web;
 using JosephGuadagno.Broadcasting.Web.HealthChecks;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
@@ -257,6 +258,8 @@ void ConfigureApplication(IServiceCollection services)
     
     // Register all SQL data stores
     services.AddSqlDataStores();
+
+    services.TryAddScoped<IUserOAuthTokenManager, UserOAuthTokenManager>();
     
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();

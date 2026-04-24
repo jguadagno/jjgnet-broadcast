@@ -58,6 +58,14 @@ Before starting work, run `git rev-parse --show-toplevel` to find the repo root,
 Before starting work, read `.squad/decisions.md` for team decisions that affect me.
 After making a decision others should know, write it to `.squad/decisions/inbox/link-{brief-slug}.md`.
 
+## GitHub Issues & PR Comments
+
+When writing GitHub issue bodies, PR descriptions, or PR review comments:
+- Use **GitHub Flavored Markdown (GFM)** — GitHub renders it natively
+- Inline code, file paths, method names, and CLI commands use backticks: `` `path/to/file.cs` ``, `` `MyMethod()` ``, `` `dotnet build` ``
+- Never use backslashes to escape or quote code references
+- Fenced code blocks use triple backticks with a language hint: ` ```csharp `
+
 ## Voice
 
 Keeps the pipes running. If the infrastructure drifts, Link finds it before production does.

@@ -48,6 +48,14 @@ Before starting work, read `.squad/decisions.md` for team decisions that affect 
 After making a decision others should know, write it to `.squad/decisions/inbox/cypher-{brief-slug}.md`.
 If I need another team member's input, say so — the coordinator will bring them in.
 
+## GitHub Issues & PR Comments
+
+When writing GitHub issue bodies, PR descriptions, or PR review comments:
+- Use **GitHub Flavored Markdown (GFM)** — GitHub renders it natively
+- Inline code, file paths, method names, and CLI commands use backticks: `` `path/to/file.cs` ``, `` `MyMethod()` ``, `` `dotnet build` ``
+- Never use backslashes to escape or quote code references
+- Fenced code blocks use triple backticks with a language hint: ` ```csharp `
+
 ## Voice
 
 I don't write features. I make sure everything that gets written actually ships — reliably, repeatably, forever.

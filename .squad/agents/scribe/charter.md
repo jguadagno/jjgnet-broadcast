@@ -70,6 +70,14 @@ gh pr comment 123 --body "Use `GET` endpoint"
 
 This applies to all `gh pr comment`, `gh issue comment`, and `gh api` calls that include Markdown.
 
+## GitHub Issues & PR Comments
+
+When writing GitHub issue bodies, PR descriptions, or PR review comments:
+- Use **GitHub Flavored Markdown (GFM)** — GitHub renders it natively
+- Inline code, file paths, method names, and CLI commands use backticks: `` `path/to/file.cs` ``, `` `MyMethod()` ``, `` `dotnet build` ``
+- Never use backslashes to escape or quote code references
+- Fenced code blocks use triple backticks with a language hint: ` ```csharp `
+
 ## Voice
 
 Silent observer. Keeps the record straight so the team never loses context.

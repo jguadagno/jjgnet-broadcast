@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using System.Text.Json;
 using JosephGuadagno.Broadcasting.Domain.Constants;
-using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Models.LinkedIn;
 using Microsoft.AspNetCore.Authorization;
@@ -16,92 +18,101 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 public class LinkedInController : Controller
 {
     private readonly HttpClient _httpClient;
-    private readonly IKeyVault _keyVault;
+    private readonly IUserOAuthTokenManager _userOAuthTokenManager;
+    private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
     private readonly LinkedInSettings _linkedInSettings;
     private readonly ILogger<LinkedInController> _logger;
-    
-    const string KeyVaultSecretName = "jjg-net-linkedin-access-token";
-    const string KeyVaultRefreshTokenSecretName = "jjg-net-linkedin-refresh-token";
+
     const string State = "state";
-    
+
     /// <summary>
-    /// Works with the LinkedIn Api to refresh tokens
+    /// Works with the LinkedIn OAuth flow to acquire and store per-user tokens
     /// </summary>
-    /// <param name="httpClient"></param>
-    /// <param name="keyVault"></param>
-    /// <param name="linkedInSettingsOptions"></param>
-    /// <param name="logger"></param>
-    public LinkedInController(HttpClient httpClient, IKeyVault keyVault, IOptions<LinkedInSettings> linkedInSettingsOptions, ILogger<LinkedInController> logger)
+    public LinkedInController(
+        HttpClient httpClient,
+        IUserOAuthTokenManager userOAuthTokenManager,
+        ISocialMediaPlatformManager socialMediaPlatformManager,
+        IOptions<LinkedInSettings> linkedInSettingsOptions,
+        ILogger<LinkedInController> logger)
     {
         _httpClient = httpClient;
-        _keyVault = keyVault;
+        _userOAuthTokenManager = userOAuthTokenManager;
+        _socialMediaPlatformManager = socialMediaPlatformManager;
         _linkedInSettings = linkedInSettingsOptions.Value;
         _logger = logger;
     }
-    
+
     /// <summary>
-    /// Returns the token information from Key Vault for LinkedIn
+    /// Shows current per-user LinkedIn token status (masked — never raw token value)
     /// </summary>
-    /// <returns></returns>
     public async Task<IActionResult> Index()
     {
-        var keyVaultSecret = await _keyVault.GetSecretAsync(KeyVaultSecretName);
+        var ownerOid = User.FindFirstValue("oid");
+        if (string.IsNullOrWhiteSpace(ownerOid))
+        {
+            _logger.LogWarning("User OID claim is missing on LinkedIn Index");
+            return View(new SavedTokenInfo { HasToken = false });
+        }
+
+        var platform = await _socialMediaPlatformManager.GetByNameAsync("LinkedIn");
+        if (platform is null)
+        {
+            _logger.LogWarning("LinkedIn platform not found in database");
+            return View(new SavedTokenInfo { HasToken = false });
+        }
+
+        var token = await _userOAuthTokenManager.GetByUserAndPlatformAsync(ownerOid, platform.Id);
+
+        if (token is null)
+        {
+            return View(new SavedTokenInfo { HasToken = false, PlatformId = platform.Id });
+        }
+
+        // Mask the token — never return raw value to the view
+        var masked = token.AccessToken.Length > 8
+            ? $"{token.AccessToken[..4]}...{token.AccessToken[^4..]}"
+            : "****";
+
         return View(new SavedTokenInfo
         {
-            AccessToken = keyVaultSecret.Value,
-            KeyVaultSecretName = keyVaultSecret.Name,
-            ExpiresOn = keyVaultSecret.Properties.ExpiresOn
+            HasToken = true,
+            MaskedAccessToken = masked,
+            ExpiresOn = token.AccessTokenExpiresAt,
+            PlatformId = platform.Id
         });
     }
 
     /// <summary>
-    /// Starts the LinkedIn OAuth2 flow
+    /// Starts the LinkedIn OAuth2 authorization code flow
     /// </summary>
-    /// <returns></returns>
     public async Task<IActionResult> RefreshToken()
     {
-        // Call the LinkedIn API to refresh the token
-        // Note: This is not actually refreshing the token but reauthorizing the user
-        // Documentation: https://learn.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?context=linkedin%2Fcontext&tabs=HTTPS1#step-2-request-an-authorization-code
-
         // Build the URL to redirect the user to
         var state = Guid.NewGuid().ToString();
         HttpContext.Session.SetString(State, state);
-        
+
         var callbackUrl = Url.Action("Callback", "LinkedIn", null, Request.Scheme) ?? string.Empty;
         if (string.IsNullOrEmpty(callbackUrl))
         {
             _logger.LogError("Callback URL is missing");
             return ViewBag["Message"] = "Callback URL is missing.";
         }
-        
+
         var url = $"{_linkedInSettings.AuthorizationUrl}?response_type=code&client_id={_linkedInSettings.ClientId}&redirect_uri={callbackUrl}&state={state}&scope={_linkedInSettings.Scopes}";
 
-        return Redirect(url);
-        //await _httpClient.GetAsync(url);
-
+        return await Task.FromResult(Redirect(url));
     }
-    
+
     /// <summary>
-    /// Handles the callback from LinkedIn
+    /// Handles the OAuth2 callback from LinkedIn and stores the token per-user
     /// </summary>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    public async Task<IActionResult> Callback()
+    public async Task<IActionResult> Callback(CancellationToken cancellationToken = default)
     {
-        // Handle the callback from LinkedIn
-        // Callback is handled in two parts
-        // 1. Retrieve the authorization code
-        // Documentation: https://learn.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?context=linkedin%2Fcontext&tabs=HTTPS1#step-2-request-an-authorization-code
-        // 2. Exchange the authorization code for an access token
-        // Documentation: https://learn.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?context=linkedin%2Fcontext&tabs=HTTPS1#step-3-exchange-authorization-code-for-an-access-token
-        
         // Read the code and state from the query string
-        // Compare the state to the session state
-        
         var code = HttpContext.Request.Query["code"].FirstOrDefault();
         var state = HttpContext.Request.Query["state"].FirstOrDefault();
-        
+
+        // CSRF state validation — must be preserved
         if (state != HttpContext.Session.GetString(State))
         {
             _logger.LogError("State does not match");
@@ -120,9 +131,8 @@ public class LinkedInController : Controller
             _logger.LogError("Callback URL is missing");
             return BadRequest();
         }
-        
+
         // Exchange the code for an access token
-        // Build the URL to exchange the code for an access token
         var headers = new Dictionary<string, string>
         {
             {"Content-Type", "application/x-www-form-urlencoded"},
@@ -132,33 +142,44 @@ public class LinkedInController : Controller
             {"client_id", _linkedInSettings.ClientId},
             {"client_secret", _linkedInSettings.ClientSecret}
         };
-        
-        var response = await _httpClient.PostAsync(_linkedInSettings.AccessTokenUrl, new FormUrlEncodedContent(headers));
-        
-        var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(await response.Content.ReadAsStringAsync());
-        
-        if (tokenResponse == null) 
+
+        var response = await _httpClient.PostAsync(_linkedInSettings.AccessTokenUrl, new FormUrlEncodedContent(headers), cancellationToken);
+
+        var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(await response.Content.ReadAsStringAsync(cancellationToken));
+
+        if (tokenResponse == null)
         {
             _logger.LogError("Token response is null");
             return BadRequest();
         }
-        
-        // Save the token and expiration to KeyVault
-        var tokenExpiration = DateTimeOffset.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
-        await _keyVault.UpdateSecretValueAndPropertiesAsync(KeyVaultSecretName, tokenResponse.AccessToken, tokenExpiration.DateTime);
-        
-        _logger.LogInformation("Saved new token '{KeyVaultSecretName}' to KeyVault", KeyVaultSecretName);
 
-        // Save the refresh token if one was returned
-        if (!string.IsNullOrEmpty(tokenResponse.RefreshToken))
-        {
-            var refreshTokenExpiration = tokenResponse.RefreshTokenExpiresIn.HasValue
-                ? DateTimeOffset.UtcNow.AddSeconds(tokenResponse.RefreshTokenExpiresIn.Value)
-                : DateTimeOffset.UtcNow.AddDays(365);
-            await _keyVault.UpdateSecretValueAndPropertiesAsync(KeyVaultRefreshTokenSecretName, tokenResponse.RefreshToken, refreshTokenExpiration.DateTime);
-            _logger.LogInformation("Saved new refresh token '{KeyVaultRefreshTokenSecretName}' to KeyVault", KeyVaultRefreshTokenSecretName);
-        }
+        var ownerOid = User.FindFirstValue("oid")
+            ?? throw new InvalidOperationException("User OID claim is missing");
+
+        var platform = await _socialMediaPlatformManager.GetByNameAsync("LinkedIn", cancellationToken)
+            ?? throw new InvalidOperationException("LinkedIn platform not found");
+
+        var accessTokenExpiresAt = DateTimeOffset.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
+        DateTimeOffset? refreshTokenExpiresAt = tokenResponse.RefreshTokenExpiresIn.HasValue
+            ? DateTimeOffset.UtcNow.AddSeconds(tokenResponse.RefreshTokenExpiresIn.Value)
+            : null;
+
+        await _userOAuthTokenManager.StoreOAuthCallbackTokenAsync(
+            ownerOid,
+            platform.Id,
+            tokenResponse.AccessToken,
+            tokenResponse.RefreshToken,
+            accessTokenExpiresAt,
+            refreshTokenExpiresAt,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Stored OAuth token for platform {PlatformId} owner {OwnerOid} expiring {ExpiresAt}",
+            platform.Id,
+            LogSanitizer.Sanitize(ownerOid),
+            accessTokenExpiresAt);
 
         return RedirectToAction("Index");
     }
 }
+

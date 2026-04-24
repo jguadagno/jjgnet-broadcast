@@ -2,7 +2,11 @@
 
 public class SavedTokenInfo
 {
-    public string AccessToken { get; set; }
-    public string KeyVaultSecretName { get; set; }
+    /// <summary>
+    /// Masked representation of the access token (never the raw value).
+    /// </summary>
+    public string? MaskedAccessToken { get; set; }
+    public bool HasToken { get; set; }
     public DateTimeOffset? ExpiresOn { get; set; }
+    public int? PlatformId { get; set; }
 }

@@ -22,6 +22,7 @@ public static class BroadcastingDataSqlServiceCollectionExtensions
         services.TryAddScoped<ISocialMediaPlatformDataStore, SocialMediaPlatformDataStore>();
         services.TryAddScoped<IEngagementSocialMediaPlatformDataStore, EngagementSocialMediaPlatformDataStore>();
         services.TryAddScoped<IUserPublisherSettingDataStore, UserPublisherSettingDataStore>();
+        services.TryAddScoped<IUserOAuthTokenDataStore, UserOAuthTokenDataStore>();
         services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
         services.TryAddScoped<IRoleDataStore, RoleDataStore>();
         services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();
@@ -37,5 +38,6 @@ public static class BroadcastingDataSqlServiceCollectionExtensions
     {
         config.AddProfile<BroadcastingProfile>();
         config.AddProfile<RbacProfile>();
+        config.AddProfile<UserOAuthTokenMappingProfile>();
     }
 }

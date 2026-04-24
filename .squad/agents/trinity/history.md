@@ -2,6 +2,64 @@
 
 ## Learnings
 
+### 2026-04-24 — Issue #777: Per-User LinkedIn OAuth Token Storage (Implementation)
+**Status:** ✅ COMPLETE — PR #854 open, Key Vault retirement issue #855 created
+
+**What was built:**
+- New `UserOAuthTokens` SQL table with unique constraint on `(CreatedByEntraOid, SocialMediaPlatformId)`, FK to `SocialMediaPlatforms`, index on `AccessTokenExpiresAt`
+- Full vertical slice: Domain model → EF entity → DataStore → Manager
+- `LinkedInController` refactored: removed `IKeyVault`, added `IUserOAuthTokenManager` + `ISocialMediaPlatformManager`; token values never logged or exposed raw to views; CSRF state validation preserved
+- All 4 LinkedIn Functions refactored to resolve per-user OAuth token via `IUserOAuthTokenManager.GetByUserAndPlatformAsync(ownerOid, SocialMediaPlatformIds.LinkedIn)`; null token → log warning + return null (no silent fallback)
+- 166 Functions unit tests + 232 Web unit tests: all green
+
+**Key learnings:**
+1. **`edit` tool file-overwrite hazard**: When `old_str` matches only a portion of a file, the replacement is applied but the remaining old content stays appended. For whole-file rewrites, always use `Set-Content` via PowerShell.
+2. **No `ImplicitUsings` in Managers project**: Must add `using System;`, `using System.Threading;`, `using System.Threading.Tasks;` explicitly — unlike Domain (which does have implicit usings).
+3. **`Talk` model uses `Name` not `Title`, `UrlForTalk`/`UrlForConferenceTalk` not `Url`**: Check domain model properties before writing test data builders.
+4. **Functions register dependencies directly in `ConfigureFunction()`**: `AddSqlDataStores()` is Web-only; Functions must add `IUserOAuthTokenDataStore` and `IUserOAuthTokenManager` explicitly in `Program.cs`.
+5. **`AuthorId` intentionally dropped**: The old code set `linkedInPost.AuthorId = linkedInApplicationSettings.AuthorId` from the shared singleton. LinkedIn API derives AuthorId from the access token, so this is safe to drop. No explicit `AuthorId` is needed.
+
+**Files created:**
+- `scripts/database/migrations/2026-04-24-user-oauth-tokens.sql`
+- `src/JosephGuadagno.Broadcasting.Domain/Models/UserOAuthToken.cs`
+- `src/JosephGuadagno.Broadcasting.Domain/Interfaces/IUserOAuthTokenDataStore.cs`
+- `src/JosephGuadagno.Broadcasting.Domain/Interfaces/IUserOAuthTokenManager.cs`
+- `src/JosephGuadagno.Broadcasting.Domain/Constants/SocialMediaPlatformIds.cs`
+- `src/JosephGuadagno.Broadcasting.Data.Sql/Models/UserOAuthToken.cs`
+- `src/JosephGuadagno.Broadcasting.Data.Sql/UserOAuthTokenDataStore.cs`
+- `src/JosephGuadagno.Broadcasting.Managers/UserOAuthTokenManager.cs`
+
+
+**Status:** ✅ EXPLORATION COMPLETE — Findings filed to inbox
+
+**Key file paths discovered:**
+- `src/JosephGuadagno.Broadcasting.Web/Controllers/LinkedInController.cs` — OAuth2 flow; writes to shared Key Vault secrets (`jjg-net-linkedin-access-token`, `jjg-net-linkedin-refresh-token`)
+- `src/JosephGuadagno.Broadcasting.Data.KeyVault/Interfaces/IKeyVault.cs` — flat interface: `GetSecretAsync(name)` + `UpdateSecretValueAndPropertiesAsync(name, value, expiresOn)`; no per-user concept
+- `src/JosephGuadagno.Broadcasting.Data.KeyVault/KeyVault.cs` — implementation via Azure `SecretClient`
+- `src/JosephGuadagno.Broadcasting.Managers.LinkedIn/Models/ILinkedInApplicationSettings.cs` — shared singleton: `ClientId`, `ClientSecret`, `AccessToken`, `AuthorId`, `AccessTokenUrl`
+- `src/JosephGuadagno.Broadcasting.Functions/Program.cs` → `ConfigureLinkedInManager()` — binds `LinkedIn:*` config to singleton `ILinkedInApplicationSettings` at startup
+- `src/JosephGuadagno.Broadcasting.Functions/LinkedIn/ProcessNewSyndicationDataFired.cs` — stamps `post.AccessToken = linkedInApplicationSettings.AccessToken` (shared)
+- `src/JosephGuadagno.Broadcasting.Functions/LinkedIn/ProcessScheduledItemFired.cs` — same pattern; uses `ScheduledItem.CreatedByEntraOid` for content ownership (owner OID available for lookup)
+- `src/JosephGuadagno.Broadcasting.Data.Sql/UserPublisherSettingDataStore.cs` — already stores `AccessToken`, `AuthorId`, `ClientId`, `ClientSecret` as JSON keys in `Settings` NVARCHAR(MAX)
+- `src/JosephGuadagno.Broadcasting.Managers/UserPublisherSettingManager.cs` — `ProjectForResponse()` sanitizes tokens to `HasAccessToken` (bool); raw values accessible before projection
+- `scripts/database/table-create.sql` — `UserPublisherSettings` table has all needed columns; `ApplicationUsers` has NO OAuth fields
+
+**Current patterns:**
+- All 4 LinkedIn "process" functions (`ProcessNewSyndicationDataFired`, `ProcessNewYouTubeDataFired`, `ProcessScheduledItemFired`, `ProcessNewRandomPost`) use the singleton access token
+- No LinkedIn `RefreshTokens` Function exists (only Facebook has one)
+- Tokens are stored **plaintext** in `UserPublisherSettings.Settings` JSON — encryption at rest is a known gap
+
+**What needs to change:**
+1. `LinkedInController.Callback` → write tokens to `UserPublisherSettings` (per user OID) instead of/alongside flat Key Vault secrets
+2. Functions: replace singleton `AccessToken`/`AuthorId` lookup with per-user `IUserPublisherSettingDataStore.GetByUserAndPlatformAsync(ownerOid, platformId)` resolution
+3. New `ILinkedInTokenResolver` service for Functions to bridge OID → raw token
+4. New `LinkedIn/RefreshTokens.cs` Function for per-user token refresh
+5. Encryption at rest decision for sensitive fields in `Settings` JSON
+
+**Deliverable:** `.squad/decisions/inbox/trinity-777-exploration.md`
+
+---
+
 ### 2026-05-XX — Issue #831: Branch Cleanup (PR #849)
 **Status:** ✅ COMPLETE — Branch `issue-831-log-forging-fix` cleaned up
 

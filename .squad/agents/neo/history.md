@@ -434,6 +434,25 @@ Both `YouTubeSourcesController` and `SyndicationFeedSourcesController` are **com
 
 Joseph's brief says "no admin-bypass logic in Web layer — API handles it." However the existing `EngagementsController` does have Web-layer ownership redirects. Issue bodies (#818/#819) follow the existing defense-in-depth pattern to stay consistent with EngagementsController. If Joseph prefers the simpler pattern (no Web-layer check), Switch should remove the ownership redirect logic from Details and Delete actions. Flag for review before implementation.
 
+---
+
+## 2026-04-24 — PR #854 Review Checklist Gap (raised by Joseph)
+
+**Status:** ✅ Documented — follow-up comment posted
+
+### Missed Checks
+
+During the PR #854 review, two directive violations were not caught by Neo's initial pass. Joseph identified them post-review:
+
+1. **AutoMapper requirement not verified** — New `UserOAuthToken` classes used direct property mapping instead of AutoMapper profiles in `Data.Sql/MappingProfiles/`. Review checklist must explicitly verify that any new entity/domain pair has a corresponding `MappingProfile` registered.
+
+2. **XML documentation comments not verified** — All seven new public files lacked `/// <summary>` XML doc comments. Review checklist must include a scan of all new public types and members for XML doc coverage.
+
+### Checklist Additions (effective immediately)
+
+- [ ] For every new domain model + EF entity pair: confirm an AutoMapper profile exists in `Data.Sql/MappingProfiles/` and is registered.
+- [ ] For every new public type and public member: confirm `/// <summary>` (and `/// <param>`, `/// <returns>`, `/// <exception>` where applicable) XML doc comments are present.
+
 ### Learnings
 
 - **Source infrastructure completeness:** Data layer, managers, and domain models for YouTubeSource/SyndicationFeedSource are fully built. Only API surface and Web UI are missing.
@@ -503,3 +522,118 @@ Reviewed 3 PRs in parallel:
 ### Learnings
 
 Sprint 26 demonstrates efficient parallel review and merge when agents follow established conventions and pre-commit gates. All 3 issues closed cleanly with no rework.
+
+---
+
+## 2026-04-24 — Architecture: Issue #777 Per-User OAuth/Token Runtime
+
+**Status:** ✅ COMPLETE (Architecture Review)  
+**Artifact:** `.squad/decisions/inbox/neo-777-oauth-arch.md`
+
+### Findings
+
+**LinkedInController today (broken):**
+- Hard-coded Key Vault secret names: `jjg-net-linkedin-access-token` / `jjg-net-linkedin-refresh-token`
+- All users share one token; no user identity in OAuth flow
+- `IKeyVault` dependency must be removed entirely from this controller
+
+**UserPublisherSettings (Sprint 20, partial):**
+- Already stores per-user LinkedIn `AccessToken` in the `Settings` JSONB dict alongside `ClientId`, `AuthorId`, `ClientSecret`
+- Gap: no `RefreshToken`, no `AccessTokenExpiry`; OAuth callback still writes to Key Vault (not this table)
+- Two storage locations in conflict
+
+**Functions (broken):**
+- All four LinkedIn Functions use `ILinkedInApplicationSettings.AccessToken` — a singleton from app config
+- `ScheduledItems.CreatedByEntraOid` exists; the routing key is available but not used
+
+### Architecture Decision
+
+New `UserOAuthTokens` table (NOT an extension of `UserPublisherSettings.Settings`):
+- `UserPublisherSettings` = static config (ClientId, AuthorId, ClientSecret) — user-configured
+- `UserOAuthTokens` = live OAuth tokens (AccessToken, RefreshToken, expiry) — OAuth-issued, auto-managed
+- Expiry is a first-class column (`AccessTokenExpiresAt datetimeoffset`) with an index — required for future background refresh Functions
+
+### Key File Paths (Architecture Surface)
+
+- `src\JosephGuadagno.Broadcasting.Web\Controllers\LinkedInController.cs` — full refactor
+- `src\JosephGuadagno.Broadcasting.Domain\Interfaces\IUserOAuthTokenDataStore.cs` — new
+- `src\JosephGuadagno.Broadcasting.Domain\Interfaces\IUserOAuthTokenManager.cs` — new
+- `src\JosephGuadagno.Broadcasting.Domain\Models\UserOAuthToken.cs` — new
+- `src\JosephGuadagno.Broadcasting.Data.Sql\UserOAuthTokenDataStore.cs` — new
+- `src\JosephGuadagno.Broadcasting.Managers\UserOAuthTokenManager.cs` — new
+- `scripts\database\migrations\2026-04-24-user-oauth-tokens.sql` — new
+- `scripts\database\table-create.sql` — append DDL for fresh-env AppHost replay
+- Functions: `ProcessScheduledItemFired`, `ProcessNewSyndicationDataFired`, `ProcessNewYouTubeDataFired`, `ProcessNewRandomPost` — inject `IUserOAuthTokenManager`
+
+### Constants Note
+
+Add `SocialMediaPlatformIds.LinkedIn = 3` constant in `JosephGuadagno.Broadcasting.Domain.Constants` to avoid magic numbers in Functions.
+
+
+### Security Anchor
+
+- Token fallback to shared Key Vault on `null` per-user lookup is FORBIDDEN — would silently re-introduce the shared secret pattern
+- `AccessToken` / `RefreshToken` must never appear in log output
+- Manual production step issue (label `squad:Joe`) required to disable the two legacy Key Vault secrets after release
+
+---
+
+## 2026-04-24 — #777 Architecture Update: LinkedIn Manual Re-Auth Constraint & Notification Pattern
+
+**Status:** ✅ COMPLETE (Architecture Amendment)  
+**Artifact:** `.squad/decisions/inbox/neo-777-oauth-arch.md` (§11 updated, §13 added)
+
+### Joseph's Input
+
+LinkedIn OAuth requires the user to interactively visit the site and complete the authorization flow — there is no programmatic token refresh endpoint available for this app type. This is why a Web page exists for it today. Facebook's `RefreshTokens.cs` Azure Function (automated) is the correct pattern only for platforms that expose a programmatic refresh endpoint.
+
+### Learnings
+
+- **LinkedIn manual re-auth constraint:** LinkedIn OAuth tokens CANNOT be silently refreshed by a background Function. Any design that implies a background Function can call LinkedIn to renew a token is architecturally incorrect for this project. The only valid refresh mechanism is the user returning to the site and completing the OAuth consent flow through `LinkedInController`.
+
+- **Email notification pattern (LinkedIn + similar platforms):** For platforms requiring manual re-authorization, the correct automated pattern is: daily timer Function → query tokens expiring within N days (`GetExpiringWindowAsync`) → queue email via `IEmailSender` → user clicks link back to the site. `IEmailSender` already exists and is already registered in `Functions/Program.cs`.
+
+- **`GetExpiringAsync` signature amendment needed:** The current `GetExpiringAsync(DateTimeOffset threshold)` returns all tokens expiring *at or before* threshold — it conflates already-expired tokens with soon-to-expire ones. Notification use requires a window query (`from`, `to`) to target tokens expiring soon but not yet expired. Method should be `GetExpiringWindowAsync(DateTimeOffset from, DateTimeOffset to)`. This amendment belongs in the notification follow-up issue, not #777.
+
+- **Deduplication via `LastNotifiedAt`:** Add `LastNotifiedAt datetimeoffset null` to `UserOAuthTokens` to prevent duplicate email spam if the timer Function retries. Skip notification if `LastNotifiedAt` is already today (UTC). This column migration is part of the notification follow-up issue.
+
+- **Scope boundary:** The notification Function is a follow-up issue (consumer of #777 infrastructure), not part of #777. #777 delivers the token storage/retrieval substrate; the notification Function adds the proactive alerting UX on top. Merging both would over-scope an already broad issue.
+
+- **`IEmailSender` is queue-based:** `EmailSender.QueueEmail()` enqueues to `Constants.Queues.SendEmail` (Azure Storage Queue, Base64-encoded). The email delivery Function picks this up. This is the correct pattern for Functions-triggered email — do not call Azure Communication Services directly from within a timer Function.
+
+
+---
+
+## 2026-04-24 — PR #854 Review: Issue #777 Per-User OAuth Token Runtime
+
+**Status:** ❌ BLOCKED (2 blocking issues)
+**PR:** #854 | **Branch:** `issue-777-per-user-oauth-token-runtime` | **Author:** Trinity
+
+### Outcome
+
+PR blocked. All security and architecture checks passed. Two required artifacts are missing.
+
+### Blocking Issues Found
+
+1. **Missing cross-user isolation test** — `UserOAuthTokenDataStoreTests.cs` (required by arch spec §6) is absent. No test verifies `GetByUserAndPlatformAsync("user-a", 3)` returns null when only user-b has a token. `UserOAuthTokenManagerTests.cs` also absent. The isolation is structurally correct in code but unverified by tests.
+
+2. **No GitHub issue for Key Vault secret retirement** — PR description says "should be created" but doesn't reference an existing issue. Security baseline directive requires a `squad:Joe`-labeled issue with step-by-step instructions to exist before merge. Direct violation.
+
+### What Was Clean
+
+- All 4 Functions: `ILinkedInApplicationSettings` removed, `IUserOAuthTokenManager` injected, null token → `LogWarning` + `return null` (no fallback). All log calls use `LogSanitizer.Sanitize()` on OIDs.
+- `LinkedInController`: state validation preserved in `Callback()`, `LogSanitizer.Sanitize(ownerOid)` in the success log, no raw token in any logger call, `IKeyVault` fully removed.
+- `UserOAuthTokenDataStore`: all reads double-filter on `CreatedByEntraOid == ownerOid && SocialMediaPlatformId == platformId`.
+- Table schema, unique constraint, expiry index, and constant `SocialMediaPlatformIds.LinkedIn = 3` all match spec.
+- `GetExpiringAsync` present on interface (confirmed prep for #852).
+- `SavedTokenInfo` uses `MaskedAccessToken`/`HasToken`/`ExpiresOn` — no raw token in views.
+
+### FYI Item Noted
+
+`AuthorId` was removed from `linkedInPost` in all 4 Functions. If LinkedIn API v2 requires an explicit author URN in the post body, posts will fail at runtime. `UserPublisherSettings.Settings` contains `AuthorId` per user if needed.
+
+### Patterns to Remember
+
+- **Test suite completeness check:** When arch spec lists required new test files, verify ALL listed files are present in the diff. `UserOAuthTokenDataStoreTests.cs` and `UserOAuthTokenManagerTests.cs` were explicitly required but missing.
+- **Manual step pre-check:** Always scan PR description for "should be created" / "follow-up" language around production steps. These must be issues already created with `squad:Joe` label, not promised futures.
+- **Cross-user isolation test pattern:** For any new per-user data store, the minimum test is: seed token for user-B, query as user-A, assert null result.
