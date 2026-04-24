@@ -48,6 +48,8 @@ public partial class BroadcastingContext : DbContext
     public virtual DbSet<EngagementSocialMediaPlatform> EngagementSocialMediaPlatforms { get; set; } = null!;
     public virtual DbSet<UserPublisherSetting> UserPublisherSettings { get; set; } = null!;
     public DbSet<Models.UserOAuthToken> UserOAuthTokens => Set<Models.UserOAuthToken>();
+    public DbSet<Models.UserCollectorFeedSource> UserCollectorFeedSources => Set<Models.UserCollectorFeedSource>();
+    public DbSet<Models.UserCollectorYouTubeChannel> UserCollectorYouTubeChannels => Set<Models.UserCollectorYouTubeChannel>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -580,6 +582,70 @@ public partial class BroadcastingContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.SocialMediaPlatformId)
                 .HasConstraintName("FK_UserOAuthTokens_SocialMediaPlatforms");
+        });
+
+        modelBuilder.Entity<Models.UserCollectorFeedSource>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_UserCollectorFeedSources")
+                .IsClustered();
+
+            entity.HasIndex(e => new { e.CreatedByEntraOid, e.FeedUrl }, "UQ_UserCollectorFeedSources_Owner_FeedUrl")
+                .IsUnique();
+
+            entity.HasIndex(e => e.CreatedByEntraOid, "IX_UserCollectorFeedSources_Owner");
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.FeedUrl)
+                .HasMaxLength(2048)
+                .IsRequired();
+
+            entity.Property(e => e.DisplayName)
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset");
+        });
+
+        modelBuilder.Entity<Models.UserCollectorYouTubeChannel>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_UserCollectorYouTubeChannels")
+                .IsClustered();
+
+            entity.HasIndex(e => new { e.CreatedByEntraOid, e.ChannelId }, "UQ_UserCollectorYouTubeChannels_Owner_Channel")
+                .IsUnique();
+
+            entity.HasIndex(e => e.CreatedByEntraOid, "IX_UserCollectorYouTubeChannels_Owner");
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.ChannelId)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.DisplayName)
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset");
         });
 
         modelBuilder.Entity<EngagementSocialMediaPlatform>(entity =>

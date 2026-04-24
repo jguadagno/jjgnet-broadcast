@@ -1,0 +1,391 @@
+using System.Security.Claims;
+using AutoMapper;
+using FluentAssertions;
+using JosephGuadagno.Broadcasting.Api.Controllers;
+using JosephGuadagno.Broadcasting.Api.Dtos;
+using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
+using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Moq;
+
+namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
+
+/// <summary>
+/// Tests for UserCollectorYouTubeChannelsController - ownership enforcement and security
+/// </summary>
+public class UserCollectorYouTubeChannelsControllerTests
+{
+    private readonly Mock<IUserCollectorYouTubeChannelManager> _manager = new();
+    private readonly Mock<ILogger<UserCollectorYouTubeChannelsController>> _logger = new();
+    private static readonly IMapper _mapper = ApiTestMapper.Instance;
+
+    [Fact]
+    public async Task GetAllAsync_ReturnsCurrentUserConfigs_WhenOwnerQueryMissing()
+    {
+        // Arrange
+        const string currentUserOid = "current-user-oid-11111111";
+        _manager
+            .Setup(m => m.GetByUserAsync(currentUserOid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        var sut = CreateSut(currentUserOid);
+
+        // Act
+        var result = await sut.GetAllAsync();
+
+        // Assert
+        result.Result.Should().BeOfType<OkObjectResult>();
+        _manager.Verify(m => m.GetByUserAsync(currentUserOid, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ReturnsForbid_WhenNonAdminTargetsAnotherUser()
+    {
+        // Arrange
+        const string currentUserOid = "current-user-oid-11111111";
+        const string targetUserOid = "target-user-oid-22222222";
+
+        var sut = CreateSut(currentUserOid, isSiteAdmin: false);
+
+        // Act
+        var result = await sut.GetAllAsync(targetUserOid);
+
+        // Assert - non-admin cannot query another user's configs
+        result.Result.Should().BeOfType<ForbidResult>();
+        _manager.Verify(m => m.GetByUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ReturnsTargetUserConfigs_WhenSiteAdminTargetsAnotherUser()
+    {
+        // Arrange
+        const string adminUserOid = "admin-user-oid-11111111";
+        const string targetUserOid = "target-user-oid-22222222";
+        var targetConfigs = new List<UserCollectorYouTubeChannel>
+        {
+            BuildYouTubeChannel(1, targetUserOid, "UC-target-channel-123")
+        };
+
+        _manager
+            .Setup(m => m.GetByUserAsync(targetUserOid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(targetConfigs);
+
+        var sut = CreateSut(adminUserOid, isSiteAdmin: true);
+
+        // Act
+        var result = await sut.GetAllAsync(targetUserOid);
+
+        // Assert - admin can query another user's configs
+        result.Result.Should().BeOfType<OkObjectResult>();
+        _manager.Verify(m => m.GetByUserAsync(targetUserOid, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAsync_ReturnsForbid_WhenCallerIsNotOwnerAndNotAdmin()
+    {
+        // Arrange
+        const string ownerOid = "owner-oid-11111111";
+        const string nonOwnerOid = "non-owner-oid-22222222";
+        var config = BuildYouTubeChannel(5, ownerOid, "UC-owner-channel-123");
+
+        _manager
+            .Setup(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(config);
+
+        var sut = CreateSut(nonOwnerOid, isSiteAdmin: false);
+
+        // Act
+        var result = await sut.GetAsync(5);
+
+        // Assert - non-owner cannot read another user's config
+        result.Result.Should().BeOfType<ForbidResult>();
+        _manager.Verify(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAsync_ReturnsConfig_WhenCallerIsOwner()
+    {
+        // Arrange
+        const string ownerOid = "owner-oid-11111111";
+        var config = BuildYouTubeChannel(5, ownerOid, "UC-owner-channel-123");
+
+        _manager
+            .Setup(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(config);
+
+        var sut = CreateSut(ownerOid);
+
+        // Act
+        var result = await sut.GetAsync(5);
+
+        // Assert - owner can read their own config
+        result.Result.Should().BeOfType<OkObjectResult>();
+        _manager.Verify(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAsync_ReturnsConfig_WhenCallerIsSiteAdmin()
+    {
+        // Arrange
+        const string adminOid = "admin-oid-11111111";
+        const string ownerOid = "owner-oid-22222222";
+        var config = BuildYouTubeChannel(5, ownerOid, "UC-owner-channel-123");
+
+        _manager
+            .Setup(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(config);
+
+        var sut = CreateSut(adminOid, isSiteAdmin: true);
+
+        // Act
+        var result = await sut.GetAsync(5);
+
+        // Assert - admin can read any user's config
+        result.Result.Should().BeOfType<OkObjectResult>();
+        _manager.Verify(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SaveAsync_SetsCreatedByEntraOidFromCurrentUser_NotRequestBody()
+    {
+        // Arrange
+        const string currentUserOid = "current-user-oid-11111111";
+        var request = new UserCollectorYouTubeChannelRequest
+        {
+            ChannelId = "UC-new-channel-123",
+            DisplayName = "New Channel",
+            IsActive = true
+        };
+
+        UserCollectorYouTubeChannel? capturedConfig = null;
+        _manager
+            .Setup(m => m.SaveAsync(It.IsAny<UserCollectorYouTubeChannel>(), It.IsAny<CancellationToken>()))
+            .Callback<UserCollectorYouTubeChannel, CancellationToken>((config, _) => capturedConfig = config)
+            .ReturnsAsync((UserCollectorYouTubeChannel config, CancellationToken _) => new UserCollectorYouTubeChannel
+            {
+                Id = 10,
+                CreatedByEntraOid = config.CreatedByEntraOid,
+                ChannelId = config.ChannelId,
+                DisplayName = config.DisplayName,
+                IsActive = config.IsActive,
+                CreatedOn = config.CreatedOn,
+                LastUpdatedOn = config.LastUpdatedOn
+            });
+
+        var sut = CreateSut(currentUserOid);
+
+        // Act
+        var result = await sut.SaveAsync(null, request);
+
+        // Assert - CreatedByEntraOid MUST come from the authenticated user, never the request body
+        result.Result.Should().BeOfType<OkObjectResult>();
+        capturedConfig.Should().NotBeNull();
+        capturedConfig!.CreatedByEntraOid.Should().Be(currentUserOid);
+        capturedConfig.ChannelId.Should().Be("UC-new-channel-123");
+        capturedConfig.DisplayName.Should().Be("New Channel");
+    }
+
+    [Fact]
+    public async Task SaveAsync_ReturnsForbid_WhenNonAdminTargetsAnotherUser()
+    {
+        // Arrange
+        const string ownerOid = "owner-oid-11111111";
+        const string nonOwnerOid = "non-owner-oid-22222222";
+
+        var request = new UserCollectorYouTubeChannelRequest
+        {
+            ChannelId = "UC-malicious-channel-456",
+            DisplayName = "Hacked Channel",
+            IsActive = true
+        };
+
+        var sut = CreateSut(nonOwnerOid, isSiteAdmin: false);
+
+        // Act - non-admin passing another user's OID in the ownerOid query param
+        var result = await sut.SaveAsync(ownerOid, request);
+
+        // Assert - non-admin cannot save configs targeting another user's OID
+        result.Result.Should().BeOfType<ForbidResult>();
+        _manager.Verify(m => m.SaveAsync(It.IsAny<UserCollectorYouTubeChannel>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SaveAsync_Succeeds_WhenOwnerUpdatesOwnConfig()
+    {
+        // Arrange
+        const string ownerOid = "owner-oid-11111111";
+
+        UserCollectorYouTubeChannel? capturedConfig = null;
+        _manager
+            .Setup(m => m.SaveAsync(It.IsAny<UserCollectorYouTubeChannel>(), It.IsAny<CancellationToken>()))
+            .Callback<UserCollectorYouTubeChannel, CancellationToken>((config, _) => capturedConfig = config)
+            .ReturnsAsync((UserCollectorYouTubeChannel config, CancellationToken _) => config);
+
+        var request = new UserCollectorYouTubeChannelRequest
+        {
+            ChannelId = "UC-updated-channel-456",
+            DisplayName = "Updated Channel",
+            IsActive = false
+        };
+
+        var sut = CreateSut(ownerOid);
+
+        // Act
+        var result = await sut.SaveAsync(null, request);
+
+        // Assert - owner can update their own config
+        result.Result.Should().BeOfType<OkObjectResult>();
+        capturedConfig.Should().NotBeNull();
+        capturedConfig!.CreatedByEntraOid.Should().Be(ownerOid);
+        capturedConfig.ChannelId.Should().Be("UC-updated-channel-456");
+        capturedConfig.DisplayName.Should().Be("Updated Channel");
+        _manager.Verify(m => m.SaveAsync(It.IsAny<UserCollectorYouTubeChannel>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SaveAsync_Succeeds_WhenAdminTargetsAnotherUser()
+    {
+        // Arrange
+        const string adminOid = "admin-oid-11111111";
+        const string targetUserOid = "target-user-oid-22222222";
+
+        UserCollectorYouTubeChannel? capturedConfig = null;
+        _manager
+            .Setup(m => m.SaveAsync(It.IsAny<UserCollectorYouTubeChannel>(), It.IsAny<CancellationToken>()))
+            .Callback<UserCollectorYouTubeChannel, CancellationToken>((config, _) => capturedConfig = config)
+            .ReturnsAsync((UserCollectorYouTubeChannel config, CancellationToken _) => config);
+
+        var request = new UserCollectorYouTubeChannelRequest
+        {
+            ChannelId = "UC-target-channel-456",
+            DisplayName = "Target User Channel",
+            IsActive = true
+        };
+
+        var sut = CreateSut(adminOid, isSiteAdmin: true);
+
+        // Act - admin passing another user's OID in ownerOid query param
+        var result = await sut.SaveAsync(targetUserOid, request);
+
+        // Assert - admin can save configs targeting another user; OID is the TARGET's, not the admin's
+        result.Result.Should().BeOfType<OkObjectResult>();
+        capturedConfig.Should().NotBeNull();
+        capturedConfig!.CreatedByEntraOid.Should().Be(targetUserOid);
+        capturedConfig.ChannelId.Should().Be("UC-target-channel-456");
+        _manager.Verify(m => m.SaveAsync(It.IsAny<UserCollectorYouTubeChannel>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ReturnsForbid_WhenNonOwnerAttemptsDelete()
+    {
+        // Arrange
+        const string ownerOid = "owner-oid-11111111";
+        const string nonOwnerOid = "non-owner-oid-22222222";
+        var config = BuildYouTubeChannel(5, ownerOid, "UC-owner-channel-123");
+
+        _manager
+            .Setup(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(config);
+
+        var sut = CreateSut(nonOwnerOid, isSiteAdmin: false);
+
+        // Act
+        var result = await sut.DeleteAsync(5);
+
+        // Assert - non-owner cannot delete another user's config
+        result.Should().BeOfType<ForbidResult>();
+        _manager.Verify(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()), Times.Once);
+        _manager.Verify(m => m.DeleteAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_Succeeds_WhenCallerIsOwner()
+    {
+        // Arrange
+        const string ownerOid = "owner-oid-11111111";
+        var config = BuildYouTubeChannel(5, ownerOid, "UC-owner-channel-123");
+
+        _manager
+            .Setup(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(config);
+
+        _manager
+            .Setup(m => m.DeleteAsync(5, ownerOid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var sut = CreateSut(ownerOid);
+
+        // Act
+        var result = await sut.DeleteAsync(5);
+
+        // Assert - owner can delete their own config
+        result.Should().BeOfType<NoContentResult>();
+        _manager.Verify(m => m.DeleteAsync(5, ownerOid, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_Succeeds_WhenCallerIsSiteAdmin()
+    {
+        // Arrange
+        const string adminOid = "admin-oid-11111111";
+        const string ownerOid = "owner-oid-22222222";
+        var config = BuildYouTubeChannel(5, ownerOid, "UC-owner-channel-123");
+
+        _manager
+            .Setup(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(config);
+
+        _manager
+            .Setup(m => m.DeleteAsync(5, ownerOid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var sut = CreateSut(adminOid, isSiteAdmin: true);
+
+        // Act
+        var result = await sut.DeleteAsync(5);
+
+        // Assert - admin can delete any user's config
+        result.Should().BeOfType<NoContentResult>();
+        _manager.Verify(m => m.DeleteAsync(5, ownerOid, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    private UserCollectorYouTubeChannelsController CreateSut(string ownerOid, bool isSiteAdmin = false)
+    {
+        return new UserCollectorYouTubeChannelsController(_manager.Object, _logger.Object, _mapper)
+        {
+            ControllerContext = CreateControllerContext(ownerOid, isSiteAdmin),
+            ProblemDetailsFactory = new TestProblemDetailsFactory()
+        };
+    }
+
+    private static ControllerContext CreateControllerContext(string ownerOid, bool isSiteAdmin)
+    {
+        var claims = new List<Claim>
+        {
+            new(ApplicationClaimTypes.EntraObjectId, ownerOid)
+        };
+
+        if (isSiteAdmin)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, RoleNames.SiteAdministrator));
+        }
+
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthentication"));
+        return new ControllerContext { HttpContext = new DefaultHttpContext { User = user } };
+    }
+
+    private static UserCollectorYouTubeChannel BuildYouTubeChannel(int id, string ownerOid, string channelId) => new()
+    {
+        Id = id,
+        CreatedByEntraOid = ownerOid,
+        ChannelId = channelId,
+        DisplayName = "Test Channel",
+        IsActive = true,
+        CreatedOn = DateTimeOffset.UtcNow,
+        LastUpdatedOn = DateTimeOffset.UtcNow
+    };
+}

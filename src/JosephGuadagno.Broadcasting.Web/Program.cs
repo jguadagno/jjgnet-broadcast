@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
-using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Web;
 using JosephGuadagno.Broadcasting.Web.HealthChecks;
 using JosephGuadagno.Broadcasting.Web.MappingProfiles;
@@ -266,6 +265,8 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
     services.TryAddScoped<IScheduledItemValidationService, ScheduledItemValidationService>();
     services.TryAddScoped<IUserPublisherSettingService, UserPublisherSettingService>();
+    services.TryAddScoped<IUserCollectorFeedSourceService, UserCollectorFeedSourceService>();
+    services.TryAddScoped<IUserCollectorYouTubeChannelService, UserCollectorYouTubeChannelService>();
     services.TryAddScoped<IMessageTemplateService, MessageTemplateService>();
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
     services.TryAddScoped<IYouTubeSourceService, YouTubeSourceService>();

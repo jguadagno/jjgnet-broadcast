@@ -1,0 +1,337 @@
+@model JosephGuadagno.Broadcasting.Web.Models.CollectorSettingsPageViewModel
+
+@{
+    ViewData["Title"] = Model.IsManagedBySiteAdmin
+        ? $"Collector Settings - {Model.TargetUserDisplayName ?? Model.TargetUserEntraOid}"
+        : "Collector Settings";
+}
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <div>
+        <h1 class="mb-1">
+            <i class="bi bi-rss-fill me-2"></i>Collector Settings
+        </h1>
+        <p class="text-muted mb-0">
+            Configure the RSS/Atom/JSON feeds and YouTube channels to collect content from.
+        </p>
+    </div>
+</div>
+
+@if (Model.IsManagedBySiteAdmin)
+{
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-shield-lock me-2"></i>
+        You are managing collector settings for <strong>@(Model.TargetUserDisplayName ?? Model.TargetUserEntraOid)</strong>.
+    </div>
+}
+
+<!-- RSS / Atom / JSON Feed Sources Section -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">
+            <i class="bi bi-rss me-2"></i>RSS / Atom / JSON Feed Sources
+        </h3>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFeedSourceModal">
+            <i class="bi bi-plus-circle me-1"></i>Add Feed Source
+        </button>
+    </div>
+    <div class="card-body">
+        @if (Model.FeedSources.Count == 0)
+        {
+            <p class="text-muted mb-0">No feed sources configured. Click "Add Feed Source" to get started.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Display Name</th>
+                            <th>Feed URL</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var feedSource in Model.FeedSources)
+                        {
+                            <tr>
+                                <td>@feedSource.DisplayName</td>
+                                <td><a href="@feedSource.FeedUrl" target="_blank" rel="noopener noreferrer">@feedSource.FeedUrl</a></td>
+                                <td>
+                                    <span class="badge @(feedSource.IsActive ? "text-bg-success" : "text-bg-secondary")">
+                                        @(feedSource.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editFeedSourceModal"
+                                            data-id="@feedSource.Id"
+                                            data-feed-url="@feedSource.FeedUrl"
+                                            data-display-name="@feedSource.DisplayName"
+                                            data-is-active="@feedSource.IsActive.ToString().ToLower()">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    <form asp-action="DeleteFeedSource" method="post" class="d-inline" 
+                                          onsubmit="return confirm('Are you sure you want to remove this feed source?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@feedSource.Id" />
+                                        @if (Model.IsManagedBySiteAdmin)
+                                        {
+                                            <input type="hidden" name="userOid" value="@Model.TargetUserEntraOid" />
+                                        }
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i> Remove
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- YouTube Channels Section -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">
+            <i class="bi bi-youtube me-2"></i>YouTube Channels
+        </h3>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addYouTubeChannelModal">
+            <i class="bi bi-plus-circle me-1"></i>Add YouTube Channel
+        </button>
+    </div>
+    <div class="card-body">
+        @if (Model.YouTubeChannels.Count == 0)
+        {
+            <p class="text-muted mb-0">No YouTube channels configured. Click "Add YouTube Channel" to get started.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Display Name</th>
+                            <th>Channel ID</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var channel in Model.YouTubeChannels)
+                        {
+                            <tr>
+                                <td>@channel.DisplayName</td>
+                                <td><code>@channel.ChannelId</code></td>
+                                <td>
+                                    <span class="badge @(channel.IsActive ? "text-bg-success" : "text-bg-secondary")">
+                                        @(channel.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editYouTubeChannelModal"
+                                            data-id="@channel.Id"
+                                            data-channel-id="@channel.ChannelId"
+                                            data-display-name="@channel.DisplayName"
+                                            data-is-active="@channel.IsActive.ToString().ToLower()">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    <form asp-action="DeleteYouTubeChannel" method="post" class="d-inline" 
+                                          onsubmit="return confirm('Are you sure you want to remove this YouTube channel?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@channel.Id" />
+                                        @if (Model.IsManagedBySiteAdmin)
+                                        {
+                                            <input type="hidden" name="userOid" value="@Model.TargetUserEntraOid" />
+                                        }
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i> Remove
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Add Feed Source Modal -->
+<div class="modal fade" id="addFeedSourceModal" tabindex="-1" aria-labelledby="addFeedSourceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="AddFeedSource" method="post">
+                @Html.AntiForgeryToken()
+                @if (Model.IsManagedBySiteAdmin)
+                {
+                    <input type="hidden" name="userOid" value="@Model.TargetUserEntraOid" />
+                }
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addFeedSourceModalLabel">Add Feed Source</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="addFeedUrl" class="form-label">Feed URL</label>
+                        <input type="url" class="form-control" id="addFeedUrl" name="FeedUrl" required maxlength="2048" />
+                        <div class="form-text">The full URL to the RSS, Atom, or JSON feed.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addDisplayName" class="form-label">Display Name</label>
+                        <input type="text" class="form-control" id="addDisplayName" name="DisplayName" required maxlength="255" />
+                        <div class="form-text">A friendly name to identify this feed.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Feed Source</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Feed Source Modal -->
+<div class="modal fade" id="editFeedSourceModal" tabindex="-1" aria-labelledby="editFeedSourceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="EditFeedSource" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="editFeedSourceId" name="Id" />
+                @if (Model.IsManagedBySiteAdmin)
+                {
+                    <input type="hidden" name="userOid" value="@Model.TargetUserEntraOid" />
+                }
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editFeedSourceModalLabel">Edit Feed Source</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editFeedUrl" class="form-label">Feed URL</label>
+                        <input type="url" class="form-control" id="editFeedUrl" name="FeedUrl" required maxlength="2048" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDisplayName" class="form-label">Display Name</label>
+                        <input type="text" class="form-control" id="editDisplayName" name="DisplayName" required maxlength="255" />
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="editIsActive" name="IsActive" value="true" />
+                        <label class="form-check-label" for="editIsActive">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add YouTube Channel Modal -->
+<div class="modal fade" id="addYouTubeChannelModal" tabindex="-1" aria-labelledby="addYouTubeChannelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="AddYouTubeChannel" method="post">
+                @Html.AntiForgeryToken()
+                @if (Model.IsManagedBySiteAdmin)
+                {
+                    <input type="hidden" name="userOid" value="@Model.TargetUserEntraOid" />
+                }
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addYouTubeChannelModalLabel">Add YouTube Channel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="addChannelId" class="form-label">YouTube Channel ID</label>
+                        <input type="text" class="form-control" id="addChannelId" name="ChannelId" required maxlength="50" />
+                        <div class="form-text">The YouTube channel ID (e.g., UCXuqSBlHAE6Xw-yeJA0Tunw).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addYouTubeDisplayName" class="form-label">Display Name</label>
+                        <input type="text" class="form-control" id="addYouTubeDisplayName" name="DisplayName" required maxlength="255" />
+                        <div class="form-text">A friendly name to identify this channel.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add YouTube Channel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit YouTube Channel Modal -->
+<div class="modal fade" id="editYouTubeChannelModal" tabindex="-1" aria-labelledby="editYouTubeChannelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="EditYouTubeChannel" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="editYouTubeChannelId" name="Id" />
+                @if (Model.IsManagedBySiteAdmin)
+                {
+                    <input type="hidden" name="userOid" value="@Model.TargetUserEntraOid" />
+                }
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editYouTubeChannelModalLabel">Edit YouTube Channel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editChannelId" class="form-label">YouTube Channel ID</label>
+                        <input type="text" class="form-control" id="editChannelId" name="ChannelId" required maxlength="50" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editYouTubeDisplayName" class="form-label">Display Name</label>
+                        <input type="text" class="form-control" id="editYouTubeDisplayName" name="DisplayName" required maxlength="255" />
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="editYouTubeIsActive" name="IsActive" value="true" />
+                        <label class="form-check-label" for="editYouTubeIsActive">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        // Populate Edit Feed Source Modal
+        const editFeedSourceModal = document.getElementById('editFeedSourceModal');
+        editFeedSourceModal.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget;
+            document.getElementById('editFeedSourceId').value = button.getAttribute('data-id');
+            document.getElementById('editFeedUrl').value = button.getAttribute('data-feed-url');
+            document.getElementById('editDisplayName').value = button.getAttribute('data-display-name');
+            document.getElementById('editIsActive').checked = button.getAttribute('data-is-active') === 'true';
+        });
+
+        // Populate Edit YouTube Channel Modal
+        const editYouTubeChannelModal = document.getElementById('editYouTubeChannelModal');
+        editYouTubeChannelModal.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget;
+            document.getElementById('editYouTubeChannelId').value = button.getAttribute('data-id');
+            document.getElementById('editChannelId').value = button.getAttribute('data-channel-id');
+            document.getElementById('editYouTubeDisplayName').value = button.getAttribute('data-display-name');
+            document.getElementById('editYouTubeIsActive').checked = button.getAttribute('data-is-active') === 'true';
+        });
+    </script>
+}

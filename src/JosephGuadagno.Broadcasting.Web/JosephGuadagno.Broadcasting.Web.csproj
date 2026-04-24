@@ -40,6 +40,9 @@
         <DocumentationFile>bin\Release\JosephGuadagno.Broadcasting.Web.xml</DocumentationFile>
     </PropertyGroup>
     <ItemGroup>
+        <!-- Override transitive Microsoft.AspNetCore.DataProtection pulled in by Microsoft.Identity.Web 4.8.0.
+             Version 10.0.0 is Critical (GHSA-9mv3-2cwr-p262); pin to 10.0.7 which contains the fix. -->
+        <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.7" />
         <PackageReference Include="Aspire.Azure.Storage.Queues" Version="13.2.3" />
         <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.2.3" />
         <PackageReference Include="AutoMapper" Version="16.1.1" />

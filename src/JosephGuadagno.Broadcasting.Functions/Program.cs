@@ -213,6 +213,10 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IUserPublisherSettingManager, UserPublisherSettingManager>();
     services.TryAddScoped<IUserOAuthTokenDataStore, UserOAuthTokenDataStore>();
     services.TryAddScoped<IUserOAuthTokenManager, UserOAuthTokenManager>();
+    services.TryAddScoped<IUserCollectorFeedSourceDataStore, UserCollectorFeedSourceDataStore>();
+    services.TryAddScoped<IUserCollectorFeedSourceManager, UserCollectorFeedSourceManager>();
+    services.TryAddScoped<IUserCollectorYouTubeChannelDataStore, UserCollectorYouTubeChannelDataStore>();
+    services.TryAddScoped<IUserCollectorYouTubeChannelManager, UserCollectorYouTubeChannelManager>();
 
     // RBAC Phase 1
     services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();

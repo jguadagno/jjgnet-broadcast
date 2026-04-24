@@ -67,5 +67,21 @@ public class ApiBroadcastingProfile : Profile
         CreateMap<TwitterPublisherSettingRequest, TwitterPublisherSettingUpdate>();
         CreateMap<FacebookPublisherSettingRequest, FacebookPublisherSettingUpdate>();
         CreateMap<LinkedInPublisherSettingRequest, LinkedInPublisherSettingUpdate>();
+
+        // User Collector Feed Source
+        CreateMap<UserCollectorFeedSource, UserCollectorFeedSourceResponse>();
+        CreateMap<UserCollectorFeedSourceRequest, UserCollectorFeedSource>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
+            .ForMember(d => d.CreatedOn, o => o.Ignore())
+            .ForMember(d => d.LastUpdatedOn, o => o.Ignore());
+
+        // User Collector YouTube Channel
+        CreateMap<UserCollectorYouTubeChannel, UserCollectorYouTubeChannelResponse>();
+        CreateMap<UserCollectorYouTubeChannelRequest, UserCollectorYouTubeChannel>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
+            .ForMember(d => d.CreatedOn, o => o.Ignore())
+            .ForMember(d => d.LastUpdatedOn, o => o.Ignore());
     }
 }
