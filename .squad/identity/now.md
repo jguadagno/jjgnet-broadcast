@@ -1,19 +1,28 @@
 # Team Focus — Now
 
-> **Last updated:** 2026-04-24T21:25:03Z
-> **Sprint:** 27 (active) — Milestone 21
-> **Status:** Sprint 27 core deliverables complete. PR #859 (#778) merged. Focused on completing remaining open issues.
+> **Last updated:** 2026-04-24T21:30:57Z
+> **Sprint:** 27 (in progress) — Milestone 21
+> **Status:** Core multi-tenancy work merged. Joe validating site functionality; #855 and #856 will close after validation. #852 and #853 remain open — deferred to next sprint.
 > **Next:** Close open issues from backlog. CodeQL CSRF alert #41 pending next scan.
 
 ## Current Focus
 
-**Sprint 27 — Completing Remaining Open Issues (Epic #609 Complete)**
+**Sprint 27 — IN PROGRESS** 🔄
 
-**Core Deliverables:** ✅ COMPLETE
+**Completed:**
 - ✅ #777 — Per-user OAuth/token runtime (merged via PR #854)
 - ✅ #778 — Per-user collector onboarding/configuration (merged via PR #859)
+- ✅ #858 — Manual DB migration for per-user collector config tables (Joe, production 2026-04-24)
 
-**Goal:** Complete remaining open issues from the backlog. Monitor CodeQL CSRF alert #41 for next scan resolution.
+**Pending (Joe validating):**
+- ⏳ #855 — Closes after site usability/config validation passes
+- ⏳ #856 — Closes after site usability/config validation passes
+
+**Deferred to next sprint:**
+- 🔜 #852 — Next sprint
+- 🔜 #853 — Next sprint
+
+**Goal:** Complete #855 and #856 after Joe's validation. Then begin next sprint with #852 and #853. Monitor CodeQL CSRF alert #41 for next scan resolution.
 
 ## Key Patterns (Sprint 27)
 
@@ -38,7 +47,7 @@
 
 ---
 
-**Last Updated:** 2026-04-24T21:25:03Z
+**Last Updated:** 2026-04-24T21:30:57Z
 **Sprint:** 27 (Multi-Tenancy: Per-User OAuth & Collectors) — COMPLETE
-**Current Focus:** Remaining open issues
+**Current Focus:** Remaining open issues / Sprint planning or backlog
 **Next Decision Point:** Sprint 28 kickoff or ongoing issue completion
