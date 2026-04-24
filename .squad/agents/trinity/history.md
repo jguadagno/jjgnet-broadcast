@@ -1061,3 +1061,29 @@ PR #849 exemplified the CodeQL log-injection pre-commit gate:
 ✅ PR #848 merged (combined XML + HTML fixes)  
 ✅ PR #849 merged (after clean rebase when #848 landed)  
 ✅ Sprint 26 delivered 3 issues with zero blockers
+
+## Learnings
+
+### 2026-04-25 — Issue #778 Per-User Collector Backend Implementation
+
+**Context:** Implemented domain models, data stores, managers, API controllers, and Functions integration for per-user collector onboarding (#778). Users can now configure their own RSS feeds and YouTube channels for collection via the API.
+
+**Key Implementation Details:**
+- Followed UserOAuthToken and UserPublisherSettings patterns exactly for consistency
+- Data stores enforce security: DeleteAsync filters on BOTH Id AND ownerOid to prevent unauthorized deletes
+- API controllers use ResolveOwnerOid() for ownership enforcement, blocking non-admin cross-user access
+- AutoMapper used throughout — no direct property assignment between entities and domain models
+- LogSanitizer.Sanitize() applied to all user-controlled strings in logs (hard security requirement)
+- Response DTOs intentionally exclude CreatedByEntraOid (security decision from arch doc)
+
+**Reader Interface Limitation:**
+The existing ISyndicationFeedReader and IYouTubeReader interfaces accept ownerOid and sinceWhen but do NOT support dynamic feed URLs or channel IDs. They pull configuration from ppsettings.json. This means the per-user config infrastructure is complete, but the collector Functions cannot yet iterate per-user configs until the readers are refactored to support per-URL/channel instantiation (factory pattern or explicit parameter overloads).
+
+**TODO Comments Added:**
+Added explicit TODO comments in LoadNewPosts.cs and LoadNewVideos.cs documenting the reader limitation and what needs to be implemented once the readers support dynamic configuration.
+
+**Files Created:** 15 new files across Domain, Data.Sql, Managers, API
+**Files Modified:** 6 files (ServiceCollectionExtensions, Program.cs, Function collectors, API mappings)
+
+**Decision Doc:** .squad/decisions/inbox/trinity-778-backend.md
+

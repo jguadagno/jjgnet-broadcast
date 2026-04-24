@@ -59,6 +59,11 @@ public class LoadNewPosts(
                 return new BadRequestObjectResult("Unable to resolve collector owner OID from syndication feed source records.");
             }
 
+            // TODO #778: Add per-user collector config support
+            // Once ISyndicationFeedReader supports per-URL reading (or a factory pattern),
+            // iterate userCollectorFeedSourceManager.GetAllActiveAsync() and process each config's
+            // FeedUrl with the config's CreatedByEntraOid. Current implementation uses global feed settings.
+
             // Check for new items
             logger.LogDebug("Checking the syndication feed for posts since '{LastItemAddedOrUpdated}'", feedCheck.LastItemAddedOrUpdated);
             var newItems = await syndicationFeedReader.GetAsync(ownerOid, feedCheck.LastItemAddedOrUpdated);

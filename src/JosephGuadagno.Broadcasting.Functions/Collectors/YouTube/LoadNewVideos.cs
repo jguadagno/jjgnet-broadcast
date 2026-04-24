@@ -59,6 +59,11 @@ public class LoadNewVideos(
                 return new BadRequestObjectResult("Unable to resolve collector owner OID from YouTube source records.");
             }
 
+            // TODO #778: Add per-user collector config support
+            // Once IYouTubeReader supports per-channel reading (or a factory pattern),
+            // iterate userCollectorYouTubeChannelManager.GetAllActiveAsync() and process each config's
+            // ChannelId with the config's CreatedByEntraOid. Current implementation uses global YouTube settings.
+
             // Check for new items
             logger.LogDebug("Checking playlist for videos since '{LastItemAddedOrUpdated}'",
                 feedCheck.LastItemAddedOrUpdated);
