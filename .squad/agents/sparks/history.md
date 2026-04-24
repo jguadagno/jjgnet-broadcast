@@ -8,6 +8,7 @@
 | 2026-04-03 | Implement health checks for Api and Web (#635) | ✅ Added SQL Server and Azure Storage health checks to ServiceDefaults; PR #641 created |
 | 2026-05-02 | Schedule Add/Edit UI validation (#67) | ✅ Implemented ItemType dropdown and AJAX validation UI; branch feature/67-schedule-item-validation-ui pushed |
 | 2026-04-11 | Fix double-submit bug in site.js (#708) | ✅ Added event.preventDefault() in submit handler to block duplicate form submissions; committed to branch social-media-708 |
+| 2026-04-24 | Fix dt/dd HTML pairing in Schedules Details view (#845) | ✅ Changed all value `<dt>` elements to `<dd>` inside the `<dl class="row">` — 8 pairs now correctly use `<dt>` (label) + `<dd>` (value); PR #848 |
 | 2026-04-11 | Fix AddPlatform 400 error (#708) | ✅ Removed redundant asp-route-engagementId from form causing model binding conflict; EngagementId now only posted via hidden field in ViewModel |
 
 ## Learnings
@@ -133,3 +134,10 @@ Established by Joseph Guadagno:
 - **Pattern:** Bootstrap 5 card layout with breadcrumb, credential table, step-by-step ordered list, and official docs link that opens in a new tab
 - **Unknown platform slug:** Returns HTTP 404 (dictionary miss)
 - **Status:** ✅ Complete — Build green, tests green, PR #841 open
+
+### 2026-04-24 — Issue #845: dt/dd HTML Pairing Fix
+- **File:** `Views/Schedules/Details.cshtml`
+- **Problem:** All 8 value cells in the `<dl class="row">` were using `<dt>` instead of `<dd>`. Every row had two `<dt>` elements (label + value), leaving no `<dd>` elements at all.
+- **Fix:** Changed the value element in each row from `<dt class="col-sm-9">` to `<dd class="col-sm-9">`. Bootstrap column classes were preserved unchanged.
+- **Pattern:** In Bootstrap 5 description lists using `<dl class="row">`, label cells use `<dt class="col-sm-N">` and value cells use `<dd class="col-sm-N">`. Never use two `<dt>` elements in the same row.
+- **Branch:** `issue-845-code-quality-cleanup` | **PR:** #848

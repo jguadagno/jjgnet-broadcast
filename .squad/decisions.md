@@ -18787,3 +18787,176 @@ The pre-submit test gate is a **HARD GATE** for every agent on the squad:
 - All 12 existing agent charters already contain the ⛔ HARD GATE section (verified Sprint 26).
 - Any future agent spawned by the Coordinator **must** also have this gate in their charter.
 - Submitting test code that has never been locally executed is a **pre-submit gate violation**, not a CI failure to fix after the fact.
+
+---
+
+## Issue #810 Decision — AJAX Source Search on Schedule Forms
+
+# Decision Inbox: Issue #810 — AJAX Source Search on Schedule Forms
+
+**Author:** Switch (Frontend Engineer)  
+**Date:** 2025-07-09  
+**PR:** #847
+
+## Context
+
+Issue #810 asked us to replace the manual numeric `ItemPrimaryKey` field on the
+Schedule Add/Edit forms with an interactive, type-driven search so users can find
+source items by name.
+
+## Decisions Made
+
+### 1. Client-side filtering for SyndicationFeedSource / YouTubeSource
+
+Neither `ISyndicationFeedSourceService.GetAllAsync()` nor `IYouTubeSourceService.GetAllAsync()`
+accepts a filter parameter. Rather than adding a new overload, we fetch the full list
+in the controller action and apply a `.Where(x => x.Name.Contains(q))` in-memory,
+capping results at 20. The lists are small and rarely change, so an API-round-trip
+filter would provide no meaningful benefit.
+
+**Alternative considered:** Add a `filter` overload to both interfaces → rejected as
+over-engineering for the current list sizes.
+
+### 2. Two-step Talk lookup (engagement → talks)
+
+Talks belong to an Engagement and have no standalone search. We reuse the existing
+`SearchEngagements` endpoint to pick an engagement, then call a new
+`GetTalksByEngagement` endpoint. This mirrors the existing data model and keeps the
+UX consistent with how Talks are managed elsewhere in the app.
+
+### 3. Edit-form pre-population via the existing `ValidateItem` endpoint
+
+When editing an existing schedule, we need to show the user the current source item
+name (not just its ID). Instead of adding a new "get by ID" endpoint for each type,
+we call the `ValidateItem` endpoint from PR #808, which returns the display name as
+`sourceItemDisplayName`. This eliminates duplication and keeps the contract narrow.
+
+### 4. `ItemPrimaryKey` hidden field default `'0'` (not empty)
+
+The model property is `int` with `[Required]`. Resetting to empty string breaks
+jQuery Unobtrusive Validation for `int` fields. Resetting to `'0'` keeps the
+field parseable and the server-side check (`≤ 0 → invalid`) already guards against
+submitting without selecting an item.
+
+## Open Questions for Joe
+
+None — all decisions are self-contained. No DB schema changes, no new secrets, no
+infra changes required.
+
+
+---
+
+## Issue #831 Decision — Log-Forging Remediation
+
+# Decision: Issue #831 — Log-Forging Remediation
+
+**Date:** 2026-05-XX  
+**Agent:** Trinity (Backend Dev)  
+**PR:** #849  
+**Issue:** #831
+
+## Files Fixed
+
+### Already Fixed (PR #833, fix #830)
+- `src/JosephGuadagno.Broadcasting.Api/Controllers/MessageTemplatesController.cs` — 4 calls sanitized: `platform` and `messageType` route params in `GetAsync` (×2) and `UpdateAsync` (×2 platform, ×2 messageType = 4 total parameter wraps)
+- `src/JosephGuadagno.Broadcasting.Web/Controllers/MessageTemplatesController.cs` — 2 calls sanitized: `model.Platform` and `model.MessageType` in `Edit` [HttpPost]
+
+### Fixed in This PR (#849)
+- `src/JosephGuadagno.Broadcasting.Api/Controllers/SocialMediaPlatformsController.cs` — 2 calls fixed:
+  - `CreateAsync`: `created.Name` → `LogSanitizer.Sanitize(created.Name)`
+  - `UpdateAsync`: `updated.Name` → `LogSanitizer.Sanitize(updated.Name)`
+
+## Total Sanitized Across #830/#831
+- **6 log-forging call sites** remediated across 3 files.
+
+## Approach
+- Used the centralized `JosephGuadagno.Broadcasting.Domain.Utilities.LogSanitizer.Sanitize()` exclusively.
+- No per-file inline sanitization helpers were added.
+- The `using JosephGuadagno.Broadcasting.Domain.Utilities;` directive was already present in all 3 files.
+
+## Broader Scan
+Scanned all logger calls in `Api/Controllers/*.cs` and `Web/Controllers/*.cs`. No additional unsanitized user-controlled strings found:
+- Integer route params (`id`, `userId`, `roleId`, `engagementId`, etc.) — safe, not strings
+- Enum values (`itemType` as `ScheduledItemType`) — safe
+- Hardcoded string literals — safe
+- Database-derived entity properties (IDs) — safe
+
+## Verification
+- Build: 0 errors
+- Tests: 0 failures (all 1023+ tests pass, excluding network-dependent SyndicationFeedReader tests)
+
+
+---
+
+## Issue #845 Decision — HTML dt/dd Pairing in Bootstrap Description Lists
+
+# Decision: dt/dd HTML Pairing in Bootstrap Description Lists
+
+**Author:** Sparks  
+**Issue:** #845  
+**Date:** 2026-04-24
+
+## What Was Fixed
+
+`Views/Schedules/Details.cshtml` contained a `<dl class="row">` where every element used `<dt>`, including the value cells. This produced 8 rows each with two `<dt>` elements and zero `<dd>` elements — semantically invalid HTML5.
+
+**Before (incorrect):**
+```html
+<dt class="col-sm-3">Id</dt>
+<dt class="col-sm-9">@Model.Id</dt>
+```
+
+**After (correct):**
+```html
+<dt class="col-sm-3">Id</dt>
+<dd class="col-sm-9">@Model.Id</dd>
+```
+
+## Rule
+
+In Bootstrap 5 description lists using `<dl class="row">`:
+- Label cells → `<dt class="col-sm-N">`
+- Value cells → `<dd class="col-sm-N">`
+
+Never use two `<dt>` elements in the same row. Each `<dt>` must be paired with at least one `<dd>`.
+
+## Scope
+
+This fix applies to all Razor views that render detail pages using `<dl>`. Review any new Details views to ensure the same pattern is not repeated.
+
+
+---
+
+## Issue #845 Decision — XML Doc Comment Spacing
+
+# Trinity — Issue #845: XML Doc Comment Spacing Fixed
+
+**Date:** 2026-05-XX  
+**Agent:** Trinity  
+**Issue:** #845 — Code quality cleanup (API part)  
+**Branch:** `issue-845-code-quality-cleanup`
+
+## What Was Fixed
+
+Two missing spaces in XML `<summary>` prose text in  
+`src/JosephGuadagno.Broadcasting.Api/Controllers/SchedulesController.cs`:
+
+| Method | Before | After |
+|--------|--------|-------|
+| `GetOrphanedScheduledItemsAsync` | `"orphaned scheduled items(items..."` | `"orphaned scheduled items (items..."` |
+| `ValidateSourceItemAsync` | `"source item existsfor the given..."` | `"source item exists for the given..."` |
+
+No logic, attributes, or method signatures were changed — purely doc comment text corrections.
+
+## Build Status
+
+0 errors, 0 new warnings. Build verified with `dotnet build .\src\ --configuration Release`.
+
+## Branch Status
+
+Commits pushed to `origin/issue-845-code-quality-cleanup`:
+- `5faeedd` — Sparks' Web fix (dt/dd pairing in Details.cshtml)  
+- `f4d66f3` — Trinity's API fix (XML doc comment spacing in SchedulesController)
+
+**The branch is ready for Sparks to review or for the coordinator to open the combined PR.**
+

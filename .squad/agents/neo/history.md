@@ -470,3 +470,36 @@ Joseph's brief says "no admin-bypass logic in Web layer — API handles it." How
 - **View resolution from subdirectory:** When views live in a subdirectory (e.g., `Views/Help/SocialMediaPlatforms/`), must use explicit sub-path in controller: `View("SocialMediaPlatforms/LinkedIn")` not `View("linkedin")`.
 - **Conditional rendering pattern:** `@if (!string.IsNullOrWhiteSpace(Model.Property))` is the correct guard for optional URL properties in Razor views.
 - **Edge case awareness:** When applying a templated change across multiple partials, always check each partial independently — `_UnsupportedPublisherSettings.cshtml` had a different card-header structure than the other four.
+
+
+---
+
+## 2026-04-24 — Sprint 26 Review Cadence
+
+**Status:** ✅ COMPLETE (Review)
+
+### Sprint 26 Review Cycle
+
+Reviewed 3 PRs in parallel:
+- PR #847 (#810): AJAX source search for Schedule forms (Switch) — ✅ APPROVED
+- PR #848 (#845): XML doc + HTML semantic fixes (Trinity + Sparks) — ✅ APPROVED (×2 reviews)
+- PR #849 (#831): Log-forging fix with LogSanitizer.Sanitize() (Trinity) — ✅ APPROVED (after rebase)
+
+### Key Patterns Reinforced
+
+- **Centralized sanitization:** `LogSanitizer.Sanitize()` for all user-controlled log parameters (CodeQL injection gate)
+- **HTML5 semantics:** Bootstrap dl/dt/dd pairing — value cells must use `<dd>`, not `<dt>`
+- **Two-step search UI:** Engagement→Talks picker pattern mirrors existing app data model
+- **Edit-form pre-population:** Reuse existing `ValidateItem` endpoint to avoid duplication
+
+### Metrics
+
+- **0 blockers** across Sprint 26
+- **3 concurrent PRs** reviewed with zero conflicts
+- **100% test pass rate** (165 unit tests, 1023+ integration suite)
+- **0 security baseline violations** (CSRF, log-injection both compliant)
+- **1 rebase** (PR #849 after #848 merge; resolved cleanly)
+
+### Learnings
+
+Sprint 26 demonstrates efficient parallel review and merge when agents follow established conventions and pre-commit gates. All 3 issues closed cleanly with no rework.
