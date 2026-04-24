@@ -9,9 +9,6 @@ public class UserCollectorFeedSourceViewModel
 {
     public int Id { get; set; }
 
-    [Required]
-    public string CreatedByEntraOid { get; set; } = string.Empty;
-
     [Required(ErrorMessage = "Feed URL is required.")]
     [Url(ErrorMessage = "Please enter a valid URL.")]
     [StringLength(2048, ErrorMessage = "Feed URL cannot exceed 2048 characters.")]

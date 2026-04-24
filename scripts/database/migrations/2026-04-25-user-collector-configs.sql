@@ -18,10 +18,10 @@ begin
                 default (1),
         CreatedOn         datetimeoffset  not null
             constraint DF_UserCollectorFeedSources_CreatedOn
-                default (getutcdate()),
+                default (sysdatetimeoffset()),
         LastUpdatedOn     datetimeoffset  not null
             constraint DF_UserCollectorFeedSources_LastUpdatedOn
-                default (getutcdate()),
+                default (sysdatetimeoffset()),
         constraint UQ_UserCollectorFeedSources_Owner_FeedUrl
             unique (CreatedByEntraOid, FeedUrl)
     )
@@ -52,10 +52,10 @@ begin
                 default (1),
         CreatedOn         datetimeoffset not null
             constraint DF_UserCollectorYouTubeChannels_CreatedOn
-                default (getutcdate()),
+                default (sysdatetimeoffset()),
         LastUpdatedOn     datetimeoffset not null
             constraint DF_UserCollectorYouTubeChannels_LastUpdatedOn
-                default (getutcdate()),
+                default (sysdatetimeoffset()),
         constraint UQ_UserCollectorYouTubeChannels_Owner_Channel
             unique (CreatedByEntraOid, ChannelId)
     )

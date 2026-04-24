@@ -9,9 +9,6 @@ public class UserCollectorYouTubeChannelViewModel
 {
     public int Id { get; set; }
 
-    [Required]
-    public string CreatedByEntraOid { get; set; } = string.Empty;
-
     [Required(ErrorMessage = "Channel ID is required.")]
     [StringLength(50, ErrorMessage = "Channel ID cannot exceed 50 characters.")]
     [Display(Name = "YouTube Channel ID")]

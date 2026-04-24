@@ -48,9 +48,9 @@ public class CollectorSettingsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddFeedSource(UserCollectorFeedSourceViewModel model)
+    public async Task<IActionResult> AddFeedSource(UserCollectorFeedSourceViewModel model, string? userOid = null)
     {
-        var resolution = await ResolveTargetUserAsync(model.CreatedByEntraOid);
+        var resolution = await ResolveTargetUserAsync(userOid);
         if (resolution.FailureResult is not null)
         {
             return resolution.FailureResult;
@@ -96,9 +96,9 @@ public class CollectorSettingsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditFeedSource(UserCollectorFeedSourceViewModel model)
+    public async Task<IActionResult> EditFeedSource(UserCollectorFeedSourceViewModel model, string? userOid = null)
     {
-        var resolution = await ResolveTargetUserAsync(model.CreatedByEntraOid);
+        var resolution = await ResolveTargetUserAsync(userOid);
         if (resolution.FailureResult is not null)
         {
             return resolution.FailureResult;
@@ -160,7 +160,7 @@ public class CollectorSettingsController : Controller
         if (success)
         {
             _logger.LogInformation(
-                "Feed source {Id} soft-deleted for owner {OwnerOid}",
+                "Feed source {Id} deleted for owner {OwnerOid}",
                 id,
                 resolution.Context.TargetUserOid);
             TempData["SuccessMessage"] = "Feed source removed successfully.";
@@ -179,9 +179,9 @@ public class CollectorSettingsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddYouTubeChannel(UserCollectorYouTubeChannelViewModel model)
+    public async Task<IActionResult> AddYouTubeChannel(UserCollectorYouTubeChannelViewModel model, string? userOid = null)
     {
-        var resolution = await ResolveTargetUserAsync(model.CreatedByEntraOid);
+        var resolution = await ResolveTargetUserAsync(userOid);
         if (resolution.FailureResult is not null)
         {
             return resolution.FailureResult;
@@ -227,9 +227,9 @@ public class CollectorSettingsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditYouTubeChannel(UserCollectorYouTubeChannelViewModel model)
+    public async Task<IActionResult> EditYouTubeChannel(UserCollectorYouTubeChannelViewModel model, string? userOid = null)
     {
-        var resolution = await ResolveTargetUserAsync(model.CreatedByEntraOid);
+        var resolution = await ResolveTargetUserAsync(userOid);
         if (resolution.FailureResult is not null)
         {
             return resolution.FailureResult;
@@ -291,7 +291,7 @@ public class CollectorSettingsController : Controller
         if (success)
         {
             _logger.LogInformation(
-                "YouTube channel {Id} soft-deleted for owner {OwnerOid}",
+                "YouTube channel {Id} deleted for owner {OwnerOid}",
                 id,
                 resolution.Context.TargetUserOid);
             TempData["SuccessMessage"] = "YouTube channel removed successfully.";
@@ -326,7 +326,6 @@ public class CollectorSettingsController : Controller
             FeedSources = feedSources.Select(fs => new UserCollectorFeedSourceViewModel
             {
                 Id = fs.Id,
-                CreatedByEntraOid = fs.CreatedByEntraOid,
                 FeedUrl = fs.FeedUrl,
                 DisplayName = fs.DisplayName,
                 IsActive = fs.IsActive,
@@ -337,7 +336,6 @@ public class CollectorSettingsController : Controller
             YouTubeChannels = youTubeChannels.Select(ch => new UserCollectorYouTubeChannelViewModel
             {
                 Id = ch.Id,
-                CreatedByEntraOid = ch.CreatedByEntraOid,
                 ChannelId = ch.ChannelId,
                 DisplayName = ch.DisplayName,
                 IsActive = ch.IsActive,
