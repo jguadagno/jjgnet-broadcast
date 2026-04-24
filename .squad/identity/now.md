@@ -3,6 +3,7 @@
 > **Last updated:** 2026-04-24T21:30:57Z
 > **Sprint:** 27 (in progress) — Milestone 21
 > **Status:** Core multi-tenancy work merged. Joe validating site functionality; #855 and #856 will close after validation. #852 and #853 remain open — deferred to next sprint.
+> **Next:** Close open issues from backlog. CodeQL CSRF alert #41 pending next scan.
 
 ## Current Focus
 
@@ -21,7 +22,7 @@
 - 🔜 #852 — Next sprint
 - 🔜 #853 — Next sprint
 
-**Goal:** Complete #855 and #856 after Joe's validation. Then begin next sprint with #852 and #853.
+**Goal:** Complete #855 and #856 after Joe's validation. Then begin next sprint with #852 and #853. Monitor CodeQL CSRF alert #41 for next scan resolution.
 
 ## Key Patterns (Sprint 27)
 
@@ -46,7 +47,7 @@
 
 ---
 
-**Last Updated:** 2026-04-24T21:24:52Z
+**Last Updated:** 2026-04-24T21:30:57Z
 **Sprint:** 27 (Multi-Tenancy: Per-User OAuth & Collectors) — COMPLETE
-**Current Focus:** Sprint planning or backlog
-**Next Decision Point:** Sprint 28 kickoff
+**Current Focus:** Remaining open issues / Sprint planning or backlog
+**Next Decision Point:** Sprint 28 kickoff or ongoing issue completion
