@@ -2,6 +2,43 @@
 
 ## Learnings
 
+### 2026-05-XX — Issue #831: Branch Cleanup (PR #849)
+**Status:** ✅ COMPLETE — Branch `issue-831-log-forging-fix` cleaned up
+
+**What happened:** The branch was originally created from `issue-845-code-quality-cleanup` instead of `main`, causing two extra commits (SchedulesController XML-doc fix and Schedules Details.cshtml HTML fix) to bleed into PR #849. These belong to PR #848.
+
+**Fix applied:** Reset branch to `main`, discarded the two out-of-scope files (`SchedulesController.cs`, `Details.cshtml`), recommitted only `SocialMediaPlatformsController.cs`, and force-pushed. PR #849 now diffs exactly 1 file.
+
+**Lesson:** Always branch from `main` (or the correct base) when starting new issue work. Never branch from another feature branch, or its commits will appear in your PR diff.
+
+---
+
+### 2026-05-XX — Issue #831: Log-Forging (cs/log-forging) Remediation
+**Status:** ✅ COMPLETE — PR #849
+
+**Task:** Remediate all CodeQL log-forging (cs/log-forging) alerts across the 3 flagged files.
+
+**Findings:**
+- `Api/Controllers/MessageTemplatesController.cs` — Already fixed in PR #833 (fix #830). All 4 logger calls using `platform` and `messageType` route params were already wrapped with `LogSanitizer.Sanitize()`.
+- `Web/Controllers/MessageTemplatesController.cs` — Already fixed in PR #833. The `model.Platform` and `model.MessageType` model properties in the Edit POST were already sanitized.
+- `Api/Controllers/SocialMediaPlatformsController.cs` — **2 calls fixed in this PR**: `created.Name` and `updated.Name` in `CreateAsync` and `UpdateAsync`. Both trace back to `request.Name` (user-controlled `[FromBody]`) through the manager/data layer.
+
+**Pattern Used:**
+```csharp
+_logger.LogInformation("...", id, LogSanitizer.Sanitize(created.Name));
+_logger.LogInformation("...", id, LogSanitizer.Sanitize(updated.Name));
+```
+
+**Additional Scan Results:**
+- All other logger calls in API and Web controllers pass integers, enums, or hardcoded strings — no further sanitization needed.
+- `SchedulesController`: `itemType` is `ScheduledItemType` (enum), `itemPrimaryKey` is `int` — safe.
+- `SiteAdminController`: `userId` and `roleId` are `int` — safe.
+
+**`using` directive:** Already present in `SocialMediaPlatformsController.cs` — no new import needed.
+
+**PR:** #849  
+**Decision Filed:** `.squad/decisions/inbox/trinity-831-log-forging.md`
+
 ### 2026-04-19 — Epic #609: Multi-Tenancy First-Round Audit
 **Status:** ✅ COMPLETE — Audit Report Filed
 
@@ -929,3 +966,40 @@ Feature-complete and production-ready. All sub-issues (#725–#731) delivered.
 
 **Decision Filed:** `.squad/decisions/inbox/trinity-816-youtube-api.md`
 
+
+
+---
+
+## 2026-04-24 — Sprint 26 Multi-PR Coordination
+
+**Status:** ✅ COMPLETE (Feature + Code Quality)
+
+### Dual Issue Delivery
+
+Completed 2 issues in parallel:
+- **PR #848:** XML documentation spacing fixes (#845) + HTML semantic fixes (shared with Sparks)
+- **PR #849:** Log-forging remediation (#831) via `LogSanitizer.Sanitize()` + codebase-wide scan
+
+### Key Learnings: Branch Independence & Issue Stacking
+
+Issue #845 demonstrated branch coordination complexity:
+- **Problem:** Single issue (#845) touched both API (XML docs) and Web (HTML semantics), assigned to multiple agents
+- **Solution:** Single shared branch `issue-845-code-quality-cleanup`, stacked commits (Trinity XML → Sparks HTML)
+- **Lesson:** When multiple agents contribute to one issue, use shared feature branch with clear commit ownership; merge together
+
+This reinforced the branch contamination lesson from Sprint 22: keep branches **narrow and focused**. If an issue naturally spans multiple layers, document that upfront so agents coordinate on a single PR rather than creating separate PRs that touch the same files.
+
+### Security Gate: Log Sanitization
+
+PR #849 exemplified the CodeQL log-injection pre-commit gate:
+- Scanned all `Api/Controllers/*.cs` and `Web/Controllers/*.cs` files
+- Found 2 unsanitized log-forging sites in `SocialMediaPlatformsController`
+- Applied centralized `LogSanitizer.Sanitize()` utility (no per-file helpers)
+- Performed broader codebase audit — confirmed no additional issues (integer params, enum values, hardcoded strings safe)
+- **Gate passed:** All 1023+ tests pass, no regressions
+
+### Outcome
+
+✅ PR #848 merged (combined XML + HTML fixes)  
+✅ PR #849 merged (after clean rebase when #848 landed)  
+✅ Sprint 26 delivered 3 issues with zero blockers
