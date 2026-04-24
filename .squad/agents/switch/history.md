@@ -352,3 +352,46 @@ Real #708 failure was API response generation issue after successful save, not W
 - **Branch:** issue-730
 - **PR:** #738
 - **Team:** Implemented same pattern as Trinity's API work in #729
+### 2026-04-25 — Issue #778 Collector Settings Web Layer
+
+Implemented the complete Web layer for per-user collector settings:
+
+**Service Layer:**
+- Created `IUserCollectorFeedSourceService` and `IUserCollectorYouTubeChannelService` interfaces following the `IUserPublisherSettingService` pattern
+- Implemented services using `IDownstreamApi` to call the API endpoints
+- Services support both current user and admin-managed user operations
+
+**ViewModels:**
+- `CollectorSettingsPageViewModel` — page-level model with feed sources and YouTube channels
+- `UserCollectorFeedSourceViewModel` — individual feed source with validation attributes
+- `UserCollectorYouTubeChannelViewModel` — individual YouTube channel with validation attributes
+
+**Controller:**
+- `CollectorSettingsController` follows `PublisherSettingsController` ownership pattern
+- `[Authorize(Policy = RequireContributor)]` at class level
+- All `[HttpPost]` actions have `[ValidateAntiForgeryToken]` (hard pre-commit gate)
+- `ResolveTargetUserAsync` supports admin managing other users
+- `LogSanitizer.Sanitize()` used for all user-controlled strings in logs
+- TempData for success/error messages
+
+**Views:**
+- `Index.cshtml` with two sections: RSS/Atom/JSON feeds and YouTube channels
+- Bootstrap 5 modal forms for Add/Edit operations
+- JavaScript to populate Edit modals with data attributes
+- Tables with inline delete forms
+- Admin context banner when managing another user
+
+**Navigation:**
+- Added "Collector Settings" link to user dropdown in `_LoginPartial.cshtml`
+- Link appears below "Publisher Settings" with RSS icon
+
+**DI Registration:**
+- Registered both service interfaces in `Program.cs` with `TryAddScoped`
+
+**Key patterns followed:**
+- Web layer only calls services, never data stores directly
+- Ownership enforcement with OID resolution
+- CSRF protection on all unsafe methods
+- Log sanitization on all user-controlled strings
+- XML doc comments on all public types
+
