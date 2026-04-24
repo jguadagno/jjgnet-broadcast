@@ -6,28 +6,28 @@
 <h2>Item Details</h2>
 <dl class="row">
     <dt class="col-sm-3">Id</dt>
-    <dt class="col-sm-9">@Model.Id</dt>
+    <dd class="col-sm-9">@Model.Id</dd>
     <dt class="col-sm-3">Type</dt>
-    <dt class="col-sm-9">@Model.ItemTableName</dt>
+    <dd class="col-sm-9">@Model.ItemTableName</dd>
     <dt class="col-sm-3">Primary Key</dt>
-    <dt class="col-sm-9">@Model.ItemPrimaryKey</dt>
+    <dd class="col-sm-9">@Model.ItemPrimaryKey</dd>
     <dt class="col-sm-3">Source Item</dt>
-    <dt class="col-sm-9">@(Model.SourceItemDisplayName ?? "–")</dt>
+    <dd class="col-sm-9">@(Model.SourceItemDisplayName ?? "–")</dd>
     <dt class="col-sm-3">Scheduled on</dt>
-    <dt class="col-sm-9"><local-time value="@Model.SendOnDateTime" /></dt>
+    <dd class="col-sm-9"><local-time value="@Model.SendOnDateTime" /></dd>
     <dt class="col-sm-3">Message</dt>
-    <dt class="col-sm-9">@Model.Message</dt>
+    <dd class="col-sm-9">@Model.Message</dd>
     <dt class="col-sm-3">Sent on</dt>
-    <dt class="col-sm-9"><local-time value="@Model.MessageSentOn" /></dt>
+    <dd class="col-sm-9"><local-time value="@Model.MessageSentOn" /></dd>
     <dt class="col-sm-3">Was sent</dt>
-    <dt class="col-sm-9">@if (Model.MessageSent)
+    <dd class="col-sm-9">@if (Model.MessageSent)
                          {
                              <i class="bi bi-check-circle text-success"></i>
                          }
                          else
                          {
                              <i class="bi bi-x-circle text-danger"></i>
-                         }</dt>
+                         }</dd>
 </dl>
 <br />
 <a asp-action="Edit" asp-controller="Schedules" asp-route-id="@Model.Id" class="btn btn-primary">
