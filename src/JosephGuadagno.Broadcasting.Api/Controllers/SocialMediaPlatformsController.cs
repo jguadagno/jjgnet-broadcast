@@ -110,7 +110,7 @@ public class SocialMediaPlatformsController : ControllerBase
             return BadRequest("Failed to create social media platform");
         }
 
-        _logger.LogInformation("Created social media platform with ID {Id}: {Name}", created.Id, created.Name);
+        _logger.LogInformation("Created social media platform with ID {Id}: {Name}", created.Id, LogSanitizer.Sanitize(created.Name));
         var response = _mapper.Map<SocialMediaPlatformResponse>(created);
         return CreatedAtAction(nameof(GetAsync), new { id = created.Id }, response);
     }
@@ -148,7 +148,7 @@ public class SocialMediaPlatformsController : ControllerBase
             return NotFound();
         }
 
-        _logger.LogInformation("Updated social media platform with ID {Id}: {Name}", id, updated.Name);
+        _logger.LogInformation("Updated social media platform with ID {Id}: {Name}", id, LogSanitizer.Sanitize(updated.Name));
         return Ok(_mapper.Map<SocialMediaPlatformResponse>(updated));
     }
 
