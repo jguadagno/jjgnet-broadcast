@@ -38,5 +38,6 @@ public static class BroadcastingDataSqlServiceCollectionExtensions
     {
         config.AddProfile<BroadcastingProfile>();
         config.AddProfile<RbacProfile>();
+        config.AddProfile<UserOAuthTokenMappingProfile>();
     }
 }

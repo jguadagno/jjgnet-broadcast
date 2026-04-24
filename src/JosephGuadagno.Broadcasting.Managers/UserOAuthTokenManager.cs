@@ -6,8 +6,12 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
+/// <summary>
+/// Manager for user OAuth token operations
+/// </summary>
 public class UserOAuthTokenManager(IUserOAuthTokenDataStore dataStore) : IUserOAuthTokenManager
 {
+    /// <inheritdoc />
     public Task<UserOAuthToken?> GetByUserAndPlatformAsync(
         string ownerOid, int platformId, CancellationToken cancellationToken = default)
     {
@@ -17,6 +21,7 @@ public class UserOAuthTokenManager(IUserOAuthTokenDataStore dataStore) : IUserOA
         return dataStore.GetByUserAndPlatformAsync(ownerOid, platformId, cancellationToken);
     }
 
+    /// <inheritdoc />
     public Task<UserOAuthToken?> StoreOAuthCallbackTokenAsync(
         string ownerOid,
         int platformId,
@@ -43,6 +48,7 @@ public class UserOAuthTokenManager(IUserOAuthTokenDataStore dataStore) : IUserOA
             cancellationToken);
     }
 
+    /// <inheritdoc />
     public Task<bool> DeleteAsync(
         string ownerOid, int platformId, CancellationToken cancellationToken = default)
     {

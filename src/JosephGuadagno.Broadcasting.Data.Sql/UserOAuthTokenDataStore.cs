@@ -1,3 +1,4 @@
+using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
@@ -6,10 +7,15 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
+/// <summary>
+/// SQL data store for user OAuth tokens
+/// </summary>
 public class UserOAuthTokenDataStore(
     BroadcastingContext broadcastingContext,
+    IMapper mapper,
     ILogger<UserOAuthTokenDataStore> logger) : IUserOAuthTokenDataStore
 {
+    /// <inheritdoc />
     public async Task<UserOAuthToken?> GetByUserAndPlatformAsync(
         string ownerOid, int platformId, CancellationToken cancellationToken = default)
     {
@@ -22,9 +28,10 @@ public class UserOAuthTokenDataStore(
                 t => t.CreatedByEntraOid == ownerOid && t.SocialMediaPlatformId == platformId,
                 cancellationToken);
 
-        return entity is null ? null : MapToDomain(entity);
+        return entity is null ? null : mapper.Map<UserOAuthToken>(entity);
     }
 
+    /// <inheritdoc />
     public async Task<UserOAuthToken?> UpsertAsync(
         UserOAuthToken token, CancellationToken cancellationToken = default)
     {
@@ -72,6 +79,7 @@ public class UserOAuthTokenDataStore(
         }
     }
 
+    /// <inheritdoc />
     public async Task<bool> DeleteAsync(
         string ownerOid, int platformId, CancellationToken cancellationToken = default)
     {
@@ -104,6 +112,7 @@ public class UserOAuthTokenDataStore(
         }
     }
 
+    /// <inheritdoc />
     public async Task<List<UserOAuthToken>> GetExpiringAsync(
         DateTimeOffset threshold, CancellationToken cancellationToken = default)
     {
@@ -112,20 +121,6 @@ public class UserOAuthTokenDataStore(
             .Where(t => t.AccessTokenExpiresAt <= threshold)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(MapToDomain).ToList();
+        return mapper.Map<List<UserOAuthToken>>(entities);
     }
-
-    private static UserOAuthToken MapToDomain(Models.UserOAuthToken entity) =>
-        new()
-        {
-            Id = entity.Id,
-            CreatedByEntraOid = entity.CreatedByEntraOid,
-            SocialMediaPlatformId = entity.SocialMediaPlatformId,
-            AccessToken = entity.AccessToken,
-            RefreshToken = entity.RefreshToken,
-            AccessTokenExpiresAt = entity.AccessTokenExpiresAt,
-            RefreshTokenExpiresAt = entity.RefreshTokenExpiresAt,
-            CreatedOn = entity.CreatedOn,
-            LastUpdatedOn = entity.LastUpdatedOn
-        };
 }
