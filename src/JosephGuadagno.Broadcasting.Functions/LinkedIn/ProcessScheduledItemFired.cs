@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
@@ -7,6 +7,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -20,17 +21,11 @@ public class ProcessScheduledItemFired(
     IEngagementManager engagementManager,
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
     IYouTubeSourceManager youTubeSourceManager,
-    ILinkedInApplicationSettings linkedInApplicationSettings,
+    IUserOAuthTokenManager userOAuthTokenManager,
     IMessageTemplateDataStore messageTemplateDataStore,
     ISocialMediaPlatformManager socialMediaPlatformManager,
     ILogger<ProcessScheduledItemFired> logger)
 {
-
-    // Debug Locally: https://docs.microsoft.com/en-us/azure/azure-functions/functions-debug-event-grid-trigger-local
-    // Sample Code: https://github.com/Azure-Samples/event-grid-dotnet-publish-consume-events
-    // When debugging locally start ngrok
-    // Create a new EventGrid endpoint in Azure similar to
-    // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=linkedin_process_scheduled_item_fired`
     [Function(ConfigurationFunctionNames.LinkedInProcessScheduledItemFired)]
     [QueueOutput(Queues.LinkedInPostLink)]
     public async Task<LinkedInPostLink?> RunAsync(
@@ -39,7 +34,7 @@ public class ProcessScheduledItemFired(
         var startedOn = DateTimeOffset.Now;
         logger.LogDebug("Started {FunctionName} at {StartedOn:f}",
             ConfigurationFunctionNames.LinkedInProcessScheduledItemFired, startedOn);
-        
+
         if (eventGridEvent.Data is null)
         {
             logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
@@ -60,9 +55,22 @@ public class ProcessScheduledItemFired(
             logger.LogDebug("Processing the event '{Id}' for '{TableName}', '{PartitionKey}'",
                 eventGridEvent.Id, scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
+            // Resolve per-user OAuth token — no silent fallback to shared token
+            var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
+                scheduledItem.CreatedByEntraOid ?? string.Empty,
+                SocialMediaPlatformIds.LinkedIn);
+
+            if (token is null)
+            {
+                logger.LogWarning(
+                    "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping item {ItemId}",
+                    LogSanitizer.Sanitize(scheduledItem.CreatedByEntraOid ?? string.Empty),
+                    scheduledItem.Id);
+                return null;
+            }
+
             // Determine what type the post is for
             LinkedInPostLink linkedInPost;
-            // The scheduled post should always have a message.  We just need to craft the Title and Urls
 
             switch (scheduledItem.ItemType)
             {
@@ -83,7 +91,7 @@ public class ProcessScheduledItemFired(
                     return null;
             }
 
-            // Attempt Scriban template rendering for the post text; fall back to scheduledItem.Message if unavailable
+            // Attempt Scriban template rendering; fall back to scheduledItem.Message if unavailable
             var messageType = scheduledItem.ItemType switch
             {
                 ScheduledItemType.Engagements => MessageTemplates.MessageTypes.NewSpeakingEngagement,
@@ -91,18 +99,17 @@ public class ProcessScheduledItemFired(
                 ScheduledItemType.SyndicationFeedSources => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
                 ScheduledItemType.YouTubeSources => MessageTemplates.MessageTypes.NewYouTubeItem,
                 _ => MessageTemplates.MessageTypes.RandomPost
-            };            
+            };
             var linkedInPlatform = await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.LinkedIn);
-            var messageTemplate = linkedInPlatform != null 
-                ? await messageTemplateDataStore.GetAsync(linkedInPlatform.Id, messageType) 
+            var messageTemplate = linkedInPlatform != null
+                ? await messageTemplateDataStore.GetAsync(linkedInPlatform.Id, messageType)
                 : null;
             string? renderedText = null;
             if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
                 renderedText = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);
 
             linkedInPost.Text = renderedText ?? scheduledItem.Message;
-            linkedInPost.AuthorId = linkedInApplicationSettings.AuthorId;
-            linkedInPost.AccessToken = linkedInApplicationSettings.AccessToken;
+            linkedInPost.AccessToken = token.AccessToken;
             linkedInPost.ImageUrl = scheduledItem.ImageUrl;
 
             var properties = new Dictionary<string, string>
@@ -134,12 +141,10 @@ public class ProcessScheduledItemFired(
     private async Task<LinkedInPostLink> GetPostForEngagement(int primaryKey)
     {
         var post = new LinkedInPostLink();
-
         logger.LogDebug("Getting the text for engagement for '{PrimaryKey}'", primaryKey);
         try
         {
             var engagement = await engagementManager.GetAsync(primaryKey);
-            // Generate the title and Url for the LinkedIn post
             post.Title = engagement.Name;
             post.LinkUrl = engagement.Url;
         }
@@ -154,34 +159,28 @@ public class ProcessScheduledItemFired(
     private async Task<LinkedInPostLink> GetPostForTalk(int primaryKey)
     {
         var post = new LinkedInPostLink();
-
         logger.LogDebug("Getting the text for Talk for '{PrimaryKey}'", primaryKey);
         try
         {
             var engagement = await engagementManager.GetTalkAsync(primaryKey);
-            // Generate the title and Url for the LinkedIn post
             post.Title = engagement.Name;
             post.LinkUrl = engagement.UrlForConferenceTalk;
-
         }
         catch (Exception e)
         {
             logger.LogError(e, "Failed to get the text for talk for '{PrimaryKey}'", primaryKey);
             throw;
         }
-
         return post;
     }
 
     private async Task<LinkedInPostLink> GetPostForSyndicationSource(int primaryKey)
     {
         var post = new LinkedInPostLink();
-
         logger.LogDebug("Getting the text for syndication source for '{PrimaryKey}'", primaryKey);
         try
         {
             var syndicationFeedSource = await syndicationFeedSourceManager.GetAsync(primaryKey);
-            // Generate the title and Url for the LinkedIn post
             post.Title = syndicationFeedSource.Title;
             post.LinkUrl = syndicationFeedSource.ShortenedUrl ?? syndicationFeedSource.Url;
         }
@@ -190,29 +189,24 @@ public class ProcessScheduledItemFired(
             logger.LogError(e, "Failed to get the text for engagement for '{PrimaryKey}'", primaryKey);
             throw;
         }
-
         return post;
     }
 
     private async Task<LinkedInPostLink> GetPostForYouTubeSource(int primaryKey)
     {
         var post = new LinkedInPostLink();
-
         logger.LogDebug("Getting the text for YouTube source for '{PrimaryKey}'", primaryKey);
         try
         {
             var youTubeSource = await youTubeSourceManager.GetAsync(primaryKey);
-            // Generate the title and Url for the LinkedIn post
             post.Title = youTubeSource.Title;
             post.LinkUrl = youTubeSource.ShortenedUrl ?? youTubeSource.Url;
-
         }
         catch (Exception e)
         {
             logger.LogError(e, "Failed to get the text for engagement for '{PrimaryKey}'", primaryKey);
             throw;
         }
-
         return post;
     }
 

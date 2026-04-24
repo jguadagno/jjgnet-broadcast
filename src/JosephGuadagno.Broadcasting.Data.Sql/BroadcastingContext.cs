@@ -47,6 +47,7 @@ public partial class BroadcastingContext : DbContext
     public virtual DbSet<SocialMediaPlatform> SocialMediaPlatforms { get; set; } = null!;
     public virtual DbSet<EngagementSocialMediaPlatform> EngagementSocialMediaPlatforms { get; set; } = null!;
     public virtual DbSet<UserPublisherSetting> UserPublisherSettings { get; set; } = null!;
+    public DbSet<Models.UserOAuthToken> UserOAuthTokens => Set<Models.UserOAuthToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -537,9 +538,52 @@ public partial class BroadcastingContext : DbContext
                 .HasConstraintName("FK_UserPublisherSettings_SocialMediaPlatforms");
         });
 
-        modelBuilder.Entity<EngagementSocialMediaPlatform>(entity =>
+        modelBuilder.Entity<Models.UserOAuthToken>(entity =>
         {
-            entity.HasKey(e => new { e.EngagementId, e.SocialMediaPlatformId })
+            entity.HasKey(e => e.Id)
+                .HasName("PK_UserOAuthTokens")
+                .IsClustered();
+
+            entity.HasIndex(e => new { e.CreatedByEntraOid, e.SocialMediaPlatformId }, "UQ_UserOAuthTokens_User_Platform")
+                .IsUnique();
+
+            entity.HasIndex(e => e.AccessTokenExpiresAt, "IX_UserOAuthTokens_AccessTokenExpiresAt");
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.SocialMediaPlatformId)
+                .IsRequired();
+
+            entity.Property(e => e.AccessToken)
+                .IsRequired();
+
+            entity.Property(e => e.AccessTokenExpiresAt)
+                .IsRequired()
+                .HasColumnType("datetimeoffset");
+
+            entity.Property(e => e.RefreshTokenExpiresAt)
+                .HasColumnType("datetimeoffset");
+
+            entity.Property(e => e.CreatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.HasOne(e => e.SocialMediaPlatform)
+                .WithMany()
+                .HasForeignKey(e => e.SocialMediaPlatformId)
+                .HasConstraintName("FK_UserOAuthTokens_SocialMediaPlatforms");
+        });
+
+        modelBuilder.Entity<EngagementSocialMediaPlatform>(entity =>
+        {entity.HasKey(e => new { e.EngagementId, e.SocialMediaPlatformId })
                 .HasName("PK_EngagementSocialMediaPlatforms");
 
             entity.HasIndex(e => e.SocialMediaPlatformId, "IX_EngagementSocialMediaPlatforms_SocialMediaPlatformId");

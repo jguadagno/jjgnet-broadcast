@@ -2,10 +2,9 @@ using Moq;
 using Moq.Protected;
 
 using System.Net;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-
-using Azure.Security.KeyVault.Secrets;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,8 +13,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Controllers;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Models.LinkedIn;
@@ -53,13 +53,18 @@ internal class TestSession : ISession
 
 public class LinkedInControllerTests
 {
-    private readonly Mock<IKeyVault> _keyVault;
+    private const string TestOwnerOid = "test-owner-oid-12345";
+
+    private readonly Mock<IUserOAuthTokenManager> _userOAuthTokenManager;
+    private readonly Mock<ISocialMediaPlatformManager> _socialMediaPlatformManager;
     private readonly LinkedInSettings _linkedInSettings;
     private readonly Mock<ILogger<LinkedInController>> _logger;
+    private readonly SocialMediaPlatform _linkedInPlatform;
 
     public LinkedInControllerTests()
     {
-        _keyVault = new Mock<IKeyVault>();
+        _userOAuthTokenManager = new Mock<IUserOAuthTokenManager>();
+        _socialMediaPlatformManager = new Mock<ISocialMediaPlatformManager>();
         _linkedInSettings = new LinkedInSettings
         {
             ClientId = "test-client-id",
@@ -69,25 +74,67 @@ public class LinkedInControllerTests
             AccessTokenUrl = "https://www.linkedin.com/oauth/v2/accessToken"
         };
         _logger = new Mock<ILogger<LinkedInController>>();
+        _linkedInPlatform = new SocialMediaPlatform { Id = 3, Name = "LinkedIn", IsActive = true };
+
+        // Default: platform lookup returns LinkedIn
+        _socialMediaPlatformManager
+            .Setup(m => m.GetByNameAsync("LinkedIn", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_linkedInPlatform);
     }
 
     private LinkedInController CreateController(HttpClient? httpClient = null)
     {
         httpClient ??= new HttpClient();
-        return new LinkedInController(httpClient, _keyVault.Object, Options.Create(_linkedInSettings), _logger.Object);
+        return new LinkedInController(
+            httpClient,
+            _userOAuthTokenManager.Object,
+            _socialMediaPlatformManager.Object,
+            Options.Create(_linkedInSettings),
+            _logger.Object);
+    }
+
+    /// <summary>
+    /// Builds an HttpContext with a ClaimsPrincipal containing an "oid" claim.
+    /// </summary>
+    private static DefaultHttpContext BuildAuthenticatedHttpContext(string? oid = TestOwnerOid, ISession? session = null)
+    {
+        var claims = new List<Claim>();
+        if (oid is not null)
+            claims.Add(new Claim("oid", oid));
+
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        var principal = new ClaimsPrincipal(identity);
+
+        var httpContext = new DefaultHttpContext
+        {
+            User = principal
+        };
+        if (session is not null)
+            httpContext.Session = session;
+
+        return httpContext;
     }
 
     [Fact]
-    public async Task Index_ShouldReturnViewWithSavedTokenInfo()
+    public async Task Index_WhenTokenExists_ShouldReturnViewWithMaskedTokenInfo()
     {
         // Arrange
-        var secret = new KeyVaultSecret("jjg-net-linkedin-access-token", "test-access-token-value");
-        _keyVault.Setup(k => k.GetSecretAsync("jjg-net-linkedin-access-token")).ReturnsAsync(secret);
+        var storedToken = new UserOAuthToken
+        {
+            CreatedByEntraOid = TestOwnerOid,
+            SocialMediaPlatformId = 3,
+            AccessToken = "abcd1234efgh5678",
+            AccessTokenExpiresAt = DateTimeOffset.UtcNow.AddHours(1)
+        };
+
+        _userOAuthTokenManager
+            .Setup(m => m.GetByUserAndPlatformAsync(TestOwnerOid, 3, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(storedToken);
 
         var controller = CreateController();
         controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext()
+            HttpContext = BuildAuthenticatedHttpContext()
         };
 
         // Act
@@ -96,9 +143,53 @@ public class LinkedInControllerTests
         // Assert
         var viewResult = Assert.IsType<ViewResult>(result);
         var model = Assert.IsType<SavedTokenInfo>(viewResult.Model);
-        Assert.Equal("test-access-token-value", model.AccessToken);
-        Assert.Equal("jjg-net-linkedin-access-token", model.KeyVaultSecretName);
-        _keyVault.Verify(k => k.GetSecretAsync("jjg-net-linkedin-access-token"), Times.Once);
+        Assert.True(model.HasToken);
+        Assert.NotNull(model.MaskedAccessToken);
+        Assert.DoesNotContain("abcd1234efgh5678", model.MaskedAccessToken!); // raw token never exposed
+        Assert.Equal(storedToken.AccessTokenExpiresAt, model.ExpiresOn);
+        _userOAuthTokenManager.Verify(m => m.GetByUserAndPlatformAsync(TestOwnerOid, 3, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Index_WhenNoTokenStored_ShouldReturnViewWithHasTokenFalse()
+    {
+        // Arrange
+        _userOAuthTokenManager
+            .Setup(m => m.GetByUserAndPlatformAsync(TestOwnerOid, 3, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserOAuthToken?)null);
+
+        var controller = CreateController();
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = BuildAuthenticatedHttpContext()
+        };
+
+        // Act
+        var result = await controller.Index();
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        var model = Assert.IsType<SavedTokenInfo>(viewResult.Model);
+        Assert.False(model.HasToken);
+    }
+
+    [Fact]
+    public async Task Index_WhenOidClaimMissing_ShouldReturnViewWithHasTokenFalse()
+    {
+        // Arrange
+        var controller = CreateController();
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = BuildAuthenticatedHttpContext(oid: null)
+        };
+
+        // Act
+        var result = await controller.Index();
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        var model = Assert.IsType<SavedTokenInfo>(viewResult.Model);
+        Assert.False(model.HasToken);
     }
 
     [Fact]
@@ -108,8 +199,7 @@ public class LinkedInControllerTests
         var controller = CreateController();
 
         var session = new TestSession();
-        var httpContext = new DefaultHttpContext();
-        httpContext.Session = session;
+        var httpContext = BuildAuthenticatedHttpContext(session: session);
 
         var mockUrlHelper = new Mock<IUrlHelper>();
         mockUrlHelper
@@ -137,8 +227,7 @@ public class LinkedInControllerTests
         var session = new TestSession();
         session.Set("state", Encoding.UTF8.GetBytes("session-state-value"));
 
-        var httpContext = new DefaultHttpContext();
-        httpContext.Session = session;
+        var httpContext = BuildAuthenticatedHttpContext(session: session);
         httpContext.Request.QueryString = new QueryString("?code=auth-code&state=different-state");
 
         controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
@@ -160,9 +249,7 @@ public class LinkedInControllerTests
         var session = new TestSession();
         session.Set("state", Encoding.UTF8.GetBytes(stateValue));
 
-        var httpContext = new DefaultHttpContext();
-        httpContext.Session = session;
-        // State matches, but no code in query string
+        var httpContext = BuildAuthenticatedHttpContext(session: session);
         httpContext.Request.QueryString = new QueryString($"?state={stateValue}");
 
         var mockUrlHelper = new Mock<IUrlHelper>();
@@ -181,7 +268,7 @@ public class LinkedInControllerTests
     }
 
     [Fact]
-    public async Task Callback_WhenValid_ShouldSaveTokenAndRedirectToIndex()
+    public async Task Callback_WhenValid_ShouldStoreTokenViaManagerAndRedirectToIndex()
     {
         // Arrange
         const string stateValue = "valid-state";
@@ -213,8 +300,7 @@ public class LinkedInControllerTests
         var session = new TestSession();
         session.Set("state", Encoding.UTF8.GetBytes(stateValue));
 
-        var httpContext = new DefaultHttpContext();
-        httpContext.Session = session;
+        var httpContext = BuildAuthenticatedHttpContext(session: session);
         httpContext.Request.QueryString = new QueryString($"?code={authCode}&state={stateValue}");
 
         var mockUrlHelper = new Mock<IUrlHelper>();
@@ -225,12 +311,16 @@ public class LinkedInControllerTests
         controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
         controller.Url = mockUrlHelper.Object;
 
-        _keyVault
-            .Setup(k => k.UpdateSecretValueAndPropertiesAsync(
-                "jjg-net-linkedin-access-token",
-                It.IsAny<string>(),
-                It.IsAny<DateTime>()))
-            .Returns(Task.CompletedTask);
+        _userOAuthTokenManager
+            .Setup(m => m.StoreOAuthCallbackTokenAsync(
+                TestOwnerOid,
+                3,
+                "new-access-token",
+                It.IsAny<string?>(),
+                It.IsAny<DateTimeOffset>(),
+                It.IsAny<DateTimeOffset?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserOAuthToken?)null);
 
         // Act
         var result = await controller.Callback();
@@ -238,10 +328,16 @@ public class LinkedInControllerTests
         // Assert
         var redirectResult = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirectResult.ActionName);
-        _keyVault.Verify(k => k.UpdateSecretValueAndPropertiesAsync(
-            "jjg-net-linkedin-access-token",
+
+        // Token is stored per-user via manager — no Key Vault
+        _userOAuthTokenManager.Verify(m => m.StoreOAuthCallbackTokenAsync(
+            TestOwnerOid,
+            3,
             "new-access-token",
-            It.IsAny<DateTime>()), Times.Once);
+            It.IsAny<string?>(),
+            It.IsAny<DateTimeOffset>(),
+            It.IsAny<DateTimeOffset?>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

@@ -2,6 +2,37 @@
 
 ## Learnings
 
+### 2026-05-XX — Issue #777: OAuth/Token Runtime Exploration (Pre-Implementation)
+**Status:** ✅ EXPLORATION COMPLETE — Findings filed to inbox
+
+**Key file paths discovered:**
+- `src/JosephGuadagno.Broadcasting.Web/Controllers/LinkedInController.cs` — OAuth2 flow; writes to shared Key Vault secrets (`jjg-net-linkedin-access-token`, `jjg-net-linkedin-refresh-token`)
+- `src/JosephGuadagno.Broadcasting.Data.KeyVault/Interfaces/IKeyVault.cs` — flat interface: `GetSecretAsync(name)` + `UpdateSecretValueAndPropertiesAsync(name, value, expiresOn)`; no per-user concept
+- `src/JosephGuadagno.Broadcasting.Data.KeyVault/KeyVault.cs` — implementation via Azure `SecretClient`
+- `src/JosephGuadagno.Broadcasting.Managers.LinkedIn/Models/ILinkedInApplicationSettings.cs` — shared singleton: `ClientId`, `ClientSecret`, `AccessToken`, `AuthorId`, `AccessTokenUrl`
+- `src/JosephGuadagno.Broadcasting.Functions/Program.cs` → `ConfigureLinkedInManager()` — binds `LinkedIn:*` config to singleton `ILinkedInApplicationSettings` at startup
+- `src/JosephGuadagno.Broadcasting.Functions/LinkedIn/ProcessNewSyndicationDataFired.cs` — stamps `post.AccessToken = linkedInApplicationSettings.AccessToken` (shared)
+- `src/JosephGuadagno.Broadcasting.Functions/LinkedIn/ProcessScheduledItemFired.cs` — same pattern; uses `ScheduledItem.CreatedByEntraOid` for content ownership (owner OID available for lookup)
+- `src/JosephGuadagno.Broadcasting.Data.Sql/UserPublisherSettingDataStore.cs` — already stores `AccessToken`, `AuthorId`, `ClientId`, `ClientSecret` as JSON keys in `Settings` NVARCHAR(MAX)
+- `src/JosephGuadagno.Broadcasting.Managers/UserPublisherSettingManager.cs` — `ProjectForResponse()` sanitizes tokens to `HasAccessToken` (bool); raw values accessible before projection
+- `scripts/database/table-create.sql` — `UserPublisherSettings` table has all needed columns; `ApplicationUsers` has NO OAuth fields
+
+**Current patterns:**
+- All 4 LinkedIn "process" functions (`ProcessNewSyndicationDataFired`, `ProcessNewYouTubeDataFired`, `ProcessScheduledItemFired`, `ProcessNewRandomPost`) use the singleton access token
+- No LinkedIn `RefreshTokens` Function exists (only Facebook has one)
+- Tokens are stored **plaintext** in `UserPublisherSettings.Settings` JSON — encryption at rest is a known gap
+
+**What needs to change:**
+1. `LinkedInController.Callback` → write tokens to `UserPublisherSettings` (per user OID) instead of/alongside flat Key Vault secrets
+2. Functions: replace singleton `AccessToken`/`AuthorId` lookup with per-user `IUserPublisherSettingDataStore.GetByUserAndPlatformAsync(ownerOid, platformId)` resolution
+3. New `ILinkedInTokenResolver` service for Functions to bridge OID → raw token
+4. New `LinkedIn/RefreshTokens.cs` Function for per-user token refresh
+5. Encryption at rest decision for sensitive fields in `Settings` JSON
+
+**Deliverable:** `.squad/decisions/inbox/trinity-777-exploration.md`
+
+---
+
 ### 2026-05-XX — Issue #831: Branch Cleanup (PR #849)
 **Status:** ✅ COMPLETE — Branch `issue-831-log-forging-fix` cleaned up
 

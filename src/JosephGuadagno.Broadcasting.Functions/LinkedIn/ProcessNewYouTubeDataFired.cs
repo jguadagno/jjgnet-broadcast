@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Azure.Messaging.EventGrid;
 
 using JosephGuadagno.Broadcasting.Domain;
@@ -7,6 +7,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -15,14 +16,9 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
 public class ProcessNewYouTubeDataFired(
     IYouTubeSourceManager youtubeSourceManager,
-    ILinkedInApplicationSettings linkedInApplicationSettings,
+    IUserOAuthTokenManager userOAuthTokenManager,
     ILogger<ProcessNewYouTubeDataFired> logger)
 {
-    // Debug Locally: https://docs.microsoft.com/en-us/azure/azure-functions/functions-debug-event-grid-trigger-local
-    // Sample Code: https://github.com/Azure-Samples/event-grid-dotnet-publish-consume-events
-    // When debugging locally start ngrok
-    // Create a new EventGrid endpoint in Azure similar to
-    // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=facebook_process_new_source_data`
     [Function(ConfigurationFunctionNames.LinkedInProcessNewYouTubeDataFired)]
     [QueueOutput(Queues.LinkedInPostLink)]
     public async Task<LinkedInPostLink?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
@@ -30,8 +26,7 @@ public class ProcessNewYouTubeDataFired(
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.LinkedInProcessNewYouTubeDataFired, startedAt);
-        
-        // Get the Source Data identifier for the event
+
         if (eventGridEvent.Data is null)
         {
             logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
@@ -47,12 +42,24 @@ public class ProcessNewYouTubeDataFired(
         }
         var youTubeSource = await youtubeSourceManager.GetAsync(newYouTubeItemEvent.Id);
 
-        // Create the Facebook posts for it
         logger.LogDebug("Processing New YouTube Feed Data Fired for '{Id}' with title of '{Title}'", youTubeSource.Id, youTubeSource.Title);
-            
-        var status = ComposeStatus(youTubeSource);
-        
-        // Done
+
+        // Resolve per-user OAuth token — no silent fallback to shared token
+        var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
+            youTubeSource.CreatedByEntraOid,
+            SocialMediaPlatformIds.LinkedIn);
+
+        if (token is null)
+        {
+            logger.LogWarning(
+                "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping YouTube item {ItemId}",
+                LogSanitizer.Sanitize(youTubeSource.CreatedByEntraOid),
+                youTubeSource.Id);
+            return null;
+        }
+
+        var status = ComposeStatus(youTubeSource, token.AccessToken);
+
         var properties = new Dictionary<string, string>
         {
             {"post", status.Text},
@@ -64,25 +71,24 @@ public class ProcessNewYouTubeDataFired(
         logger.LogDebug("Done composing LinkedIn status for '{Id}' with title of '{Title}'", youTubeSource.Id, youTubeSource.Title);
         return status;
     }
-    
-    private LinkedInPostLink ComposeStatus(YouTubeSource youTubeSource)
+
+    private LinkedInPostLink ComposeStatus(YouTubeSource youTubeSource, string accessToken)
     {
         logger.LogDebug("Composing LinkedIn post for Id: '{Id}', Title:'{Title}'", youTubeSource.Id, youTubeSource.Title);
         var statusText = youTubeSource.LastUpdatedOn > youTubeSource.PublicationDate
                 ? "Updated Blog Post: "
                 : "New Blog Post: ";
-        
+
         var post = new LinkedInPostLink
         {
             Text = $"{statusText} {youTubeSource.Title} {HashTagLists.BuildHashTagList(youTubeSource.Tags)}",
             Title = youTubeSource.Title,
             LinkUrl = youTubeSource.Url,
-            AuthorId = linkedInApplicationSettings.AuthorId,
-            AccessToken = linkedInApplicationSettings.AccessToken
+            AccessToken = accessToken
         };
-        
+
         logger.LogDebug("Composed LinkedIn status for '{Id}' with title of '{Title}'", youTubeSource.Id, youTubeSource.Title);
-        
+
         return post;
     }
 }

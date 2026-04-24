@@ -7,6 +7,7 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -15,7 +16,7 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
 public class ProcessNewRandomPost(
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
-    ILinkedInApplicationSettings linkedInApplicationSettings,
+    IUserOAuthTokenManager userOAuthTokenManager,
     ILogger<ProcessNewRandomPost> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInProcessRandomPostFired)]
@@ -26,7 +27,6 @@ public class ProcessNewRandomPost(
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.LinkedInProcessRandomPostFired, startedAt);
 
-        // Check to make sure the eventGridEvent.Data is not null
         if (eventGridEvent.Data is null)
         {
             logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
@@ -44,18 +44,29 @@ public class ProcessNewRandomPost(
             }
             var syndicationFeedSource = await syndicationFeedSourceManager.GetAsync(source.Id);
 
-            // Handle the event - compose the LinkedIn post
+            // Resolve per-user OAuth token — no silent fallback to shared token
+            var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
+                syndicationFeedSource.CreatedByEntraOid,
+                SocialMediaPlatformIds.LinkedIn);
+
+            if (token is null)
+            {
+                logger.LogWarning(
+                    "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping random post {ItemId}",
+                    LogSanitizer.Sanitize(syndicationFeedSource.CreatedByEntraOid),
+                    syndicationFeedSource.Id);
+                return null;
+            }
+
             var statusText = "ICYMI: ";
             var post = new LinkedInPostLink
             {
                 Text = $"{statusText} {syndicationFeedSource.Title} {HashTagLists.BuildHashTagList(syndicationFeedSource.Tags)}",
                 Title = syndicationFeedSource.Title,
                 LinkUrl = syndicationFeedSource.Url,
-                AuthorId = linkedInApplicationSettings.AuthorId,
-                AccessToken = linkedInApplicationSettings.AccessToken
+                AccessToken = token.AccessToken
             };
 
-            // Return
             var properties = new Dictionary<string, string>
             {
                 {"title", syndicationFeedSource.Title},
