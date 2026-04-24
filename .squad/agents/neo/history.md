@@ -32,6 +32,10 @@
 
 **Sprint 21 scope:** Collector owner OID completeness (Trinity #760/#761, Tank regression #762). Blocker: `scripts\database\data-seed.sql` requires CreatedByEntraOid bootstrap values; PR #771 stacked on #770; PR #772 has unrelated Web config drift.
 
+**Scope-to-Role Migration Plan (future work):** 5-phase migration (#763–#769) to replace 37 `VerifyUserHasAnyAcceptedScope` calls in API with role-based policies (matching Web pattern). Phase 0: Extract `EntraClaimsTransformation` to shared project. Phase 4: Clean 42 custom delegated scopes from Entra. Dependency chain: each phase unblocks next.
+
+**Pre-2026-04-20 analysis archived:** Auth scope limits (personal MSA accounts), #731 settings design (flat key/value dict vs nested objects), Epic #667 (SocialMediaPlatforms implementation + API/Web UI integration, all 4 sprints complete), CodeQL remediation (#683/#684 security fixes), Branch/PR policy violations (third remediation cycle).
+
 ---
 
 ## 2026-04-20 — Branch/PR Policy Remediation
@@ -637,3 +641,188 @@ PR blocked. All security and architecture checks passed. Two required artifacts 
 - **Test suite completeness check:** When arch spec lists required new test files, verify ALL listed files are present in the diff. `UserOAuthTokenDataStoreTests.cs` and `UserOAuthTokenManagerTests.cs` were explicitly required but missing.
 - **Manual step pre-check:** Always scan PR description for "should be created" / "follow-up" language around production steps. These must be issues already created with `squad:Joe` label, not promised futures.
 - **Cross-user isolation test pattern:** For any new per-user data store, the minimum test is: seed token for user-B, query as user-A, assert null result.
+
+
+---
+
+## 2026-04-24 — PR #854 Round 3: APPROVED ✅
+
+**Status:** ✅ COMPLETE — APPROVED  
+**PR:** #854 `feat(auth): per-user OAuth token runtime for LinkedIn`  
+**Comment:** https://github.com/jguadagno/jjgnet-broadcast/pull/854#issuecomment-4315447349
+
+### All Round 1 Blockers Resolved
+
+| Blocker | Resolution |
+|---------|------------|
+| AutoMapper (direct mapping) | `UserOAuthTokenMappingProfile` created, registered, `mapper.Map<>()` used throughout |
+| XML doc comments | All 7 new files fully documented |
+| Cross-user isolation tests | `UserOAuthTokenDataStoreTests.cs` — 4 scenarios pass |
+| squad:Joe issues + PR description | #856 (Key Vault), #857 (DB migration) — both labeled, linked, PR description updated with GFM backtick formatting |
+
+### Build / Test at Approval
+
+- Build: 0 errors
+- Tests: 166 + 232 passing, 0 failures
+
+### Verdict
+
+APPROVED ✅ — #777 ready to merge, pending Joseph's go-ahead on manual steps (#856, #857).
+
+### Note
+
+GitHub does not allow approving an owner's own PR via the API. Approval posted as a visible comment per squad protocol. Comment ID: 4315447349.
+
+---
+
+## 2026-04-24 — PR #854 Second Review (Round 2)
+
+**Status:** ✅ COMPLETE — BLOCKED (1 remaining item)
+
+### What Morpheus Fixed Correctly in commit `fbdb861`
+
+| Blocker | Resolution |
+|---------|------------|
+| AutoMapper profile | `UserOAuthTokenMappingProfile` created in correct location, registered in `AddDataSqlMappingProfiles()`, `mapper.Map<>()` used for all entity→domain conversions; `DateTimeOffset` fields correct |
+| XML doc comments | All 7 files fully documented: `/// <summary>` on every public type + member; `/// <inheritdoc />` on interface implementations |
+| Cross-user isolation test | `UserOAuthTokenDataStoreTests.cs` added with 4 isolation tests covering read, null-on-miss, independent upserts, and delete-only-own-record |
+| Issue #856 created | Issue #856 created with `squad:Joe` label, correct title, step-by-step Key Vault disable instructions, references PR #854 |
+
+### Remaining Blocker
+
+Issue #856 was created but the PR description was never updated to reference it. The directive requires `#856` to be linked in the PR body before merge. The body still reads "A follow-up GitHub issue **should** be created" — no `#856` link. This is a one-line edit, not a code change.
+
+### Build / Test
+
+- Build: 0 errors, 657 pre-existing warnings
+- Tests: 0 failures across all suites; all 4 new isolation tests pass
+
+### Verdict
+
+BLOCKED — one directive violation remaining (PR description must reference `#856`).
+
+
+---
+
+## 2026-04-24 — Issue #777 Complete: PR #854 Approved & Merged
+
+**Status:** ✅ COMPLETE (Feature Shipped)
+
+### PR #854 Review Cycle & Approval
+
+**Round 1 Review:** neo-pr854-review2 (blocked on 4 items)
+- Identified missing cross-user isolation tests
+- Identified missing manual production step issue
+- All security and architecture checklists passed
+
+**Round 1 Fixes by Morpheus:**
+- Created UserOAuthTokenDataStoreTests.cs with 4 comprehensive cross-user isolation test scenarios
+- Created UserOAuthTokenManagerTests.cs
+- Created UserOAuthTokenMappingProfile in MappingProfiles
+- Added XML doc comments to all 7 new public files
+- Created issue #856 (squad:Joe label, step-by-step Key Vault secret retirement)
+- Created issue #857 (squad:Joe label, DB migration step)
+
+**Round 2 Review:** neo-pr854-review2 (blocked on 1 item)
+- Confirmed AutoMapper, XML docs, cross-user isolation tests all correct
+- Identified PR description still missing issue references
+- Blocked on PR description edit
+
+**Coordinator (inline) Fixes:**
+- Fixed PR #854 description: replaced backslash escaping with GFM backticks, added "Required manual production steps" section referencing #856 and #857
+- Fixed issue #855 body: GFM backticks, code fences, cross-references to #857/#856
+
+**Approval:** neo-pr854-approved
+- All 4 blockers confirmed resolved
+- PR approved and ready for merge pending manual production steps completion
+
+**Human Action (Joseph):**
+- Merged PR #854 (squash commit)
+- Closed issue #857
+
+### Outcome
+
+✅ **Issue #777 (per-user OAuth token runtime for LinkedIn):** COMPLETE
+
+**Shipped in PR #854:**
+- UserOAuthTokens table with CreatedByEntraOid isolation
+- IKeyVault usage removed from Functions layer
+- Per-user token resolution at runtime
+- Cross-user isolation enforcement via data store filters
+- Token expiry detection via GetExpiringAsync()
+
+**Issues #855/#856:** Remain open pending Joseph's post-deployment validation
+
+### Architecture Pattern Reinforced
+
+UserPublisherSettings (built Sprint 20 #731) now fully consumed by Functions at runtime instead of relying on shared Key Vault singleton. Establishes multi-tenancy pattern for social media credentials.
+
+---
+
+---
+
+## 2026-04-24 — Sprint 27 Complete: PR #854 Merged ✅
+
+**Status:** ✅ COMPLETE (Sprint Closure)
+
+PR #854 (eat(auth): per-user OAuth token runtime for LinkedIn) merged to main (commit bdb861). Issue #777 complete. All production-blocking steps routed to Joseph with correct labels and actionable instructions.
+
+### Session Outcome
+
+| Item | Status |
+|------|--------|
+| PR #854 | ✅ Merged to main (commit bdb861) |
+| Issue #777 | ✅ Code complete, runtime active |
+| Issue #857 (DB migration) | ✅ Closed by Joseph |
+| Issue #856 (Key Vault cleanup) | ⏳ Open, awaiting Joseph validation |
+| Issue #855 (LinkedIn validation) | ⏳ Open, awaiting Joseph validation |
+
+### Decisions Finalized
+
+- **LinkedIn manual re-auth constraint:** Tokens cannot be silently refreshed programmatically. User must return to site and complete OAuth consent flow.
+- **Email notification pattern:** Future follow-up issue will implement email queue-based expiry alerts using existing IEmailSender pattern.
+- **Test completeness:** All new per-user data stores require cross-user isolation tests (minimum 4 scenarios).
+- **GFM formatting directive:** All GitHub bodies use backticks for code references, not backslash escapes (hard pre-commit gate).
+
+### Architecture Delivered
+
+- New UserOAuthTokens table with unique (CreatedByEntraOid, SocialMediaPlatformId) constraint
+- New layers: IUserOAuthTokenDataStore, IUserOAuthTokenManager, UserOAuthTokenMappingProfile
+- All 4 Functions updated to inject IUserOAuthTokenManager (no fallback to shared Key Vault)
+- Log sanitization on all OID references (LogSanitizer.Sanitize())
+
+### Next Focus
+
+Sprint 27 transitions to:
+- #852: Notification data layer (GetExpiringWindowAsync amendment)
+- #853: NotifyExpiringTokens Function (email queue-based alerts)
+- #778: Per-user collector onboarding
+
+Joseph to action #855/#856 after LinkedIn post validation.
+
+---
+
+
+---
+
+## 2026-04-25 — Architecture Analysis for #778 (Per-User Collector Onboarding)
+
+**Status:** ✅ COMPLETE (Architecture & Planning)
+
+### Key Architectural Decisions
+
+- **Two typed config tables** (UserCollectorFeedSources + UserCollectorYouTubeChannels) not a generic discriminator table. Matches existing separate-table convention for SyndicationFeedSources/YouTubeSources.
+- **IsActive soft-delete flag** on both config tables. Users can pause without losing configuration. Matches SocialMediaPlatforms.IsActive precedent.
+- **Functions iterate all active configs**: GetAllActiveAsync() returns all users' active configs; Functions process per-owner-OID from each config record. The existing CollectorOwnerOidResolver heuristic is preserved unchanged for legacy single-user path.
+- **API follows UserPublisherSettingsController pattern** exactly: ResolveOwnerOid(), admin targeting via ?ownerOid=, Forbid() for non-admin cross-user access.
+- **Web uses service layer** (not direct manager calls) — architectural invariant.
+- **DeleteAsync at data store filters on BOTH Id AND ownerOid** — last-line-of-defence cross-user deletion prevention.
+- **Response DTOs must NOT expose CreatedByEntraOid**.
+- **Squad:Joe production issue required** for two new DDL tables.
+- **No credential columns in v1** — YouTube Data API key remains global; per-user YouTube API key is a follow-up issue.
+
+### Learnings
+
+- Collector configs (UserCollectorFeedSources) vs. collected content (SyndicationFeedSources) are now clearly separate concerns. Config tables drive execution; content tables store results.
+- ISyndicationFeedReader and IYouTubeReader may need new overloads to accept an explicit URL/channel ID — Trinity must flag this before implementing Functions changes.
+- The CollectorOwnerOidResolver is a single-user heuristic workaround, not a pattern to extend for multi-user scenarios.

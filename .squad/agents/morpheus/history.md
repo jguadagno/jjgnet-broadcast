@@ -47,6 +47,19 @@
 
 ## Recent Sessions
 
+### 2026-04-25 — Issue #778 User Collector Configs
+
+- **Work:** Database migration + EF Core entities for per-user collector onboarding
+  - Created `scripts\database\migrations\2026-04-25-user-collector-configs.sql` with idempotent IF NOT EXISTS guards
+  - Added two tables: `UserCollectorFeedSources` (RSS/Atom/JSON feeds) and `UserCollectorYouTubeChannels` (YouTube channels)
+  - Both tables use `CreatedByEntraOid nvarchar(36)`, unique constraint on owner+identifier, nonclustered owner index, IsActive soft-delete flag, DateTimeOffset audit fields
+  - Created EF Core entity models: `UserCollectorFeedSource.cs` and `UserCollectorYouTubeChannel.cs`
+  - Updated `BroadcastingContext.cs`: Added two `DbSet<>` properties and full `OnModelCreating` configurations matching UserOAuthToken pattern
+  
+- **EF Configuration Pattern:** Clustered PK with `.IsClustered()`, unique composite index first, then nonclustered single-column indexes, `.HasMaxLength()` on string properties, `.HasColumnType("datetimeoffset")` on DateTimeOffset fields, no `.HasDefaultValueSql()` on value types (bool)
+- **Outcome:** Clean build verification; migration script ready for production; entities ready for data store implementations
+- **Status:** ✅ COMPLETE
+
 ### 2026-04-20 — PR #771 Seed Bootstrap Patch
 
 - **Work:** Fix fresh-environment database bootstrap for collector owner resolution
