@@ -1,55 +1,43 @@
 # Team Focus — Now
 
-**Last updated:** 2026-04-20  
-**Sprint:** 21 (active)  
-**Status:** Sprint planning complete. Ready to start collector owner work.  
-**Next:** Begin implementation of #760, #761, #762 (collector owner OID threading).
+> **Last updated:** 2026-04-24
+> **Sprint:** 27 (active) — Milestone 21
+> **Status:** Sprint 26 (Milestone 22) closed. Starting Sprint 27 multi-tenancy work.
+> **Next:** Implement per-user OAuth runtime (#777) and per-user collector configuration (#778).
 
 ## Current Focus
 
-**Sprint 21 — Collector Owner OID Completeness (Epic #609 Round 1)**
-
-Close the remaining Round 1 ownership gaps in the Functions collector flow:
+**Sprint 27 — Multi-Tenancy: Per-User OAuth & Collector Configuration (Epic #609)**
 
 | Issue | Title | Squad |
 |---|---|---|
-| #760 | Source collector owner OID from collector records | trinity |
-| #761 | Remove empty-owner reader scaffolding | trinity |
-| #762 | Add regression coverage for collector owner threading | tank |
+| #777 | Per-user OAuth/token runtime: replace shared Key Vault pattern | trinity |
+| #778 | Per-user collector onboarding/configuration: complete acceptance criteria | trinity |
 
-**Goal:** All collector-triggered persistence paths thread a real owner OID from the source/collector record — no more global scaffold or empty-string fallbacks.
+**Goal:** Replace the shared Key Vault OAuth pattern with per-user token acquisition/storage, and complete per-user collector configuration so each user manages their own RSS/YouTube sources — no cross-user visibility.
 
-## Future Sprints
+## Key Patterns (Sprint 27)
 
-The scope-to-role migration (#763–#769) is now scheduled across dedicated sprints:
-
-| Sprint | Phase | Issues |
-|---|---|---|
-| Sprint 22 | Phase 0 — Foundation | #763, #764 |
-| Sprint 23 | Phases 1-2 — Controller + test migration | #765, #766 |
-| Sprint 24 | Phases 3-4 — Cleanup + Entra portal | #767, #768, #769 |
+1. **Per-user OAuth:** `LinkedinController` (and other platforms) must acquire and store tokens per user, not from a shared Key Vault secret.
+2. **Per-user collectors:** `UserCollectors` data model; queries filter by current user's OID — no cross-user leakage.
+3. **Security invariant:** Tests must prove a user cannot read or execute another user's tokens or collector configurations.
 
 ## Standing Work
 
-- #689: In-memory caching for SocialMediaPlatformManager (backlog)
-
-## Key Patterns (Sprint 21)
-
-1. **Owner OID threading:** Collectors load owner OID from the collector/source record and pass it through `LoadNewPosts`, `LoadAllPosts`, `LoadNewVideos`, `LoadAllVideos`.
-2. **No empty-owner persistence:** Readers must require a non-empty `CreatedByEntraOid` on persisted records.
-3. **Regression tests:** Tests must fail if implementation falls back to removed scaffolding.
+- #803: Allow `.squad` updates to commit from main (squad:neo, low priority)
+- #724: Multi-user teams/groups — blocked on Epic #609 completion
 
 ## Team Composition
 
-**Sprint 21:**
-- Trinity — Collector implementation (#760, #761)
-- Tank — Test coverage (#762)
+**Sprint 27:**
+- Trinity — Implementation (#777, #778)
+- Tank — Test coverage
 - Neo — Review & architecture
 
 **Rotating Roles:** Squad roster available in `.squad/team.md`
 
 ---
 
-**Last Updated:** 2026-04-20  
-**Sprint:** 21 (Collector Owner OID)  
-**Next Decision Point:** Sprint 22 kickoff after Sprint 21 closes
+**Last Updated:** 2026-04-24
+**Sprint:** 27 (Per-User OAuth & Collectors)
+**Next Decision Point:** Sprint 28 kickoff after Sprint 27 closes
