@@ -22,16 +22,74 @@
         <span id="val-ItemType" asp-validation-for="ItemType" class="text-danger"></span>
     </div>
     <input type="hidden" asp-for="ItemTableName" />
-    <div class="mb-3">
+    <div class="mb-3" id="item-primary-key-section">
         <label asp-for="ItemPrimaryKey" class="form-label"></label>
-        <div class="input-group">
-            <input asp-for="ItemPrimaryKey" type="number" class="form-control" autocomplete="off" aria-describedby="val-ItemPrimaryKey" />
-            <button type="button" class="btn btn-outline-secondary" id="btnValidateItem">
-                <i class="bi bi-check-circle me-1"></i>Validate
-            </button>
+        <input asp-for="ItemPrimaryKey" type="hidden" />
+        <span id="val-ItemPrimaryKey" asp-validation-for="ItemPrimaryKey" class="text-danger d-block"></span>
+
+        <!-- Type-specific search UI (revealed after ItemType is selected) -->
+        <div id="source-search-panel" style="display:none;">
+
+            <!-- Engagement search (ItemType = 0) -->
+            <div id="engagement-search-section" class="source-search-section" style="display:none;">
+                <div class="input-group">
+                    <input type="text" id="engagement-search-input" class="form-control" placeholder="Search by engagement name..." autocomplete="off" />
+                    <button type="button" class="btn btn-outline-secondary" id="engagement-search-btn">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                </div>
+                <div id="engagement-results" class="mt-1"></div>
+            </div>
+
+            <!-- Talks search (ItemType = 1, two-step: pick engagement then talk) -->
+            <div id="talks-search-section" class="source-search-section" style="display:none;">
+                <div class="input-group">
+                    <input type="text" id="talks-engagement-input" class="form-control" placeholder="Search by engagement name..." autocomplete="off" />
+                    <button type="button" class="btn btn-outline-secondary" id="talks-engagement-btn">
+                        <i class="bi bi-search me-1"></i>Search Engagement
+                    </button>
+                </div>
+                <div id="talks-engagement-results" class="mt-1"></div>
+                <div id="talks-select-panel" class="mt-2" style="display:none;">
+                    <label class="form-label">Select a Talk</label>
+                    <select class="form-select" id="talks-select">
+                        <option value="">-- Select a Talk --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SyndicationFeedSource search (ItemType = 2) -->
+            <div id="feed-search-section" class="source-search-section" style="display:none;">
+                <div class="input-group">
+                    <input type="text" id="feed-search-input" class="form-control" placeholder="Search by feed title..." autocomplete="off" />
+                    <button type="button" class="btn btn-outline-secondary" id="feed-search-btn">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                </div>
+                <div id="feed-results" class="mt-1"></div>
+            </div>
+
+            <!-- YouTubeSource search (ItemType = 3) -->
+            <div id="youtube-search-section" class="source-search-section" style="display:none;">
+                <div class="input-group">
+                    <input type="text" id="youtube-search-input" class="form-control" placeholder="Search by video title..." autocomplete="off" />
+                    <button type="button" class="btn btn-outline-secondary" id="youtube-search-btn">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                </div>
+                <div id="youtube-results" class="mt-1"></div>
+            </div>
         </div>
-        <span id="val-ItemPrimaryKey" asp-validation-for="ItemPrimaryKey" class="text-danger"></span>
-        <div id="validation-result" class="mt-2"></div>
+
+        <!-- Selected item display (shown once an item is chosen) -->
+        <div id="selected-item-display" class="mt-1" style="display:none;">
+            <div class="alert alert-success d-flex align-items-center justify-content-between mb-0 py-2">
+                <span><i class="bi bi-check-circle-fill me-2"></i><strong>Selected:</strong> <span id="selected-item-name"></span></span>
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" id="clear-item-btn">
+                    <i class="bi bi-x-lg me-1"></i>Change
+                </button>
+            </div>
+        </div>
     </div>
     <div class="mb-3">
         <label asp-for="SendOnDateTime" class="form-label">Send on Date/Time</label>

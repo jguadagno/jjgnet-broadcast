@@ -1,6 +1,7 @@
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +19,9 @@ public class SchedulesController : Controller
 {
     private readonly IScheduledItemService _scheduledItemService;
     private readonly IScheduledItemValidationService _validationService;
+    private readonly IEngagementService _engagementService;
+    private readonly ISyndicationFeedSourceService _syndicationFeedSourceService;
+    private readonly IYouTubeSourceService _youTubeSourceService;
     private readonly IMapper _mapper;
     private readonly ILogger<SchedulesController> _logger;
 
@@ -28,12 +32,25 @@ public class SchedulesController : Controller
     /// <param name="validationService">The scheduled item validation service</param>
     /// <param name="mapper">The mapper service</param>
     /// <param name="logger">The logger to use</param>
-    public SchedulesController(IScheduledItemService scheduledItemService, IScheduledItemValidationService validationService, IMapper mapper, ILogger<SchedulesController> logger)
+    /// <param name="engagementService">The engagement service</param>
+    /// <param name="syndicationFeedSourceService">The syndication feed source service</param>
+    /// <param name="youTubeSourceService">The YouTube source service</param>
+    public SchedulesController(
+        IScheduledItemService scheduledItemService,
+        IScheduledItemValidationService validationService,
+        IMapper mapper,
+        ILogger<SchedulesController> logger,
+        IEngagementService engagementService,
+        ISyndicationFeedSourceService syndicationFeedSourceService,
+        IYouTubeSourceService youTubeSourceService)
     {
         _scheduledItemService = scheduledItemService;
         _validationService = validationService;
         _mapper = mapper;
         _logger = logger;
+        _engagementService = engagementService;
+        _syndicationFeedSourceService = syndicationFeedSourceService;
+        _youTubeSourceService = youTubeSourceService;
     }
 
     /// <summary>
@@ -354,5 +371,68 @@ public class SchedulesController : Controller
 
         var result = await _validationService.ValidateItemAsync(itemType, itemPrimaryKey);
         return Json(result);
+    }
+
+    /// <summary>
+    /// Searches engagements by name for the AJAX source item lookup.
+    /// </summary>
+    /// <param name="q">Optional search term to filter engagement names</param>
+    /// <returns>JSON array of matching engagements with id and name</returns>
+    [HttpGet]
+    public async Task<IActionResult> SearchEngagements(string q = "")
+    {
+        var result = await _engagementService.GetEngagementsAsync(
+            page: 1, pageSize: 20,
+            sortBy: "name", sortDescending: false,
+            filter: string.IsNullOrWhiteSpace(q) ? null : q);
+        var items = result.Items.Select(e => new { id = e.Id, name = e.Name });
+        return Json(items);
+    }
+
+    /// <summary>
+    /// Returns all talks for a given engagement, for the AJAX Talk source item lookup.
+    /// </summary>
+    /// <param name="engagementId">The engagement whose talks to retrieve</param>
+    /// <returns>JSON array of talks with id and name</returns>
+    [HttpGet]
+    public async Task<IActionResult> GetTalksByEngagement(int engagementId)
+    {
+        if (engagementId <= 0)
+            return Json(Array.Empty<object>());
+        var result = await _engagementService.GetEngagementTalksAsync(engagementId, 1, 50);
+        var items = result.Items.Select(t => new { id = t.Id, name = t.Name });
+        return Json(items);
+    }
+
+    /// <summary>
+    /// Searches syndication feed sources by title for the AJAX source item lookup.
+    /// </summary>
+    /// <param name="q">Optional search term to filter feed source titles</param>
+    /// <returns>JSON array of matching feed sources with id and name</returns>
+    [HttpGet]
+    public async Task<IActionResult> SearchSyndicationFeedSources(string q = "")
+    {
+        var all = await _syndicationFeedSourceService.GetAllAsync();
+        IEnumerable<SyndicationFeedSource> filtered = all;
+        if (!string.IsNullOrWhiteSpace(q))
+            filtered = all.Where(s => s.Title.Contains(q, StringComparison.OrdinalIgnoreCase));
+        var items = filtered.Take(20).Select(s => new { id = s.Id, name = s.Title });
+        return Json(items);
+    }
+
+    /// <summary>
+    /// Searches YouTube sources by title for the AJAX source item lookup.
+    /// </summary>
+    /// <param name="q">Optional search term to filter YouTube source titles</param>
+    /// <returns>JSON array of matching YouTube sources with id and name</returns>
+    [HttpGet]
+    public async Task<IActionResult> SearchYouTubeSources(string q = "")
+    {
+        var all = await _youTubeSourceService.GetAllAsync();
+        IEnumerable<YouTubeSource> filtered = all;
+        if (!string.IsNullOrWhiteSpace(q))
+            filtered = all.Where(s => s.Title.Contains(q, StringComparison.OrdinalIgnoreCase));
+        var items = filtered.Take(20).Select(s => new { id = s.Id, name = s.Title });
+        return Json(items);
     }
 }

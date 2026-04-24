@@ -19,6 +19,9 @@ public class SchedulesControllerTests
 {
     private readonly Mock<IScheduledItemService> _scheduledItemService;
     private readonly Mock<IScheduledItemValidationService> _validationService;
+    private readonly Mock<IEngagementService> _engagementService;
+    private readonly Mock<ISyndicationFeedSourceService> _syndicationFeedSourceService;
+    private readonly Mock<IYouTubeSourceService> _youTubeSourceService;
     private readonly Mock<IMapper> _mapper;
     private readonly Mock<ILogger<SchedulesController>> _logger;
     private readonly SchedulesController _controller;
@@ -27,9 +30,19 @@ public class SchedulesControllerTests
     {
         _scheduledItemService = new Mock<IScheduledItemService>();
         _validationService = new Mock<IScheduledItemValidationService>();
+        _engagementService = new Mock<IEngagementService>();
+        _syndicationFeedSourceService = new Mock<ISyndicationFeedSourceService>();
+        _youTubeSourceService = new Mock<IYouTubeSourceService>();
         _mapper = new Mock<IMapper>();
         _logger = new Mock<ILogger<SchedulesController>>();
-        _controller = new SchedulesController(_scheduledItemService.Object, _validationService.Object, _mapper.Object, _logger.Object);
+        _controller = new SchedulesController(
+            _scheduledItemService.Object,
+            _validationService.Object,
+            _mapper.Object,
+            _logger.Object,
+            _engagementService.Object,
+            _syndicationFeedSourceService.Object,
+            _youTubeSourceService.Object);
         
         // Initialize TempData
         var httpContext = new DefaultHttpContext();
@@ -663,5 +676,98 @@ public class SchedulesControllerTests
         Assert.Equal("Details", redirectResult.ActionName);
         Assert.NotNull(capturedItem);
         Assert.Equal(userOid, capturedItem!.CreatedByEntraOid);
+    }
+
+    // -------------------------------------------------------------------------
+    // Source search actions (#810)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SearchEngagements_WithQuery_ReturnsMatchingEngagements()
+    {
+        // Arrange
+        var engagements = new List<Engagement>
+        {
+            new Engagement { Id = 1, Name = "TechConf 2024" },
+            new Engagement { Id = 2, Name = "DevFest 2024" }
+        };
+        var pagedResult = new PagedResult<Engagement> { Items = engagements, TotalCount = 2 };
+        _engagementService.Setup(s => s.GetEngagementsAsync(1, 20, "name", false, "Tech")).ReturnsAsync(pagedResult);
+
+        // Act
+        var result = await _controller.SearchEngagements("Tech");
+
+        // Assert
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.NotNull(jsonResult.Value);
+    }
+
+    [Fact]
+    public async Task GetTalksByEngagement_WithValidId_ReturnsTalks()
+    {
+        // Arrange
+        var talks = new List<Talk>
+        {
+            new Talk { Id = 10, Name = "Intro to .NET" },
+            new Talk { Id = 11, Name = "Advanced Blazor" }
+        };
+        var pagedResult = new PagedResult<Talk> { Items = talks, TotalCount = 2 };
+        _engagementService.Setup(s => s.GetEngagementTalksAsync(5, 1, 50)).ReturnsAsync(pagedResult);
+
+        // Act
+        var result = await _controller.GetTalksByEngagement(5);
+
+        // Assert
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.NotNull(jsonResult.Value);
+    }
+
+    [Fact]
+    public async Task GetTalksByEngagement_WithZeroId_ReturnsEmptyArray()
+    {
+        // Act
+        var result = await _controller.GetTalksByEngagement(0);
+
+        // Assert
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        _engagementService.Verify(s => s.GetEngagementTalksAsync(It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SearchSyndicationFeedSources_WithQuery_ReturnsFilteredSources()
+    {
+        // Arrange
+        var sources = new List<SyndicationFeedSource>
+        {
+            new SyndicationFeedSource { Id = 1, Title = "Tech Blog", FeedIdentifier = "f1", Author = "A", Url = "http://a.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" },
+            new SyndicationFeedSource { Id = 2, Title = "News Feed", FeedIdentifier = "f2", Author = "B", Url = "http://b.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" }
+        };
+        _syndicationFeedSourceService.Setup(s => s.GetAllAsync()).ReturnsAsync(sources);
+
+        // Act
+        var result = await _controller.SearchSyndicationFeedSources("Tech");
+
+        // Assert
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.NotNull(jsonResult.Value);
+    }
+
+    [Fact]
+    public async Task SearchYouTubeSources_WithQuery_ReturnsFilteredSources()
+    {
+        // Arrange
+        var sources = new List<YouTubeSource>
+        {
+            new YouTubeSource { Id = 1, Title = "Intro Video", VideoId = "v1", Author = "A", Url = "http://a.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" },
+            new YouTubeSource { Id = 2, Title = "Tutorial", VideoId = "v2", Author = "B", Url = "http://b.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" }
+        };
+        _youTubeSourceService.Setup(s => s.GetAllAsync()).ReturnsAsync(sources);
+
+        // Act
+        var result = await _controller.SearchYouTubeSources("Intro");
+
+        // Assert
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.NotNull(jsonResult.Value);
     }
 }
