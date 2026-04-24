@@ -74,15 +74,17 @@ public class UserCollectorYouTubeChannelDataStore(
 
             if (existing is null)
             {
-                existing = mapper.Map<Models.UserCollectorYouTubeChannel>(config);
-                existing.CreatedOn = DateTimeOffset.UtcNow;
+                existing = new Models.UserCollectorYouTubeChannel
+                {
+                    CreatedByEntraOid = config.CreatedByEntraOid,
+                    ChannelId = config.ChannelId,
+                    CreatedOn = DateTimeOffset.UtcNow
+                };
                 broadcastingContext.UserCollectorYouTubeChannels.Add(existing);
             }
-            else
-            {
-                mapper.Map(config, existing);
-            }
 
+            existing.DisplayName = config.DisplayName;
+            existing.IsActive = config.IsActive;
             existing.LastUpdatedOn = DateTimeOffset.UtcNow;
 
             await broadcastingContext.SaveChangesAsync(cancellationToken);

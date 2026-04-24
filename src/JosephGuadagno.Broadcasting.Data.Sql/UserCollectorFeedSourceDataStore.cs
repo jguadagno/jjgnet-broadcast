@@ -74,15 +74,17 @@ public class UserCollectorFeedSourceDataStore(
 
             if (existing is null)
             {
-                existing = mapper.Map<Models.UserCollectorFeedSource>(config);
-                existing.CreatedOn = DateTimeOffset.UtcNow;
+                existing = new Models.UserCollectorFeedSource
+                {
+                    CreatedByEntraOid = config.CreatedByEntraOid,
+                    FeedUrl = config.FeedUrl,
+                    CreatedOn = DateTimeOffset.UtcNow
+                };
                 broadcastingContext.UserCollectorFeedSources.Add(existing);
             }
-            else
-            {
-                mapper.Map(config, existing);
-            }
 
+            existing.DisplayName = config.DisplayName;
+            existing.IsActive = config.IsActive;
             existing.LastUpdatedOn = DateTimeOffset.UtcNow;
 
             await broadcastingContext.SaveChangesAsync(cancellationToken);

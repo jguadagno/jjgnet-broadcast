@@ -85,7 +85,7 @@ public class UserCollectorFeedSourcesControllerTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_ReturnsForbid_WhenCallerIsNotOwnerAndNotAdmin()
+    public async Task GetAsync_ReturnsForbid_WhenCallerIsNotOwnerAndNotAdmin()
     {
         // Arrange
         const string ownerOid = "owner-oid-11111111";
@@ -99,7 +99,7 @@ public class UserCollectorFeedSourcesControllerTests
         var sut = CreateSut(nonOwnerOid, isSiteAdmin: false);
 
         // Act
-        var result = await sut.GetByIdAsync(5);
+        var result = await sut.GetAsync(5);
 
         // Assert - non-owner cannot read another user's config
         result.Result.Should().BeOfType<ForbidResult>();
@@ -107,7 +107,7 @@ public class UserCollectorFeedSourcesControllerTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_ReturnsConfig_WhenCallerIsOwner()
+    public async Task GetAsync_ReturnsConfig_WhenCallerIsOwner()
     {
         // Arrange
         const string ownerOid = "owner-oid-11111111";
@@ -120,7 +120,7 @@ public class UserCollectorFeedSourcesControllerTests
         var sut = CreateSut(ownerOid);
 
         // Act
-        var result = await sut.GetByIdAsync(5);
+        var result = await sut.GetAsync(5);
 
         // Assert - owner can read their own config
         result.Result.Should().BeOfType<OkObjectResult>();
@@ -128,7 +128,7 @@ public class UserCollectorFeedSourcesControllerTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_ReturnsConfig_WhenCallerIsSiteAdmin()
+    public async Task GetAsync_ReturnsConfig_WhenCallerIsSiteAdmin()
     {
         // Arrange
         const string adminOid = "admin-oid-11111111";
@@ -142,7 +142,7 @@ public class UserCollectorFeedSourcesControllerTests
         var sut = CreateSut(adminOid, isSiteAdmin: true);
 
         // Act
-        var result = await sut.GetByIdAsync(5);
+        var result = await sut.GetAsync(5);
 
         // Assert - admin can read any user's config
         result.Result.Should().BeOfType<OkObjectResult>();
@@ -150,7 +150,7 @@ public class UserCollectorFeedSourcesControllerTests
     }
 
     [Fact]
-    public async Task PostAsync_SetsCreatedByEntraOidFromCurrentUser_NotRequestBody()
+    public async Task SaveAsync_SetsCreatedByEntraOidFromCurrentUser_NotRequestBody()
     {
         // Arrange
         const string currentUserOid = "current-user-oid-11111111";
@@ -165,15 +165,24 @@ public class UserCollectorFeedSourcesControllerTests
         _manager
             .Setup(m => m.SaveAsync(It.IsAny<UserCollectorFeedSource>(), It.IsAny<CancellationToken>()))
             .Callback<UserCollectorFeedSource, CancellationToken>((config, _) => capturedConfig = config)
-            .ReturnsAsync((UserCollectorFeedSource config, CancellationToken _) => config with { Id = 10 });
+            .ReturnsAsync((UserCollectorFeedSource config, CancellationToken _) => new UserCollectorFeedSource
+            {
+                Id = 10,
+                CreatedByEntraOid = config.CreatedByEntraOid,
+                FeedUrl = config.FeedUrl,
+                DisplayName = config.DisplayName,
+                IsActive = config.IsActive,
+                CreatedOn = config.CreatedOn,
+                LastUpdatedOn = config.LastUpdatedOn
+            });
 
         var sut = CreateSut(currentUserOid);
 
         // Act
-        var result = await sut.PostAsync(request);
+        var result = await sut.SaveAsync(null, request);
 
         // Assert - CreatedByEntraOid MUST come from the authenticated user, never the request body
-        result.Result.Should().BeOfType<CreatedAtActionResult>();
+        result.Result.Should().BeOfType<OkObjectResult>();
         capturedConfig.Should().NotBeNull();
         capturedConfig!.CreatedByEntraOid.Should().Be(currentUserOid);
         capturedConfig.FeedUrl.Should().Be("https://example.com/feed.xml");
@@ -181,16 +190,11 @@ public class UserCollectorFeedSourcesControllerTests
     }
 
     [Fact]
-    public async Task PutAsync_ReturnsForbid_WhenNonOwnerAttemptsUpdate()
+    public async Task SaveAsync_ReturnsForbid_WhenNonAdminTargetsAnotherUser()
     {
         // Arrange
         const string ownerOid = "owner-oid-11111111";
         const string nonOwnerOid = "non-owner-oid-22222222";
-        var existingConfig = BuildFeedSource(5, ownerOid, "https://owner.com/feed.xml");
-
-        _manager
-            .Setup(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingConfig);
 
         var request = new UserCollectorFeedSourceRequest
         {
@@ -201,25 +205,19 @@ public class UserCollectorFeedSourcesControllerTests
 
         var sut = CreateSut(nonOwnerOid, isSiteAdmin: false);
 
-        // Act
-        var result = await sut.PutAsync(5, request);
+        // Act - non-admin passing another user's OID in the ownerOid query param
+        var result = await sut.SaveAsync(ownerOid, request);
 
-        // Assert - non-owner cannot update another user's config
+        // Assert - non-admin cannot save configs targeting another user's OID
         result.Result.Should().BeOfType<ForbidResult>();
-        _manager.Verify(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()), Times.Once);
         _manager.Verify(m => m.SaveAsync(It.IsAny<UserCollectorFeedSource>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task PutAsync_Succeeds_WhenOwnerUpdatesOwnConfig()
+    public async Task SaveAsync_Succeeds_WhenOwnerUpdatesOwnConfig()
     {
         // Arrange
         const string ownerOid = "owner-oid-11111111";
-        var existingConfig = BuildFeedSource(5, ownerOid, "https://owner.com/feed.xml");
-
-        _manager
-            .Setup(m => m.GetByIdAsync(5, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingConfig);
 
         UserCollectorFeedSource? capturedConfig = null;
         _manager
@@ -237,7 +235,7 @@ public class UserCollectorFeedSourcesControllerTests
         var sut = CreateSut(ownerOid);
 
         // Act
-        var result = await sut.PutAsync(5, request);
+        var result = await sut.SaveAsync(null, request);
 
         // Assert - owner can update their own config
         result.Result.Should().BeOfType<OkObjectResult>();
