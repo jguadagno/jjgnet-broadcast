@@ -2,6 +2,15 @@
 
 Compiled record of team decisions, architecture choices, and resolutions.
 
+## Directives
+
+### 2026-04-24T17:45:29Z: User directive
+**By:** Joseph (via Copilot)
+**What:** GitHub issues and PR comments must use GitHub Flavored Markdown. Inline code and file paths use backticks (`), never backslashes. GitHub renders GFM — always use it.
+**Why:** User request — agents have repeatedly used backslash-escaped text instead of GFM backtick code spans in issue and PR comment bodies.
+
+---
+
 ## Current Sprint Wrap-Up (Sprint 20)
 
 **Date:** 2026-04-19  
