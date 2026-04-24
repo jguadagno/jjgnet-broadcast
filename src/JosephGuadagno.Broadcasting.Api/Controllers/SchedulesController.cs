@@ -382,7 +382,7 @@ public class SchedulesController: ControllerBase
     }
 
     /// <summary>
-    /// Gets a list of orphaned scheduled items(items whose source no longer exists)
+    /// Gets a list of orphaned scheduled items (items whose source no longer exists)
     /// </summary>
     /// <param name="page">The page number (default: 1)</param>
     /// <param name="pageSize">The page size (default: 25)</param>
@@ -423,7 +423,7 @@ public class SchedulesController: ControllerBase
     }
 
     /// <summary>
-    /// Validates that a source item existsfor the given type and primary key.
+    /// Validates that a source item exists for the given type and primary key.
     /// Used by the Web project's AJAX validation.
     /// </summary>
     /// <param name="itemType">The type of item (Engagements, Talks, SyndicationFeedSources, YouTubeSources)</param>
