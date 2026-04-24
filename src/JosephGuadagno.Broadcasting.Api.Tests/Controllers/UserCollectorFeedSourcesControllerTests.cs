@@ -247,6 +247,39 @@ public class UserCollectorFeedSourcesControllerTests
     }
 
     [Fact]
+    public async Task SaveAsync_Succeeds_WhenAdminTargetsAnotherUser()
+    {
+        // Arrange
+        const string adminOid = "admin-oid-11111111";
+        const string targetUserOid = "target-user-oid-22222222";
+
+        UserCollectorFeedSource? capturedConfig = null;
+        _manager
+            .Setup(m => m.SaveAsync(It.IsAny<UserCollectorFeedSource>(), It.IsAny<CancellationToken>()))
+            .Callback<UserCollectorFeedSource, CancellationToken>((config, _) => capturedConfig = config)
+            .ReturnsAsync((UserCollectorFeedSource config, CancellationToken _) => config);
+
+        var request = new UserCollectorFeedSourceRequest
+        {
+            FeedUrl = "https://targetuser.com/feed.xml",
+            DisplayName = "Target User Feed",
+            IsActive = true
+        };
+
+        var sut = CreateSut(adminOid, isSiteAdmin: true);
+
+        // Act - admin passing another user's OID in ownerOid query param
+        var result = await sut.SaveAsync(targetUserOid, request);
+
+        // Assert - admin can save configs targeting another user; OID is the TARGET's, not the admin's
+        result.Result.Should().BeOfType<OkObjectResult>();
+        capturedConfig.Should().NotBeNull();
+        capturedConfig!.CreatedByEntraOid.Should().Be(targetUserOid);
+        capturedConfig.FeedUrl.Should().Be("https://targetuser.com/feed.xml");
+        _manager.Verify(m => m.SaveAsync(It.IsAny<UserCollectorFeedSource>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task DeleteAsync_ReturnsForbid_WhenNonOwnerAttemptsDelete()
     {
         // Arrange

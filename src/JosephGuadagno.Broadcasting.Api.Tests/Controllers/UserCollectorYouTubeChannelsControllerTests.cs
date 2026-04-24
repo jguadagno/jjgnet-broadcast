@@ -247,6 +247,39 @@ public class UserCollectorYouTubeChannelsControllerTests
     }
 
     [Fact]
+    public async Task SaveAsync_Succeeds_WhenAdminTargetsAnotherUser()
+    {
+        // Arrange
+        const string adminOid = "admin-oid-11111111";
+        const string targetUserOid = "target-user-oid-22222222";
+
+        UserCollectorYouTubeChannel? capturedConfig = null;
+        _manager
+            .Setup(m => m.SaveAsync(It.IsAny<UserCollectorYouTubeChannel>(), It.IsAny<CancellationToken>()))
+            .Callback<UserCollectorYouTubeChannel, CancellationToken>((config, _) => capturedConfig = config)
+            .ReturnsAsync((UserCollectorYouTubeChannel config, CancellationToken _) => config);
+
+        var request = new UserCollectorYouTubeChannelRequest
+        {
+            ChannelId = "UC-target-channel-456",
+            DisplayName = "Target User Channel",
+            IsActive = true
+        };
+
+        var sut = CreateSut(adminOid, isSiteAdmin: true);
+
+        // Act - admin passing another user's OID in ownerOid query param
+        var result = await sut.SaveAsync(targetUserOid, request);
+
+        // Assert - admin can save configs targeting another user; OID is the TARGET's, not the admin's
+        result.Result.Should().BeOfType<OkObjectResult>();
+        capturedConfig.Should().NotBeNull();
+        capturedConfig!.CreatedByEntraOid.Should().Be(targetUserOid);
+        capturedConfig.ChannelId.Should().Be("UC-target-channel-456");
+        _manager.Verify(m => m.SaveAsync(It.IsAny<UserCollectorYouTubeChannel>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task DeleteAsync_ReturnsForbid_WhenNonOwnerAttemptsDelete()
     {
         // Arrange
