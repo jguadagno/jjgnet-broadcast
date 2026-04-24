@@ -18969,3 +18969,60 @@ Commits pushed to `origin/issue-845-code-quality-cleanup`:
 
 **The branch is ready for Sparks to review or for the coordinator to open the combined PR.**
 
+
+---
+
+## 2026-04-25: Architectural Decisions — Issue #778
+
+**Decision Set Author:** Neo (Lead)
+**Related Files:** 
+- .squad/decisions/inbox/neo-778-arch.md (Architecture)
+- .squad/decisions/inbox/neo-778-plan.md (Implementation Brief)
+- .squad/decisions/inbox/morpheus-778-db.md (Database)
+- .squad/decisions/inbox/trinity-778-backend.md (Backend)
+- .squad/decisions/inbox/switch-778-web.md (Web)
+- .squad/decisions/inbox/tank-778-security-matrix.md (Security Tests)
+
+### Overview
+Per-user collector onboarding/configuration feature requires two new typed config tables (UserCollectorFeedSources, UserCollectorYouTubeChannels) with soft-delete support, separate data stores, managers, and API endpoints following UserPublisherSettingsController ownership enforcement pattern. Web layer uses service interfaces to call the API. Database migration requires manual execution in production during maintenance window.
+
+### Key Decisions
+
+**D1:** Two typed config tables, not a generic UserCollectors table with discriminator.
+- Strongly-typed EF Core entities, simpler LINQ queries, straightforward unique constraints per type.
+
+**D2:** IsActive soft-delete flag on both config tables.
+- Users may temporarily pause a feed without losing configuration. Collectors filter IsActive = 1 at query time.
+
+**D3:** Functions iterate all active configs, not single-owner heuristic.
+- Config tables own the OID; extend existing Functions to loop over configs and pass config's CreatedByEntraOid to readers.
+
+**D4:** API follows UserPublisherSettingsController ownership enforcement pattern.
+- ResolveOwnerOid() private method; admin may query other users via ?ownerOid= query param; non-admin returns 403 Forbid() when targeting another user.
+
+**D5:** Web uses service layer (not direct data store calls).
+- CollectorSettingsController calls IUserCollectorFeedSourceService / IUserCollectorYouTubeChannelService thin wrappers that forward to the API.
+
+**D6:** Squad:Joe issue required for production DB migration.
+- Code deploys first; migration script runs in maintenance window. New GitHub issue with label squad:Joe required with step-by-step instructions.
+
+**D7:** No credential storage on collector configs in v1.
+- v1 stores only public feed URL; no API key or auth columns. Follow-up issue for per-user YouTube API key support.
+
+### Implementation Status
+- **Morpheus (Database):** Migration script created with idempotent DDL, two typed tables, unique constraints, nonclustered index on owner OID.
+- **Trinity (Backend):** Domain models, interfaces, data stores, managers, API controllers implemented. LogSanitizer.Sanitize() on all user-controlled strings. Reader interface limitation flagged (readers don't yet accept dynamic URLs/channel IDs).
+- **Switch (Web):** Service interfaces mirror API contracts, Bootstrap modals for Add/Edit, soft-delete support, admin context banner, LogSanitizer on all logs, DI via TryAddScoped.
+- **Tank (Tests):** Security test matrix includes 8 Forbid() coverage tests, 2 OID injection prevention tests, 2 cross-user isolation tests, admin bypass tests, owner success tests.
+
+### Security & Conventions Compliance
+✅ LogSanitizer on all user-controlled strings  
+✅ [IgnoreAntiforgeryToken] on API controller class  
+✅ DeleteAsync enforces BOTH ID AND ownerOid filter  
+✅ DateTimeOffset for all datetime fields  
+✅ AutoMapper for all entity ↔ domain mapping  
+✅ Response DTOs do NOT expose CreatedByEntraOid  
+✅ [ValidateAntiForgeryToken] on Web POST methods (soft-delete only)
+
+---
+
