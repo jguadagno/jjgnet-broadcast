@@ -11,14 +11,22 @@
 4. Post with `gh api repos/<owner>/<repo>/issues/<number>/comments --method POST --input <json-file>`.
 5. Delete the temporary JSON file after the request succeeds.
 
+## Content guidelines — GFM required
+
+Before composing the comment body:
+- Use **GitHub Flavored Markdown (GFM)** — inline code uses backticks: `` `path/to/file.cs` ``, `` `MyMethod()` ``
+- **NEVER** write `\text\` (backslash-word-backslash) — it renders as literal backslashes on GitHub, not code
+- **NEVER** write `\\\` as a code fence — use triple backticks (` ``` `) instead
+- **Self-check:** before posting, scan the body for `\word\` patterns and replace with `` `word` ``
+
 ## Example
 ```powershell
-$payloadPath = '.\\gh-comment-123.json'
-@{ body = 'Neo review note: concise finding here.' } |
+$payloadPath = '.\gh-comment-123.json'
+@{ body = 'Neo review note: use ``MyMethod()`` not ``\MyMethod\``.' } |
   ConvertTo-Json -Compress |
   Set-Content -Path $payloadPath -Encoding utf8
 
-gh api repos\owner\repo\issues\123\comments --method POST --input $payloadPath
+gh api repos/owner/repo/issues/123/comments --method POST --input $payloadPath
 
 Remove-Item $payloadPath -Force
 ```
