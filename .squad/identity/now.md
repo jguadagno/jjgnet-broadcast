@@ -1,20 +1,27 @@
 # Team Focus — Now
 
-> **Last updated:** 2026-04-24T21:24:52Z
-> **Sprint:** 27 (complete) — Milestone 21
-> **Status:** ✅ RESOLVED. Issue #858 (manual DB migration) completed by Joe in production. No blocking work remains for Sprint 27.
-> **Next:** Sprint 28 kickoff or continue with open backlog issues.
+> **Last updated:** 2026-04-24T21:30:57Z
+> **Sprint:** 27 (in progress) — Milestone 21
+> **Status:** Core multi-tenancy work merged. Joe validating site functionality; #855 and #856 will close after validation. #852 and #853 remain open — deferred to next sprint.
 
 ## Current Focus
 
-**Sprint 27 — ALL DELIVERABLES COMPLETE** ✅
+**Sprint 27 — IN PROGRESS** 🔄
 
-**Core Deliverables:** ✅ COMPLETE
+**Completed:**
 - ✅ #777 — Per-user OAuth/token runtime (merged via PR #854)
 - ✅ #778 — Per-user collector onboarding/configuration (merged via PR #859)
-- ✅ #858 — Manual DB migration for per-user collector config tables (Joe completed in production 2026-04-24T21:24:52Z)
+- ✅ #858 — Manual DB migration for per-user collector config tables (Joe, production 2026-04-24)
 
-**Goal:** Begin Sprint 28 planning or complete remaining backlog issues. Monitor CodeQL CSRF alert #41 for next scan resolution.
+**Pending (Joe validating):**
+- ⏳ #855 — Closes after site usability/config validation passes
+- ⏳ #856 — Closes after site usability/config validation passes
+
+**Deferred to next sprint:**
+- 🔜 #852 — Next sprint
+- 🔜 #853 — Next sprint
+
+**Goal:** Complete #855 and #856 after Joe's validation. Then begin next sprint with #852 and #853.
 
 ## Key Patterns (Sprint 27)
 
