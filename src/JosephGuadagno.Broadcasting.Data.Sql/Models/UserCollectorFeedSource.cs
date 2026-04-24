@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace JosephGuadagno.Broadcasting.Data.Sql.Models;
 
 /// <summary>
@@ -13,16 +15,19 @@ public class UserCollectorFeedSource
     /// <summary>
     /// Gets or sets the Entra Object ID of the user who owns this config
     /// </summary>
+    [MaxLength(100)]
     public string CreatedByEntraOid { get; set; } = string.Empty;
     
     /// <summary>
     /// Gets or sets the feed URL to poll
     /// </summary>
+    [MaxLength(2048)]
     public string FeedUrl { get; set; } = string.Empty;
     
     /// <summary>
     /// Gets or sets the friendly display name for this feed
     /// </summary>
+    [MaxLength(255)]
     public string DisplayName { get; set; } = string.Empty;
     
     /// <summary>

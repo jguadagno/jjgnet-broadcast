@@ -49,7 +49,7 @@ public class UserCollectorFeedSourceDataStore(
     {
         var entities = await broadcastingContext.UserCollectorFeedSources
             .AsNoTracking()
-            .Where(c => c.IsActive == true)
+            .Where(c => c.IsActive)
             .OrderBy(c => c.CreatedByEntraOid)
             .ThenBy(c => c.DisplayName)
             .ToListAsync(cancellationToken);
