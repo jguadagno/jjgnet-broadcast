@@ -104,6 +104,7 @@ public class UserCollectorFeedSourcesController(
     /// <response code="401">The caller is not authenticated</response>
     /// <response code="403">The caller is not allowed to save configurations for the requested owner</response>
     [HttpPost]
+    [IgnoreAntiforgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorFeedSourceResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
