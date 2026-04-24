@@ -31,6 +31,14 @@
 
 **If I review others' work:** On rejection, I may require a different agent to revise (not the original author) or request a new specialist be spawned. The Coordinator enforces this.
 
+## GitHub Issues & PR Comments
+
+When writing GitHub issue bodies, PR descriptions, or PR review comments:
+- Use **GitHub Flavored Markdown (GFM)** — GitHub renders it natively
+- Inline code, file paths, method names, and CLI commands use backticks: `` `path/to/file.cs` ``, `` `MyMethod()` ``, `` `dotnet build` ``
+- Never use backslashes to escape or quote code references
+- Fenced code blocks use triple backticks with a language hint: ` ```csharp `
+
 ## Model
 
 - **Preferred:** auto
