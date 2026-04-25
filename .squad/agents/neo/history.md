@@ -1,3 +1,22 @@
+## 2026-04-28 — AutoMapper Mapping Audit
+
+**Status:** ✅ COMPLETE (Read-Only Audit)
+**Artifact:** .squad/decisions/inbox/neo-automapper-audit.md
+
+### Findings
+
+- Audited 6 profiles (1 API, 5 Data.Sql), 9 controllers, 21 DTOs, and all domain models
+- **2 confirmed missing API mappings** — both in SyndicationFeedSourcesController
+- All other 27 API mappings in ApiBroadcastingProfile.cs are correctly registered
+
+### Learnings
+
+- SyndicationFeedSource ↔ SyndicationFeedSourceRequest/Response mappings are absent from ApiBroadcastingProfile.cs — runtime AutoMapperMappingException on all GET and POST syndication endpoints
+- Fix: add CreateMap<SyndicationFeedSource, SyndicationFeedSourceResponse>() and CreateMap<SyndicationFeedSourceRequest, SyndicationFeedSource>() following the YouTubeSource pattern (same ignored fields: Id, AddedOn, LastUpdatedOn, CreatedByEntraOid; same Tags ?? new List<string>())
+- `SourceItemValidationResponse` is correctly constructed directly with `new` — no mapper needed
+- Data.Sql profiles are complete and unaffected
+
+---
 ## Core Context
 
 **Key established patterns:**
