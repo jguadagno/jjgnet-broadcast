@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Api;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -39,16 +39,6 @@ public class SyndicationFeedSourcesController : ControllerBase
         _mapper = mapper;
     }
 
-    private string GetOwnerOid()
-    {
-        return User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
-            ?? throw new InvalidOperationException("Entra Object ID claim not found");
-    }
-
-    private bool IsSiteAdministrator()
-    {
-        return User.IsInRole(RoleNames.SiteAdministrator);
-    }
 
     /// <summary>
     /// Gets all the syndication feed sources
@@ -65,13 +55,13 @@ public class SyndicationFeedSourcesController : ControllerBase
     public async Task<ActionResult<List<SyndicationFeedSourceResponse>>> GetSyndicationFeedSourcesAsync()
     {
         List<SyndicationFeedSource> sources;
-        if (IsSiteAdministrator())
+        if (User.IsSiteAdministrator())
         {
             sources = await _syndicationFeedSourceManager.GetAllAsync();
         }
         else
         {
-            var ownerOid = GetOwnerOid();
+            var ownerOid = User.GetOwnerOid();
             sources = await _syndicationFeedSourceManager.GetAllAsync(ownerOid);
         }
 
@@ -102,7 +92,7 @@ public class SyndicationFeedSourcesController : ControllerBase
         if (source is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && source.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && source.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -132,7 +122,7 @@ public class SyndicationFeedSourcesController : ControllerBase
         }
 
         var source = _mapper.Map<SyndicationFeedSource>(request);
-        source.CreatedByEntraOid = GetOwnerOid();
+        source.CreatedByEntraOid = User.GetOwnerOid();
         source.AddedOn = DateTimeOffset.UtcNow;
         source.LastUpdatedOn = DateTimeOffset.UtcNow;
 
@@ -173,12 +163,12 @@ public class SyndicationFeedSourcesController : ControllerBase
             return NotFound();
         }
 
-        if (!IsSiteAdministrator() && source.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && source.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
 
-        var wasDeleted = await _syndicationFeedSourceManager.DeleteAsync(id);
+        var wasDeleted= await _syndicationFeedSourceManager.DeleteAsync(id);
         if (wasDeleted.IsSuccess)
         {
             _logger.LogInformation("SyndicationFeedSource {SourceId} deleted successfully", id);

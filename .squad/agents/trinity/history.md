@@ -2,6 +2,25 @@
 
 ## Learnings
 
+### 2026-05-XX — Issue #862: Consolidate ClaimsPrincipal Helpers into Extension Class
+**Status:** ✅ COMPLETE — PR opened on `issue-862-claims-principal-extensions`
+
+**What was consolidated:**
+Duplicate `GetOwnerOid()`, `IsSiteAdministrator()`, and `ResolveOwnerOid()` private methods existed verbatim across 8 API controllers. Created `ClaimsPrincipalExtensions.cs` in the `JosephGuadagno.Broadcasting.Api` namespace and replaced all 28+ call sites.
+
+**Key decisions:**
+- `GetOwnerOid()` returns `string` (throws `InvalidOperationException` if missing) — not `string?` as originally proposed, to match actual existing behavior
+- `ResolveOwnerOid()` preserves the **null-as-forbidden** pattern: returns `null` when a non-admin tries to target another user's OID; callers check `if (resolvedOwnerOid is null) return Forbid()`. The proposed design would have silently returned the current user's OID — a security regression
+- Added `EntraObjectIdShort` ("oid") fallback in `GetOwnerOid()` for Microsoft.Identity.Web v2+ JWT handlers (additive improvement, not breaking)
+- Explicit `using JosephGuadagno.Broadcasting.Api;` required in each controller — C# does NOT auto-expose parent-namespace extension methods to child namespaces
+
+**Fixed inline bypasses:**
+`UserCollectorFeedSourcesController` and `UserCollectorYouTubeChannelsController` had raw `FindFirstValue`/`IsInRole` calls in `GetAsync` and `DeleteAsync` that bypassed the private `ResolveOwnerOid`. Replaced with `User.GetOwnerOid()` + `User.ResolveOwnerOid(config.CreatedByEntraOid, true)`.
+
+**Build/test:** 0 errors, all tests green (166 unit + all suites).
+
+---
+
 ### 2026-04-24 — Issue #777: Per-User LinkedIn OAuth Token Storage (Implementation)
 **Status:** ✅ COMPLETE — PR #854 open, Key Vault retirement issue #855 created
 

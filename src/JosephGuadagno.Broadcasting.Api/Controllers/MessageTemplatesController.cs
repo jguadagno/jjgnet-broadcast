@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Api;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -42,16 +42,6 @@ public class MessageTemplatesController : ControllerBase
         _mapper = mapper;
     }
 
-    private string GetOwnerOid()
-    {
-        return User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
-            ?? throw new InvalidOperationException("Entra Object ID claim not found");
-    }
-
-    private bool IsSiteAdministrator()
-    {
-        return User.IsInRole(RoleNames.SiteAdministrator);
-    }
 
     /// <summary>
     /// Gets all message templates
@@ -72,13 +62,13 @@ public class MessageTemplatesController : ControllerBase
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
         PagedResult<MessageTemplate> result;
-        if (IsSiteAdministrator())
+        if (User.IsSiteAdministrator())
         {
             result = await _messageTemplateDataStore.GetAllAsync(page, pageSize);
         }
         else
         {
-            var ownerOid = GetOwnerOid();
+            var ownerOid = User.GetOwnerOid();
             result = await _messageTemplateDataStore.GetAllAsync(ownerOid, page, pageSize);
         }
 
@@ -123,7 +113,7 @@ public class MessageTemplatesController : ControllerBase
             return NotFound();
         }
 
-        if (!IsSiteAdministrator() && template.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && template.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -171,7 +161,7 @@ public class MessageTemplatesController : ControllerBase
             return NotFound();
         }
 
-        if (!IsSiteAdministrator() && existing.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && existing.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }

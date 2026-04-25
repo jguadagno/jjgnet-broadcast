@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Api;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Exceptions;
@@ -44,17 +44,6 @@ public class EngagementsController: ControllerBase
         _mapper = mapper;
     }
 
-    private string GetOwnerOid()
-    {
-        return User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
-            ?? throw new InvalidOperationException("Entra Object ID claim not found");
-    }
-
-    private bool IsSiteAdministrator()
-    {
-        return User.IsInRole(RoleNames.SiteAdministrator);
-    }
-
     /// <summary>
     /// Gets all the engagements
     /// </summary>
@@ -76,13 +65,13 @@ public class EngagementsController: ControllerBase
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
         PagedResult<Engagement> result;
-        if (IsSiteAdministrator())
+        if (User.IsSiteAdministrator())
         {
             result = await _engagementManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
         }
         else
         {
-            var ownerOid = GetOwnerOid();
+            var ownerOid = User.GetOwnerOid();
             result = await _engagementManager.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
         }
 
@@ -119,7 +108,7 @@ public class EngagementsController: ControllerBase
         if (engagement is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && engagement.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -149,7 +138,7 @@ public class EngagementsController: ControllerBase
         }
 
         var engagement = _mapper.Map<Engagement>(request);
-        engagement.CreatedByEntraOid = GetOwnerOid();
+        engagement.CreatedByEntraOid = User.GetOwnerOid();
         var result = await _engagementManager.SaveAsync(engagement);
         if (result.IsSuccess && result.Value != null)
         {
@@ -187,7 +176,7 @@ public class EngagementsController: ControllerBase
         if (existing is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && existing.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && existing.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -229,7 +218,7 @@ public class EngagementsController: ControllerBase
             return new NotFoundResult();
         }
 
-        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && engagement.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -267,7 +256,7 @@ public class EngagementsController: ControllerBase
         if (engagement is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && engagement.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -310,7 +299,7 @@ public class EngagementsController: ControllerBase
         if (engagement is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && engagement.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -355,7 +344,7 @@ public class EngagementsController: ControllerBase
         if (engagement is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && engagement.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -396,7 +385,7 @@ public class EngagementsController: ControllerBase
         if (engagement is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && engagement.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -429,7 +418,7 @@ public class EngagementsController: ControllerBase
         if (engagement is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && engagement.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -466,7 +455,7 @@ public class EngagementsController: ControllerBase
         if (engagement is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && engagement.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -502,7 +491,7 @@ public class EngagementsController: ControllerBase
         if (engagement is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && engagement.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -546,7 +535,7 @@ public class EngagementsController: ControllerBase
         if (engagement is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && engagement.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -607,7 +596,7 @@ public class EngagementsController: ControllerBase
         if (engagement is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && engagement.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && engagement.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
