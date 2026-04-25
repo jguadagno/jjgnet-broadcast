@@ -139,4 +139,14 @@ public class ScheduledItemManager: IScheduledItemManager
     {
         return await _scheduledItemDataStore.GetOrphanedScheduledItemsAsync(ownerEntraOid, page, pageSize, cancellationToken);
     }
+
+    public async Task<PagedResult<ScheduledItem>> GetAllAsync(int page, int pageSize, string sortBy = "sendondate", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        return await _scheduledItemDataStore.GetAllAsync(page, pageSize, sortBy, sortDescending, filter, cancellationToken);
+    }
+
+    public async Task<PagedResult<ScheduledItem>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "sendondate", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        return await _scheduledItemDataStore.GetAllAsync(ownerEntraOid, page, pageSize, sortBy, sortDescending, filter, cancellationToken);
+    }
 }

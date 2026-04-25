@@ -11,4 +11,6 @@ public interface ISyndicationFeedSourceDataStore : IDataStore<SyndicationFeedSou
     Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default);
     Task<List<SyndicationFeedSource>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default);
     Task<SyndicationFeedSource?> GetRandomSyndicationDataAsync(string ownerEntraOid, DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default);
+    Task<PagedResult<SyndicationFeedSource>> GetAllAsync(int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default);
+    Task<PagedResult<SyndicationFeedSource>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default);
 }

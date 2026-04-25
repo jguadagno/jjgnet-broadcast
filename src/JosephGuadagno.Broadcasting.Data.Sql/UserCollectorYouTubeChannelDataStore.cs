@@ -134,4 +134,36 @@ public class UserCollectorYouTubeChannelDataStore(
             return false;
         }
     }
+
+    /// <inheritdoc />
+    public async Task<Domain.Models.PagedResult<UserCollectorYouTubeChannel>> GetAllAsync(
+        string ownerOid, int page, int pageSize, string sortBy = "displayname", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
+
+        IQueryable<Models.UserCollectorYouTubeChannel> query = broadcastingContext.UserCollectorYouTubeChannels
+            .AsNoTracking()
+            .Where(c => c.CreatedByEntraOid == ownerOid);
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(c => c.DisplayName.ToLower().Contains(lowerFilter));
+        }
+
+        query = sortBy?.ToLowerInvariant() switch
+        {
+            "channelid" => sortDescending ? query.OrderByDescending(c => c.ChannelId) : query.OrderBy(c => c.ChannelId),
+            "createdon" => sortDescending ? query.OrderByDescending(c => c.CreatedOn) : query.OrderBy(c => c.CreatedOn),
+            _ => sortDescending ? query.OrderByDescending(c => c.DisplayName) : query.OrderBy(c => c.DisplayName),
+        };
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var entities = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return new Domain.Models.PagedResult<UserCollectorYouTubeChannel>
+        {
+            Items = mapper.Map<List<UserCollectorYouTubeChannel>>(entities),
+            TotalCount = totalCount
+        };
+    }
 }

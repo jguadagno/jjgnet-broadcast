@@ -49,23 +49,35 @@ public class SyndicationFeedSourcesController : ControllerBase
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SyndicationFeedSourceResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<SyndicationFeedSourceResponse>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<SyndicationFeedSourceResponse>>> GetSyndicationFeedSourcesAsync()
+    public async Task<ActionResult<PagedResponse<SyndicationFeedSourceResponse>>> GetAllAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "name", bool sortDescending = false, string? filter = null)
     {
+        if (page < 1) page = Pagination.DefaultPage;
+        if (pageSize < 1 || pageSize > Pagination.MaxPageSize) pageSize = Pagination.DefaultPageSize;
+
         List<SyndicationFeedSource> sources;
         if (User.IsSiteAdministrator())
         {
+            // TODO(morpheus): replace with GetAllAsync(page, pageSize, sortBy, sortDescending, filter) when paged overload is available
             sources = await _syndicationFeedSourceManager.GetAllAsync();
         }
         else
         {
             var ownerOid = User.GetOwnerOid();
+            // TODO(morpheus): replace with GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter) when paged overload is available
             sources = await _syndicationFeedSourceManager.GetAllAsync(ownerOid);
         }
 
-        return Ok(_mapper.Map<List<SyndicationFeedSourceResponse>>(sources));
+        var items = _mapper.Map<List<SyndicationFeedSourceResponse>>(sources);
+        return new PagedResponse<SyndicationFeedSourceResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = sources.Count
+        };
     }
 
     /// <summary>

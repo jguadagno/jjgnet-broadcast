@@ -89,7 +89,7 @@ public class ScheduledItemManagerTests
         _repository.Setup(r => r.GetAllAsync("owner-1", 2, 5, default)).ReturnsAsync(pagedResult);
 
         // Act
-        var result = await _scheduledItemManager.GetAllAsync("owner-1", 2, 5);
+        var result = await _scheduledItemManager.GetAllAsync("owner-1", 2, 5, cancellationToken: default);
 
         // Assert
         Assert.Equal(pagedResult, result);

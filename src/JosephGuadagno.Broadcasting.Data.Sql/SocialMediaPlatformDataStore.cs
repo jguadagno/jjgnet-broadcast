@@ -96,4 +96,34 @@ public class SocialMediaPlatformDataStore(BroadcastingContext broadcastingContex
             return false;
         }
     }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.SocialMediaPlatform>> GetAllAsync(int page, int pageSize, string sortBy = "name", bool sortDescending = false, string? filter = null, bool includeInactive = false, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Models.SocialMediaPlatform> query = broadcastingContext.SocialMediaPlatforms;
+
+        if (!includeInactive)
+        {
+            query = query.Where(p => p.IsActive);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(p => p.Name.ToLower().Contains(lowerFilter));
+        }
+
+        query = sortBy?.ToLowerInvariant() switch
+        {
+            "id" => sortDescending ? query.OrderByDescending(p => p.Id) : query.OrderBy(p => p.Id),
+            _ => sortDescending ? query.OrderByDescending(p => p.Name) : query.OrderBy(p => p.Name),
+        };
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return new Domain.Models.PagedResult<Domain.Models.SocialMediaPlatform>
+        {
+            Items = mapper.Map<List<Domain.Models.SocialMediaPlatform>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
 }

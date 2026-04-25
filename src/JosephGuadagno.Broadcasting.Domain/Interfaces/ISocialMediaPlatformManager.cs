@@ -61,4 +61,6 @@ public interface ISocialMediaPlatformManager
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if deleted successfully, false otherwise</returns>
     Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);
+
+    Task<PagedResult<SocialMediaPlatform>> GetAllAsync(int page, int pageSize, string sortBy = "name", bool sortDescending = false, string? filter = null, bool includeInactive = false, CancellationToken cancellationToken = default);
 }

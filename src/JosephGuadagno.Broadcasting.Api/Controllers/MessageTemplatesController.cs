@@ -55,21 +55,20 @@ public class MessageTemplatesController : ControllerBase
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<MessageTemplateResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PagedResponse<MessageTemplateResponse>>> GetAllAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
+    public async Task<ActionResult<PagedResponse<MessageTemplateResponse>>> GetAllAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "subject", bool sortDescending = true, string? filter = null)
     {
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 1;
-        if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
+        if (page < 1) page = Pagination.DefaultPage;
+        if (pageSize < 1 || pageSize > Pagination.MaxPageSize) pageSize = Pagination.DefaultPageSize;
         
         PagedResult<MessageTemplate> result;
         if (User.IsSiteAdministrator())
         {
-            result = await _messageTemplateDataStore.GetAllAsync(page, pageSize);
+            result = await _messageTemplateDataStore.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
         }
         else
         {
             var ownerOid = User.GetOwnerOid();
-            result = await _messageTemplateDataStore.GetAllAsync(ownerOid, page, pageSize);
+            result = await _messageTemplateDataStore.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
         }
 
         var items = _mapper.Map<List<MessageTemplateResponse>>(result.Items);

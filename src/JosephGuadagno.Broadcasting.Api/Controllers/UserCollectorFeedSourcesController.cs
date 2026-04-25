@@ -35,19 +35,30 @@ public class UserCollectorFeedSourcesController(
     /// <response code="403">The caller is not allowed to query the requested owner</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UserCollectorFeedSourceResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<UserCollectorFeedSourceResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<List<UserCollectorFeedSourceResponse>>> GetAllAsync([FromQuery] string? ownerOid = null)
+    public async Task<ActionResult<PagedResponse<UserCollectorFeedSourceResponse>>> GetAllAsync([FromQuery] string? ownerOid = null, int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "name", bool sortDescending = false, string? filter = null)
     {
+        if (page < 1) page = Pagination.DefaultPage;
+        if (pageSize < 1 || pageSize > Pagination.MaxPageSize) pageSize = Pagination.DefaultPageSize;
+
         var resolvedOwnerOid = User.ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
         if (resolvedOwnerOid is null)
         {
             return Forbid();
         }
 
+        // TODO(morpheus): replace with GetByUserAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter) when paged overload is available
         var configs = await userCollectorFeedSourceManager.GetByUserAsync(resolvedOwnerOid);
-        return Ok(mapper.Map<List<UserCollectorFeedSourceResponse>>(configs));
+        var items = mapper.Map<List<UserCollectorFeedSourceResponse>>(configs);
+        return new PagedResponse<UserCollectorFeedSourceResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = configs.Count
+        };
     }
 
     /// <summary>

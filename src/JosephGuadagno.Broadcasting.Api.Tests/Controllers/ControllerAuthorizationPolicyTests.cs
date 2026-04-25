@@ -20,7 +20,7 @@ public class ControllerAuthorizationPolicyTests
 
     public static TheoryData<Type, string, string> ActionPolicies => new()
     {
-        { typeof(EngagementsController), nameof(EngagementsController.GetEngagementsAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(EngagementsController), nameof(EngagementsController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(EngagementsController), nameof(EngagementsController.GetEngagementAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(EngagementsController), nameof(EngagementsController.CreateEngagementAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(EngagementsController), nameof(EngagementsController.UpdateEngagementAsync), AuthorizationPolicyNames.RequireContributor },

@@ -76,4 +76,60 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
             TotalCount = totalCount
         };
     }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.MessageTemplate>> GetAllAsync(int page, int pageSize, string sortBy = "messagetype", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Models.MessageTemplate> query = broadcastingContext.MessageTemplates.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(mt => mt.MessageType.ToLower().Contains(lowerFilter));
+        }
+
+        query = sortBy?.ToLowerInvariant() switch
+        {
+            "platformid" => sortDescending ? query.OrderByDescending(mt => mt.SocialMediaPlatformId) : query.OrderBy(mt => mt.SocialMediaPlatformId),
+            _ => sortDescending
+                ? query.OrderByDescending(mt => mt.MessageType).ThenByDescending(mt => mt.SocialMediaPlatformId)
+                : query.OrderBy(mt => mt.MessageType).ThenBy(mt => mt.SocialMediaPlatformId),
+        };
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return new Domain.Models.PagedResult<Domain.Models.MessageTemplate>
+        {
+            Items = mapper.Map<List<Domain.Models.MessageTemplate>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.MessageTemplate>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "messagetype", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Models.MessageTemplate> query = broadcastingContext.MessageTemplates
+            .AsNoTracking()
+            .Where(mt => mt.CreatedByEntraOid == ownerEntraOid);
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(mt => mt.MessageType.ToLower().Contains(lowerFilter));
+        }
+
+        query = sortBy?.ToLowerInvariant() switch
+        {
+            "platformid" => sortDescending ? query.OrderByDescending(mt => mt.SocialMediaPlatformId) : query.OrderBy(mt => mt.SocialMediaPlatformId),
+            _ => sortDescending
+                ? query.OrderByDescending(mt => mt.MessageType).ThenByDescending(mt => mt.SocialMediaPlatformId)
+                : query.OrderBy(mt => mt.MessageType).ThenBy(mt => mt.SocialMediaPlatformId),
+        };
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return new Domain.Models.PagedResult<Domain.Models.MessageTemplate>
+        {
+            Items = mapper.Map<List<Domain.Models.MessageTemplate>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
 }
