@@ -12666,7 +12666,6 @@ Twitter/X, BlueSky, LinkedIn, Facebook, Mastodon (include even if no publisher e
 
 ### Implementation Order
 Morpheus (DB) → Trinity (API) → Switch (Web Controllers) → Sparks (Razor Views) → Tank (Tests)
-=======
 
 --- From: neo-667-sprint-breakdown.md ---
 # Decision: Sprint Breakdown for Epic #667 (Social Media Platform Abstraction)
@@ -19054,4 +19053,167 @@ C# does not automatically expose extension methods from a parent namespace (`Jos
 **What:** Agents must NEVER use `\word\` (backslash-word-backslash) style escaping in any GitHub output (PR descriptions, issue bodies, PR comments, review comments). Always use backtick-quoted code: ` \word\ `. This has been a recurring violation across multiple agents and PRs despite being documented in charters. Every agent must self-check all GitHub output before posting — scan for `\` characters and replace with backticks.
 
 **Why:** User request — recurring violation flagged again on PR #864. Captured for permanent team memory and charter enforcement. Charter hardening committed as cc77930: "docs: harden no-backslash pre-flight rule in all agent charters".
+
+---
+
+# Decision: Consolidate ClaimsPrincipal Helpers into Extension Methods
+
+**Date:** 2026-04-25  
+**Author:** Neo (Lead)  
+**Issue:** [#862](https://github.com/jguadagno/jjgnet-broadcast/issues/862)  
+**Sprint:** Sprint 27  
+
+## Decision
+
+Create `ClaimsPrincipalExtensions` (static extension class) in `JosephGuadagno.Broadcasting.Api` to consolidate three duplicated helpers currently copy-pasted across 5–8 controllers.
+
+## Rationale
+
+- **13 private method bodies** are identical across controllers (`GetOwnerOid`, `IsSiteAdministrator`, `ResolveOwnerOid`). This is straightforward DRY violation.
+- **7 inline bypasses** in `UserCollector*` controllers call `FindFirstValue` and `IsInRole` directly, skipping even the local private method. This creates security drift: a change to auth logic won't propagate to those code paths.
+- Extension methods on `ClaimsPrincipal` are the idiomatic .NET pattern. Call sites require zero refactor friction — `User.GetOwnerOid()` reads identically to the current `GetOwnerOid()` private call.
+
+## Naming
+
+`OwnerOid` chosen over `UserId` or `OwnerId`:
+- Codebase already uses `EntraObjectId`, `CreatedByEntraOid`, `OwnerOid` consistently.
+- `UserId` loses the Entra/AAD OID specificity.
+- `OwnerId` implies integer PK semantics.
+
+## Scope
+
+| Item | Detail |
+|---|---|
+| New file | `src/JosephGuadagno.Broadcasting.Api/ClaimsPrincipalExtensions.cs` |
+| Controllers touched | ~8 (all controllers with private auth helpers) |
+| Private methods replaced | 13 |
+| Inline bypasses fixed | 7 (in `UserCollectorFeedSourcesController`, `UserCollectorYouTubeChannelsController`) |
+| Tests required | Unit tests for all 3 extension methods |
+
+## Status
+
+Open — assigned to Sprint 27 (milestone #21, closed sprint; work carries to active sprint).
+
+
+---
+
+---
+date: 2026-04-25
+author: Neo
+status: proposed
+topic: API caller context / owner-resolution helper
+---
+
+# Decision: API Caller Context — `ClaimsPrincipalExtensions`
+
+## Context
+
+Joe identified inconsistency in API controllers around `OwnerId` and Site Administrator handling and proposed a helper class. This is the formal evaluation and recommendation.
+
+## Audit Findings
+
+Three private helper patterns are duplicated across 8 API controllers with ~20+ identical implementations:
+
+### Pattern 1 — `GetOwnerOid()` (5 identical copies)
+Present in: `EngagementsController`, `SchedulesController`, `MessageTemplatesController`, `SyndicationFeedSourcesController`, `YouTubeSourcesController`
+
+```csharp
+private string GetOwnerOid() {
+    return User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
+        ?? throw new InvalidOperationException("Entra Object ID claim not found");
+}
+```
+
+### Pattern 2 — `IsSiteAdministrator()` (5 identical copies)
+Present in the same 5 controllers above.
+
+```csharp
+private bool IsSiteAdministrator() {
+    return User.IsInRole(RoleNames.SiteAdministrator);
+}
+```
+
+### Pattern 3 — `ResolveOwnerOid(string?, bool)` (3 identical copies)
+Present in: `UserCollectorFeedSourcesController`, `UserCollectorYouTubeChannelsController`, `UserPublisherSettingsController`
+
+```csharp
+private string? ResolveOwnerOid(string? requestedOwnerOid, bool requireAdminWhenTargetingOtherUser) {
+    var currentOwnerOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
+        ?? throw new InvalidOperationException("Entra Object ID claim not found");
+    if (string.IsNullOrWhiteSpace(requestedOwnerOid)
+        || string.Equals(requestedOwnerOid, currentOwnerOid, StringComparison.OrdinalIgnoreCase))
+    {
+        return currentOwnerOid;
+    }
+    return requireAdminWhenTargetingOtherUser && !User.IsInRole(RoleNames.SiteAdministrator)
+        ? null : requestedOwnerOid;
+}
+```
+
+### Additional Problem — Inline bypasses (7 occurrences)
+`UserCollectorFeedSourcesController` and `UserCollectorYouTubeChannelsController` have `ResolveOwnerOid` as a private method but then bypass it with raw `FindFirstValue` + `IsInRole` inline in `GetAsync` and `DeleteAsync`. The inconsistency is **within the same file**.
+
+## Assessment of Joe's Proposal
+
+| Element | Assessment |
+|---|---|
+| `IsSiteAdministrator` property | ✅ Correct — duplicated 5+ times |
+| `UserId` / `OwnerId` property | ✅ Correct concept — naming needs fixing (see below) |
+| `IsInRole` method | ⚠️ Redundant — already on `ClaimsPrincipal`; codebase only ever checks one role |
+| `Roles` property | ⚠️ Not needed — overkill for actual usage |
+| Injection via constructor | ⚠️ Requires `IHttpContextAccessor` DI wiring — not the simplest path |
+| Missing `ResolveOwnerOid` | ❌ Not mentioned — but this is equally (more?) duplicated and must be included |
+
+## Decision
+
+**Implement `ClaimsPrincipalExtensions`** in `JosephGuadagno.Broadcasting.Api` with three extension methods:
+
+```csharp
+// Reads ApplicationClaimTypes.EntraObjectId; throws if claim is missing
+public static string GetOwnerOid(this ClaimsPrincipal principal)
+
+// Returns true if user is in RoleNames.SiteAdministrator
+public static bool IsSiteAdministrator(this ClaimsPrincipal principal)
+
+// Admin-aware owner resolution; returns null when non-admin requests another owner
+public static string? ResolveOwnerOid(this ClaimsPrincipal principal, string? requestedOwnerOid, bool requireAdminWhenTargetingOtherUser)
+```
+
+**Call sites become:** `User.GetOwnerOid()`, `User.IsSiteAdministrator()`, `User.ResolveOwnerOid(ownerOid, true)`
+
+## Naming Ruling: `OwnerOid` not `UserId` or `OwnerId`
+
+The property/method name is `OwnerOid`. Reasoning:
+- Codebase consistently uses `EntraObjectId`, `CreatedByEntraOid`, `OwnerOid`
+- `UserId` loses the Entra specificity — there are other "user ID" concepts in the system
+- `OwnerId` implies an integer PK, not a GUID — this is a GUID OID
+- Extension method name `GetOwnerOid()` is already the established name in 5 controllers
+
+## Implementation Notes
+
+- **Do not inject `ClaimsPrincipal` via DI.** Extension methods work directly on `User` (the `ClaimsPrincipal` property of `ControllerBase`). No `IHttpContextAccessor`, no scoped service registration, no startup config.
+- **Suppress the `Roles` property and `IsInRole` method** from the proposal — they add surface without reducing duplication.
+- **Tests:** Extension methods are directly callable with a mock `ClaimsPrincipal` — no DI wiring needed in test setup.
+- **Bundling:** This work is a natural fit to bundle with Phase 1 of the scope-to-role migration (#765), which already touches all these controllers. Alternatively it can be a standalone issue — it is independent of the scope migration.
+
+## GitHub Issue
+
+**Yes, file a GitHub issue.** Suggested:
+
+**Title:** `refactor: consolidate duplicated owner-OID and site-admin helpers into ClaimsPrincipalExtensions`
+
+**Scope:**
+- Create `ClaimsPrincipalExtensions` in `JosephGuadagno.Broadcasting.Api` with `GetOwnerOid`, `IsSiteAdministrator`, and `ResolveOwnerOid` extension methods
+- Replace 5× private `GetOwnerOid()` methods across controllers
+- Replace 5× private `IsSiteAdministrator()` methods across controllers
+- Replace 3× private `ResolveOwnerOid()` methods across controllers
+- Replace 7× inline `FindFirstValue`/`IsInRole` calls in `UserCollector*` controllers
+- Add unit tests for the extension class
+
+**Labels:** `refactor`, `tech-debt`  
+**Milestone:** Can target Sprint 22 or bundle with #765 (Phase 1 scope-to-role migration)
+
+
+---
+
 

@@ -95,6 +95,48 @@ Created 3 new milestones and assigned 7 issues across future sprints:
 
 ---
 
+## 2026-04-25 — Design Evaluation: API Caller Context Helper
+
+**Status:** ✅ COMPLETE (Read-Only Analysis + Recommendation)
+**Artifact:** `.squad/decisions/inbox/neo-owner-helper-design.md`
+
+### Findings
+
+Three distinct private helper patterns are duplicated across 8 API controllers (~20+ identical implementations):
+
+| Pattern | Controllers | Copies |
+|---|---|---|
+| `GetOwnerOid()` — reads `EntraObjectId` claim, throws if missing | Engagements, Schedules, MessageTemplates, SyndicationFeedSources, YouTubeSources | 5 |
+| `IsSiteAdministrator()` — wraps `User.IsInRole(RoleNames.SiteAdministrator)` | Same 5 controllers | 5 |
+| `ResolveOwnerOid(string?, bool)` — admin-aware owner resolution | UserCollectorFeedSources, UserCollectorYouTubeChannels, UserPublisherSettings | 3 |
+| Inline `FindFirstValue(ApplicationClaimTypes.EntraObjectId)` (bypassing private methods) | UserCollectorFeedSources, UserCollectorYouTubeChannels | 7 additional occurrences |
+
+`UserCollectorFeedSourcesController` and `UserCollectorYouTubeChannelsController` have a particularly bad pattern: they have `ResolveOwnerOid()` as a private method but then fall back to raw inline `FindFirstValue` + `IsInRole` in `GetAsync` and `DeleteAsync` — inconsistent within the same file.
+
+### Recommendation
+
+**Approved direction:** Create `ClaimsPrincipalExtensions` in the API project with three extension methods:
+- `GetOwnerOid(this ClaimsPrincipal)` → `string` (throws if claim missing)
+- `IsSiteAdministrator(this ClaimsPrincipal)` → `bool`
+- `ResolveOwnerOid(this ClaimsPrincipal, string?, bool)` → `string?`
+
+**Do not** inject `ClaimsPrincipal` via DI constructor — extension methods are simpler, don't require `IHttpContextAccessor`, and are directly callable on `User` from any controller (`User.GetOwnerOid()`, `User.IsSiteAdministrator()`).
+
+**Naming:** Property/method should be `OwnerOid` (not `UserId`, not `OwnerId`). Codebase uses `EntraObjectId`, `CreatedByEntraOid`, `OwnerOid` consistently — `UserId` loses the Entra specificity.
+
+**Scope:** Joe's proposal is correct but incomplete — it omits `ResolveOwnerOid` (the two-param version). The `Roles` property and `IsInRole` method are redundant — only `SiteAdministrator` is ever checked.
+
+**GitHub issue:** Yes — file one. Good candidate to bundle with Phase 1 of scope-to-role migration (#765), which already touches all these controllers.
+
+### Learnings
+
+- Three private helper patterns are duplicated across 8 controllers; `UserCollector*` controllers bypass their own private helpers with inline calls — the inconsistency is worse than it appears from the proposal description
+- Extension methods on `ClaimsPrincipal` are the cleanest consolidation point for API auth helpers — no DI overhead, call sites stay `User.Xxx()`, tests work without DI wiring
+- `ResolveOwnerOid(string?, bool)` is the most complex duplicated pattern and the most likely source of future security drift — it must be part of any consolidation
+- Naming: always `OwnerOid` not `OwnerId` or `UserId` in this codebase (Entra OID specificity matters)
+
+---
+
 ## 2026-04-20 — Scope-to-Role Migration: GitHub Issues Created
 
 **Status:** ✅ COMPLETE (Issue Triage & Creation)
@@ -851,3 +893,7 @@ Used `git commit --no-verify` to complete the merge commit on `main` — the pre
 - **Union merge is correct for `.squad/identity/now.md`** — it is an append-only state file; never discard either side.
 - **`--no-verify` is correct for merge commits on `main`** — the pre-commit hook targets direct feature commits, not structural merges.
 - Local main now 2 commits ahead of origin/main (the local squad status commit + the merge commit). These will be included in the next squad PR.
+
+
+- **Sprint 27 is a closed milestone** — Sprint 27 exists as milestone #21 in jguadagno/jjgnet-broadcast but is closed (closed 2026-04-24). Issues can still be assigned to it via API. gh project list requires ead:project scope which is not in the current token; use gh api repos/.../milestones?state=all to find milestones across states.
+- **efactor and 	ech-debt labels created** — Neither existed; 	echnical-debt was the prior label. Both new labels added to jguadagno/jjgnet-broadcast on 2026-04-25.
