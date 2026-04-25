@@ -8,6 +8,57 @@
 
 ## Learnings
 
+### 2026-04-25 — Issue #866: Standardize All GetAll API Endpoints (FINAL SESSION)
+
+**Status:** ✅ COMPLETE — 3 commits on `issue-866-getall-consistency`; 192 tests passing; ready for PR merge
+
+**Final deliverable verification:**
+- ✅ All 9 controllers renamed/updated with `GetAllAsync(page, pageSize, sortBy, sortDescending, filter)`
+- ✅ Return type standardized to `ActionResult<PagedResponse<T>>` across all 9 controllers
+- ✅ Morpheus pre-staged paged overloads: all controllers now call new overloads directly
+- ✅ Test cascade fixed: 5 test files updated; 192 tests passing; 0 failures
+- ✅ Build verification: `dotnet build --configuration Release` succeeded; 0 errors
+
+**Controllers finalized:**
+1. `EngagementsController` — Renamed `GetEngagementsAsync` → `GetAllAsync`
+2. `MessageTemplatesController` — Added sort/filter paging
+3. `SchedulesController` — Renamed `GetScheduledItemsAsync` → `GetAllAsync`; paging added
+4. `SocialMediaPlatformsController` — Full paging/sort/filter; return type changed
+5. `SyndicationFeedSourcesController` — Renamed `GetSyndicationFeedSourcesAsync` → `GetAllAsync`
+6. `UserCollectorFeedSourcesController` — Full paging/sort/filter; return type changed
+7. `UserCollectorYouTubeChannelsController` — Full paging/sort/filter; return type changed
+8. `UserPublisherSettingsController` — Full paging/sort/filter; return type changed
+9. `YouTubeSourcesController` — Renamed `GetYouTubeSourcesAsync` → `GetAllAsync`
+
+**Integration notes:**
+- Morpheus had pre-staged uncommitted work: all Domain interfaces + DataStore implementations with paged overloads ready
+- Trinity consumed these directly — no adapter pattern needed
+- Manager layer delegation is consistent: all forward sort/filter/paging to data stores
+- Test fixes applied PowerShell batch regex patterns for efficiency (regex > repeated edit calls)
+
+---
+
+### Learnings
+
+### 2026-04-25 — Issue #866: Standardize All GetAll API Endpoints
+**Status:** ✅ COMPLETE — 2 commits on `issue-866-getall-consistency`
+
+**What was changed:**
+- All 9 API controllers updated to use `GetAllAsync` (renamed from entity-specific names) with `page`, `pageSize`, `sortBy`, `sortDescending`, `filter` parameters and `ActionResult<PagedResponse<T>>` return type
+- Morpheus had pre-staged work in the working tree: all Domain interfaces and DataStore implementations already had paged overloads — controllers were updated to use them directly (no wrapper needed for most)
+- `MessageTemplatesController` and `SchedulesController` now call paged `GetAllAsync` overloads on their respective managers/data stores
+- Test fixes: `ControllerAuthorizationPolicyTests`, `SchedulesControllerTests`, `ScheduledItemManagerTests`, `MessageTemplateDataStoreTests`, `ScheduledItemDataStoreTests`
+
+**Key learnings:**
+1. **Cascade CS0535 errors are misleading**: In a full-solution build, a compile failure in a dependency (e.g., `Data.Sql`) can cause spurious interface-not-implemented errors in `Managers`. Always build each project in isolation to identify real vs cascade errors.
+2. **New overload ambiguity pattern**: Adding a paged `GetAllAsync(int, int, string, bool, string?, CT)` alongside existing `GetAllAsync(int, int, CT)` causes CS0121 at every call site that only passes 2 positional args. Fix: switch all call sites to the new overload, passing all params explicitly.
+3. **Moq `It.IsAny<>()` with ambiguous overloads**: Mock setups using `It.IsAny<int>(), It.IsAny<int>()` are also ambiguous when new overloads are added. Must add `It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()` to target the new 7-arg overload.
+4. **`dotnet build --no-restore` can show stale errors**: Use `--no-incremental` to force full recompile when edits are not picked up.
+5. **PowerShell batch regex replace for test files**: When the same pattern appears 10+ times in a test file, `(Get-Content -Raw) -replace ... | Set-Content` is far faster than individual `edit` tool calls.
+6. **Moq `sut.OldMethodName()` calls need renaming separately**: The regex for mock setups won't catch direct `sut.MethodName()` invocations — these need a separate replace pass.
+
+---
+
 ### 2026-05-XX — Issue #862: Consolidate ClaimsPrincipal Helpers into Extension Class
 **Status:** ✅ COMPLETE — PR opened on `issue-862-claims-principal-extensions`
 

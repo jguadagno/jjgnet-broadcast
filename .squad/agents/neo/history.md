@@ -1,3 +1,35 @@
+## 2026-04-25 — Issue #866: Standardize All GetAll Endpoints
+
+**Status:** ✅ COMPLETE — API Spec + Issue Creation
+
+**What was delivered:**
+- Issue #866 created with full specification of GetAll consistency pattern
+- Title: "Standardize all GetAll endpoints with paging, sorting, filtering"
+- Assigned to Neo (Lead)
+- Labels applied; Milestone: Sprint 24
+- Decision recorded in `.squad/decisions/inbox/neo-getall-consistency.md`
+
+**Mandatory pattern defined:**
+- Method name: `GetAllAsync` (no entity-specific names)
+- Signature: `GetAllAsync(int page=1, int pageSize=50, string sortBy=default, bool sortDescending=true, string? filter=null)`
+- Return type: `ActionResult<PagedResponse<T>>` (never `List<T>`)
+- Parameter guards: `page >= 1`, `pageSize` clamped to `Pagination.MaxPageSize`
+- Sort/filter pushed to data layer (no in-memory at manager level)
+- Preserves existing per-controller parameters (e.g., `ownerOid`, `includeInactive`)
+
+**Integration with team:**
+- Trinity: Updated all 9 controllers to follow pattern
+- Morpheus: Added sort/filter/paging to all managers and data stores
+- Tank: All tests passing (192 tests); 2 new test files created
+
+**Code review gate (in progress):**
+- All 9 controllers aligned
+- Build clean; 0 errors
+- 192 tests passing; 0 failures
+- PR creation pending formal approval
+
+---
+
 ## Core Context
 
 **Key established patterns:**

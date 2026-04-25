@@ -50,13 +50,56 @@ _managerMock.Verify(m => m.SaveAsync(It.IsAny<ScheduledItem>()), Times.Never);
 - **For any security/ownership feature:** grep `Forbid()` first, build matrix, write test per site
 - **When controller signatures add `ownerOid` parameter:** update mock `.Setup()` overload immediately — mismatched overloads silently miss setups
 
+### Team Rules (Permanent)
+
+- **ALWAYS run `dotnet test` before committing** — no exceptions
+- **ZERO test failures before opening PR** — failing tests block the PR
+- **For any security/ownership feature:** grep `Forbid()` first, build matrix, write test per site
+- **When controller signatures add `ownerOid` parameter:** update mock `.Setup()` overload immediately — mismatched overloads silently miss setups
+
 ### Mock Overload Resolution Note
 
 When a controller method signature changes to add an `ownerOid` parameter, Moq will silently skip mismatched `.Setup()` calls rather than throwing. This causes the mock to return null and tests to behave incorrectly. Always verify the exact parameter types match the controller dispatch path.
 
 ---
 
-## 2026-04-18 — PR #739: Add 9 Security Tests (Round 2) — MERGED
+## 2026-04-25 — Issue #866: Standardize All GetAll Endpoints — Test Delivery
+
+**Status:** ✅ COMPLETE — 192 tests passing; 0 failures; 5 test files fixed
+
+**Test cascade identified and resolved:**
+- CS0535 cascade errors from full-solution builds misleading — Trinity experienced spurious interface-not-implemented errors in Managers when real errors were in Data.Sql
+- Solution: Build each project in isolation to identify real vs cascade errors
+
+**Test files fixed (5 total):**
+1. **ControllerAuthorizationPolicyTests.cs** — Fixed `nameof()` refs for renamed methods (`GetEngagementsAsync` → `GetAllAsync`, `GetScheduledItemsAsync` → `GetAllAsync`, etc.)
+2. **SchedulesControllerTests.cs** — Updated Moq setups to target new 7-arg paged `GetAllAsync(int, int, string, bool, string?, CancellationToken)` overload; renamed all `sut.GetScheduledItemsAsync()` → `sut.GetAllAsync()`
+3. **ScheduledItemManagerTests.cs** — Disambiguated overload call with explicit `cancellationToken: default`
+4. **MessageTemplateDataStoreTests.cs** — Disambiguated with explicit `sortBy: "subject"`
+5. **ScheduledItemDataStoreTests.cs** — Disambiguated with explicit `sortBy: "sendondatetime"`
+
+**Moq pattern for new 7-arg overload:**
+```csharp
+// Before (2-arg overload):
+_managerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+  .ReturnsAsync(...);
+
+// After (7-arg overload):
+_managerMock.Setup(m => m.GetAllAsync(
+    It.IsAny<int>(),      // page
+    It.IsAny<int>(),      // pageSize
+    It.IsAny<string>(),   // sortBy
+    It.IsAny<bool>(),     // sortDescending
+    It.IsAny<string>(),   // filter
+    It.IsAny<CancellationToken>()))
+  .ReturnsAsync(...);
+```
+
+**Test results:** `dotnet test` — 192 passing, 0 failures
+
+---
+
+### Team Rules (Permanent)
 
 **Status:** ✅ COMPLETE  
 **PR:** #739 (feat(#729): enforce owner isolation in API controllers)  
