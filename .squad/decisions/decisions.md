@@ -675,3 +675,187 @@ When creating new sprint labels:
 **By:** Joseph Guadagno (via Copilot)  
 **What:** All GitHub sprint labels must follow the format `sprint:{number}` (e.g., `sprint:13`). Description should be `Sprint {number}` optionally followed by a theme (e.g., `Sprint 13 - Codebase Health`). Color must be `#0075ca`.  
 **Why:** User request — captured for team memory and consistent label hygiene across all sprints.
+
+---
+
+# Decision: PR #865 Review Findings
+
+**Date:** 2026-04-25  
+**Author:** Neo  
+
+[Content from neo-pr865-review.md]
+
+# Neo — PR #865 Review Findings
+
+**Date:** 2026-04-25  
+**PR:** #865 — `refactor(#862): consolidate owner-OID and site-admin helpers into ClaimsPrincipalExtensions`  
+**Branch:** `issue-862-claims-principal-extensions`  
+**Verdict:** APPROVED ✅
+
+---
+
+## Summary
+
+Clean, complete consolidation of owner-OID and site-admin helpers into `ClaimsPrincipalExtensions`. All 7 security-critical inline bypasses fixed, no private duplicates remain, test coverage thorough. No blocking issues.
+
+---
+
+## Checklist
+
+| Criterion | Status |
+|-----------|--------|
+| Signatures match design decision | ✅ |
+| `EntraObjectIdShort` fallback in `GetOwnerOid()` | ✅ |
+| `GetOwnerOid` returns `string`, throws (not `string?`) | ✅ |
+| Null-as-forbidden preserved in `ResolveOwnerOid` | ✅ |
+| All 7 inline bypasses fixed in UserCollector controllers | ✅ |
+| Zero private duplicate methods in any controller | ✅ |
+| `using JosephGuadagno.Broadcasting.Api;` in all 8 controllers | ✅ |
+| 12 tests across all 3 methods | ✅ |
+| Admin elevation gate tested | ✅ |
+| Case-insensitive OID matching tested | ✅ |
+| PR description: no backslash-word-backslash escaping | ✅ |
+
+---
+
+## Detailed Findings
+
+### `ClaimsPrincipalExtensions.cs` ✅
+
+Implementation matches the design decision in `.squad/decisions.md` (2026-04-25) exactly:
+
+- `GetOwnerOid` — tries `ApplicationClaimTypes.EntraObjectId` first, falls back to `EntraObjectIdShort` for MSAL v2+ JWT handlers. Throws `InvalidOperationException` (not `null`) if neither present.
+- `IsSiteAdministrator` — one-liner delegating to `IsInRole(RoleNames.SiteAdministrator)`.
+- `ResolveOwnerOid` — default `requireAdminWhenTargetingOtherUser = true` ensures the safe path is the default. Null-as-forbidden pattern preserved.
+
+### Inline bypass fix ✅
+
+Both `UserCollectorFeedSourcesController` and `UserCollectorYouTubeChannelsController` — `GetAsync` and `DeleteAsync` — previously had raw `FindFirstValue`/`IsInRole` calls that bypassed the controller's private `ResolveOwnerOid`. These are now correctly replaced with:
+
+```csharp
+var currentOwnerOid = User.GetOwnerOid();
+if (User.ResolveOwnerOid(config.CreatedByEntraOid, requireAdminWhenTargetingOtherUser: true) is null)
+{
+    // log with currentOwnerOid for context
+    return Forbid();
+}
+```
+
+The `currentOwnerOid` local is intentional — it is used exclusively for the structured log warning, not for the auth check.
+
+### All 8 controllers ✅
+
+Grep on `Controllers/` directory: zero remaining private `GetOwnerOid`, `IsSiteAdministrator`, or `ResolveOwnerOid` methods. `System.Security.Claims` using removed; `JosephGuadagno.Broadcasting.Api` added in all affected files.
+
+### Tests ✅
+
+12 tests in `ClaimsPrincipalExtensionsTests.cs` cover:
+- `GetOwnerOid`: full-URI primary, short fallback, both-present priority, throw-on-missing
+- `IsSiteAdministrator`: role present, role absent, empty principal
+- `ResolveOwnerOid`: null/empty/matching OID, case-insensitive match, non-admin different OID → null, admin different OID → requested, requireAdmin=false bypass, admin with null requested → caller OID
+
+---
+
+## One Item for Joe to Verify
+
+**⚠️ Test count discrepancy (not a blocker):**
+- Tank's session log: **192/192** passing (12 new + 180 pre-existing)
+- PR description: **166 unit tests passed**
+- Gap of 26 tests — likely different test project scope between runs
+- Recommend: run `dotnet test` across the full solution before merging to confirm all suites pass
+
+---
+
+## Decision
+
+No architecture concerns. No directive violations. No security regressions. Implementation is exactly what was designed.
+
+**PR #865 is approved. Ready to merge after test-count verification.**
+
+---
+
+*GitHub comment:* https://github.com/jguadagno/jjgnet-broadcast/pull/865#issuecomment-4317480336
+
+
+---
+
+# Decision: Test Pattern — ClaimsPrincipalExtensions (Issue #862)
+
+**Date:** 2026-04-24  
+**Author:** Tank  
+
+[Content from tank-862-tests.md]
+
+# Test Pattern: ClaimsPrincipalExtensions (Issue #862)
+
+**Author:** Tank  
+**Date:** 2026-04-24  
+**Branch:** issue-862-claims-principal-extensions
+
+## Context
+
+`ClaimsPrincipalExtensions` is a new static class in `JosephGuadagno.Broadcasting.Api` that centralises three owner/role helpers previously duplicated across controllers:
+- `GetOwnerOid()` — reads OID from full-URI or short "oid" claim; throws if absent
+- `IsSiteAdministrator()` — checks `RoleNames.SiteAdministrator` role
+- `ResolveOwnerOid(requestedOwnerOid, requireAdminWhenTargetingOtherUser)` — computes effective owner OID with admin-bypass logic
+
+## Test Patterns Worth Capturing
+
+### No Mocks Required for Static Extension Methods
+
+When testing `ClaimsPrincipal` extension methods, construct the principal directly. No Moq needed.
+
+```csharp
+private static ClaimsPrincipal BuildPrincipal(
+    string? oidFullUri = null,
+    string? oidShort = null,
+    bool isSiteAdmin = false)
+{
+    var claims = new List<Claim>();
+
+    if (oidFullUri is not null)
+        claims.Add(new Claim(ApplicationClaimTypes.EntraObjectId, oidFullUri));
+
+    if (oidShort is not null)
+        claims.Add(new Claim(ApplicationClaimTypes.EntraObjectIdShort, oidShort));
+
+    if (isSiteAdmin)
+        claims.Add(new Claim(ClaimTypes.Role, RoleNames.SiteAdministrator));
+
+    return new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+}
+```
+
+### Testing Throws (FluentAssertions)
+
+```csharp
+var act = () => principal.GetOwnerOid();
+act.Should().Throw<InvalidOperationException>().WithMessage("*Entra Object ID*");
+```
+
+### Claim Fallback Priority Test
+
+When a method checks two claim types in order, test:
+1. Only primary claim present → returns primary value
+2. Only fallback claim present → returns fallback value
+3. Both claims present → returns primary (priority ordering confirmed)
+4. Neither claim present → expected exception/null
+
+## Spec vs. Implementation Divergence
+
+The task spec said `GetOwnerOid` returns `null` when no OID claim is present. The actual implementation **throws `InvalidOperationException`**. Always read the production code before writing tests — specs can be outdated.
+
+## ResolveOwnerOid Truth Table
+
+| requestedOwnerOid | equals caller OID? | requireAdmin | isSiteAdmin | Result |
+|---|---|---|---|---|
+| null / empty | — | any | any | caller OID |
+| same value | yes | any | any | caller OID |
+| different | no | true | false | `null` (forbidden) |
+| different | no | true | true | requestedOwnerOid |
+| different | no | false | any | requestedOwnerOid |
+
+## File Location
+
+`src/JosephGuadagno.Broadcasting.Api.Tests/ClaimsPrincipalExtensionsTests.cs`
+
