@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Api;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -40,7 +40,7 @@ public class UserCollectorFeedSourcesController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<List<UserCollectorFeedSourceResponse>>> GetAllAsync([FromQuery] string? ownerOid = null)
     {
-        var resolvedOwnerOid = ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
+        var resolvedOwnerOid = User.ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
         if (resolvedOwnerOid is null)
         {
             return Forbid();
@@ -74,11 +74,9 @@ public class UserCollectorFeedSourcesController(
             return NotFound();
         }
 
-        var currentOwnerOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
-            ?? throw new InvalidOperationException("Entra Object ID claim not found");
+        var currentOwnerOid = User.GetOwnerOid();
 
-        if (!string.Equals(config.CreatedByEntraOid, currentOwnerOid, StringComparison.OrdinalIgnoreCase)
-            && !User.IsInRole(RoleNames.SiteAdministrator))
+        if (User.ResolveOwnerOid(config.CreatedByEntraOid, requireAdminWhenTargetingOtherUser: true) is null)
         {
             logger.LogWarning(
                 "User {CurrentOid} attempted to access feed source config {Id} owned by {OwnerOid}",
@@ -120,7 +118,7 @@ public class UserCollectorFeedSourcesController(
             return BadRequest(ModelState);
         }
 
-        var resolvedOwnerOid = ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
+        var resolvedOwnerOid = User.ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
         if (resolvedOwnerOid is null)
         {
             return Forbid();
@@ -166,11 +164,9 @@ public class UserCollectorFeedSourcesController(
             return NotFound();
         }
 
-        var currentOwnerOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
-            ?? throw new InvalidOperationException("Entra Object ID claim not found");
+        var currentOwnerOid = User.GetOwnerOid();
 
-        if (!string.Equals(config.CreatedByEntraOid, currentOwnerOid, StringComparison.OrdinalIgnoreCase)
-            && !User.IsInRole(RoleNames.SiteAdministrator))
+        if (User.ResolveOwnerOid(config.CreatedByEntraOid, requireAdminWhenTargetingOtherUser: true) is null)
         {
             logger.LogWarning(
                 "User {CurrentOid} attempted to delete feed source config {Id} owned by {OwnerOid}",
@@ -190,19 +186,4 @@ public class UserCollectorFeedSourcesController(
         return NoContent();
     }
 
-    private string? ResolveOwnerOid(string? requestedOwnerOid, bool requireAdminWhenTargetingOtherUser)
-    {
-        var currentOwnerOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
-                              ?? throw new InvalidOperationException("Entra Object ID claim not found");
-
-        if (string.IsNullOrWhiteSpace(requestedOwnerOid)
-            || string.Equals(requestedOwnerOid, currentOwnerOid, StringComparison.OrdinalIgnoreCase))
-        {
-            return currentOwnerOid;
-        }
-
-        return requireAdminWhenTargetingOtherUser && !User.IsInRole(RoleNames.SiteAdministrator)
-            ? null
-            : requestedOwnerOid;
-    }
 }

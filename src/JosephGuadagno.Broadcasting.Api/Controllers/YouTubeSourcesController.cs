@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Api;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -39,16 +39,6 @@ public class YouTubeSourcesController : ControllerBase
         _mapper = mapper;
     }
 
-    private string GetOwnerOid()
-    {
-        return User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
-            ?? throw new InvalidOperationException("Entra Object ID claim not found");
-    }
-
-    private bool IsSiteAdministrator()
-    {
-        return User.IsInRole(RoleNames.SiteAdministrator);
-    }
 
     /// <summary>
     /// Gets all YouTube sources
@@ -63,13 +53,13 @@ public class YouTubeSourcesController : ControllerBase
     public async Task<ActionResult<List<YouTubeSourceResponse>>> GetYouTubeSourcesAsync()
     {
         List<YouTubeSource> results;
-        if (IsSiteAdministrator())
+        if (User.IsSiteAdministrator())
         {
             results = await _youTubeSourceManager.GetAllAsync();
         }
         else
         {
-            var ownerOid = GetOwnerOid();
+            var ownerOid = User.GetOwnerOid();
             results = await _youTubeSourceManager.GetAllAsync(ownerOid);
         }
 
@@ -98,7 +88,7 @@ public class YouTubeSourcesController : ControllerBase
         if (source is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && source.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && source.CreatedByEntraOid != User.GetOwnerOid())
             return Forbid();
 
         return Ok(_mapper.Map<YouTubeSourceResponse>(source));
@@ -126,7 +116,7 @@ public class YouTubeSourcesController : ControllerBase
         }
 
         var source = _mapper.Map<YouTubeSource>(request);
-        source.CreatedByEntraOid = GetOwnerOid();
+        source.CreatedByEntraOid = User.GetOwnerOid();
         source.AddedOn = DateTimeOffset.UtcNow;
         source.LastUpdatedOn = DateTimeOffset.UtcNow;
 
@@ -165,10 +155,10 @@ public class YouTubeSourcesController : ControllerBase
             return NotFound();
         }
 
-        if (!IsSiteAdministrator() && source.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && source.CreatedByEntraOid != User.GetOwnerOid())
             return Forbid();
 
-        var wasDeleted = await _youTubeSourceManager.DeleteAsync(id);
+        var wasDeleted= await _youTubeSourceManager.DeleteAsync(id);
         if (wasDeleted.IsSuccess)
         {
             _logger.LogInformation("YouTubeSource {YouTubeSourceId} deleted successfully", id);

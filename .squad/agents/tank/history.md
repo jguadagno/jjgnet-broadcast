@@ -1168,3 +1168,57 @@ Before writing any test for a security/ownership feature:
 - Coordinate bootstrap data alignment when data-seed.sql updated
 - Neo provides architecture review support during merge phase
 
+---
+
+## 2026-04-24 — Issue #862: Unit Tests for ClaimsPrincipalExtensions
+
+**Status:** ✅ COMPLETE  
+**Branch:** issue-862-claims-principal-extensions  
+**Issue:** #862
+
+### Work Summary
+
+Wrote 12 unit tests for the new `ClaimsPrincipalExtensions` static class covering all three extension methods. Tests use no mocks — `ClaimsPrincipal` is constructed directly using `ClaimsIdentity` + `Claim` objects.
+
+### Tests Added
+
+**GetOwnerOid (4 tests):**
+- `GetOwnerOid_WhenFullUriClaimPresent_ReturnsOid` — reads `ApplicationClaimTypes.EntraObjectId`
+- `GetOwnerOid_WhenOnlyShortOidClaimPresent_ReturnsOid` — fallback to `ApplicationClaimTypes.EntraObjectIdShort`
+- `GetOwnerOid_WhenBothClaimsPresent_ReturnsFullUriClaimValue` — full-URI takes precedence
+- `GetOwnerOid_WhenNoOidClaimPresent_ThrowsInvalidOperationException` — throws, does NOT return null
+
+**IsSiteAdministrator (3 tests):**
+- Role present → `true`
+- Role absent → `false`
+- Empty principal (no identities) → `false`
+
+**ResolveOwnerOid (5 tests):**
+- Null requested OID → returns caller OID
+- Empty requested OID → returns caller OID
+- Matching requested OID → returns caller OID
+- Different OID, requireAdmin=true, non-admin → returns `null` (forbidden signal)
+- Different OID, requireAdmin=true, admin → returns requested OID
+- Different OID, requireAdmin=false, non-admin → returns requested OID
+- Admin + null requested OID → returns caller OID
+
+### Key Design Note
+
+The task spec described `GetOwnerOid` as returning `null` when no claim present. **The actual implementation throws `InvalidOperationException` instead.** Tests reflect the real implementation, not the spec.
+
+`ResolveOwnerOid` parameter is `requireAdminWhenTargetingOtherUser` (not `allowAdminOverride`). Logic: null/empty/same OID → always returns caller OID; different OID + requireAdmin=true + non-admin → null; otherwise → requested OID.
+
+### Test Results
+
+- 192/192 passing (12 new + 180 pre-existing)
+
+### Learnings
+
+1. **Always read the actual implementation** — spec descriptions can differ from production code. `GetOwnerOid` throws instead of returning null; `ResolveOwnerOid` has a different parameter name with inverted semantics.
+
+2. **Static extension methods need no mocks** — `ClaimsPrincipal` can be constructed directly with `ClaimsIdentity` + `Claim`. Keep a `BuildPrincipal()` helper with optional parameters for clean test setup.
+
+3. **Full-URI claim takes precedence over short "oid" form** — test both the primary and fallback claim paths separately, and together (to confirm priority ordering).
+
+4. **`requireAdminWhenTargetingOtherUser=false` is a bypass flag** — non-admins CAN target other OIDs when this is false. Test this explicitly to document the intentional bypass behavior.
+

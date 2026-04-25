@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Api;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
@@ -52,17 +52,6 @@ public class SchedulesController: ControllerBase
         _mapper = mapper;
     }
 
-    private string GetOwnerOid()
-    {
-        return User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
-            ?? throw new InvalidOperationException("Entra Object ID claim not found");
-    }
-
-    private bool IsSiteAdministrator()
-    {
-        return User.IsInRole(RoleNames.SiteAdministrator);
-    }
-    
     /// <summary>
     /// Returns all the scheduled items
     /// </summary>
@@ -82,13 +71,13 @@ public class SchedulesController: ControllerBase
         if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
         
         PagedResult<ScheduledItem> result;
-        if (IsSiteAdministrator())
+        if (User.IsSiteAdministrator())
         {
             result = await _scheduledItemManager.GetAllAsync(page, pageSize);
         }
         else
         {
-            var ownerOid = GetOwnerOid();
+            var ownerOid = User.GetOwnerOid();
             result = await _scheduledItemManager.GetAllAsync(ownerOid, page, pageSize);
         }
 
@@ -129,7 +118,7 @@ public class SchedulesController: ControllerBase
         if (item is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && item.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && item.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -161,7 +150,7 @@ public class SchedulesController: ControllerBase
         }
 
         var scheduledItem = _mapper.Map<ScheduledItem>(request);
-        scheduledItem.CreatedByEntraOid = GetOwnerOid();
+        scheduledItem.CreatedByEntraOid = User.GetOwnerOid();
         var result = await _scheduledItemManager.SaveAsync(scheduledItem);
         if (result.IsSuccess && result.Value != null)
         {
@@ -199,7 +188,7 @@ public class SchedulesController: ControllerBase
         if (existing is null)
             return NotFound();
 
-        if (!IsSiteAdministrator() && existing.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && existing.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }
@@ -241,7 +230,7 @@ public class SchedulesController: ControllerBase
             return new NotFoundResult();
         }
 
-        if (!IsSiteAdministrator() && scheduledItem.CreatedByEntraOid != GetOwnerOid())
+        if (!User.IsSiteAdministrator() && scheduledItem.CreatedByEntraOid != User.GetOwnerOid())
         {
             return Forbid();
         }

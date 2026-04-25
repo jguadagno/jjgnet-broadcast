@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using AutoMapper;
+using JosephGuadagno.Broadcasting.Api;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -40,7 +40,7 @@ public class UserPublisherSettingsController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<List<UserPublisherSettingResponse>>> GetAllAsync([FromQuery] string? ownerOid = null)
     {
-        var resolvedOwnerOid = ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
+        var resolvedOwnerOid = User.ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
         if (resolvedOwnerOid is null)
         {
             return Forbid();
@@ -70,7 +70,7 @@ public class UserPublisherSettingsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserPublisherSettingResponse>> GetAsync(int platformId, [FromQuery] string? ownerOid = null)
     {
-        var resolvedOwnerOid = ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
+        var resolvedOwnerOid = User.ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
         if (resolvedOwnerOid is null)
         {
             return Forbid();
@@ -119,7 +119,7 @@ public class UserPublisherSettingsController(
             return BadRequest(ModelState);
         }
 
-        var resolvedOwnerOid = ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
+        var resolvedOwnerOid = User.ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
         if (resolvedOwnerOid is null)
         {
             return Forbid();
@@ -162,7 +162,7 @@ public class UserPublisherSettingsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteAsync(int platformId, [FromQuery] string? ownerOid = null)
     {
-        var resolvedOwnerOid = ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
+        var resolvedOwnerOid = User.ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
         if (resolvedOwnerOid is null)
         {
             return Forbid();
@@ -181,19 +181,4 @@ public class UserPublisherSettingsController(
         return NoContent();
     }
 
-    private string? ResolveOwnerOid(string? requestedOwnerOid, bool requireAdminWhenTargetingOtherUser)
-    {
-        var currentOwnerOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId)
-                              ?? throw new InvalidOperationException("Entra Object ID claim not found");
-
-        if (string.IsNullOrWhiteSpace(requestedOwnerOid)
-            || string.Equals(requestedOwnerOid, currentOwnerOid, StringComparison.OrdinalIgnoreCase))
-        {
-            return currentOwnerOid;
-        }
-
-        return requireAdminWhenTargetingOtherUser && !User.IsInRole(RoleNames.SiteAdministrator)
-            ? null
-            : requestedOwnerOid;
-    }
 }
