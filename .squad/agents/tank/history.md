@@ -63,7 +63,65 @@ When a controller method signature changes to add an `ownerOid` parameter, Moq w
 
 ---
 
-## 2026-04-25 — Issue #866: Standardize All GetAll Endpoints — Test Delivery
+## 2026-04-26 — Issue #866: Fix Remaining 11 Failing Controller Tests (GetAllAsync Overload Mismatch)
+
+**Status:** ✅ COMPLETE — 50 targeted tests passing; 0 failures; 5 test files fixed
+
+**Root cause:** Trinity's commit `9dac48c` updated 6 controllers to call new paged
+`GetAllAsync` overloads. The test mocks still targeted old 2/3/4-param overloads, causing
+Moq to silently return null → `NullReferenceException` at runtime.
+
+**Two categories of fixes applied:**
+
+**Category A — Mock overload mismatch (Setup + Verify):**
+- `MessageTemplatesControllerTests`: 3-param admin setup → 5+CT; 4-param owner setup → 6+CT
+- `UserCollectorFeedSourcesControllerTests`: `GetByUserAsync(oid, CT)` → `GetAllAsync(oid, int, int, string, bool, string?, CT)`
+- `UserCollectorYouTubeChannelsControllerTests`: same
+- `UserPublisherSettingsControllerTests`: same
+- `SocialMediaPlatformsControllerTests`: `GetAllAsync(bool, CT)` → `GetAllAsync(int, int, string, bool, string?, bool, CT)`
+
+**Category B — Return type change (List<T> → PagedResult<T>):**
+- All `GetByUserAsync` mocks returned `List<T>` → new `GetAllAsync` returns `PagedResult<T> { Items, TotalCount }`
+- `SocialMediaPlatformsControllerTests`: `ReturnsAsync(List<T>)` → `ReturnsAsync(new PagedResult<T> { Items = ..., TotalCount = ... })`
+
+**Category C — Assertion mismatch (result.Result → result.Value):**
+- Controllers return `new PagedResponse<T>` directly (value path), not via `Ok()` (result path)
+- `result.Result.Should().BeOfType<OkObjectResult>()` → `result.Value.Should().NotBeNull()`
+- `ForbidResult` assertions remain on `result.Result` (correct — `Forbid()` uses result path)
+
+**Moq pattern for UserCollector/PublisherSettings (6+CT owner overload):**
+```csharp
+_manager
+    .Setup(m => m.GetAllAsync(
+        It.IsAny<string>(),   // ownerOid
+        It.IsAny<int>(),      // page
+        It.IsAny<int>(),      // pageSize
+        It.IsAny<string>(),   // sortBy
+        It.IsAny<bool>(),     // sortDescending
+        It.IsAny<string?>(),  // filter
+        It.IsAny<CancellationToken>()))
+    .ReturnsAsync(new PagedResult<T> { Items = items, TotalCount = items.Count });
+```
+
+**Moq pattern for SocialMediaPlatforms (6 data params + includeInactive + CT):**
+```csharp
+_managerMock
+    .Setup(m => m.GetAllAsync(
+        It.IsAny<int>(),      // page
+        It.IsAny<int>(),      // pageSize
+        It.IsAny<string>(),   // sortBy
+        It.IsAny<bool>(),     // sortDescending
+        It.IsAny<string?>(),  // filter
+        It.IsAny<bool>(),     // includeInactive
+        It.IsAny<CancellationToken>()))
+    .ReturnsAsync(new PagedResult<SocialMediaPlatform> { Items = platforms, TotalCount = platforms.Count });
+```
+
+**Commit:** `587add2` — `test: fix Moq overload mismatch in GetAllAsync controller tests (#866)`
+
+---
+
+
 
 **Status:** ✅ COMPLETE — 192 tests passing; 0 failures; 5 test files fixed
 
