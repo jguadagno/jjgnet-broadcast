@@ -76,8 +76,11 @@ public class YouTubeSourcesControllerTests
         // Arrange
         var sources = new List<YouTubeSource> { BuildSource(1), BuildSource(2) };
         _managerMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(sources);
+            .Setup(m => m.GetAllAsync(
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(),
+                It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<YouTubeSource> { Items = sources, TotalCount = sources.Count });
 
         var sut = CreateSut(ownerOid: "owner-oid-12345", isSiteAdmin: false);
 
@@ -90,9 +93,15 @@ public class YouTubeSourcesControllerTests
         result.Value.Items.Should().HaveCount(2);
 
         // Owner-filtered overload must fire …
-        _managerMock.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        _managerMock.Verify(m => m.GetAllAsync(
+            It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(),
+            It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()), Times.Once);
         // … and the unfiltered overload must never be called.
-        _managerMock.Verify(m => m.GetAllAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _managerMock.Verify(m => m.GetAllAsync(
+            It.IsAny<int>(), It.IsAny<int>(),
+            It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -101,8 +110,11 @@ public class YouTubeSourcesControllerTests
         // Arrange
         var sources = new List<YouTubeSource> { BuildSource(1) };
         _managerMock
-            .Setup(m => m.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(sources);
+            .Setup(m => m.GetAllAsync(
+                It.IsAny<int>(), It.IsAny<int>(),
+                It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<YouTubeSource> { Items = sources, TotalCount = sources.Count });
 
         var sut = CreateSut(isSiteAdmin: true);
 
@@ -115,9 +127,15 @@ public class YouTubeSourcesControllerTests
         result.Value.Items.Should().HaveCount(1);
 
         // Unfiltered overload must fire …
-        _managerMock.Verify(m => m.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _managerMock.Verify(m => m.GetAllAsync(
+            It.IsAny<int>(), It.IsAny<int>(),
+            It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()), Times.Once);
         // … and the owner-filtered overload must never be called.
-        _managerMock.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _managerMock.Verify(m => m.GetAllAsync(
+            It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(),
+            It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -125,8 +143,11 @@ public class YouTubeSourcesControllerTests
     {
         // Arrange
         _managerMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<YouTubeSource>());
+            .Setup(m => m.GetAllAsync(
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(),
+                It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<YouTubeSource> { Items = [], TotalCount = 0 });
 
         var sut = CreateSut();
 
