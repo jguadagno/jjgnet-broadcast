@@ -926,3 +926,26 @@ ull, resulting in NullReferenceException in the controller. Always check the act
 3. **In-memory pagination silently corrupts contract.** A controller that accepts page, pageSize, sortBy, sortDescending, ilter but calls an unpaaged data method still returns PagedResponse<T> with correct-looking metadata — but TotalCount reflects un-filtered count and sort/filter are never applied. This is a data contract violation with no compile-time signal.
 
 4. **End-to-end wiring check should be part of the agent handoff.** Trinity built controllers with TODO stubs; Morpheus built manager overloads. The squad task did not include a validation step to confirm the stubs were actually removed. A simple grep -r "TODO(morpheus)" in the diff would have caught this before review.
+
+## 2026-05-28 — Fix: PR #867 Title and Body Formatting
+
+**Status:** ✅ COMPLETE — PR metadata corrected for team convention  
+**PR:** #867  
+
+### Task
+
+Review PR #867 title and body formatting to ensure consistency with team metadata standards.
+
+### Findings and Changes
+
+**Title issue:** PR title did not follow issue(#NNN) - description convention.  
+- **Before:** "Standardize all GetAll API methods to paged GetAllAsync signature"
+- **After:** "issue(#866) - standardize all GetAll API methods to paged GetAllAsync signature"
+
+**Body:** Reformatted for clarity and consistency.
+
+### Learnings
+
+1. **PR title convention is critical for automation.** The issue(#NNN) - prefix enables tooling to correctly link PRs to issues in .squad/ orchestration logs and commit messages.
+2. **Metadata review should be part of acceptance criteria.** Just as code is reviewed for logic/security, PR metadata should be reviewed for convention compliance before merge.
+

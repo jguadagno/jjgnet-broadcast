@@ -1323,3 +1323,49 @@ The task spec described `GetOwnerOid` as returning `null` when no claim present.
 
 4. **`requireAdminWhenTargetingOtherUser=false` is a bypass flag** — non-admins CAN target other OIDs when this is false. Test this explicitly to document the intentional bypass behavior.
 
+
+---
+
+## 2026-04-26 — Issue #866 — Test Moq Overload Mismatch Fixes
+
+**Status:** ✅ COMPLETE — All 50 Api.Tests passing; 0 regressions  
+**Commit:** 587add2  
+**Branch:** issue-866-getall-consistency  
+
+### Task
+
+Update all test Setup() and Verify() calls to match new paged manager overload signatures. Trinity wired 6 controllers to call 6+ parameter paged overloads; test mocks still targeted 3-4 parameter non-paged overloads. Moq doesn't match; returns null; controller throws NullReferenceException.
+
+### Files Updated
+
+| File | Problem | Fix |
+|---|---|---|
+| MessageTemplatesControllerTests.cs | Admin tests mocked 3-param; controller calls 5+CT. Owner tests mocked 4-param; controller calls 6+CT. | Updated Setup for each test to include It.IsAny<string>() sortBy, It.IsAny<bool>() sortDescending, It.IsAny<string?>() filter |
+| UserCollectorFeedSourcesControllerTests.cs | Mocked old GetByUserAsync(); controller calls paged GetAllAsync(6+CT). Return type changed List<T> → PagedResult<T>. | Updated Setup signatures and return shape; changed assertions from esult.Result to esult.Value |
+| UserCollectorYouTubeChannelsControllerTests.cs | Same as FeedSources (different type) | Same fixes, different entity type |
+| UserPublisherSettingsControllerTests.cs | Same as FeedSources | Same fixes |
+| SocialMediaPlatformsControllerTests.cs | Mocked GetAllAsync(bool, CT); controller now calls GetAllAsync(page, pageSize, sortBy, sortDescending, filter, includeInactive, CT) | Updated Setup to 6+CT with correct param types; updated return types and assertions |
+
+### Key Pattern: When Overloads Change
+
+1. **Check the controller code** — confirm which overload it actually calls (read the real call, not the spec)
+2. **Match Setup signature exactly** — if controller calls GetAllAsync(a, b, c, d, e, f, CT), Setup must be Setup(s => s.GetAllAsync(It.IsAny<T1>(), ..., CT))
+3. **Update return type** — if overload signature changed return type from List<T> to PagedResult<T>, mock Returns must return the new type
+4. **Fix assertions** — if return path changed from esult.Result (ActionResult pattern) to esult.Value (direct return pattern), update all assertions
+
+### Test Results
+
+- **Before:** 11 failures (NullReferenceException in 5 test files)
+- **After:** 50/50 passing
+- **Regressions:** 0
+
+### Learnings
+
+1. **Moq doesn't silently try other overloads** — if Setup signature doesn't match exactly, it returns null/default. Silent null is worse than explicit exception; test failures are discovered at CI, not in production. Always verify Setup matches the actual call.
+
+2. **Mocking patterns fail when interface methods change** — Moq Setup is **brittle to interface evolution**. After interface refactor (signature change), **all mocks of that interface must be updated systematically**. A grep for the old method name is a starting point, but each site must be checked for exact signature match.
+
+3. **Return type changes require mock Updates** — when paged methods return PagedResult<T> (not List<T>), the mock .Returns() must return an object that satisfies the interface's new contract. This forced update pattern is a feature — it ensures tests document interface changes.
+
+4. **Assertion path changes with return type** — converting from OkObjectResult (ActionResult<T>.Result) to direct return (ActionResult<T>.Value) means **all downstream assertions must change**. This is another forced-update mechanism that helps keep tests in sync with controller implementations.
+

@@ -107,6 +107,21 @@
 
 ---
 
+### 2026-05-28 — Issue #866 Sort Property Refactor
+
+- **Work:** Replaced hard-coded sort string literals with `nameof().ToLowerInvariant()` for compile-time safety
+  - Fixed 9 DataStore files: Engagement, MessageTemplate, ScheduledItem, SocialMediaPlatform, SyndicationFeedSource, YouTubeSource, UserCollectorFeedSource, UserCollectorYouTubeChannel, UserPublisherSetting
+  - Converted switch expressions to if/else chains using `nameof(EntityType.PropertyName).ToLowerInvariant()`
+  - Total of 18 paged `GetAllAsync` overloads updated (2 per DataStore: base + owner-filtered)
+  - All hard-coded strings like `"name"`, `"startdate"`, `"platformid"`, `"author"`, `"channelid"`, etc. now use `nameof()`
+  
+- **Pattern used:** `var sortByLower = sortBy?.ToLowerInvariant(); if (sortByLower == nameof(Model.Property).ToLowerInvariant()) { ... }`
+- **Rationale:** If property names change, the compiler will catch breaks instead of failing silently at runtime
+- **Outcome:** Clean build; 0 errors; commit 1378c3b
+- **Status:** ✅ COMPLETE
+
+---
+
 ### 2026-05-27 — Issue #866 GetAll Consistency
 
 - **Work:** Standardized all `GetAllAsync` overloads with uniform paging, sorting, and filtering pushed to data layer

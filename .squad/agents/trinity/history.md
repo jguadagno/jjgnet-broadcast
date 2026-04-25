@@ -1177,3 +1177,43 @@ Added explicit TODO comments in LoadNewPosts.cs and LoadNewVideos.cs documenting
 
 **Decision Doc:** .squad/decisions/inbox/trinity-778-backend.md
 
+
+---
+
+## 2026-04-25 — Issue #866 — Controller Wiring Phase 1 (Wire Paged Overloads)
+
+**Status:** ✅ COMPLETE — All 6 TODO-blocked controllers updated to call paged overloads  
+**Commit:** 9dac48c  
+**Branch:** issue-866-getall-consistency  
+
+### Task
+
+Wire 6 TODO-blocked controllers to call the newly implemented paged manager GetAllAsync overloads (added by Morpheus in a pre-staged working tree). Remove all TODO comments.
+
+### Controllers Updated
+
+| Controller | Overload Now Called |
+|---|---|
+| SyndicationFeedSourcesController | GetAllAsync(page, pageSize, sortBy, sortDescending, filter) → admin path; owner path uses additional ownerOid |
+| YouTubeSourcesController | Admin/owner paged overloads |
+| SocialMediaPlatformsController | Consolidated two legacy calls (GetAllAsync + GetAllIncludingInactiveAsync) into single paged with includeInactive flag |
+| UserCollectorFeedSourcesController | Paged overload with owner enforcement via esolvedOwnerOid |
+| UserCollectorYouTubeChannelsController | Paged overload with owner enforcement |
+| UserPublisherSettingsController | Paged overload with owner enforcement |
+
+### Key Changes
+
+- All // TODO(morpheus): comments removed
+- TotalCount now sourced from PagedResult<T>.TotalCount (not list.Count) — critical for correct paginated metadata
+- Page/pageSize guards remain: if (page < 1) / if (pageSize > MaxPageSize) etc.
+- Return types: ActionResult<PagedResponse<T>>
+- Owner enforcement via ResolveOwnerOid() preserved on all owner-scoped controllers
+
+### Learnings
+
+1. **TODO comments signal incomplete features.** Six controllers shipped with TODO stubs in Sprint 25; these must be tracked in the acceptance criteria and verified as part of the PR review for the fixing sprint, not discovered during code review of the completed work.
+
+2. **Consolidation opportunity during paged wiring.** SocialMediaPlatformsController had two legacy calls (GetAllAsync and GetAllIncludingInactiveAsync). The paged overload includes an includeInactive parameter, eliminating the need for two separate methods. This consolidation must happen during wiring, not as a later refactor.
+
+3. **TotalCount must come from the paged query.** When controllers previously wrapped non-paged results in PagedResponse shell, TotalCount was set to list.Count() — which for filtered queries is wrong (includes all records, not filtered subset). The paged overload returns PagedResult<T>.TotalCount which reflects the actual filtered+paged result.
+

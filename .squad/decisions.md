@@ -19239,3 +19239,113 @@ No existing overloads were removed. No EF migrations were needed (query-only add
 - **`UserPublisherSettingManager`**: The paged overload applies `ProjectForResponse` to each item to mask raw settings data.
 - **`MessageTemplateDataStore`**: No manager class exists — data store is used directly by the API controller.
 
+
+---
+
+# User Directive: Sort Property Names Must Use nameof()
+
+**Date:** 2026-04-25  
+**From:** Joseph (via Copilot)  
+**Status:** Standing rule  
+
+Always use `nameof().ToLowerInvariant()` for property names in sort-by switch statements in DataStores. Never use hard-coded string literals for property/field names — this ensures compile-time safety when names change.
+
+**Rationale:** Hard-coded property strings break silently on rename; `nameof()` provides compile-time safety. If a domain property is renamed, the compiler catches the error instead of failing at runtime when callers pass the old string value.
+
+**Enforcement:** Applied to Issue #866 DataStore refactor (commit 1378c3b).
+
+---
+
+# Review 1: Issue #866 — GetAll API Consistency (BLOCKED)
+
+**Date:** 2026-04-25  
+**Author:** Neo (Code Review Lead)  
+**Status:** ❌ BLOCKED (6 controllers + 11 test mock mismatches)  
+**Branch:** issue-866-getall-consistency  
+
+## Blocking Defect 1 — 6 Controllers Discard Paging Parameters
+
+All six have `// TODO(morpheus):` comments. Paged manager overloads exist and are implemented. Controllers accept the parameters but call old non-paged methods and wrap in `PagedResponse` shell — in-memory pagination that violates "DB filtering at data store layer" directive.
+
+**Fix assigned to:** Trinity
+
+## Blocking Defect 2 — 11 Test Mock Mismatches
+
+Moq `.Setup()` signatures don't match actual interface method signatures. Controllers call full 6-parameter paged overloads; tests mock 3-parameter non-paged overloads. Moq doesn't match; returns null; tests throw NullReferenceException.
+
+**Fix assigned to:** Tank
+
+---
+
+# Review 2: Issue #866 — GetAll API Consistency (APPROVED)
+
+**Date:** 2026-04-25  
+**Author:** Neo (Code Review Lead)  
+**Status:** ✅ APPROVED (with minor residual fix by Neo)  
+**Branch:** issue-866-getall-consistency  
+**PR:** #867  
+
+## Blocking Defects from Review 1 — All Resolved ✅
+
+All defects fixed. Final results:
+- **Build:** 0 errors, 717 pre-existing warnings
+- **Tests:** 242/242 Api.Tests pass; full suite clean
+
+**Verdict:** APPROVED — Ready to merge.
+
+---
+
+# Decision: Fix Moq Overload Mismatch — Issue #866 Tests
+
+**Date:** 2026-04-26  
+**Author:** Tank (QA Automation Engineer)  
+**Status:** ✅ COMPLETED  
+**Branch:** issue-866-getall-consistency  
+**Commit:** 587add2  
+
+Updated all `.Setup()` and `.Verify()` calls in 5 affected test files to match new exact overload signatures. All 50 tests in `JosephGuadagno.Broadcasting.Api.Tests` pass. 0 regressions.
+
+**Standing Rule:** When a controller's manager interface method signature changes, all corresponding test `Setup()` and `Verify()` calls must be updated to the exact new overload.
+
+---
+
+# Trinity Fix: Wire Paged Manager Overloads in 6 Controllers
+
+**Date:** 2026-04-25  
+**Author:** Trinity (API Layer Engineer)  
+**Status:** ✅ COMPLETED  
+**Branch:** issue-866-getall-consistency  
+**Commit:** 9dac48c  
+
+Updated 6 TODO-blocked controllers to call full-signature paged `GetAllAsync` overloads. All TODOs removed. `TotalCount` now sourced from `PagedResult<T>.TotalCount`. Build: 0 errors.
+
+---
+
+# Morpheus: Sort Property Name Refactor — Issue #866
+
+**Date:** 2026-05-28  
+**Author:** Morpheus (Data Engineer)  
+**Status:** ✅ COMPLETED  
+**Branch:** issue-866-getall-consistency  
+**Commit:** 1378c3b  
+
+Replaced all 27 hard-coded sort string literals with idiomatic C# if/else chains using `nameof(EntityType.PropertyName).ToLowerInvariant()`.
+
+## Files Updated (src/JosephGuadagno.Broadcasting.Data.Sql/)
+
+- EngagementDataStore.cs — 2 overloads
+- MessageTemplateDataStore.cs — 2 overloads
+- ScheduledItemDataStore.cs — 2 overloads
+- SocialMediaPlatformDataStore.cs — 1 overload
+- SyndicationFeedSourceDataStore.cs — 2 overloads
+- YouTubeSourceDataStore.cs — 2 overloads
+- UserCollectorFeedSourceDataStore.cs — 1 overload
+- UserCollectorYouTubeChannelDataStore.cs — 1 overload
+- UserPublisherSettingDataStore.cs — 1 overload
+
+**Total:** 18 paged `GetAllAsync` overloads; 27 hard-coded strings replaced
+
+Build verification: ✅ Clean (0 errors, 0 warnings)
+
+Learnings: Compile-time safety via `nameof()` ensures property renames are caught by compiler, preventing silent runtime failures.
+
