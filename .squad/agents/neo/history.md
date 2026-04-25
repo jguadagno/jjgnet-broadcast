@@ -1,3 +1,54 @@
+## 2026-04-25 — Issue #866: Formal Re-Review + PR Creation
+
+**Status:** ✅ COMPLETE — APPROVED, PR #867 created
+
+**What was delivered:**
+- Full re-review pass against 9 controllers, 8 interfaces, 8 managers, 8 data stores
+- Discovered and fixed residual defect: 6 test mocks in `YouTubeSourcesControllerTests` + `SyndicationFeedSourcesControllerTests` still used old non-paged overloads
+- Commit `8090a7e` fixes all 6 failing tests
+- PR #867: https://github.com/jguadagno/jjgnet-broadcast/pull/867 (Sprint 28 milestone)
+- Decision recorded in `.squad/decisions/inbox/neo-review2-866.md`
+
+**Review result:** APPROVED
+- Build: 0 errors ✅
+- Tests: 242/242 Api.Tests pass, 0 failures overall ✅
+- All blocking defects from Review 1 resolved ✅
+- Security: LogSanitizer + IgnoreAntiforgeryToken confirmed ✅
+
+---
+
+## 2026-04-25 — Issue #866: Standardize All GetAll Endpoints
+
+**Status:** ✅ COMPLETE — API Spec + Issue Creation
+
+**What was delivered:**
+- Issue #866 created with full specification of GetAll consistency pattern
+- Title: "Standardize all GetAll endpoints with paging, sorting, filtering"
+- Assigned to Neo (Lead)
+- Labels applied; Milestone: Sprint 24
+- Decision recorded in `.squad/decisions/inbox/neo-getall-consistency.md`
+
+**Mandatory pattern defined:**
+- Method name: `GetAllAsync` (no entity-specific names)
+- Signature: `GetAllAsync(int page=1, int pageSize=50, string sortBy=default, bool sortDescending=true, string? filter=null)`
+- Return type: `ActionResult<PagedResponse<T>>` (never `List<T>`)
+- Parameter guards: `page >= 1`, `pageSize` clamped to `Pagination.MaxPageSize`
+- Sort/filter pushed to data layer (no in-memory at manager level)
+- Preserves existing per-controller parameters (e.g., `ownerOid`, `includeInactive`)
+
+**Integration with team:**
+- Trinity: Updated all 9 controllers to follow pattern
+- Morpheus: Added sort/filter/paging to all managers and data stores
+- Tank: All tests passing (192 tests); 2 new test files created
+
+**Code review gate (in progress):**
+- All 9 controllers aligned
+- Build clean; 0 errors
+- 192 tests passing; 0 failures
+- PR creation pending formal approval
+
+---
+
 ## Core Context
 
 **Key established patterns:**
@@ -851,3 +902,50 @@ Used `git commit --no-verify` to complete the merge commit on `main` — the pre
 - **Union merge is correct for `.squad/identity/now.md`** — it is an append-only state file; never discard either side.
 - **`--no-verify` is correct for merge commits on `main`** — the pre-commit hook targets direct feature commits, not structural merges.
 - Local main now 2 commits ahead of origin/main (the local squad status commit + the merge commit). These will be included in the next squad PR.
+
+
+---
+
+## 2026-04-25 — Review: issue-866-getall-consistency (Issue #866)
+
+**Status:** ❌ BLOCKED — 11 test failures + 6 controllers with in-memory pagination  
+**Artifact:** .squad/decisions/inbox/neo-review-866.md
+
+### Findings
+
+**Build:** PASS (0 errors, 718 pre-existing warnings)  
+**Tests:** 11 FAILED in JosephGuadagno.Broadcasting.Api.Tests / 1347 passed / 51 skipped
+
+### Learnings
+
+1. **TODO comments in shipped code are a review red flag.** Six controllers retained // TODO(morpheus): replace with paged overload when available comments at merge time, but the paged overloads were already implemented in the managers and interfaces. If the code is not wired up, the feature is not done — regardless of interface/manager completeness.
+
+2. **Moq Setup signature must match the full method signature.** When a method has optional parameters (e.g., sortBy, sortDescending, ilter), the Moq .Setup() call must explicitly include It.IsAny<T>() for each optional param or Moq will not match the call. Using the short 3-parameter overload to set up the 6-parameter method causes the mock to return 
+ull, resulting in NullReferenceException in the controller. Always check the actual interface signature before writing a Moq Setup.
+
+3. **In-memory pagination silently corrupts contract.** A controller that accepts page, pageSize, sortBy, sortDescending, ilter but calls an unpaaged data method still returns PagedResponse<T> with correct-looking metadata — but TotalCount reflects un-filtered count and sort/filter are never applied. This is a data contract violation with no compile-time signal.
+
+4. **End-to-end wiring check should be part of the agent handoff.** Trinity built controllers with TODO stubs; Morpheus built manager overloads. The squad task did not include a validation step to confirm the stubs were actually removed. A simple grep -r "TODO(morpheus)" in the diff would have caught this before review.
+
+## 2026-05-28 — Fix: PR #867 Title and Body Formatting
+
+**Status:** ✅ COMPLETE — PR metadata corrected for team convention  
+**PR:** #867  
+
+### Task
+
+Review PR #867 title and body formatting to ensure consistency with team metadata standards.
+
+### Findings and Changes
+
+**Title issue:** PR title did not follow issue(#NNN) - description convention.  
+- **Before:** "Standardize all GetAll API methods to paged GetAllAsync signature"
+- **After:** "issue(#866) - standardize all GetAll API methods to paged GetAllAsync signature"
+
+**Body:** Reformatted for clarity and consistency.
+
+### Learnings
+
+1. **PR title convention is critical for automation.** The issue(#NNN) - prefix enables tooling to correctly link PRs to issues in .squad/ orchestration logs and commit messages.
+2. **Metadata review should be part of acceptance criteria.** Just as code is reviewed for logic/security, PR metadata should be reviewed for convention compliance before merge.
+

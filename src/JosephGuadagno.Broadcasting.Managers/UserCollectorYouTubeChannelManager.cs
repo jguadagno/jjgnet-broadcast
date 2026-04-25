@@ -54,4 +54,12 @@ public class UserCollectorYouTubeChannelManager(IUserCollectorYouTubeChannelData
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         return dataStore.DeleteAsync(id, ownerOid, cancellationToken);
     }
+
+    /// <inheritdoc />
+    public Task<PagedResult<UserCollectorYouTubeChannel>> GetAllAsync(
+        string ownerOid, int page, int pageSize, string sortBy = "displayname", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
+        return dataStore.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter, cancellationToken);
+    }
 }

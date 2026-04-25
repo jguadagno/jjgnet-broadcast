@@ -11,4 +11,6 @@ public interface IMessageTemplateDataStore
     Task<List<MessageTemplate>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default);
     Task<PagedResult<MessageTemplate>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default);
     Task<PagedResult<MessageTemplate>> GetAllAsync(string ownerEntraOid, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<PagedResult<MessageTemplate>> GetAllAsync(int page, int pageSize, string sortBy = "messagetype", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default);
+    Task<PagedResult<MessageTemplate>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "messagetype", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default);
 }

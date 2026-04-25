@@ -58,7 +58,8 @@ public class SocialMediaPlatformsControllerTests
             new() { Id = 2, Name = "BlueSky",  Url = "https://bsky.app",     IsActive = true },
             new() { Id = 3, Name = "LinkedIn", Url = "https://linkedin.com", IsActive = true }
         };
-        _managerMock.Setup(m => m.GetAllAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>())).ReturnsAsync(platforms);
+        _managerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<SocialMediaPlatform> { Items = platforms, TotalCount = platforms.Count });
 
         var sut = CreateSut();
 
@@ -66,19 +67,20 @@ public class SocialMediaPlatformsControllerTests
         var result = await sut.GetAllAsync();
 
         // Assert
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeAssignableTo<List<SocialMediaPlatformResponse>>().Subject;
-        response.Should().HaveCount(3);
-        response.Should().BeEquivalentTo(platforms, opts => opts.ExcludingMissingMembers());
-        _managerMock.Verify(m => m.GetAllAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
+        result.Value.Should().NotBeNull();
+        result.Value!.Items.Should().HaveCount(3);
+        result.Value!.Items.Should().BeEquivalentTo(
+            platforms.Select(p => new { p.Id, p.Name, p.Url, p.IsActive }),
+            opts => opts.ExcludingMissingMembers());
+        _managerMock.Verify(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task GetAllAsync_WhenEmpty_ShouldReturn200WithEmptyList()
     {
         // Arrange
-        _managerMock.Setup(m => m.GetAllAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<SocialMediaPlatform>());
+        _managerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<SocialMediaPlatform> { Items = [], TotalCount = 0 });
 
         var sut = CreateSut();
 
@@ -86,10 +88,9 @@ public class SocialMediaPlatformsControllerTests
         var result = await sut.GetAllAsync();
 
         // Assert
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeAssignableTo<List<SocialMediaPlatformResponse>>().Subject;
-        response.Should().BeEmpty();
-        _managerMock.Verify(m => m.GetAllAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
+        result.Value.Should().NotBeNull();
+        result.Value!.Items.Should().BeEmpty();
+        _managerMock.Verify(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------

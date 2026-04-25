@@ -72,4 +72,14 @@ public class SyndicationFeedSourceManager : ISyndicationFeedSourceManager
     {
         return await _syndicationFeedSourceDataStore.GetRandomSyndicationDataAsync(ownerEntraOid, cutoffDate, excludedCategories, cancellationToken);
     }
+
+    public async Task<PagedResult<SyndicationFeedSource>> GetAllAsync(int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        return await _syndicationFeedSourceDataStore.GetAllAsync(page, pageSize, sortBy, sortDescending, filter, cancellationToken);
+    }
+
+    public async Task<PagedResult<SyndicationFeedSource>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        return await _syndicationFeedSourceDataStore.GetAllAsync(ownerEntraOid, page, pageSize, sortBy, sortDescending, filter, cancellationToken);
+    }
 }

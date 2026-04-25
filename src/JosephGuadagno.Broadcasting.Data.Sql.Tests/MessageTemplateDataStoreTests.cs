@@ -238,7 +238,7 @@ public class MessageTemplateDataStoreTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _dataStore.GetAllAsync("owner-1", 1, 2);
+        var result = await _dataStore.GetAllAsync("owner-1", 1, 2, sortBy: "subject");
 
         // Assert
         Assert.Equal(3, result.TotalCount);

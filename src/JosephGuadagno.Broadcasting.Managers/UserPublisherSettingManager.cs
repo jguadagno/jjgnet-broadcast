@@ -59,6 +59,16 @@ public class UserPublisherSettingManager(
         return userPublisherSettingDataStore.DeleteAsync(ownerOid, platformId, cancellationToken);
     }
 
+    public async Task<PagedResult<UserPublisherSetting>> GetAllAsync(string ownerOid, int page, int pageSize, string sortBy = "platformname", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        var pagedResult = await userPublisherSettingDataStore.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter, cancellationToken);
+        return new PagedResult<UserPublisherSetting>
+        {
+            Items = pagedResult.Items.Select(ProjectForResponse).ToList(),
+            TotalCount = pagedResult.TotalCount
+        };
+    }
+
     private static UserPublisherSetting ProjectForResponse(UserPublisherSetting setting)
     {
         var projected = new UserPublisherSetting

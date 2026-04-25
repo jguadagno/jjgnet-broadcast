@@ -11,4 +11,6 @@ public interface IUserPublisherSettingManager
     Task<UserPublisherSetting?> SaveAsync(UserPublisherSettingUpdate setting, CancellationToken cancellationToken = default);
 
     Task<bool> DeleteAsync(string ownerOid, int platformId, CancellationToken cancellationToken = default);
+
+    Task<PagedResult<UserPublisherSetting>> GetAllAsync(string ownerOid, int page, int pageSize, string sortBy = "platformname", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default);
 }

@@ -89,39 +89,39 @@ public class SchedulesControllerTests
             BuildScheduledItem(1),
             BuildScheduledItem(2)
         };
-        _scheduledItemManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+        _scheduledItemManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = items, TotalCount = items.Count });
 
         var sut = CreateSut();
 
         // Act
-        var result = await sut.GetScheduledItemsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().HaveCount(2);
         result.Value!.Items.Should().BeEquivalentTo(items, opts => opts.ExcludingMissingMembers());
         result.Value!.TotalCount.Should().Be(2);
-        _scheduledItemManagerMock.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
+        _scheduledItemManagerMock.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task GetScheduledItemsAsync_WhenNoItemsExist_ReturnsEmptyList()
     {
         // Arrange
-        _scheduledItemManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+        _scheduledItemManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 });
 
         var sut = CreateSut();
 
         // Act
-        var result = await sut.GetScheduledItemsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().BeEmpty();
         result.Value!.TotalCount.Should().Be(0);
-        _scheduledItemManagerMock.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
+        _scheduledItemManagerMock.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------
@@ -427,13 +427,13 @@ public class SchedulesControllerTests
         var items = new List<ScheduledItem> { BuildScheduledItem(1) };
         // Set up the unfiltered overload (no ownerOid, first param is int page).
         _scheduledItemManagerMock
-            .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = items, TotalCount = items.Count });
 
         var sut = CreateSut(isSiteAdmin: true);
 
         // Act
-        var result = await sut.GetScheduledItemsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
@@ -441,11 +441,11 @@ public class SchedulesControllerTests
 
         // Unfiltered overload must be invoked exactly once ΓÇª
         _scheduledItemManagerMock.Verify(
-            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()),
+            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
         // ΓÇª and the owner-filtered overload must never be called.
         _scheduledItemManagerMock.Verify(
-            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()),
+            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -605,7 +605,7 @@ public class SchedulesControllerTests
             CreatedByEntraOid = "owner-oid-12345"
         };
         _scheduledItemManagerMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
         _engagementManagerMock
             .Setup(m => m.GetAsync(5))
@@ -614,7 +614,7 @@ public class SchedulesControllerTests
         var sut = CreateSut();
 
         // Act
-        var result = await sut.GetScheduledItemsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
@@ -635,7 +635,7 @@ public class SchedulesControllerTests
             CreatedByEntraOid = "owner-oid-12345"
         };
         _scheduledItemManagerMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
         _engagementManagerMock
             .Setup(m => m.GetAsync(5))
@@ -644,7 +644,7 @@ public class SchedulesControllerTests
         var sut = CreateSut();
 
         // Act
-        var result = await sut.GetScheduledItemsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
@@ -665,7 +665,7 @@ public class SchedulesControllerTests
             CreatedByEntraOid = "owner-oid-12345"
         };
         _scheduledItemManagerMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
         _engagementManagerMock
             .Setup(m => m.GetTalkAsync(10, It.IsAny<CancellationToken>()))
@@ -677,7 +677,7 @@ public class SchedulesControllerTests
         var sut = CreateSut();
 
         // Act
-        var result = await sut.GetScheduledItemsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
@@ -698,7 +698,7 @@ public class SchedulesControllerTests
             CreatedByEntraOid = "owner-oid-12345"
         };
         _scheduledItemManagerMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
         _engagementManagerMock
             .Setup(m => m.GetTalkAsync(10, It.IsAny<CancellationToken>()))
@@ -710,7 +710,7 @@ public class SchedulesControllerTests
         var sut = CreateSut();
 
         // Act
-        var result = await sut.GetScheduledItemsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
@@ -731,7 +731,7 @@ public class SchedulesControllerTests
             CreatedByEntraOid = "owner-oid-12345"
         };
         _scheduledItemManagerMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
         _engagementManagerMock
             .Setup(m => m.GetTalkAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
@@ -740,7 +740,7 @@ public class SchedulesControllerTests
         var sut = CreateSut();
 
         // Act
-        var result = await sut.GetScheduledItemsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
@@ -761,7 +761,7 @@ public class SchedulesControllerTests
             CreatedByEntraOid = "owner-oid-12345"
         };
         _scheduledItemManagerMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
         _syndicationFeedSourceManagerMock
             .Setup(m => m.GetAsync(7))
@@ -781,7 +781,7 @@ public class SchedulesControllerTests
         var sut = CreateSut();
 
         // Act
-        var result = await sut.GetScheduledItemsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
@@ -802,7 +802,7 @@ public class SchedulesControllerTests
             CreatedByEntraOid = "owner-oid-12345"
         };
         _scheduledItemManagerMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
         _youTubeSourceManagerMock
             .Setup(m => m.GetAsync(3))
@@ -822,7 +822,7 @@ public class SchedulesControllerTests
         var sut = CreateSut();
 
         // Act
-        var result = await sut.GetScheduledItemsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
@@ -843,7 +843,7 @@ public class SchedulesControllerTests
             CreatedByEntraOid = "owner-oid-12345"
         };
         _scheduledItemManagerMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
         _syndicationFeedSourceManagerMock
             .Setup(m => m.GetAsync(99))
@@ -852,11 +852,11 @@ public class SchedulesControllerTests
         var sut = CreateSut();
 
         // Act
-        var act = async () => await sut.GetScheduledItemsAsync();
+        var act = async () => await sut.GetAllAsync();
 
         // Assert — must complete without throwing; display name must be null
         await act.Should().NotThrowAsync();
-        var result = await sut.GetScheduledItemsAsync();
+        var result = await sut.GetAllAsync();
         result.Value.Should().NotBeNull();
         result.Value!.Items.First().SourceItemDisplayName.Should().BeNull();
     }

@@ -48,22 +48,32 @@ public class YouTubeSourcesController : ControllerBase
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<YouTubeSourceResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<YouTubeSourceResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<YouTubeSourceResponse>>> GetYouTubeSourcesAsync()
+    public async Task<ActionResult<PagedResponse<YouTubeSourceResponse>>> GetAllAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "name", bool sortDescending = false, string? filter = null)
     {
-        List<YouTubeSource> results;
+        if (page < 1) page = Pagination.DefaultPage;
+        if (pageSize < 1 || pageSize > Pagination.MaxPageSize) pageSize = Pagination.DefaultPageSize;
+
+        PagedResult<YouTubeSource> result;
         if (User.IsSiteAdministrator())
         {
-            results = await _youTubeSourceManager.GetAllAsync();
+            result = await _youTubeSourceManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
         }
         else
         {
             var ownerOid = User.GetOwnerOid();
-            results = await _youTubeSourceManager.GetAllAsync(ownerOid);
+            result = await _youTubeSourceManager.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
         }
 
-        return Ok(_mapper.Map<List<YouTubeSourceResponse>>(results));
+        var items = _mapper.Map<List<YouTubeSourceResponse>>(result.Items);
+        return new PagedResponse<YouTubeSourceResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = result.TotalCount
+        };
     }
 
     /// <summary>

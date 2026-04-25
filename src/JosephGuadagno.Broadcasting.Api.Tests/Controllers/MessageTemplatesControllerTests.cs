@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
 using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -137,7 +138,7 @@ public class MessageTemplatesControllerTests
         var templates = new List<MessageTemplate> { BuildTemplate() };
         // Set up the unfiltered overload (no ownerOid ΓÇö first param is int page).
         _messageTemplateDataStoreMock
-            .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<MessageTemplate> { Items = templates, TotalCount = templates.Count });
 
         var sut = CreateSut(isSiteAdmin: true);
@@ -151,11 +152,79 @@ public class MessageTemplatesControllerTests
 
         // Unfiltered overload must be invoked exactly once ΓÇª
         _messageTemplateDataStoreMock.Verify(
-            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
-        // ΓÇª and the owner-filtered overload must never be called.
+        // … and the owner-filtered overload must never be called.
         _messageTemplateDataStoreMock.Verify(
-            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    // -------------------------------------------------------------------------
+    // GetAllAsync — non-admin owner-filtered path and guards
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetAllAsync_WhenNotSiteAdmin_CallsOwnerFilteredGetAll()
+    {
+        // Arrange
+        var templates = new List<MessageTemplate> { BuildTemplate() };
+        _messageTemplateDataStoreMock
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<MessageTemplate> { Items = templates, TotalCount = templates.Count });
+
+        var sut = CreateSut(ownerOid: "owner-oid-12345", isSiteAdmin: false);
+
+        // Act
+        var result = await sut.GetAllAsync();
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.TotalCount.Should().Be(1);
+
+        // Owner-filtered overload must fire …
+        _messageTemplateDataStoreMock.Verify(
+            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+        // … and the unfiltered overload must never be called.
+        _messageTemplateDataStoreMock.Verify(
+            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WhenPageIsZero_ClampsToDefaultPage()
+    {
+        // Arrange
+        _messageTemplateDataStoreMock
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<MessageTemplate> { Items = new List<MessageTemplate>(), TotalCount = 0 });
+
+        var sut = CreateSut();
+
+        // Act — page = 0 must be clamped to Pagination.DefaultPage
+        var result = await sut.GetAllAsync(page: 0);
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.Page.Should().Be(Pagination.DefaultPage);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WhenPageSizeIsZero_ClampsToDefaultPageSize()
+    {
+        // Arrange
+        _messageTemplateDataStoreMock
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<MessageTemplate> { Items = new List<MessageTemplate>(), TotalCount = 0 });
+
+        var sut = CreateSut();
+
+        // Act — pageSize = 0 must be clamped to Pagination.DefaultPageSize
+        var result = await sut.GetAllAsync(pageSize: 0);
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.PageSize.Should().Be(Pagination.DefaultPageSize);
     }
 }

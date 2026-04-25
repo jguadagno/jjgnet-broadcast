@@ -46,4 +46,6 @@ public interface IUserCollectorYouTubeChannelManager
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if deleted, false if not found or error occurred</returns>
     Task<bool> DeleteAsync(int id, string ownerOid, CancellationToken cancellationToken = default);
+
+    Task<PagedResult<UserCollectorYouTubeChannel>> GetAllAsync(string ownerOid, int page, int pageSize, string sortBy = "displayname", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default);
 }
