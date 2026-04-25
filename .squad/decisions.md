@@ -19026,3 +19026,32 @@ Per-user collector onboarding/configuration feature requires two new typed confi
 
 ---
 
+
+---
+
+### 2026-04-25: ClaimsPrincipal extension method design for API controllers
+**By:** Trinity (issue #862)
+
+**What:** Created `ClaimsPrincipalExtensions.cs` in the `JosephGuadagno.Broadcasting.Api` namespace consolidating three helpers:
+- `GetOwnerOid(this ClaimsPrincipal user)` — returns `string` (throws `InvalidOperationException` if the OID claim is missing); tries `EntraObjectId` first, then `EntraObjectIdShort` fallback for Microsoft.Identity.Web v2+ JWT handlers
+- `IsSiteAdministrator(this ClaimsPrincipal user)` — delegates to `user.IsInRole(RoleNames.SiteAdministrator)`
+- `ResolveOwnerOid(this ClaimsPrincipal user, string? requestedOwnerOid, bool requireAdminWhenTargetingOtherUser)` — returns `null` as a forbidden signal when a non-admin targets another user's OID; callers must check `if (resolvedOwnerOid is null) return Forbid()`
+
+**Why the null-as-forbidden pattern was preserved:**
+The task's proposed Neo design would have silently returned the current user's OID when a non-admin tried to access another user's data. This is a **security regression** — it silently narrows the scope rather than explicitly denying access. The existing pattern is explicit: callers get `null` and must call `Forbid()`. This keeps authorization intent visible at the call site.
+
+**Why explicit `using` is required:**
+C# does not automatically expose extension methods from a parent namespace (`JosephGuadagno.Broadcasting.Api`) to a child namespace (`JosephGuadagno.Broadcasting.Api.Controllers`). All 8 controllers require `using JosephGuadagno.Broadcasting.Api;`.
+
+**Inline bypass fix:**
+`UserCollectorFeedSourcesController` and `UserCollectorYouTubeChannelsController` had raw `FindFirstValue`/`IsInRole` calls inside `GetAsync` and `DeleteAsync` that bypassed the controller's own private `ResolveOwnerOid`. These were replaced with `User.GetOwnerOid()` + `User.ResolveOwnerOid(config.CreatedByEntraOid, true)`.
+
+---
+
+### 2026-04-24: User directive — No backslash escaping in GitHub output
+**By:** Joe (via Copilot)
+
+**What:** Agents must NEVER use `\word\` (backslash-word-backslash) style escaping in any GitHub output (PR descriptions, issue bodies, PR comments, review comments). Always use backtick-quoted code: ` \word\ `. This has been a recurring violation across multiple agents and PRs despite being documented in charters. Every agent must self-check all GitHub output before posting — scan for `\` characters and replace with backticks.
+
+**Why:** User request — recurring violation flagged again on PR #864. Captured for permanent team memory and charter enforcement. Charter hardening committed as cc77930: "docs: harden no-backslash pre-flight rule in all agent charters".
+

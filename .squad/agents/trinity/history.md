@@ -1,5 +1,11 @@
 # Trinity - History
 
+## Cross-Agent Learnings
+
+**Charter security directive (cc77930):** Neo hardened all agent charters with explicit pre-flight checklist for GitHub output — scan for backslash-word-backslash (`\word\`) patterns and replace with backticks (`` `word` ``). This recurring violation has silently mangled Markdown in PR comments and descriptions. All team members must add self-check step before running any `gh pr create`, `gh pr edit`, `gh issue create`, or `gh issue edit`. Trinity impact: charter updated to require `using JosephGuadagno.Broadcasting.Api;` in all 8 controllers — double-check all new PR descriptions/comments follow the no-backslash rule.
+
+---
+
 ## Learnings
 
 ### 2026-05-XX — Issue #862: Consolidate ClaimsPrincipal Helpers into Extension Class
