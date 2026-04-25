@@ -8,6 +8,20 @@
 
 ## Learnings
 
+### 2026-05-XX — Issue #866: Wire Paged Manager Overloads (TODO Cleanup)
+
+**Status:** ✅ COMPLETE — 1 commit on `issue-866-getall-consistency`; build 0 errors
+
+**What was fixed:**
+- 6 controllers had `// TODO(morpheus):` stubs calling old non-paged overloads; replaced with the full-signature overloads Morpheus had already added to the interfaces.
+- `SyndicationFeedSourcesController` and `YouTubeSourcesController`: admin path calls `GetAllAsync(page, pageSize, sortBy, sortDescending, filter)`; owner path calls `GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter)`; return type switched from `List<T>` + manual count to `PagedResult<T>`.
+- `SocialMediaPlatformsController`: consolidated `GetAllIncludingInactiveAsync()` / `GetAllAsync()` branches into single `GetAllAsync(page, pageSize, sortBy, sortDescending, filter, includeInactive)` call.
+- `UserCollectorFeedSourcesController`, `UserCollectorYouTubeChannelsController`, `UserPublisherSettingsController`: replaced `GetByUserAsync(resolvedOwnerOid)` with `GetAllAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter)`.
+
+**Key learning:** When a manager interface exposes a new paged overload alongside the legacy non-paged one, the controller `PagedResponse` construction must switch from `items.Count` (from `List<T>`) to `result.TotalCount` (from `PagedResult<T>`) to get correct total counts for pagination metadata.
+
+---
+
 ### 2026-04-25 — Issue #866: Standardize All GetAll API Endpoints (FINAL SESSION)
 
 **Status:** ✅ COMPLETE — 3 commits on `issue-866-getall-consistency`; 192 tests passing; ready for PR merge

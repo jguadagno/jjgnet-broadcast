@@ -199,13 +199,23 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
             query = query.Where(y => y.Title.ToLower().Contains(lowerFilter));
         }
 
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.YouTubeSource.Author).ToLowerInvariant())
         {
-            "author" => sortDescending ? query.OrderByDescending(y => y.Author) : query.OrderBy(y => y.Author),
-            "publicationdate" => sortDescending ? query.OrderByDescending(y => y.PublicationDate) : query.OrderBy(y => y.PublicationDate),
-            "addedon" => sortDescending ? query.OrderByDescending(y => y.AddedOn) : query.OrderBy(y => y.AddedOn),
-            _ => sortDescending ? query.OrderByDescending(y => y.Title) : query.OrderBy(y => y.Title),
-        };
+            query = sortDescending ? query.OrderByDescending(y => y.Author) : query.OrderBy(y => y.Author);
+        }
+        else if (sortByLower == nameof(Models.YouTubeSource.PublicationDate).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.PublicationDate) : query.OrderBy(y => y.PublicationDate);
+        }
+        else if (sortByLower == nameof(Models.YouTubeSource.AddedOn).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.AddedOn) : query.OrderBy(y => y.AddedOn);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.Title) : query.OrderBy(y => y.Title);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
@@ -235,13 +245,23 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
             query = query.Where(y => y.Title.ToLower().Contains(lowerFilter));
         }
 
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.YouTubeSource.Author).ToLowerInvariant())
         {
-            "author" => sortDescending ? query.OrderByDescending(y => y.Author) : query.OrderBy(y => y.Author),
-            "publicationdate" => sortDescending ? query.OrderByDescending(y => y.PublicationDate) : query.OrderBy(y => y.PublicationDate),
-            "addedon" => sortDescending ? query.OrderByDescending(y => y.AddedOn) : query.OrderBy(y => y.AddedOn),
-            _ => sortDescending ? query.OrderByDescending(y => y.Title) : query.OrderBy(y => y.Title),
-        };
+            query = sortDescending ? query.OrderByDescending(y => y.Author) : query.OrderBy(y => y.Author);
+        }
+        else if (sortByLower == nameof(Models.YouTubeSource.PublicationDate).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.PublicationDate) : query.OrderBy(y => y.PublicationDate);
+        }
+        else if (sortByLower == nameof(Models.YouTubeSource.AddedOn).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.AddedOn) : query.OrderBy(y => y.AddedOn);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.Title) : query.OrderBy(y => y.Title);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);

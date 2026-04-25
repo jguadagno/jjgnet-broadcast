@@ -342,12 +342,19 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
             query = query.Where(si => si.Message.ToLower().Contains(lowerFilter));
         }
 
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.ScheduledItem.Message).ToLowerInvariant())
         {
-            "message" => sortDescending ? query.OrderByDescending(si => si.Message) : query.OrderBy(si => si.Message),
-            "messagesent" => sortDescending ? query.OrderByDescending(si => si.MessageSent) : query.OrderBy(si => si.MessageSent),
-            _ => sortDescending ? query.OrderByDescending(si => si.SendOnDateTime) : query.OrderBy(si => si.SendOnDateTime),
-        };
+            query = sortDescending ? query.OrderByDescending(si => si.Message) : query.OrderBy(si => si.Message);
+        }
+        else if (sortByLower == nameof(Models.ScheduledItem.MessageSent).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(si => si.MessageSent) : query.OrderBy(si => si.MessageSent);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(si => si.SendOnDateTime) : query.OrderBy(si => si.SendOnDateTime);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
@@ -369,12 +376,19 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
             query = query.Where(si => si.Message.ToLower().Contains(lowerFilter));
         }
 
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.ScheduledItem.Message).ToLowerInvariant())
         {
-            "message" => sortDescending ? query.OrderByDescending(si => si.Message) : query.OrderBy(si => si.Message),
-            "messagesent" => sortDescending ? query.OrderByDescending(si => si.MessageSent) : query.OrderBy(si => si.MessageSent),
-            _ => sortDescending ? query.OrderByDescending(si => si.SendOnDateTime) : query.OrderBy(si => si.SendOnDateTime),
-        };
+            query = sortDescending ? query.OrderByDescending(si => si.Message) : query.OrderBy(si => si.Message);
+        }
+        else if (sortByLower == nameof(Models.ScheduledItem.MessageSent).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(si => si.MessageSent) : query.OrderBy(si => si.MessageSent);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(si => si.SendOnDateTime) : query.OrderBy(si => si.SendOnDateTime);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);

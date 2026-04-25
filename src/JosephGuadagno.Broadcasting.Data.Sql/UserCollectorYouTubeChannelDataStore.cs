@@ -151,12 +151,19 @@ public class UserCollectorYouTubeChannelDataStore(
             query = query.Where(c => c.DisplayName.ToLower().Contains(lowerFilter));
         }
 
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.UserCollectorYouTubeChannel.ChannelId).ToLowerInvariant())
         {
-            "channelid" => sortDescending ? query.OrderByDescending(c => c.ChannelId) : query.OrderBy(c => c.ChannelId),
-            "createdon" => sortDescending ? query.OrderByDescending(c => c.CreatedOn) : query.OrderBy(c => c.CreatedOn),
-            _ => sortDescending ? query.OrderByDescending(c => c.DisplayName) : query.OrderBy(c => c.DisplayName),
-        };
+            query = sortDescending ? query.OrderByDescending(c => c.ChannelId) : query.OrderBy(c => c.ChannelId);
+        }
+        else if (sortByLower == nameof(Models.UserCollectorYouTubeChannel.CreatedOn).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(c => c.CreatedOn) : query.OrderBy(c => c.CreatedOn);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(c => c.DisplayName) : query.OrderBy(c => c.DisplayName);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
         var entities = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);

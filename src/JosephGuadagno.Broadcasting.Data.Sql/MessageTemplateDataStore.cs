@@ -87,13 +87,17 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
             query = query.Where(mt => mt.MessageType.ToLower().Contains(lowerFilter));
         }
 
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.MessageTemplate.SocialMediaPlatformId).ToLowerInvariant().Replace("socialmedia", "").Replace("id", "id"))
         {
-            "platformid" => sortDescending ? query.OrderByDescending(mt => mt.SocialMediaPlatformId) : query.OrderBy(mt => mt.SocialMediaPlatformId),
-            _ => sortDescending
+            query = sortDescending ? query.OrderByDescending(mt => mt.SocialMediaPlatformId) : query.OrderBy(mt => mt.SocialMediaPlatformId);
+        }
+        else
+        {
+            query = sortDescending
                 ? query.OrderByDescending(mt => mt.MessageType).ThenByDescending(mt => mt.SocialMediaPlatformId)
-                : query.OrderBy(mt => mt.MessageType).ThenBy(mt => mt.SocialMediaPlatformId),
-        };
+                : query.OrderBy(mt => mt.MessageType).ThenBy(mt => mt.SocialMediaPlatformId);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
@@ -116,13 +120,17 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
             query = query.Where(mt => mt.MessageType.ToLower().Contains(lowerFilter));
         }
 
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.MessageTemplate.SocialMediaPlatformId).ToLowerInvariant().Replace("socialmedia", "").Replace("id", "id"))
         {
-            "platformid" => sortDescending ? query.OrderByDescending(mt => mt.SocialMediaPlatformId) : query.OrderBy(mt => mt.SocialMediaPlatformId),
-            _ => sortDescending
+            query = sortDescending ? query.OrderByDescending(mt => mt.SocialMediaPlatformId) : query.OrderBy(mt => mt.SocialMediaPlatformId);
+        }
+        else
+        {
+            query = sortDescending
                 ? query.OrderByDescending(mt => mt.MessageType).ThenByDescending(mt => mt.SocialMediaPlatformId)
-                : query.OrderBy(mt => mt.MessageType).ThenBy(mt => mt.SocialMediaPlatformId),
-        };
+                : query.OrderBy(mt => mt.MessageType).ThenBy(mt => mt.SocialMediaPlatformId);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);

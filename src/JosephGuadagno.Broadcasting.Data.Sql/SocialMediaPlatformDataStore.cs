@@ -112,11 +112,15 @@ public class SocialMediaPlatformDataStore(BroadcastingContext broadcastingContex
             query = query.Where(p => p.Name.ToLower().Contains(lowerFilter));
         }
 
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.SocialMediaPlatform.Id).ToLowerInvariant())
         {
-            "id" => sortDescending ? query.OrderByDescending(p => p.Id) : query.OrderBy(p => p.Id),
-            _ => sortDescending ? query.OrderByDescending(p => p.Name) : query.OrderBy(p => p.Name),
-        };
+            query = sortDescending ? query.OrderByDescending(p => p.Id) : query.OrderBy(p => p.Id);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(p => p.Name) : query.OrderBy(p => p.Name);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);

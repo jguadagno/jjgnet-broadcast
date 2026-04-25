@@ -151,12 +151,19 @@ public class UserCollectorFeedSourceDataStore(
             query = query.Where(c => c.DisplayName.ToLower().Contains(lowerFilter));
         }
 
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.UserCollectorFeedSource.FeedUrl).ToLowerInvariant())
         {
-            "feedurl" => sortDescending ? query.OrderByDescending(c => c.FeedUrl) : query.OrderBy(c => c.FeedUrl),
-            "createdon" => sortDescending ? query.OrderByDescending(c => c.CreatedOn) : query.OrderBy(c => c.CreatedOn),
-            _ => sortDescending ? query.OrderByDescending(c => c.DisplayName) : query.OrderBy(c => c.DisplayName),
-        };
+            query = sortDescending ? query.OrderByDescending(c => c.FeedUrl) : query.OrderBy(c => c.FeedUrl);
+        }
+        else if (sortByLower == nameof(Models.UserCollectorFeedSource.CreatedOn).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(c => c.CreatedOn) : query.OrderBy(c => c.CreatedOn);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(c => c.DisplayName) : query.OrderBy(c => c.DisplayName);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
         var entities = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);

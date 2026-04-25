@@ -263,13 +263,23 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
             query = query.Where(s => s.Title.ToLower().Contains(lowerFilter));
         }
 
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.SyndicationFeedSource.Author).ToLowerInvariant())
         {
-            "author" => sortDescending ? query.OrderByDescending(s => s.Author) : query.OrderBy(s => s.Author),
-            "publicationdate" => sortDescending ? query.OrderByDescending(s => s.PublicationDate) : query.OrderBy(s => s.PublicationDate),
-            "addedon" => sortDescending ? query.OrderByDescending(s => s.AddedOn) : query.OrderBy(s => s.AddedOn),
-            _ => sortDescending ? query.OrderByDescending(s => s.Title) : query.OrderBy(s => s.Title),
-        };
+            query = sortDescending ? query.OrderByDescending(s => s.Author) : query.OrderBy(s => s.Author);
+        }
+        else if (sortByLower == nameof(Models.SyndicationFeedSource.PublicationDate).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.PublicationDate) : query.OrderBy(s => s.PublicationDate);
+        }
+        else if (sortByLower == nameof(Models.SyndicationFeedSource.AddedOn).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.AddedOn) : query.OrderBy(s => s.AddedOn);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.Title) : query.OrderBy(s => s.Title);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
@@ -299,13 +309,23 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
             query = query.Where(s => s.Title.ToLower().Contains(lowerFilter));
         }
 
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.SyndicationFeedSource.Author).ToLowerInvariant())
         {
-            "author" => sortDescending ? query.OrderByDescending(s => s.Author) : query.OrderBy(s => s.Author),
-            "publicationdate" => sortDescending ? query.OrderByDescending(s => s.PublicationDate) : query.OrderBy(s => s.PublicationDate),
-            "addedon" => sortDescending ? query.OrderByDescending(s => s.AddedOn) : query.OrderBy(s => s.AddedOn),
-            _ => sortDescending ? query.OrderByDescending(s => s.Title) : query.OrderBy(s => s.Title),
-        };
+            query = sortDescending ? query.OrderByDescending(s => s.Author) : query.OrderBy(s => s.Author);
+        }
+        else if (sortByLower == nameof(Models.SyndicationFeedSource.PublicationDate).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.PublicationDate) : query.OrderBy(s => s.PublicationDate);
+        }
+        else if (sortByLower == nameof(Models.SyndicationFeedSource.AddedOn).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.AddedOn) : query.OrderBy(s => s.AddedOn);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.Title) : query.OrderBy(s => s.Title);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
