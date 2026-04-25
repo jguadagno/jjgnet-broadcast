@@ -883,3 +883,27 @@ Used `git commit --no-verify` to complete the merge commit on `main` — the pre
 - **Union merge is correct for `.squad/identity/now.md`** — it is an append-only state file; never discard either side.
 - **`--no-verify` is correct for merge commits on `main`** — the pre-commit hook targets direct feature commits, not structural merges.
 - Local main now 2 commits ahead of origin/main (the local squad status commit + the merge commit). These will be included in the next squad PR.
+
+
+---
+
+## 2026-04-25 — Review: issue-866-getall-consistency (Issue #866)
+
+**Status:** ❌ BLOCKED — 11 test failures + 6 controllers with in-memory pagination  
+**Artifact:** .squad/decisions/inbox/neo-review-866.md
+
+### Findings
+
+**Build:** PASS (0 errors, 718 pre-existing warnings)  
+**Tests:** 11 FAILED in JosephGuadagno.Broadcasting.Api.Tests / 1347 passed / 51 skipped
+
+### Learnings
+
+1. **TODO comments in shipped code are a review red flag.** Six controllers retained // TODO(morpheus): replace with paged overload when available comments at merge time, but the paged overloads were already implemented in the managers and interfaces. If the code is not wired up, the feature is not done — regardless of interface/manager completeness.
+
+2. **Moq Setup signature must match the full method signature.** When a method has optional parameters (e.g., sortBy, sortDescending, ilter), the Moq .Setup() call must explicitly include It.IsAny<T>() for each optional param or Moq will not match the call. Using the short 3-parameter overload to set up the 6-parameter method causes the mock to return 
+ull, resulting in NullReferenceException in the controller. Always check the actual interface signature before writing a Moq Setup.
+
+3. **In-memory pagination silently corrupts contract.** A controller that accepts page, pageSize, sortBy, sortDescending, ilter but calls an unpaaged data method still returns PagedResponse<T> with correct-looking metadata — but TotalCount reflects un-filtered count and sort/filter are never applied. This is a data contract violation with no compile-time signal.
+
+4. **End-to-end wiring check should be part of the agent handoff.** Trinity built controllers with TODO stubs; Morpheus built manager overloads. The squad task did not include a validation step to confirm the stubs were actually removed. A simple grep -r "TODO(morpheus)" in the diff would have caught this before review.
