@@ -61,4 +61,14 @@ public class YouTubeSourceManager : IYouTubeSourceManager
     {
         return await _youTubeSourceDataStore.GetCollectorOwnerOidAsync(cancellationToken);
     }
+
+    public async Task<PagedResult<YouTubeSource>> GetAllAsync(int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        return await _youTubeSourceDataStore.GetAllAsync(page, pageSize, sortBy, sortDescending, filter, cancellationToken);
+    }
+
+    public async Task<PagedResult<YouTubeSource>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        return await _youTubeSourceDataStore.GetAllAsync(ownerEntraOid, page, pageSize, sortBy, sortDescending, filter, cancellationToken);
+    }
 }

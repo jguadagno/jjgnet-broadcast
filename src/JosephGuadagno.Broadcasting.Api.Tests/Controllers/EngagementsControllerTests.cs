@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
 using JosephGuadagno.Broadcasting.Domain;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Http;
@@ -62,11 +63,11 @@ public class EngagementsControllerTests
     };
 
     // -------------------------------------------------------------------------
-    // GetEngagementsAsync
+    // GetAllAsync
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task GetEngagementsAsync_WhenCalled_ReturnsAllEngagements()
+    public async Task GetAllAsync_WhenCalled_ReturnsAllEngagements()
     {
         // Arrange
         var engagements = new List<Engagement>
@@ -80,7 +81,7 @@ public class EngagementsControllerTests
         var sut = CreateSut();
 
         // Act
-        var result = await sut.GetEngagementsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
@@ -93,7 +94,7 @@ public class EngagementsControllerTests
     }
 
     [Fact]
-    public async Task GetEngagementsAsync_WhenNoEngagementsExist_ReturnsEmptyList()
+    public async Task GetAllAsync_WhenNoEngagementsExist_ReturnsEmptyList()
     {
         // Arrange
         _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
@@ -102,13 +103,47 @@ public class EngagementsControllerTests
         var sut = CreateSut();
 
         // Act
-        var result = await sut.GetEngagementsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
         result.Value!.Items.Should().BeEmpty();
         result.Value!.TotalCount.Should().Be(0);
         _engagementManagerMock.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WhenPageIsZero_ClampsToDefaultPage()
+    {
+        // Arrange
+        _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(new PagedResult<Engagement> { Items = new List<Engagement>(), TotalCount = 0 });
+
+        var sut = CreateSut();
+
+        // Act — page = 0 should be clamped to 1
+        var result = await sut.GetAllAsync(page: 0);
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.Page.Should().Be(Pagination.DefaultPage);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WhenPageSizeIsZero_ClampsToDefaultPageSize()
+    {
+        // Arrange
+        _engagementManagerMock.Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(new PagedResult<Engagement> { Items = new List<Engagement>(), TotalCount = 0 });
+
+        var sut = CreateSut();
+
+        // Act — pageSize = 0 should be clamped to 1
+        var result = await sut.GetAllAsync(pageSize: 0);
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.PageSize.Should().BeGreaterThan(0);
     }
 
     // -------------------------------------------------------------------------
@@ -918,7 +953,7 @@ public class EngagementsControllerTests
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task GetEngagementsAsync_WhenSiteAdmin_CallsUnfilteredGetAll()
+    public async Task GetAllAsync_WhenSiteAdmin_CallsUnfilteredGetAll()
     {
         // Arrange
         var engagements = new List<Engagement> { BuildEngagement(1) };
@@ -930,17 +965,17 @@ public class EngagementsControllerTests
         var sut = CreateSut(isSiteAdmin: true);
 
         // Act
-        var result = await sut.GetEngagementsAsync();
+        var result = await sut.GetAllAsync();
 
         // Assert
         result.Value.Should().NotBeNull();
         result.Value!.TotalCount.Should().Be(1);
 
-        // Unfiltered overload must be invoked exactly once ΓÇª
+        // Unfiltered overload must be invoked exactly once …
         _engagementManagerMock.Verify(
             m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()),
             Times.Once);
-        // ΓÇª and the owner-filtered overload must never be called.
+        // … and the owner-filtered overload must never be called.
         _engagementManagerMock.Verify(
             m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()),
             Times.Never);

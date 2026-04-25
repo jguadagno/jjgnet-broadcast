@@ -24,15 +24,15 @@ public class UserPublisherSettingsControllerTests
     public async Task GetAllAsync_ShouldUseCurrentUserWhenOwnerQueryMissing()
     {
         _manager
-            .Setup(manager => manager.GetByUserAsync("current-user-oid", It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+            .Setup(manager => manager.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<UserPublisherSetting> { Items = [], TotalCount = 0 });
 
         var sut = CreateSut("current-user-oid");
 
         var result = await sut.GetAllAsync();
 
-        result.Result.Should().BeOfType<OkObjectResult>();
-        _manager.Verify(manager => manager.GetByUserAsync("current-user-oid", It.IsAny<CancellationToken>()), Times.Once);
+        result.Value.Should().NotBeNull();
+        _manager.Verify(manager => manager.GetAllAsync("current-user-oid", It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public class UserPublisherSettingsControllerTests
         var result = await sut.GetAllAsync("other-user-oid");
 
         result.Result.Should().BeOfType<ForbidResult>();
-        _manager.Verify(manager => manager.GetByUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _manager.Verify(manager => manager.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

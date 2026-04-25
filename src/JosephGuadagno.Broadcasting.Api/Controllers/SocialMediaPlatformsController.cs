@@ -45,15 +45,22 @@ public class SocialMediaPlatformsController : ControllerBase
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SocialMediaPlatformResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<SocialMediaPlatformResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<SocialMediaPlatformResponse>>> GetAllAsync([FromQuery] bool includeInactive = false)
+    public async Task<ActionResult<PagedResponse<SocialMediaPlatformResponse>>> GetAllAsync([FromQuery] bool includeInactive = false, int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "name", bool sortDescending = false, string? filter = null)
     {
-        var platforms = includeInactive
-            ? await _socialMediaPlatformManager.GetAllIncludingInactiveAsync()
-            : await _socialMediaPlatformManager.GetAllAsync();
-        var response = _mapper.Map<List<SocialMediaPlatformResponse>>(platforms);
-        return Ok(response);
+        if (page < 1) page = Pagination.DefaultPage;
+        if (pageSize < 1 || pageSize > Pagination.MaxPageSize) pageSize = Pagination.DefaultPageSize;
+
+        var result = await _socialMediaPlatformManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter, includeInactive);
+        var items = _mapper.Map<List<SocialMediaPlatformResponse>>(result.Items);
+        return new PagedResponse<SocialMediaPlatformResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = result.TotalCount
+        };
     }
 
     /// <summary>

@@ -88,6 +88,11 @@ public class SocialMediaPlatformManager : ISocialMediaPlatformManager
         return result;
     }
 
+    public async Task<PagedResult<SocialMediaPlatform>> GetAllAsync(int page, int pageSize, string sortBy = "name", bool sortDescending = false, string? filter = null, bool includeInactive = false, CancellationToken cancellationToken = default)
+    {
+        return await _dataStore.GetAllAsync(page, pageSize, sortBy, sortDescending, filter, includeInactive, cancellationToken);
+    }
+
     private void InvalidateListCaches()
     {
         _cache.Remove(CacheKeyAllActive);

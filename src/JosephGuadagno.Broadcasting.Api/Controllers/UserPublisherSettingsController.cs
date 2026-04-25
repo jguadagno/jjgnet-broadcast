@@ -35,19 +35,29 @@ public class UserPublisherSettingsController(
     /// <response code="403">The caller is not allowed to query the requested owner.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UserPublisherSettingResponse>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<UserPublisherSettingResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<List<UserPublisherSettingResponse>>> GetAllAsync([FromQuery] string? ownerOid = null)
+    public async Task<ActionResult<PagedResponse<UserPublisherSettingResponse>>> GetAllAsync([FromQuery] string? ownerOid = null, int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "platform", bool sortDescending = false, string? filter = null)
     {
+        if (page < 1) page = Pagination.DefaultPage;
+        if (pageSize < 1 || pageSize > Pagination.MaxPageSize) pageSize = Pagination.DefaultPageSize;
+
         var resolvedOwnerOid = User.ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
         if (resolvedOwnerOid is null)
         {
             return Forbid();
         }
 
-        var settings = await userPublisherSettingManager.GetByUserAsync(resolvedOwnerOid);
-        return Ok(mapper.Map<List<UserPublisherSettingResponse>>(settings));
+        var result = await userPublisherSettingManager.GetAllAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter);
+        var items = mapper.Map<List<UserPublisherSettingResponse>>(result.Items);
+        return new PagedResponse<UserPublisherSettingResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = result.TotalCount
+        };
     }
 
     /// <summary>

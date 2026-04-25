@@ -331,4 +331,71 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
             TotalCount = totalCount
         };
     }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetAllAsync(int page, int pageSize, string sortBy = "sendondate", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Models.ScheduledItem> query = broadcastingContext.ScheduledItems;
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(si => si.Message.ToLower().Contains(lowerFilter));
+        }
+
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.ScheduledItem.Message).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(si => si.Message) : query.OrderBy(si => si.Message);
+        }
+        else if (sortByLower == nameof(Models.ScheduledItem.MessageSent).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(si => si.MessageSent) : query.OrderBy(si => si.MessageSent);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(si => si.SendOnDateTime) : query.OrderBy(si => si.SendOnDateTime);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return new Domain.Models.PagedResult<Domain.Models.ScheduledItem>
+        {
+            Items = mapper.Map<List<Domain.Models.ScheduledItem>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "sendondate", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Models.ScheduledItem> query = broadcastingContext.ScheduledItems
+            .Where(si => si.CreatedByEntraOid == ownerEntraOid);
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(si => si.Message.ToLower().Contains(lowerFilter));
+        }
+
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.ScheduledItem.Message).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(si => si.Message) : query.OrderBy(si => si.Message);
+        }
+        else if (sortByLower == nameof(Models.ScheduledItem.MessageSent).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(si => si.MessageSent) : query.OrderBy(si => si.MessageSent);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(si => si.SendOnDateTime) : query.OrderBy(si => si.SendOnDateTime);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return new Domain.Models.PagedResult<Domain.Models.ScheduledItem>
+        {
+            Items = mapper.Map<List<Domain.Models.ScheduledItem>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
 }

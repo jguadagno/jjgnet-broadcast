@@ -134,4 +134,43 @@ public class UserCollectorFeedSourceDataStore(
             return false;
         }
     }
+
+    /// <inheritdoc />
+    public async Task<Domain.Models.PagedResult<UserCollectorFeedSource>> GetAllAsync(
+        string ownerOid, int page, int pageSize, string sortBy = "displayname", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
+
+        IQueryable<Models.UserCollectorFeedSource> query = broadcastingContext.UserCollectorFeedSources
+            .AsNoTracking()
+            .Where(c => c.CreatedByEntraOid == ownerOid);
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(c => c.DisplayName.ToLower().Contains(lowerFilter));
+        }
+
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.UserCollectorFeedSource.FeedUrl).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(c => c.FeedUrl) : query.OrderBy(c => c.FeedUrl);
+        }
+        else if (sortByLower == nameof(Models.UserCollectorFeedSource.CreatedOn).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(c => c.CreatedOn) : query.OrderBy(c => c.CreatedOn);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(c => c.DisplayName) : query.OrderBy(c => c.DisplayName);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var entities = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return new Domain.Models.PagedResult<UserCollectorFeedSource>
+        {
+            Items = mapper.Map<List<UserCollectorFeedSource>>(entities),
+            TotalCount = totalCount
+        };
+    }
 }

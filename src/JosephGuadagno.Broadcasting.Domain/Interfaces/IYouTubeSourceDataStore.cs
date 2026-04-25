@@ -7,4 +7,6 @@ public interface IYouTubeSourceDataStore : IDataStore<Domain.Models.YouTubeSourc
 
     Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default);
     Task<List<Domain.Models.YouTubeSource>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default);
+    Task<Domain.Models.PagedResult<Domain.Models.YouTubeSource>> GetAllAsync(int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default);
+    Task<Domain.Models.PagedResult<Domain.Models.YouTubeSource>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default);
 }

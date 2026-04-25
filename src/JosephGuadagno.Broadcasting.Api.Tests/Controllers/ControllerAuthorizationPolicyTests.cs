@@ -20,7 +20,7 @@ public class ControllerAuthorizationPolicyTests
 
     public static TheoryData<Type, string, string> ActionPolicies => new()
     {
-        { typeof(EngagementsController), nameof(EngagementsController.GetEngagementsAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(EngagementsController), nameof(EngagementsController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(EngagementsController), nameof(EngagementsController.GetEngagementAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(EngagementsController), nameof(EngagementsController.CreateEngagementAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(EngagementsController), nameof(EngagementsController.UpdateEngagementAsync), AuthorizationPolicyNames.RequireContributor },
@@ -34,7 +34,7 @@ public class ControllerAuthorizationPolicyTests
         { typeof(EngagementsController), nameof(EngagementsController.GetPlatformForEngagementAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(EngagementsController), nameof(EngagementsController.AddPlatformToEngagementAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(EngagementsController), nameof(EngagementsController.RemovePlatformFromEngagementAsync), AuthorizationPolicyNames.RequireAdministrator },
-        { typeof(SchedulesController), nameof(SchedulesController.GetScheduledItemsAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(SchedulesController), nameof(SchedulesController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(SchedulesController), nameof(SchedulesController.GetScheduledItemAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(SchedulesController), nameof(SchedulesController.CreateScheduledItemAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(SchedulesController), nameof(SchedulesController.UpdateScheduledItemAsync), AuthorizationPolicyNames.RequireContributor },
@@ -55,7 +55,7 @@ public class ControllerAuthorizationPolicyTests
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.GetAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },
-        { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.GetYouTubeSourcesAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.GetYouTubeSourceAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.CreateYouTubeSourceAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.DeleteYouTubeSourceAsync), AuthorizationPolicyNames.RequireAdministrator },

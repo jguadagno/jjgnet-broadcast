@@ -64,21 +64,20 @@ public class SchedulesController: ControllerBase
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<ScheduledItemResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetScheduledItemsAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize)
+    public async Task<ActionResult<PagedResponse<ScheduledItemResponse>>> GetAllAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "sendondatetime", bool sortDescending = true, string? filter = null)
     {
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 1;
-        if (pageSize > Pagination.MaxPageSize) pageSize = Pagination.MaxPageSize;
+        if (page < 1) page = Pagination.DefaultPage;
+        if (pageSize < 1 || pageSize > Pagination.MaxPageSize) pageSize = Pagination.DefaultPageSize;
         
         PagedResult<ScheduledItem> result;
         if (User.IsSiteAdministrator())
         {
-            result = await _scheduledItemManager.GetAllAsync(page, pageSize);
+            result = await _scheduledItemManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
         }
         else
         {
             var ownerOid = User.GetOwnerOid();
-            result = await _scheduledItemManager.GetAllAsync(ownerOid, page, pageSize);
+            result = await _scheduledItemManager.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
         }
 
         var items = _mapper.Map<List<ScheduledItemResponse>>(result.Items);

@@ -188,4 +188,95 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
 
         await broadcastingContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.YouTubeSource>> GetAllAsync(int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Models.YouTubeSource> query = broadcastingContext.YouTubeSources;
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(y => y.Title.ToLower().Contains(lowerFilter));
+        }
+
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.YouTubeSource.Author).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.Author) : query.OrderBy(y => y.Author);
+        }
+        else if (sortByLower == nameof(Models.YouTubeSource.PublicationDate).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.PublicationDate) : query.OrderBy(y => y.PublicationDate);
+        }
+        else if (sortByLower == nameof(Models.YouTubeSource.AddedOn).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.AddedOn) : query.OrderBy(y => y.AddedOn);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.Title) : query.OrderBy(y => y.Title);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+
+        foreach (var source in dbItems)
+        {
+            source.SourceTags = await broadcastingContext.SourceTags
+                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+        }
+
+        return new Domain.Models.PagedResult<Domain.Models.YouTubeSource>
+        {
+            Items = mapper.Map<List<Domain.Models.YouTubeSource>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.YouTubeSource>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Models.YouTubeSource> query = broadcastingContext.YouTubeSources
+            .Where(y => y.CreatedByEntraOid == ownerEntraOid);
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(y => y.Title.ToLower().Contains(lowerFilter));
+        }
+
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.YouTubeSource.Author).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.Author) : query.OrderBy(y => y.Author);
+        }
+        else if (sortByLower == nameof(Models.YouTubeSource.PublicationDate).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.PublicationDate) : query.OrderBy(y => y.PublicationDate);
+        }
+        else if (sortByLower == nameof(Models.YouTubeSource.AddedOn).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.AddedOn) : query.OrderBy(y => y.AddedOn);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(y => y.Title) : query.OrderBy(y => y.Title);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+
+        foreach (var source in dbItems)
+        {
+            source.SourceTags = await broadcastingContext.SourceTags
+                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+        }
+
+        return new Domain.Models.PagedResult<Domain.Models.YouTubeSource>
+        {
+            Items = mapper.Map<List<Domain.Models.YouTubeSource>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
 }

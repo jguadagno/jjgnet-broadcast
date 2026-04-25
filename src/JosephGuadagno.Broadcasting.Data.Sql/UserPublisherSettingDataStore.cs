@@ -119,6 +119,44 @@ public class UserPublisherSettingDataStore(
         }
     }
 
+    public async Task<Domain.Models.PagedResult<UserPublisherSetting>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "platformname", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(ownerEntraOid);
+
+        IQueryable<Models.UserPublisherSetting> query = broadcastingContext.UserPublisherSettings
+            .AsNoTracking()
+            .Include(s => s.SocialMediaPlatform)
+            .Where(s => s.CreatedByEntraOid == ownerEntraOid);
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(s => s.SocialMediaPlatform.Name.ToLower().Contains(lowerFilter));
+        }
+
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.UserPublisherSetting.IsEnabled).ToLowerInvariant().Replace("is", ""))
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.IsEnabled) : query.OrderBy(s => s.IsEnabled);
+        }
+        else if (sortByLower == nameof(Models.UserPublisherSetting.CreatedOn).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.CreatedOn) : query.OrderBy(s => s.CreatedOn);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.SocialMediaPlatform.Name) : query.OrderBy(s => s.SocialMediaPlatform.Name);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var entities = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return new Domain.Models.PagedResult<UserPublisherSetting>
+        {
+            Items = entities.Select(MapToDomain).ToList(),
+            TotalCount = totalCount
+        };
+    }
+
     private UserPublisherSetting MapToDomain(Models.UserPublisherSetting setting)
     {
         var settings = DeserializeSettings(setting.Settings);

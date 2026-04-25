@@ -252,4 +252,95 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
 
         await broadcastingContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.SyndicationFeedSource>> GetAllAsync(int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Models.SyndicationFeedSource> query = broadcastingContext.SyndicationFeedSources;
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(s => s.Title.ToLower().Contains(lowerFilter));
+        }
+
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.SyndicationFeedSource.Author).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.Author) : query.OrderBy(s => s.Author);
+        }
+        else if (sortByLower == nameof(Models.SyndicationFeedSource.PublicationDate).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.PublicationDate) : query.OrderBy(s => s.PublicationDate);
+        }
+        else if (sortByLower == nameof(Models.SyndicationFeedSource.AddedOn).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.AddedOn) : query.OrderBy(s => s.AddedOn);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.Title) : query.OrderBy(s => s.Title);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+
+        foreach (var source in dbItems)
+        {
+            source.SourceTags = await broadcastingContext.SourceTags
+                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+        }
+
+        return new Domain.Models.PagedResult<Domain.Models.SyndicationFeedSource>
+        {
+            Items = mapper.Map<List<Domain.Models.SyndicationFeedSource>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
+
+    public async Task<Domain.Models.PagedResult<Domain.Models.SyndicationFeedSource>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Models.SyndicationFeedSource> query = broadcastingContext.SyndicationFeedSources
+            .Where(s => s.CreatedByEntraOid == ownerEntraOid);
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var lowerFilter = filter.ToLowerInvariant();
+            query = query.Where(s => s.Title.ToLower().Contains(lowerFilter));
+        }
+
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.SyndicationFeedSource.Author).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.Author) : query.OrderBy(s => s.Author);
+        }
+        else if (sortByLower == nameof(Models.SyndicationFeedSource.PublicationDate).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.PublicationDate) : query.OrderBy(s => s.PublicationDate);
+        }
+        else if (sortByLower == nameof(Models.SyndicationFeedSource.AddedOn).ToLowerInvariant())
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.AddedOn) : query.OrderBy(s => s.AddedOn);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(s => s.Title) : query.OrderBy(s => s.Title);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+
+        foreach (var source in dbItems)
+        {
+            source.SourceTags = await broadcastingContext.SourceTags
+                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
+                .ToListAsync(cancellationToken);
+        }
+
+        return new Domain.Models.PagedResult<Domain.Models.SyndicationFeedSource>
+        {
+            Items = mapper.Map<List<Domain.Models.SyndicationFeedSource>>(dbItems),
+            TotalCount = totalCount
+        };
+    }
 }

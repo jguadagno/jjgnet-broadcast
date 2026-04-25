@@ -232,12 +232,19 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
             query = query.Where(e => e.Name.ToLower().Contains(lowerFilter));
         }
         
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.Engagement.Name).ToLowerInvariant())
         {
-            "name" => sortDescending ? query.OrderByDescending(e => e.Name) : query.OrderBy(e => e.Name),
-            "enddate" => sortDescending ? query.OrderByDescending(e => e.EndDateTime) : query.OrderBy(e => e.EndDateTime),
-            _ => sortDescending ? query.OrderByDescending(e => e.StartDateTime) : query.OrderBy(e => e.StartDateTime),
-        };
+            query = sortDescending ? query.OrderByDescending(e => e.Name) : query.OrderBy(e => e.Name);
+        }
+        else if (sortByLower == nameof(Models.Engagement.EndDateTime).ToLowerInvariant().Replace("datetime", "date"))
+        {
+            query = sortDescending ? query.OrderByDescending(e => e.EndDateTime) : query.OrderBy(e => e.EndDateTime);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(e => e.StartDateTime) : query.OrderBy(e => e.StartDateTime);
+        }
         
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query
@@ -262,12 +269,19 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
             query = query.Where(e => e.Name.ToLower().Contains(lowerFilter));
         }
         
-        query = sortBy?.ToLowerInvariant() switch
+        var sortByLower = sortBy?.ToLowerInvariant();
+        if (sortByLower == nameof(Models.Engagement.Name).ToLowerInvariant())
         {
-            "name" => sortDescending ? query.OrderByDescending(e => e.Name) : query.OrderBy(e => e.Name),
-            "enddate" => sortDescending ? query.OrderByDescending(e => e.EndDateTime) : query.OrderBy(e => e.EndDateTime),
-            _ => sortDescending ? query.OrderByDescending(e => e.StartDateTime) : query.OrderBy(e => e.StartDateTime),
-        };
+            query = sortDescending ? query.OrderByDescending(e => e.Name) : query.OrderBy(e => e.Name);
+        }
+        else if (sortByLower == nameof(Models.Engagement.EndDateTime).ToLowerInvariant().Replace("datetime", "date"))
+        {
+            query = sortDescending ? query.OrderByDescending(e => e.EndDateTime) : query.OrderBy(e => e.EndDateTime);
+        }
+        else
+        {
+            query = sortDescending ? query.OrderByDescending(e => e.StartDateTime) : query.OrderBy(e => e.StartDateTime);
+        }
         
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query
