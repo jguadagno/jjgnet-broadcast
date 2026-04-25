@@ -55,26 +55,24 @@ public class YouTubeSourcesController : ControllerBase
         if (page < 1) page = Pagination.DefaultPage;
         if (pageSize < 1 || pageSize > Pagination.MaxPageSize) pageSize = Pagination.DefaultPageSize;
 
-        List<YouTubeSource> results;
+        PagedResult<YouTubeSource> result;
         if (User.IsSiteAdministrator())
         {
-            // TODO(morpheus): replace with GetAllAsync(page, pageSize, sortBy, sortDescending, filter) when paged overload is available
-            results = await _youTubeSourceManager.GetAllAsync();
+            result = await _youTubeSourceManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
         }
         else
         {
             var ownerOid = User.GetOwnerOid();
-            // TODO(morpheus): replace with GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter) when paged overload is available
-            results = await _youTubeSourceManager.GetAllAsync(ownerOid);
+            result = await _youTubeSourceManager.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
         }
 
-        var items = _mapper.Map<List<YouTubeSourceResponse>>(results);
+        var items = _mapper.Map<List<YouTubeSourceResponse>>(result.Items);
         return new PagedResponse<YouTubeSourceResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = results.Count
+            TotalCount = result.TotalCount
         };
     }
 

@@ -57,26 +57,24 @@ public class SyndicationFeedSourcesController : ControllerBase
         if (page < 1) page = Pagination.DefaultPage;
         if (pageSize < 1 || pageSize > Pagination.MaxPageSize) pageSize = Pagination.DefaultPageSize;
 
-        List<SyndicationFeedSource> sources;
+        PagedResult<SyndicationFeedSource> result;
         if (User.IsSiteAdministrator())
         {
-            // TODO(morpheus): replace with GetAllAsync(page, pageSize, sortBy, sortDescending, filter) when paged overload is available
-            sources = await _syndicationFeedSourceManager.GetAllAsync();
+            result = await _syndicationFeedSourceManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
         }
         else
         {
             var ownerOid = User.GetOwnerOid();
-            // TODO(morpheus): replace with GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter) when paged overload is available
-            sources = await _syndicationFeedSourceManager.GetAllAsync(ownerOid);
+            result = await _syndicationFeedSourceManager.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
         }
 
-        var items = _mapper.Map<List<SyndicationFeedSourceResponse>>(sources);
+        var items = _mapper.Map<List<SyndicationFeedSourceResponse>>(result.Items);
         return new PagedResponse<SyndicationFeedSourceResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = sources.Count
+            TotalCount = result.TotalCount
         };
     }
 

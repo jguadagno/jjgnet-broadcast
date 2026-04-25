@@ -49,15 +49,14 @@ public class UserCollectorYouTubeChannelsController(
             return Forbid();
         }
 
-        // TODO(morpheus): replace with GetByUserAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter) when paged overload is available
-        var configs = await userCollectorYouTubeChannelManager.GetByUserAsync(resolvedOwnerOid);
-        var items = mapper.Map<List<UserCollectorYouTubeChannelResponse>>(configs);
+        var result = await userCollectorYouTubeChannelManager.GetAllAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter);
+        var items = mapper.Map<List<UserCollectorYouTubeChannelResponse>>(result.Items);
         return new PagedResponse<UserCollectorYouTubeChannelResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = configs.Count
+            TotalCount = result.TotalCount
         };
     }
 

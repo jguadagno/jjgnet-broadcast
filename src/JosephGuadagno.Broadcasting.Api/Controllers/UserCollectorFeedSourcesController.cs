@@ -49,15 +49,14 @@ public class UserCollectorFeedSourcesController(
             return Forbid();
         }
 
-        // TODO(morpheus): replace with GetByUserAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter) when paged overload is available
-        var configs = await userCollectorFeedSourceManager.GetByUserAsync(resolvedOwnerOid);
-        var items = mapper.Map<List<UserCollectorFeedSourceResponse>>(configs);
+        var result = await userCollectorFeedSourceManager.GetAllAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter);
+        var items = mapper.Map<List<UserCollectorFeedSourceResponse>>(result.Items);
         return new PagedResponse<UserCollectorFeedSourceResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = configs.Count
+            TotalCount = result.TotalCount
         };
     }
 

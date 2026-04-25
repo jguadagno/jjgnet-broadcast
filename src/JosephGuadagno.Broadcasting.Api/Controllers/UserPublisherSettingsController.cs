@@ -49,15 +49,14 @@ public class UserPublisherSettingsController(
             return Forbid();
         }
 
-        // TODO(morpheus): replace with GetByUserAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter) when paged overload is available
-        var settings = await userPublisherSettingManager.GetByUserAsync(resolvedOwnerOid);
-        var items = mapper.Map<List<UserPublisherSettingResponse>>(settings);
+        var result = await userPublisherSettingManager.GetAllAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter);
+        var items = mapper.Map<List<UserPublisherSettingResponse>>(result.Items);
         return new PagedResponse<UserPublisherSettingResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = settings.Count
+            TotalCount = result.TotalCount
         };
     }
 

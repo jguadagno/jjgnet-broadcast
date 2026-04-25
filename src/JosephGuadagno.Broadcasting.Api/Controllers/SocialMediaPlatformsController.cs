@@ -52,17 +52,14 @@ public class SocialMediaPlatformsController : ControllerBase
         if (page < 1) page = Pagination.DefaultPage;
         if (pageSize < 1 || pageSize > Pagination.MaxPageSize) pageSize = Pagination.DefaultPageSize;
 
-        // TODO(morpheus): replace with paged GetAllAsync(includeInactive, page, pageSize, sortBy, sortDescending, filter) when overload is available
-        var platforms = includeInactive
-            ? await _socialMediaPlatformManager.GetAllIncludingInactiveAsync()
-            : await _socialMediaPlatformManager.GetAllAsync();
-        var items = _mapper.Map<List<SocialMediaPlatformResponse>>(platforms);
+        var result = await _socialMediaPlatformManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter, includeInactive);
+        var items = _mapper.Map<List<SocialMediaPlatformResponse>>(result.Items);
         return new PagedResponse<SocialMediaPlatformResponse>
         {
             Items = items,
             Page = page,
             PageSize = pageSize,
-            TotalCount = platforms.Count
+            TotalCount = result.TotalCount
         };
     }
 
