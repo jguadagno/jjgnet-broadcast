@@ -68,6 +68,16 @@ public class ApiBroadcastingProfile : Profile
         CreateMap<FacebookPublisherSettingRequest, FacebookPublisherSettingUpdate>();
         CreateMap<LinkedInPublisherSettingRequest, LinkedInPublisherSettingUpdate>();
 
+        // Syndication Feed Source
+        CreateMap<SyndicationFeedSource, SyndicationFeedSourceResponse>();
+        CreateMap<SyndicationFeedSourceRequest, SyndicationFeedSource>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.AddedOn, o => o.Ignore())
+            .ForMember(d => d.ItemLastUpdatedOn, o => o.Ignore())
+            .ForMember(d => d.LastUpdatedOn, o => o.Ignore())
+            .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
+            .ForMember(d => d.Tags, o => o.MapFrom(s => s.Tags ?? new List<string>()));
+
         // User Collector Feed Source
         CreateMap<UserCollectorFeedSource, UserCollectorFeedSourceResponse>();
         CreateMap<UserCollectorFeedSourceRequest, UserCollectorFeedSource>()
