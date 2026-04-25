@@ -138,7 +138,7 @@ public class MessageTemplatesControllerTests
         var templates = new List<MessageTemplate> { BuildTemplate() };
         // Set up the unfiltered overload (no ownerOid ΓÇö first param is int page).
         _messageTemplateDataStoreMock
-            .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<MessageTemplate> { Items = templates, TotalCount = templates.Count });
 
         var sut = CreateSut(isSiteAdmin: true);
@@ -152,11 +152,11 @@ public class MessageTemplatesControllerTests
 
         // Unfiltered overload must be invoked exactly once ΓÇª
         _messageTemplateDataStoreMock.Verify(
-            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
         // … and the owner-filtered overload must never be called.
         _messageTemplateDataStoreMock.Verify(
-            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -170,7 +170,7 @@ public class MessageTemplatesControllerTests
         // Arrange
         var templates = new List<MessageTemplate> { BuildTemplate() };
         _messageTemplateDataStoreMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<MessageTemplate> { Items = templates, TotalCount = templates.Count });
 
         var sut = CreateSut(ownerOid: "owner-oid-12345", isSiteAdmin: false);
@@ -184,11 +184,11 @@ public class MessageTemplatesControllerTests
 
         // Owner-filtered overload must fire …
         _messageTemplateDataStoreMock.Verify(
-            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
         // … and the unfiltered overload must never be called.
         _messageTemplateDataStoreMock.Verify(
-            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -197,7 +197,7 @@ public class MessageTemplatesControllerTests
     {
         // Arrange
         _messageTemplateDataStoreMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<MessageTemplate> { Items = new List<MessageTemplate>(), TotalCount = 0 });
 
         var sut = CreateSut();
@@ -215,7 +215,7 @@ public class MessageTemplatesControllerTests
     {
         // Arrange
         _messageTemplateDataStoreMock
-            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<MessageTemplate> { Items = new List<MessageTemplate>(), TotalCount = 0 });
 
         var sut = CreateSut();

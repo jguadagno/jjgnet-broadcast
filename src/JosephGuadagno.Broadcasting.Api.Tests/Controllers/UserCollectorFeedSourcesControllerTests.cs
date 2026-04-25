@@ -29,8 +29,8 @@ public class UserCollectorFeedSourcesControllerTests
         // Arrange
         const string currentUserOid = "current-user-oid-11111111";
         _manager
-            .Setup(m => m.GetByUserAsync(currentUserOid, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<UserCollectorFeedSource> { Items = [], TotalCount = 0 });
 
         var sut = CreateSut(currentUserOid);
 
@@ -38,8 +38,8 @@ public class UserCollectorFeedSourcesControllerTests
         var result = await sut.GetAllAsync();
 
         // Assert
-        result.Result.Should().BeOfType<OkObjectResult>();
-        _manager.Verify(m => m.GetByUserAsync(currentUserOid, It.IsAny<CancellationToken>()), Times.Once);
+        result.Value.Should().NotBeNull();
+        _manager.Verify(m => m.GetAllAsync(currentUserOid, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public class UserCollectorFeedSourcesControllerTests
 
         // Assert - non-admin cannot query another user's configs
         result.Result.Should().BeOfType<ForbidResult>();
-        _manager.Verify(m => m.GetByUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _manager.Verify(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -71,8 +71,8 @@ public class UserCollectorFeedSourcesControllerTests
         };
 
         _manager
-            .Setup(m => m.GetByUserAsync(targetUserOid, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(targetConfigs);
+            .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<UserCollectorFeedSource> { Items = targetConfigs, TotalCount = targetConfigs.Count });
 
         var sut = CreateSut(adminUserOid, isSiteAdmin: true);
 
@@ -80,8 +80,8 @@ public class UserCollectorFeedSourcesControllerTests
         var result = await sut.GetAllAsync(targetUserOid);
 
         // Assert - admin can query another user's configs
-        result.Result.Should().BeOfType<OkObjectResult>();
-        _manager.Verify(m => m.GetByUserAsync(targetUserOid, It.IsAny<CancellationToken>()), Times.Once);
+        result.Value.Should().NotBeNull();
+        _manager.Verify(m => m.GetAllAsync(targetUserOid, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
