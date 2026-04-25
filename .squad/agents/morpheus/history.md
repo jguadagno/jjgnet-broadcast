@@ -72,6 +72,24 @@
 - **Validation:** Docs lint clean; pre-existing Functions.Tests compile errors on issue-760 remain unrelated to seed changes
 - **Status:** ✅ COMPLETE
 
+### 2026-05-27 — Issue #866 GetAll Consistency
+
+- **Work:** Standardized all `GetAllAsync` overloads with uniform paging, sorting, and filtering pushed to data layer
+  - Added sort/filter `GetAllAsync` overloads to 8 data store interfaces, 7 manager interfaces
+  - Implemented in 8 data stores: MessageTemplate, ScheduledItem, SocialMediaPlatform, SyndicationFeedSource, UserCollectorFeedSource, UserCollectorYouTubeChannel, UserPublisherSetting, YouTubeSource
+  - Implemented in 7 managers: ScheduledItem, SocialMediaPlatform, SyndicationFeedSource, UserCollectorFeedSource, UserCollectorYouTubeChannel, UserPublisherSetting, YouTubeSource
+  - Full detail in `.squad/decisions/inbox/morpheus-datalayer-getall.md`
+  
+- **Key learnings:**
+  - `SyndicationFeedSourceDataStore`/`YouTubeSourceDataStore`: SourceTags must be loaded per-page (not all-at-once) in paged overloads — loop over `dbItems` after paged query executes
+  - `UserPublisherSettingDataStore`: Uses custom `MapToDomain()` (not AutoMapper) — call after `.Include(SocialMediaPlatform)` and `ToListAsync()`
+  - `SocialMediaPlatformManager`: Paged/filtered results bypass in-memory cache since results are query-specific
+  - `UserPublisherSettingManager`: Apply `ProjectForResponse()` projection to each item in the paged result before returning
+  - `MessageTemplateDataStore`: No manager class — data store used directly by controller
+  - CS0121 ambiguity risk: When adding optional-param overloads alongside existing optional-CancellationToken overloads, callers using named `cancellationToken:` arg may see ambiguity — Tank already updated test Moq setups to use the 7-arg explicit pattern to avoid this
+
+- **Status:** ✅ COMPLETE
+
 ---
 
 *Detailed work logs and learnings: See decisions.md for architectural decisions and issue-specific deep dives. Earlier work archived in git history.*
