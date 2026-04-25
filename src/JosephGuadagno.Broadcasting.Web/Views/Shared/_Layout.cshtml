@@ -71,14 +71,36 @@
                                 <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Unsent">Unsent</a></li>    
                             </ul>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="MessageTemplates" asp-action="Index">Message Templates</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="False">
+                                <i class="bi bi-shield-lock me-1"></i>Admin
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                <li>
+                                    <a class="dropdown-item" asp-area="" asp-controller="MessageTemplates" asp-action="Index">
+                                        <i class="bi bi-textarea-t me-2"></i>Message Templates
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="" asp-controller="SyndicationFeedSources" asp-action="Index">
+                                        <i class="bi bi-rss me-2"></i>Syndication Feed Sources
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="" asp-controller="YouTubeSources" asp-action="Index">
+                                        <i class="bi bi-youtube me-2"></i>YouTube Sources
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="YouTubeSources" asp-action="Index">YouTube Sources</a>
+                            
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="SyndicationFeedSources" asp-action="Index">Syndication Feed Sources</a>
+                            
+                        </li>
+                        <li class="nav-item">
+                            
                         </li>
                         @if (User.IsInRole(RoleNames.SiteAdministrator) || User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Contributor))
                         {
