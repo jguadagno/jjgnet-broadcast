@@ -387,3 +387,65 @@ go
 create nonclustered index IX_UserOAuthTokens_AccessTokenExpiresAt
     on dbo.UserOAuthTokens (AccessTokenExpiresAt)
 go
+
+-- Performance indexes (Issue #855)
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Engagements_StartDateTime' AND object_id = OBJECT_ID('dbo.Engagements'))
+    CREATE INDEX IX_Engagements_StartDateTime ON dbo.Engagements (StartDateTime DESC) INCLUDE (Name, EndDateTime, CreatedByEntraOid);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Engagements_CreatedByEntraOid' AND object_id = OBJECT_ID('dbo.Engagements'))
+    CREATE INDEX IX_Engagements_CreatedByEntraOid ON dbo.Engagements (CreatedByEntraOid);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_Title' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
+    CREATE INDEX IX_SyndicationFeedSources_Title ON dbo.SyndicationFeedSources (Title);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_Author' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
+    CREATE INDEX IX_SyndicationFeedSources_Author ON dbo.SyndicationFeedSources (Author);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_PublicationDate' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
+    CREATE INDEX IX_SyndicationFeedSources_PublicationDate ON dbo.SyndicationFeedSources (PublicationDate DESC);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_AddedOn' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
+    CREATE INDEX IX_SyndicationFeedSources_AddedOn ON dbo.SyndicationFeedSources (AddedOn DESC);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_CreatedByEntraOid' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
+    CREATE INDEX IX_SyndicationFeedSources_CreatedByEntraOid ON dbo.SyndicationFeedSources (CreatedByEntraOid);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_Title' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
+    CREATE INDEX IX_YouTubeSources_Title ON dbo.YouTubeSources (Title);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_Author' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
+    CREATE INDEX IX_YouTubeSources_Author ON dbo.YouTubeSources (Author);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_PublicationDate' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
+    CREATE INDEX IX_YouTubeSources_PublicationDate ON dbo.YouTubeSources (PublicationDate DESC);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_AddedOn' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
+    CREATE INDEX IX_YouTubeSources_AddedOn ON dbo.YouTubeSources (AddedOn DESC);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_CreatedByEntraOid' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
+    CREATE INDEX IX_YouTubeSources_CreatedByEntraOid ON dbo.YouTubeSources (CreatedByEntraOid);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ScheduledItems_SendOnDateTime' AND object_id = OBJECT_ID('dbo.ScheduledItems'))
+    CREATE INDEX IX_ScheduledItems_SendOnDateTime ON dbo.ScheduledItems (SendOnDateTime DESC);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ScheduledItems_CreatedByEntraOid' AND object_id = OBJECT_ID('dbo.ScheduledItems'))
+    CREATE INDEX IX_ScheduledItems_CreatedByEntraOid ON dbo.ScheduledItems (CreatedByEntraOid);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SocialMediaPlatforms_IsActive_Name' AND object_id = OBJECT_ID('dbo.SocialMediaPlatforms'))
+    CREATE INDEX IX_SocialMediaPlatforms_IsActive_Name ON dbo.SocialMediaPlatforms (IsActive, Name);
+GO

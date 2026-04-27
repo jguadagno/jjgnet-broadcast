@@ -224,7 +224,8 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
 
     public async Task<Domain.Models.PagedResult<Domain.Models.Engagement>> GetAllAsync(int page, int pageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null, CancellationToken cancellationToken = default)
     {
-        IQueryable<Models.Engagement> query = broadcastingContext.Engagements;
+        IQueryable<Models.Engagement> query = broadcastingContext.Engagements
+            .AsNoTracking();
         
         if (!string.IsNullOrWhiteSpace(filter))
         {
@@ -261,6 +262,7 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
     public async Task<Domain.Models.PagedResult<Domain.Models.Engagement>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null, CancellationToken cancellationToken = default)
     {
         IQueryable<Models.Engagement> query = broadcastingContext.Engagements
+            .AsNoTracking()
             .Where(e => e.CreatedByEntraOid == ownerEntraOid);
         
         if (!string.IsNullOrWhiteSpace(filter))

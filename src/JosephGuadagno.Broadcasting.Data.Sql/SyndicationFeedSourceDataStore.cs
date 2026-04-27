@@ -66,31 +66,39 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
     public async Task<List<Domain.Models.SyndicationFeedSource>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var dbSyndicationFeedSources = await broadcastingContext.SyndicationFeedSources
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
-        
+
+        var ids = dbSyndicationFeedSources.Select(s => s.Id).ToList();
+        var allTags = await broadcastingContext.SourceTags
+            .Where(st => ids.Contains(st.SourceId) && st.SourceType == SourceType)
+            .ToListAsync(cancellationToken);
+        var tagsBySourceId = allTags.GroupBy(t => t.SourceId).ToDictionary(g => g.Key, g => g.ToList());
         foreach (var source in dbSyndicationFeedSources)
         {
-            source.SourceTags = await broadcastingContext.SourceTags
-                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
-                .ToListAsync(cancellationToken);
+            source.SourceTags = tagsBySourceId.TryGetValue(source.Id, out var tags) ? tags : new List<Models.SourceTag>();
         }
-        
+
         return mapper.Map<List<Domain.Models.SyndicationFeedSource>>(dbSyndicationFeedSources);
     }
 
     public async Task<List<Domain.Models.SyndicationFeedSource>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
     {
         var dbSyndicationFeedSources = await broadcastingContext.SyndicationFeedSources
+            .AsNoTracking()
             .Where(s => s.CreatedByEntraOid == ownerEntraOid)
             .ToListAsync(cancellationToken);
-        
+
+        var ids = dbSyndicationFeedSources.Select(s => s.Id).ToList();
+        var allTags = await broadcastingContext.SourceTags
+            .Where(st => ids.Contains(st.SourceId) && st.SourceType == SourceType)
+            .ToListAsync(cancellationToken);
+        var tagsBySourceId = allTags.GroupBy(t => t.SourceId).ToDictionary(g => g.Key, g => g.ToList());
         foreach (var source in dbSyndicationFeedSources)
         {
-            source.SourceTags = await broadcastingContext.SourceTags
-                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
-                .ToListAsync(cancellationToken);
+            source.SourceTags = tagsBySourceId.TryGetValue(source.Id, out var tags) ? tags : new List<Models.SourceTag>();
         }
-        
+
         return mapper.Map<List<Domain.Models.SyndicationFeedSource>>(dbSyndicationFeedSources);
     }
 
@@ -255,7 +263,8 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
 
     public async Task<Domain.Models.PagedResult<Domain.Models.SyndicationFeedSource>> GetAllAsync(int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
-        IQueryable<Models.SyndicationFeedSource> query = broadcastingContext.SyndicationFeedSources;
+        IQueryable<Models.SyndicationFeedSource> query = broadcastingContext.SyndicationFeedSources
+            .AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(filter))
         {
@@ -284,11 +293,14 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
 
-        foreach (var source in dbItems)
+        var ids = dbItems.Select(s => s.Id).ToList();
+        var allTags = await broadcastingContext.SourceTags
+            .Where(st => ids.Contains(st.SourceId) && st.SourceType == SourceType)
+            .ToListAsync(cancellationToken);
+        var tagsBySourceId = allTags.GroupBy(t => t.SourceId).ToDictionary(g => g.Key, g => g.ToList());
+        foreach (var item in dbItems)
         {
-            source.SourceTags = await broadcastingContext.SourceTags
-                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
-                .ToListAsync(cancellationToken);
+            item.SourceTags = tagsBySourceId.TryGetValue(item.Id, out var tags) ? tags : new List<Models.SourceTag>();
         }
 
         return new Domain.Models.PagedResult<Domain.Models.SyndicationFeedSource>
@@ -301,6 +313,7 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
     public async Task<Domain.Models.PagedResult<Domain.Models.SyndicationFeedSource>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
         IQueryable<Models.SyndicationFeedSource> query = broadcastingContext.SyndicationFeedSources
+            .AsNoTracking()
             .Where(s => s.CreatedByEntraOid == ownerEntraOid);
 
         if (!string.IsNullOrWhiteSpace(filter))
@@ -330,11 +343,14 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
 
-        foreach (var source in dbItems)
+        var ids = dbItems.Select(s => s.Id).ToList();
+        var allTags = await broadcastingContext.SourceTags
+            .Where(st => ids.Contains(st.SourceId) && st.SourceType == SourceType)
+            .ToListAsync(cancellationToken);
+        var tagsBySourceId = allTags.GroupBy(t => t.SourceId).ToDictionary(g => g.Key, g => g.ToList());
+        foreach (var item in dbItems)
         {
-            source.SourceTags = await broadcastingContext.SourceTags
-                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
-                .ToListAsync(cancellationToken);
+            item.SourceTags = tagsBySourceId.TryGetValue(item.Id, out var tags) ? tags : new List<Models.SourceTag>();
         }
 
         return new Domain.Models.PagedResult<Domain.Models.SyndicationFeedSource>
