@@ -219,6 +219,7 @@ The alternative (restructure into one table with a Platform column) would lose t
 - Trinity implemented `IMessageTemplateService` with `sortBy`/`sortDescending`/`filter` parameters
 - Controller accepts and propagates all three parameters
 - Sparks wired Razor view to controller parameters
+| MessageTemplates | N/A (grouped admin) | N/A | ✅ | ✅ |
 
 ---
 
