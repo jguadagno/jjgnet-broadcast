@@ -8,6 +8,28 @@
 
 ## Learnings
 
+### 2026-04-27 — Issues #868, #869, #872, #873: Fix PagedResponse<T> deserialization in Web services
+
+**Status:** ✅ COMPLETE — PR #875 on `issue-868-fix-paged-response-web-services`; 232/232 tests passing
+
+**Root cause:** Sprint 27 paging refactor (#866/#867) changed all API GET-list endpoints to return `PagedResponse<T>`. The Web service layer still called `GetForUserAsync<List<T>>()` — JSON deserializer received `{"items":[...],"page":1,...}` where it expected `[...]`, throwing `JsonException` on every index page load.
+
+**What was fixed:**
+- `SyndicationFeedSourceService`, `YouTubeSourceService`, `SocialMediaPlatformService`: switched to `GetForUserAsync<PagedResponse<T>>()`, returning `PagedResult<T>` with paging params.
+- `UserPublisherSettingService`: unwraps `PagedResponse<T>` internally; interface return type (`List<UserPublisherSetting>`) unchanged so callers weren't broken.
+- Interfaces `ISyndicationFeedSourceService`, `IYouTubeSourceService`, `ISocialMediaPlatformService`: updated `GetAllAsync` signatures with paging params.
+- Controllers: `SyndicationFeedSourcesController`, `YouTubeSourcesController`, `SocialMediaPlatformsController` Index actions updated with paging params + ViewBag. `EngagementsController`, `PublisherSettingsController`, `SchedulesController`, `HelpController` callers updated to use `.Items` and pass `Pagination.MaxPageSize` for dropdown/all-item use cases.
+- Views: `SyndicationFeedSources/Index.cshtml` rebuilt from blank; `YouTubeSources/Index.cshtml` and `SocialMediaPlatforms/Index.cshtml` updated with sortable headers, filter form, pagination partial.
+- 7 test files updated across Web.Tests.
+
+**Key learnings:**
+1. When a service interface returns `PagedResult<T>` instead of `List<T>`, ALL callers in the Web project need auditing — not just the index controllers. Dropdown callers (engagements, publisher settings) need `pageSize: Pagination.MaxPageSize` and `.Items`.
+2. Hidden callers exist in non-obvious controllers (`SchedulesController.SearchSyndicationFeedSources`, `HelpController.SocialMediaPlatforms`) — always grep for all usages before considering a service interface change complete.
+3. `UserPublisherSettingService` is special: keep the public interface returning `List<T>` to avoid cascading changes; only change the internal deserialization type.
+4. Test mocks using `GetForUserAsync<List<T>>()` must be updated to `GetForUserAsync<PagedResponse<T>>()` — Moq type parameters are part of the setup match and won't fire if they don't match exactly.
+
+
+
 ### 2026-05-XX — Issue #866: Wire Paged Manager Overloads (TODO Cleanup)
 
 **Status:** ✅ COMPLETE — 1 commit on `issue-866-getall-consistency`; build 0 errors
@@ -1216,4 +1238,12 @@ Wire 6 TODO-blocked controllers to call the newly implemented paged manager GetA
 2. **Consolidation opportunity during paged wiring.** SocialMediaPlatformsController had two legacy calls (GetAllAsync and GetAllIncludingInactiveAsync). The paged overload includes an includeInactive parameter, eliminating the need for two separate methods. This consolidation must happen during wiring, not as a later refactor.
 
 3. **TotalCount must come from the paged query.** When controllers previously wrapped non-paged results in PagedResponse shell, TotalCount was set to list.Count() — which for filtered queries is wrong (includes all records, not filtered subset). The paged overload returns PagedResult<T>.TotalCount which reflects the actual filtered+paged result.
+
+
+
+---
+
+## 2026-04-27 — Cross-Agent: Sparks PR #874 (Bootstrap 5 table headers)
+
+Sparks fixed issue #871 (Engagements column headings invisible) by updating Bootstrap 4 	head-dark to Bootstrap 5 	able-dark (PR #874). No API/backend impact.
 

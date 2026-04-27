@@ -13,6 +13,13 @@
 
 ## Learnings
 
+### 2026-04-27 — Issue #871: Engagements Index Column Headings Invisible
+- **Root Cause:** `<thead class="thead-dark">` is a Bootstrap 4 class removed in Bootstrap 5. The sort link anchors inside `<th>` elements use `class="text-decoration-none text-white"`, so without a dark background the text is white-on-white — completely invisible.
+- **Fix:** Changed `thead-dark` → `table-dark` (the Bootstrap 5 equivalent on `<thead>`).
+- **Scope:** One-line change in `Views/Engagements/Index.cshtml`.
+- **Pattern:** Any `thead-dark` in the codebase is a Bootstrap 4 leftover. Other index views (Schedules, YouTubeSources, etc.) also use `thead-dark` but lack `text-white` links so they still render (black text on default white background). Those are cosmetic regressions (missing dark header), not visibility blockers.
+- **Branch:** `issue-871-fix-engagements-column-headings` | **PR:** #874
+
 ### Health Checks in ServiceDefaults (2026-04-03)
 - ServiceDefaults uses `IHostApplicationBuilder` where `builder.Configuration` is `IConfigurationManager` (not `IConfiguration`)
 - Connection strings must be accessed via indexer: `builder.Configuration["ConnectionStrings:KeyName"]` not `GetConnectionString()`

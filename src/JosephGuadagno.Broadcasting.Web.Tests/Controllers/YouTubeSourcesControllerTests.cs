@@ -93,7 +93,8 @@ public class YouTubeSourcesControllerTests
         // Arrange
         var sources = new List<YouTubeSource> { BuildSource(1) };
         var viewModels = new List<YouTubeSourceViewModel> { new YouTubeSourceViewModel { Id = 1 } };
-        _service.Setup(s => s.GetAllAsync()).ReturnsAsync(sources);
+        _service.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(new PagedResult<YouTubeSource> { Items = sources, TotalCount = sources.Count });
         _mapper.Setup(m => m.Map<List<YouTubeSourceViewModel>>(It.IsAny<object>())).Returns(viewModels);
 
         // Act
@@ -102,7 +103,7 @@ public class YouTubeSourcesControllerTests
         // Assert
         var viewResult = Assert.IsType<ViewResult>(result);
         Assert.Equal(viewModels, viewResult.Model);
-        _service.Verify(s => s.GetAllAsync(), Times.Once);
+        _service.Verify(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------

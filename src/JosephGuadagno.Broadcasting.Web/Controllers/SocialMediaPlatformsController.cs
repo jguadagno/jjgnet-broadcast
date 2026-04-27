@@ -28,10 +28,21 @@ public class SocialMediaPlatformsController : Controller
     /// <summary>
     /// Lists all social media platforms (active and inactive).
     /// </summary>
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int page = Pagination.DefaultPage, string sortBy = "name", bool sortDescending = false, string? filter = null)
     {
-        var platforms = await _platformService.GetAllAsync();
-        var viewModels = _mapper.Map<List<SocialMediaPlatformViewModel>>(platforms);
+        var result = await _platformService.GetAllAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter, includeInactive: true);
+        var viewModels = _mapper.Map<List<SocialMediaPlatformViewModel>>(result.Items);
+
+        ViewBag.Page = page;
+        ViewBag.PageSize = Pagination.DefaultPageSize;
+        ViewBag.TotalCount = result.TotalCount;
+        ViewBag.TotalPages = (int)Math.Ceiling(result.TotalCount / (double)Pagination.DefaultPageSize);
+        ViewBag.ControllerName = "SocialMediaPlatforms";
+        ViewBag.ActionName = "Index";
+        ViewBag.SortBy = sortBy;
+        ViewBag.SortDescending = sortDescending;
+        ViewBag.Filter = filter;
+
         return View(viewModels);
     }
 

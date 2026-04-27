@@ -412,10 +412,10 @@ public class SchedulesController : Controller
     [HttpGet]
     public async Task<IActionResult> SearchSyndicationFeedSources(string q = "")
     {
-        var all = await _syndicationFeedSourceService.GetAllAsync();
-        IEnumerable<SyndicationFeedSource> filtered = all;
+        var all = await _syndicationFeedSourceService.GetAllAsync(pageSize: Pagination.MaxPageSize);
+        var filtered = all.Items.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(q))
-            filtered = all.Where(s => s.Title.Contains(q, StringComparison.OrdinalIgnoreCase));
+            filtered = filtered.Where(s => s.Title.Contains(q, StringComparison.OrdinalIgnoreCase));
         var items = filtered.Take(20).Select(s => new { id = s.Id, name = s.Title });
         return Json(items);
     }
@@ -428,10 +428,10 @@ public class SchedulesController : Controller
     [HttpGet]
     public async Task<IActionResult> SearchYouTubeSources(string q = "")
     {
-        var all = await _youTubeSourceService.GetAllAsync();
-        IEnumerable<YouTubeSource> filtered = all;
+        var all = await _youTubeSourceService.GetAllAsync(pageSize: Pagination.MaxPageSize);
+        var filtered = all.Items.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(q))
-            filtered = all.Where(s => s.Title.Contains(q, StringComparison.OrdinalIgnoreCase));
+            filtered = filtered.Where(s => s.Title.Contains(q, StringComparison.OrdinalIgnoreCase));
         var items = filtered.Take(20).Select(s => new { id = s.Id, name = s.Title });
         return Json(items);
     }

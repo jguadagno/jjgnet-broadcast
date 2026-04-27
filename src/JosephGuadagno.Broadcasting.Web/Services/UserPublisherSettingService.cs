@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
@@ -17,22 +18,22 @@ public class UserPublisherSettingService(
 
     public async Task<List<UserPublisherSetting>> GetCurrentUserAsync()
     {
-        var response = await apiClient.GetForUserAsync<List<UserPublisherSettingApiResponse>>(ApiServiceName, options =>
+        var response = await apiClient.GetForUserAsync<PagedResponse<UserPublisherSettingApiResponse>>(ApiServiceName, options =>
         {
-            options.RelativePath = PublisherSettingsBaseUrl;
+            options.RelativePath = $"{PublisherSettingsBaseUrl}?pageSize={Pagination.MaxPageSize}";
         });
 
-        return response?.Select(MapResponse).ToList() ?? [];
+        return response?.Items.Select(MapResponse).ToList() ?? [];
     }
 
     public async Task<List<UserPublisherSetting>> GetByUserAsync(string ownerOid)
     {
-        var response = await apiClient.GetForUserAsync<List<UserPublisherSettingApiResponse>>(ApiServiceName, options =>
+        var response = await apiClient.GetForUserAsync<PagedResponse<UserPublisherSettingApiResponse>>(ApiServiceName, options =>
         {
-            options.RelativePath = BuildRelativePath(ownerOid);
+            options.RelativePath = BuildRelativePath(ownerOid) + $"&pageSize={Pagination.MaxPageSize}";
         });
 
-        return response?.Select(MapResponse).ToList() ?? [];
+        return response?.Items.Select(MapResponse).ToList() ?? [];
     }
 
     public Task<UserPublisherSetting?> SaveCurrentUserAsync(UserPublisherSetting setting)

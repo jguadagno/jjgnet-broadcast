@@ -33,10 +33,21 @@ public class SyndicationFeedSourcesController : Controller
     /// Gets the list of syndication feed sources
     /// </summary>
     /// <returns>Returns a List&lt;<see cref="SyndicationFeedSourceViewModel"/>&gt;.</returns>
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int page = Pagination.DefaultPage, string sortBy = "name", bool sortDescending = false, string? filter = null)
     {
-        var sources = await _syndicationFeedSourceService.GetAllAsync();
-        var viewSources = _mapper.Map<List<SyndicationFeedSourceViewModel>>(sources);
+        var result = await _syndicationFeedSourceService.GetAllAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
+        var viewSources = _mapper.Map<List<SyndicationFeedSourceViewModel>>(result.Items);
+
+        ViewBag.Page = page;
+        ViewBag.PageSize = Pagination.DefaultPageSize;
+        ViewBag.TotalCount = result.TotalCount;
+        ViewBag.TotalPages = (int)Math.Ceiling(result.TotalCount / (double)Pagination.DefaultPageSize);
+        ViewBag.ControllerName = "SyndicationFeedSources";
+        ViewBag.ActionName = "Index";
+        ViewBag.SortBy = sortBy;
+        ViewBag.SortDescending = sortDescending;
+        ViewBag.Filter = filter;
+
         return View(viewSources);
     }
 

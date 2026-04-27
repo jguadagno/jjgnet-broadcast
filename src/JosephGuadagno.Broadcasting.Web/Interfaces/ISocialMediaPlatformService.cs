@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
 
 namespace JosephGuadagno.Broadcasting.Web.Interfaces;
@@ -8,10 +9,15 @@ namespace JosephGuadagno.Broadcasting.Web.Interfaces;
 public interface ISocialMediaPlatformService
 {
     /// <summary>
-    /// Gets all social media platforms including inactive ones (for admin use)
+    /// Gets a paged list of social media platforms
     /// </summary>
-    /// <param name="includeInactive">Whether to include inactive platforms (default: false)</param>
-    Task<List<SocialMediaPlatform>> GetAllAsync(bool includeInactive = false);
+    /// <param name="page">Page number</param>
+    /// <param name="pageSize">Items per page</param>
+    /// <param name="sortBy">Sort field</param>
+    /// <param name="sortDescending">Sort direction</param>
+    /// <param name="filter">Optional name filter</param>
+    /// <param name="includeInactive">Whether to include inactive platforms</param>
+    Task<PagedResult<SocialMediaPlatform>> GetAllAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "name", bool sortDescending = false, string? filter = null, bool includeInactive = false);
 
     /// <summary>
     /// Gets a social media platform by its ID

@@ -4,48 +4,6 @@
 
 - **Project:** A .NET broadcasting application using Azure Functions, ASP.NET Core API/MVC, SQL Server, and Azure infrastructure to collect and distribute social media content.
 - **Role:** Frontend Engineer
-- **Joined:** 2026-03-14T16:55:20.779Z
-
-## Learnings
-
-### Issue #813 — Publisher Settings: credential-setup documentation link
-
-- **Task:** Add a conditional "Setup guide" link to all 5 publisher-settings provider cards when `CredentialSetupDocumentationUrl` is populated on the `SocialMediaPlatform`.
-- **Outcome:** ✅ PR #840 created; 165 tests, 0 failures.
-- **What I changed:**
-  - `PublisherPlatformSettingsViewModels.cs` — added `public string? CredentialSetupDocumentationUrl { get; set; }` to the `PublisherPlatformSettingsViewModel` base class.
-  - `PublisherSettingsController.cs` — mapped `platform.CredentialSetupDocumentationUrl` into all 5 concrete view model branches inside `CreateViewModel`.
-  - `_BlueskySettings.cshtml`, `_TwitterSettings.cshtml`, `_FacebookSettings.cshtml`, `_LinkedInSettings.cshtml` — added conditional `<a>` button after the enabled/disabled badge in the card-header `d-flex` row.
-  - `_UnsupportedPublisherSettings.cshtml` — its card-header was plain (no `d-flex`); restructured to `d-flex justify-content-between align-items-center` and added the same conditional link.
-- **Pattern to remember:** The Unsupported partial didn't follow the same `d-flex` card-header pattern as the other four partials — always check each partial independently before applying a templated change.
-- **Gotcha:** I was on a different branch (`issue-814-help-pages`) when I made the commit. Used `git cherry-pick` to land the commit on the correct branch before pushing.
-- **Branch:** `issue-813-publisher-settings-doc-link`; **PR:** #840.
-
-
-
-- **Task:** Apply directive-mandated canonical OIDs (`"owner-oid-12345"`, `"non-owner-oid-99999"`) and `CreateNonOwnerControllerContext()` helper to all non-owner ownership rejection tests, per the `security-test-checklist` SKILL.
-- **Outcome:** ✅ Committed and pushed to `issue-741-742`; 170 tests, 0 failures.
-- **What I changed:**
-  - `TalksControllerTests.cs` — `Edit_Post_WhenUserIsNotOwnerAndNotAdmin_ShouldRedirectWithError`: replaced `"other-user-oid"` with `"owner-oid-12345"` on the entity, removed the inline `List<Claim>` block, replaced with `CreateNonOwnerControllerContext()` (helper was already present at line 63).
-  - `SchedulesControllerTests.cs` — no changes needed; the prior fix commit had already applied `CreateNonOwnerControllerContext()` and canonical OIDs to the single non-owner test in that file.
-- **Key finding:** When the task says "fix both files", verify by grepping — the prior commit may have already fixed one of them. Only the file with remaining violations (`other-user-oid`, `attacker-oid`) needed editing.
-- **Pattern to remember:** `CreateNonOwnerControllerContext()` is the required helper for all Web MVC ownership rejection tests. It encapsulates the canonical non-owner OID `"non-owner-oid-99999"` so tests don't inline magic strings.
-
-### Sprint 19 — Issues #741 & #742: Per-User Isolation + Edit POST Ownership
-
-- **Task:** (1) Filter Index/list endpoints by owner OID for per-user isolation (#741). (2) Add ownership re-verification on Edit POST actions (#742).
-- **Outcome:** ✅ PR #752 created; issues #741 and #742 closed.
-- **Key finding:** The API layer already handles per-user OID filtering transparently. `EngagementsController` and `SchedulesController` (API) call `IsSiteAdministrator()` and branch to filtered vs. unfiltered `GetAllAsync` — no additional `ownerOid` param was needed in the Web service interface. The bearer token is forwarded via MSAL `IDownstreamApi`.
-- **What I changed:**
-  - `EngagementsController.Edit [HttpPost]` — fetch entity + re-verify `CreatedByEntraOid == userOid` before saving; `SiteAdministrator` bypasses.
-  - `SchedulesController.Edit [HttpPost]` — same pattern.
-  - `TalksController.Edit [HttpPost]` — same pattern; guards nullable `EngagementId`; on failure redirects to `Engagements/Edit`.
-  - All three controllers use `RoleNames.SiteAdministrator` and `ApplicationClaimTypes.EntraObjectId` — no magic strings.
-  - Added 21 new/updated tests across three controller test classes.
-- **Testing:** `170 passed, 0 failed` — `dotnet test .\src\ --no-build --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"`.
-- **Pattern to remember:** When edits to controller files appear to succeed (`edit` tool says "updated") but `git diff` shows no changes, the `old_str` likely had XML-escaped content that didn't match exactly. Use short, code-only `old_str` fragments (just the method body, not the XML doc comments) to guarantee a unique match.
-- **Branch name:** `issue-741-742`; **PR:** #752.
-
 ### 2026-04-14T00-30-00Z — Issue #708: Web Service Contract Audit
 - **Task:** Audit `EngagementService.AddPlatformToEngagementAsync` after manual testing still failed in the downstream API call path.
 - **Outcome:** ✅ Web-side contract hardening complete.
@@ -85,23 +43,6 @@
 - **Decisions documented:** `switch-real-fix-708.md` (double-submit prevention), `switch-708-conflict-handling.md` (409 handling)
 - **Team:** Coordinated with Tank (regression tests) and Trinity (backend validation)
 - **Status:** Ready for merge. Complements Tank's regression coverage and Trinity's backend 409 handling.
-
-### 2026-03-16: Issue #105 - Conference Social Fields UI
-- Added `ConferenceHashtag` and `ConferenceTwitterHandle` fields to Engagement Create/Edit/Details views
-- These fields are nullable `string?` properties added to `EngagementViewModel` in PR #529
-- Form pattern: Bootstrap `mb-3` div with label, input, validation span using `asp-for` helpers
-- Details pattern: Show only if `!string.IsNullOrEmpty()` to avoid displaying empty rows
-- **CRITICAL**: In Razor views, escape `@` in HTML attributes with `@@` (e.g., `placeholder="@@MyConference"`)
-- PR #534 created, builds successfully with 0 errors
-
-### 2026-03-20T20:11:20Z — Orchestration Log & Session Completion
-- **Task:** Record engagement social fields Web UI completion
-- **Orchestration log:** Created 2026-03-20T20-11-20Z-switch.md documenting PR #534 (Engagement Create/Edit/Details views with ConferenceHashtag and ConferenceTwitterHandle)
-- **Build status:** Clean build, 0 errors
-- **PR status:** #534 open, ready for review
-- **Vertical slice completion:** Full engagement social fields feature now spans Domain → Data → API → Web UI (all layers in sync)
-- **Pattern documented:** Form accessibility improvements (PR #522) blocked on ViewModel updates, to be rebase once BlueSkyHandle props added
-
 
 ### 2026-04-01 — Issue Spec #573 (Web paging UI)
 - **Relevant specs:** `.squad/sessions/issue-specs-591-575-574-573.md`
@@ -394,4 +335,5 @@ Implemented the complete Web layer for per-user collector settings:
 - CSRF protection on all unsafe methods
 - Log sanitization on all user-controlled strings
 - XML doc comments on all public types
+
 

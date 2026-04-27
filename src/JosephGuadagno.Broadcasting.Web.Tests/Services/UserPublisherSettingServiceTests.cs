@@ -20,7 +20,7 @@ public class UserPublisherSettingServiceTests
         var capturedOptions = default(DownstreamApiOptionsReadOnlyHttpMethod);
 
         _apiClient
-            .Setup(api => api.GetForUserAsync<List<UserPublisherSettingApiResponse>>(
+            .Setup(api => api.GetForUserAsync<PagedResponse<UserPublisherSettingApiResponse>>(
                 It.IsAny<string>(),
                 It.IsAny<Action<DownstreamApiOptionsReadOnlyHttpMethod>>(),
                 It.IsAny<ClaimsPrincipal>(),
@@ -31,29 +31,33 @@ public class UserPublisherSettingServiceTests
                     capturedOptions = new DownstreamApiOptionsReadOnlyHttpMethod(new DownstreamApiOptions(), HttpMethod.Get.Method);
                     configureOptions(capturedOptions);
                 })
-            .ReturnsAsync(
-            [
-                new UserPublisherSettingApiResponse
-                {
-                    Id = 12,
-                    CreatedByEntraOid = "current-user-oid",
-                    SocialMediaPlatformId = 2,
-                    SocialMediaPlatform = new UserPublisherSettingSocialMediaPlatformApiResponse
+            .ReturnsAsync(new PagedResponse<UserPublisherSettingApiResponse>
+            {
+                Items =
+                [
+                    new UserPublisherSettingApiResponse
                     {
-                        Id = 2,
-                        Name = "BlueSky",
-                        Icon = "bi-cloud",
-                        Url = "https://bsky.app",
-                        IsActive = true
-                    },
-                    IsEnabled = true,
-                    Bluesky = new BlueskyPublisherSettingApiResponse
-                    {
-                        UserName = "@switch",
-                        HasAppPassword = true
+                        Id = 12,
+                        CreatedByEntraOid = "current-user-oid",
+                        SocialMediaPlatformId = 2,
+                        SocialMediaPlatform = new UserPublisherSettingSocialMediaPlatformApiResponse
+                        {
+                            Id = 2,
+                            Name = "BlueSky",
+                            Icon = "bi-cloud",
+                            Url = "https://bsky.app",
+                            IsActive = true
+                        },
+                        IsEnabled = true,
+                        Bluesky = new BlueskyPublisherSettingApiResponse
+                        {
+                            UserName = "@switch",
+                            HasAppPassword = true
+                        }
                     }
-                }
-            ]);
+                ],
+                TotalCount = 1
+            });
 
         var sut = new UserPublisherSettingService(_apiClient.Object, _logger.Object);
 
@@ -62,7 +66,7 @@ public class UserPublisherSettingServiceTests
 
         // Assert
         capturedOptions.Should().NotBeNull();
-        capturedOptions!.RelativePath.Should().Be("/UserPublisherSettings");
+        capturedOptions!.RelativePath.Should().Be("/UserPublisherSettings?pageSize=100");
         result.Should().ContainSingle();
         result[0].Bluesky!.UserName.Should().Be("@switch");
         result[0].WriteOnlyFields.Should().Contain(nameof(BlueskyPublisherSettings.BlueskyPassword));
@@ -76,7 +80,7 @@ public class UserPublisherSettingServiceTests
         var capturedOptions = default(DownstreamApiOptionsReadOnlyHttpMethod);
 
         _apiClient
-            .Setup(api => api.GetForUserAsync<List<UserPublisherSettingApiResponse>>(
+            .Setup(api => api.GetForUserAsync<PagedResponse<UserPublisherSettingApiResponse>>(
                 It.IsAny<string>(),
                 It.IsAny<Action<DownstreamApiOptionsReadOnlyHttpMethod>>(),
                 It.IsAny<ClaimsPrincipal>(),
@@ -87,7 +91,7 @@ public class UserPublisherSettingServiceTests
                     capturedOptions = new DownstreamApiOptionsReadOnlyHttpMethod(new DownstreamApiOptions(), HttpMethod.Get.Method);
                     configureOptions(capturedOptions);
                 })
-            .ReturnsAsync([]);
+            .ReturnsAsync(new PagedResponse<UserPublisherSettingApiResponse> { Items = [], TotalCount = 0 });
 
         var sut = new UserPublisherSettingService(_apiClient.Object, _logger.Object);
 
@@ -96,7 +100,7 @@ public class UserPublisherSettingServiceTests
 
         // Assert
         capturedOptions.Should().NotBeNull();
-        capturedOptions!.RelativePath.Should().Be("/UserPublisherSettings?ownerOid=target-user-oid");
+        capturedOptions!.RelativePath.Should().Be("/UserPublisherSettings?ownerOid=target-user-oid&pageSize=100");
     }
 
     [Fact]

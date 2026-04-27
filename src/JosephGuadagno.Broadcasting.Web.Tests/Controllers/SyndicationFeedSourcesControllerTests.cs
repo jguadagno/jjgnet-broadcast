@@ -93,7 +93,8 @@ public class SyndicationFeedSourcesControllerTests
         // Arrange
         var sources = new List<SyndicationFeedSource> { BuildSource(1) };
         var viewModels = new List<SyndicationFeedSourceViewModel> { new SyndicationFeedSourceViewModel { Id = 1 } };
-        _service.Setup(s => s.GetAllAsync()).ReturnsAsync(sources);
+        _service.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(new PagedResult<SyndicationFeedSource> { Items = sources, TotalCount = sources.Count });
         _mapper.Setup(m => m.Map<List<SyndicationFeedSourceViewModel>>(It.IsAny<object>())).Returns(viewModels);
 
         // Act
@@ -102,7 +103,7 @@ public class SyndicationFeedSourcesControllerTests
         // Assert
         var viewResult = Assert.IsType<ViewResult>(result);
         Assert.Equal(viewModels, viewResult.Model);
-        _service.Verify(s => s.GetAllAsync(), Times.Once);
+        _service.Verify(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------

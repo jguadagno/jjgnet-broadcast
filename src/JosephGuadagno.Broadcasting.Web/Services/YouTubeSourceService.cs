@@ -1,4 +1,5 @@
 using System.Net;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
@@ -14,16 +15,22 @@ public class YouTubeSourceService(IDownstreamApi apiClient): IYouTubeSourceServi
     private const string BaseUrl = "/YouTubeSources";
 
     /// <summary>
-    /// Gets all YouTube sources
+    /// Gets a paged list of YouTube sources
     /// </summary>
-    /// <returns>A List&lt;<see cref="YouTubeSource"/>&gt;s</returns>
-    public async Task<List<YouTubeSource>> GetAllAsync()
+    public async Task<PagedResult<YouTubeSource>> GetAllAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "name", bool sortDescending = false, string? filter = null)
     {
-        var sources = await apiClient.GetForUserAsync<List<YouTubeSource>>(ApiServiceName, options =>
+        var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<YouTubeSource>>(ApiServiceName, options =>
         {
-            options.RelativePath = BaseUrl;
+            var queryParams = $"page={page}&pageSize={pageSize}&sortBy={sortBy}&sortDescending={sortDescending}";
+            if (!string.IsNullOrEmpty(filter))
+            {
+                queryParams += $"&filter={Uri.EscapeDataString(filter)}";
+            }
+            options.RelativePath = $"{BaseUrl}?{queryParams}";
         });
-        return sources ?? [];
+
+        if (pagedResponse is null) return new PagedResult<YouTubeSource>();
+        return new PagedResult<YouTubeSource> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
 
     /// <summary>

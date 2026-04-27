@@ -732,7 +732,8 @@ public class EngagementsControllerTests
             new SocialMediaPlatform { Id = 1, Name = "Twitter", IsActive = true },
             new SocialMediaPlatform { Id = 2, Name = "LinkedIn", IsActive = true }
         };
-        _socialMediaPlatformService.Setup(s => s.GetAllAsync(true)).ReturnsAsync(platforms);
+        _socialMediaPlatformService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<bool>()))
+            .ReturnsAsync(new PagedResult<SocialMediaPlatform> { Items = platforms, TotalCount = platforms.Count });
 
         // Act
         var result = await _controller.AddPlatform(engagementId);
@@ -742,7 +743,7 @@ public class EngagementsControllerTests
         var model = Assert.IsType<EngagementSocialMediaPlatformViewModel>(viewResult.Model);
         Assert.Equal(engagementId, model.EngagementId);
         Assert.Equal(platforms, _controller.ViewBag.Platforms);
-        _socialMediaPlatformService.Verify(s => s.GetAllAsync(true), Times.Once);
+        _socialMediaPlatformService.Verify(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<bool>()), Times.Once);
     }
 
     [Fact]
@@ -758,7 +759,8 @@ public class EngagementsControllerTests
         {
             new SocialMediaPlatform { Id = 1, Name = "Twitter", IsActive = true }
         };
-        _socialMediaPlatformService.Setup(s => s.GetAllAsync(false)).ReturnsAsync(platforms);
+        _socialMediaPlatformService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<bool>()))
+            .ReturnsAsync(new PagedResult<SocialMediaPlatform> { Items = platforms, TotalCount = platforms.Count });
         _controller.ModelState.AddModelError("SocialMediaPlatformId", "Please select a platform.");
 
         // Act

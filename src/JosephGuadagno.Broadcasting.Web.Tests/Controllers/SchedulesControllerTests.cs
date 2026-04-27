@@ -742,7 +742,8 @@ public class SchedulesControllerTests
             new SyndicationFeedSource { Id = 1, Title = "Tech Blog", FeedIdentifier = "f1", Author = "A", Url = "http://a.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" },
             new SyndicationFeedSource { Id = 2, Title = "News Feed", FeedIdentifier = "f2", Author = "B", Url = "http://b.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" }
         };
-        _syndicationFeedSourceService.Setup(s => s.GetAllAsync()).ReturnsAsync(sources);
+        _syndicationFeedSourceService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(new PagedResult<SyndicationFeedSource> { Items = sources, TotalCount = sources.Count });
 
         // Act
         var result = await _controller.SearchSyndicationFeedSources("Tech");
@@ -761,7 +762,8 @@ public class SchedulesControllerTests
             new YouTubeSource { Id = 1, Title = "Intro Video", VideoId = "v1", Author = "A", Url = "http://a.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" },
             new YouTubeSource { Id = 2, Title = "Tutorial", VideoId = "v2", Author = "B", Url = "http://b.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" }
         };
-        _youTubeSourceService.Setup(s => s.GetAllAsync()).ReturnsAsync(sources);
+        _youTubeSourceService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(new PagedResult<YouTubeSource> { Items = sources, TotalCount = sources.Count });
 
         // Act
         var result = await _controller.SearchYouTubeSources("Intro");

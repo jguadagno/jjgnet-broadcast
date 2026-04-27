@@ -1,4 +1,5 @@
 using System.Net;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
@@ -14,16 +15,22 @@ public class SyndicationFeedSourceService(IDownstreamApi apiClient): ISyndicatio
     private const string BaseUrl = "/SyndicationFeedSources";
 
     /// <summary>
-    /// Gets all syndication feed sources
+    /// Gets a paged list of syndication feed sources
     /// </summary>
-    /// <returns>A List&lt;<see cref="SyndicationFeedSource"/>&gt;s</returns>
-    public async Task<List<SyndicationFeedSource>> GetAllAsync()
+    public async Task<PagedResult<SyndicationFeedSource>> GetAllAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "name", bool sortDescending = false, string? filter = null)
     {
-        var sources = await apiClient.GetForUserAsync<List<SyndicationFeedSource>>(ApiServiceName, options =>
+        var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<SyndicationFeedSource>>(ApiServiceName, options =>
         {
-            options.RelativePath = BaseUrl;
+            var queryParams = $"page={page}&pageSize={pageSize}&sortBy={sortBy}&sortDescending={sortDescending}";
+            if (!string.IsNullOrEmpty(filter))
+            {
+                queryParams += $"&filter={Uri.EscapeDataString(filter)}";
+            }
+            options.RelativePath = $"{BaseUrl}?{queryParams}";
         });
-        return sources ?? [];
+
+        if (pagedResponse is null) return new PagedResult<SyndicationFeedSource>();
+        return new PagedResult<SyndicationFeedSource> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
 
     /// <summary>
