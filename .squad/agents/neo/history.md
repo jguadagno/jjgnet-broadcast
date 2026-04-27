@@ -1,3 +1,27 @@
+## 2026-05-01 — Performance Investigation: All Index Pages
+
+**Status:** ✅ COMPLETE — Findings written to `.squad/decisions/inbox/neo-perf-investigation-findings.md`
+
+## Learnings
+
+**N+1 SourceTags queries are the #1 performance killer.** Both `SyndicationFeedSourceDataStore` and `YouTubeSourceDataStore` use a `foreach` loop post-materialization to load SourceTags — 27+ sequential DB roundtrips per Index page. The fix is a batch IN-clause query followed by in-memory grouping.
+
+**Schedules/Index makes 2 sequential HTTP calls** (items list + orphan count). These are not parallelized. Fix with `Task.WhenAll`.
+
+**Missing AsNoTracking on read-only list queries** affects Engagements, SyndicationFeedSources, YouTubeSources, ScheduledItems paged data stores. MessageTemplateDataStore is the correct reference implementation.
+
+**SocialMediaPlatformManager paged GetAllAsync bypasses IMemoryCache.** The cached path is non-paged; the Index page uses the paged overload that hits the DB every time. Since the platform list is tiny, the correct fix is to serve paged/filtered results from the cached full list.
+
+**MessageTemplatesController hard-codes pageSize=100 and filters in memory.** Platform filter never reaches SQL.
+
+**Missing DB indexes on sort columns:** Engagements (StartDateTime, EndDateTime, CreatedByEntraOid), SyndicationFeedSources (Title, Author, PublicationDate, AddedOn, CreatedByEntraOid), YouTubeSources (same), ScheduledItems (SendOnDateTime standalone, CreatedByEntraOid), SocialMediaPlatforms (IsActive+Name composite).
+
+**Managers are pass-throughs except SocialMediaPlatformManager.** No caching in SyndicationFeedSourceManager or YouTubeSourceManager — the SocialMediaPlatformManager caching pattern should be replicated for short-TTL (60s) list caching.
+
+**`LIKE '%...%'` queries cannot use B-tree indexes.** Text `Contains` filters hit full-table scans. Not fixable without Full-Text Search. Current data volumes keep this acceptable.
+
+---
+
 ## 2026-04-28 — AutoMapper Mapping Audit
 ## 2026-04-27 — PR #876 Review + Approval: Index Sorting/Filtering
 

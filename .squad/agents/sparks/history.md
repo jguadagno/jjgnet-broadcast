@@ -14,6 +14,15 @@
 
 ## Learnings
 
+### 2026-05-02 — MessageTemplates Platform Filter Dropdown
+- **File:** `Views/MessageTemplates/Index.cshtml`
+- **Change:** Added `<select name="selectedPlatform">` dropdown between text filter and Filter button; populated from `(List<string>)ViewBag.Platforms` with explicit cast required in Razor.
+- **Auto-submit pattern:** `onchange="this.form.submit()"` on the select enables immediate filtering without clicking the Filter button — good UX for low-option dropdowns.
+- **w-auto:** Use `form-select w-auto` to keep select width compact in a flex row; without `w-auto` it stretches to fill available space.
+- **Clear button pattern:** Always include ALL active filter params in the `@if` condition: `!string.IsNullOrEmpty(ViewBag.Filter as string) || !string.IsNullOrEmpty(ViewBag.SelectedPlatform as string)`.
+- **Sort link preservation:** Every `asp-route-*` param in sort column links must include all active filter state (`asp-route-filter`, `asp-route-selectedPlatform`) so platform filter survives sort clicks.
+- **ViewBag cast rule:** `ViewBag.Platforms` is `dynamic`; always cast explicitly in Razor: `(List<string>)ViewBag.Platforms`. Without the cast the foreach fails at runtime.
+
 ### 2026-04-27 — Issue #870: Sorting/Filtering/Searching on All Index Pages
 - **Pattern established:** All index pages use: filter `<form method="get">` with hidden `sortBy`/`sortDescending` inputs, sortable `<thead class="table-dark">` column headers with `asp-route-sortBy/sortDescending/filter`, and `<partial name="_PaginationPartial" />` at bottom.
 - **Bootstrap 5 fix sweep:** `thead-dark` (Bootstrap 4) → `table-dark` (Bootstrap 5) on `<thead>`. Found in Schedules, SyndicationFeedSources, YouTubeSources. Engagements was fixed in PR #874.

@@ -71,13 +71,13 @@
                 <td><local-time value="@talk.StartDateTime" /></td>
                 <td><local-time value="@talk.EndDateTime" /></td>
                 <td class="text-end">
-                    <a asp-action="Details" asp-controller="Talks" asp-route-engagementId="@Model.Id" asp-route-talkId="@talk.Id" class="btn btn-outline-secondary">
+                    <a asp-action="Details" asp-controller="Talks" asp-route-engagementId="@Model.Id" asp-route-talkId="@talk.Id" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-eye"></i>
                     </a>
-                    <a asp-action="Edit" asp-controller="Talks" asp-route-engagementId="@Model.Id" asp-route-talkId="@talk.Id" class="btn btn-outline-secondary">
+                    <a asp-action="Edit" asp-controller="Talks" asp-route-engagementId="@Model.Id" asp-route-talkId="@talk.Id" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-pencil"></i>
                     </a>
-                    <a asp-action="Delete" asp-controller="Talks" asp-route-engagementId="@Model.Id" asp-route-talkId="@talk.Id" class="btn btn-danger">
+                    <a asp-action="Delete" asp-controller="Talks" asp-route-engagementId="@Model.Id" asp-route-talkId="@talk.Id" class="btn btn-sm btn-danger">
                         <i class="bi bi-trash"></i>
                     </a>
                 </td>

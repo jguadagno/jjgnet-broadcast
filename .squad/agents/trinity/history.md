@@ -16,6 +16,41 @@
 
 ## Learnings
 
+### 2026-04-27 — Issue #855: Application-layer performance fixes
+
+**Status:** ✅ COMPLETE — 242 + 166 tests passing, committed on `issue-855-system-validation`
+
+**Fix 1: SchedulesController.Index — Task.WhenAll**
+- `GetScheduledItemsAsync` and `GetOrphanedScheduledItemsAsync` were awaited sequentially, adding a full serial HTTP roundtrip to every page load.
+- Fix: start both tasks without awaiting, then `await Task.WhenAll(itemsTask, orphanedTask)`, then `await` each completed task to retrieve results.
+
+**Fix 2: SocialMediaPlatformManager paged GetAllAsync — serve from cache**
+- The paged overload `GetAllAsync(int page, int pageSize, ...)` bypassed `IMemoryCache` and hit the data store on every call.
+- Fix: call the existing cached `GetAllAsync(includeInactive)` to get the full list, apply filter/sort/page in-memory, and return `PagedResult<SocialMediaPlatform>`.
+- Sort dispatch uses a `switch` expression on `sortBy.ToLowerInvariant()` covering all domain fields; default is Name.
+
+**Key patterns:**
+1. When two async calls have no data dependency, convert to `Task.WhenAll` — do not await inline.
+2. Cache-backed managers: paged overloads should call the non-paged cached overload and slice in-memory; avoids duplicate DB calls for small/stable datasets.
+3. Always add `using System.Linq;` when adding LINQ to a file that didn't have it.
+
+---
+
+### 2025-XX-XX — MessageTemplates Index: selectedPlatform filter
+
+**Status:** ✅ COMPLETE — 0 build errors
+
+**What was updated:**
+- `MessageTemplatesController.cs` `Index` action: added `selectedPlatform` param; loads with `pageSize: 100, page: 1` to get all templates in one shot; derives distinct platforms BEFORE filtering; filters in memory; sets `ViewBag.Platforms`, `ViewBag.SelectedPlatform`, `ViewBag.TotalCount = filteredViewModels.Count`, `ViewBag.TotalPages = 1`.
+- `Views/MessageTemplates/Index.cshtml` line 34: fixed pre-existing `RZ1031` Razor tag helper error — replaced inline ternary `@(... ? "selected" : "")` attribute with proper boolean `selected="@(p == (string)ViewBag.SelectedPlatform)"` syntax.
+
+**Key learnings:**
+1. Razor tag helpers (`<option>`) reject standalone C# expressions as attributes (RZ1031). Use `attribute="@(boolExpr)"` instead of `@(expr ? "attr" : "")`.
+2. For small admin datasets, loading all items at `pageSize: 100` and filtering in memory is simpler and correct — no service interface change needed.
+3. Always derive `platforms` list from the FULL unfiltered set so the dropdown shows all options regardless of current filter.
+
+---
+
 ### 2026-05-XX — MessageTemplates Web-layer sort/filter wiring
 
 **Status:** ✅ COMPLETE — 0 build errors

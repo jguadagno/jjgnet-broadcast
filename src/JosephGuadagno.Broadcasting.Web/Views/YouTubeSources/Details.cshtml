@@ -61,9 +61,9 @@
         <a asp-action="Index" class="btn btn-secondary">
             <i class="bi bi-arrow-left me-1"></i>Back to List
         </a>
-        @if (User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.Contributor) || 
-             User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.Administrator) || 
-             User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.SiteAdministrator))
+        @if (User.IsInRole(RoleNames.Contributor) || 
+             User.IsInRole(RoleNames.Administrator) || 
+             User.IsInRole(RoleNames.SiteAdministrator))
         {
             <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
                 <i class="bi bi-trash me-1"></i>Delete
