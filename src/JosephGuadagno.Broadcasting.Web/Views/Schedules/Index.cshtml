@@ -1,25 +1,62 @@
 ﻿@model List<JosephGuadagno.Broadcasting.Web.Models.ScheduledItemViewModel>
 
 @{
-    ViewData["Title"] = "View Scheduled Items";
+    ViewData["Title"] = "Scheduled Items";
     var orphanedCount = (int)(ViewBag.OrphanedCount ?? 0);
-}
-@if (orphanedCount > 0)
-{
-    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-        <strong>&#9888;&#65039; @orphanedCount orphaned scheduled item(s) detected.</strong>
-        These items reference source records that no longer exist.
-        <a asp-action="Orphaned" class="alert-link">View orphaned items</a>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
+
+    string NextSortDirection(string col)
+    {
+        return (ViewBag.SortBy as string) == col && (bool)ViewBag.SortDescending ? "false" : "true";
+    }
+
+    string SortIcon(string col)
+    {
+        if ((ViewBag.SortBy as string) != col) return "";
+        return (bool)ViewBag.SortDescending ? " <i class=\"bi bi-arrow-down\"></i>" : " <i class=\"bi bi-arrow-up\"></i>";
+    }
 }
 <div class="text-center">
+    <h1>Scheduled Items</h1>
+
+    @if (orphanedCount > 0)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <strong>&#9888;&#65039; @orphanedCount orphaned scheduled item(s) detected.</strong>
+            These items reference source records that no longer exist.
+            <a asp-action="Orphaned" class="alert-link">View orphaned items</a>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form method="get" asp-action="Index" asp-controller="Schedules" class="mb-3 d-flex gap-2">
+        <input type="hidden" name="sortBy" value="@ViewBag.SortBy" />
+        <input type="hidden" name="sortDescending" value="@ViewBag.SortDescending" />
+        <input type="text" name="filter" class="form-control" placeholder="Filter by source item..." value="@ViewBag.Filter" />
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        @if (!string.IsNullOrEmpty(ViewBag.Filter as string))
+        {
+            <a asp-action="Index" asp-controller="Schedules" asp-route-sortBy="@ViewBag.SortBy" asp-route-sortDescending="@ViewBag.SortDescending" class="btn btn-outline-danger">Clear</a>
+        }
+    </form>
+
     <table class="table table-striped">
-        <thead class="thead-dark">
+        <thead class="table-dark">
         <tr>
-            <th scope="col">Source Item</th>
-            <th scope="col">Schedule Send DateTime</th>
-            <th scope="col">Was Sent</th>
+            <th scope="col">
+                <a asp-action="Index" asp-controller="Schedules" asp-route-sortBy="sourceitem" asp-route-sortDescending="@NextSortDirection("sourceitem")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                    Source Item@Html.Raw(SortIcon("sourceitem"))
+                </a>
+            </th>
+            <th scope="col">
+                <a asp-action="Index" asp-controller="Schedules" asp-route-sortBy="sendondatetime" asp-route-sortDescending="@NextSortDirection("sendondatetime")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                    Schedule Send Date/Time@Html.Raw(SortIcon("sendondatetime"))
+                </a>
+            </th>
+            <th scope="col">
+                <a asp-action="Index" asp-controller="Schedules" asp-route-sortBy="messagesent" asp-route-sortDescending="@NextSortDirection("messagesent")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                    Was Sent@Html.Raw(SortIcon("messagesent"))
+                </a>
+            </th>
             <th scope="col">&nbsp;</th>
         </tr>
         </thead>
