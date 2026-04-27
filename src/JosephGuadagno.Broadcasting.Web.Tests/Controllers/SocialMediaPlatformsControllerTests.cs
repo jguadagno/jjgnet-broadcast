@@ -43,12 +43,13 @@ public class SocialMediaPlatformsControllerTests
             new SocialMediaPlatform { Id = 1, Name = "Twitter", IsActive = true },
             new SocialMediaPlatform { Id = 2, Name = "BlueSky", IsActive = false }
         };
+        var pagedResult = new PagedResult<SocialMediaPlatform> { Items = platforms, TotalCount = 2 };
         var viewModels = new List<SocialMediaPlatformViewModel>
         {
             new SocialMediaPlatformViewModel { Id = 1, Name = "Twitter", IsActive = true },
             new SocialMediaPlatformViewModel { Id = 2, Name = "BlueSky", IsActive = false }
         };
-        _platformService.Setup(s => s.GetAllAsync()).ReturnsAsync(platforms);
+        _platformService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<bool>())).ReturnsAsync(pagedResult);
         _mapper.Setup(m => m.Map<List<SocialMediaPlatformViewModel>>(platforms)).Returns(viewModels);
 
         // Act
@@ -57,7 +58,7 @@ public class SocialMediaPlatformsControllerTests
         // Assert
         var viewResult = Assert.IsType<ViewResult>(result);
         viewResult.Model.Should().BeEquivalentTo(viewModels);
-        _platformService.Verify(s => s.GetAllAsync(), Times.Once);
+        _platformService.Verify(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<bool>()), Times.Once);
     }
 
     [Fact]
@@ -65,8 +66,9 @@ public class SocialMediaPlatformsControllerTests
     {
         // Arrange
         var emptyList = new List<SocialMediaPlatform>();
+        var emptyPagedResult = new PagedResult<SocialMediaPlatform> { Items = emptyList, TotalCount = 0 };
         var emptyViewModels = new List<SocialMediaPlatformViewModel>();
-        _platformService.Setup(s => s.GetAllAsync()).ReturnsAsync(emptyList);
+        _platformService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<bool>())).ReturnsAsync(emptyPagedResult);
         _mapper.Setup(m => m.Map<List<SocialMediaPlatformViewModel>>(emptyList)).Returns(emptyViewModels);
 
         // Act

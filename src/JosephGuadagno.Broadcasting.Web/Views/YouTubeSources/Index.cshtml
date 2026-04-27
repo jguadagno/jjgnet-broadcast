@@ -1,21 +1,32 @@
 @model List<JosephGuadagno.Broadcasting.Web.Models.YouTubeSourceViewModel>
 @{
     ViewData["Title"] = "YouTube Sources";
+
+    string NextSortDirection(string col)
+    {
+        return (ViewBag.SortBy as string) == col && (bool)ViewBag.SortDescending ? "false" : "true";
+    }
+
+    string SortIcon(string col)
+    {
+        if ((ViewBag.SortBy as string) != col) return "";
+        return (bool)ViewBag.SortDescending ? " <i class=\"bi bi-arrow-down\"></i>" : " <i class=\"bi bi-arrow-up\"></i>";
+    }
 }
 <div class="text-center">
     <h1 class="display-4">YouTube Sources</h1>
-    
-    @if (User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.Contributor) || 
-         User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.Administrator) || 
-         User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.SiteAdministrator))
-    {
-        <p class="mb-3">
-            <a asp-action="Add" class="btn btn-primary">
-                <i class="bi bi-plus-circle me-1"></i>Add New YouTube Source
-            </a>
-        </p>
-    }
-    
+
+    <form method="get" asp-action="Index" asp-controller="YouTubeSources" class="mb-3 d-flex gap-2">
+        <input type="hidden" name="sortBy" value="@ViewBag.SortBy" />
+        <input type="hidden" name="sortDescending" value="@ViewBag.SortDescending" />
+        <input type="text" name="filter" class="form-control" placeholder="Filter by title or author..." value="@ViewBag.Filter" />
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+        @if (!string.IsNullOrEmpty(ViewBag.Filter as string))
+        {
+            <a asp-action="Index" asp-controller="YouTubeSources" asp-route-sortBy="@ViewBag.SortBy" asp-route-sortDescending="@ViewBag.SortDescending" class="btn btn-outline-danger">Clear</a>
+        }
+    </form>
+
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -30,7 +41,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
-    
+
     @if (Model.Count == 0)
     {
         <p class="text-muted">No YouTube sources found.</p>
@@ -40,11 +51,27 @@
         <table class="table table-striped">
             <thead class="thead-dark">
             <tr>
-                <th scope="col">Title</th>
-                <th scope="col">Author</th>
+                <th scope="col">
+                    <a asp-action="Index" asp-controller="YouTubeSources" asp-route-sortBy="title" asp-route-sortDescending="@NextSortDirection("title")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                        Title@Html.Raw(SortIcon("title"))
+                    </a>
+                </th>
+                <th scope="col">
+                    <a asp-action="Index" asp-controller="YouTubeSources" asp-route-sortBy="author" asp-route-sortDescending="@NextSortDirection("author")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                        Author@Html.Raw(SortIcon("author"))
+                    </a>
+                </th>
                 <th scope="col">Video ID</th>
-                <th scope="col">Publication Date</th>
-                <th scope="col">Added On</th>
+                <th scope="col">
+                    <a asp-action="Index" asp-controller="YouTubeSources" asp-route-sortBy="publicationdate" asp-route-sortDescending="@NextSortDirection("publicationdate")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                        Publication Date@Html.Raw(SortIcon("publicationdate"))
+                    </a>
+                </th>
+                <th scope="col">
+                    <a asp-action="Index" asp-controller="YouTubeSources" asp-route-sortBy="addedon" asp-route-sortDescending="@NextSortDirection("addedon")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                        Added On@Html.Raw(SortIcon("addedon"))
+                    </a>
+                </th>
                 <th scope="col" class="col-2">&nbsp;</th>
             </tr>
             </thead>
@@ -55,14 +82,14 @@
                     <td>@source.Title</td>
                     <td>@source.Author</td>
                     <td>@source.VideoId</td>
-                    <td>@source.PublicationDate.ToString("g")</td>
-                    <td>@source.AddedOn.ToString("g")</td>
+                    <td><local-time value="@source.PublicationDate" /></td>
+                    <td><local-time value="@source.AddedOn" /></td>
                     <td class="text-end">
                         <a asp-action="Details" asp-route-id="@source.Id" class="btn btn-sm btn-info" title="Details">
                             <i class="bi bi-eye"></i>
                         </a>
-                        @if (User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.Contributor) || 
-                             User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.Administrator) || 
+                        @if (User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.Contributor) ||
+                             User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.Administrator) ||
                              User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.SiteAdministrator))
                         {
                             <a asp-action="Delete" asp-route-id="@source.Id" class="btn btn-sm btn-danger" title="Delete">
@@ -74,5 +101,18 @@
             }
             </tbody>
         </table>
+    }
+
+    <partial name="_PaginationPartial" />
+
+    @if (User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.Contributor) ||
+         User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.Administrator) ||
+         User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.SiteAdministrator))
+    {
+        <p class="mb-3">
+            <a asp-action="Add" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Add New YouTube Source
+            </a>
+        </p>
     }
 </div>

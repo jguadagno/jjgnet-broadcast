@@ -166,13 +166,13 @@ public class PublisherSettingsController : Controller
         TargetPublisherSettingsContext context,
         PublisherPlatformSettingsViewModel? invalidModel = null)
     {
-        var availablePlatforms = await _socialMediaPlatformService.GetAllAsync(includeInactive: true);
+        var availablePlatforms = await _socialMediaPlatformService.GetAllAsync(pageSize: Pagination.MaxPageSize, includeInactive: true);
         var currentSettings = context.IsManagedBySiteAdmin
             ? await _userPublisherSettingService.GetByUserAsync(context.TargetUserOid)
             : await _userPublisherSettingService.GetCurrentUserAsync();
         var settingsByPlatformId = currentSettings.ToDictionary(setting => setting.SocialMediaPlatformId);
 
-        var platforms = availablePlatforms
+        var platforms = availablePlatforms.Items
             .Where(platform => platform.IsActive || settingsByPlatformId.ContainsKey(platform.Id))
             .OrderBy(platform => platform.Name)
             .Select(platform => CreateViewModel(platform, context.TargetUserOid, settingsByPlatformId.GetValueOrDefault(platform.Id), context.IsManagedBySiteAdmin))

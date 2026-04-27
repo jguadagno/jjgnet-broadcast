@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,8 +14,8 @@ public class HelpController(ISocialMediaPlatformService socialMediaPlatformServi
     [Route("Help/SocialMediaPlatforms/{platform}")]
     public async Task<IActionResult> SocialMediaPlatforms(string platform)
     {
-        var platforms = await socialMediaPlatformService.GetAllAsync();
-        var match = platforms.FirstOrDefault(p =>
+        var result = await socialMediaPlatformService.GetAllAsync(pageSize: Pagination.MaxPageSize, includeInactive: false);
+        var match = result.Items.FirstOrDefault(p =>
             string.Equals(p.Name, platform, StringComparison.OrdinalIgnoreCase));
         if (match is null)
             return NotFound();

@@ -33,10 +33,21 @@ public class YouTubeSourcesController : Controller
     /// Gets the list of YouTube sources
     /// </summary>
     /// <returns>Returns a List&lt;<see cref="YouTubeSourceViewModel"/>&gt;.</returns>
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int page = Pagination.DefaultPage, string sortBy = "name", bool sortDescending = false, string? filter = null)
     {
-        var sources = await _youTubeSourceService.GetAllAsync();
-        var viewSources = _mapper.Map<List<YouTubeSourceViewModel>>(sources);
+        var result = await _youTubeSourceService.GetAllAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
+        var viewSources = _mapper.Map<List<YouTubeSourceViewModel>>(result.Items);
+
+        ViewBag.Page = page;
+        ViewBag.PageSize = Pagination.DefaultPageSize;
+        ViewBag.TotalCount = result.TotalCount;
+        ViewBag.TotalPages = (int)Math.Ceiling(result.TotalCount / (double)Pagination.DefaultPageSize);
+        ViewBag.ControllerName = "YouTubeSources";
+        ViewBag.ActionName = "Index";
+        ViewBag.SortBy = sortBy;
+        ViewBag.SortDescending = sortDescending;
+        ViewBag.Filter = filter;
+
         return View(viewSources);
     }
 

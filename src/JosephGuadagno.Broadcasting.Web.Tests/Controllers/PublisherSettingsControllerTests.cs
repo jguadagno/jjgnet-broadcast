@@ -53,12 +53,16 @@ public class PublisherSettingsControllerTests
             });
 
         _platformService
-            .Setup(service => service.GetAllAsync(true))
-            .ReturnsAsync(
-            [
-                new SocialMediaPlatform { Id = 1, Name = "BlueSky", Icon = "bi-cloud", IsActive = true },
-                new SocialMediaPlatform { Id = 99, Name = "Mastodon", Icon = "bi-mastodon", IsActive = true }
-            ]);
+            .Setup(service => service.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), true))
+            .ReturnsAsync(new PagedResult<SocialMediaPlatform>
+            {
+                Items =
+                [
+                    new SocialMediaPlatform { Id = 1, Name = "BlueSky", Icon = "bi-cloud", IsActive = true },
+                    new SocialMediaPlatform { Id = 99, Name = "Mastodon", Icon = "bi-mastodon", IsActive = true }
+                ],
+                TotalCount = 2
+            });
 
         _publisherSettingService
             .Setup(service => service.GetCurrentUserAsync())
@@ -135,8 +139,12 @@ public class PublisherSettingsControllerTests
             });
 
         _platformService
-            .Setup(service => service.GetAllAsync(true))
-            .ReturnsAsync([new SocialMediaPlatform { Id = 2, Name = "BlueSky", IsActive = true }]);
+            .Setup(service => service.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), true))
+            .ReturnsAsync(new PagedResult<SocialMediaPlatform>
+            {
+                Items = [new SocialMediaPlatform { Id = 2, Name = "BlueSky", IsActive = true }],
+                TotalCount = 1
+            });
 
         _publisherSettingService
             .Setup(service => service.GetCurrentUserAsync())
