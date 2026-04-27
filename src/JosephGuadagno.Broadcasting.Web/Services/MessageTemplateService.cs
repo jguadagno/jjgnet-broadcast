@@ -20,11 +20,19 @@ public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplate
     /// </summary>
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
-    public async Task<PagedResult<MessageTemplate>?> GetAllAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
+    /// <param name="sortBy">The field to sort by</param>
+    /// <param name="sortDescending">Whether to sort descending</param>
+    /// <param name="filter">An optional filter string</param>
+    public async Task<PagedResult<MessageTemplate>?> GetAllAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize, string sortBy = "messagetype", bool sortDescending = false, string? filter = null)
     {
         var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<MessageTemplate>>(ApiServiceName, options =>
         {
-            options.RelativePath = $"{MessageTemplateBaseUrl}?page={page}&pageSize={pageSize}";
+            var url = $"{MessageTemplateBaseUrl}?page={page}&pageSize={pageSize}&sortBy={sortBy}&sortDescending={sortDescending}";
+            if (!string.IsNullOrEmpty(filter))
+            {
+                url += $"&filter={filter}";
+            }
+            options.RelativePath = url;
         });
         if (pagedResponse is null) return null;
         return new PagedResult<MessageTemplate> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };

@@ -13,73 +13,77 @@
         return (bool)ViewBag.SortDescending ? " <i class=\"bi bi-arrow-down\"></i>" : " <i class=\"bi bi-arrow-up\"></i>";
     }
 }
-<div class="text-center">
-    <h1>Engagements</h1>
 
-    <form method="get" asp-action="Index" asp-controller="Engagements" class="mb-3 d-flex gap-2">
-        <input type="hidden" name="sortBy" value="@ViewBag.SortBy" />
-        <input type="hidden" name="sortDescending" value="@ViewBag.SortDescending" />
-        <input type="text" name="filter" class="form-control" placeholder="Filter by name..." value="@ViewBag.Filter" />
-        <button type="submit" class="btn btn-outline-secondary">Filter</button>
-        @if (!string.IsNullOrEmpty(ViewBag.Filter as string))
-        {
-            <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="@ViewBag.SortBy" asp-route-sortDescending="@ViewBag.SortDescending" class="btn btn-outline-danger">Clear</a>
-        }
-    </form>
-    
-    <table class="table table-striped">
-        <thead class="table-dark">
-        <tr>
-            <th scope="col">
-                <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="name" asp-route-sortDescending="@NextSortDirection("name")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
-                    Name@Html.Raw(SortIcon("name"))
-                </a>
-            </th>
-            <th scope="col" class="col-2">Time Zone</th>
-            <th scope="col" class="col-2">
-                <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="startdate" asp-route-sortDescending="@NextSortDirection("startdate")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
-                    Start Date@Html.Raw(SortIcon("startdate"))
-                </a>
-            </th>
-            <th scope="col" class="col-2">
-                <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="enddate" asp-route-sortDescending="@NextSortDirection("enddate")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
-                    End Date@Html.Raw(SortIcon("enddate"))
-                </a>
-            </th>
-            <th scope="col" class="col-1">Updated</th>
-            <th scope="col" class="col-3">&nbsp;</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var engagement in @Model)
-        {
-            <tr>
-                <td>@engagement.Name
-                    <a href="@engagement.Url" title="@engagement.Url" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a>
-                </td>
-                <td>@engagement.TimeZoneId</td>
-                <td><local-time value="@engagement.StartDateTime" /></td>
-                <td><local-time value="@engagement.EndDateTime" /></td>
-                <td><local-time value="@engagement.LastUpdatedOn" date-only="true" /></td>
-                <td class="text-end">
-                    <a asp-action="Details" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-outline-secondary">
-                        <i class="bi bi-eye"></i>
-                    </a>
-                    <a asp-action="Edit" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-outline-secondary">
-                        <i class="bi bi-pencil-square"></i>
-                    </a>
-                    <a asp-action="Delete" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-danger">
-                        <i class="bi bi-trash"></i>
-                    </a>
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
-    
-    <partial name="_PaginationPartial" />
-    
-    <a asp-action="Add" asp-controller="Engagements" class="btn btn-primary">
-        <i class="bi bi-calendar4-range me-2"></i>Add New Engagement
-    </a>
+<div class="d-flex justify-content-between mb-3">
+    <h1><i class="fa-solid fa-person-chalkboard me-2"></i>Engagements</h1>
 </div>
+<p class="lead">
+    TODO: Fill in a good description
+</p>
+<form method="get" asp-action="Index" asp-controller="Engagements" class="mb-3 d-flex gap-2">
+    <input type="hidden" name="sortBy" value="@ViewBag.SortBy"/>
+    <input type="hidden" name="sortDescending" value="@ViewBag.SortDescending"/>
+    <input type="text" name="filter" class="form-control" placeholder="Filter by name..." value="@ViewBag.Filter"/>
+    <button type="submit" class="btn btn-outline-secondary">Filter</button>
+    @if (!string.IsNullOrEmpty(ViewBag.Filter as string))
+    {
+        <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="@ViewBag.SortBy" asp-route-sortDescending="@ViewBag.SortDescending" class="btn btn-outline-danger">Clear</a>
+    }
+</form>
+
+<table class="table table-striped table-hover table-bordered">
+    <thead>
+    <tr>
+        <th scope="col" class="col-3">
+            <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="name" asp-route-sortDescending="@NextSortDirection("name")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-body">
+                Name @Html.Raw(SortIcon("name"))
+            </a>
+        </th>
+        <th scope="col" class="col-1">Time Zone</th>
+        <th scope="col" class="col-2">
+            <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="startdate" asp-route-sortDescending="@NextSortDirection("startdate")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-body">
+                Start Date @Html.Raw(SortIcon("startdate"))
+            </a>
+        </th>
+        <th scope="col" class="col-2">
+            <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="enddate" asp-route-sortDescending="@NextSortDirection("enddate")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-body">
+                End Date @Html.Raw(SortIcon("enddate"))
+            </a>
+        </th>
+        <th scope="col" class="col-2">Updated</th>
+        <th scope="col" class="col-2">&nbsp;</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var engagement in @Model)
+    {
+        <tr>
+            <td>@engagement.Name
+                <a href="@engagement.Url" title="@engagement.Url" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a>
+            </td>
+            <td>@engagement.TimeZoneId</td>
+            <td><local-time value="@engagement.StartDateTime"/></td>
+            <td><local-time value="@engagement.EndDateTime"/></td>
+            <td><local-time value="@engagement.LastUpdatedOn" date-only="true"/></td>
+            <td class="text-end">
+                <a asp-action="Details" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-eye"></i>
+                </a>
+                <a asp-action="Edit" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-pencil-square"></i>
+                </a>
+                <a asp-action="Delete" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-sm btn-danger">
+                    <i class="bi bi-trash"></i>
+                </a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<partial name="_PaginationPartial"/>
+
+<a asp-action="Add" asp-controller="Engagements" class="btn btn-primary">
+    <i class="bi bi-calendar4-range me-2"></i>Add New Engagement
+</a>
+
