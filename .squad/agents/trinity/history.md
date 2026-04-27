@@ -1,6 +1,14 @@
 # Trinity - History
 
-## Cross-Agent Learnings
+## Cross-Agent Learnings — Sprint 28 Session (2026-04-27)
+
+**Scribe updated all agent charters with mandatory `--body-file` rule for `gh pr create`:**
+- NEVER use `gh pr create --body "..."` inline (PowerShell mangles backslashes)
+- ALWAYS write body to temp file first: `body | Set-Content "$env:TEMP\pr-body.md"`
+- Then: `gh pr create --body-file "$env:TEMP\pr-body.md"`
+- Same rule for `gh pr edit`: use `gh api PATCH --input <tmpfile>` not inline
+- Root cause: 20-30+ occurrences of `\text\` PR body corruption across multiple sprints
+- PR #878 committed all 12 charter updates
 
 **Charter security directive (cc77930):** Neo hardened all agent charters with explicit pre-flight checklist for GitHub output — scan for backslash-word-backslash (`\word\`) patterns and replace with backticks (`` `word` ``). This recurring violation has silently mangled Markdown in PR comments and descriptions. All team members must add self-check step before running any `gh pr create`, `gh pr edit`, `gh issue create`, or `gh issue edit`. Trinity impact: charter updated to require `using JosephGuadagno.Broadcasting.Api;` in all 8 controllers — double-check all new PR descriptions/comments follow the no-backslash rule.
 

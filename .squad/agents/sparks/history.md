@@ -155,3 +155,19 @@ Established by Joseph Guadagno:
 - **Fix:** Changed the value element in each row from `<dt class="col-sm-9">` to `<dd class="col-sm-9">`. Bootstrap column classes were preserved unchanged.
 - **Pattern:** In Bootstrap 5 description lists using `<dl class="row">`, label cells use `<dt class="col-sm-N">` and value cells use `<dd class="col-sm-N">`. Never use two `<dt>` elements in the same row.
 - **Branch:** `issue-845-code-quality-cleanup` | **PR:** #848
+
+## Sprint 28 Session (2026-04-27)
+
+### Index Page Sorting/Filtering/Searching Pattern (Issue #870, PR #876)
+- **Merged:** ✅ PR #876 → main
+- **Work:** Implemented consistent UX pattern for all index pages: sorting, filtering, pagination, and `<h1>` headings
+- **Pages Updated:** Schedules (new sort/filter), Engagements (added H1)
+- **Bootstrap 5 Fix:** Updated all affected index page `<thead>` from `thead-dark` (Bootstrap 4) to `table-dark` (Bootstrap 5). Missing `table-dark` caused white text links to be invisible on white background.
+- **Pattern Components:**
+  1. Visible `<h1>` heading on every index page
+  2. `GET` filter form above table with hidden `sortBy`/`sortDescending` inputs to preserve state
+  3. Sortable `<thead class="table-dark">` headers with Bootstrap 5 `bi-arrow-*` icons
+  4. Pagination partial (`_PaginationPartial`) at bottom
+  5. Service/controller/data layer must all propagate sort/filter/page params
+- **Status Matrix Captured:** Documented all index pages (complete/incomplete) in decisions.md
+- **Learning:** Index page pattern is now standardized. New index pages must follow this model or explicitly document exceptions.

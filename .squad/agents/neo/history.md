@@ -1,3 +1,32 @@
+## 2026-04-27 — PR #876 Review + Approval: Index Sorting/Filtering
+
+**Status:** ✅ APPROVED — PR #876 → main
+
+**What was reviewed:**
+- Sparks' PR #876: Sorting/filtering implementation on Schedules and Engagements index pages
+- Issue #870: Add sorting, filtering, searching to all index pages
+
+**Review scope:**
+- Sort logic (toggle direction on reclick)
+- Filter form (preserves sort state via hidden inputs)
+- Bootstrap 5 compliance (`table-dark` vs `thead-dark`)
+- H1 heading requirement met
+- Pagination partial integrated
+- Controller/view/service layer pattern verified
+
+**Approval summary:**
+- ✅ Code logic correct
+- ✅ UI/UX consistent
+- ✅ Bootstrap 5 compliance verified
+- ✅ No security issues
+- ✅ Ready for merge
+
+**Merge action:** PR #876 merged to main; issue #870 closed.
+
+**Pattern documented:** Index Page Sorting/Filtering/Searching Pattern now in decisions.md with full specifications, controller template, service template, and pages status matrix.
+
+---
+
 ## 2026-04-25 — Issue #866: Formal Re-Review + PR Creation
 
 **Status:** ✅ COMPLETE — APPROVED, PR #867 created
