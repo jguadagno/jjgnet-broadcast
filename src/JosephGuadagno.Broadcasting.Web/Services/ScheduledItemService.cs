@@ -22,11 +22,14 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
-    public async Task<PagedResult<ScheduledItem>> GetScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize)
+    public async Task<PagedResult<ScheduledItem>> GetScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize, string sortBy = "sendondatetime", bool sortDescending = true, string? filter = null)
     {
+        var url = $"{ScheduledItemBaseUrl}?page={page}&pageSize={pageSize}&sortBy={sortBy}&sortDescending={sortDescending}";
+        if (!string.IsNullOrWhiteSpace(filter))
+            url += $"&filter={Uri.EscapeDataString(filter)}";
         var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<ScheduledItem>>(ApiServiceName, options =>
         {
-            options.RelativePath = $"{ScheduledItemBaseUrl}?page={page}&pageSize={pageSize}";
+            options.RelativePath = url;
         });
         if (pagedResponse is null) return new PagedResult<ScheduledItem>();
         return new PagedResult<ScheduledItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };

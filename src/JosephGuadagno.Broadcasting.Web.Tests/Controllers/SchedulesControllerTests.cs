@@ -64,7 +64,7 @@ public class SchedulesControllerTests
         var pagedScheduledItems = new PagedResult<ScheduledItem> { Items = scheduledItems, TotalCount = scheduledItems.Count };
         var orphanedResult = new PagedResult<ScheduledItem> { Items = new List<ScheduledItem>(), TotalCount = 0 };
         var viewModels = new List<ScheduledItemViewModel> { new ScheduledItemViewModel { Id = 1 } };
-        _scheduledItemService.Setup(s => s.GetScheduledItemsAsync(It.IsAny<int?>(), It.IsAny<int?>())).ReturnsAsync(pagedScheduledItems);
+        _scheduledItemService.Setup(s => s.GetScheduledItemsAsync(It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>())).ReturnsAsync(pagedScheduledItems);
         _scheduledItemService.Setup(s => s.GetOrphanedScheduledItemsAsync(It.IsAny<int?>(), It.IsAny<int?>())).ReturnsAsync(orphanedResult);
         _mapper.Setup(m => m.Map<List<ScheduledItemViewModel>>(It.IsAny<object>())).Returns(viewModels);
 
@@ -74,7 +74,7 @@ public class SchedulesControllerTests
         // Assert
         var viewResult = Assert.IsType<ViewResult>(result);
         Assert.Equal(viewModels, viewResult.Model);
-        _scheduledItemService.Verify(s => s.GetScheduledItemsAsync(It.IsAny<int?>(), It.IsAny<int?>()), Times.Once);
+        _scheduledItemService.Verify(s => s.GetScheduledItemsAsync(It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Once);
     }
 
     [Fact]
