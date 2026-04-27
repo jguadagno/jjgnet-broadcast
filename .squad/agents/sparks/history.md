@@ -171,3 +171,9 @@ Established by Joseph Guadagno:
   5. Service/controller/data layer must all propagate sort/filter/page params
 - **Status Matrix Captured:** Documented all index pages (complete/incomplete) in decisions.md
 - **Learning:** Index page pattern is now standardized. New index pages must follow this model or explicitly document exceptions.
+
+### MessageTemplates Index — Sort/Filter Fix (post-#876)
+- **File:** `Views/MessageTemplates/Index.cshtml`
+- **Fixes applied:** Added `NextSortDirection`/`SortIcon` helpers in `@{}` block; added GET filter form below lead paragraph; changed `<thead>` → `<thead class="table-dark">`; made "Message Type" column a sort link with `text-white` class.
+- **Platform-grouped special case:** MessageTemplates groups rows by platform for visual presentation only. Each platform section gets its own `<table>` with identical `<thead>`. The sort/filter form is global (above all tables), and the data layer handles actual ordering. The `<thead>` sort link is repeated in every platform table but always points to the same `sortBy=messagetype` route.
+- **CS8321 warning:** `SortIcon` triggers "declared but never used" — this is a known benign warning shared by all index views (SocialMediaPlatforms, Schedules, etc.) because the compiler can't trace `Html.Raw(SortIcon(...))` as a usage. Pre-existing; not introduced by this change.

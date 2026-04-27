@@ -16,6 +16,19 @@
 
 ## Learnings
 
+### 2026-05-XX — MessageTemplates Web-layer sort/filter wiring
+
+**Status:** ✅ COMPLETE — 0 build errors
+
+**What was updated:**
+- `src\JosephGuadagno.Broadcasting.Web\Interfaces\IMessageTemplateService.cs`: Added `sortBy`, `sortDescending`, `filter` parameters to `GetAllAsync`
+- `src\JosephGuadagno.Broadcasting.Web\Services\MessageTemplateService.cs`: Updated `GetAllAsync` to pass those params in the query string; `filter` is only appended when non-null/non-empty
+- `src\JosephGuadagno.Broadcasting.Web\Controllers\MessageTemplatesController.cs`: `Index` action now accepts and forwards `sortBy`, `sortDescending`, `filter`; sets `ViewBag.SortBy`, `ViewBag.SortDescending`, `ViewBag.Filter`
+
+**Pattern used:** Matched the `SocialMediaPlatformsController` reference pattern exactly.
+
+---
+
 ### 2026-04-27 — Issues #868, #869, #872, #873: Fix PagedResponse<T> deserialization in Web services
 
 **Status:** ✅ COMPLETE — PR #875 on `issue-868-fix-paged-response-web-services`; 232/232 tests passing

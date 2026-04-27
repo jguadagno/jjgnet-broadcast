@@ -190,7 +190,35 @@ Task<PagedResponse<T>> GetAllAsync(
 | SocialMediaPlatforms | ✅ (PR #875) | ✅ (PR #875) | ✅ (PR #875) | ✅ |
 | CollectorSettings | N/A (settings page) | N/A | N/A | ✅ |
 | PublisherSettings | N/A (card view) | N/A | N/A | ✅ |
-| MessageTemplates | N/A (grouped admin) | N/A | ✅ | ✅ |
+| MessageTemplates | ✅ (2026-04-27) | ✅ (2026-04-27) | ✅ | ✅ |
+
+---
+
+## MessageTemplates Platform-Grouped Layout Adaptation (2026-04-27)
+
+**Date:** 2026-04-27  
+**Author:** Sparks  
+**Issue:** Related to #870 pattern  
+**Status:** ✅ Complete
+
+The MessageTemplates Index view groups rows by platform into separate `<table>` elements. When applying the standard sort/filter pattern from PR #876 (Issue #870), the layout requires adaptation:
+
+### Pattern Applied
+
+1. **Single global filter form** placed above all platform sections — not repeated per platform
+2. **`<thead class="table-dark">` with sort link** repeated inside every platform table for visual consistency
+3. **Sort link applies globally** — `sortBy=messagetype` sorts all templates regardless of platform; the data layer handles ordering and Razor grouping presents the sorted result
+4. **`text-white` on sort links** is required for contrast against `table-dark` background (Bootstrap 5)
+
+### Rationale
+
+The alternative (restructure into one table with a Platform column) would lose the visual platform grouping that aids user scanning. This approach keeps UX intact while adding sort/filter affordances.
+
+### Backend Coordination
+
+- Trinity implemented `IMessageTemplateService` with `sortBy`/`sortDescending`/`filter` parameters
+- Controller accepts and propagates all three parameters
+- Sparks wired Razor view to controller parameters
 
 ---
 
