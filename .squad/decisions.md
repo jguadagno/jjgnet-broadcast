@@ -4,6 +4,24 @@ Compiled record of team decisions, architecture choices, and resolutions.
 
 ## Directives
 
+### 2026-04-27T07:29:48Z: User directive — PR Title Convention
+**By:** Joe (via Copilot)
+**What:** PR titles MUST follow the convention: `feat(#N): description` or `fix(#N): description` — the issue number in parentheses is required. This is already in routing.md but agents keep missing it. It is a hard requirement, not optional. Every agent that creates a PR must include the issue number in the title.
+**Why:** User request — recurring failure, wastes time on failed CI checks. Captured for team memory and charter reinforcement.
+
+---
+
+### 2026-04-27T07:42:26Z: User directive — CHRONIC VIOLATION: PR Body Formatting
+**By:** Joe (via Copilot)
+**What:** PR description/body backslash formatting has failed 20-30+ times across multiple sprints. The `\text\` pattern appearing in PR bodies is caused by passing markdown inline to `gh pr create --body`. This is a systemic failure, not a one-off. The fix is MANDATORY for all agents:
+- NEVER use `gh pr create --body "..."` inline
+- ALWAYS write the PR body to a temp file first, then use `gh pr create --body-file <tmpfile>`
+- Same rule applies to `gh pr edit`: use `gh api PATCH --input <tmpfile>` not inline `--body`
+
+**Why:** User request — 20-30 occurrences is a structural failure. Charter warnings are not enough; agents need the mechanical fix baked in. PR #878 updated all 12 agent charters with this rule.
+
+---
+
 ### 2026-04-24T17:45:29Z: User directive
 **By:** Joseph (via Copilot)
 **What:** GitHub issues and PR comments must use GitHub Flavored Markdown. Inline code and file paths use backticks (`), never backslashes. GitHub renders GFM — always use it.
@@ -35,6 +53,144 @@ Even without `text-white`, `thead-dark` views silently lose their dark styling; 
 - `Views/YouTubeSources/Index.cshtml`
 
 These have black text so headings are still visible, but the dark background is absent. Fix as part of any planned polish pass.
+
+---
+
+## Index Page Sorting/Filtering/Searching Pattern
+
+**Date:** 2026-04-27  
+**Author:** Sparks  
+**Issue:** #870  
+**PR:** #876  
+**Status:** ✅ Merged
+
+All index pages in the Web project (`JosephGuadagno.Broadcasting.Web`) must follow a consistent UX pattern for sorting, filtering, and pagination.
+
+### Required Elements
+
+**1. `<h1>` Heading**
+
+Every index page must begin with a visible `<h1>` heading matching the page name:
+
+```razor
+<h1>Engagements</h1>
+```
+
+**2. Filter Form**
+
+Place a `GET` filter form above the table. Hidden inputs preserve sort state across filter submissions:
+
+```razor
+<form method="get" asp-action="Index" asp-controller="ControllerName" class="mb-3 d-flex gap-2">
+    <input type="hidden" name="sortBy" value="@ViewBag.SortBy" />
+    <input type="hidden" name="sortDescending" value="@ViewBag.SortDescending" />
+    <input type="text" name="filter" class="form-control" placeholder="Filter by ..." value="@ViewBag.Filter" />
+    <button type="submit" class="btn btn-outline-secondary">Filter</button>
+    @if (!string.IsNullOrEmpty(ViewBag.Filter as string))
+    {
+        <a asp-action="Index" asp-controller="ControllerName" asp-route-sortBy="@ViewBag.SortBy" asp-route-sortDescending="@ViewBag.SortDescending" class="btn btn-outline-danger">Clear</a>
+    }
+</form>
+```
+
+**3. Sortable Table Headers (Bootstrap 5)**
+
+Use `<thead class="table-dark">` (Bootstrap 5). **Never use `thead-dark`** (Bootstrap 4 — removed).
+
+Sort links include the current filter value so filtering is preserved on re-sort:
+
+```razor
+@{
+    string NextSortDirection(string col)
+    {
+        return (ViewBag.SortBy as string) == col && (bool)ViewBag.SortDescending ? "false" : "true";
+    }
+
+    string SortIcon(string col)
+    {
+        if ((ViewBag.SortBy as string) != col) return "";
+        return (bool)ViewBag.SortDescending ? " <i class=\"bi bi-arrow-down\"></i>" : " <i class=\"bi bi-arrow-up\"></i>";
+    }
+}
+
+<thead class="table-dark">
+<tr>
+    <th scope="col">
+        <a asp-action="Index" asp-controller="ControllerName"
+           asp-route-sortBy="fieldname"
+           asp-route-sortDescending="@NextSortDirection("fieldname")"
+           asp-route-filter="@ViewBag.Filter"
+           class="text-decoration-none text-white">
+            Column Name@Html.Raw(SortIcon("fieldname"))
+        </a>
+    </th>
+</tr>
+</thead>
+```
+
+**4. Pagination Partial**
+
+Always include at the bottom of the table:
+
+```razor
+<partial name="_PaginationPartial" />
+```
+
+The controller must set `ViewBag.Page`, `ViewBag.PageSize`, `ViewBag.TotalCount`, `ViewBag.TotalPages`, `ViewBag.ControllerName`, `ViewBag.ActionName`.
+
+### Controller Pattern
+
+Accept and propagate all four parameters. Set all required ViewBag values:
+
+```csharp
+public async Task<IActionResult> Index(
+    int page = Pagination.DefaultPage,
+    string sortBy = "defaultfield",
+    bool sortDescending = true,
+    string? filter = null)
+{
+    var result = await _service.GetAllAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
+    var viewModels = _mapper.Map<List<ViewModel>>(result.Items);
+
+    ViewBag.Page = page;
+    ViewBag.PageSize = Pagination.DefaultPageSize;
+    ViewBag.TotalCount = result.TotalCount;
+    ViewBag.TotalPages = (int)Math.Ceiling(result.TotalCount / (double)Pagination.DefaultPageSize);
+    ViewBag.ControllerName = "ControllerName";
+    ViewBag.ActionName = "Index";
+    ViewBag.SortBy = sortBy;
+    ViewBag.SortDescending = sortDescending;
+    ViewBag.Filter = filter;
+
+    return View(viewModels);
+}
+```
+
+### Service Interface Pattern
+
+Sort/filter params must flow to the data layer (team rule). Service interfaces must include them:
+
+```csharp
+Task<PagedResponse<T>> GetAllAsync(
+    int? page = Pagination.DefaultPage,
+    int? pageSize = Pagination.DefaultPageSize,
+    string sortBy = "defaultfield",
+    bool sortDescending = true,
+    string? filter = null);
+```
+
+### Pages Status (as of 2026-04-27)
+
+| Page | Sort | Filter | Pagination | H1 |
+|------|------|--------|------------|-----|
+| Engagements | ✅ | ✅ | ✅ | ✅ (added PR #876) |
+| Schedules | ✅ (PR #876) | ✅ (PR #876) | ✅ | ✅ (PR #876) |
+| SyndicationFeedSources | ✅ (PR #875) | ✅ (PR #875) | ✅ (PR #875) | ✅ |
+| YouTubeSources | ✅ (PR #875) | ✅ (PR #875) | ✅ (PR #875) | ✅ |
+| SocialMediaPlatforms | ✅ (PR #875) | ✅ (PR #875) | ✅ (PR #875) | ✅ |
+| CollectorSettings | N/A (settings page) | N/A | N/A | ✅ |
+| PublisherSettings | N/A (card view) | N/A | N/A | ✅ |
+| MessageTemplates | N/A (grouped admin) | N/A | ✅ | ✅ |
 
 ---
 
