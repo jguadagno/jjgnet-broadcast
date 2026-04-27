@@ -5,7 +5,7 @@ namespace JosephGuadagno.Broadcasting.Web.Interfaces;
 
 public interface IScheduledItemService
 {
-    Task<PagedResult<ScheduledItem>> GetScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize);
+    Task<PagedResult<ScheduledItem>> GetScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize, string sortBy = "sendondatetime", bool sortDescending = true, string? filter = null);
     Task<ScheduledItem?> GetScheduledItemAsync(int scheduledItemId);
     Task<ScheduledItem?> SaveScheduledItemAsync(ScheduledItem scheduledItem);
     Task<bool> DeleteScheduledItemAsync(int scheduledItemId);
