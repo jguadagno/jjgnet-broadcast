@@ -50,8 +50,29 @@ If I need another team member's input, say so — the coordinator will bring the
 When writing GitHub issue bodies, PR descriptions, or PR review comments:
 - Use **GitHub Flavored Markdown (GFM)** — GitHub renders it natively
 - Inline code, file paths, method names, and CLI commands use backticks: `` `path/to/file.cs` ``, `` `MyMethod()` ``, `` `dotnet build` ``
-- Never use backslashes to escape or quote code references
+- **NEVER** use `\text\` (backslash-word-backslash) — this is the most common mistake; it renders as literal backslashes on GitHub, not code
+- **NEVER** use `\\\` or `\\` as a code fence — use triple backticks (` ``` `) instead
 - Fenced code blocks use triple backticks with a language hint: ` ```csharp `
+- **Self-check before posting:** scan your draft for `\word\` patterns — replace every instance with `` `word` `` before submitting
+
+### ⚠️ PR Creation — MANDATORY (chronic violation, 20+ occurrences)
+
+**NEVER** pass the PR body inline to `gh pr create --body "..."` — PowerShell mangles backticks and produces `\text\` garbage. **ALWAYS** write the body to a temp file first:
+
+```powershell
+# Write body to temp file
+$prBody = @"
+## Summary
+Your PR description with `backticks` and **markdown** here...
+"@
+$prBody | Set-Content "$env:TEMP\pr-body.md"
+
+# Create PR using the file
+gh pr create --title "feat(#N): ..." --body-file "$env:TEMP\pr-body.md" --base main
+Remove-Item "$env:TEMP\pr-body.md" -Force
+```
+
+Same rule for `gh pr edit`: use `gh api repos/.../pulls/{N} -X PATCH --input <tmpfile>`, never `--body` inline.
 
 ## Voice
 

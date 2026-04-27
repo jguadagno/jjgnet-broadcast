@@ -10,10 +10,17 @@
 | 2026-04-11 | Fix double-submit bug in site.js (#708) | ✅ Added event.preventDefault() in submit handler to block duplicate form submissions; committed to branch social-media-708 |
 | 2026-04-24 | Fix dt/dd HTML pairing in Schedules Details view (#845) | ✅ Changed all value `<dt>` elements to `<dd>` inside the `<dl class="row">` — 8 pairs now correctly use `<dt>` (label) + `<dd>` (value); PR #848 |
 | 2026-04-11 | Fix AddPlatform 400 error (#708) | ✅ Removed redundant asp-route-engagementId from form causing model binding conflict; EngagementId now only posted via hidden field in ViewModel |
+| 2026-04-27 | Add sorting, filtering, searching to all index pages (#870) | ✅ Schedules index full sort/filter/H1/Bootstrap 5 fix; Engagements index H1; SyndicationFeedSources + YouTubeSources thead-dark → table-dark; wired Schedules service sort/filter to API; PR #876 |
 
 ## Learnings
 
-### 2026-04-27 — Issue #871: Engagements Index Column Headings Invisible
+### 2026-04-27 — Issue #870: Sorting/Filtering/Searching on All Index Pages
+- **Pattern established:** All index pages use: filter `<form method="get">` with hidden `sortBy`/`sortDescending` inputs, sortable `<thead class="table-dark">` column headers with `asp-route-sortBy/sortDescending/filter`, and `<partial name="_PaginationPartial" />` at bottom.
+- **Bootstrap 5 fix sweep:** `thead-dark` (Bootstrap 4) → `table-dark` (Bootstrap 5) on `<thead>`. Found in Schedules, SyndicationFeedSources, YouTubeSources. Engagements was fixed in PR #874.
+- **H1 requirement:** Issue #870 explicitly requires every index page to have `<h1>PageName</h1>`. Engagements was missing one; Schedules was missing one.
+- **Data layer rule applies:** Sort/filter wiring must go all the way to the service/API. For Schedules, `IScheduledItemService.GetScheduledItemsAsync` was updated with `sortBy`, `sortDescending`, `filter` params. The API (`GET /Schedules`) already supported these params.
+- **Non-applicable pages:** CollectorSettings (card/modal per-user settings), PublisherSettings (card-based per-platform view), MessageTemplates (platform-grouped admin view — `IMessageTemplateService` has no filter param), Home/LinkedIn (non-list pages).
+- **Branch:** `issue-870-sorting-filtering-searching-index-pages` | **PR:** #876
 - **Root Cause:** `<thead class="thead-dark">` is a Bootstrap 4 class removed in Bootstrap 5. The sort link anchors inside `<th>` elements use `class="text-decoration-none text-white"`, so without a dark background the text is white-on-white — completely invisible.
 - **Fix:** Changed `thead-dark` → `table-dark` (the Bootstrap 5 equivalent on `<thead>`).
 - **Scope:** One-line change in `Views/Engagements/Index.cshtml`.
@@ -148,3 +155,19 @@ Established by Joseph Guadagno:
 - **Fix:** Changed the value element in each row from `<dt class="col-sm-9">` to `<dd class="col-sm-9">`. Bootstrap column classes were preserved unchanged.
 - **Pattern:** In Bootstrap 5 description lists using `<dl class="row">`, label cells use `<dt class="col-sm-N">` and value cells use `<dd class="col-sm-N">`. Never use two `<dt>` elements in the same row.
 - **Branch:** `issue-845-code-quality-cleanup` | **PR:** #848
+
+## Sprint 28 Session (2026-04-27)
+
+### Index Page Sorting/Filtering/Searching Pattern (Issue #870, PR #876)
+- **Merged:** ✅ PR #876 → main
+- **Work:** Implemented consistent UX pattern for all index pages: sorting, filtering, pagination, and `<h1>` headings
+- **Pages Updated:** Schedules (new sort/filter), Engagements (added H1)
+- **Bootstrap 5 Fix:** Updated all affected index page `<thead>` from `thead-dark` (Bootstrap 4) to `table-dark` (Bootstrap 5). Missing `table-dark` caused white text links to be invisible on white background.
+- **Pattern Components:**
+  1. Visible `<h1>` heading on every index page
+  2. `GET` filter form above table with hidden `sortBy`/`sortDescending` inputs to preserve state
+  3. Sortable `<thead class="table-dark">` headers with Bootstrap 5 `bi-arrow-*` icons
+  4. Pagination partial (`_PaginationPartial`) at bottom
+  5. Service/controller/data layer must all propagate sort/filter/page params
+- **Status Matrix Captured:** Documented all index pages (complete/incomplete) in decisions.md
+- **Learning:** Index page pattern is now standardized. New index pages must follow this model or explicitly document exceptions.
