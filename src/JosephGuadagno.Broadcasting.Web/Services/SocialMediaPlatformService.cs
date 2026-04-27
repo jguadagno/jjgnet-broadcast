@@ -1,4 +1,5 @@
 using System.Net;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 
@@ -15,15 +16,22 @@ public class SocialMediaPlatformService(IDownstreamApi apiClient, ILogger<Social
     private const string PlatformBaseUrl = "/socialmediaplatforms";
 
     /// <summary>
-    /// Gets all social media platforms including inactive ones (for admin use)
+    /// Gets a paged list of social media platforms
     /// </summary>
-    public async Task<List<SocialMediaPlatform>> GetAllAsync(bool includeInactive = false)
+    public async Task<PagedResult<SocialMediaPlatform>> GetAllAsync(int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "name", bool sortDescending = false, string? filter = null, bool includeInactive = false)
     {
-        var platforms = await apiClient.GetForUserAsync<List<SocialMediaPlatform>>(ApiServiceName, options =>
+        var pagedResponse = await apiClient.GetForUserAsync<PagedResponse<SocialMediaPlatform>>(ApiServiceName, options =>
         {
-            options.RelativePath = $"{PlatformBaseUrl}?includeInactive=true";
+            var queryParams = $"includeInactive={includeInactive}&page={page}&pageSize={pageSize}&sortBy={sortBy}&sortDescending={sortDescending}";
+            if (!string.IsNullOrEmpty(filter))
+            {
+                queryParams += $"&filter={Uri.EscapeDataString(filter)}";
+            }
+            options.RelativePath = $"{PlatformBaseUrl}?{queryParams}";
         });
-        return platforms ?? [];
+
+        if (pagedResponse is null) return new PagedResult<SocialMediaPlatform>();
+        return new PagedResult<SocialMediaPlatform> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
 
     /// <summary>

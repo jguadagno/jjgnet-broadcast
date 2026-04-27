@@ -294,8 +294,8 @@ public class EngagementsController : Controller
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> AddPlatform(int engagementId)
     {
-        var allPlatforms = await _socialMediaPlatformService.GetAllAsync(includeInactive: true);
-        ViewBag.Platforms = allPlatforms;
+        var allPlatforms = await _socialMediaPlatformService.GetAllAsync(pageSize: Pagination.MaxPageSize, includeInactive: true);
+        ViewBag.Platforms = allPlatforms.Items;
         return View(new EngagementSocialMediaPlatformViewModel { EngagementId = engagementId });
     }
 
@@ -311,8 +311,8 @@ public class EngagementsController : Controller
     {
         if (!ModelState.IsValid)
         {
-            var allPlatforms = await _socialMediaPlatformService.GetAllAsync();
-            ViewBag.Platforms = allPlatforms;
+            var allPlatforms = await _socialMediaPlatformService.GetAllAsync(pageSize: Pagination.MaxPageSize);
+            ViewBag.Platforms = allPlatforms.Items;
             return View(vm);
         }
 

@@ -11,6 +11,33 @@ Compiled record of team decisions, architecture choices, and resolutions.
 
 ---
 
+### 2026-04-27: Bootstrap 5 Table Header Dark Class
+**By:** Sparks  
+**Context:** Issue #871 — Engagements Index column headings invisible
+
+In Bootstrap 5, use `<thead class="table-dark">` for a dark-background table header.
+
+`thead-dark` was removed from Bootstrap 5. Any view still using `thead-dark` is a Bootstrap 4 leftover.
+
+When column header links carry `text-white` (as in the Engagements sort links), omitting the dark background makes the text invisible — white text on the default white thead background.
+
+Even without `text-white`, `thead-dark` views silently lose their dark styling; the header renders without contrast.
+
+**Rule:**
+- **Do:** `<thead class="table-dark">` — Bootstrap 5 dark header
+- **Don't:** `<thead class="thead-dark">` — Bootstrap 4, removed in BS5
+
+**Files to Audit (still using thead-dark):**
+- `Views/Schedules/Index.cshtml`
+- `Views/Schedules/Orphaned.cshtml`
+- `Views/Schedules/Upcoming.cshtml`
+- `Views/Schedules/Unsent.cshtml`
+- `Views/YouTubeSources/Index.cshtml`
+
+These have black text so headings are still visible, but the dark background is absent. Fix as part of any planned polish pass.
+
+---
+
 ## Current Sprint Wrap-Up (Sprint 20)
 
 **Date:** 2026-04-19  
@@ -19514,4 +19541,5 @@ Replaced all 27 hard-coded sort string literals with idiomatic C# if/else chains
 Build verification: ✅ Clean (0 errors, 0 warnings)
 
 Learnings: Compile-time safety via `nameof()` ensures property renames are caught by compiler, preventing silent runtime failures.
+
 

@@ -14,6 +14,8 @@
     }
 }
 <div class="text-center">
+    <h1>Engagements</h1>
+
     <form method="get" asp-action="Index" asp-controller="Engagements" class="mb-3 d-flex gap-2">
         <input type="hidden" name="sortBy" value="@ViewBag.SortBy" />
         <input type="hidden" name="sortDescending" value="@ViewBag.SortDescending" />
@@ -26,7 +28,7 @@
     </form>
     
     <table class="table table-striped">
-        <thead class="thead-dark">
+        <thead class="table-dark">
         <tr>
             <th scope="col">
                 <a asp-action="Index" asp-controller="Engagements" asp-route-sortBy="name" asp-route-sortDescending="@NextSortDirection("name")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">

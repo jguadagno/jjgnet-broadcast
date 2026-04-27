@@ -57,9 +57,9 @@ public class SchedulesController : Controller
     /// The list of schedules
     /// </summary>
     /// <returns>A List&lt;<see cref="ScheduledItemViewModel"/>&gt;</returns>
-    public async Task<IActionResult> Index(int page = Pagination.DefaultPage)
+    public async Task<IActionResult> Index(int page = Pagination.DefaultPage, string sortBy = "sendondatetime", bool sortDescending = true, string? filter = null)
     {
-        var result = await _scheduledItemService.GetScheduledItemsAsync(page, Pagination.DefaultPageSize);
+        var result = await _scheduledItemService.GetScheduledItemsAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
         var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(result.Items);
 
         var orphanedResult = await _scheduledItemService.GetOrphanedScheduledItemsAsync(1, 1);
@@ -71,6 +71,9 @@ public class SchedulesController : Controller
         ViewBag.TotalPages = (int)Math.Ceiling(result.TotalCount / (double)Pagination.DefaultPageSize);
         ViewBag.ControllerName = "Schedules";
         ViewBag.ActionName = "Index";
+        ViewBag.SortBy = sortBy;
+        ViewBag.SortDescending = sortDescending;
+        ViewBag.Filter = filter;
 
         return View(scheduledItemViewModels);
     }
@@ -412,10 +415,10 @@ public class SchedulesController : Controller
     [HttpGet]
     public async Task<IActionResult> SearchSyndicationFeedSources(string q = "")
     {
-        var all = await _syndicationFeedSourceService.GetAllAsync();
-        IEnumerable<SyndicationFeedSource> filtered = all;
+        var all = await _syndicationFeedSourceService.GetAllAsync(pageSize: Pagination.MaxPageSize);
+        var filtered = all.Items.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(q))
-            filtered = all.Where(s => s.Title.Contains(q, StringComparison.OrdinalIgnoreCase));
+            filtered = filtered.Where(s => s.Title.Contains(q, StringComparison.OrdinalIgnoreCase));
         var items = filtered.Take(20).Select(s => new { id = s.Id, name = s.Title });
         return Json(items);
     }
@@ -428,10 +431,10 @@ public class SchedulesController : Controller
     [HttpGet]
     public async Task<IActionResult> SearchYouTubeSources(string q = "")
     {
-        var all = await _youTubeSourceService.GetAllAsync();
-        IEnumerable<YouTubeSource> filtered = all;
+        var all = await _youTubeSourceService.GetAllAsync(pageSize: Pagination.MaxPageSize);
+        var filtered = all.Items.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(q))
-            filtered = all.Where(s => s.Title.Contains(q, StringComparison.OrdinalIgnoreCase));
+            filtered = filtered.Where(s => s.Title.Contains(q, StringComparison.OrdinalIgnoreCase));
         var items = filtered.Take(20).Select(s => new { id = s.Id, name = s.Title });
         return Json(items);
     }

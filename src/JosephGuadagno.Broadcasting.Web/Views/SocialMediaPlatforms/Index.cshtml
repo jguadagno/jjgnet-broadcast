@@ -1,6 +1,17 @@
 @model List<JosephGuadagno.Broadcasting.Web.Models.SocialMediaPlatformViewModel>
 @{
     ViewData["Title"] = "Social Media Platforms";
+
+    string NextSortDirection(string col)
+    {
+        return (ViewBag.SortBy as string) == col && (bool)ViewBag.SortDescending ? "false" : "true";
+    }
+
+    string SortIcon(string col)
+    {
+        if ((ViewBag.SortBy as string) != col) return "";
+        return (bool)ViewBag.SortDescending ? " <i class=\"bi bi-arrow-down\"></i>" : " <i class=\"bi bi-arrow-up\"></i>";
+    }
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -15,12 +26,27 @@
     }
 </div>
 
+<form method="get" asp-action="Index" asp-controller="SocialMediaPlatforms" class="mb-3 d-flex gap-2">
+    <input type="hidden" name="sortBy" value="@ViewBag.SortBy" />
+    <input type="hidden" name="sortDescending" value="@ViewBag.SortDescending" />
+    <input type="text" name="filter" class="form-control" placeholder="Filter by name..." value="@ViewBag.Filter" />
+    <button type="submit" class="btn btn-outline-secondary">Filter</button>
+    @if (!string.IsNullOrEmpty(ViewBag.Filter as string))
+    {
+        <a asp-action="Index" asp-controller="SocialMediaPlatforms" asp-route-sortBy="@ViewBag.SortBy" asp-route-sortDescending="@ViewBag.SortDescending" class="btn btn-outline-danger">Clear</a>
+    }
+</form>
+
 <div class="table-responsive">
     <table class="table table-striped table-hover">
         <thead>
             <tr>
                 <th scope="col" class="col-1">Icon</th>
-                <th scope="col">Name</th>
+                <th scope="col">
+                    <a asp-action="Index" asp-controller="SocialMediaPlatforms" asp-route-sortBy="name" asp-route-sortDescending="@NextSortDirection("name")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none">
+                        Name@Html.Raw(SortIcon("name"))
+                    </a>
+                </th>
                 <th scope="col">URL</th>
                 <th scope="col" class="col-1 text-center">Active</th>
                 <th scope="col" class="col-3 text-end">Actions</th>
@@ -95,6 +121,8 @@
         </tbody>
     </table>
 </div>
+
+<partial name="_PaginationPartial" />
 
 @if (!Model.Any())
 {
