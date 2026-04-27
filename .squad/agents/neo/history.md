@@ -949,3 +949,11 @@ Review PR #867 title and body formatting to ensure consistency with team metadat
 1. **PR title convention is critical for automation.** The issue(#NNN) - prefix enables tooling to correctly link PRs to issues in .squad/ orchestration logs and commit messages.
 2. **Metadata review should be part of acceptance criteria.** Just as code is reviewed for logic/security, PR metadata should be reviewed for convention compliance before merge.
 
+
+
+---
+
+## 2026-04-27 — Cross-Agent: Sparks PR #874 (Bootstrap 5 table headers)
+
+Sparks fixed issue #871 (Engagements column headings invisible) by updating Bootstrap 4 	head-dark to Bootstrap 5 	able-dark (PR #874). Audit note: Views/Schedules and Views/YouTubeSources also need updating — recommend for future polish.
+
