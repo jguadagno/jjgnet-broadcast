@@ -1,34 +1,38 @@
 # Team Focus — Now
 
-> **Last updated:** 2026-04-24T21:30:57Z
-> **Sprint:** 27 (in progress) — Milestone 21
-> **Status:** Core multi-tenancy work merged. Joe validating site functionality; #855 and #856 will close after validation. #852 and #853 remain open — deferred to next sprint.
-> **Next:** Close open issues from backlog. CodeQL CSRF alert #41 pending next scan.
+> **Last updated:** 2026-04-28T05:30:00Z
+> **Sprint:** 28 — Milestone 22
+> **Status:** Sprint 27 complete. #855 closed. #856 flagged to Joe (manual Azure Portal step). Sprint 28 begins with #852 (Trinity, in flight) and #853 (blocked on #852 merge).
+> **Next:** Merge #852, unblock #853. Complete Joe's manual #856 step asynchronously.
 
 ## Current Focus
 
-**Sprint 27 — IN PROGRESS** 🔄
+**Sprint 28 — IN PROGRESS** 🔄
 
-**Completed:**
+**Sprint 27 — COMPLETE:**
 - ✅ #777 — Per-user OAuth/token runtime (merged via PR #854)
 - ✅ #778 — Per-user collector onboarding/configuration (merged via PR #859)
 - ✅ #858 — Manual DB migration for per-user collector config tables (Joe, production 2026-04-24)
+- ✅ #855 — Site validation complete (closed)
 
-**Pending (Joe validating):**
-- ⏳ #855 — Closes after site usability/config validation passes
-- ⏳ #856 — Closes after site usability/config validation passes
+**Sprint 28 — ACTIVE:**
+- 🔄 #852 — LinkedIn OAuth token expiry data layer (Trinity, in flight)
+  - LastNotifiedAt column addition
+  - GetExpiringWindowAsync repository method
+  - Domain model + manager + unit tests
+- 🔜 #853 — Blocked on #852 merge (Trinity, next after merge)
+- ⏳ #856 — Manual production step pending Joe (squad:Joe label)
+  - Disable old LinkedIn Key Vault secrets in Azure Portal
+  - Non-blocking code task
 
-**Deferred to next sprint:**
-- 🔜 #852 — Next sprint
-- 🔜 #853 — Next sprint
+**Goal:** Merge #852 → unblock #853. Joe completes #856 Azure Portal step asynchronously. Monitor CodeQL CSRF alert #41 for next scan resolution.
 
-**Goal:** Complete #855 and #856 after Joe's validation. Then begin next sprint with #852 and #853. Monitor CodeQL CSRF alert #41 for next scan resolution.
+## Key Patterns (Sprint 28)
 
-## Key Patterns (Sprint 27)
-
-1. **Per-user OAuth:** `LinkedinController` (and other platforms) acquire and store tokens per user.
-2. **Per-user collectors:** `UserCollectors` data model; queries filter by current user's OID — no cross-user leakage.
-3. **Security invariant:** Tests prove a user cannot read or execute another user's tokens or collector configurations.
+1. **LinkedIn OAuth expiry tracking:** New `LastNotifiedAt` column tracks when users were last notified of token expiry (supports #852 → #853 notification flow).
+2. **Per-user OAuth:** Continues from Sprint 27 — `LinkedinController` acquires and stores tokens per user.
+3. **Per-user collectors:** `UserCollectors` data model; queries filter by current user's OID — no cross-user leakage.
+4. **Security invariant:** Tests prove a user cannot read or execute another user's tokens or collector configurations.
 
 ## Standing Work
 
@@ -38,16 +42,15 @@
 
 ## Team Composition
 
-**Sprint 27 (Complete):**
-- Trinity — Implementation (#777, #778) ✅
-- Tank — Test coverage ✅
-- Neo — Review & architecture ✅
+**Sprint 28 (Active):**
+- Trinity — Implementation (#852, #853) 🔄
+- Joe — Manual Azure Portal step (#856) ⏳
 
 **Rotating Roles:** Squad roster available in `.squad/team.md`
 
 ---
 
-**Last Updated:** 2026-04-24T21:30:57Z
-**Sprint:** 27 (Multi-Tenancy: Per-User OAuth & Collectors) — COMPLETE
-**Current Focus:** Remaining open issues / Sprint planning or backlog
-**Next Decision Point:** Sprint 28 kickoff or ongoing issue completion
+**Last Updated:** 2026-04-28T05:30:00Z
+**Sprint:** 28 (LinkedIn OAuth Token Expiry) — IN PROGRESS
+**Current Focus:** #852 (Trinity), #853 (blocked), #856 (Joe manual step)
+**Next Decision Point:** #852 merge completion
