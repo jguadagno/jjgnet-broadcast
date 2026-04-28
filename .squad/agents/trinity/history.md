@@ -16,6 +16,24 @@
 
 ## Learnings
 
+### 2026-05-02 — Issue #853: LinkedIn OAuth token expiry notification Function and email templates
+
+**Status:** ✅ COMPLETE — PR #891 on `issue-853-notify-expiring-linkedin-tokens`; all tests passing
+
+**What was delivered:**
+- `ConfigurationFunctionNames.LinkedInNotifyExpiringTokens` constant added to Domain
+- `LinkedIn/NotifyExpiringTokens.cs` timer Function (daily 08:00 UTC via `%linkedin_notify_expiring_tokens_cron_settings%`)
+- Two passes: 7-day window (`LinkedInTokenExpiring7Day` template) and 1-day window (`LinkedInTokenExpiring1Day` template)
+- Email templates seeded in `data-seed.sql` and a dedicated migration script
+- 7 unit tests in `Functions.Tests/LinkedIn/NotifyExpiringTokensTests.cs`
+
+**Key patterns discovered:**
+1. `EmailTemplates` table stores plain HTML (or Scriban-renderable HTML) — `IEmailTemplateManager.GetTemplateAsync(name)` retrieves by name. Rendering Scriban on the body before queuing is the right extension point.
+2. `UserOAuthToken.CreatedByEntraOid` is the OID field (issue spec called it `OwnerOid`). `UserOAuthToken.SocialMediaPlatformId` is the platform field (issue spec called it `PlatformId`). `IUserOAuthTokenManager.UpdateLastNotifiedAtAsync` still takes `ownerOid`/`platformId` parameter names — pass `token.CreatedByEntraOid` and `token.SocialMediaPlatformId`.
+3. Timer functions use `%settings_key_name%` cron binding with a default in `local.settings.json`. No DI registration needed — Functions runtime discovers `[Function]`-decorated classes automatically.
+4. `IApplicationUserDataStore` is already registered in `Functions/Program.cs`. Use `GetByEntraObjectIdAsync(oid)` to resolve user email for notification.
+5. Deduplication: compare `token.LastNotifiedAt.Value.UtcDateTime.Date >= todayUtc` — using `from.UtcDateTime.Date` for `todayUtc` keeps the check stable within the run.
+
 ### 2026-04-27 — Issue #855: Application-layer performance fixes
 
 **Status:** ✅ COMPLETE — 242 + 166 tests passing, committed on `issue-855-system-validation`
