@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -56,5 +57,22 @@ public class UserOAuthTokenManager(IUserOAuthTokenDataStore dataStore) : IUserOA
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(platformId);
 
         return dataStore.DeleteAsync(ownerOid, platformId, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<List<UserOAuthToken>> GetExpiringWindowAsync(
+        DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default)
+    {
+        return dataStore.GetExpiringWindowAsync(from, to, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<bool> UpdateLastNotifiedAtAsync(
+        string ownerOid, int platformId, DateTimeOffset notifiedAt, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(platformId);
+
+        return dataStore.UpdateLastNotifiedAtAsync(ownerOid, platformId, notifiedAt, cancellationToken);
     }
 }

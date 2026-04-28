@@ -45,4 +45,26 @@ public interface IUserOAuthTokenDataStore
     /// <returns>List of tokens expiring at or before the threshold</returns>
     Task<List<UserOAuthToken>> GetExpiringAsync(
         DateTimeOffset threshold, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns all tokens whose AccessTokenExpiresAt falls within the window [<paramref name="from"/>, <paramref name="to"/>].
+    /// Used by notification Functions to find tokens expiring soon.
+    /// </summary>
+    /// <param name="from">Start of the expiry window (inclusive)</param>
+    /// <param name="to">End of the expiry window (inclusive)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of tokens whose access token expires within the window</returns>
+    Task<List<UserOAuthToken>> GetExpiringWindowAsync(
+        DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates the LastNotifiedAt timestamp for a specific token.
+    /// </summary>
+    /// <param name="ownerOid">The Entra Object ID of the user</param>
+    /// <param name="platformId">The social media platform ID</param>
+    /// <param name="notifiedAt">The timestamp when the notification was sent</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if updated, false if the token was not found</returns>
+    Task<bool> UpdateLastNotifiedAtAsync(
+        string ownerOid, int platformId, DateTimeOffset notifiedAt, CancellationToken cancellationToken = default);
 }
