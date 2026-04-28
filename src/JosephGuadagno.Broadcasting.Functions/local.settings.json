@@ -12,6 +12,7 @@
     "collectors_youtube_load_new_videos_cron_settings": "0 */2 * * * *",
     "facebook_refresh_tokens_cron_settings": "0 */2 * * * *",
     "linkedin_refresh_tokens_cron_settings": "0 0 9 * * *",
+    "linkedin_notify_expiring_tokens_cron_settings": "0 0 8 * * *",
     "maintenance_clear_old_logs_cron_settings": "0 */2 * * * *",
     "publishers_random_post_cron_settings": "0 */2 * * * *",
     "publishers_scheduled_items_cron_settings": "0 */2 * * * *",
@@ -28,6 +29,7 @@
     "AzureWebJobs.FacebookProcessScheduledItemFired.Disabled": true,
     "AzureWebJobs.FacebookTokenRefresh.Disabled": true,
     "AzureWebJobs.LinkedInTokenRefresh.Disabled": true,
+    "AzureWebJobs.LinkedInNotifyExpiringTokens.Disabled": true,
     "AzureWebJobs.TwitterSendTweet.Disabled": true,
     "AzureWebJobs.TwitterProcessNewSourceData.Disabled": true,
     "AzureWebJobs.TwitterProcessScheduledItemFired.Disabled": true,
@@ -52,7 +54,8 @@
     "QueueAccount": "UseDevelopmentStorage=true"
   },
   "Settings": {
-    "ShortenedDomainToUse": "jjg.me"
+    "ShortenedDomainToUse": "jjg.me",
+    "WebBaseUrl": "https://localhost:7001"
   },
   "Email": {
     "FromAddress": "noreply@broadcasting.josephguadagno.net",

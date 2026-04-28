@@ -16,6 +16,24 @@
 
 ## Learnings
 
+### 2026-05-02 — Issue #853: LinkedIn OAuth token expiry notification Function and email templates
+
+**Status:** ✅ COMPLETE — PR #891 on `issue-853-notify-expiring-linkedin-tokens`; all tests passing
+
+**What was delivered:**
+- `ConfigurationFunctionNames.LinkedInNotifyExpiringTokens` constant added to Domain
+- `LinkedIn/NotifyExpiringTokens.cs` timer Function (daily 08:00 UTC via `%linkedin_notify_expiring_tokens_cron_settings%`)
+- Two passes: 7-day window (`LinkedInTokenExpiring7Day` template) and 1-day window (`LinkedInTokenExpiring1Day` template)
+- Email templates seeded in `data-seed.sql` and a dedicated migration script
+- 7 unit tests in `Functions.Tests/LinkedIn/NotifyExpiringTokensTests.cs`
+
+**Key patterns discovered:**
+1. `EmailTemplates` table stores plain HTML (or Scriban-renderable HTML) — `IEmailTemplateManager.GetTemplateAsync(name)` retrieves by name. Rendering Scriban on the body before queuing is the right extension point.
+2. `UserOAuthToken.CreatedByEntraOid` is the OID field (issue spec called it `OwnerOid`). `UserOAuthToken.SocialMediaPlatformId` is the platform field (issue spec called it `PlatformId`). `IUserOAuthTokenManager.UpdateLastNotifiedAtAsync` still takes `ownerOid`/`platformId` parameter names — pass `token.CreatedByEntraOid` and `token.SocialMediaPlatformId`.
+3. Timer functions use `%settings_key_name%` cron binding with a default in `local.settings.json`. No DI registration needed — Functions runtime discovers `[Function]`-decorated classes automatically.
+4. `IApplicationUserDataStore` is already registered in `Functions/Program.cs`. Use `GetByEntraObjectIdAsync(oid)` to resolve user email for notification.
+5. Deduplication: compare `token.LastNotifiedAt.Value.UtcDateTime.Date >= todayUtc` — using `from.UtcDateTime.Date` for `todayUtc` keeps the check stable within the run.
+
 ### 2026-04-27 — Issue #855: Application-layer performance fixes
 
 **Status:** ✅ COMPLETE — 242 + 166 tests passing, committed on `issue-855-system-validation`
@@ -1302,4 +1320,27 @@ Wire 6 TODO-blocked controllers to call the newly implemented paged manager GetA
 ## 2026-04-27 — Cross-Agent: Sparks PR #874 (Bootstrap 5 table headers)
 
 Sparks fixed issue #871 (Engagements column headings invisible) by updating Bootstrap 4 	head-dark to Bootstrap 5 	able-dark (PR #874). No API/backend impact.
+
+
+---
+
+### 2026-05-01 — Issue #852: LinkedIn OAuth token expiry notification data layer
+
+**Status:** ✅ COMPLETE — PR #889 on `issue-852-oauth-token-expiry-data-layer`; 242+ tests passing
+
+**What was implemented:**
+- Added `LastNotifiedAt (DateTimeOffset?)` to `Domain.Models.UserOAuthToken` and `Data.Sql.Models.UserOAuthToken`
+- Migration script: `scripts/database/migrations/2026-05-01-user-oauth-tokens-add-last-notified-at.sql` (idempotent `ALTER TABLE`)
+- Updated `table-create.sql` with the new column for fresh-environment parity
+- Added `GetExpiringWindowAsync(from, to)` to `IUserOAuthTokenDataStore` and `UserOAuthTokenDataStore` — uses `AsNoTracking`, inclusive boundary filter on `AccessTokenExpiresAt`
+- Added `UpdateLastNotifiedAtAsync(ownerOid, platformId, notifiedAt)` — targeted single-field update with `LogSanitizer.Sanitize` on ownerOid in error paths
+- Exposed both new methods on `IUserOAuthTokenManager` and `UserOAuthTokenManager`
+- 5 new unit tests in `UserOAuthTokenDataStoreTests`: window boundary (inclusive from/to), empty window, UpdateLastNotifiedAt sets value, returns false when not found, does not affect other users
+
+**Key patterns confirmed:**
+1. Window queries on `AccessTokenExpiresAt` use `>= from && <= to` (inclusive both ends)
+2. `UpdateLastNotifiedAt` does NOT touch `LastUpdatedOn` — it only sets the notification timestamp
+3. New data store methods follow existing error-catch pattern: `LogSanitizer.Sanitize(ownerOid)` in all log calls
+4. Manager layer delegates directly to data store — no business logic added at manager level for data layer issues
+5. Migration scripts are idempotent (`IF NOT EXISTS` guard on column) — AppHost replays scripts
 

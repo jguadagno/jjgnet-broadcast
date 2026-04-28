@@ -45,4 +45,5 @@ public static class ConfigurationFunctionNames
     // Maintenance
     public const string FacebookTokenRefresh = "FacebookTokenRefresh";
     public const string MaintenanceClearOldLogs = "MaintenanceClearOldLogs";
+    public const string LinkedInNotifyExpiringTokens = "LinkedInNotifyExpiringTokens";
 }
