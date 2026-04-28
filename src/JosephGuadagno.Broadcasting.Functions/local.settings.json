@@ -54,7 +54,8 @@
     "QueueAccount": "UseDevelopmentStorage=true"
   },
   "Settings": {
-    "ShortenedDomainToUse": "jjg.me"
+    "ShortenedDomainToUse": "jjg.me",
+    "WebBaseUrl": "https://localhost:7001"
   },
   "Email": {
     "FromAddress": "noreply@broadcasting.josephguadagno.net",

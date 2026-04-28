@@ -4,6 +4,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scriban;
 using Scriban.Runtime;
@@ -19,7 +20,8 @@ public class NotifyExpiringTokens(
     IApplicationUserDataStore applicationUserDataStore,
     IEmailTemplateManager emailTemplateManager,
     IEmailSender emailSender,
-    ILogger<NotifyExpiringTokens> logger)
+    ILogger<NotifyExpiringTokens> logger,
+    IConfiguration configuration)
 {
     private const string SevenDayTemplateName = "LinkedInTokenExpiring7Day";
     private const string OneDayTemplateName = "LinkedInTokenExpiring1Day";
@@ -101,8 +103,11 @@ public class NotifyExpiringTokens(
 
         try
         {
+            var webBaseUrl = configuration["Settings:WebBaseUrl"]?.TrimEnd('/') ?? string.Empty;
+            var reauthUrl = $"{webBaseUrl}/LinkedIn";
+
             var body = RenderTemplate(template.Body, user.DisplayName ?? user.Email,
-                token.AccessTokenExpiresAt);
+                token.AccessTokenExpiresAt, reauthUrl);
 
             var toAddress = new MailAddress(user.Email, user.DisplayName ?? user.Email);
             await emailSender.QueueEmail(toAddress, template.Subject, body, cancellationToken);
@@ -126,7 +131,7 @@ public class NotifyExpiringTokens(
         }
     }
 
-    private static string RenderTemplate(string templateBody, string displayName, DateTimeOffset expiresAt)
+    private static string RenderTemplate(string templateBody, string displayName, DateTimeOffset expiresAt, string reauthUrl)
     {
         try
         {
@@ -136,7 +141,7 @@ public class NotifyExpiringTokens(
             {
                 display_name = displayName,
                 expires_at = expiresAt.ToString("f"),
-                reauth_url = "/LinkedIn"
+                reauth_url = reauthUrl
             });
             var context = new TemplateContext();
             context.PushGlobal(scriptObject);
