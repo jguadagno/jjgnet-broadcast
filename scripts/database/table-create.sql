@@ -379,6 +379,7 @@ create table dbo.UserOAuthTokens
     LastUpdatedOn         datetimeoffset not null
         constraint DF_UserOAuthTokens_LastUpdatedOn
             default (getutcdate()),
+    LastNotifiedAt        datetimeoffset null,
     constraint UQ_UserOAuthTokens_User_Platform
         unique (CreatedByEntraOid, SocialMediaPlatformId)
 )

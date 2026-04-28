@@ -179,4 +179,168 @@ public class UserOAuthTokenDataStoreTests : IDisposable
         Assert.NotNull(resultB); // Owner B's token should still exist
         Assert.Equal("token-b", resultB.AccessToken);
     }
+
+    [Fact]
+    public async Task GetExpiringWindowAsync_ReturnsOnlyTokensWithinWindow()
+    {
+        // Arrange
+        var platformIdA = await CreatePlatformAsync("LinkedIn");
+        var platformIdB = await CreatePlatformAsync("Twitter");
+        var platformIdC = await CreatePlatformAsync("Facebook");
+
+        var now = DateTimeOffset.UtcNow;
+        var windowFrom = now.AddDays(5);
+        var windowTo = now.AddDays(10);
+
+        // Token expiring before the window
+        _context.UserOAuthTokens.Add(new UserOAuthToken
+        {
+            CreatedByEntraOid = "owner-a",
+            SocialMediaPlatformId = platformIdA,
+            AccessToken = "token-before-window",
+            AccessTokenExpiresAt = now.AddDays(2),
+            CreatedOn = now,
+            LastUpdatedOn = now
+        });
+
+        // Token expiring at the start of the window (inclusive)
+        _context.UserOAuthTokens.Add(new UserOAuthToken
+        {
+            CreatedByEntraOid = "owner-b",
+            SocialMediaPlatformId = platformIdA,
+            AccessToken = "token-at-window-start",
+            AccessTokenExpiresAt = windowFrom,
+            CreatedOn = now,
+            LastUpdatedOn = now
+        });
+
+        // Token expiring within the window
+        _context.UserOAuthTokens.Add(new UserOAuthToken
+        {
+            CreatedByEntraOid = "owner-a",
+            SocialMediaPlatformId = platformIdB,
+            AccessToken = "token-inside-window",
+            AccessTokenExpiresAt = now.AddDays(7),
+            CreatedOn = now,
+            LastUpdatedOn = now
+        });
+
+        // Token expiring at the end of the window (inclusive)
+        _context.UserOAuthTokens.Add(new UserOAuthToken
+        {
+            CreatedByEntraOid = "owner-a",
+            SocialMediaPlatformId = platformIdC,
+            AccessToken = "token-at-window-end",
+            AccessTokenExpiresAt = windowTo,
+            CreatedOn = now,
+            LastUpdatedOn = now
+        });
+
+        // Token expiring after the window
+        _context.UserOAuthTokens.Add(new UserOAuthToken
+        {
+            CreatedByEntraOid = "owner-b",
+            SocialMediaPlatformId = platformIdB,
+            AccessToken = "token-after-window",
+            AccessTokenExpiresAt = now.AddDays(15),
+            CreatedOn = now,
+            LastUpdatedOn = now
+        });
+
+        await _context.SaveChangesAsync();
+
+        // Act
+        var results = await _dataStore.GetExpiringWindowAsync(windowFrom, windowTo);
+
+        // Assert - only tokens within [windowFrom, windowTo] should be returned
+        Assert.Equal(3, results.Count);
+        Assert.Contains(results, t => t.AccessToken == "token-at-window-start");
+        Assert.Contains(results, t => t.AccessToken == "token-inside-window");
+        Assert.Contains(results, t => t.AccessToken == "token-at-window-end");
+        Assert.DoesNotContain(results, t => t.AccessToken == "token-before-window");
+        Assert.DoesNotContain(results, t => t.AccessToken == "token-after-window");
+    }
+
+    [Fact]
+    public async Task GetExpiringWindowAsync_ReturnsEmptyListWhenNoTokensInWindow()
+    {
+        // Arrange
+        var platformId = await CreatePlatformAsync("LinkedIn");
+        var now = DateTimeOffset.UtcNow;
+
+        _context.UserOAuthTokens.Add(new UserOAuthToken
+        {
+            CreatedByEntraOid = "owner-a",
+            SocialMediaPlatformId = platformId,
+            AccessToken = "token-outside-window",
+            AccessTokenExpiresAt = now.AddDays(30),
+            CreatedOn = now,
+            LastUpdatedOn = now
+        });
+
+        await _context.SaveChangesAsync();
+
+        // Act
+        var results = await _dataStore.GetExpiringWindowAsync(now.AddDays(5), now.AddDays(10));
+
+        // Assert
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public async Task UpdateLastNotifiedAtAsync_SetsLastNotifiedAt()
+    {
+        // Arrange
+        var platformId = await CreatePlatformAsync("LinkedIn");
+        const string ownerOid = "owner-a-oid";
+        await CreateTokenAsync(ownerOid, platformId);
+
+        var notifiedAt = DateTimeOffset.UtcNow;
+
+        // Act
+        var result = await _dataStore.UpdateLastNotifiedAtAsync(ownerOid, platformId, notifiedAt);
+
+        // Assert
+        Assert.True(result);
+
+        var token = await _dataStore.GetByUserAndPlatformAsync(ownerOid, platformId);
+        Assert.NotNull(token);
+        Assert.NotNull(token.LastNotifiedAt);
+        Assert.Equal(notifiedAt, token.LastNotifiedAt!.Value, TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task UpdateLastNotifiedAtAsync_ReturnsFalseWhenTokenNotFound()
+    {
+        // Arrange
+        var platformId = await CreatePlatformAsync("LinkedIn");
+
+        // Act - no token exists for this owner
+        var result = await _dataStore.UpdateLastNotifiedAtAsync("nonexistent-oid", platformId, DateTimeOffset.UtcNow);
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task UpdateLastNotifiedAtAsync_DoesNotAffectOtherUsersTokens()
+    {
+        // Arrange
+        var platformId = await CreatePlatformAsync("LinkedIn");
+        const string ownerA = "owner-a-oid";
+        const string ownerB = "owner-b-oid";
+
+        await CreateTokenAsync(ownerA, platformId, "token-a");
+        await CreateTokenAsync(ownerB, platformId, "token-b");
+
+        var notifiedAt = DateTimeOffset.UtcNow;
+
+        // Act - update only owner A
+        await _dataStore.UpdateLastNotifiedAtAsync(ownerA, platformId, notifiedAt);
+
+        // Assert - owner B should not be affected
+        var tokenB = await _dataStore.GetByUserAndPlatformAsync(ownerB, platformId);
+        Assert.NotNull(tokenB);
+        Assert.Null(tokenB.LastNotifiedAt);
+    }
 }

@@ -49,4 +49,9 @@ public class UserOAuthToken
     /// Gets or sets when this token was last updated
     /// </summary>
     public DateTimeOffset LastUpdatedOn { get; set; }
+
+    /// <summary>
+    /// Gets or sets when the user was last notified of token expiry, or null if never notified
+    /// </summary>
+    public DateTimeOffset? LastNotifiedAt { get; set; }
 }

@@ -123,4 +123,49 @@ public class UserOAuthTokenDataStore(
 
         return mapper.Map<List<UserOAuthToken>>(entities);
     }
+
+    /// <inheritdoc />
+    public async Task<List<UserOAuthToken>> GetExpiringWindowAsync(
+        DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default)
+    {
+        var entities = await broadcastingContext.UserOAuthTokens
+            .AsNoTracking()
+            .Where(t => t.AccessTokenExpiresAt >= from && t.AccessTokenExpiresAt <= to)
+            .ToListAsync(cancellationToken);
+
+        return mapper.Map<List<UserOAuthToken>>(entities);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UpdateLastNotifiedAtAsync(
+        string ownerOid, int platformId, DateTimeOffset notifiedAt, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(platformId);
+
+        try
+        {
+            var existing = await broadcastingContext.UserOAuthTokens
+                .FirstOrDefaultAsync(
+                    t => t.CreatedByEntraOid == ownerOid && t.SocialMediaPlatformId == platformId,
+                    cancellationToken);
+
+            if (existing is null)
+            {
+                return false;
+            }
+
+            existing.LastNotifiedAt = notifiedAt;
+            return await broadcastingContext.SaveChangesAsync(cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to update LastNotifiedAt for owner {OwnerOid} and platform {PlatformId}",
+                LogSanitizer.Sanitize(ownerOid),
+                platformId);
+            return false;
+        }
+    }
 }
