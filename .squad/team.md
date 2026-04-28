@@ -24,6 +24,7 @@
 | Ghost | Security & Identity | `.squad/agents/ghost/charter.md` | ✅ Active |
 | Link | Platform & DevOps | `.squad/agents/link/charter.md` | ✅ Active |
 | Sparks | Frontend Developer | `.squad/agents/sparks/charter.md` | ✅ Active |
+| Joe | Human (Owner) | — | 👤 Human |
 
 ## Project Context
 

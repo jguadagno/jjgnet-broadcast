@@ -26,3 +26,4 @@
 | Azure AD app registrations, Key Vault secrets, secret rotation | Oracle | Ghost | Secret management & policy |
 | GitHub Actions CI/CD pipelines, Event Grid, Azure resource deployment | Link | Neo | Full infra-as-code ownership |
 | .NET Aspire AppHost, Bicep, local dev orchestration, container config | Cypher | Link | Local + staging environment config |
+| Manual human tasks (Azure portal, local secrets, config, secret rotation, permissions) | Joe | — | 👤 Human — coordinator pauses and waits for Joe |
