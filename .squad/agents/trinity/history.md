@@ -1303,3 +1303,26 @@ Wire 6 TODO-blocked controllers to call the newly implemented paged manager GetA
 
 Sparks fixed issue #871 (Engagements column headings invisible) by updating Bootstrap 4 	head-dark to Bootstrap 5 	able-dark (PR #874). No API/backend impact.
 
+
+---
+
+### 2026-05-01 — Issue #852: LinkedIn OAuth token expiry notification data layer
+
+**Status:** ✅ COMPLETE — PR #889 on `issue-852-oauth-token-expiry-data-layer`; 242+ tests passing
+
+**What was implemented:**
+- Added `LastNotifiedAt (DateTimeOffset?)` to `Domain.Models.UserOAuthToken` and `Data.Sql.Models.UserOAuthToken`
+- Migration script: `scripts/database/migrations/2026-05-01-user-oauth-tokens-add-last-notified-at.sql` (idempotent `ALTER TABLE`)
+- Updated `table-create.sql` with the new column for fresh-environment parity
+- Added `GetExpiringWindowAsync(from, to)` to `IUserOAuthTokenDataStore` and `UserOAuthTokenDataStore` — uses `AsNoTracking`, inclusive boundary filter on `AccessTokenExpiresAt`
+- Added `UpdateLastNotifiedAtAsync(ownerOid, platformId, notifiedAt)` — targeted single-field update with `LogSanitizer.Sanitize` on ownerOid in error paths
+- Exposed both new methods on `IUserOAuthTokenManager` and `UserOAuthTokenManager`
+- 5 new unit tests in `UserOAuthTokenDataStoreTests`: window boundary (inclusive from/to), empty window, UpdateLastNotifiedAt sets value, returns false when not found, does not affect other users
+
+**Key patterns confirmed:**
+1. Window queries on `AccessTokenExpiresAt` use `>= from && <= to` (inclusive both ends)
+2. `UpdateLastNotifiedAt` does NOT touch `LastUpdatedOn` — it only sets the notification timestamp
+3. New data store methods follow existing error-catch pattern: `LogSanitizer.Sanitize(ownerOid)` in all log calls
+4. Manager layer delegates directly to data store — no business logic added at manager level for data layer issues
+5. Migration scripts are idempotent (`IF NOT EXISTS` guard on column) — AppHost replays scripts
+

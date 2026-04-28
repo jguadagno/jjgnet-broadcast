@@ -123,6 +123,20 @@ IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.EmailTemplates WHERE Name = N'UserReject
         N'<!DOCTYPE html><html><body><p>Hello,</p><p>Thank you for your interest in the JJGNet Broadcasting application.</p><p>After review, we are unable to approve your access request at this time.</p><p>If you believe this is an error or would like more information, please contact the administrator.</p><p>The JJGNet Broadcasting Team</p></body></html>'
     )
 
+-- Seed LinkedIn token expiry notification templates (Issue #853)
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.EmailTemplates WHERE Name = N'LinkedInTokenExpiring7Day')
+    INSERT INTO JJGNet.dbo.EmailTemplates (Name, Subject, Body) VALUES (
+        N'LinkedInTokenExpiring7Day',
+        N'Action required: Your LinkedIn connection expires in 7 days',
+        N'<!DOCTYPE html><html><body><p>Hello {{ display_name }},</p><p>Your LinkedIn OAuth token will expire on <strong>{{ expires_at }}</strong> — that is in approximately 7 days.</p><p>To keep your LinkedIn posts publishing without interruption, please re-authorise your LinkedIn connection before it expires.</p><p><a href="{{ reauth_url }}">Re-connect your LinkedIn account</a></p><p>If you have already re-connected your account, you can ignore this message.</p><p>The JJGNet Broadcasting Team</p></body></html>'
+    )
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.EmailTemplates WHERE Name = N'LinkedInTokenExpiring1Day')
+    INSERT INTO JJGNet.dbo.EmailTemplates (Name, Subject, Body) VALUES (
+        N'LinkedInTokenExpiring1Day',
+        N'Urgent: Your LinkedIn connection expires tomorrow',
+        N'<!DOCTYPE html><html><body><p>Hello {{ display_name }},</p><p>Your LinkedIn OAuth token will expire on <strong>{{ expires_at }}</strong> — that is tomorrow.</p><p>Please re-authorise your LinkedIn connection immediately to avoid any disruption to your scheduled posts.</p><p><a href="{{ reauth_url }}">Re-connect your LinkedIn account now</a></p><p>If you have already re-connected your account, you can ignore this message.</p><p>The JJGNet Broadcasting Team</p></body></html>'
+    )
+
 -- Seed the SyndicationFeedSource table
 INSERT INTO JJGNet.dbo.SyndicationFeedSources (FeedIdentifier, Author, Title, ShortenedUrl, Tags, Url, PublicationDate, AddedOn, ItemLastUpdatedOn, LastUpdatedOn, CreatedByEntraOid) VALUES (	'https://www.josephguadagno.net/2007/08/02/developing-microsoft-asp-net-server-controls-and-components/','Joseph Guadagno','Developing Microsoft ASP.NET Server Controls and Components','https://jjg.me/3zBGp3K','Books,Book Reviews','https://www.josephguadagno.net/2007/08/02/developing-microsoft-asp-net-server-controls-and-components/','2007-08-02 00:12:56.0000000 +07:00','2025-09-06 01:18:54.8588384 +07:00','2007-08-02 00:12:56.0000000 +07:00','2026-01-28 04:07:56.6219101 +07:00', @SeededOwnerEntraOid)
 INSERT INTO JJGNet.dbo.SyndicationFeedSources (FeedIdentifier, Author, Title, ShortenedUrl, Tags, Url, PublicationDate, AddedOn, ItemLastUpdatedOn, LastUpdatedOn, CreatedByEntraOid) VALUES (	'https://www.josephguadagno.net/2007/08/02/essential-asp-net-2-0/','Joseph Guadagno','Essential ASP.NET 2.0','https://jjg.me/4ePNqy9','Books,Book Reviews','https://www.josephguadagno.net/2007/08/02/essential-asp-net-2-0/','2007-08-02 00:11:45.0000000 +07:00','2025-09-06 01:18:54.8588384 +07:00','2007-08-02 00:11:45.0000000 +07:00','2026-01-28 04:07:56.6219103 +07:00', @SeededOwnerEntraOid)

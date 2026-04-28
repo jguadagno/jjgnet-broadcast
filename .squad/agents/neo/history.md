@@ -1,3 +1,21 @@
+## 2026-04-28 — PR #889 Review: LinkedIn OAuth Token Expiry Data Layer
+
+**Status:** ✅ APPROVED — PR #889, Issue #852
+
+**What was reviewed:** Trinity's implementation of `LastNotifiedAt` column and expiry window methods for `UserOAuthTokens`.
+
+**Review result:** APPROVED — no blocking issues. Comment posted at https://github.com/jguadagno/jjgnet-broadcast/pull/889#issuecomment-4335350588
+
+## Learnings
+
+**Double input-guard pattern is acceptable.** `UpdateLastNotifiedAtAsync` validates `ownerOid` and `platformId` in both the manager and the data store. This is defense-in-depth, not a violation. Don't flag it as redundant — the data store must be self-defending.
+
+**`GetExpiringWindowAsync` without `from <= to` guard is acceptable for scheduled Function callers.** When the only call site is a scheduled Function with a fixed, programmatically computed window, a parameter-order guard adds noise. Only add it if the method is ever exposed to external or user-controlled input.
+
+**5-test pattern for data store methods covering a new column is the right granularity:** boundary-in, boundary-out (both ends), interior, empty window, user isolation, and not-found return value. Trinity's test set hits all required axes for this type of feature.
+
+---
+
 ## 2026-05-01 — Performance Investigation: All Index Pages
 
 **Status:** ✅ COMPLETE — Findings written to `.squad/decisions/inbox/neo-perf-investigation-findings.md`
