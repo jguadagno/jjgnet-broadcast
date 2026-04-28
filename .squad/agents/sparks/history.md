@@ -14,6 +14,15 @@
 
 ## Learnings
 
+### 2026-05-02 — MessageTemplates Platform Filter Dropdown
+- **File:** `Views/MessageTemplates/Index.cshtml`
+- **Change:** Added `<select name="selectedPlatform">` dropdown between text filter and Filter button; populated from `(List<string>)ViewBag.Platforms` with explicit cast required in Razor.
+- **Auto-submit pattern:** `onchange="this.form.submit()"` on the select enables immediate filtering without clicking the Filter button — good UX for low-option dropdowns.
+- **w-auto:** Use `form-select w-auto` to keep select width compact in a flex row; without `w-auto` it stretches to fill available space.
+- **Clear button pattern:** Always include ALL active filter params in the `@if` condition: `!string.IsNullOrEmpty(ViewBag.Filter as string) || !string.IsNullOrEmpty(ViewBag.SelectedPlatform as string)`.
+- **Sort link preservation:** Every `asp-route-*` param in sort column links must include all active filter state (`asp-route-filter`, `asp-route-selectedPlatform`) so platform filter survives sort clicks.
+- **ViewBag cast rule:** `ViewBag.Platforms` is `dynamic`; always cast explicitly in Razor: `(List<string>)ViewBag.Platforms`. Without the cast the foreach fails at runtime.
+
 ### 2026-04-27 — Issue #870: Sorting/Filtering/Searching on All Index Pages
 - **Pattern established:** All index pages use: filter `<form method="get">` with hidden `sortBy`/`sortDescending` inputs, sortable `<thead class="table-dark">` column headers with `asp-route-sortBy/sortDescending/filter`, and `<partial name="_PaginationPartial" />` at bottom.
 - **Bootstrap 5 fix sweep:** `thead-dark` (Bootstrap 4) → `table-dark` (Bootstrap 5) on `<thead>`. Found in Schedules, SyndicationFeedSources, YouTubeSources. Engagements was fixed in PR #874.
@@ -171,3 +180,9 @@ Established by Joseph Guadagno:
   5. Service/controller/data layer must all propagate sort/filter/page params
 - **Status Matrix Captured:** Documented all index pages (complete/incomplete) in decisions.md
 - **Learning:** Index page pattern is now standardized. New index pages must follow this model or explicitly document exceptions.
+
+### MessageTemplates Index — Sort/Filter Fix (post-#876)
+- **File:** `Views/MessageTemplates/Index.cshtml`
+- **Fixes applied:** Added `NextSortDirection`/`SortIcon` helpers in `@{}` block; added GET filter form below lead paragraph; changed `<thead>` → `<thead class="table-dark">`; made "Message Type" column a sort link with `text-white` class.
+- **Platform-grouped special case:** MessageTemplates groups rows by platform for visual presentation only. Each platform section gets its own `<table>` with identical `<thead>`. The sort/filter form is global (above all tables), and the data layer handles actual ordering. The `<thead>` sort link is repeated in every platform table but always points to the same `sortBy=messagetype` route.
+- **CS8321 warning:** `SortIcon` triggers "declared but never used" — this is a known benign warning shared by all index views (SocialMediaPlatforms, Schedules, etc.) because the compiler can't trace `Html.Raw(SortIcon(...))` as a usage. Pre-existing; not introduced by this change.

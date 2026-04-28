@@ -65,31 +65,39 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
     public async Task<List<Domain.Models.YouTubeSource>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var dbYouTubeSources = await broadcastingContext.YouTubeSources
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
-        
+
+        var ids = dbYouTubeSources.Select(y => y.Id).ToList();
+        var allTags = await broadcastingContext.SourceTags
+            .Where(st => ids.Contains(st.SourceId) && st.SourceType == SourceType)
+            .ToListAsync(cancellationToken);
+        var tagsBySourceId = allTags.GroupBy(t => t.SourceId).ToDictionary(g => g.Key, g => g.ToList());
         foreach (var source in dbYouTubeSources)
         {
-            source.SourceTags = await broadcastingContext.SourceTags
-                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
-                .ToListAsync(cancellationToken);
+            source.SourceTags = tagsBySourceId.TryGetValue(source.Id, out var tags) ? tags : new List<Models.SourceTag>();
         }
-        
+
         return mapper.Map<List<Domain.Models.YouTubeSource>>(dbYouTubeSources);
     }
 
     public async Task<List<Domain.Models.YouTubeSource>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
     {
         var dbYouTubeSources = await broadcastingContext.YouTubeSources
+            .AsNoTracking()
             .Where(y => y.CreatedByEntraOid == ownerEntraOid)
             .ToListAsync(cancellationToken);
-        
+
+        var ids = dbYouTubeSources.Select(y => y.Id).ToList();
+        var allTags = await broadcastingContext.SourceTags
+            .Where(st => ids.Contains(st.SourceId) && st.SourceType == SourceType)
+            .ToListAsync(cancellationToken);
+        var tagsBySourceId = allTags.GroupBy(t => t.SourceId).ToDictionary(g => g.Key, g => g.ToList());
         foreach (var source in dbYouTubeSources)
         {
-            source.SourceTags = await broadcastingContext.SourceTags
-                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
-                .ToListAsync(cancellationToken);
+            source.SourceTags = tagsBySourceId.TryGetValue(source.Id, out var tags) ? tags : new List<Models.SourceTag>();
         }
-        
+
         return mapper.Map<List<Domain.Models.YouTubeSource>>(dbYouTubeSources);
     }
 
@@ -191,7 +199,8 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
 
     public async Task<Domain.Models.PagedResult<Domain.Models.YouTubeSource>> GetAllAsync(int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
-        IQueryable<Models.YouTubeSource> query = broadcastingContext.YouTubeSources;
+        IQueryable<Models.YouTubeSource> query = broadcastingContext.YouTubeSources
+            .AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(filter))
         {
@@ -220,11 +229,14 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
 
-        foreach (var source in dbItems)
+        var ids = dbItems.Select(y => y.Id).ToList();
+        var allTags = await broadcastingContext.SourceTags
+            .Where(st => ids.Contains(st.SourceId) && st.SourceType == SourceType)
+            .ToListAsync(cancellationToken);
+        var tagsBySourceId = allTags.GroupBy(t => t.SourceId).ToDictionary(g => g.Key, g => g.ToList());
+        foreach (var item in dbItems)
         {
-            source.SourceTags = await broadcastingContext.SourceTags
-                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
-                .ToListAsync(cancellationToken);
+            item.SourceTags = tagsBySourceId.TryGetValue(item.Id, out var tags) ? tags : new List<Models.SourceTag>();
         }
 
         return new Domain.Models.PagedResult<Domain.Models.YouTubeSource>
@@ -237,6 +249,7 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
     public async Task<Domain.Models.PagedResult<Domain.Models.YouTubeSource>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
         IQueryable<Models.YouTubeSource> query = broadcastingContext.YouTubeSources
+            .AsNoTracking()
             .Where(y => y.CreatedByEntraOid == ownerEntraOid);
 
         if (!string.IsNullOrWhiteSpace(filter))
@@ -266,11 +279,14 @@ public class YouTubeSourceDataStore(BroadcastingContext broadcastingContext, IMa
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
 
-        foreach (var source in dbItems)
+        var ids = dbItems.Select(y => y.Id).ToList();
+        var allTags = await broadcastingContext.SourceTags
+            .Where(st => ids.Contains(st.SourceId) && st.SourceType == SourceType)
+            .ToListAsync(cancellationToken);
+        var tagsBySourceId = allTags.GroupBy(t => t.SourceId).ToDictionary(g => g.Key, g => g.ToList());
+        foreach (var item in dbItems)
         {
-            source.SourceTags = await broadcastingContext.SourceTags
-                .Where(st => st.SourceId == source.Id && st.SourceType == SourceType)
-                .ToListAsync(cancellationToken);
+            item.SourceTags = tagsBySourceId.TryGetValue(item.Id, out var tags) ? tags : new List<Models.SourceTag>();
         }
 
         return new Domain.Models.PagedResult<Domain.Models.YouTubeSource>

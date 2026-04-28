@@ -13,18 +13,21 @@
         return (bool)ViewBag.SortDescending ? " <i class=\"bi bi-arrow-down\"></i>" : " <i class=\"bi bi-arrow-up\"></i>";
     }
 }
-
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>
-        <i class="bi bi-share me-2"></i>Social Media Platforms
-    </h1>
-    @if (User.IsInRole(RoleNames.SiteAdministrator) || User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Contributor))
-    {
-        <a asp-action="Add" asp-controller="SocialMediaPlatforms" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-2"></i>Add New Platform
-        </a>
-    }
+<div class="d-flex justify-content-between mb-3">
+    <h1><i class="bi bi-share me-2"></i>Social Media Platforms</h1>
 </div>
+<p class="lead">
+    TODO: Add a good description
+</p>
+@if (User.IsInRole(RoleNames.SiteAdministrator) || User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Contributor))
+{
+    <p></p>
+    <a asp-action="Add" asp-controller="SocialMediaPlatforms" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>Add New Platform
+    </a>
+    <p></p>
+}
+
 
 <form method="get" asp-action="Index" asp-controller="SocialMediaPlatforms" class="mb-3 d-flex gap-2">
     <input type="hidden" name="sortBy" value="@ViewBag.SortBy" />
@@ -38,13 +41,13 @@
 </form>
 
 <div class="table-responsive">
-    <table class="table table-striped table-hover">
+    <table class="table table-striped table-hover table-bordered">
         <thead>
             <tr>
                 <th scope="col" class="col-1">Icon</th>
                 <th scope="col">
-                    <a asp-action="Index" asp-controller="SocialMediaPlatforms" asp-route-sortBy="name" asp-route-sortDescending="@NextSortDirection("name")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none">
-                        Name@Html.Raw(SortIcon("name"))
+                    <a asp-action="Index" asp-controller="SocialMediaPlatforms" asp-route-sortBy="name" asp-route-sortDescending="@NextSortDirection("name")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-body">
+                        Name @Html.Raw(SortIcon("name"))
                     </a>
                 </th>
                 <th scope="col">URL</th>

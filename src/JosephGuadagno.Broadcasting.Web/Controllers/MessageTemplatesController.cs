@@ -37,19 +37,30 @@ public class MessageTemplatesController : Controller
     /// <summary>
     /// Lists all message templates grouped by platform.
     /// </summary>
-    public async Task<IActionResult> Index(int page = Pagination.DefaultPage)
+    public async Task<IActionResult> Index(int page = Pagination.DefaultPage, string sortBy = "messagetype", bool sortDescending = false, string? filter = null, string? selectedPlatform = null)
     {
-        var result = await _messageTemplateService.GetAllAsync(page, Pagination.DefaultPageSize);
-        var viewModels = _mapper.Map<List<MessageTemplateViewModel>>(result?.Items ?? []);
+        var result = await _messageTemplateService.GetAllAsync(page: 1, pageSize: 100, sortBy, sortDescending, filter);
+        var allViewModels = _mapper.Map<List<MessageTemplateViewModel>>(result?.Items ?? []);
+
+        var platforms = allViewModels.Select(t => t.Platform).Distinct().OrderBy(p => p).ToList();
+
+        var filteredViewModels = string.IsNullOrEmpty(selectedPlatform)
+            ? allViewModels
+            : allViewModels.Where(t => t.Platform == selectedPlatform).ToList();
 
         ViewBag.Page = page;
-        ViewBag.PageSize = Pagination.DefaultPageSize;
-        ViewBag.TotalCount = result?.TotalCount ?? 0;
-        ViewBag.TotalPages = (int)Math.Ceiling((result?.TotalCount ?? 0) / (double)Pagination.DefaultPageSize);
+        ViewBag.PageSize = 100;
+        ViewBag.TotalCount = filteredViewModels.Count;
+        ViewBag.TotalPages = 1;
         ViewBag.ControllerName = "MessageTemplates";
         ViewBag.ActionName = "Index";
+        ViewBag.SortBy = sortBy;
+        ViewBag.SortDescending = sortDescending;
+        ViewBag.Filter = filter;
+        ViewBag.Platforms = platforms;
+        ViewBag.SelectedPlatform = selectedPlatform;
 
-        return View(viewModels);
+        return View(filteredViewModels);
     }
 
     /// <summary>

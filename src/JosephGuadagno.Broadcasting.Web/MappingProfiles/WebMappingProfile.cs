@@ -46,8 +46,7 @@ public class WebMappingProfile: Profile
                 destination => destination.ItemType,
                 options => options.MapFrom(source => source.ItemType))
             .ForMember(destination => destination.Platform, options => options.Ignore());
-        CreateMap<Domain.Models.MessageTemplate, Models.MessageTemplateViewModel>()
-            .ForMember(destination => destination.Platform, options => options.Ignore());
+        CreateMap<Domain.Models.MessageTemplate, Models.MessageTemplateViewModel>();
         
         // RBAC Phase 1 mappings
         CreateMap<Domain.Models.ApplicationUser, Models.ApplicationUserViewModel>();

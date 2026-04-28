@@ -29,6 +29,12 @@ public class MessageTemplate
     public string? Description { get; set; }
 
     /// <summary>
+    /// The name of the social media platform (e.g. "Twitter", "Bluesky"). Populated from the
+    /// SocialMediaPlatforms join — not persisted directly in the MessageTemplates table.
+    /// </summary>
+    public string Platform { get; set; } = string.Empty;
+
+    /// <summary>
     /// The Entra Object ID of the user who created this message template
     /// </summary>
     public string? CreatedByEntraOid { get; set; }

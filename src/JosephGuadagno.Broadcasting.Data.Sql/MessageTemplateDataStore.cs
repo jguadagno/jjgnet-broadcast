@@ -10,13 +10,17 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
     {
         var dbMessageTemplate = await broadcastingContext.MessageTemplates
             .AsNoTracking()
+            .Include(mt => mt.SocialMediaPlatform)
             .FirstOrDefaultAsync(mt => mt.SocialMediaPlatformId == socialMediaPlatformId && mt.MessageType == messageType, cancellationToken);
         return dbMessageTemplate is null ? null : mapper.Map<Domain.Models.MessageTemplate>(dbMessageTemplate);
     }
 
     public async Task<List<Domain.Models.MessageTemplate>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var dbMessageTemplates = await broadcastingContext.MessageTemplates.AsNoTracking().ToListAsync(cancellationToken);
+        var dbMessageTemplates = await broadcastingContext.MessageTemplates
+            .AsNoTracking()
+            .Include(mt => mt.SocialMediaPlatform)
+            .ToListAsync(cancellationToken);
         return mapper.Map<List<Domain.Models.MessageTemplate>>(dbMessageTemplates);
     }
 
@@ -24,6 +28,7 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
     {
         var dbMessageTemplates = await broadcastingContext.MessageTemplates
             .AsNoTracking()
+            .Include(mt => mt.SocialMediaPlatform)
             .Where(mt => mt.CreatedByEntraOid == ownerEntraOid)
             .ToListAsync(cancellationToken);
         return mapper.Map<List<Domain.Models.MessageTemplate>>(dbMessageTemplates);
@@ -32,6 +37,7 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
     public async Task<Domain.Models.MessageTemplate?> UpdateAsync(Domain.Models.MessageTemplate messageTemplate, CancellationToken cancellationToken = default)
     {
         var existing = await broadcastingContext.MessageTemplates
+            .Include(mt => mt.SocialMediaPlatform)
             .FirstOrDefaultAsync(mt => mt.SocialMediaPlatformId == messageTemplate.SocialMediaPlatformId && mt.MessageType == messageTemplate.MessageType, cancellationToken);
         if (existing is null) return null;
 
@@ -46,6 +52,7 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
         var totalCount = await broadcastingContext.MessageTemplates.CountAsync(cancellationToken);
         var dbItems = await broadcastingContext.MessageTemplates
             .AsNoTracking()
+            .Include(mt => mt.SocialMediaPlatform)
             .OrderBy(mt => mt.SocialMediaPlatformId)
             .ThenBy(mt => mt.MessageType)
             .Skip((page - 1) * pageSize)
@@ -62,6 +69,7 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
     {
         var query = broadcastingContext.MessageTemplates
             .AsNoTracking()
+            .Include(mt => mt.SocialMediaPlatform)
             .Where(mt => mt.CreatedByEntraOid == ownerEntraOid);
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query
@@ -79,7 +87,9 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
 
     public async Task<Domain.Models.PagedResult<Domain.Models.MessageTemplate>> GetAllAsync(int page, int pageSize, string sortBy = "messagetype", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
-        IQueryable<Models.MessageTemplate> query = broadcastingContext.MessageTemplates.AsNoTracking();
+        IQueryable<Models.MessageTemplate> query = broadcastingContext.MessageTemplates
+            .AsNoTracking()
+            .Include(mt => mt.SocialMediaPlatform);
 
         if (!string.IsNullOrWhiteSpace(filter))
         {
@@ -112,6 +122,7 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
     {
         IQueryable<Models.MessageTemplate> query = broadcastingContext.MessageTemplates
             .AsNoTracking()
+            .Include(mt => mt.SocialMediaPlatform)
             .Where(mt => mt.CreatedByEntraOid == ownerEntraOid);
 
         if (!string.IsNullOrWhiteSpace(filter))

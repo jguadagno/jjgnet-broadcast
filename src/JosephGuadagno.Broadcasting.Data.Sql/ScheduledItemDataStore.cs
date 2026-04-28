@@ -165,6 +165,7 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
     {
         var totalCount = await broadcastingContext.ScheduledItems.CountAsync(cancellationToken);
         var dbItems = await broadcastingContext.ScheduledItems
+            .AsNoTracking()
             .OrderBy(si => si.SendOnDateTime)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -178,7 +179,9 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
 
     public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetAllAsync(string ownerEntraOid, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var query = broadcastingContext.ScheduledItems.Where(si => si.CreatedByEntraOid == ownerEntraOid);
+        var query = broadcastingContext.ScheduledItems
+            .AsNoTracking()
+            .Where(si => si.CreatedByEntraOid == ownerEntraOid);
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query
             .OrderBy(si => si.SendOnDateTime)
@@ -334,7 +337,8 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
 
     public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetAllAsync(int page, int pageSize, string sortBy = "sendondate", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
-        IQueryable<Models.ScheduledItem> query = broadcastingContext.ScheduledItems;
+        IQueryable<Models.ScheduledItem> query = broadcastingContext.ScheduledItems
+            .AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(filter))
         {
@@ -368,6 +372,7 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
     public async Task<Domain.Models.PagedResult<Domain.Models.ScheduledItem>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "sendondate", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
         IQueryable<Models.ScheduledItem> query = broadcastingContext.ScheduledItems
+            .AsNoTracking()
             .Where(si => si.CreatedByEntraOid == ownerEntraOid);
 
         if (!string.IsNullOrWhiteSpace(filter))

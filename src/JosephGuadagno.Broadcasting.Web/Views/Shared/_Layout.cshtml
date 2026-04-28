@@ -1,4 +1,4 @@
-@inject Microsoft.Extensions.Options.IOptions<JosephGuadagno.Broadcasting.Web.Models.Settings> SettingsOptions;
+@inject Microsoft.Extensions.Options.IOptions<Settings> SettingsOptions;
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
@@ -59,26 +59,58 @@
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Engagements" asp-action="Index">Engagements</a>
+                            <a class="nav-link" asp-area="" asp-controller="Engagements" asp-action="Index">
+                                <i class="fa-solid fa-person-chalkboard me-1"></i>Engagements
+                            </a>
                         </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="scheduleDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="False">Schedules</a>
+                            <a class="nav-link dropdown-toggle" href="#" id="scheduleDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="False">
+                                <i class="bi bi-calendar me-1"></i>Schedules
+                            </a>
                             <ul class="dropdown-menu" aria-labelledby="scheduleDropdown">
                                 <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Index">All</a></li>    
                                 <li><hr class="dropdown-divider"></li>    
-                                <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Calendar">Calendar</a></li>    
-                                <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Upcoming">Upcoming</a></li>    
-                                <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Unsent">Unsent</a></li>    
+                                <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Calendar">
+                                    <i class="bi bi-calendar-month me-1"></i>Calendar
+                                </a></li>    
+                                <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Upcoming">
+                                    <i class="bi bi-envelope me-1"></i>Upcoming
+                                </a></li>    
+                                <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Unsent">
+                                    <i class="bi bi-envelope-dash me-1"></i>Unsent
+                                </a></li>    
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="False">
+                                <i class="bi bi-shield-lock me-1"></i>Admin
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                <li>
+                                    <a class="dropdown-item" asp-area="" asp-controller="MessageTemplates" asp-action="Index">
+                                        <i class="bi bi-textarea-t me-2"></i>Message Templates
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="" asp-controller="SyndicationFeedSources" asp-action="Index">
+                                        <i class="bi bi-rss me-2"></i>Syndication Feed Sources
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="" asp-controller="YouTubeSources" asp-action="Index">
+                                        <i class="bi bi-youtube me-2"></i>YouTube Sources
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="MessageTemplates" asp-action="Index">Message Templates</a>
+                            
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="YouTubeSources" asp-action="Index">YouTube Sources</a>
+                            
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="SyndicationFeedSources" asp-action="Index">Syndication Feed Sources</a>
+                            
                         </li>
                         @if (User.IsInRole(RoleNames.SiteAdministrator) || User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Contributor))
                         {
@@ -92,7 +124,7 @@
                                         <h6 class="dropdown-header">Platform Management</h6>
                                     </li>
                                     <li><a class="dropdown-item" asp-area="" asp-controller="SocialMediaPlatforms" asp-action="Index">
-                                        <i class="bi bi-broadcast me-2"></i>Social Media Platforms
+                                        <i class="bi bi-share me-2"></i>Social Media Platforms
                                     </a></li>
                                     @if (User.IsInRole(RoleNames.SiteAdministrator))
                                     {

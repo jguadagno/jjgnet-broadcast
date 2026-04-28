@@ -143,3 +143,28 @@
 ---
 
 *Detailed work logs and learnings: See decisions.md for architectural decisions and issue-specific deep dives. Earlier work archived in git history.*
+
+---
+
+## Learnings
+
+### N+1 SourceTags pattern (Issue #855)
+
+**Pattern found:** Both `SyndicationFeedSourceDataStore` and `YouTubeSourceDataStore` had a `foreach` loop in ALL `GetAllAsync` overloads (both non-paged and paged) that issued one `broadcastingContext.SourceTags...ToListAsync()` query per row — yielding N+1 DB roundtrips.
+
+**Fix pattern — batched SourceTags load:**
+1. Collect page IDs: `var ids = dbItems.Select(x => x.Id).ToList();`
+2. Single batch query: `var allTags = await broadcastingContext.SourceTags.Where(st => ids.Contains(st.SourceId) && st.SourceType == SourceType).ToListAsync(ct);`
+3. Build dictionary: `var tagsBySourceId = allTags.GroupBy(t => t.SourceId).ToDictionary(g => g.Key, g => g.ToList());`
+4. Assign in-memory: `item.SourceTags = tagsBySourceId.TryGetValue(item.Id, out var tags) ? tags : new List<Models.SourceTag>();`
+
+**AsNoTracking pattern:** Add `.AsNoTracking()` at the start of the `IQueryable<T>` chain (immediately after `broadcastingContext.DbSet`) in all read-only `GetAllAsync` overloads. Do NOT add to write operations.
+
+**SQL Server idempotency pattern for indexes:**
+```sql
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_...' AND object_id = OBJECT_ID('dbo.TableName'))
+    CREATE INDEX IX_... ON dbo.TableName (...);
+GO
+```
+
+**Applied to:** SyndicationFeedSourceDataStore, YouTubeSourceDataStore (all GetAllAsync overloads), EngagementDataStore, ScheduledItemDataStore (paged overloads only). DB indexes added for Engagements, SyndicationFeedSources, YouTubeSources, ScheduledItems, SocialMediaPlatforms sort/filter columns.

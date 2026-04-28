@@ -21,6 +21,5 @@ public class SocialMediaPlatformRequest
     public bool IsActive { get; set; } = true;
 
     [MaxLength(500)]
-    [Url]
     public string? CredentialSetupDocumentationUrl { get; set; }
 }

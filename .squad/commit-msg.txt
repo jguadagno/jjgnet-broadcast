@@ -1,9 +1,11 @@
-docs: squad session orchestration for issue #784 cleanup
+docs(.squad): record MessageTemplates sort/filter session
 
-- Merged 9 inbox decisions into decisions.md (deduped)
-- Deleted inbox files post-merge: Dependabot bypass, PR cleanup safety, Neo review ownership, Trinity #784 decisions
-- Updated agent history: Neo (standing rules), Link (CI/cleanup), Trinity (EF retry patterns)
-- Session log: 2026-04-21T03:55:01Z-784-cleanup.md
-- Orchestration log: 2026-04-21T03:55:01Z-link.md
+- Add orchestration-log for Trinity (backend sort/filter)
+- Add orchestration-log for Sparks (frontend Index UI)
+- Add session log for MessageTemplates sort/filter completion
+- Merge Sparks inbox decision into decisions.md (platform-grouped layout adaptation)
+- Delete processed inbox file
+
+Both agents completed 0 errors. Ready for testing/merge.
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

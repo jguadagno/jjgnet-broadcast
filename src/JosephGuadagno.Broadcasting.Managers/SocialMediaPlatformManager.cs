@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -90,7 +91,28 @@ public class SocialMediaPlatformManager : ISocialMediaPlatformManager
 
     public async Task<PagedResult<SocialMediaPlatform>> GetAllAsync(int page, int pageSize, string sortBy = "name", bool sortDescending = false, string? filter = null, bool includeInactive = false, CancellationToken cancellationToken = default)
     {
-        return await _dataStore.GetAllAsync(page, pageSize, sortBy, sortDescending, filter, includeInactive, cancellationToken);
+        var all = await GetAllAsync(includeInactive, cancellationToken);
+
+        IEnumerable<SocialMediaPlatform> query = all;
+
+        if (!string.IsNullOrEmpty(filter))
+        {
+            query = query.Where(p => p.Name.Contains(filter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        query = sortBy.ToLowerInvariant() switch
+        {
+            "url"  => sortDescending ? query.OrderByDescending(p => p.Url)  : query.OrderBy(p => p.Url),
+            "icon" => sortDescending ? query.OrderByDescending(p => p.Icon) : query.OrderBy(p => p.Icon),
+            "isactive" => sortDescending ? query.OrderByDescending(p => p.IsActive) : query.OrderBy(p => p.IsActive),
+            "credentialsetupdocumentationurl" => sortDescending ? query.OrderByDescending(p => p.CredentialSetupDocumentationUrl) : query.OrderBy(p => p.CredentialSetupDocumentationUrl),
+            _ => sortDescending ? query.OrderByDescending(p => p.Name) : query.OrderBy(p => p.Name),
+        };
+
+        var filtered = query.ToList();
+        var items = filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        return new PagedResult<SocialMediaPlatform> { Items = items, TotalCount = filtered.Count };
     }
 
     private void InvalidateListCaches()

@@ -18,7 +18,11 @@ public class BroadcastingProfile: Profile
                 destination => destination.SourceItemDisplayName,
                 options => options.Ignore());
         CreateMap<Models.FeedCheck, Domain.Models.FeedCheck>().ReverseMap();
-        CreateMap<Models.MessageTemplate, Domain.Models.MessageTemplate>().ReverseMap();
+        CreateMap<Models.MessageTemplate, Domain.Models.MessageTemplate>()
+            .ForMember(dest => dest.Platform,
+                opt => opt.MapFrom(src => src.SocialMediaPlatform != null ? src.SocialMediaPlatform.Name : string.Empty))
+            .ReverseMap()
+            .ForMember(dest => dest.SocialMediaPlatform, opt => opt.Ignore());
         CreateMap<Models.TokenRefresh, Domain.Models.TokenRefresh>().ReverseMap();
 
         CreateMap<Models.SyndicationFeedSource, Domain.Models.SyndicationFeedSource>()

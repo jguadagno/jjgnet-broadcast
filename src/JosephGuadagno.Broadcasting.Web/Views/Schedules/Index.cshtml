@@ -15,86 +15,89 @@
         return (bool)ViewBag.SortDescending ? " <i class=\"bi bi-arrow-down\"></i>" : " <i class=\"bi bi-arrow-up\"></i>";
     }
 }
-<div class="text-center">
-    <h1>Scheduled Items</h1>
 
-    @if (orphanedCount > 0)
-    {
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            <strong>&#9888;&#65039; @orphanedCount orphaned scheduled item(s) detected.</strong>
-            These items reference source records that no longer exist.
-            <a asp-action="Orphaned" class="alert-link">View orphaned items</a>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-
-    <form method="get" asp-action="Index" asp-controller="Schedules" class="mb-3 d-flex gap-2">
-        <input type="hidden" name="sortBy" value="@ViewBag.SortBy" />
-        <input type="hidden" name="sortDescending" value="@ViewBag.SortDescending" />
-        <input type="text" name="filter" class="form-control" placeholder="Filter by source item..." value="@ViewBag.Filter" />
-        <button type="submit" class="btn btn-outline-secondary">Filter</button>
-        @if (!string.IsNullOrEmpty(ViewBag.Filter as string))
-        {
-            <a asp-action="Index" asp-controller="Schedules" asp-route-sortBy="@ViewBag.SortBy" asp-route-sortDescending="@ViewBag.SortDescending" class="btn btn-outline-danger">Clear</a>
-        }
-    </form>
-
-    <table class="table table-striped">
-        <thead class="table-dark">
-        <tr>
-            <th scope="col">
-                <a asp-action="Index" asp-controller="Schedules" asp-route-sortBy="sourceitem" asp-route-sortDescending="@NextSortDirection("sourceitem")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
-                    Source Item@Html.Raw(SortIcon("sourceitem"))
-                </a>
-            </th>
-            <th scope="col">
-                <a asp-action="Index" asp-controller="Schedules" asp-route-sortBy="sendondatetime" asp-route-sortDescending="@NextSortDirection("sendondatetime")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
-                    Schedule Send Date/Time@Html.Raw(SortIcon("sendondatetime"))
-                </a>
-            </th>
-            <th scope="col">
-                <a asp-action="Index" asp-controller="Schedules" asp-route-sortBy="messagesent" asp-route-sortDescending="@NextSortDirection("messagesent")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
-                    Was Sent@Html.Raw(SortIcon("messagesent"))
-                </a>
-            </th>
-            <th scope="col">&nbsp;</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var scheduledItem in @Model)
-        {
-            <tr>
-
-                <td>@(scheduledItem.SourceItemDisplayName ?? $"{scheduledItem.ItemTableName} #{scheduledItem.ItemPrimaryKey}")</td>
-                <td><local-time value="@scheduledItem.SendOnDateTime" /></td>
-                <td>@if (scheduledItem.MessageSent)
-                    {
-                        <i class="bi bi-check-circle text-success"></i>
-                    }
-                    else
-                    {
-                        <i class="bi bi-x-circle text-danger"></i>
-                    }
-                    </td>
-                <td>
-                    <a asp-controller="Schedules" asp-action="Details" asp-route-id="@scheduledItem.Id" class="btn btn-outline-secondary">
-                        <i class="bi bi-eye"></i>
-                    </a>
-                    <a asp-action="Edit" asp-controller="Schedules" asp-route-id="@scheduledItem.Id" class="btn btn-outline-secondary">
-                        <i class="bi bi-pencil"></i>
-                    </a>
-                    <a asp-action="Delete" asp-controller="Schedules" asp-route-id="@scheduledItem.Id" class="btn btn-danger">
-                        <i class="bi bi-trash"></i>
-                    </a>
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
-    
-    <partial name="_PaginationPartial" />
-    
-    <a asp-action="Add" asp-controller="Schedules" class="btn btn-primary">
-        <i class="bi bi-calendar-plus me-2"></i>Add Scheduled Item
-    </a>
+<div class="d-flex justify-content-between mb-3">
+    <h1><i class="bi bi-calendar me-2"></i>Schedules</h1>
 </div>
+<p class="lead">
+    TODO: Fill in a good description
+</p>
+
+@if (orphanedCount > 0)
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <strong>&#9888;&#65039; @orphanedCount orphaned scheduled item(s) detected.</strong>
+        These items reference source records that no longer exist.
+        <a asp-action="Orphaned" class="alert-link">View orphaned items</a>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form method="get" asp-action="Index" asp-controller="Schedules" class="mb-3 d-flex gap-2">
+    <input type="hidden" name="sortBy" value="@ViewBag.SortBy" />
+    <input type="hidden" name="sortDescending" value="@ViewBag.SortDescending" />
+    <input type="text" name="filter" class="form-control" placeholder="Filter by source item..." value="@ViewBag.Filter" />
+    <button type="submit" class="btn btn-outline-secondary">Filter</button>
+    @if (!string.IsNullOrEmpty(ViewBag.Filter as string))
+    {
+        <a asp-action="Index" asp-controller="Schedules" asp-route-sortBy="@ViewBag.SortBy" asp-route-sortDescending="@ViewBag.SortDescending" class="btn btn-outline-danger">Clear</a>
+    }
+</form>
+
+<table class="table table-striped table-hover table-bordered">
+    <thead>
+    <tr>
+        <th scope="col">
+            <a asp-action="Index" asp-controller="Schedules" asp-route-sortBy="sourceitem" asp-route-sortDescending="@NextSortDirection("sourceitem")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-body">
+                Source Item @Html.Raw(SortIcon("sourceitem"))
+            </a>
+        </th>
+        <th scope="col">
+            <a asp-action="Index" asp-controller="Schedules" asp-route-sortBy="sendondatetime" asp-route-sortDescending="@NextSortDirection("sendondatetime")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-body">
+                Schedule Send Date/Time @Html.Raw(SortIcon("sendondatetime"))
+            </a>
+        </th>
+        <th scope="col">
+            <a asp-action="Index" asp-controller="Schedules" asp-route-sortBy="messagesent" asp-route-sortDescending="@NextSortDirection("messagesent")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-body">
+                Was Sent @Html.Raw(SortIcon("messagesent"))
+            </a>
+        </th>
+        <th scope="col">&nbsp;</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var scheduledItem in @Model)
+    {
+        <tr>
+            <td>@(scheduledItem.SourceItemDisplayName ?? $"{scheduledItem.ItemTableName} #{scheduledItem.ItemPrimaryKey}")</td>
+            <td><local-time value="@scheduledItem.SendOnDateTime" /></td>
+            <td>@if (scheduledItem.MessageSent)
+                {
+                    <i class="bi bi-check-circle text-success"></i>
+                }
+                else
+                {
+                    <i class="bi bi-x-circle text-danger"></i>
+                }
+                </td>
+            <td>
+                <a asp-controller="Schedules" asp-action="Details" asp-route-id="@scheduledItem.Id" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-eye"></i>
+                </a>
+                <a asp-action="Edit" asp-controller="Schedules" asp-route-id="@scheduledItem.Id" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-pencil"></i>
+                </a>
+                <a asp-action="Delete" asp-controller="Schedules" asp-route-id="@scheduledItem.Id" class="btn btn-sm btn-danger">
+                    <i class="bi bi-trash"></i>
+                </a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<partial name="_PaginationPartial" />
+
+<a asp-action="Add" asp-controller="Schedules" class="btn btn-primary">
+    <i class="bi bi-calendar-plus me-2"></i>Add Scheduled Item
+</a>
