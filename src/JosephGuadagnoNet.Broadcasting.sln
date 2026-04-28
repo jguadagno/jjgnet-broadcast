@@ -142,6 +142,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Workflows", "Workflows", "{
 		..\.github\workflows\main_jjgnet-broadcast.yml = ..\.github\workflows\main_jjgnet-broadcast.yml
 		..\.github\workflows\main_web-jjgnet-broadcast.yml = ..\.github\workflows\main_web-jjgnet-broadcast.yml
 		..\.github\pull_request_template.md = ..\.github\pull_request_template.md
+		..\.github\workflows\ci.yml = ..\.github\workflows\ci.yml
+		..\.github\workflows\squad-heartbeat.yml = ..\.github\workflows\squad-heartbeat.yml
+		..\.github\workflows\squad-issue-assign.yml = ..\.github\workflows\squad-issue-assign.yml
+		..\.github\workflows\squad-label-enforce.yml = ..\.github\workflows\squad-label-enforce.yml
+		..\.github\workflows\squad-triage.yml = ..\.github\workflows\squad-triage.yml
+		..\.github\workflows\sync-squad-labels.yml = ..\.github\workflows\sync-squad-labels.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Api.Tests", "JosephGuadagno.Broadcasting.Api.Tests\JosephGuadagno.Broadcasting.Api.Tests.csproj", "{F2531CC0-1A58-4C3A-88EA-30CEC164C74B}"
