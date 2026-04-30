@@ -12,7 +12,8 @@
         <Title>JosephGuadagno.NET Broadcasting - YouTube Reader Integration Tests</Title>
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
-    </PropertyGroup>
+        <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+  </PropertyGroup>
     <PropertyGroup>
         <VersionMajor>2</VersionMajor>
         <VersionMinor>0</VersionMinor>

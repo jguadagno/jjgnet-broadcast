@@ -13,6 +13,7 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <UserSecretsId>a1b2c3d4-e5f6-7890-abcd-ef1234567890</UserSecretsId>
+      <NoWarn>$(NoWarn);xUnit1051</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
     <VersionMajor>2</VersionMajor>
