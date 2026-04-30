@@ -128,6 +128,11 @@ public class UserOAuthTokenDataStore(
     public async Task<List<UserOAuthToken>> GetExpiringWindowAsync(
         DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default)
     {
+        if (from > to)
+        {
+            throw new ArgumentException($"'from' ({from:O}) must be less than or equal to 'to' ({to:O}).", nameof(from));
+        }
+
         var entities = await broadcastingContext.UserOAuthTokens
             .AsNoTracking()
             .Where(t => t.AccessTokenExpiresAt >= from && t.AccessTokenExpiresAt <= to)
