@@ -8,7 +8,7 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.LinkedIn;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests.LinkedIn;
@@ -20,6 +20,7 @@ public class NotifyExpiringTokensTests
     private readonly Mock<IEmailTemplateManager> _emailTemplateManager;
     private readonly Mock<IEmailSender> _emailSender;
     private readonly Mock<IConfiguration> _configuration;
+    private readonly Mock<ILogger<NotifyExpiringTokens>> _logger;
     private readonly NotifyExpiringTokens _sut;
 
     private static readonly TimerInfo FakeTimer = new();
@@ -31,6 +32,7 @@ public class NotifyExpiringTokensTests
         _emailTemplateManager = new Mock<IEmailTemplateManager>();
         _emailSender = new Mock<IEmailSender>();
         _configuration = new Mock<IConfiguration>();
+        _logger = new Mock<ILogger<NotifyExpiringTokens>>();
         _configuration.Setup(c => c["Settings:WebBaseUrl"]).Returns("https://example.com");
 
         _sut = new NotifyExpiringTokens(
@@ -38,7 +40,7 @@ public class NotifyExpiringTokensTests
             _userDataStore.Object,
             _emailTemplateManager.Object,
             _emailSender.Object,
-            NullLogger<NotifyExpiringTokens>.Instance,
+            _logger.Object,
             _configuration.Object);
     }
 
@@ -358,5 +360,58 @@ public class NotifyExpiringTokensTests
 
         Assert.NotNull(capturedBody);
         Assert.Contains("https://example.com/LinkedIn", capturedBody);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task RunAsync_WhenWebBaseUrlIsMissingOrEmpty_LogsWarningAndUsesRelativeLink(string? configuredWebBaseUrl)
+    {
+        var token = BuildToken(lastNotifiedAt: null);
+        var user = BuildUser();
+        var template = BuildTemplate();
+        string? capturedBody = null;
+
+        _configuration.Setup(c => c["Settings:WebBaseUrl"]).Returns(configuredWebBaseUrl);
+
+        _tokenManager
+            .Setup(m => m.GetExpiringWindowAsync(It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([token]);
+
+        _emailTemplateManager
+            .Setup(m => m.GetTemplateAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(template);
+
+        _userDataStore
+            .Setup(m => m.GetByEntraObjectIdAsync(token.CreatedByEntraOid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _emailSender
+            .Setup(s => s.QueueEmail(It.IsAny<MailAddress>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<MailAddress, string, string, CancellationToken>((_, _, body, _) => capturedBody = body)
+            .Returns(Task.CompletedTask);
+
+        _tokenManager
+            .Setup(m => m.UpdateLastNotifiedAtAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        await _sut.RunAsync(FakeTimer);
+
+        VerifyWarningLogged("Settings:WebBaseUrl is not configured");
+        Assert.NotNull(capturedBody);
+        Assert.Contains("href='/LinkedIn'", capturedBody);
+    }
+
+    private void VerifyWarningLogged(string expectedMessage)
+    {
+        _logger.Verify(
+            target => target.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains(expectedMessage, StringComparison.Ordinal)),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 }
