@@ -13,7 +13,8 @@
         <IsTestProject>true</IsTestProject>
         <IsPackable>false</IsPackable>
         <OutputType>Exe</OutputType>
-    </PropertyGroup>
+        <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+  </PropertyGroup>
     <PropertyGroup>
         <VersionMajor>2</VersionMajor>
         <VersionMinor>0</VersionMinor>

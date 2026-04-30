@@ -7,7 +7,7 @@
     <IsPackable>false</IsPackable>
     <!-- CS8620: Moq's type inference resolves nullable Task<T?> return types as Task<T>,
          causing false positives when stubbing null returns. Suppress at project level. -->
-    <NoWarn>$(NoWarn);CS8620</NoWarn>
+    <NoWarn>$(NoWarn);CS8620;xUnit1051</NoWarn>
     <Company>JosephGuadagno.NET, LLC</Company>
     <Authors>Joseph Guadagno</Authors>
     <Product>JosephGuadagno.NET Broadcasting - Api Tests</Product>

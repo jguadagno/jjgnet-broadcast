@@ -10,6 +10,7 @@
     <Description>The unit tests for the KeyVault library for the JosephGuadagno.NET Broadcasting application</Description>
     <Copyright>Copyright ©2014-2026, Joseph Guadagno, JosephGuadagno.Net, LLC; josephguadagno.net</Copyright>
     <Title>JosephGuadagno.NET Broadcasting - KeyVault Tests</Title>
+      <NoWarn>$(NoWarn);xUnit1051</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
     <VersionMajor>1</VersionMajor>

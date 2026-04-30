@@ -12,6 +12,7 @@
         <UserSecretsId>bba0c3bc-df5e-4c6c-a82c-ab974102a8a4</UserSecretsId>
         <IsTestProject>true</IsTestProject>
         <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);xUnit1051</NoWarn>
         <OutputType>Exe</OutputType>
     </PropertyGroup>
     <PropertyGroup>

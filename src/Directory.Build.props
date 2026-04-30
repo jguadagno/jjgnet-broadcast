@@ -1,5 +1,7 @@
 <Project>
   <PropertyGroup>
     <DefaultItemExcludes>$(DefaultItemExcludes);artifacts\**</DefaultItemExcludes>
+    <!-- Suppress vendor SDK platform-annotation noise (Microsoft.Azure.DocumentDB.Core win7-x64 RID) -->
+    <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
   </PropertyGroup>
 </Project>

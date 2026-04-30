@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);xUnit1051</NoWarn>
     <IsTestProject>true</IsTestProject>
     <UserSecretsId>c909c691-7d9e-46a1-96bc-eec49300ca0a</UserSecretsId>
     <Company>JosephGuadagno.NET, LLC</Company>
