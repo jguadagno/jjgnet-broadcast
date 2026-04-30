@@ -34,9 +34,10 @@ public class NotifyExpiringTokens(
         var now = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.LinkedInNotifyExpiringTokens, now);
+        var webBaseUrl = GetWebBaseUrl();
 
-        await NotifyWindowAsync(now, now.AddDays(7), SevenDayTemplateName, cancellationToken);
-        await NotifyWindowAsync(now, now.AddDays(1), OneDayTemplateName, cancellationToken);
+        await NotifyWindowAsync(now, now.AddDays(7), SevenDayTemplateName, webBaseUrl, cancellationToken);
+        await NotifyWindowAsync(now, now.AddDays(1), OneDayTemplateName, webBaseUrl, cancellationToken);
 
         logger.LogDebug("{FunctionName} completed at: {CompletedAt:f}",
             ConfigurationFunctionNames.LinkedInNotifyExpiringTokens, DateTimeOffset.UtcNow);
@@ -46,6 +47,7 @@ public class NotifyExpiringTokens(
         DateTimeOffset from,
         DateTimeOffset to,
         string templateName,
+        string webBaseUrl,
         CancellationToken cancellationToken)
     {
         var expiringTokens = await userOAuthTokenManager.GetExpiringWindowAsync(from, to, cancellationToken);
@@ -80,13 +82,14 @@ public class NotifyExpiringTokens(
                 continue;
             }
 
-            await TrySendNotificationAsync(token, template, cancellationToken);
+            await TrySendNotificationAsync(token, template, webBaseUrl, cancellationToken);
         }
     }
 
     private async Task TrySendNotificationAsync(
         UserOAuthToken token,
         Domain.Models.EmailTemplate template,
+        string webBaseUrl,
         CancellationToken cancellationToken)
     {
         var user = await applicationUserDataStore.GetByEntraObjectIdAsync(
@@ -103,7 +106,6 @@ public class NotifyExpiringTokens(
 
         try
         {
-            var webBaseUrl = configuration["Settings:WebBaseUrl"]?.TrimEnd('/') ?? string.Empty;
             var reauthUrl = $"{webBaseUrl}/LinkedIn";
 
             var body = RenderTemplate(template.Body, user.DisplayName ?? user.Email,
@@ -129,6 +131,20 @@ public class NotifyExpiringTokens(
                 LogSanitizer.Sanitize(token.CreatedByEntraOid),
                 token.SocialMediaPlatformId);
         }
+    }
+
+    private string GetWebBaseUrl()
+    {
+        var webBaseUrl = configuration["Settings:WebBaseUrl"]?.Trim();
+        if (string.IsNullOrWhiteSpace(webBaseUrl))
+        {
+            logger.LogWarning(
+                "{FunctionName}: Settings:WebBaseUrl is not configured. Re-auth links in LinkedIn expiry emails will be relative paths.",
+                ConfigurationFunctionNames.LinkedInNotifyExpiringTokens);
+            return string.Empty;
+        }
+
+        return webBaseUrl.TrimEnd('/');
     }
 
     private static string RenderTemplate(string templateBody, string displayName, DateTimeOffset expiresAt, string reauthUrl)
