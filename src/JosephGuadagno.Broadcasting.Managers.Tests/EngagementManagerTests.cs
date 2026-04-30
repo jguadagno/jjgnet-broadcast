@@ -58,7 +58,7 @@ public class EngagementManagerTests
     {
         // Arrange
         var engagement = new Engagement { Id = 0, Name = "Test", Url = "http://test.com", StartDateTime = new DateTimeOffset(2022, 1, 1, 12, 0, 0, TimeSpan.Zero), TimeZoneId = "UTC" };
-        _repository.Setup(r => r.GetByNameAndUrlAndYearAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), default)).ReturnsAsync((Engagement)null);
+        _repository.Setup(r => r.GetByNameAndUrlAndYearAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), default)).ReturnsAsync((Engagement?)null);
         _repository.Setup(r => r.SaveAsync(It.IsAny<Engagement>(), default)).ReturnsAsync((Engagement e, CancellationToken ct) => OperationResult<Engagement>.Success(e));
 
         // Act
@@ -212,7 +212,7 @@ public class EngagementManagerTests
     {
         // Arrange
         var talk = new Talk { EngagementId = 1 };
-        _repository.Setup(r => r.GetAsync(1, default)).ReturnsAsync((Engagement)null);
+        _repository.Setup(r => r.GetAsync(1, default)).ReturnsAsync((Engagement)null!);
 
         // Act
         var result = await _engagementManager.SaveTalkAsync(talk);
@@ -539,7 +539,7 @@ public class EngagementManagerTests
         // Arrange
         _repository
             .Setup(r => r.GetByNameAndUrlAndYearAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
-            .ReturnsAsync((Engagement)null);
+            .ReturnsAsync((Engagement?)null);
 
         // Act
         var result = await _engagementManager.GetByNameAndUrlAndYearAsync("Nonexistent Event", "https://nonexistent.example.com", 2025);

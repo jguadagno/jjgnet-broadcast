@@ -8,13 +8,13 @@ public class LinkedInPostText
     /// <summary>
     /// The access token to use to post the message
     /// </summary>
-    public string AccessToken { get; set; }
+    public required string AccessToken { get; set; }
     /// <summary>
     /// The LinkedIn Author Id to use to post the message
     /// </summary>
-    public string AuthorId { get; set; }
+    public required string AuthorId { get; set; }
     /// <summary>
     /// The text to use in the post
     /// </summary>
-    public string Text { get; set; }
+    public required string Text { get; set; }
 }

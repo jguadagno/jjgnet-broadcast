@@ -4,5 +4,5 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
 
 public class SyndicationFeedReaderSettings: ISyndicationFeedReaderSettings
 {
-    public string FeedUrl { get; set; }
+    public string FeedUrl { get; set; } = null!;
 }

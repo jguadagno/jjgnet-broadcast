@@ -79,7 +79,7 @@ public class Startup
         config.Bind("RandomPost", randomPostSettings);
         services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
 
-        var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings { SpeakingEngagementsFile = null };
+        var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings { SpeakingEngagementsFile = null! };
         config.Bind("SpeakingEngagementsReader", speakerEngagementsSettings);
         services.TryAddSingleton<ISpeakingEngagementsReaderSettings>(speakerEngagementsSettings);
 

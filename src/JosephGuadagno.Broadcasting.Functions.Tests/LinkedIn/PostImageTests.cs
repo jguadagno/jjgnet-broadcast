@@ -160,7 +160,7 @@ public class PostImageTests
         _linkedInManager
             .Setup(m => m.PostShareTextAndImage(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync((string?)null);
+            .ReturnsAsync((string)null!);
 
         var sut = BuildSut();
 

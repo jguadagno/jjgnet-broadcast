@@ -11,6 +11,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// </summary>
 public class HomeController(ILogger<HomeController> logger) : Controller
 {
+    private readonly ILogger<HomeController> _logger = logger;
 
     /// <summary>
     /// Returns the home page

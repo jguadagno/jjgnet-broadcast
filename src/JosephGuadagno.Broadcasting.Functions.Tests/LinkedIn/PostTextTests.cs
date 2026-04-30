@@ -57,7 +57,7 @@ public class PostTextTests
         var postText = BuildLinkedInPostText();
         _linkedInManager
             .Setup(m => m.PostShareText(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync((string?)null);
+            .ReturnsAsync((string)null!);
 
         var sut = BuildSut();
 

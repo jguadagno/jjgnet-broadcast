@@ -238,8 +238,8 @@ public class ProcessScheduledItemFired(
                 case ScheduledItemType.Talks:
                     var talk = await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey);
                     title = talk.Name;
-                    url = talk.UrlForTalk;
-                    description = talk.Comments;
+                    url = talk.UrlForTalk ?? "";
+                    description = talk.Comments ?? "";
                     break;
                 default:
                     return null;

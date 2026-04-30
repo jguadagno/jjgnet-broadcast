@@ -285,7 +285,7 @@ public class LoadNewVideosTests
         // Arrange
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _youTubeReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync((List<YouTubeSource>?)null);
+        _youTubeReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync((List<YouTubeSource>)null!);
 
         // Act
         var result = await _sut.RunAsync(null!);

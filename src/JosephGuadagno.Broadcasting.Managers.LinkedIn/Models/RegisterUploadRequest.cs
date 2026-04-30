@@ -12,8 +12,8 @@ public class RegisterUploadRequest
     /// </summary>
     /// <remarks>This should be in the Person Urn format. Example: urn:li:person:8675309</remarks>
     [JsonPropertyName("owner")]
-    public string Owner { get; set; }
+    public string? Owner { get; set; }
     
     [JsonPropertyName("serviceRelationships")]
-    public ServiceRelationships[] ServiceRelationships { get; set; }
+    public ServiceRelationships[]? ServiceRelationships { get; set; }
 }

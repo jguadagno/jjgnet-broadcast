@@ -44,9 +44,9 @@ public class UserPublisherSettingManagerTests
         result.Should().ContainSingle();
         result[0].LinkedIn.Should().NotBeNull();
         result[0].LinkedIn!.AuthorId.Should().Be("author-123");
-        result[0].LinkedIn.ClientId.Should().Be("client-123");
-        result[0].LinkedIn.HasClientSecret.Should().BeTrue();
-        result[0].LinkedIn.HasAccessToken.Should().BeTrue();
+        result[0].LinkedIn!.ClientId.Should().Be("client-123");
+        result[0].LinkedIn!.HasClientSecret.Should().BeTrue();
+        result[0].LinkedIn!.HasAccessToken.Should().BeTrue();
     }
 
     [Fact]

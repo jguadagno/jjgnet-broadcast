@@ -102,7 +102,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _syndicationFeedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Once);
@@ -139,7 +139,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        await _sut.RunAsync(request, null);
+        await _sut.RunAsync(request, null!);
 
         // Assert
         _syndicationFeedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p =>
@@ -161,7 +161,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        await _sut.RunAsync(request, null);
+        await _sut.RunAsync(request, null!);
 
         // Assert
         _syndicationFeedSourceManager.Verify(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -184,7 +184,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _syndicationFeedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Never);
@@ -203,7 +203,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _syndicationFeedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Never);
@@ -242,7 +242,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _syndicationFeedReader.Verify(r => r.GetAsync(OwnerEntraOid, DateTimeOffset.MinValue), Times.Once);
@@ -300,7 +300,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _syndicationFeedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Exactly(2));
@@ -338,7 +338,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         // Should still return OK and continue processing despite failure
@@ -357,7 +357,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -382,7 +382,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _urlShortener.Verify(u => u.GetShortenedUrlAsync(item.Url, "short.example.com"), Times.Once);

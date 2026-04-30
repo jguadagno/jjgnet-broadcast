@@ -10,7 +10,7 @@ public class ShareRequest
     /// </summary>
     /// <remarks>Needs to be formatted as a Person URn: Example "urn:li:person:{0}"</remarks>
     [JsonPropertyName("author")]
-    public string Author { get; set; }
+    public string? Author { get; set; }
     
     /// <summary>
     /// Defines the state of the share. For the purposes of creating a share, the lifecycleState will always be PUBLISHED.
@@ -22,8 +22,8 @@ public class ShareRequest
     /// Provides additional options while defining the content of the share.
     /// </summary>
     [JsonPropertyName("specificContent")]
-    public SpecificContent SpecificContent { get; set; }
+    public SpecificContent? SpecificContent { get; set; }
     
     [JsonPropertyName("visibility")]
-    public Visibility Visibility { get; set; }
+    public Visibility? Visibility { get; set; }
 }

@@ -85,7 +85,7 @@ builder.Services.AddOptions<RandomPostSettings>().ValidateDataAnnotations();
 
 var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings
 {
-    SpeakingEngagementsFile = null
+    SpeakingEngagementsFile = null!
 };
 builder.Configuration.Bind("SpeakingEngagementsReader", speakerEngagementsSettings);
 builder.Services.TryAddSingleton<ISpeakingEngagementsReaderSettings>(speakerEngagementsSettings);

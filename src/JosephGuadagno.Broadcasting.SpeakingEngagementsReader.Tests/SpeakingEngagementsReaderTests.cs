@@ -27,7 +27,7 @@ public class SpeakingEngagementsReaderTests
     public void Constructor_WithNullSettings_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        var ex = Assert.Throws<ArgumentNullException>(() => new SpeakingEngagementsReader(_httpClient, null, _mockLogger.Object));
+        var ex = Assert.Throws<ArgumentNullException>(() => new SpeakingEngagementsReader(_httpClient, null!, _mockLogger.Object));
         Assert.Equal("settings", ex.ParamName);
         Assert.Contains("The SpeakingEngagementsReaderSettings cannot be null", ex.Message);
     }
@@ -206,13 +206,13 @@ public class SpeakingEngagementsReaderTests
         // Assert
         Assert.NotNull(result);
         Assert.Single(result);
-        Assert.Equal(2, result[0].Talks.Count);
+        Assert.Equal(2, result[0].Talks!.Count);
         
-        var datedTalk = result[0].Talks.First(t => t.Name == "Dated Talk");
+        var datedTalk = result[0].Talks!.First(t => t.Name == "Dated Talk");
         Assert.Equal(talkStart, datedTalk.StartDateTime);
         Assert.Equal(talkEnd, datedTalk.EndDateTime);
 
-        var fallbackTalk = result[0].Talks.First(t => t.Name == "Fallback Talk");
+        var fallbackTalk = result[0].Talks!.First(t => t.Name == "Fallback Talk");
         Assert.Equal(eventStart, fallbackTalk.StartDateTime);
         Assert.Equal(eventEnd, fallbackTalk.EndDateTime);
     }
@@ -243,9 +243,9 @@ public class SpeakingEngagementsReaderTests
             x => x.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Failed to load all the speaking engagements")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Failed to load all the speaking engagements")),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 

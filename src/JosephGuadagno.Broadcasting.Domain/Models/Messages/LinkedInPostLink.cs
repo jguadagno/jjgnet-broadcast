@@ -8,27 +8,27 @@ public class LinkedInPostLink
     /// <summary>
     /// The access token to use to post the message
     /// </summary>
-    public string AccessToken { get; set; }
+    public string AccessToken { get; set; } = null!;
     /// <summary>
     /// The LinkedIn Author Id to use to post the message
     /// </summary>
-    public string AuthorId { get; set; }
+    public string AuthorId { get; set; } = null!;
     /// <summary>
     /// The text to use in the post
     /// </summary>
-    public string Text { get; set; }
+    public string Text { get; set; } = null!;
     /// <summary>
     /// The url to use for the post
     /// </summary>
-    public string LinkUrl { get; set; }
+    public string LinkUrl { get; set; } = null!;
     /// <summary>
     /// The title of the Url (Optional)
     /// </summary>
-    public string Title { get; set; }
+    public string Title { get; set; } = null!;
     /// <summary>
     /// The description of the Url (Optional)
     /// </summary>
-    public string Description { get; set; }
+    public string Description { get; set; } = null!;
     /// <summary>
     /// An optional URL for an image. When set, the post is submitted as an image share
     /// (downloading the image and calling <c>PostShareTextAndImage</c>) rather than a link share.

@@ -9,15 +9,15 @@ public class YouTubeSource
 
     [Required]
     [StringLength(20)]
-    public string VideoId { get; set; }
+    public string VideoId { get; set; } = null!;
 
     [Required]
     [StringLength(255)]
-    public string Author { get; set; }
+    public string Author { get; set; } = null!;
 
     [Required]
     [StringLength(512)]
-    public string Title { get; set; }
+    public string Title { get; set; } = null!;
 
     [StringLength(255)]
     public string? ShortenedUrl { get; set; }
@@ -26,7 +26,7 @@ public class YouTubeSource
 
     [Required]
     [Url]
-    public string Url { get; set; }
+    public string Url { get; set; } = null!;
 
     [Required]
     public DateTimeOffset PublicationDate { get; set; }
@@ -41,5 +41,5 @@ public class YouTubeSource
 
     [Required]
     [StringLength(36)]
-    public required string CreatedByEntraOid { get; set; }
+    public string CreatedByEntraOid { get; set; } = null!;
 }

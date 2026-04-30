@@ -167,7 +167,7 @@ public class PostLinkTests
         _linkedInManager
             .Setup(m => m.PostShareTextAndLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync((string?)null);
+            .ReturnsAsync((string)null!);
 
         var sut = BuildSut();
 

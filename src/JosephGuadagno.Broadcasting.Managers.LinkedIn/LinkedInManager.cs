@@ -205,7 +205,7 @@ public class LinkedInManager : ILinkedInManager
         var uploadResponse = await GetUploadResponse(accessToken, authorId);
         
         // Upload the image
-        var uploadUrl = uploadResponse.Value.UploadMechanism.MediaUploadHttpRequest.UploadUrl;
+        var uploadUrl = uploadResponse.Value!.UploadMechanism!.MediaUploadHttpRequest!.UploadUrl!;
         var wasFileUploadSuccessful = await UploadImage(accessToken, uploadUrl, image);
 
         if (!wasFileUploadSuccessful)

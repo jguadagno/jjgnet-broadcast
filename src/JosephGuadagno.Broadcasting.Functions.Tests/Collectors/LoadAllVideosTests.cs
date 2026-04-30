@@ -102,7 +102,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Once);
@@ -139,7 +139,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        await _sut.RunAsync(request, null);
+        await _sut.RunAsync(request, null!);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.Is<YouTubeSource>(v =>
@@ -161,7 +161,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        await _sut.RunAsync(request, null);
+        await _sut.RunAsync(request, null!);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -184,7 +184,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Never);
@@ -203,7 +203,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Never);
@@ -242,7 +242,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _youTubeReader.Verify(r => r.GetAsync(OwnerEntraOid, It.Is<DateTimeOffset>(d => d == DateTimeOffset.MinValue || d == DateTime.MinValue)), Times.Once);
@@ -300,7 +300,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Exactly(2));
@@ -319,7 +319,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -344,7 +344,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _urlShortener.Verify(u => u.GetShortenedUrlAsync(item.Url, "short.example.com"), Times.Once);

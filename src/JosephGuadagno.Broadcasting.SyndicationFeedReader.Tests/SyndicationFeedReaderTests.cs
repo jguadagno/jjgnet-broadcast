@@ -47,7 +47,7 @@ public class SyndicationFeedReaderTests
         // Act / Assert
         Assert.Throws<ArgumentNullException>(() =>
         {
-            var syndicationFeedReader = new SyndicationFeedReader(null, logger);
+            var syndicationFeedReader = new SyndicationFeedReader(null!, logger);
         });
     }
     

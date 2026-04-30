@@ -343,7 +343,7 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
         if (!string.IsNullOrWhiteSpace(filter))
         {
             var lowerFilter = filter.ToLowerInvariant();
-            query = query.Where(si => si.Message.ToLower().Contains(lowerFilter));
+            query = query.Where(si => si.Message != null && si.Message.ToLower().Contains(lowerFilter));
         }
 
         var sortByLower = sortBy?.ToLowerInvariant();
@@ -378,7 +378,7 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
         if (!string.IsNullOrWhiteSpace(filter))
         {
             var lowerFilter = filter.ToLowerInvariant();
-            query = query.Where(si => si.Message.ToLower().Contains(lowerFilter));
+            query = query.Where(si => si.Message != null && si.Message.ToLower().Contains(lowerFilter));
         }
 
         var sortByLower = sortBy?.ToLowerInvariant();

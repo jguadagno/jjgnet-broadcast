@@ -5,10 +5,10 @@ namespace JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 class FacebookPostError
 {
     [JsonPropertyName("message")]
-    public string Message { get; set; } 
+    public string? Message { get; set; } 
     
     [JsonPropertyName("type")]
-    public string Type { get; set; }
+    public string? Type { get; set; }
     
     [JsonPropertyName("code")]
     public int Code { get; set; }
@@ -17,5 +17,5 @@ class FacebookPostError
     public int SubCode { get; set; }
     
     [JsonPropertyName("fbtrace_id")]
-    public string FacebookTraceId { get; set; }
+    public string? FacebookTraceId { get; set; }
 }

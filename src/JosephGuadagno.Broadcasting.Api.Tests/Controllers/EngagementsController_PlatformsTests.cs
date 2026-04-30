@@ -47,7 +47,7 @@ public class EngagementsController_PlatformsTests
         // don't need per-test boilerplate.  Individual tests may override for specific IDs.
         _engagementManagerMock
             .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .Returns((int id, CancellationToken _) => Task.FromResult<Engagement?>(BuildEngagement(id)));
+            .Returns((int id, CancellationToken _) => Task.FromResult<Engagement>(BuildEngagement(id)));
     }
 
     // =========================================================================

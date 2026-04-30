@@ -8,5 +8,5 @@ public class UploadMechanism
     /// Details to upload media
     /// </summary>
     [JsonPropertyName("com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest")]
-    public MediaUploadHttpRequest MediaUploadHttpRequest { get; set; }
+    public MediaUploadHttpRequest? MediaUploadHttpRequest { get; set; }
 }

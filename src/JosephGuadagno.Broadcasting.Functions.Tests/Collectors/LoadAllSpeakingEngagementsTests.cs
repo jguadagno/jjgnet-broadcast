@@ -88,7 +88,7 @@ public class LoadAllSpeakingEngagementsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Once);
@@ -112,7 +112,7 @@ public class LoadAllSpeakingEngagementsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         // Verify that GetByNameAndUrlAndYearAsync is NEVER called (no deduplication)
@@ -131,7 +131,7 @@ public class LoadAllSpeakingEngagementsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
@@ -170,7 +170,7 @@ public class LoadAllSpeakingEngagementsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _speakingEngagementsReader.Verify(r => r.GetAll(It.Is<DateTimeOffset>(d => d == DateTimeOffset.MinValue || d == DateTime.MinValue)), Times.Once);
@@ -223,7 +223,7 @@ public class LoadAllSpeakingEngagementsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Exactly(3));
@@ -255,7 +255,7 @@ public class LoadAllSpeakingEngagementsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         // Should still return OK and continue processing despite failure
@@ -274,7 +274,7 @@ public class LoadAllSpeakingEngagementsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -293,7 +293,7 @@ public class LoadAllSpeakingEngagementsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -306,12 +306,12 @@ public class LoadAllSpeakingEngagementsTests
         // Arrange
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync((List<Engagement>?)null);
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync((List<Engagement>)null!);
 
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null);
+        var result = await _sut.RunAsync(request, null!);
 
         // Assert
         _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);

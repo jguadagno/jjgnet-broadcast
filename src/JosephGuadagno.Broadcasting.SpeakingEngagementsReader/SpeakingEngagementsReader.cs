@@ -18,7 +18,7 @@ public class SpeakingEngagementsReader: ISpeakingEngagementsReader
     private readonly ISpeakingEngagementsReaderSettings _settings;
     private readonly ILogger<SpeakingEngagementsReader> _logger;
 
-    public SpeakingEngagementsReader(HttpClient httpClient, ISpeakingEngagementsReaderSettings settings, ILogger<SpeakingEngagementsReader> logger)
+    public SpeakingEngagementsReader(HttpClient httpClient, ISpeakingEngagementsReaderSettings? settings, ILogger<SpeakingEngagementsReader> logger)
     {
 
         if (settings == null)
@@ -56,19 +56,24 @@ public class SpeakingEngagementsReader: ISpeakingEngagementsReader
         try
         {
             // Load the data
-            List<Models.Engagement> speakingEngagements =
+            List<Models.Engagement>? speakingEngagements =
                 await _httpClient.GetFromJsonAsync<List<Models.Engagement>>(_settings.SpeakingEngagementsFile);
+
+            if (speakingEngagements is null)
+            {
+                return engagements;
+            }
 
             // Transform the data
             foreach (var speakingEngagement in speakingEngagements)
             {
                 var engagement = new Engagement
                 {
-                    Name = speakingEngagement.EventName,
-                    Url = speakingEngagement.EventUrl,
+                    Name = speakingEngagement.EventName!,
+                    Url = speakingEngagement.EventUrl!,
                     StartDateTime = speakingEngagement.EventStart,
                     EndDateTime = speakingEngagement.EventEnd,
-                    TimeZoneId = speakingEngagement.Timezone,
+                    TimeZoneId = speakingEngagement.Timezone!,
                     Comments =  speakingEngagement.Comments,
                     CreatedOn = speakingEngagement.CreatedOrUpdatedOn,
                     LastUpdatedOn = speakingEngagement.CreatedOrUpdatedOn
@@ -81,9 +86,9 @@ public class SpeakingEngagementsReader: ISpeakingEngagementsReader
                     {
                         engagement.Talks.Add(new Talk
                         {
-                            Name = talk.Name,
-                            UrlForTalk = talk.Url,
-                            UrlForConferenceTalk =  talk.Url,
+                            Name = talk.Name!,
+                            UrlForTalk = talk.Url!,
+                            UrlForConferenceTalk =  talk.Url!,
                             StartDateTime = talk.PresentationStartDateTime ?? speakingEngagement.EventStart,
                             EndDateTime = talk.PresentationEndDateTime ?? speakingEngagement.EventEnd,
                             TalkLocation = talk.Room,
