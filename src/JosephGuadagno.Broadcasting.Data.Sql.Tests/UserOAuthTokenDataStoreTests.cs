@@ -288,6 +288,23 @@ public class UserOAuthTokenDataStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task GetExpiringWindowAsync_ThrowsWhenFromIsAfterTo()
+    {
+        // Arrange
+        var from = DateTimeOffset.UtcNow.AddDays(2);
+        var to = DateTimeOffset.UtcNow.AddDays(1);
+
+        // Act
+        var exception = await Assert.ThrowsAsync<ArgumentException>(
+            () => _dataStore.GetExpiringWindowAsync(from, to));
+
+        // Assert
+        Assert.Equal("from", exception.ParamName);
+        Assert.Contains("'from'", exception.Message);
+        Assert.Contains("'to'", exception.Message);
+    }
+
+    [Fact]
     public async Task UpdateLastNotifiedAtAsync_SetsLastNotifiedAt()
     {
         // Arrange
