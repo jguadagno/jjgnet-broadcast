@@ -36,6 +36,8 @@
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Security: override transitive 10.0.2 → 13.0.3 to resolve GHSA-5crp-9r3c-p9vr (High: NU1903) -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
     <PackageReference Include="JsonFeed.NET" Version="2.0.0" />
   </ItemGroup>

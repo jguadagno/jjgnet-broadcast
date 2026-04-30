@@ -1,3 +1,59 @@
+## 2026-05-01 — Release Build Warnings: GitHub Issues Created
+
+**Status:** ✅ COMPLETE — Issues #903–#905 created from warning triage
+
+**Action:** Created three GitHub issues to track and fix build warning categories identified in the release build triage (`.squad/decisions/inbox/neo-build-warnings-triage.md`).
+
+**Issues created:**
+- #903: `fix: upgrade Newtonsoft.Json to 13.0.3+ to resolve NU1903 CVE` (security, bug)
+  - Covers NU1903 vulnerability in Newtonsoft.Json 10.0.2 across 13 projects
+  - 22 warnings, CRITICAL severity, high-severity CVE GHSA-5crp-9r3c-p9vr
+- #904: `refactor: resolve CS8xxx nullable reference warnings across solution` (enhancement, refactor)
+  - Covers 115 nullable reference type warnings across 5 projects
+  - CS8618 (50), CS8625 (29), others (36)
+  - Domain (32), Web (12), Managers.LinkedIn (8), Data.Sql (5), Data (1)
+- #905: `chore: suppress xUnit1051 and NETSDK1206 build noise` (enhancement)
+  - Covers xUnit1051 (290 warnings, test hygiene), NETSDK1206 (37 warnings, vendor library), NU1510 (4 warnings, unnecessary packages)
+
+---
+
+## 2026-04-30 — Issue Epic Scoping: Social Media Message Composition Refactor
+
+**Status:** ✅ COMPLETE — Issues #899–#902 created; #69 comment posted
+
+**Action:** Confirmed #69 (customize social messages with Sciban templates) as the parent epic. #45 and #46 are related detail issues already in scope. Created four platform-specific refactor issues to move message composition (Sciban template rendering) from Azure Functions into Manager layer.
+
+**Issues created:**
+- #899: refactor: move Twitter message composition to TwitterManager
+- #900: refactor: move Facebook message composition to FacebookManager
+- #901: refactor: move Bluesky message composition to BlueskyManager
+- #902: refactor: move LinkedIn message composition to LinkedInManager
+
+**Comment posted to #69:** https://github.com/jguadagno/jjgnet-broadcast/issues/69#issuecomment-4349212612
+
+## Learnings
+
+**Release build warnings triage completed (2026-05-01).** Full Release build produces 1067 warning lines across 6 categories:
+1. **CS8xxx (Nullable):** 115 warnings — CS8618 (non-nullable property) dominates at 50 occurrences, followed by CS8625 (null literal) at 29. Heaviest in Domain (32), Web (12), Managers.LinkedIn (8), Data.Sql (5).
+2. **NU1903 (Vulnerable packages):** 22 projects reference Newtonsoft.Json 10.0.2 with GHSA-5crp-9r3c-p9vr high severity vulnerability. 
+3. **NU1510 (Unnecessary packages):** 4 projects carry prunable package references (Managers, Web, Api).
+4. **xUnit1051 (CancellationToken):** 290 test warnings suggesting `TestContext.Current.CancellationToken` usage.
+5. **NETSDK1206 (RID warnings):** 37 warnings about win7-x64 RID in Microsoft.Azure.DocumentDB.Core (legacy .NET 8 deprecation notice).
+6. **Build metadata noise:** ~400 lines of "EnableIntermediateOutputPathMismatchWarning" status and "succeeded with X warning(s)" summaries.
+
+**Critical findings:** NU1903 is the only security-critical category (high severity vulnerability). CS8xxx nullable warnings are correctness issues but not runtime blockers (nullable reference types are compile-time only). xUnit1051 is test hygiene (non-blocking). NU1510 and NETSDK1206 are informational.
+
+**Recommendation:** Fix NU1903 first (upgrade Newtonsoft.Json → 13.0.3+). Nullable warnings are a batch-fix candidate (2-4 hours, one PR). xUnit warnings can be fixed or suppressed project-wide. NU1510 should be investigated (may legitimately need those packages). NETSDK1206 is library vendor issue, suppress via NoWarn.
+
+**Architecture decision: Composition in Managers, Publish-Only in Functions.** Message composition logic (Sciban template selection and rendering) belongs in the Manager layer; Azure Functions should be responsible only for the publish/send call. This establishes a clean separation of concerns:
+- **Managers:** Business logic and message composition
+- **Functions:** Execution of publish/send operations to platform APIs
+- **Tests:** Composition can be tested independently from publish mechanics
+
+The codebase currently has all four social media platforms (Twitter, Facebook, Bluesky, LinkedIn) with dedicated Functions folders and no dedicated Manager classes. The refactor distributes composition upward into managers, keeping Functions lean.
+
+---
+
 ## 2026-04-28 — PR #889 Review: LinkedIn OAuth Token Expiry Data Layer
 
 **Status:** ✅ APPROVED — PR #889, Issue #852
@@ -7,6 +63,8 @@
 **Review result:** APPROVED — no blocking issues. Comment posted at https://github.com/jguadagno/jjgnet-broadcast/pull/889#issuecomment-4335350588
 
 ## Learnings
+
+**Issue #9 (Publisher abstraction) — PARTIALLY DONE as of 2025.** "Publisher" terminology is broadly adopted: `UserPublisherSetting*`, `EventPublisher`, `Publishers/` Functions folder. Platform managers exist as separate projects (Managers.Twitter, Managers.Bluesky, Managers.LinkedIn, Managers.Facebook) with their own platform-specific interfaces (`ITwitterManager`, `IBlueskyManager`, `ILinkedInManager`). BUT there is NO common `IPublisher`/`ISocialMediaPublisher` interface that all platform managers implement — the "pluggable" contract requested in issue #9 is absent. The `SocialMediaPlatform` model and `ISocialMediaPlatformManager` are data-management concerns, not the per-platform posting abstraction the issue asked for.
 
 **Double input-guard pattern is acceptable.** `UpdateLastNotifiedAtAsync` validates `ownerOid` and `platformId` in both the manager and the data store. This is defense-in-depth, not a violation. Don't flag it as redundant — the data store must be self-defending.
 
@@ -1739,3 +1797,7 @@ Review PR #867 title and body formatting to ensure consistency with team metadat
 
 Sparks fixed issue #871 (Engagements column headings invisible) by updating Bootstrap 4 	head-dark to Bootstrap 5 	able-dark (PR #874). Audit note: Views/Schedules and Views/YouTubeSources also need updating — recommend for future polish.
 
+
+## Learnings
+
+- **2026-04-30 — Issue #9 closed, #898 opened**: Issue #9 ("Rename the 'social media' plugins as 'publishers'") was closed as partially done. The naming migration (`Publishers/` folder, `UserPublisherSetting*` stack, per-platform manager projects) was already complete. The remaining pluggability work — defining a shared `ISocialMediaPublisher` interface in `JosephGuadagno.Broadcasting.Domain` so each platform manager (Twitter, Bluesky, LinkedIn, Facebook) implements a common contract — is now tracked in issue #898.

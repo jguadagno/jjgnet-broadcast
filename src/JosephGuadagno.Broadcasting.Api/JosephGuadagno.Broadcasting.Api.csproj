@@ -40,6 +40,10 @@
     <DocumentationFile>bin\Release\JosephGuadagno.Broadcasting.Api.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Explicit override: pins patched version above transitive 10.0.0 (Critical: GHSA-9mv3-2cwr-p262) -->
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.7" />
+    <!-- Security: override transitive 10.0.2 → 13.0.3 to resolve GHSA-5crp-9r3c-p9vr (High: NU1903) -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Aspire.Azure.Storage.Queues" Version="13.2.4" />
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.2.4" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.4.0" />
