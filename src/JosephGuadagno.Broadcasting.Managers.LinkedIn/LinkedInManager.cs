@@ -1,8 +1,9 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Extensions.Logging;
@@ -17,7 +18,7 @@ public class LinkedInManager : ILinkedInManager
     private const string LinkedInAssetUrl = "https://api.linkedin.com/v2/assets?action=registerUpload";
     
     private const string LinkedInAuthorUrn = "urn:li:person:{0}";
-    
+
     private readonly HttpClient _httpClient;
     private readonly ILogger<LinkedInManager> _logger;
     
@@ -25,6 +26,68 @@ public class LinkedInManager : ILinkedInManager
     {
         _httpClient = httpClient;
         _logger = logger;
+    }
+
+    public async Task<string?> PublishAsync(SocialMediaPublishRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.Text);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.AccessToken);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.AuthorId);
+
+        if (request.ImageBytes is { Length: > 0 })
+        {
+            return await PostShareTextAndImage(
+                request.AccessToken!,
+                request.AuthorId!,
+                request.Text,
+                request.ImageBytes,
+                request.Title,
+                request.Description);
+        }
+
+        if (!string.IsNullOrEmpty(request.ImageUrl))
+        {
+            var imageResponse = await _httpClient.GetAsync(request.ImageUrl);
+            if (imageResponse.StatusCode == HttpStatusCode.OK)
+            {
+                var imageBytes = await imageResponse.Content.ReadAsByteArrayAsync();
+                return await PostShareTextAndImage(
+                    request.AccessToken!,
+                    request.AuthorId!,
+                    request.Text,
+                    imageBytes,
+                    request.Title,
+                    request.Description);
+            }
+
+            if (!string.IsNullOrEmpty(request.LinkUrl))
+            {
+                return await PostShareTextAndLink(
+                    request.AccessToken!,
+                    request.AuthorId!,
+                    request.Text,
+                    request.LinkUrl,
+                    request.Title,
+                    request.Description);
+            }
+
+            throw new LinkedInPostException(
+                $"Unable to get the image from the url. Status Code: {imageResponse.StatusCode}");
+        }
+
+        if (!string.IsNullOrEmpty(request.LinkUrl))
+        {
+            return await PostShareTextAndLink(
+                request.AccessToken!,
+                request.AuthorId!,
+                request.Text,
+                request.LinkUrl,
+                request.Title,
+                request.Description);
+        }
+
+        return await PostShareText(request.AccessToken!, request.AuthorId!, request.Text);
     }
 
     /// <summary>

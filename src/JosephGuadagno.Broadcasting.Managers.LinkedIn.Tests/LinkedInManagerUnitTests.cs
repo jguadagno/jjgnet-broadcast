@@ -1,6 +1,9 @@
 using System.Net;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Exceptions;
+using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
@@ -231,6 +234,68 @@ public class LinkedInManagerUnitTests
             () => sut.PostShareTextAndLink("validToken", "authorId123", "Hello LinkedIn!", "https://example.com"));
 
         Assert.Contains("LinkedIn", exception.Message);
+    }
+
+    [Fact]
+    public async Task PublishAsync_WithImageUrlDownloadFailure_FallsBackToLinkShare()
+    {
+        // Arrange
+        _mockHttpMessageHandler
+            .Protected()
+            .SetupSequence<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<System.Threading.CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.NotFound,
+                Content = new StringContent(string.Empty)
+            })
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent("{\"id\": \"share-123\"}", System.Text.Encoding.UTF8, "application/json")
+            });
+
+        ISocialMediaPublisher sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+
+        // Act
+        var result = await sut.PublishAsync(new SocialMediaPublishRequest
+        {
+            AccessToken = "validToken",
+            AuthorId = "authorId123",
+            Text = "Hello LinkedIn!",
+            LinkUrl = "https://example.com",
+            ImageUrl = "https://example.com/image.png",
+            Title = "Title",
+            Description = "Description"
+        });
+
+        // Assert
+        Assert.Equal("share-123", result);
+    }
+
+    [Fact]
+    public async Task PublishAsync_WithoutAccessToken_ThrowsArgumentNullException()
+    {
+        // Arrange
+        ISocialMediaPublisher sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+
+        // Act
+        var act = () => sut.PublishAsync(new SocialMediaPublishRequest
+        {
+            AuthorId = "authorId123",
+            Text = "Hello LinkedIn!"
+        });
+
+        // Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(act);
+    }
+
+    [Fact]
+    public void ILinkedInManager_Implements_ISocialMediaPublisher()
+    {
+        Assert.True(typeof(ISocialMediaPublisher).IsAssignableFrom(typeof(ILinkedInManager)));
     }
 
     [Fact]

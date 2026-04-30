@@ -28,6 +28,7 @@ using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
+using JosephGuadagno.Broadcasting.Managers.Twitter;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Models;
@@ -234,6 +235,9 @@ public class Startup
             }
             return new TwitterContext(authorizer);
         });
+        services.TryAddSingleton<ITwitterManager, TwitterManager>();
+        services.AddSingleton<ISocialMediaPublisher>(sp =>
+            sp.GetRequiredService<ITwitterManager>());
     }
 
     private void ConfigureSyndicationFeedReader(IServiceCollection services, IConfiguration config)
@@ -270,6 +274,8 @@ public class Startup
             return linkedInApplicationSettings;
         });
         services.TryAddSingleton<ILinkedInManager, LinkedInManager>();
+        services.AddSingleton<ISocialMediaPublisher>(sp =>
+            sp.GetRequiredService<ILinkedInManager>());
     }
 
     private void ConfigureFacebookManager(IServiceCollection services, IConfiguration config)
@@ -281,6 +287,8 @@ public class Startup
             return facebookApplicationSettings;
         });
         services.TryAddSingleton<IFacebookManager, FacebookManager>();
+        services.AddSingleton<ISocialMediaPublisher>(sp =>
+            sp.GetRequiredService<IFacebookManager>());
     }
 
     private void ConfigureBlueskyManager(IServiceCollection services, IConfiguration config)
@@ -292,5 +300,7 @@ public class Startup
             return blueskySettings;
         });
         services.TryAddSingleton<IBlueskyManager, BlueskyManager>();
+        services.AddSingleton<ISocialMediaPublisher>(sp =>
+            sp.GetRequiredService<IBlueskyManager>());
     }
 }

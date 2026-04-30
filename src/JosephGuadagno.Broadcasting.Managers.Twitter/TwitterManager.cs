@@ -1,4 +1,5 @@
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Twitter.Exceptions;
 using LinqToTwitter;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,13 @@ namespace JosephGuadagno.Broadcasting.Managers.Twitter;
 public class TwitterManager(TwitterContext twitterContext, ILogger<TwitterManager> logger)
     : ITwitterManager
 {
+    public Task<string?> PublishAsync(SocialMediaPublishRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.Text);
+        return SendTweetAsync(request.Text);
+    }
+
     public async Task<string?> SendTweetAsync(string tweetText)
     {
         try
