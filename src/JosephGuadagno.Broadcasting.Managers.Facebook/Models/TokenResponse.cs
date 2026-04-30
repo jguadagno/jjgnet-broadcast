@@ -11,12 +11,12 @@ public class TokenResponse
     /// The access token
     /// </summary>
     [JsonPropertyName("access_token")]
-    public string AccessToken { get; set; }
+    public required string AccessToken { get; set; }
     /// <summary>
     /// The token type
     /// </summary> 
     [JsonPropertyName("token_type")]
-    public string TokenType { get; set; }
+    public required string TokenType { get; set; }
     
     /// <summary>
     /// The number of seconds the token is valid for

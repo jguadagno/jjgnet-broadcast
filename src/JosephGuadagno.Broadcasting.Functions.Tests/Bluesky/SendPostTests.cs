@@ -102,7 +102,7 @@ public class SendPostTests
             imageUrl: "https://example.com/image.jpg");
 
         _blueskyManager
-            .Setup(m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url, postMessage.ImageUrl!))
+            .Setup(m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url!, postMessage.ImageUrl!))
             .ReturnsAsync((EmbeddedExternal?)null);
         _blueskyManager
             .Setup(m => m.Post(It.IsAny<PostBuilder>()))
@@ -115,7 +115,7 @@ public class SendPostTests
 
         // Assert
         _blueskyManager.Verify(
-            m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url, postMessage.ImageUrl!),
+            m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url!, postMessage.ImageUrl!),
             Times.Once);
         _blueskyManager.Verify(
             m => m.GetEmbeddedExternalRecord(It.IsAny<string>()),
@@ -136,7 +136,7 @@ public class SendPostTests
             imageUrl: "https://example.com/image.jpg");
 
         _blueskyManager
-            .Setup(m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url, postMessage.ImageUrl!))
+            .Setup(m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url!, postMessage.ImageUrl!))
             .ReturnsAsync((EmbeddedExternal?)null);
         _blueskyManager
             .Setup(m => m.Post(It.IsAny<PostBuilder>()))
@@ -149,7 +149,7 @@ public class SendPostTests
 
         // Assert
         _blueskyManager.Verify(
-            m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url, postMessage.ImageUrl!),
+            m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url!, postMessage.ImageUrl!),
             Times.Once);
         _blueskyManager.Verify(m => m.Post(It.IsAny<PostBuilder>()), Times.Once);
     }

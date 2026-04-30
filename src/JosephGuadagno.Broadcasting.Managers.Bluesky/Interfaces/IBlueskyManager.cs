@@ -9,7 +9,7 @@ public interface IBlueskyManager
     Task<CreateRecordResult?> PostText(string postText);
     Task<CreateRecordResult?> Post(PostBuilder postBuilder);
     Task<bool> DeletePost(StrongReference strongReference);
-    Task<EmbeddedExternal?> GetEmbeddedExternalRecord(string externalUrl);
+    Task<EmbeddedExternal?> GetEmbeddedExternalRecord(string? externalUrl);
 
     /// <summary>
     /// Builds an <see cref="EmbeddedExternal"/> link card for <paramref name="externalUrl"/>,

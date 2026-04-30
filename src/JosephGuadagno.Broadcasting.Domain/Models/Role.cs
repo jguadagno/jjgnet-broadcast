@@ -17,7 +17,7 @@ public class Role
     /// The name of the role
     /// </summary>
     [Required]
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
     /// <summary>
     /// A description of the role and its permissions

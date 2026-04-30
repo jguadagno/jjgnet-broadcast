@@ -529,8 +529,8 @@ public class EngagementDataStoreTests : IDisposable
         {
             Id = talk.Id,
             Name = talk.Name,
-            UrlForConferenceTalk = talk.UrlForConferenceTalk,
-            UrlForTalk = talk.UrlForTalk,
+            UrlForConferenceTalk = talk.UrlForConferenceTalk!,
+            UrlForTalk = talk.UrlForTalk!,
             StartDateTime = talk.StartDateTime,
             EndDateTime = talk.EndDateTime
         };

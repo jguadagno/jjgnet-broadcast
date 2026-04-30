@@ -85,7 +85,7 @@ public class PostPageStatusTests
         var postStatus = BuildFacebookPostStatus();
         _facebookManager
             .Setup(m => m.PostMessageAndLinkToPage(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync((string?)null);
+            .ReturnsAsync((string)null!);
 
         var sut = BuildSut();
 

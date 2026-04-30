@@ -216,7 +216,7 @@ public class ProcessScheduledItemFired(
         var statusText = $"Talk: {talk.Name} ({talk.UrlForTalk}) starting on {talk.StartDateTime:f} to {talk.EndDateTime:t}";
         statusText += $" in room {talk.TalkLocation}";
 
-        var commentsLength = talk.Comments.Length;
+        var commentsLength = talk.Comments?.Length ?? 0;
         var comments = $" Comments: {talk.Comments}";
         statusText += comments;
         
@@ -266,8 +266,8 @@ public class ProcessScheduledItemFired(
                 case ScheduledItemType.Talks:
                     var talk = await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey);
                     title = talk.Name;
-                    url = talk.UrlForTalk;
-                    description = talk.Comments;
+                    url = talk.UrlForTalk ?? "";
+                    description = talk.Comments ?? "";
                     break;
                 default:
                     return null;

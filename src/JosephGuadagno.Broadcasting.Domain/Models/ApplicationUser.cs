@@ -17,7 +17,7 @@ public class ApplicationUser
     /// The Microsoft Entra (Azure AD) object ID for this user
     /// </summary>
     [Required]
-    public string EntraObjectId { get; set; }
+    public string EntraObjectId { get; set; } = null!;
 
     /// <summary>
     /// The display name of the user
@@ -33,7 +33,7 @@ public class ApplicationUser
     /// The approval status of the user
     /// </summary>
     [Required]
-    public string ApprovalStatus { get; set; }
+    public string ApprovalStatus { get; set; } = null!;
 
     /// <summary>
     /// Notes regarding the approval decision

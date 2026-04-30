@@ -28,7 +28,7 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
                 return _agent;
 
             _agent ??= new BlueskyAgent();
-            var loginResult = await _agent.Login(blueskySettings.BlueskyUserName, blueskySettings.BlueskyPassword);
+            var loginResult = await _agent.Login(blueskySettings.BlueskyUserName!, blueskySettings.BlueskyPassword!);
             if (loginResult.Succeeded)
                 return _agent;
 
@@ -128,7 +128,7 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
         return false;
     }
 
-    public async Task<EmbeddedExternal?> GetEmbeddedExternalRecord(string externalUrl)
+    public async Task<EmbeddedExternal?> GetEmbeddedExternalRecord(string? externalUrl)
     {
         if (string.IsNullOrEmpty(externalUrl))
         {

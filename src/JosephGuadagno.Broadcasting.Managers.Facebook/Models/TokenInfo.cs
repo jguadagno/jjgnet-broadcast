@@ -8,12 +8,12 @@ public class TokenInfo
     /// <summary>
     /// The new access token
     /// </summary>
-    public string AccessToken { get; set; }
+    public required string AccessToken { get; set; }
     
     /// <summary>
     /// The token type
     /// </summary>
-    public string TokenType { get; set; }
+    public required string TokenType { get; set; }
     
     /// <summary>
     /// Indicates when the token expires

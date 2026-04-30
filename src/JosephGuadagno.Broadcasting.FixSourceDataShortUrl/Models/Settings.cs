@@ -4,9 +4,9 @@ namespace JosephGuadagno.Broadcasting.FixSourceDataShortUrl.Models;
 
 public class Settings
 {
-    public string BitlyToken { get; set; }
-    public string BitlyShortenedDomain { get; set; }
-    public string BitlyApiRootUri { get; set; }
+    public string BitlyToken { get; set; } = null!;
+    public string BitlyShortenedDomain { get; set; } = null!;
+    public string BitlyApiRootUri { get; set; } = null!;
 
-    public AutoMapperSettings AutoMapper { get; init; }
+    public AutoMapperSettings AutoMapper { get; init; } = null!;
 }

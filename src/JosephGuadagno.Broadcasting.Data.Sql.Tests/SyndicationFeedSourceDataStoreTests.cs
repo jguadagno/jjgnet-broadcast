@@ -299,7 +299,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         Assert.Equal(1, result.Value!.Id);
         Assert.Equal("Updated Title", result.Value!.Title);
         var dbRecord = await _context.SyndicationFeedSources.FindAsync(1);
-        Assert.Equal("Updated Title", dbRecord.Title);
+        Assert.Equal("Updated Title", dbRecord!.Title);
     }
 
     [Fact]

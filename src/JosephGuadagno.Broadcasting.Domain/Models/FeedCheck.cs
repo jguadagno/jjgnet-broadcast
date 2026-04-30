@@ -9,7 +9,7 @@ public class FeedCheck
 
     [Required]
     [StringLength(255)]
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
     [Required]
     public DateTimeOffset LastCheckedFeed { get; set; }

@@ -268,7 +268,7 @@ public class ProcessScheduledItemFired(
                     var talk = await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey);
                     title = talk.Name;
                     url = talk.UrlForTalk;
-                    description = talk.Comments;
+                    description = talk.Comments ?? "";
                     break;
                 default:
                     return null;

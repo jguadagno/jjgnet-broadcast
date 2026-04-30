@@ -36,7 +36,7 @@ public class ScheduledItem
     /// The message that will be sent out
     /// </summary>
     [Required]
-    public string Message { get; set; }
+    public string Message { get; set; } = null!;
 
     /// <summary>
     /// An optional URL of an image to attach or embed in the broadcast post.

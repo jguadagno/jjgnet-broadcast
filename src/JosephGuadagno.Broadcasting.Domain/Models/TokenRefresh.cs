@@ -9,7 +9,7 @@ public class TokenRefresh
 
     [Required]
     [StringLength(255)]
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
     [Required]
     public DateTimeOffset Expires { get; set; }

@@ -8,40 +8,40 @@ public class Email
     /// <summary>
     /// The email address of the sender.
     /// </summary>
-    public string FromMailAddress { get; set; }
+    public required string FromMailAddress { get; set; }
 
     /// <summary>
     /// The display name of the sender.
     /// </summary>
-    public string FromDisplayName { get; set; }
+    public string FromDisplayName { get; set; } = null!;
 
     /// <summary>
     /// The email address of the recipient.
     /// </summary>
-    public string ToMailAddress { get; set; }
+    public required string ToMailAddress { get; set; }
 
     /// <summary>
     /// The display name of the recipient.
     /// </summary>
-    public string ToDisplayName { get; set; }
+    public string ToDisplayName { get; set; } = null!;
 
     /// <summary>
     /// The email address to reply to.
     /// </summary>
-    public string ReplyToMailAddress { get; set; }
+    public string ReplyToMailAddress { get; set; } = null!;
 
     /// <summary>
     /// The display name for the reply-to address.
     /// </summary>
-    public string ReplyToDisplayName { get; set; }
+    public string ReplyToDisplayName { get; set; } = null!;
 
     /// <summary>
     /// The subject of the email.
     /// </summary>
-    public string Subject { get; set; }
+    public required string Subject { get; set; }
 
     /// <summary>
     /// The body of the email.
     /// </summary>
-    public string Body { get; set; }
+    public required string Body { get; set; }
 }

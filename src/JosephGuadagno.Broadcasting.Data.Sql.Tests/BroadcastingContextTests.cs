@@ -91,7 +91,7 @@ public class BroadcastingContextTests : IDisposable
         var retrieved = await _context.Talks.Include(t => t.Engagement).FirstOrDefaultAsync(t => t.Id == talk.Id);
         Assert.NotNull(retrieved);
         Assert.Equal(engagement.Id, retrieved.EngagementId);
-        Assert.Equal("Test Conf", retrieved.Engagement.Name);
+        Assert.Equal("Test Conf", retrieved.Engagement!.Name);
     }
 
     [Fact]

@@ -18,21 +18,21 @@ public class Talk
     /// </summary>
     [Required]
     [MaxLength(500)]
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
         
     /// <summary>
     /// A Url for the talk on the conference website
     /// </summary>
     [Required]
     [Url]
-    public string UrlForConferenceTalk { get; set; }
+    public string UrlForConferenceTalk { get; set; } = null!;
         
     /// <summary>
     /// The Url for the talk on the talk deliverers website
     /// </summary>
     [Required]
     [Url]
-    public string UrlForTalk { get; set; }
+    public string UrlForTalk { get; set; } = null!;
         
     /// <summary>
     /// The start date and time of the talk
@@ -50,12 +50,12 @@ public class Talk
     /// The room/channel/url for the talk
     /// </summary>
     [MaxLength(500)]
-    public string TalkLocation { get; set; }
+    public string? TalkLocation { get; set; }
         
     /// <summary>
     /// Comments for the talk
     /// </summary>
-    public string Comments { get; set; }
+    public string? Comments { get; set; }
     
     /// <summary>
     /// The identifier of the engagement

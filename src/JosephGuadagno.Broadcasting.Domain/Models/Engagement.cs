@@ -20,7 +20,7 @@ public class Engagement
     /// </summary>
     [Required]
     [MaxLength(500)]
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
         
     /// <summary>
     /// The Url for the engagement
@@ -28,7 +28,7 @@ public class Engagement
     [Required]
     [Url]
     [MaxLength(2048)]
-    public string Url { get; set; }
+    public string Url { get; set; } = null!;
         
     /// <summary>
     /// The date and time the engagement starts
@@ -46,7 +46,7 @@ public class Engagement
     /// The IANA Time Zone Identifier for the engagement
     /// </summary>
     [Required]
-    public string TimeZoneId { get; set; }
+    public string TimeZoneId { get; set; } = null!;
 
     /// <summary>
     /// Comments for the engagement

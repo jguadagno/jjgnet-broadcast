@@ -28,7 +28,7 @@ public class ScheduledItemViewModel
     /// This could be SourceData, Engagements, or more
     /// </remarks>
     [Required]
-    public string ItemTableName { get; set; }
+    public string ItemTableName { get; set; } = null!;
         
     /// <summary>
     /// The primary key for this record.
@@ -46,7 +46,7 @@ public class ScheduledItemViewModel
     /// The message that will be sent out
     /// </summary>
     [Required]
-    public string Message { get; set; }
+    public string Message { get; set; } = null!;
 
     /// <summary>
     /// An optional URL of an image to attach or embed in the broadcast post.

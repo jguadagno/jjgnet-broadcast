@@ -28,7 +28,7 @@ public class UserApprovalLog
     /// The action that was performed
     /// </summary>
     [Required]
-    public string Action { get; set; }
+    public string Action { get; set; } = null!;
 
     /// <summary>
     /// Notes regarding this action

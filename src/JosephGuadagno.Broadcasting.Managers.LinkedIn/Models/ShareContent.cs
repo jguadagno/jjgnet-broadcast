@@ -12,7 +12,7 @@ public class ShareContent
     /// Provides the primary content for the share.
     /// </summary>
     [JsonPropertyName("shareCommentary")]
-    public TextProperties ShareCommentary { get; set; }
+    public TextProperties? ShareCommentary { get; set; }
     
     /// <summary>
     /// Represents the media assets attached to the share.
@@ -36,5 +36,5 @@ public class ShareContent
     /// If the shareMediaCategory is <see cref="ShareMediaCategoryEnum.Article"/> or <see cref="ShareMediaCategoryEnum.Image"/>, define those media assets here.
     /// </summary>
     [JsonPropertyName("media")]
-    public Media[] Media { get; set; }
+    public Media[]? Media { get; set; }
 }

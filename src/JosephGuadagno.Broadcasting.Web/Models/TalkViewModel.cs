@@ -17,21 +17,21 @@ public class TalkViewModel
     /// The name of the talk
     /// </summary>
     [Required]
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
         
     /// <summary>
     /// A Url for the talk on the conference website
     /// </summary>
     [Required]
     [Url]
-    public string UrlForConferenceTalk { get; set; }
+    public string UrlForConferenceTalk { get; set; } = null!;
         
     /// <summary>
     /// The Url for the talk on the talk deliverers website
     /// </summary>
     [Required]
     [Url]
-    public string UrlForTalk { get; set; }
+    public string UrlForTalk { get; set; } = null!;
         
     /// <summary>
     /// The start date and time of the talk

@@ -11,5 +11,5 @@ public class TextProperties
     /// Sets the text for the title or description
     /// </summary>
     [JsonPropertyName("text")]
-    public string Text { get; set; }
+    public string? Text { get; set; }
 }
