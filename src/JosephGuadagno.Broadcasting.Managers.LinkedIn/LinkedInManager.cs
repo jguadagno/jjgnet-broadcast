@@ -9,7 +9,6 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Scriban;
 using Scriban.Runtime;
@@ -27,21 +26,28 @@ public class LinkedInManager : ILinkedInManager
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<LinkedInManager> _logger;
-    private readonly IServiceScopeFactory? _serviceScopeFactory;
-    
-    public LinkedInManager(HttpClient httpClient, ILogger<LinkedInManager> logger)
-        : this(httpClient, logger, null)
-    {
-    }
+    private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
+    private readonly IMessageTemplateDataStore _messageTemplateDataStore;
+    private readonly ISyndicationFeedSourceManager _syndicationFeedSourceManager;
+    private readonly IYouTubeSourceManager _youTubeSourceManager;
+    private readonly IEngagementManager _engagementManager;
 
     public LinkedInManager(
         HttpClient httpClient,
         ILogger<LinkedInManager> logger,
-        IServiceScopeFactory? serviceScopeFactory)
+        ISocialMediaPlatformManager socialMediaPlatformManager,
+        IMessageTemplateDataStore messageTemplateDataStore,
+        ISyndicationFeedSourceManager syndicationFeedSourceManager,
+        IYouTubeSourceManager youTubeSourceManager,
+        IEngagementManager engagementManager)
     {
         _httpClient = httpClient;
         _logger = logger;
-        _serviceScopeFactory = serviceScopeFactory;
+        _socialMediaPlatformManager = socialMediaPlatformManager;
+        _messageTemplateDataStore = messageTemplateDataStore;
+        _syndicationFeedSourceManager = syndicationFeedSourceManager;
+        _youTubeSourceManager = youTubeSourceManager;
+        _engagementManager = engagementManager;
     }
 
     public async Task<string?> PublishAsync(SocialMediaPublishRequest request)
@@ -112,25 +118,14 @@ public class LinkedInManager : ILinkedInManager
     {
         ArgumentNullException.ThrowIfNull(scheduledItem);
 
-        if (_serviceScopeFactory is null)
-        {
-            throw new InvalidOperationException(
-                "ComposeMessageAsync requires an IServiceScopeFactory-backed LinkedInManager instance.");
-        }
-
-        using var scope = _serviceScopeFactory.CreateScope();
-        var serviceProvider = scope.ServiceProvider;
-
-        var socialMediaPlatformManager = serviceProvider.GetRequiredService<ISocialMediaPlatformManager>();
         var linkedInPlatform =
-            await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.LinkedIn, cancellationToken);
+            await _socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.LinkedIn, cancellationToken);
         if (linkedInPlatform is null)
         {
             return scheduledItem.Message;
         }
 
-        var messageTemplateDataStore = serviceProvider.GetRequiredService<IMessageTemplateDataStore>();
-        var messageTemplate = await messageTemplateDataStore.GetAsync(
+        var messageTemplate = await _messageTemplateDataStore.GetAsync(
             linkedInPlatform.Id,
             GetMessageType(scheduledItem.ItemType),
             cancellationToken);
@@ -141,7 +136,6 @@ public class LinkedInManager : ILinkedInManager
         }
 
         var renderedMessage = await TryRenderTemplateAsync(
-            serviceProvider,
             scheduledItem,
             messageTemplate.Template,
             cancellationToken);
@@ -581,7 +575,6 @@ public class LinkedInManager : ILinkedInManager
     };
 
     private async Task<string?> TryRenderTemplateAsync(
-        IServiceProvider serviceProvider,
         ScheduledItem scheduledItem,
         string templateContent,
         CancellationToken cancellationToken)
@@ -596,9 +589,7 @@ public class LinkedInManager : ILinkedInManager
             switch (scheduledItem.ItemType)
             {
                 case ScheduledItemType.SyndicationFeedSources:
-                    var syndicationFeedSourceManager =
-                        serviceProvider.GetRequiredService<ISyndicationFeedSourceManager>();
-                    var feed = await syndicationFeedSourceManager.GetAsync(
+                    var feed = await _syndicationFeedSourceManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = feed.Title;
@@ -606,8 +597,7 @@ public class LinkedInManager : ILinkedInManager
                     tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.YouTubeSources:
-                    var youTubeSourceManager = serviceProvider.GetRequiredService<IYouTubeSourceManager>();
-                    var youTubeSource = await youTubeSourceManager.GetAsync(
+                    var youTubeSource = await _youTubeSourceManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = youTubeSource.Title;
@@ -615,8 +605,7 @@ public class LinkedInManager : ILinkedInManager
                     tags = youTubeSource.Tags?.Count > 0 ? string.Join(",", youTubeSource.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.Engagements:
-                    var engagementManager = serviceProvider.GetRequiredService<IEngagementManager>();
-                    var engagement = await engagementManager.GetAsync(
+                    var engagement = await _engagementManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = engagement.Name;
@@ -624,8 +613,7 @@ public class LinkedInManager : ILinkedInManager
                     description = engagement.Comments ?? string.Empty;
                     break;
                 case ScheduledItemType.Talks:
-                    var talkManager = serviceProvider.GetRequiredService<IEngagementManager>();
-                    var talk = await talkManager.GetTalkAsync(
+                    var talk = await _engagementManager.GetTalkAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = talk.Name;

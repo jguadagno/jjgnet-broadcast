@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Threading;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -6,7 +6,6 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
@@ -35,7 +34,7 @@ public class LinkedInManagerUnitTests
     public async Task PostShareText_WithEmptyAccessToken_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
@@ -48,7 +47,7 @@ public class LinkedInManagerUnitTests
     public async Task PostShareText_WithEmptyAuthorId_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
@@ -61,7 +60,7 @@ public class LinkedInManagerUnitTests
     public async Task PostShareText_WithEmptyPostText_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
@@ -78,7 +77,7 @@ public class LinkedInManagerUnitTests
     public async Task PostShareTextAndLink_WithEmptyAccessToken_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
@@ -91,7 +90,7 @@ public class LinkedInManagerUnitTests
     public async Task PostShareTextAndLink_WithEmptyAuthorId_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
@@ -104,7 +103,7 @@ public class LinkedInManagerUnitTests
     public async Task PostShareTextAndLink_WithEmptyPostText_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
@@ -117,7 +116,7 @@ public class LinkedInManagerUnitTests
     public async Task PostShareTextAndLink_WithEmptyLink_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
@@ -134,7 +133,7 @@ public class LinkedInManagerUnitTests
     public async Task PostShareTextAndImage_WithEmptyAccessToken_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
         var imageBytes = new byte[] { 1, 2, 3, 4 };
 
         // Act & Assert
@@ -148,7 +147,7 @@ public class LinkedInManagerUnitTests
     public async Task PostShareTextAndImage_WithEmptyPostText_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
         var imageBytes = new byte[] { 1, 2, 3, 4 };
 
         // Act & Assert
@@ -162,7 +161,7 @@ public class LinkedInManagerUnitTests
     public async Task PostShareTextAndImage_WithEmptyImage_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
@@ -179,7 +178,7 @@ public class LinkedInManagerUnitTests
     public async Task GetMyLinkedInUserProfile_WithEmptyAccessToken_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
@@ -198,7 +197,7 @@ public class LinkedInManagerUnitTests
         // Arrange
         var errorJson = "{\"message\": \"Unauthorized\", \"serviceErrorCode\": 401, \"status\": 401}";
         SetupHttpMessageHandler(HttpStatusCode.OK, errorJson);
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<LinkedInPostException>(
@@ -213,7 +212,7 @@ public class LinkedInManagerUnitTests
         // Arrange — LinkedIn returns a failure response (no "id" field, so IsSuccess == false)
         var errorJson = "{\"message\": \"Unauthorized\", \"serviceErrorCode\": 401, \"status\": 401}";
         SetupHttpMessageHandler(HttpStatusCode.OK, errorJson);
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act
         var exception = await Assert.ThrowsAsync<LinkedInPostException>(
@@ -230,7 +229,7 @@ public class LinkedInManagerUnitTests
         // Arrange
         var errorJson = "{\"message\": \"Forbidden\", \"serviceErrorCode\": 403, \"status\": 403}";
         SetupHttpMessageHandler(HttpStatusCode.OK, errorJson);
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<LinkedInPostException>(
@@ -260,7 +259,7 @@ public class LinkedInManagerUnitTests
                 Content = new StringContent("{\"id\": \"share-123\"}", System.Text.Encoding.UTF8, "application/json")
             });
 
-        ISocialMediaPublisher sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        ISocialMediaPublisher sut = CreateSut();
 
         // Act
         var result = await sut.PublishAsync(new SocialMediaPublishRequest
@@ -282,7 +281,7 @@ public class LinkedInManagerUnitTests
     public async Task PublishAsync_WithoutAccessToken_ThrowsArgumentNullException()
     {
         // Arrange
-        ISocialMediaPublisher sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        ISocialMediaPublisher sut = CreateSut();
 
         // Act
         var act = () => sut.PublishAsync(new SocialMediaPublishRequest
@@ -296,20 +295,11 @@ public class LinkedInManagerUnitTests
     }
 
     [Fact]
-    public async Task ComposeMessageAsync_WithoutScopeFactory_ThrowsInvalidOperationException()
+    public async Task ComposeMessageAsync_WithNullScheduledItem_ThrowsArgumentNullException()
     {
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object);
+        var sut = CreateSut();
 
-        var act = () => sut.ComposeMessageAsync(new ScheduledItem
-        {
-            Id = 1,
-            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
-            ItemPrimaryKey = 42,
-            Message = "fallback",
-            SendOnDateTime = DateTimeOffset.UtcNow
-        });
-
-        await Assert.ThrowsAsync<InvalidOperationException>(act);
+        await Assert.ThrowsAsync<ArgumentNullException>(() => sut.ComposeMessageAsync(null!));
     }
 
     [Fact]
@@ -325,14 +315,25 @@ public class LinkedInManagerUnitTests
             ImageUrl = "https://cdn.example.com/image.jpg"
         };
 
-        var scopeFactory = BuildScopeFactory(
-            messageTemplate: new MessageTemplate
+        var mockPlatformManager = new Mock<ISocialMediaPlatformManager>();
+        mockPlatformManager
+            .Setup(m => m.GetByNameAsync(MessageTemplates.Platforms.LinkedIn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SocialMediaPlatform { Id = SocialMediaPlatformIds.LinkedIn, Name = MessageTemplates.Platforms.LinkedIn, IsActive = true });
+
+        var mockTemplateStore = new Mock<IMessageTemplateDataStore>();
+        mockTemplateStore
+            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MessageTemplate
             {
                 SocialMediaPlatformId = SocialMediaPlatformIds.LinkedIn,
                 MessageType = MessageTemplates.MessageTypes.NewSyndicationFeedItem,
                 Template = "{{ title }} - {{ url }} {{ image_url }}"
-            },
-            feedSource: new SyndicationFeedSource
+            });
+
+        var mockFeedManager = new Mock<ISyndicationFeedSourceManager>();
+        mockFeedManager
+            .Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SyndicationFeedSource
             {
                 Id = 42,
                 FeedIdentifier = "feed-1",
@@ -344,7 +345,10 @@ public class LinkedInManagerUnitTests
                 CreatedByEntraOid = "test-oid"
             });
 
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object, scopeFactory);
+        var sut = CreateSut(
+            socialMediaPlatformManager: mockPlatformManager,
+            messageTemplateDataStore: mockTemplateStore,
+            syndicationFeedSourceManager: mockFeedManager);
 
         var result = await sut.ComposeMessageAsync(scheduledItem);
 
@@ -363,19 +367,19 @@ public class LinkedInManagerUnitTests
             SendOnDateTime = DateTimeOffset.UtcNow
         };
 
-        var scopeFactory = BuildScopeFactory(
-            messageTemplate: null,
-            engagement: new Engagement
-            {
-                Id = 42,
-                Name = "Tech Conference 2026",
-                Url = "https://conf.example.com",
-                StartDateTime = DateTimeOffset.UtcNow,
-                EndDateTime = DateTimeOffset.UtcNow.AddHours(1),
-                TimeZoneId = "UTC"
-            });
+        var mockPlatformManager = new Mock<ISocialMediaPlatformManager>();
+        mockPlatformManager
+            .Setup(m => m.GetByNameAsync(MessageTemplates.Platforms.LinkedIn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SocialMediaPlatform { Id = SocialMediaPlatformIds.LinkedIn, Name = MessageTemplates.Platforms.LinkedIn, IsActive = true });
 
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object, scopeFactory);
+        var mockTemplateStore = new Mock<IMessageTemplateDataStore>();
+        mockTemplateStore
+            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MessageTemplate?)null);
+
+        var sut = CreateSut(
+            socialMediaPlatformManager: mockPlatformManager,
+            messageTemplateDataStore: mockTemplateStore);
 
         var result = await sut.ComposeMessageAsync(scheduledItem);
 
@@ -394,14 +398,25 @@ public class LinkedInManagerUnitTests
             SendOnDateTime = DateTimeOffset.UtcNow
         };
 
-        var scopeFactory = BuildScopeFactory(
-            messageTemplate: new MessageTemplate
+        var mockPlatformManager = new Mock<ISocialMediaPlatformManager>();
+        mockPlatformManager
+            .Setup(m => m.GetByNameAsync(MessageTemplates.Platforms.LinkedIn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SocialMediaPlatform { Id = SocialMediaPlatformIds.LinkedIn, Name = MessageTemplates.Platforms.LinkedIn, IsActive = true });
+
+        var mockTemplateStore = new Mock<IMessageTemplateDataStore>();
+        mockTemplateStore
+            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MessageTemplate
             {
                 SocialMediaPlatformId = SocialMediaPlatformIds.LinkedIn,
                 MessageType = MessageTemplates.MessageTypes.ScheduledItem,
                 Template = "{{ title }} - {{ url }} - {{ description }}"
-            },
-            talk: new Talk
+            });
+
+        var mockEngagementManager = new Mock<IEngagementManager>();
+        mockEngagementManager
+            .Setup(m => m.GetTalkAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Talk
             {
                 Id = 42,
                 EngagementId = 99,
@@ -414,7 +429,10 @@ public class LinkedInManagerUnitTests
                 TalkLocation = "Room A"
             });
 
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object, scopeFactory);
+        var sut = CreateSut(
+            socialMediaPlatformManager: mockPlatformManager,
+            messageTemplateDataStore: mockTemplateStore,
+            engagementManager: mockEngagementManager);
 
         var result = await sut.ComposeMessageAsync(scheduledItem);
 
@@ -433,21 +451,30 @@ public class LinkedInManagerUnitTests
             SendOnDateTime = DateTimeOffset.UtcNow
         };
 
-        var failingYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
-        failingYouTubeSourceManager
-            .Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("boom"));
+        var mockPlatformManager = new Mock<ISocialMediaPlatformManager>();
+        mockPlatformManager
+            .Setup(m => m.GetByNameAsync(MessageTemplates.Platforms.LinkedIn, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SocialMediaPlatform { Id = SocialMediaPlatformIds.LinkedIn, Name = MessageTemplates.Platforms.LinkedIn, IsActive = true });
 
-        var scopeFactory = BuildScopeFactory(
-            messageTemplate: new MessageTemplate
+        var mockTemplateStore = new Mock<IMessageTemplateDataStore>();
+        mockTemplateStore
+            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MessageTemplate
             {
                 SocialMediaPlatformId = SocialMediaPlatformIds.LinkedIn,
                 MessageType = MessageTemplates.MessageTypes.NewYouTubeItem,
                 Template = "{{ title }}"
-            },
-            youTubeSourceManager: failingYouTubeSourceManager);
+            });
 
-        var sut = new LinkedInManager(_httpClient, _mockLogger.Object, scopeFactory);
+        var mockYouTubeManager = new Mock<IYouTubeSourceManager>();
+        mockYouTubeManager
+            .Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("boom"));
+
+        var sut = CreateSut(
+            socialMediaPlatformManager: mockPlatformManager,
+            messageTemplateDataStore: mockTemplateStore,
+            youTubeSourceManager: mockYouTubeManager);
 
         var result = await sut.ComposeMessageAsync(scheduledItem);
 
@@ -486,59 +513,18 @@ public class LinkedInManagerUnitTests
             });
     }
 
-    private static IServiceScopeFactory BuildScopeFactory(
-        MessageTemplate? messageTemplate,
-        SyndicationFeedSource? feedSource = null,
-        Engagement? engagement = null,
-        Talk? talk = null,
-        YouTubeSource? youTubeSource = null,
-        Mock<IYouTubeSourceManager>? youTubeSourceManager = null)
-    {
-        var messageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        messageTemplateDataStore
-            .Setup(m => m.GetAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(messageTemplate);
-
-        var socialMediaPlatformManager = new Mock<ISocialMediaPlatformManager>();
-        socialMediaPlatformManager
-            .Setup(m => m.GetByNameAsync(
-                MessageTemplates.Platforms.LinkedIn,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SocialMediaPlatform
-            {
-                Id = SocialMediaPlatformIds.LinkedIn,
-                Name = MessageTemplates.Platforms.LinkedIn,
-                IsActive = true
-            });
-
-        var engagementManager = new Mock<IEngagementManager>();
-        engagementManager
-            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(engagement!);
-        engagementManager
-            .Setup(m => m.GetTalkAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(talk!);
-
-        var syndicationFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
-        syndicationFeedSourceManager
-            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(feedSource!);
-
-        youTubeSourceManager ??= new Mock<IYouTubeSourceManager>();
-        youTubeSourceManager
-            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(youTubeSource!);
-
-        var services = new ServiceCollection();
-        services.AddScoped(_ => messageTemplateDataStore.Object);
-        services.AddScoped(_ => socialMediaPlatformManager.Object);
-        services.AddScoped(_ => engagementManager.Object);
-        services.AddScoped(_ => syndicationFeedSourceManager.Object);
-        services.AddScoped(_ => youTubeSourceManager.Object);
-
-        return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
-    }
+    private LinkedInManager CreateSut(
+        Mock<ISocialMediaPlatformManager>? socialMediaPlatformManager = null,
+        Mock<IMessageTemplateDataStore>? messageTemplateDataStore = null,
+        Mock<ISyndicationFeedSourceManager>? syndicationFeedSourceManager = null,
+        Mock<IYouTubeSourceManager>? youTubeSourceManager = null,
+        Mock<IEngagementManager>? engagementManager = null)
+        => new LinkedInManager(
+            _httpClient,
+            _mockLogger.Object,
+            (socialMediaPlatformManager ?? new Mock<ISocialMediaPlatformManager>()).Object,
+            (messageTemplateDataStore ?? new Mock<IMessageTemplateDataStore>()).Object,
+            (syndicationFeedSourceManager ?? new Mock<ISyndicationFeedSourceManager>()).Object,
+            (youTubeSourceManager ?? new Mock<IYouTubeSourceManager>()).Object,
+            (engagementManager ?? new Mock<IEngagementManager>()).Object);
 }
