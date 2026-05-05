@@ -273,8 +273,8 @@ void ConfigureTwitter(IServiceCollection services, IConfiguration config)
         }
         return new TwitterContext(authorizer);
     });
-    services.TryAddSingleton<ITwitterManager, TwitterManager>();
-    services.AddSingleton<ISocialMediaPublisher>(sp =>
+    services.TryAddScoped<ITwitterManager, TwitterManager>();
+    services.AddScoped<ISocialMediaPublisher>(sp =>
         sp.GetRequiredService<ITwitterManager>());
 }
 
