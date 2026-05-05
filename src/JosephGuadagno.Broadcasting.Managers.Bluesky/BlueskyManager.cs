@@ -9,7 +9,6 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Scriban;
 using Scriban.Runtime;
@@ -22,26 +21,33 @@ public class BlueskyManager : IBlueskyManager
     private readonly HttpClient _httpClient;
     private readonly IBlueskySettings _blueskySettings;
     private readonly ILogger<BlueskyManager> _logger;
-    private readonly IServiceScopeFactory? _serviceScopeFactory;
+    private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
+    private readonly IMessageTemplateDataStore _messageTemplateDataStore;
+    private readonly ISyndicationFeedSourceManager _syndicationFeedSourceManager;
+    private readonly IYouTubeSourceManager _youTubeSourceManager;
+    private readonly IEngagementManager _engagementManager;
 
     private BlueskyAgent? _agent;
     private readonly SemaphoreSlim _loginLock = new(1, 1);
-
-    public BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySettings, ILogger<BlueskyManager> logger)
-        : this(httpClient, blueskySettings, logger, null)
-    {
-    }
 
     public BlueskyManager(
         HttpClient httpClient,
         IBlueskySettings blueskySettings,
         ILogger<BlueskyManager> logger,
-        IServiceScopeFactory? serviceScopeFactory)
+        ISocialMediaPlatformManager socialMediaPlatformManager,
+        IMessageTemplateDataStore messageTemplateDataStore,
+        ISyndicationFeedSourceManager syndicationFeedSourceManager,
+        IYouTubeSourceManager youTubeSourceManager,
+        IEngagementManager engagementManager)
     {
         _httpClient = httpClient;
         _blueskySettings = blueskySettings;
         _logger = logger;
-        _serviceScopeFactory = serviceScopeFactory;
+        _socialMediaPlatformManager = socialMediaPlatformManager;
+        _messageTemplateDataStore = messageTemplateDataStore;
+        _syndicationFeedSourceManager = syndicationFeedSourceManager;
+        _youTubeSourceManager = youTubeSourceManager;
+        _engagementManager = engagementManager;
     }
 
 
@@ -338,25 +344,14 @@ public class BlueskyManager : IBlueskyManager
     {
         ArgumentNullException.ThrowIfNull(scheduledItem);
 
-        if (_serviceScopeFactory is null)
-        {
-            throw new InvalidOperationException(
-                "ComposeMessageAsync requires an IServiceScopeFactory-backed BlueskyManager instance.");
-        }
-
-        using var scope = _serviceScopeFactory.CreateScope();
-        var serviceProvider = scope.ServiceProvider;
-
-        var socialMediaPlatformManager = serviceProvider.GetRequiredService<ISocialMediaPlatformManager>();
         var blueskyPlatform =
-            await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Bluesky, cancellationToken);
+            await _socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Bluesky, cancellationToken);
         if (blueskyPlatform is null)
         {
             return scheduledItem.Message;
         }
 
-        var messageTemplateDataStore = serviceProvider.GetRequiredService<IMessageTemplateDataStore>();
-        var messageTemplate = await messageTemplateDataStore.GetAsync(
+        var messageTemplate = await _messageTemplateDataStore.GetAsync(
             blueskyPlatform.Id,
             GetMessageType(scheduledItem.ItemType),
             cancellationToken);
@@ -367,7 +362,6 @@ public class BlueskyManager : IBlueskyManager
         }
 
         var renderedMessage = await TryRenderTemplateAsync(
-            serviceProvider,
             scheduledItem,
             messageTemplate.Template,
             cancellationToken);
@@ -385,7 +379,6 @@ public class BlueskyManager : IBlueskyManager
     };
 
     private async Task<string?> TryRenderTemplateAsync(
-        IServiceProvider serviceProvider,
         ScheduledItem scheduledItem,
         string templateContent,
         CancellationToken cancellationToken)
@@ -400,9 +393,7 @@ public class BlueskyManager : IBlueskyManager
             switch (scheduledItem.ItemType)
             {
                 case ScheduledItemType.SyndicationFeedSources:
-                    var syndicationFeedSourceManager =
-                        serviceProvider.GetRequiredService<ISyndicationFeedSourceManager>();
-                    var feed = await syndicationFeedSourceManager.GetAsync(
+                    var feed = await _syndicationFeedSourceManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = feed.Title;
@@ -410,8 +401,7 @@ public class BlueskyManager : IBlueskyManager
                     tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.YouTubeSources:
-                    var youTubeSourceManager = serviceProvider.GetRequiredService<IYouTubeSourceManager>();
-                    var youTubeSource = await youTubeSourceManager.GetAsync(
+                    var youTubeSource = await _youTubeSourceManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = youTubeSource.Title;
@@ -419,8 +409,7 @@ public class BlueskyManager : IBlueskyManager
                     tags = youTubeSource.Tags?.Count > 0 ? string.Join(",", youTubeSource.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.Engagements:
-                    var engagementManager = serviceProvider.GetRequiredService<IEngagementManager>();
-                    var engagement = await engagementManager.GetAsync(
+                    var engagement = await _engagementManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = engagement.Name;
@@ -428,8 +417,7 @@ public class BlueskyManager : IBlueskyManager
                     description = engagement.Comments ?? string.Empty;
                     break;
                 case ScheduledItemType.Talks:
-                    var talkManager = serviceProvider.GetRequiredService<IEngagementManager>();
-                    var talk = await talkManager.GetTalkAsync(
+                    var talk = await _engagementManager.GetTalkAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = talk.Name;

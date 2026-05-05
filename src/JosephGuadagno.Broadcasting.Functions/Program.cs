@@ -340,7 +340,7 @@ void ConfigureBlueskyManager(IServiceCollection services, IConfiguration config)
         config.Bind("Bluesky", blueskySettings);
         return blueskySettings;
     });
-    services.TryAddSingleton<IBlueskyManager, BlueskyManager>();
-    services.AddSingleton<ISocialMediaPublisher>(sp =>
+    services.TryAddScoped<IBlueskyManager, BlueskyManager>();
+    services.AddScoped<ISocialMediaPublisher>(sp =>
         sp.GetRequiredService<IBlueskyManager>());
 }
