@@ -1,7 +1,10 @@
 namespace JosephGuadagno.Broadcasting.Domain.Constants;
 
 /// <summary>
-/// Constant IDs for social media platforms matching database seed values
+/// Constant IDs for social media platforms matching database seed values.
+/// These IDs are pinned via SET IDENTITY_INSERT in
+/// <c>scripts/database/data-seed.sql</c>.
+/// If a new platform is added, update BOTH that seed script and this file.
 /// </summary>
 public static class SocialMediaPlatformIds
 {

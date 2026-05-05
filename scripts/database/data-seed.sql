@@ -81,21 +81,25 @@ IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.Roles WHERE Name = N'Viewer')
 --       See scripts/database/migrations/2026-04-02-rbac-user-approval.sql for the template SQL.
 
 -- Seed the SocialMediaPlatforms table (Epic #667)
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Twitter')
-    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
-    VALUES (N'Twitter', N'https://twitter.com', N'bi-twitter-x', 1)
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'BlueSky')
-    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
-    VALUES (N'BlueSky', N'https://bsky.app', N'bi-bluesky', 1)
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'LinkedIn')
-    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
-    VALUES (N'LinkedIn', N'https://www.linkedin.com', N'bi-linkedin', 1)
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Facebook')
-    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
-    VALUES (N'Facebook', N'https://www.facebook.com', N'bi-facebook', 1)
-IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Mastodon')
-    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
-    VALUES (N'Mastodon', N'https://mastodon.social', N'bi-mastodon', 1)
+-- IMPORTANT: IDs here are pinned and must match SocialMediaPlatformIds.cs constants.
+-- SET IDENTITY_INSERT guarantees predictable IDs regardless of insertion order or prior state.
+SET IDENTITY_INSERT JJGNet.dbo.SocialMediaPlatforms ON;
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Id = 1)
+    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Id, Name, Url, Icon, IsActive)
+    VALUES (1, N'Twitter', N'https://twitter.com', N'bi-twitter-x', 1)
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Id = 2)
+    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Id, Name, Url, Icon, IsActive)
+    VALUES (2, N'BlueSky', N'https://bsky.app', N'bi-bluesky', 1)
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Id = 3)
+    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Id, Name, Url, Icon, IsActive)
+    VALUES (3, N'LinkedIn', N'https://www.linkedin.com', N'bi-linkedin', 1)
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Id = 4)
+    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Id, Name, Url, Icon, IsActive)
+    VALUES (4, N'Facebook', N'https://www.facebook.com', N'bi-facebook', 1)
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Id = 5)
+    INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Id, Name, Url, Icon, IsActive)
+    VALUES (5, N'Mastodon', N'https://mastodon.social', N'bi-mastodon', 1)
+SET IDENTITY_INSERT JJGNet.dbo.SocialMediaPlatforms OFF;
 
 -- Seed CredentialSetupDocumentationUrl for SocialMediaPlatforms (Issue #812)
 UPDATE JJGNet.dbo.SocialMediaPlatforms SET CredentialSetupDocumentationUrl = N'/help/socialMediaPlatforms/twitter'
