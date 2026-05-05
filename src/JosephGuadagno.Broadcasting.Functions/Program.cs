@@ -327,8 +327,8 @@ void ConfigureFacebookManager(IServiceCollection services, IConfiguration config
         config.Bind("Facebook", facebookApplicationSettings);
         return facebookApplicationSettings;
     });
-    services.TryAddSingleton<IFacebookManager, FacebookManager>();
-    services.AddSingleton<ISocialMediaPublisher>(sp =>
+    services.TryAddScoped<IFacebookManager, FacebookManager>();
+    services.AddScoped<ISocialMediaPublisher>(sp =>
         sp.GetRequiredService<IFacebookManager>());
 }
 
