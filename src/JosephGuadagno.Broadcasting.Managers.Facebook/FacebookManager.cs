@@ -8,7 +8,6 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Scriban;
 using Scriban.Runtime;
@@ -21,23 +20,30 @@ public class FacebookManager : IFacebookManager
     private readonly HttpClient _httpClient;
     private readonly ILogger<FacebookManager> _logger;
     private readonly IFacebookApplicationSettings _facebookApplicationSettings;
-    private readonly IServiceScopeFactory? _serviceScopeFactory;
-
-    public FacebookManager(HttpClient httpClient, IFacebookApplicationSettings facebookApplicationSettings, ILogger<FacebookManager> logger)
-        : this(httpClient, facebookApplicationSettings, logger, null)
-    {
-    }
+    private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
+    private readonly IMessageTemplateDataStore _messageTemplateDataStore;
+    private readonly ISyndicationFeedSourceManager _syndicationFeedSourceManager;
+    private readonly IYouTubeSourceManager _youTubeSourceManager;
+    private readonly IEngagementManager _engagementManager;
 
     public FacebookManager(
         HttpClient httpClient,
         IFacebookApplicationSettings facebookApplicationSettings,
         ILogger<FacebookManager> logger,
-        IServiceScopeFactory? serviceScopeFactory)
+        ISocialMediaPlatformManager socialMediaPlatformManager,
+        IMessageTemplateDataStore messageTemplateDataStore,
+        ISyndicationFeedSourceManager syndicationFeedSourceManager,
+        IYouTubeSourceManager youTubeSourceManager,
+        IEngagementManager engagementManager)
     {
         _httpClient = httpClient;
         _facebookApplicationSettings = facebookApplicationSettings;
         _logger = logger;
-        _serviceScopeFactory = serviceScopeFactory;
+        _socialMediaPlatformManager = socialMediaPlatformManager;
+        _messageTemplateDataStore = messageTemplateDataStore;
+        _syndicationFeedSourceManager = syndicationFeedSourceManager;
+        _youTubeSourceManager = youTubeSourceManager;
+        _engagementManager = engagementManager;
     }
 
     public async Task<string> ComposeMessageAsync(
@@ -46,25 +52,14 @@ public class FacebookManager : IFacebookManager
     {
         ArgumentNullException.ThrowIfNull(scheduledItem);
 
-        if (_serviceScopeFactory is null)
-        {
-            throw new InvalidOperationException(
-                "ComposeMessageAsync requires an IServiceScopeFactory-backed FacebookManager instance.");
-        }
-
-        using var scope = _serviceScopeFactory.CreateScope();
-        var serviceProvider = scope.ServiceProvider;
-
-        var socialMediaPlatformManager = serviceProvider.GetRequiredService<ISocialMediaPlatformManager>();
         var facebookPlatform =
-            await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Facebook, cancellationToken);
+            await _socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Facebook, cancellationToken);
         if (facebookPlatform is null)
         {
             return scheduledItem.Message;
         }
 
-        var messageTemplateDataStore = serviceProvider.GetRequiredService<IMessageTemplateDataStore>();
-        var messageTemplate = await messageTemplateDataStore.GetAsync(
+        var messageTemplate = await _messageTemplateDataStore.GetAsync(
             facebookPlatform.Id,
             GetMessageType(scheduledItem.ItemType),
             cancellationToken);
@@ -75,7 +70,6 @@ public class FacebookManager : IFacebookManager
         }
 
         var renderedMessage = await TryRenderTemplateAsync(
-            serviceProvider,
             scheduledItem,
             messageTemplate.Template,
             cancellationToken);
@@ -296,7 +290,6 @@ public class FacebookManager : IFacebookManager
     };
 
     private async Task<string?> TryRenderTemplateAsync(
-        IServiceProvider serviceProvider,
         ScheduledItem scheduledItem,
         string templateContent,
         CancellationToken cancellationToken)
@@ -311,9 +304,7 @@ public class FacebookManager : IFacebookManager
             switch (scheduledItem.ItemType)
             {
                 case ScheduledItemType.SyndicationFeedSources:
-                    var syndicationFeedSourceManager =
-                        serviceProvider.GetRequiredService<ISyndicationFeedSourceManager>();
-                    var feed = await syndicationFeedSourceManager.GetAsync(
+                    var feed = await _syndicationFeedSourceManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = feed.Title;
@@ -321,8 +312,7 @@ public class FacebookManager : IFacebookManager
                     tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.YouTubeSources:
-                    var youTubeSourceManager = serviceProvider.GetRequiredService<IYouTubeSourceManager>();
-                    var youTubeSource = await youTubeSourceManager.GetAsync(
+                    var youTubeSource = await _youTubeSourceManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = youTubeSource.Title;
@@ -330,8 +320,7 @@ public class FacebookManager : IFacebookManager
                     tags = youTubeSource.Tags?.Count > 0 ? string.Join(",", youTubeSource.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.Engagements:
-                    var engagementManager = serviceProvider.GetRequiredService<IEngagementManager>();
-                    var engagement = await engagementManager.GetAsync(
+                    var engagement = await _engagementManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = engagement.Name;
@@ -339,8 +328,7 @@ public class FacebookManager : IFacebookManager
                     description = engagement.Comments ?? string.Empty;
                     break;
                 case ScheduledItemType.Talks:
-                    var talkManager = serviceProvider.GetRequiredService<IEngagementManager>();
-                    var talk = await talkManager.GetTalkAsync(
+                    var talk = await _engagementManager.GetTalkAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = talk.Name;
