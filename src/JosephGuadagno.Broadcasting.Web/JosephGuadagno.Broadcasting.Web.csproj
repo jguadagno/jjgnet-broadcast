@@ -55,7 +55,7 @@
         <PackageReference Include="Microsoft.Extensions.Caching.SqlServer" Version="10.0.7" />
         <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0" />
         <PackageReference Include="Microsoft.Identity.Web" Version="4.8.0" />
-        <PackageReference Include="Microsoft.Identity.Web.DownstreamApi" Version="4.8.0" />
+        <PackageReference Include="Microsoft.Identity.Web.DownstreamApi" Version="4.9.0" />
         <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.8.0" />
         <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.3" />
         <PackageReference Include="NodaTime" Version="3.3.2" />
