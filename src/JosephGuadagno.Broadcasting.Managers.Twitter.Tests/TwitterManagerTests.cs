@@ -1,12 +1,9 @@
-using FluentAssertions;
-using JosephGuadagno.Broadcasting.Domain.Constants;
-using JosephGuadagno.Broadcasting.Domain.Enums;
+﻿using FluentAssertions;
 using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Twitter.Exceptions;
 using LinqToTwitter;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -122,106 +119,18 @@ public class TwitterManagerTests
     }
 
     [Fact]
-    public async Task ComposeMessageAsync_WhenServiceScopeFactoryIsNull_ThrowsInvalidOperationException()
+    public async Task ComposeMessageAsync_ReturnsScheduledItemMessage()
     {
         // Arrange
-        var sut = new TwitterManager(null!, _mockLogger.Object, null);
-        var scheduledItem = new ScheduledItem { Message = "test message" };
-
-        // Act
-        var act = () => sut.ComposeMessageAsync(scheduledItem);
-
-        // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>();
-    }
-
-    [Fact]
-    public async Task ComposeMessageAsync_WhenPlatformNotFound_ReturnsFallbackMessage()
-    {
-        // Arrange
-        var expectedMessage = "fallback message";
+        var expectedMessage = "Hello Twitter!";
         var scheduledItem = new ScheduledItem { Message = expectedMessage };
-
-        var mockPlatformManager = new Mock<ISocialMediaPlatformManager>();
-        mockPlatformManager
-            .Setup(m => m.GetByNameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((SocialMediaPlatform?)null);
-
-        var mockServiceProvider = new Mock<IServiceProvider>();
-        mockServiceProvider
-            .Setup(sp => sp.GetService(typeof(ISocialMediaPlatformManager)))
-            .Returns(mockPlatformManager.Object);
-
-        var mockScope = new Mock<IServiceScope>();
-        mockScope.Setup(s => s.ServiceProvider).Returns(mockServiceProvider.Object);
-
-        var mockScopeFactory = new Mock<IServiceScopeFactory>();
-        mockScopeFactory.Setup(f => f.CreateScope()).Returns(mockScope.Object);
-
-        var sut = new TwitterManager(null!, _mockLogger.Object, mockScopeFactory.Object);
+        var sut = CreateSut(_mockLogger.Object, tweetResult: null);
 
         // Act
         var result = await sut.ComposeMessageAsync(scheduledItem);
 
         // Assert
         result.Should().Be(expectedMessage);
-    }
-
-    [Fact]
-    public async Task ComposeMessageAsync_WhenValidScheduledItemWithTemplate_ReturnsNonEmptyString()
-    {
-        // Arrange
-        var scheduledItem = new ScheduledItem
-        {
-            Message = "fallback",
-            ItemType = ScheduledItemType.SyndicationFeedSources,
-            ItemPrimaryKey = 1
-        };
-
-        var platform = new SocialMediaPlatform { Id = 42, Name = MessageTemplates.Platforms.Twitter };
-        var messageTemplate = new MessageTemplate { Template = "Check out: {{ title }} {{ url }}" };
-        var feedSource = new SyndicationFeedSource { Title = "Test Post", Url = "https://example.com/post" };
-
-        var mockPlatformManager = new Mock<ISocialMediaPlatformManager>();
-        mockPlatformManager
-            .Setup(m => m.GetByNameAsync(MessageTemplates.Platforms.Twitter, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(platform);
-
-        var mockTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockTemplateDataStore
-            .Setup(m => m.GetAsync(platform.Id, MessageTemplates.MessageTypes.NewSyndicationFeedItem, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(messageTemplate);
-
-        var mockFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
-        mockFeedSourceManager
-            .Setup(m => m.GetAsync(scheduledItem.ItemPrimaryKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(feedSource);
-
-        var mockServiceProvider = new Mock<IServiceProvider>();
-        mockServiceProvider
-            .Setup(sp => sp.GetService(typeof(ISocialMediaPlatformManager)))
-            .Returns(mockPlatformManager.Object);
-        mockServiceProvider
-            .Setup(sp => sp.GetService(typeof(IMessageTemplateDataStore)))
-            .Returns(mockTemplateDataStore.Object);
-        mockServiceProvider
-            .Setup(sp => sp.GetService(typeof(ISyndicationFeedSourceManager)))
-            .Returns(mockFeedSourceManager.Object);
-
-        var mockScope = new Mock<IServiceScope>();
-        mockScope.Setup(s => s.ServiceProvider).Returns(mockServiceProvider.Object);
-
-        var mockScopeFactory = new Mock<IServiceScopeFactory>();
-        mockScopeFactory.Setup(f => f.CreateScope()).Returns(mockScope.Object);
-
-        var sut = new TwitterManager(null!, _mockLogger.Object, mockScopeFactory.Object);
-
-        // Act
-        var result = await sut.ComposeMessageAsync(scheduledItem);
-
-        // Assert
-        result.Should().NotBeNullOrEmpty();
-        result.Should().Contain("Test Post");
     }
 
     private sealed class TestableTwitterManager(ILogger<TwitterManager> logger, Tweet? tweetResult, Exception? exception = null)
