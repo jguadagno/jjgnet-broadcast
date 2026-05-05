@@ -1,6 +1,8 @@
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Exceptions;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -54,6 +56,40 @@ public class BlueskyManagerUnitTests
 
         // Assert
         Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task PublishAsync_WithNullRequest_ThrowsArgumentNullException()
+    {
+        // Arrange
+        ISocialMediaPublisher sut =
+            new BlueskyManager(_httpClient, _mockBlueskySettings.Object, _mockLogger.Object);
+
+        // Act
+        var act = () => sut.PublishAsync(null!);
+
+        // Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(act);
+    }
+
+    [Fact]
+    public async Task PublishAsync_WithBlankText_ThrowsArgumentException()
+    {
+        // Arrange
+        ISocialMediaPublisher sut =
+            new BlueskyManager(_httpClient, _mockBlueskySettings.Object, _mockLogger.Object);
+
+        // Act
+        var act = () => sut.PublishAsync(new Domain.Models.SocialMediaPublishRequest { Text = " " });
+
+        // Assert
+        await Assert.ThrowsAsync<ArgumentException>(act);
+    }
+
+    [Fact]
+    public void IBlueskyManager_Implements_ISocialMediaPublisher()
+    {
+        Assert.True(typeof(ISocialMediaPublisher).IsAssignableFrom(typeof(IBlueskyManager)));
     }
 
     #endregion

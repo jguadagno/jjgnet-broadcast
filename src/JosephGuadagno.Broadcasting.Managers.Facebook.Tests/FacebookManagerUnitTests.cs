@@ -2,6 +2,8 @@ using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Exceptions;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -208,6 +210,72 @@ public class FacebookManagerUnitTests
 
         // Assert
         Assert.Equal("https://graph.facebook.com/v21.0/", result);
+    }
+
+    [Fact]
+    public async Task PublishAsync_WithImageUrl_UsesPicturePublishingPath()
+    {
+        // Arrange
+        var expectedId = "12345_67890";
+        var jsonResponse = $"{{\"id\": \"{expectedId}\"}}";
+        SetupHttpMessageHandler(System.Net.HttpStatusCode.OK, jsonResponse);
+        ISocialMediaPublisher sut =
+            new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+
+        // Act
+        var result = await sut.PublishAsync(new SocialMediaPublishRequest
+        {
+            Text = "Test Message",
+            LinkUrl = "https://example.com",
+            ImageUrl = "https://example.com/image.png"
+        });
+
+        // Assert
+        Assert.Equal(expectedId, result);
+    }
+
+    [Fact]
+    public async Task PublishAsync_WithoutLinkOrImage_PostsTextOnlyStatus()
+    {
+        // Arrange
+        var expectedId = "12345_67890";
+        var jsonResponse = $"{{\"id\": \"{expectedId}\"}}";
+        SetupHttpMessageHandler(System.Net.HttpStatusCode.OK, jsonResponse);
+        ISocialMediaPublisher sut =
+            new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+
+        // Act
+        var result = await sut.PublishAsync(new SocialMediaPublishRequest
+        {
+            Text = "Test Message"
+        });
+
+        // Assert
+        Assert.Equal(expectedId, result);
+    }
+
+    [Fact]
+    public async Task PublishAsync_WithImageUrlAndNoLink_ThrowsArgumentNullException()
+    {
+        // Arrange
+        ISocialMediaPublisher sut =
+            new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+
+        // Act
+        var act = () => sut.PublishAsync(new SocialMediaPublishRequest
+        {
+            Text = "Test Message",
+            ImageUrl = "https://example.com/image.png"
+        });
+
+        // Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(act);
+    }
+
+    [Fact]
+    public void IFacebookManager_Implements_ISocialMediaPublisher()
+    {
+        Assert.True(typeof(ISocialMediaPublisher).IsAssignableFrom(typeof(IFacebookManager)));
     }
 
     #region Exception Inheritance Tests

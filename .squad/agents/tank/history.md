@@ -1,5 +1,15 @@
 # Tank - History
 
+## Recent Session: Sprint 30 #897 ISocialMediaPublisher Interface Tests (2026-05-01)
+
+- **Work:** Completed comprehensive test coverage for ISocialMediaPublisher contract across all four platform managers
+- **Result:** ✅ COMPLETE — Three-layer test strategy (interface shape + inheritance + platform routing) applied to Twitter, Bluesky, Facebook, LinkedIn
+- **Validation:** 1154 tests passed, 41 skipped, 0 failed; Functions DI wiring verified
+- **Outcome:** Sprint 30 gating task unblocked; #902→#899–#900–#901 composition refactor sequence ready to proceed
+- **Decision Merged:** `tank-social-media-publisher-contract-tests.md` (test pattern established for future shared contracts)
+
+---
+
 ## Ownership Test Checklist (Sprint 18 Established — 2026-04-18)
 
 > Formal checklist extracted from sprint 18 work (Issues #729, #730, #738, #739).
@@ -1369,4 +1379,28 @@ Update all test Setup() and Verify() calls to match new paged manager overload s
 
 4. **Assertion path changes with return type** — converting from OkObjectResult (ActionResult<T>.Result) to direct return (ActionResult<T>.Value) means **all downstream assertions must change**. This is another forced-update mechanism that helps keep tests in sync with controller implementations.
 
+5. **Optional Function URL settings should be normalized once per run** —
+   `src\JosephGuadagno.Broadcasting.Functions\LinkedIn\NotifyExpiringTokens.cs`
+   now resolves `Settings:WebBaseUrl` at the top of `RunAsync()`, trims it,
+   logs one warning when missing/empty/whitespace, and passes the normalized
+   value into both notification windows.
 
+6. **Logger assertions in Function tests need a real mock, not
+   `NullLogger`** —
+   `src\JosephGuadagno.Broadcasting.Functions.Tests\LinkedIn\NotifyExpiringTokensTests.cs`
+   uses `Mock<ILogger<NotifyExpiringTokens>>` and verifies the warning through
+   `ILogger.Log(...)` state text when misconfiguration is part of the
+   acceptance criteria.
+
+7. **Expiring-window queries are fail-fast API boundaries** —
+   `src\JosephGuadagno.Broadcasting.Data.Sql\UserOAuthTokenDataStore.cs`
+   should throw for `from > to`, and the guard belongs with the repository
+   coverage in
+   `src\JosephGuadagno.Broadcasting.Data.Sql.Tests\UserOAuthTokenDataStoreTests.cs`.
+
+
+
+## Learnings
+- Issue #897 established a durable contract-testing pattern for shared publishers: verify the `ISocialMediaPublisher.PublishAsync(SocialMediaPublishRequest)` shape directly, assert each platform-specific interface implements the shared contract, and keep one platform-specific `PublishAsync` routing or guard test per manager.
+- The common publisher seam currently lives in `src\JosephGuadagno.Broadcasting.Domain\Interfaces\ISocialMediaPublisher.cs` with request data in `src\JosephGuadagno.Broadcasting.Domain\Models\SocialMediaPublishRequest.cs`; regression coverage belongs in the platform manager test projects, not in the Functions processors.
+- `src\JosephGuadagno.Broadcasting.Functions\Program.cs` and `src\JosephGuadagno.Broadcasting.Functions.Tests\Startup.cs` must stay aligned when adding shared publisher DI registrations, or Functions tests drift from runtime wiring.

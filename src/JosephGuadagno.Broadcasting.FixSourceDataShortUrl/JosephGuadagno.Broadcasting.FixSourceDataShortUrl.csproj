@@ -38,7 +38,7 @@
 
   <ItemGroup>
     <!-- Security: override transitive 10.0.2 → 13.0.3 to resolve GHSA-5crp-9r3c-p9vr (High: NU1903) -->
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="AutoMapper" Version="16.1.1" />
     <PackageReference Include="JosephGuadagno.AzureHelpers.Cosmos" Version="1.0.8" />
     <PackageReference Include="JosephGuadagno.Utilities.Web" Version="1.1.7" />

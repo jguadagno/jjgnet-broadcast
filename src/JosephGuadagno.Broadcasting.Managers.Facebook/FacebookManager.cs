@@ -1,5 +1,7 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
@@ -19,6 +21,25 @@ public class FacebookManager : IFacebookManager
         _httpClient = httpClient;
         _facebookApplicationSettings = facebookApplicationSettings;
         _logger = logger;
+    }
+
+    public async Task<string?> PublishAsync(SocialMediaPublishRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.Text);
+
+        if (!string.IsNullOrEmpty(request.ImageUrl))
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(request.LinkUrl);
+            return await PostMessageLinkAndPictureToPage(request.Text, request.LinkUrl!, request.ImageUrl);
+        }
+
+        if (!string.IsNullOrEmpty(request.LinkUrl))
+        {
+            return await PostMessageAndLinkToPage(request.Text, request.LinkUrl);
+        }
+
+        return await PostMessageToPage(request.Text);
     }
 
     /// <summary>
@@ -43,68 +64,7 @@ public class FacebookManager : IFacebookManager
             throw new ArgumentNullException(nameof(link));
         }
 
-        try
-        {
-            var postToPageWithLinkUrl = GraphApiRoot + "{page_id}/feed?message={message}&link={link}&access_token={access_token}";
-            
-            var url = postToPageWithLinkUrl.Replace("{page_id}", _facebookApplicationSettings.PageId)
-                .Replace("{message}",  System.Web.HttpUtility.UrlEncode(message))
-                .Replace("{link}", link)
-                .Replace("{access_token}", _facebookApplicationSettings.PageAccessToken);
-        
-            _logger.LogTrace("Url: `{Url}`", RedactSensitiveQueryParams(url));
-            var response = await _httpClient.PostAsync(url,null);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                var postStatusResponse = JsonSerializer.Deserialize<PostStatusResponse>(content);
-                if (postStatusResponse is not null)
-                {
-                    // Need to make sure the response has the PageId, if not, it will have the FacebookPostError populated
-                    if (!string.IsNullOrEmpty(postStatusResponse.Id))
-                    {
-                        // We should be good
-                        _logger.LogDebug("Successfully posted status. Id: '{Id}'", postStatusResponse.Id);
-                        return postStatusResponse.Id;
-                    }
-
-                    // This is an error.  We should use the FacebookPostError to log and throw the error
-                    if (postStatusResponse.Error is not null)
-                    {
-                        _logger.LogError(
-                            "Failed to post status. Message: '{Message}', Type: '{ErrorType}', Code: '{Code}', Sub Code: '{SubCode}', TraceId: '{TraceId}",
-                            postStatusResponse.Error.Message,
-                            postStatusResponse.Error.Type, postStatusResponse.Error.Code,
-                            postStatusResponse.Error.SubCode, postStatusResponse.Error.FacebookTraceId);
-                        throw new FacebookPostException(
-                            $"Failed to post status. Reason {postStatusResponse.Error.Message}");
-                    }
-                    
-                    // If we made it here, there was an error but the response did not have the FacebookPostError populated
-                    _logger.LogError("Failed to post status. Could not determine the reason. Response: {Response}", content);
-                    throw new FacebookPostException(
-                        $"Failed to post status. Could not determine the reason. Response {content}");
-                }
-                
-                _logger.LogError("Failed to post status. Could not deserialized the response. Response: {Response}", content);
-                throw new FacebookPostException(
-                    $"Failed to post status. Could not deserialized the response. Response {content}");
-                
-            }
-            
-            _logger.LogError(
-                "Failed to post status. Response status code was not successful. StatusCode: '{StatusCode}', ReasonPhrase: '{ReasonPhrase}'",
-                response.StatusCode, response.ReasonPhrase);
-            throw new FacebookPostException(
-                $"Failed to post status. Response status code was not successful. StatusCode: '{response.StatusCode}', ReasonPhrase: '{response.ReasonPhrase}'");
-
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to post status. Exception: {ExceptionMessage}",  ex.Message);
-            throw;
-        }
+        return await PostMessageInternalAsync(message, link);
     }
 
     /// <inheritdoc />
@@ -117,49 +77,7 @@ public class FacebookManager : IFacebookManager
         if (string.IsNullOrEmpty(picture))
             throw new ArgumentNullException(nameof(picture));
 
-        try
-        {
-            var postToPageWithPictureUrl = GraphApiRoot + "{page_id}/feed?message={message}&link={link}&picture={picture}&access_token={access_token}";
-
-            var url = postToPageWithPictureUrl
-                .Replace("{page_id}", _facebookApplicationSettings.PageId)
-                .Replace("{message}", System.Web.HttpUtility.UrlEncode(message))
-                .Replace("{link}", link)
-                .Replace("{picture}", System.Web.HttpUtility.UrlEncode(picture))
-                .Replace("{access_token}", _facebookApplicationSettings.PageAccessToken);
-
-            _logger.LogTrace("Url: `{Url}`", RedactSensitiveQueryParams(url));
-            var response = await _httpClient.PostAsync(url, null);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                var postStatusResponse = JsonSerializer.Deserialize<PostStatusResponse>(content);
-                if (postStatusResponse is not null)
-                {
-                    if (!string.IsNullOrEmpty(postStatusResponse.Id))
-                    {
-                        _logger.LogDebug("Successfully posted status with picture. Id: '{Id}'", postStatusResponse.Id);
-                        return postStatusResponse.Id;
-                    }
-                    if (postStatusResponse.Error is not null)
-                    {
-                        _logger.LogError("Failed to post status with picture. Message: '{Message}'", postStatusResponse.Error.Message);
-                        throw new FacebookPostException($"Failed to post status with picture. Reason {postStatusResponse.Error.Message}");
-                    }
-                    throw new FacebookPostException("Failed to post status with picture. Could not determine the reason.");
-                }
-                throw new FacebookPostException("Failed to post status with picture. Could not deserialize the response.");
-            }
-
-            _logger.LogError("Failed to post status with picture. StatusCode: '{StatusCode}'", response.StatusCode);
-            throw new FacebookPostException($"Failed to post status with picture. StatusCode: '{response.StatusCode}'");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to post status with picture. Exception: {ExceptionMessage}", ex.Message);
-            throw;
-        }
+        return await PostMessageInternalAsync(message, link, picture);
     }
 
     /// <summary>
@@ -222,6 +140,88 @@ public class FacebookManager : IFacebookManager
 
     private static readonly Regex SensitiveQueryParamPattern =
         new(@"(access_token|client_secret|fb_exchange_token)=[^&]*", RegexOptions.Compiled);
+
+    private async Task<string> PostMessageToPage(string message)
+    {
+        if (string.IsNullOrEmpty(message))
+        {
+            throw new ArgumentNullException(nameof(message));
+        }
+
+        return await PostMessageInternalAsync(message);
+    }
+
+    private async Task<string> PostMessageInternalAsync(string message, string? link = null, string? picture = null)
+    {
+        try
+        {
+            var urlBuilder = new StringBuilder(GraphApiRoot)
+                .Append(_facebookApplicationSettings.PageId)
+                .Append("/feed?message=")
+                .Append(System.Web.HttpUtility.UrlEncode(message));
+
+            if (!string.IsNullOrEmpty(link))
+            {
+                urlBuilder.Append("&link=").Append(link);
+            }
+
+            if (!string.IsNullOrEmpty(picture))
+            {
+                urlBuilder.Append("&picture=").Append(System.Web.HttpUtility.UrlEncode(picture));
+            }
+
+            urlBuilder.Append("&access_token=").Append(_facebookApplicationSettings.PageAccessToken);
+
+            var url = urlBuilder.ToString();
+
+            _logger.LogTrace("Url: `{Url}`", RedactSensitiveQueryParams(url));
+            var response = await _httpClient.PostAsync(url, null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var postStatusResponse = JsonSerializer.Deserialize<PostStatusResponse>(content);
+                if (postStatusResponse is not null)
+                {
+                    if (!string.IsNullOrEmpty(postStatusResponse.Id))
+                    {
+                        _logger.LogDebug("Successfully posted status. Id: '{Id}'", postStatusResponse.Id);
+                        return postStatusResponse.Id;
+                    }
+
+                    if (postStatusResponse.Error is not null)
+                    {
+                        _logger.LogError(
+                            "Failed to post status. Message: '{Message}', Type: '{ErrorType}', Code: '{Code}', Sub Code: '{SubCode}', TraceId: '{TraceId}",
+                            postStatusResponse.Error.Message,
+                            postStatusResponse.Error.Type,
+                            postStatusResponse.Error.Code,
+                            postStatusResponse.Error.SubCode,
+                            postStatusResponse.Error.FacebookTraceId);
+                        throw new FacebookPostException($"Failed to post status. Reason {postStatusResponse.Error.Message}");
+                    }
+
+                    _logger.LogError("Failed to post status. Could not determine the reason. Response: {Response}", content);
+                    throw new FacebookPostException($"Failed to post status. Could not determine the reason. Response {content}");
+                }
+
+                _logger.LogError("Failed to post status. Could not deserialized the response. Response: {Response}", content);
+                throw new FacebookPostException($"Failed to post status. Could not deserialized the response. Response {content}");
+            }
+
+            _logger.LogError(
+                "Failed to post status. Response status code was not successful. StatusCode: '{StatusCode}', ReasonPhrase: '{ReasonPhrase}'",
+                response.StatusCode,
+                response.ReasonPhrase);
+            throw new FacebookPostException(
+                $"Failed to post status. Response status code was not successful. StatusCode: '{response.StatusCode}', ReasonPhrase: '{response.ReasonPhrase}'");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to post status. Exception: {ExceptionMessage}", ex.Message);
+            throw;
+        }
+    }
 
     private static string RedactSensitiveQueryParams(string url) =>
         SensitiveQueryParamPattern.Replace(url, "$1=***REDACTED***");
