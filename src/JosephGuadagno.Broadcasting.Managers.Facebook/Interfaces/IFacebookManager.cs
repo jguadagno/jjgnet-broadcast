@@ -1,4 +1,5 @@
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 
 namespace JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
@@ -6,6 +7,15 @@ namespace JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 public interface IFacebookManager
     : ISocialMediaPublisher
 {
+    /// <summary>
+    /// Composes a Facebook status text for the given scheduled item using a Scriban template
+    /// if one is configured, falling back to the item's default message.
+    /// </summary>
+    /// <param name="scheduledItem">The scheduled item to compose a message for</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The composed status text</returns>
+    Task<string> ComposeMessageAsync(ScheduledItem scheduledItem, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Posts a message with a link to a Facebook Page
     /// </summary>

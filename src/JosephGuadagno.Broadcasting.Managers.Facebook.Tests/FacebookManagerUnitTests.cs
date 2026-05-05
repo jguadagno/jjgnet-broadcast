@@ -1,11 +1,14 @@
 using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
@@ -278,6 +281,151 @@ public class FacebookManagerUnitTests
         Assert.True(typeof(ISocialMediaPublisher).IsAssignableFrom(typeof(IFacebookManager)));
     }
 
+    #region ComposeMessageAsync Tests
+
+    [Fact]
+    public async Task ComposeMessageAsync_WithoutScopeFactory_ThrowsInvalidOperationException()
+    {
+        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+
+        var act = () => sut.ComposeMessageAsync(new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemPrimaryKey = 42,
+            Message = "fallback",
+            SendOnDateTime = DateTimeOffset.UtcNow
+        });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(act);
+    }
+
+    [Fact]
+    public async Task ComposeMessageAsync_WhenTemplateExists_RendersSyndicationContent()
+    {
+        var scheduledItem = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemPrimaryKey = 42,
+            Message = "fallback",
+            SendOnDateTime = DateTimeOffset.UtcNow,
+            ImageUrl = "https://cdn.example.com/image.jpg"
+        };
+
+        var scopeFactory = BuildScopeFactory(
+            messageTemplate: new MessageTemplate
+            {
+                SocialMediaPlatformId = SocialMediaPlatformIds.Facebook,
+                MessageType = MessageTemplates.MessageTypes.NewSyndicationFeedItem,
+                Template = "{{ title }} - {{ url }} {{ image_url }}"
+            },
+            feedSource: new SyndicationFeedSource
+            {
+                Id = 42,
+                FeedIdentifier = "feed-1",
+                Title = "Post Title",
+                Url = "https://example.com/post",
+                PublicationDate = DateTimeOffset.UtcNow,
+                AddedOn = DateTimeOffset.UtcNow,
+                LastUpdatedOn = DateTimeOffset.UtcNow,
+                CreatedByEntraOid = "test-oid"
+            });
+
+        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object, scopeFactory);
+
+        var result = await sut.ComposeMessageAsync(scheduledItem);
+
+        Assert.Equal("Post Title - https://example.com/post https://cdn.example.com/image.jpg", result);
+    }
+
+    [Fact]
+    public async Task ComposeMessageAsync_WhenTemplateMissing_ReturnsScheduledMessage()
+    {
+        var scheduledItem = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.Engagements,
+            ItemPrimaryKey = 42,
+            Message = "fallback message",
+            SendOnDateTime = DateTimeOffset.UtcNow
+        };
+
+        var scopeFactory = BuildScopeFactory(
+            messageTemplate: null,
+            engagement: new Engagement
+            {
+                Id = 42,
+                Name = "Tech Conference 2026",
+                Url = "https://conf.example.com",
+                StartDateTime = DateTimeOffset.UtcNow,
+                EndDateTime = DateTimeOffset.UtcNow.AddHours(1),
+                TimeZoneId = "UTC"
+            });
+
+        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object, scopeFactory);
+
+        var result = await sut.ComposeMessageAsync(scheduledItem);
+
+        Assert.Equal("fallback message", result);
+    }
+
+    [Fact]
+    public async Task ComposeMessageAsync_WhenPlatformNotFound_ReturnsScheduledMessage()
+    {
+        var scheduledItem = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemPrimaryKey = 42,
+            Message = "fallback message",
+            SendOnDateTime = DateTimeOffset.UtcNow
+        };
+
+        var scopeFactory = BuildScopeFactory(messageTemplate: null, platformFound: false);
+
+        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object, scopeFactory);
+
+        var result = await sut.ComposeMessageAsync(scheduledItem);
+
+        Assert.Equal("fallback message", result);
+    }
+
+    [Fact]
+    public async Task ComposeMessageAsync_WhenRenderingThrows_ReturnsScheduledMessage()
+    {
+        var scheduledItem = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.YouTubeSources,
+            ItemPrimaryKey = 42,
+            Message = "fallback message",
+            SendOnDateTime = DateTimeOffset.UtcNow
+        };
+
+        var failingYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
+        failingYouTubeSourceManager
+            .Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("boom"));
+
+        var scopeFactory = BuildScopeFactory(
+            messageTemplate: new MessageTemplate
+            {
+                SocialMediaPlatformId = SocialMediaPlatformIds.Facebook,
+                MessageType = MessageTemplates.MessageTypes.NewYouTubeItem,
+                Template = "{{ title }}"
+            },
+            youTubeSourceManager: failingYouTubeSourceManager);
+
+        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object, scopeFactory);
+
+        var result = await sut.ComposeMessageAsync(scheduledItem);
+
+        Assert.Equal("fallback message", result);
+    }
+
+    #endregion
+
     #region Exception Inheritance Tests
 
     [Fact]
@@ -314,5 +462,64 @@ public class FacebookManagerUnitTests
                 StatusCode = statusCode,
                 Content = new StringContent(content, System.Text.Encoding.UTF8, "application/json")
             });
+    }
+
+    private static IServiceScopeFactory BuildScopeFactory(
+        MessageTemplate? messageTemplate,
+        SyndicationFeedSource? feedSource = null,
+        Engagement? engagement = null,
+        Talk? talk = null,
+        YouTubeSource? youTubeSource = null,
+        Mock<IYouTubeSourceManager>? youTubeSourceManager = null,
+        bool platformFound = true)
+    {
+        var messageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        messageTemplateDataStore
+            .Setup(m => m.GetAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(messageTemplate);
+
+        var socialMediaPlatformManager = new Mock<ISocialMediaPlatformManager>();
+        socialMediaPlatformManager
+            .Setup(m => m.GetByNameAsync(
+                MessageTemplates.Platforms.Facebook,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(platformFound
+                ? new SocialMediaPlatform
+                {
+                    Id = SocialMediaPlatformIds.Facebook,
+                    Name = MessageTemplates.Platforms.Facebook,
+                    IsActive = true
+                }
+                : null);
+
+        var engagementManager = new Mock<IEngagementManager>();
+        engagementManager
+            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(engagement!);
+        engagementManager
+            .Setup(m => m.GetTalkAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(talk!);
+
+        var syndicationFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
+        syndicationFeedSourceManager
+            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(feedSource!);
+
+        youTubeSourceManager ??= new Mock<IYouTubeSourceManager>();
+        youTubeSourceManager
+            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(youTubeSource!);
+
+        var services = new ServiceCollection();
+        services.AddScoped(_ => messageTemplateDataStore.Object);
+        services.AddScoped(_ => socialMediaPlatformManager.Object);
+        services.AddScoped(_ => engagementManager.Object);
+        services.AddScoped(_ => syndicationFeedSourceManager.Object);
+        services.AddScoped(_ => youTubeSourceManager.Object);
+
+        return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
     }
 }

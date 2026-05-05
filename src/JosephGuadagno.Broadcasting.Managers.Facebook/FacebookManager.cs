@@ -1,26 +1,86 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Enums;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Scriban;
+using Scriban.Runtime;
 
 namespace JosephGuadagno.Broadcasting.Managers.Facebook;
 
 public class FacebookManager : IFacebookManager
 {
-    
+
     private readonly HttpClient _httpClient;
     private readonly ILogger<FacebookManager> _logger;
     private readonly IFacebookApplicationSettings _facebookApplicationSettings;
-    
+    private readonly IServiceScopeFactory? _serviceScopeFactory;
+
     public FacebookManager(HttpClient httpClient, IFacebookApplicationSettings facebookApplicationSettings, ILogger<FacebookManager> logger)
+        : this(httpClient, facebookApplicationSettings, logger, null)
+    {
+    }
+
+    public FacebookManager(
+        HttpClient httpClient,
+        IFacebookApplicationSettings facebookApplicationSettings,
+        ILogger<FacebookManager> logger,
+        IServiceScopeFactory? serviceScopeFactory)
     {
         _httpClient = httpClient;
         _facebookApplicationSettings = facebookApplicationSettings;
         _logger = logger;
+        _serviceScopeFactory = serviceScopeFactory;
+    }
+
+    public async Task<string> ComposeMessageAsync(
+        ScheduledItem scheduledItem,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(scheduledItem);
+
+        if (_serviceScopeFactory is null)
+        {
+            throw new InvalidOperationException(
+                "ComposeMessageAsync requires an IServiceScopeFactory-backed FacebookManager instance.");
+        }
+
+        using var scope = _serviceScopeFactory.CreateScope();
+        var serviceProvider = scope.ServiceProvider;
+
+        var socialMediaPlatformManager = serviceProvider.GetRequiredService<ISocialMediaPlatformManager>();
+        var facebookPlatform =
+            await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Facebook, cancellationToken);
+        if (facebookPlatform is null)
+        {
+            return scheduledItem.Message;
+        }
+
+        var messageTemplateDataStore = serviceProvider.GetRequiredService<IMessageTemplateDataStore>();
+        var messageTemplate = await messageTemplateDataStore.GetAsync(
+            facebookPlatform.Id,
+            GetMessageType(scheduledItem.ItemType),
+            cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(messageTemplate?.Template))
+        {
+            return scheduledItem.Message;
+        }
+
+        var renderedMessage = await TryRenderTemplateAsync(
+            serviceProvider,
+            scheduledItem,
+            messageTemplate.Template,
+            cancellationToken);
+
+        return renderedMessage ?? scheduledItem.Message;
     }
 
     public async Task<string?> PublishAsync(SocialMediaPublishRequest request)
@@ -225,4 +285,91 @@ public class FacebookManager : IFacebookManager
 
     private static string RedactSensitiveQueryParams(string url) =>
         SensitiveQueryParamPattern.Replace(url, "$1=***REDACTED***");
+
+    private static string GetMessageType(ScheduledItemType itemType) => itemType switch
+    {
+        ScheduledItemType.Engagements => MessageTemplates.MessageTypes.NewSpeakingEngagement,
+        ScheduledItemType.Talks => MessageTemplates.MessageTypes.ScheduledItem,
+        ScheduledItemType.SyndicationFeedSources => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
+        ScheduledItemType.YouTubeSources => MessageTemplates.MessageTypes.NewYouTubeItem,
+        _ => MessageTemplates.MessageTypes.RandomPost
+    };
+
+    private async Task<string?> TryRenderTemplateAsync(
+        IServiceProvider serviceProvider,
+        ScheduledItem scheduledItem,
+        string templateContent,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            string title = string.Empty;
+            string url = string.Empty;
+            string description = string.Empty;
+            string tags = string.Empty;
+
+            switch (scheduledItem.ItemType)
+            {
+                case ScheduledItemType.SyndicationFeedSources:
+                    var syndicationFeedSourceManager =
+                        serviceProvider.GetRequiredService<ISyndicationFeedSourceManager>();
+                    var feed = await syndicationFeedSourceManager.GetAsync(
+                        scheduledItem.ItemPrimaryKey,
+                        cancellationToken);
+                    title = feed.Title;
+                    url = feed.ShortenedUrl ?? feed.Url;
+                    tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : string.Empty;
+                    break;
+                case ScheduledItemType.YouTubeSources:
+                    var youTubeSourceManager = serviceProvider.GetRequiredService<IYouTubeSourceManager>();
+                    var youTubeSource = await youTubeSourceManager.GetAsync(
+                        scheduledItem.ItemPrimaryKey,
+                        cancellationToken);
+                    title = youTubeSource.Title;
+                    url = youTubeSource.ShortenedUrl ?? youTubeSource.Url;
+                    tags = youTubeSource.Tags?.Count > 0 ? string.Join(",", youTubeSource.Tags) : string.Empty;
+                    break;
+                case ScheduledItemType.Engagements:
+                    var engagementManager = serviceProvider.GetRequiredService<IEngagementManager>();
+                    var engagement = await engagementManager.GetAsync(
+                        scheduledItem.ItemPrimaryKey,
+                        cancellationToken);
+                    title = engagement.Name;
+                    url = engagement.Url;
+                    description = engagement.Comments ?? string.Empty;
+                    break;
+                case ScheduledItemType.Talks:
+                    var talkManager = serviceProvider.GetRequiredService<IEngagementManager>();
+                    var talk = await talkManager.GetTalkAsync(
+                        scheduledItem.ItemPrimaryKey,
+                        cancellationToken);
+                    title = talk.Name;
+                    url = talk.UrlForTalk ?? string.Empty;
+                    description = talk.Comments ?? string.Empty;
+                    break;
+                default:
+                    return null;
+            }
+
+            var template = Template.Parse(templateContent);
+            var scriptObject = new ScriptObject();
+            scriptObject.Import(new
+            {
+                title,
+                url,
+                description,
+                tags,
+                image_url = scheduledItem.ImageUrl
+            });
+            var context = new TemplateContext();
+            context.PushGlobal(scriptObject);
+            var rendered = await template.RenderAsync(context);
+            return string.IsNullOrWhiteSpace(rendered) ? null : rendered.Trim();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Scriban template rendering failed for Facebook scheduled item {Id}", scheduledItem.Id);
+            return null;
+        }
+    }
 }
