@@ -16,6 +16,35 @@
 
 ## Learnings
 
+### 2026-04-30 — Issues #897 and #902: clean PR recovery from stacked local branches
+
+**Status:** ✅ COMPLETE — PR #911 on `issue-897-social-media-publisher-interface`, PR #912 on `issue-902-linkedin-message-composition`
+
+**What was delivered:**
+- Cleaned `issue-897-social-media-publisher-interface` down to product files only and opened PR #911 against `main`
+- Cleaned `issue-902-linkedin-message-composition` down to product files only and opened PR #912 stacked on `issue-897-social-media-publisher-interface`
+- Verified both clean branches from `origin/main` lineage or clean stacked lineage using the repo Release restore/build/test pass
+
+**Key patterns discovered:**
+1. When a local issue branch mixes product files with `.squad` drift, recover the product change in a dedicated worktree and push a clean remote branch instead of rewriting the dirty workspace.
+2. `issue-902-linkedin-message-composition` is not safely reviewable straight from `main`; cherry-picking onto `origin/main` conflicts in `LinkedInManager`, `ILinkedInManager`, and `LinkedInManagerUnitTests`, so stacking it on the clean #897 branch is the lowest-risk review path.
+3. The repo's branch guard blocks commits from ad-hoc branch names; use an issue-scoped local branch such as `feature/897-social-media-publisher-interface` even for temporary recovery worktrees.
+
+### 2026-04-30 — Issues #890 and #893: Sprint 29 hardening PR split
+
+**Status:** ✅ COMPLETE — PR #909 on `issue-890-expiring-window-guard`, PR #910 on `issue-893-webbaseurl-warning`
+
+**What was delivered:**
+- `src\JosephGuadagno.Broadcasting.Data.Sql\UserOAuthTokenDataStore.cs`: `GetExpiringWindowAsync(from, to)` now throws `ArgumentException` when `from > to`
+- `src\JosephGuadagno.Broadcasting.Data.Sql.Tests\UserOAuthTokenDataStoreTests.cs`: added invalid-window coverage
+- `src\JosephGuadagno.Broadcasting.Functions\LinkedIn\NotifyExpiringTokens.cs`: resolves `Settings:WebBaseUrl` once per run, logs one warning when missing, and reuses the normalized value across both notification windows
+- `src\JosephGuadagno.Broadcasting.Functions.Tests\LinkedIn\NotifyExpiringTokensTests.cs`: covers null/empty/whitespace config with warning verification and relative-link fallback
+
+**Key patterns discovered:**
+1. In Data.Sql, inverted date windows are caller bugs; fail fast with a parameterized `ArgumentException` instead of returning an empty result set.
+2. In Azure Functions, normalize optional configuration once at function entry and pass the value into downstream helpers to avoid duplicate warnings and repeated config reads.
+3. When one dirty working tree contains work for multiple issues, split by issue-scoped branches and PRs before merging so review history stays aligned with the repo's one-PR-per-issue rule.
+
 ### 2026-05-02 — Issue #853: LinkedIn OAuth token expiry notification Function and email templates
 
 **Status:** ✅ COMPLETE — PR #891 on `issue-853-notify-expiring-linkedin-tokens`; all tests passing
@@ -1343,4 +1372,34 @@ Sparks fixed issue #871 (Engagements column headings invisible) by updating Boot
 3. New data store methods follow existing error-catch pattern: `LogSanitizer.Sanitize(ownerOid)` in all log calls
 4. Manager layer delegates directly to data store — no business logic added at manager level for data layer issues
 5. Migration scripts are idempotent (`IF NOT EXISTS` guard on column) — AppHost replays scripts
+ 
+### 2026-05-01 — Batch #893 and #890: expiring token guardrails
 
+**Status:** ✅ COMPLETE — scoped follow-up fixes for the LinkedIn token expiry pipeline; repo validation passed (`restore`, `build`, repo-wide filtered `test`)
+
+**What changed:**
+- `src\JosephGuadagno.Broadcasting.Data.Sql\UserOAuthTokenDataStore.cs` now guards `GetExpiringWindowAsync(from, to)` and throws `ArgumentException` when `from > to`
+- `src\JosephGuadagno.Broadcasting.Data.Sql.Tests\UserOAuthTokenDataStoreTests.cs` adds `GetExpiringWindowAsync_ThrowsWhenFromIsAfterTo`
+- `src\JosephGuadagno.Broadcasting.Functions\LinkedIn\NotifyExpiringTokens.cs` now resolves `Settings:WebBaseUrl` once per run, trims it, logs a warning when missing/blank, and passes the normalized value into both notification windows
+- `src\JosephGuadagno.Broadcasting.Functions.Tests\LinkedIn\NotifyExpiringTokensTests.cs` now verifies warning behavior and relative fallback links for null/empty/whitespace config
+
+**Pattern captured:**
+1. Guard repository window-query inputs early; do not let inverted ranges fail silently
+2. For optional URL settings used in generated emails, normalize configuration once per function invocation and log the missing-setting warning once per run to avoid noisy per-token warnings
+3. Relative fallback links remain acceptable as a degraded behavior, but missing base URL must be visible in logs
+
+### 2026-05-01 — Issue #897: common social publisher contract
+
+**Status:** ✅ COMPLETE — introduced a domain-level `ISocialMediaPublisher` contract and validated with repo-wide Release build/test.
+
+**What changed:**
+- Added `src\JosephGuadagno.Broadcasting.Domain\Interfaces\ISocialMediaPublisher.cs` and `src\JosephGuadagno.Broadcasting.Domain\Models\SocialMediaPublishRequest.cs`
+- Expanded `src\JosephGuadagno.Broadcasting.Domain\Constants\SocialMediaPlatformIds.cs` so the publisher contract can expose stable seeded IDs for Twitter, Bluesky, LinkedIn, and Facebook
+- Updated `TwitterManager`, `BlueskyManager`, `LinkedInManager`, and `FacebookManager` plus their existing interfaces to implement the shared contract without removing the platform-specific methods used by current Functions
+- Registered all four managers as `ISocialMediaPublisher` implementations in `src\JosephGuadagno.Broadcasting.Functions\Program.cs` and mirrored that registration in `src\JosephGuadagno.Broadcasting.Functions.Tests\Startup.cs`
+- Added contract-focused coverage in the manager test projects to verify shared publishing entry points and interface adoption
+
+**Patterns confirmed:**
+1. Add cross-platform contracts in `JosephGuadagno.Broadcasting.Domain`, but keep existing platform-specific manager interfaces in place until downstream callers are migrated
+2. Use a superset request model (`SocialMediaPublishRequest`) to normalize text/link/image/token inputs while letting each manager preserve its platform-specific publish behavior
+3. For future publisher routing work, register each concrete manager both by its specific interface and as `ISocialMediaPublisher` so callers can resolve `IEnumerable<ISocialMediaPublisher>` without changing current function handlers
