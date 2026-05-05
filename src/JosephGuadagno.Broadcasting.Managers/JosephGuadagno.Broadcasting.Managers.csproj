@@ -42,7 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Security: override transitive 10.0.2 → 13.0.3 to resolve GHSA-5crp-9r3c-p9vr (High: NU1903) -->
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.25.0" />
     <PackageReference Include="JosephGuadagno.AzureHelpers.Storage" Version="1.1.9" />
     <PackageReference Include="NodaTime" Version="3.3.2" />

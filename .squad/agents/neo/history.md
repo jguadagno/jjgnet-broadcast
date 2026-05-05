@@ -32,6 +32,9 @@
 **Comment posted to #69:** https://github.com/jguadagno/jjgnet-broadcast/issues/69#issuecomment-4349212612
 
 ## Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
+
+**Backlog review & next-up planning (2026-05-01).** Reviewed open backlog (23 issues). Sprint 28 complete (#852 + #853 merged, #856 pending Joe manual step). Next sequence is #897–#902 (ISocialMediaPublisher refactor + message composition moves to Managers). Recommended 3-5 item priority stack: (1) #893 + #890 quick wins, (2) #897 ISocialMediaPublisher interface (blocker for #902–#899), (3) #902–#899 composition refactor in order, (4) #892 + #896 Joe parallel tasks. #724 deferred until #609 per-user isolation confirmed complete. Team assignments: Trinity (#893, #890), Tank (#897, #902–#899), Joe (#856 async, #892, #896).
 
 **Release build warnings triage completed (2026-05-01).** Full Release build produces 1067 warning lines across 6 categories:
 1. **CS8xxx (Nullable):** 115 warnings — CS8618 (non-nullable property) dominates at 50 occurrences, followed by CS8625 (null literal) at 29. Heaviest in Domain (32), Web (12), Managers.LinkedIn (8), Data.Sql (5).
@@ -63,6 +66,7 @@ The codebase currently has all four social media platforms (Twitter, Facebook, B
 **Review result:** APPROVED — no blocking issues. Comment posted at https://github.com/jguadagno/jjgnet-broadcast/pull/889#issuecomment-4335350588
 
 ## Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 **Issue #9 (Publisher abstraction) — PARTIALLY DONE as of 2025.** "Publisher" terminology is broadly adopted: `UserPublisherSetting*`, `EventPublisher`, `Publishers/` Functions folder. Platform managers exist as separate projects (Managers.Twitter, Managers.Bluesky, Managers.LinkedIn, Managers.Facebook) with their own platform-specific interfaces (`ITwitterManager`, `IBlueskyManager`, `ILinkedInManager`). BUT there is NO common `IPublisher`/`ISocialMediaPublisher` interface that all platform managers implement — the "pluggable" contract requested in issue #9 is absent. The `SocialMediaPlatform` model and `ISocialMediaPlatformManager` are data-management concerns, not the per-platform posting abstraction the issue asked for.
 
@@ -79,6 +83,7 @@ The codebase currently has all four social media platforms (Twitter, Facebook, B
 **Status:** ✅ COMPLETE — Findings written to `.squad/decisions/inbox/neo-perf-investigation-findings.md`
 
 ## Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 **N+1 SourceTags queries are the #1 performance killer.** Both `SyndicationFeedSourceDataStore` and `YouTubeSourceDataStore` use a `foreach` loop post-materialization to load SourceTags — 27+ sequential DB roundtrips per Index page. The fix is a batch IN-clause query followed by in-memory grouping.
 
@@ -191,6 +196,7 @@ The codebase currently has all four social media platforms (Twitter, Facebook, B
 - All other 27 API mappings in ApiBroadcastingProfile.cs are correctly registered
 
 ### Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 - SyndicationFeedSource ↔ SyndicationFeedSourceRequest/Response mappings are absent from ApiBroadcastingProfile.cs — runtime AutoMapperMappingException on all GET and POST syndication endpoints
 - Fix: add CreateMap<SyndicationFeedSource, SyndicationFeedSourceResponse>() and CreateMap<SyndicationFeedSourceRequest, SyndicationFeedSource>() following the YouTubeSource pattern (same ignored fields: Id, AddedOn, LastUpdatedOn, CreatedByEntraOid; same Tags ?? new List<string>())
@@ -1142,6 +1148,7 @@ Session logs and orchestration log recorded.
 - Bootstrap blocker: Track data-seed.sql alignment before final Sprint 21 close
 
 ## Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 ### 2026-04-20 — Neo PR Comment Template (Canonical Standard)
 
@@ -1286,6 +1293,7 @@ All 8 criteria **met**:
 - ✅ All queries tenant-aware (data layer filters on owner OID)
 
 ### Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 - **Dual-method pattern:** Exposing both `GetAllAsync()` and `GetAllAsync(ownerOid)` at data layer enables admin bypass without code duplication
 - **Fail-closed collector design:** Collectors halt if owner OID cannot be resolved (prevents orphaned content)
@@ -1349,6 +1357,7 @@ During the PR #854 review, two directive violations were not caught by Neo's ini
 - [ ] For every new public type and public member: confirm `/// <summary>` (and `/// <param>`, `/// <returns>`, `/// <exception>` where applicable) XML doc comments are present.
 
 ### Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 - **Source infrastructure completeness:** Data layer, managers, and domain models for YouTubeSource/SyndicationFeedSource are fully built. Only API surface and Web UI are missing.
 - **No pagination on source managers:** `IYouTubeSourceManager` and `ISyndicationFeedSourceManager` return flat `List<T>`. Acceptable for initial implementation; add pagination in follow-up sprint.
@@ -1379,6 +1388,7 @@ During the PR #854 review, two directive violations were not caught by Neo's ini
 - **Build:** 645 warnings, 0 errors (warnings are pre-existing).
 
 ### Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 - **GET-only controller security:** Controllers with no POST actions and no logging have no CSRF or log injection risk. The route parameter `platform` is not logged, so no `LogSanitizer.Sanitize()` needed.
 - **View resolution from subdirectory:** When views live in a subdirectory (e.g., `Views/Help/SocialMediaPlatforms/`), must use explicit sub-path in controller: `View("SocialMediaPlatforms/LinkedIn")` not `View("linkedin")`.
@@ -1415,6 +1425,7 @@ Reviewed 3 PRs in parallel:
 - **1 rebase** (PR #849 after #848 merge; resolved cleanly)
 
 ### Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 Sprint 26 demonstrates efficient parallel review and merge when agents follow established conventions and pre-commit gates. All 3 issues closed cleanly with no rework.
 
@@ -1483,6 +1494,7 @@ Add `SocialMediaPlatformIds.LinkedIn = 3` constant in `JosephGuadagno.Broadcasti
 LinkedIn OAuth requires the user to interactively visit the site and complete the authorization flow — there is no programmatic token refresh endpoint available for this app type. This is why a Web page exists for it today. Facebook's `RefreshTokens.cs` Azure Function (automated) is the correct pattern only for platforms that expose a programmatic refresh endpoint.
 
 ### Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 - **LinkedIn manual re-auth constraint:** LinkedIn OAuth tokens CANNOT be silently refreshed by a background Function. Any design that implies a background Function can call LinkedIn to renew a token is architecturally incorrect for this project. The only valid refresh mechanism is the user returning to the site and completing the OAuth consent flow through `LinkedInController`.
 
@@ -1713,6 +1725,7 @@ Joseph to action #855/#856 after LinkedIn post validation.
 - **No credential columns in v1** — YouTube Data API key remains global; per-user YouTube API key is a follow-up issue.
 
 ### Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 - Collector configs (UserCollectorFeedSources) vs. collected content (SyndicationFeedSources) are now clearly separate concerns. Config tables drive execution; content tables store results.
 - ISyndicationFeedReader and IYouTubeReader may need new overloads to accept an explicit URL/channel ID — Trinity must flag this before implementing Functions changes.
@@ -1738,6 +1751,7 @@ Applied a **union merge**: preserved all content from both sides.
 Used `git commit --no-verify` to complete the merge commit on `main` — the pre-commit hook correctly blocks feature work on main but must be bypassed for structural merge commits resolving pull conflicts.
 
 ### Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 - **Union merge is correct for `.squad/identity/now.md`** — it is an append-only state file; never discard either side.
 - **`--no-verify` is correct for merge commits on `main`** — the pre-commit hook targets direct feature commits, not structural merges.
@@ -1757,6 +1771,7 @@ Used `git commit --no-verify` to complete the merge commit on `main` — the pre
 **Tests:** 11 FAILED in JosephGuadagno.Broadcasting.Api.Tests / 1347 passed / 51 skipped
 
 ### Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 1. **TODO comments in shipped code are a review red flag.** Six controllers retained // TODO(morpheus): replace with paged overload when available comments at merge time, but the paged overloads were already implemented in the managers and interfaces. If the code is not wired up, the feature is not done — regardless of interface/manager completeness.
 
@@ -1785,6 +1800,7 @@ Review PR #867 title and body formatting to ensure consistency with team metadat
 **Body:** Reformatted for clarity and consistency.
 
 ### Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 1. **PR title convention is critical for automation.** The issue(#NNN) - prefix enables tooling to correctly link PRs to issues in .squad/ orchestration logs and commit messages.
 2. **Metadata review should be part of acceptance criteria.** Just as code is reviewed for logic/security, PR metadata should be reviewed for convention compliance before merge.
@@ -1799,5 +1815,7 @@ Sparks fixed issue #871 (Engagements column headings invisible) by updating Boot
 
 
 ## Learnings
+- **Sprint milestone structure (2026-04-30)**: Created Sprint 29 and Sprint 30 milestones. Sprint N starts at milestone number 23 + N - 23. Keep sprints focused on thematic coherence (e.g., OAuth token fixes vs. publisher refactor). Quick-hitting fixes go first; architectural work (ISocialMediaPublisher, message composition consolidation) follows naturally.
 
 - **2026-04-30 — Issue #9 closed, #898 opened**: Issue #9 ("Rename the 'social media' plugins as 'publishers'") was closed as partially done. The naming migration (`Publishers/` folder, `UserPublisherSetting*` stack, per-platform manager projects) was already complete. The remaining pluggability work — defining a shared `ISocialMediaPublisher` interface in `JosephGuadagno.Broadcasting.Domain` so each platform manager (Twitter, Bluesky, LinkedIn, Facebook) implements a common contract — is now tracked in issue #898.
+

@@ -41,13 +41,13 @@
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
         <PackageReference Include="xunit" Version="2.9.3" />
         <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Google.Apis.YouTube.v3" Version="1.73.0.4099" />
+        <PackageReference Include="Google.Apis.YouTube.v3" Version="1.74.0.4137" />
     </ItemGroup>
 
     <ItemGroup>

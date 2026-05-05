@@ -44,19 +44,19 @@
              Version 10.0.0 is Critical (GHSA-9mv3-2cwr-p262); pin to 10.0.7 which contains the fix. -->
         <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.7" />
         <!-- Security: override transitive 10.0.2 → 13.0.3 to resolve GHSA-5crp-9r3c-p9vr (High: NU1903) -->
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="Aspire.Azure.Storage.Queues" Version="13.2.4" />
         <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.2.4" />
         <PackageReference Include="AutoMapper" Version="16.1.1" />
         <PackageReference Include="Azure.Identity" Version="1.21.0" />
-        <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.4.0" />
+        <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.5.0" />
         <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.10.0" />
         <PackageReference Include="Microsoft.Extensions.Azure" Version="1.14.0" />
         <PackageReference Include="Microsoft.Extensions.Caching.SqlServer" Version="10.0.7" />
         <PackageReference Include="Microsoft.Extensions.PlatformAbstractions" Version="1.1.0" />
-        <PackageReference Include="Microsoft.Identity.Web" Version="4.8.0" />
+        <PackageReference Include="Microsoft.Identity.Web" Version="4.9.0" />
         <PackageReference Include="Microsoft.Identity.Web.DownstreamApi" Version="4.9.0" />
-        <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.8.0" />
+        <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.9.0" />
         <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.3" />
         <PackageReference Include="NodaTime" Version="3.3.2" />
         <PackageReference Include="Rocket.Surgery.Extensions.AutoMapper.NodaTime" Version="9.0.1" />
