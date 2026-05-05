@@ -12,14 +12,32 @@ namespace JosephGuadagno.Broadcasting.Managers.Twitter.Tests;
 public class TwitterManagerTests
 {
     private readonly Mock<ILogger<TwitterManager>> _mockLogger;
+    private readonly Mock<ISocialMediaPlatformManager> _mockSocialMediaPlatformManager;
+    private readonly Mock<IMessageTemplateDataStore> _mockMessageTemplateDataStore;
+    private readonly Mock<ISyndicationFeedSourceManager> _mockSyndicationFeedSourceManager;
+    private readonly Mock<IYouTubeSourceManager> _mockYouTubeSourceManager;
+    private readonly Mock<IEngagementManager> _mockEngagementManager;
 
     public TwitterManagerTests()
     {
         _mockLogger = new Mock<ILogger<TwitterManager>>();
+        _mockSocialMediaPlatformManager = new Mock<ISocialMediaPlatformManager>();
+        _mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        _mockSyndicationFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
+        _mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
+        _mockEngagementManager = new Mock<IEngagementManager>();
     }
 
-    private static TestableTwitterManager CreateSut(ILogger<TwitterManager> logger, Tweet? tweetResult, Exception? exception = null)
-        => new(logger, tweetResult, exception);
+    private TestableTwitterManager CreateSut(Tweet? tweetResult, Exception? exception = null)
+        => new(
+            _mockLogger.Object,
+            _mockSocialMediaPlatformManager.Object,
+            _mockMessageTemplateDataStore.Object,
+            _mockSyndicationFeedSourceManager.Object,
+            _mockYouTubeSourceManager.Object,
+            _mockEngagementManager.Object,
+            tweetResult,
+            exception);
 
     [Fact]
     public async Task SendTweetAsync_WhenTweetSucceeds_ReturnsTweetId()
@@ -27,7 +45,7 @@ public class TwitterManagerTests
         // Arrange
         var expectedId = "123456789";
         var tweet = new Tweet { ID = expectedId };
-        var sut = CreateSut(_mockLogger.Object, tweet);
+        var sut = CreateSut(tweet);
 
         // Act
         var result = await sut.SendTweetAsync("Hello world!");
@@ -41,7 +59,7 @@ public class TwitterManagerTests
     {
         // Arrange
         var expectedId = "123456789";
-        ISocialMediaPublisher sut = CreateSut(_mockLogger.Object, new Tweet { ID = expectedId });
+        ISocialMediaPublisher sut = CreateSut(new Tweet { ID = expectedId });
 
         // Act
         var result = await sut.PublishAsync(new SocialMediaPublishRequest { Text = "Hello world!" });
@@ -54,7 +72,7 @@ public class TwitterManagerTests
     public async Task PublishAsync_WhenTextIsMissing_ThrowsArgumentException()
     {
         // Arrange
-        ISocialMediaPublisher sut = CreateSut(_mockLogger.Object, new Tweet { ID = "123456789" });
+        ISocialMediaPublisher sut = CreateSut(new Tweet { ID = "123456789" });
 
         // Act
         var act = () => sut.PublishAsync(new SocialMediaPublishRequest { Text = " " });
@@ -67,7 +85,7 @@ public class TwitterManagerTests
     public async Task SendTweetAsync_WhenTweetReturnsNull_ThrowsTwitterPostException()
     {
         // Arrange
-        var sut = CreateSut(_mockLogger.Object, tweetResult: null);
+        var sut = CreateSut(tweetResult: null);
 
         // Act
         var act = () => sut.SendTweetAsync("Hello world!");
@@ -81,7 +99,7 @@ public class TwitterManagerTests
     public async Task SendTweetAsync_WhenExceptionThrown_ThrowsTwitterPostException()
     {
         // Arrange
-        var sut = CreateSut(_mockLogger.Object, tweetResult: null, exception: new InvalidOperationException("Twitter API error"));
+        var sut = CreateSut(tweetResult: null, exception: new InvalidOperationException("Twitter API error"));
 
         // Act
         var act = () => sut.SendTweetAsync("Hello world!");
@@ -119,12 +137,28 @@ public class TwitterManagerTests
     }
 
     [Fact]
-    public async Task ComposeMessageAsync_ReturnsScheduledItemMessage()
+    public async Task ComposeMessageAsync_WhenScheduledItemIsNull_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var sut = CreateSut(tweetResult: null);
+
+        // Act
+        var act = async () => await sut.ComposeMessageAsync(null!);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    [Fact]
+    public async Task ComposeMessageAsync_WhenPlatformNotFound_ReturnsOriginalMessage()
     {
         // Arrange
         var expectedMessage = "Hello Twitter!";
         var scheduledItem = new ScheduledItem { Message = expectedMessage };
-        var sut = CreateSut(_mockLogger.Object, tweetResult: null);
+        _mockSocialMediaPlatformManager
+            .Setup(m => m.GetByNameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((SocialMediaPlatform?)null);
+        var sut = CreateSut(tweetResult: null);
 
         // Act
         var result = await sut.ComposeMessageAsync(scheduledItem);
@@ -133,8 +167,44 @@ public class TwitterManagerTests
         result.Should().Be(expectedMessage);
     }
 
-    private sealed class TestableTwitterManager(ILogger<TwitterManager> logger, Tweet? tweetResult, Exception? exception = null)
-        : TwitterManager(null!, logger)
+    [Fact]
+    public async Task ComposeMessageAsync_WhenTemplateNotFound_ReturnsOriginalMessage()
+    {
+        // Arrange
+        var expectedMessage = "Hello Twitter!";
+        var scheduledItem = new ScheduledItem { Message = expectedMessage };
+        _mockSocialMediaPlatformManager
+            .Setup(m => m.GetByNameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SocialMediaPlatform { Id = 1, Name = "Twitter" });
+        _mockMessageTemplateDataStore
+            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MessageTemplate?)null);
+        var sut = CreateSut(tweetResult: null);
+
+        // Act
+        var result = await sut.ComposeMessageAsync(scheduledItem);
+
+        // Assert
+        result.Should().Be(expectedMessage);
+    }
+
+    private sealed class TestableTwitterManager(
+        ILogger<TwitterManager> logger,
+        ISocialMediaPlatformManager socialMediaPlatformManager,
+        IMessageTemplateDataStore messageTemplateDataStore,
+        ISyndicationFeedSourceManager syndicationFeedSourceManager,
+        IYouTubeSourceManager youTubeSourceManager,
+        IEngagementManager engagementManager,
+        Tweet? tweetResult,
+        Exception? exception = null)
+        : TwitterManager(
+            null!,
+            logger,
+            socialMediaPlatformManager,
+            messageTemplateDataStore,
+            syndicationFeedSourceManager,
+            youTubeSourceManager,
+            engagementManager)
     {
         protected override Task<Tweet?> TweetAsync(string tweetText)
         {

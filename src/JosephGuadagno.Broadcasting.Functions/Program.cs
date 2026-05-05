@@ -273,8 +273,8 @@ void ConfigureTwitter(IServiceCollection services, IConfiguration config)
         }
         return new TwitterContext(authorizer);
     });
-    services.TryAddSingleton<ITwitterManager, TwitterManager>();
-    services.AddSingleton<ISocialMediaPublisher>(sp =>
+    services.TryAddScoped<ITwitterManager, TwitterManager>();
+    services.AddScoped<ISocialMediaPublisher>(sp =>
         sp.GetRequiredService<ITwitterManager>());
 }
 
@@ -341,7 +341,7 @@ void ConfigureBlueskyManager(IServiceCollection services, IConfiguration config)
         return blueskySettings;
     });
     services.TryAddSingleton<IBlueskyManager, BlueskyManager>();
-    services.AddSingleton<ISocialMediaPublisher>(sp =>
+    services.AddScoped<ISocialMediaPublisher>(sp =>
         sp.GetRequiredService<IBlueskyManager>());
 }
 

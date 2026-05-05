@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Reflection;
@@ -235,8 +235,8 @@ public class Startup
             }
             return new TwitterContext(authorizer);
         });
-        services.TryAddSingleton<ITwitterManager, TwitterManager>();
-        services.AddSingleton<ISocialMediaPublisher>(sp =>
+        services.TryAddScoped<ITwitterManager, TwitterManager>();
+        services.AddScoped<ISocialMediaPublisher>(sp =>
             sp.GetRequiredService<ITwitterManager>());
     }
 
