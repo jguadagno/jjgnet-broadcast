@@ -314,8 +314,8 @@ void ConfigureLinkedInManager(IServiceCollection services, IConfiguration config
         config.Bind("LinkedIn", linkedInApplicationSettings);
         return linkedInApplicationSettings;
     });
-    services.TryAddSingleton<ILinkedInManager, LinkedInManager>();
-    services.AddSingleton<ISocialMediaPublisher>(sp =>
+    services.TryAddScoped<ILinkedInManager, LinkedInManager>();
+    services.AddScoped<ISocialMediaPublisher>(sp =>
         sp.GetRequiredService<ILinkedInManager>());
 }
 
@@ -344,3 +344,4 @@ void ConfigureBlueskyManager(IServiceCollection services, IConfiguration config)
     services.AddSingleton<ISocialMediaPublisher>(sp =>
         sp.GetRequiredService<IBlueskyManager>());
 }
+
