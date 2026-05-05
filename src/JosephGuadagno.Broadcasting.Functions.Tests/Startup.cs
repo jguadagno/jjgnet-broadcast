@@ -273,8 +273,8 @@ public class Startup
             config.Bind("LinkedIn", linkedInApplicationSettings);
             return linkedInApplicationSettings;
         });
-        services.TryAddSingleton<ILinkedInManager, LinkedInManager>();
-        services.AddSingleton<ISocialMediaPublisher>(sp =>
+        services.TryAddScoped<ILinkedInManager, LinkedInManager>();
+        services.AddScoped<ISocialMediaPublisher>(sp =>
             sp.GetRequiredService<ILinkedInManager>());
     }
 

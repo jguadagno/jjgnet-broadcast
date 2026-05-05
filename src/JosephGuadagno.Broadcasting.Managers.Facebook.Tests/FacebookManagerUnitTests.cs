@@ -1,6 +1,8 @@
 using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -21,6 +23,11 @@ public class FacebookManagerUnitTests
     private readonly Mock<IFacebookApplicationSettings> _mockFacebookSettings;
     private readonly Mock<HttpMessageHandler> _mockHttpMessageHandler;
     private readonly HttpClient _httpClient;
+    private readonly Mock<ISocialMediaPlatformManager> _mockSocialMediaPlatformManager;
+    private readonly Mock<IMessageTemplateDataStore> _mockMessageTemplateDataStore;
+    private readonly Mock<ISyndicationFeedSourceManager> _mockSyndicationFeedSourceManager;
+    private readonly Mock<IYouTubeSourceManager> _mockYouTubeSourceManager;
+    private readonly Mock<IEngagementManager> _mockEngagementManager;
 
     public FacebookManagerUnitTests()
     {
@@ -28,6 +35,11 @@ public class FacebookManagerUnitTests
         _mockFacebookSettings = new Mock<IFacebookApplicationSettings>();
         _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
         _httpClient = new HttpClient(_mockHttpMessageHandler.Object);
+        _mockSocialMediaPlatformManager = new Mock<ISocialMediaPlatformManager>();
+        _mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        _mockSyndicationFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
+        _mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
+        _mockEngagementManager = new Mock<IEngagementManager>();
 
         // Setup default settings
         _mockFacebookSettings.Setup(s => s.GraphApiRootUrl).Returns("https://graph.facebook.com");
@@ -42,7 +54,7 @@ public class FacebookManagerUnitTests
     public async Task PostMessageAndLinkToPage_WithEmptyMessage_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
@@ -55,7 +67,7 @@ public class FacebookManagerUnitTests
     public async Task PostMessageAndLinkToPage_WithEmptyLink_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
@@ -71,7 +83,7 @@ public class FacebookManagerUnitTests
         var expectedId = "12345_67890";
         var jsonResponse = $"{{\"id\": \"{expectedId}\"}}";
         SetupHttpMessageHandler(System.Net.HttpStatusCode.OK, jsonResponse);
-        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.PostMessageAndLinkToPage("Test Message", "https://example.com");
@@ -87,7 +99,7 @@ public class FacebookManagerUnitTests
         var errorMessage = "Some Facebook Error";
         var jsonResponse = $"{{\"error\": {{\"message\": \"{errorMessage}\", \"type\": \"OAuthException\", \"code\": 100, \"error_subcode\": 33, \"fbtrace_id\": \"trace123\"}}}}";
         SetupHttpMessageHandler(System.Net.HttpStatusCode.OK, jsonResponse);
-        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<FacebookPostException>(
@@ -100,7 +112,7 @@ public class FacebookManagerUnitTests
     {
         // Arrange
         SetupHttpMessageHandler(System.Net.HttpStatusCode.OK, "null");
-        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<FacebookPostException>(
@@ -113,7 +125,7 @@ public class FacebookManagerUnitTests
     {
         // Arrange
         SetupHttpMessageHandler(System.Net.HttpStatusCode.BadRequest, "Error");
-        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<FacebookPostException>(
@@ -127,7 +139,7 @@ public class FacebookManagerUnitTests
         // Arrange
         var jsonResponse = "{\"id\": \"\"}";
         SetupHttpMessageHandler(System.Net.HttpStatusCode.OK, jsonResponse);
-        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<FacebookPostException>(
@@ -143,7 +155,7 @@ public class FacebookManagerUnitTests
     public async Task RefreshToken_WithEmptyToken_ThrowsArgumentNullException()
     {
         // Arrange
-        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
@@ -159,7 +171,7 @@ public class FacebookManagerUnitTests
         var expectedToken = "new_access_token";
         var jsonResponse = $"{{\"access_token\": \"{expectedToken}\", \"token_type\": \"bearer\", \"expires_in\": 3600}}";
         SetupHttpMessageHandler(System.Net.HttpStatusCode.OK, jsonResponse);
-        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.RefreshToken("old_token");
@@ -176,7 +188,7 @@ public class FacebookManagerUnitTests
     {
         // Arrange
         SetupHttpMessageHandler(System.Net.HttpStatusCode.OK, "null");
-        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<FacebookPostException>(
@@ -189,7 +201,7 @@ public class FacebookManagerUnitTests
     {
         // Arrange
         SetupHttpMessageHandler(System.Net.HttpStatusCode.InternalServerError, "Error");
-        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<FacebookPostException>(
@@ -203,7 +215,7 @@ public class FacebookManagerUnitTests
     public void GraphApiRoot_ReturnsCorrectUrl()
     {
         // Arrange
-        var sut = new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act
         var result = sut.GraphApiRoot;
@@ -220,7 +232,7 @@ public class FacebookManagerUnitTests
         var jsonResponse = $"{{\"id\": \"{expectedId}\"}}";
         SetupHttpMessageHandler(System.Net.HttpStatusCode.OK, jsonResponse);
         ISocialMediaPublisher sut =
-            new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+            CreateSut();
 
         // Act
         var result = await sut.PublishAsync(new SocialMediaPublishRequest
@@ -242,7 +254,7 @@ public class FacebookManagerUnitTests
         var jsonResponse = $"{{\"id\": \"{expectedId}\"}}";
         SetupHttpMessageHandler(System.Net.HttpStatusCode.OK, jsonResponse);
         ISocialMediaPublisher sut =
-            new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+            CreateSut();
 
         // Act
         var result = await sut.PublishAsync(new SocialMediaPublishRequest
@@ -259,7 +271,7 @@ public class FacebookManagerUnitTests
     {
         // Arrange
         ISocialMediaPublisher sut =
-            new FacebookManager(_httpClient, _mockFacebookSettings.Object, _mockLogger.Object);
+            CreateSut();
 
         // Act
         var act = () => sut.PublishAsync(new SocialMediaPublishRequest
@@ -277,6 +289,167 @@ public class FacebookManagerUnitTests
     {
         Assert.True(typeof(ISocialMediaPublisher).IsAssignableFrom(typeof(IFacebookManager)));
     }
+
+    #region ComposeMessageAsync Tests
+
+    [Fact]
+    public async Task ComposeMessageAsync_WithNullScheduledItem_ThrowsArgumentNullException()
+    {
+        var sut = CreateSut();
+
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => sut.ComposeMessageAsync(null!));
+    }
+
+    [Fact]
+    public async Task ComposeMessageAsync_WhenTemplateExists_RendersSyndicationContent()
+    {
+        var scheduledItem = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemPrimaryKey = 42,
+            Message = "fallback",
+            SendOnDateTime = DateTimeOffset.UtcNow,
+            ImageUrl = "https://cdn.example.com/image.jpg"
+        };
+
+        _mockSocialMediaPlatformManager
+            .Setup(m => m.GetByNameAsync(MessageTemplates.Platforms.Facebook, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SocialMediaPlatform
+            {
+                Id = SocialMediaPlatformIds.Facebook,
+                Name = MessageTemplates.Platforms.Facebook,
+                IsActive = true
+            });
+
+        _mockMessageTemplateDataStore
+            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MessageTemplate
+            {
+                SocialMediaPlatformId = SocialMediaPlatformIds.Facebook,
+                MessageType = MessageTemplates.MessageTypes.NewSyndicationFeedItem,
+                Template = "{{ title }} - {{ url }} {{ image_url }}"
+            });
+
+        _mockSyndicationFeedSourceManager
+            .Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SyndicationFeedSource
+            {
+                Id = 42,
+                FeedIdentifier = "feed-1",
+                Title = "Post Title",
+                Url = "https://example.com/post",
+                PublicationDate = DateTimeOffset.UtcNow,
+                AddedOn = DateTimeOffset.UtcNow,
+                LastUpdatedOn = DateTimeOffset.UtcNow,
+                CreatedByEntraOid = "test-oid"
+            });
+
+        var sut = CreateSut();
+
+        var result = await sut.ComposeMessageAsync(scheduledItem);
+
+        Assert.Equal("Post Title - https://example.com/post https://cdn.example.com/image.jpg", result);
+    }
+
+    [Fact]
+    public async Task ComposeMessageAsync_WhenTemplateMissing_ReturnsScheduledMessage()
+    {
+        var scheduledItem = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.Engagements,
+            ItemPrimaryKey = 42,
+            Message = "fallback message",
+            SendOnDateTime = DateTimeOffset.UtcNow
+        };
+
+        _mockSocialMediaPlatformManager
+            .Setup(m => m.GetByNameAsync(MessageTemplates.Platforms.Facebook, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SocialMediaPlatform
+            {
+                Id = SocialMediaPlatformIds.Facebook,
+                Name = MessageTemplates.Platforms.Facebook,
+                IsActive = true
+            });
+
+        _mockMessageTemplateDataStore
+            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MessageTemplate?)null);
+
+        var sut = CreateSut();
+
+        var result = await sut.ComposeMessageAsync(scheduledItem);
+
+        Assert.Equal("fallback message", result);
+    }
+
+    [Fact]
+    public async Task ComposeMessageAsync_WhenPlatformNotFound_ReturnsScheduledMessage()
+    {
+        var scheduledItem = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemPrimaryKey = 42,
+            Message = "fallback message",
+            SendOnDateTime = DateTimeOffset.UtcNow
+        };
+
+        _mockSocialMediaPlatformManager
+            .Setup(m => m.GetByNameAsync(MessageTemplates.Platforms.Facebook, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((SocialMediaPlatform?)null);
+
+        var sut = CreateSut();
+
+        var result = await sut.ComposeMessageAsync(scheduledItem);
+
+        Assert.Equal("fallback message", result);
+    }
+
+    [Fact]
+    public async Task ComposeMessageAsync_WhenRenderingThrows_ReturnsScheduledMessage()
+    {
+        var scheduledItem = new ScheduledItem
+        {
+            Id = 1,
+            ItemType = Domain.Enums.ScheduledItemType.YouTubeSources,
+            ItemPrimaryKey = 42,
+            Message = "fallback message",
+            SendOnDateTime = DateTimeOffset.UtcNow
+        };
+
+        _mockSocialMediaPlatformManager
+            .Setup(m => m.GetByNameAsync(MessageTemplates.Platforms.Facebook, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SocialMediaPlatform
+            {
+                Id = SocialMediaPlatformIds.Facebook,
+                Name = MessageTemplates.Platforms.Facebook,
+                IsActive = true
+            });
+
+        _mockMessageTemplateDataStore
+            .Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MessageTemplate
+            {
+                SocialMediaPlatformId = SocialMediaPlatformIds.Facebook,
+                MessageType = MessageTemplates.MessageTypes.NewYouTubeItem,
+                Template = "{{ title }}"
+            });
+
+        _mockYouTubeSourceManager
+            .Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("boom"));
+
+        var sut = CreateSut();
+
+        var result = await sut.ComposeMessageAsync(scheduledItem);
+
+        Assert.Equal("fallback message", result);
+    }
+
+    #endregion
 
     #region Exception Inheritance Tests
 
@@ -314,5 +487,23 @@ public class FacebookManagerUnitTests
                 StatusCode = statusCode,
                 Content = new StringContent(content, System.Text.Encoding.UTF8, "application/json")
             });
+    }
+
+    private FacebookManager CreateSut(
+        Mock<ISocialMediaPlatformManager>? socialMediaPlatformManager = null,
+        Mock<IMessageTemplateDataStore>? messageTemplateDataStore = null,
+        Mock<ISyndicationFeedSourceManager>? syndicationFeedSourceManager = null,
+        Mock<IYouTubeSourceManager>? youTubeSourceManager = null,
+        Mock<IEngagementManager>? engagementManager = null)
+    {
+        return new FacebookManager(
+            _httpClient,
+            _mockFacebookSettings.Object,
+            _mockLogger.Object,
+            (socialMediaPlatformManager ?? _mockSocialMediaPlatformManager).Object,
+            (messageTemplateDataStore ?? _mockMessageTemplateDataStore).Object,
+            (syndicationFeedSourceManager ?? _mockSyndicationFeedSourceManager).Object,
+            (youTubeSourceManager ?? _mockYouTubeSourceManager).Object,
+            (engagementManager ?? _mockEngagementManager).Object);
     }
 }

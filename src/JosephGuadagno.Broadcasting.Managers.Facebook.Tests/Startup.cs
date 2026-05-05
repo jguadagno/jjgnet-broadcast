@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 using Microsoft.Extensions.Configuration;
@@ -32,7 +32,7 @@ public class Startup
         var facebookApplicationSettings = new FacebookApplicationSettings();
         config.Bind("Facebook", facebookApplicationSettings);
         services.TryAddSingleton<IFacebookApplicationSettings>(facebookApplicationSettings);
-        services.TryAddSingleton<IFacebookManager, FacebookManager>();
+        services.TryAddScoped<IFacebookManager, FacebookManager>();
 
         services.AddHttpClient();
     }
