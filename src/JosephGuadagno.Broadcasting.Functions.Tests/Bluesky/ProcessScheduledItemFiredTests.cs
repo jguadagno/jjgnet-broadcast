@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Messaging.EventGrid;
-using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
+using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
@@ -21,22 +21,24 @@ public class ProcessScheduledItemFiredTests
         return new EventGridEvent("subject", "eventType", "1.0", BinaryData.FromString(payload));
     }
 
-    private static Domain.Models.ScheduledItem BuildScheduledItem(int id = 1, int primaryKey = 42) => new()
+    private static Domain.Models.ScheduledItem BuildScheduledItem(
+        int id = 1,
+        int primaryKey = 42,
+        ScheduledItemType itemType = ScheduledItemType.SyndicationFeedSources) => new()
     {
         Id = id,
-        ItemType = ScheduledItemType.SyndicationFeedSources,
+        ItemType = itemType,
         ItemPrimaryKey = primaryKey,
         Message = "existing scheduled message",
         SendOnDateTime = DateTimeOffset.UtcNow
     };
 
-    private static SyndicationFeedSource BuildFeedSource() => new()
+    private static SyndicationFeedSource BuildFeedSource(int id = 42, string url = "https://example.com/post") => new()
     {
-        Id = 42,
+        Id = id,
         FeedIdentifier = "feed-1",
         Title = "Test Blog Post Title",
-        Url = "https://example.com/post",
-        ShortenedUrl = null,
+        Url = url,
         Author = "Author",
         PublicationDate = DateTimeOffset.UtcNow,
         AddedOn = DateTimeOffset.UtcNow,
@@ -44,588 +46,235 @@ public class ProcessScheduledItemFiredTests
         CreatedByEntraOid = ""
     };
 
-    private static Engagement BuildEngagement(int id = 42) => new()
+    private static Engagement BuildEngagement(int id = 42, string url = "https://conf.example.com") => new()
     {
         Id = id,
         Name = "Tech Conference 2026",
-        Url = "https://conf.example.com",
+        Url = url,
         StartDateTime = new DateTimeOffset(2026, 6, 1, 9, 0, 0, TimeSpan.Zero),
         EndDateTime = new DateTimeOffset(2026, 6, 3, 17, 0, 0, TimeSpan.Zero),
-        TimeZoneId = "UTC",
-        Comments = "Great event!"
+        TimeZoneId = "UTC"
     };
 
-    private static Talk BuildTalk(int id = 42, int engagementId = 99) => new()
+    private static Talk BuildTalk(int id = 42, int engagementId = 99, string url = "https://conf.example.com/talk") => new()
     {
         Id = id,
-        Name = "Building .NET Apps",
-        UrlForConferenceTalk = "https://conf.example.com/talks/dotnet",
-        UrlForTalk = "https://josephguadagno.net/talks/dotnet",
-        StartDateTime = new DateTimeOffset(2026, 6, 2, 10, 0, 0, TimeSpan.Zero),
-        EndDateTime = new DateTimeOffset(2026, 6, 2, 11, 0, 0, TimeSpan.Zero),
-        TalkLocation = "Room A",
-        Comments = "Excellent session",
-        EngagementId = engagementId
+        EngagementId = engagementId,
+        Name = "My Talk Title",
+        UrlForConferenceTalk = url,
+        UrlForTalk = url
     };
 
-    private static YouTubeSource BuildYouTubeSource(int id = 42) => new()
+    private static YouTubeSource BuildYouTubeSource(int id = 42, string url = "https://youtube.com/watch?v=abc") => new()
     {
         Id = id,
-        VideoId = "abc123def",
-        Author = "Joseph Guadagno",
-        Title = "Building Better Apps with .NET",
-        Url = "https://youtube.com/watch?v=abc123def",
-        ShortenedUrl = null,
-        Tags = [],
+        VideoId = "abc",
+        Title = "My YouTube Video",
+        Url = url,
+        Author = "Author",
         PublicationDate = DateTimeOffset.UtcNow,
         AddedOn = DateTimeOffset.UtcNow,
         LastUpdatedOn = DateTimeOffset.UtcNow,
         CreatedByEntraOid = ""
     };
 
+    // Constructor order: (IScheduledItemManager, IEngagementManager, ISyndicationFeedSourceManager, IYouTubeSourceManager, IBlueskyManager, ILogger)
     private static Functions.Bluesky.ProcessScheduledItemFired BuildSut(
         Mock<IScheduledItemManager> scheduledItemManager,
+        Mock<IEngagementManager> engagementManager,
         Mock<ISyndicationFeedSourceManager> feedSourceManager,
         Mock<IYouTubeSourceManager> youTubeSourceManager,
-        Mock<IEngagementManager> engagementManager,
-        Mock<IMessageTemplateDataStore> messageTemplateDataStore,
-        Mock<ISocialMediaPlatformManager> socialMediaPlatformManager)
+        Mock<IBlueskyManager> blueskyManager)
     {
         return new Functions.Bluesky.ProcessScheduledItemFired(
             scheduledItemManager.Object,
+            engagementManager.Object,
             feedSourceManager.Object,
             youTubeSourceManager.Object,
-            engagementManager.Object,
-            messageTemplateDataStore.Object,
-            socialMediaPlatformManager.Object,
+            blueskyManager.Object,
             NullLogger<Functions.Bluesky.ProcessScheduledItemFired>.Instance);
     }
 
-    private static Mock<ISocialMediaPlatformManager> BuildPlatformManager()
+    [Fact]
+    public async Task RunAsync_WhenEventDataIsNull_ReturnsNull()
     {
-        var mock = new Mock<ISocialMediaPlatformManager>();
-        mock.Setup(m => m.GetByNameAsync(MessageTemplates.Platforms.Bluesky, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SocialMediaPlatform { Id = 2, Name = "Bluesky", IsActive = true });
-        return mock;
+        var evt = new EventGridEvent("subject", "eventType", "1.0", BinaryData.FromString("null"));
+        var sut = BuildSut(
+            new Mock<IScheduledItemManager>(),
+            new Mock<IEngagementManager>(),
+            new Mock<ISyndicationFeedSourceManager>(),
+            new Mock<IYouTubeSourceManager>(),
+            new Mock<IBlueskyManager>());
+        var result = await sut.RunAsync(evt);
+        Assert.Null(result);
     }
 
     [Fact]
-    public async Task RunAsync_WhenTemplateFound_UsesRenderedTextNotAutoGenerated()
+    public async Task RunAsync_WhenComposeMessageReturnsText_ReturnsBlueskyPostMessage()
     {
-        // Arrange
         var scheduledItem = BuildScheduledItem();
-        var feedSource = BuildFeedSource();
-        var messageTemplate = new MessageTemplate
-        {
-            SocialMediaPlatformId = 2,
-            MessageType = "NewSyndicationFeedItem",
-            Template = "{{ title }} - {{ url }}"
-        };
-
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
-        mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
-
-        var sut = BuildSut(
-            mockScheduledItemManager,
-            mockFeedSourceManager,
-            new Mock<IYouTubeSourceManager>(),
-            new Mock<IEngagementManager>(),
-            mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
+        var mockFeedSource = new Mock<ISyndicationFeedSourceManager>();
+        mockFeedSource.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildFeedSource());
+        var mockBlueskyManager = new Mock<IBlueskyManager>();
+        mockBlueskyManager
+            .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Test Blog Post Title");
+        var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
+            mockFeedSource, new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
         var result = await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — rendered text, not the "Blog Post: ..." fallback
-        Assert.Equal("Test Blog Post Title - https://example.com/post", result?.Text);
-    }
-
-    [Fact]
-    public async Task RunAsync_WhenTemplateIsNull_FallsBackToAutoGeneratedMessage()
-    {
-        // Arrange
-        var scheduledItem = BuildScheduledItem();
-        var feedSource = BuildFeedSource();
-
-        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
-        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
-        mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync((MessageTemplate?)null);
-
-        var sut = BuildSut(
-            mockScheduledItemManager,
-            mockFeedSourceManager,
-            new Mock<IYouTubeSourceManager>(),
-            new Mock<IEngagementManager>(),
-            mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
-        var result = await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — fallback generates "Blog Post: ..." format
         Assert.NotNull(result);
-        Assert.Contains("Blog Post:", result!.Text);
-        Assert.Contains("Test Blog Post Title", result!.Text);
+        Assert.Equal("Test Blog Post Title", result!.Text);
     }
 
     [Fact]
-    public async Task RunAsync_WhenTemplateRendersImageUrl_ImageUrlAppearsInResult()
+    public async Task RunAsync_WhenComposeMessageReturnsEmpty_ReturnsNull()
     {
-        // Arrange
+        var scheduledItem = BuildScheduledItem();
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+        var mockBlueskyManager = new Mock<IBlueskyManager>();
+        mockBlueskyManager
+            .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(string.Empty);
+        var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
+            new Mock<ISyndicationFeedSourceManager>(), new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+        var result = await sut.RunAsync(BuildEventGridEvent(1));
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task RunAsync_DelegatesTextCompositionToBlueskyManager()
+    {
+        var scheduledItem = BuildScheduledItem();
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+        var mockFeedSource = new Mock<ISyndicationFeedSourceManager>();
+        mockFeedSource.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildFeedSource());
+        var mockBlueskyManager = new Mock<IBlueskyManager>();
+        mockBlueskyManager
+            .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Composed text");
+        var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
+            mockFeedSource, new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+        await sut.RunAsync(BuildEventGridEvent(1));
+        mockBlueskyManager.Verify(m => m.ComposeMessageAsync(scheduledItem, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenItemTypeIsSyndicationFeed_SetsUrlFromFeedSource()
+    {
+        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.SyndicationFeedSources);
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+        var mockFeedSource = new Mock<ISyndicationFeedSourceManager>();
+        mockFeedSource.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildFeedSource(url: "https://example.com/post"));
+        var mockBlueskyManager = new Mock<IBlueskyManager>();
+        mockBlueskyManager
+            .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Test Blog Post Title");
+        var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
+            mockFeedSource, new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+        var result = await sut.RunAsync(BuildEventGridEvent(1));
+        Assert.NotNull(result);
+        Assert.Equal("https://example.com/post", result!.Url);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenItemTypeIsYouTubeSource_SetsUrlFromYouTubeSource()
+    {
+        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.YouTubeSources);
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+        var mockYouTube = new Mock<IYouTubeSourceManager>();
+        mockYouTube.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildYouTubeSource(url: "https://youtube.com/watch?v=abc"));
+        var mockBlueskyManager = new Mock<IBlueskyManager>();
+        mockBlueskyManager
+            .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("My YouTube Video");
+        var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
+            new Mock<ISyndicationFeedSourceManager>(), mockYouTube, mockBlueskyManager);
+        var result = await sut.RunAsync(BuildEventGridEvent(1));
+        Assert.NotNull(result);
+        Assert.Equal("https://youtube.com/watch?v=abc", result!.Url);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenItemTypeIsEngagement_SetsUrlFromEngagement()
+    {
+        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.Engagements);
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+        var mockEngagement = new Mock<IEngagementManager>();
+        mockEngagement.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildEngagement(url: "https://conf.example.com"));
+        var mockBlueskyManager = new Mock<IBlueskyManager>();
+        mockBlueskyManager
+            .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Speaking at Tech Conference 2026");
+        var sut = BuildSut(mockScheduledItemManager, mockEngagement,
+            new Mock<ISyndicationFeedSourceManager>(), new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+        var result = await sut.RunAsync(BuildEventGridEvent(1));
+        Assert.NotNull(result);
+        Assert.Equal("https://conf.example.com", result!.Url);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenItemTypeIsTalk_SetsUrlFromTalk()
+    {
+        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.Talks);
+        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
+        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
+        var mockEngagement = new Mock<IEngagementManager>();
+        mockEngagement.Setup(m => m.GetTalkAsync(42)).ReturnsAsync(BuildTalk(url: "https://conf.example.com/talk"));
+        var mockBlueskyManager = new Mock<IBlueskyManager>();
+        mockBlueskyManager
+            .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("My Talk Title at Tech Conference 2026");
+        var sut = BuildSut(mockScheduledItemManager, mockEngagement,
+            new Mock<ISyndicationFeedSourceManager>(), new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+        var result = await sut.RunAsync(BuildEventGridEvent(1));
+        Assert.NotNull(result);
+        Assert.Equal("https://conf.example.com/talk", result!.Url);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenImageUrlIsSet_ImageUrlAppearsInResult()
+    {
         var scheduledItem = BuildScheduledItem();
         scheduledItem.ImageUrl = "https://cdn.example.com/image.jpg";
-
-        var feedSource = BuildFeedSource();
-        var messageTemplate = new MessageTemplate
-        {
-            SocialMediaPlatformId = 2,
-            MessageType = "NewSyndicationFeedItem",
-            Template = "{{ title }} {{ image_url }}"
-        };
-
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
-        mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
-
-        var sut = BuildSut(
-            mockScheduledItemManager,
-            mockFeedSourceManager,
-            new Mock<IYouTubeSourceManager>(),
-            new Mock<IEngagementManager>(),
-            mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
+        var mockFeedSource = new Mock<ISyndicationFeedSourceManager>();
+        mockFeedSource.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildFeedSource());
+        var mockBlueskyManager = new Mock<IBlueskyManager>();
+        mockBlueskyManager
+            .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Test Blog Post Title");
+        var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
+            mockFeedSource, new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
         var result = await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert
         Assert.NotNull(result);
-        Assert.Contains("https://cdn.example.com/image.jpg", result!.Text);
+        Assert.Equal("https://cdn.example.com/image.jpg", result!.ImageUrl);
     }
 
     [Fact]
-    public async Task RunAsync_WhenScheduledItemImageUrlIsNull_ImageUrlIsEmptyInRenderedTemplate()
+    public async Task RunAsync_WhenImageUrlIsNull_ImageUrlIsNullInResult()
     {
-        // Arrange
         var scheduledItem = BuildScheduledItem();
         scheduledItem.ImageUrl = null;
-
-        var feedSource = BuildFeedSource();
-        var messageTemplate = new MessageTemplate
-        {
-            SocialMediaPlatformId = 2,
-            MessageType = "NewSyndicationFeedItem",
-            Template = "{{ title }}|{{ image_url }}"
-        };
-
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
-        mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
-
-        var sut = BuildSut(
-            mockScheduledItemManager,
-            mockFeedSourceManager,
-            new Mock<IYouTubeSourceManager>(),
-            new Mock<IEngagementManager>(),
-            mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
+        var mockFeedSource = new Mock<ISyndicationFeedSourceManager>();
+        mockFeedSource.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildFeedSource());
+        var mockBlueskyManager = new Mock<IBlueskyManager>();
+        mockBlueskyManager
+            .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Test Blog Post Title");
+        var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
+            mockFeedSource, new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
         var result = await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — image_url renders as empty string
         Assert.NotNull(result);
-        Assert.Equal("Test Blog Post Title|", result!.Text);
-    }
-
-    [Fact]
-    public async Task RunAsync_WhenTemplateIsEmptyString_FallsBackToAutoGeneratedMessage()
-    {
-        // Arrange
-        var scheduledItem = BuildScheduledItem();
-        var feedSource = BuildFeedSource();
-        var messageTemplate = new MessageTemplate
-        {
-            SocialMediaPlatformId = 2,
-            MessageType = "NewSyndicationFeedItem",
-            Template = ""   // empty → TryRenderTemplateAsync returns null → fallback
-        };
-
-        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
-        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
-        mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSyndicationFeedItem)).ReturnsAsync(messageTemplate);
-
-        var sut = BuildSut(
-            mockScheduledItemManager,
-            mockFeedSourceManager,
-            new Mock<IYouTubeSourceManager>(),
-            new Mock<IEngagementManager>(),
-            mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
-        var result = await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — empty template is treated as no template → fallback
-        Assert.NotNull(result);
-        Assert.Contains("Blog Post:", result!.Text);
-    }
-
-    // ── Per-type template selection: Engagements ─────────────────────────────
-
-    [Fact]
-    public async Task RunAsync_ShouldRequestNewSpeakingEngagementTemplate_WhenItemTypeIsEngagements()
-    {
-        // Arrange
-        var scheduledItem = new Domain.Models.ScheduledItem
-        {
-            Id = 1, ItemType = ScheduledItemType.Engagements, ItemPrimaryKey = 42,
-            Message = "engagement message", SendOnDateTime = DateTimeOffset.UtcNow
-        };
-        var engagement = BuildEngagement();
-
-        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
-        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockEngagementManager = new Mock<IEngagementManager>();
-        mockEngagementManager.Setup(m => m.GetAsync(42)).ReturnsAsync(engagement);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>()))
-            .ReturnsAsync((MessageTemplate?)null);
-
-        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
-        await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — must request the engagement-specific template
-        mockMessageTemplateDataStore.Verify(
-            m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSpeakingEngagement),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task RunAsync_WhenEngagementTemplateFound_RendersEngagementNameAndUrl()
-    {
-        // Arrange
-        var scheduledItem = new Domain.Models.ScheduledItem
-        {
-            Id = 1, ItemType = ScheduledItemType.Engagements, ItemPrimaryKey = 42,
-            Message = "engagement message", SendOnDateTime = DateTimeOffset.UtcNow
-        };
-        var engagement = BuildEngagement();
-        var messageTemplate = new MessageTemplate
-        {
-            SocialMediaPlatformId = 2,
-            MessageType = MessageTemplates.MessageTypes.NewSpeakingEngagement,
-            Template = "Speaking at {{ title }} - {{ url }}"
-        };
-
-        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
-        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockEngagementManager = new Mock<IEngagementManager>();
-        mockEngagementManager.Setup(m => m.GetAsync(42)).ReturnsAsync(engagement);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSpeakingEngagement))
-            .ReturnsAsync(messageTemplate);
-
-        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
-        var result = await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — rendered via Scriban using engagement fields
-        Assert.NotNull(result);
-        Assert.Equal("Speaking at Tech Conference 2026 - https://conf.example.com", result!.Text);
-    }
-
-    [Fact]
-    public async Task RunAsync_WhenEngagementTemplateIsNull_FallsBackToEngagementPost()
-    {
-        // Arrange
-        var scheduledItem = new Domain.Models.ScheduledItem
-        {
-            Id = 1, ItemType = ScheduledItemType.Engagements, ItemPrimaryKey = 42,
-            Message = "engagement message", SendOnDateTime = DateTimeOffset.UtcNow
-        };
-        var engagement = BuildEngagement();
-
-        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
-        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockEngagementManager = new Mock<IEngagementManager>();
-        mockEngagementManager.Setup(m => m.GetAsync(42)).ReturnsAsync(engagement);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewSpeakingEngagement))
-            .ReturnsAsync((MessageTemplate?)null);
-
-        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
-        var result = await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — fallback includes engagement name
-        Assert.NotNull(result);
-        Assert.Contains("I'm speaking at", result!.Text);
-        Assert.Contains("Tech Conference 2026", result!.Text);
-    }
-
-    // ── Per-type template selection: Talks ────────────────────────────────────
-
-    [Fact]
-    public async Task RunAsync_ShouldRequestScheduledItemTemplate_WhenItemTypeIsTalks()
-    {
-        // Arrange
-        var scheduledItem = new Domain.Models.ScheduledItem
-        {
-            Id = 1, ItemType = ScheduledItemType.Talks, ItemPrimaryKey = 42,
-            Message = "talk message", SendOnDateTime = DateTimeOffset.UtcNow
-        };
-        var talk = BuildTalk();
-        var associatedEngagement = BuildEngagement(talk.Id);
-
-        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
-        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockEngagementManager = new Mock<IEngagementManager>();
-        mockEngagementManager.Setup(m => m.GetTalkAsync(42)).ReturnsAsync(talk);
-        mockEngagementManager.Setup(m => m.GetAsync(talk.Id)).ReturnsAsync(associatedEngagement);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>()))
-            .ReturnsAsync((MessageTemplate?)null);
-
-        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
-        await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — must request the talk-specific template
-        mockMessageTemplateDataStore.Verify(
-            m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.ScheduledItem),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task RunAsync_WhenTalkTemplateFound_RendersTalkNameAndUrl()
-    {
-        // Arrange
-        var scheduledItem = new Domain.Models.ScheduledItem
-        {
-            Id = 1, ItemType = ScheduledItemType.Talks, ItemPrimaryKey = 42,
-            Message = "talk message", SendOnDateTime = DateTimeOffset.UtcNow
-        };
-        var talk = BuildTalk();
-        var messageTemplate = new MessageTemplate
-        {
-            SocialMediaPlatformId = 2,
-            MessageType = MessageTemplates.MessageTypes.ScheduledItem,
-            Template = "My talk: {{ title }} - {{ url }}"
-        };
-
-        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
-        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockEngagementManager = new Mock<IEngagementManager>();
-        mockEngagementManager.Setup(m => m.GetTalkAsync(42)).ReturnsAsync(talk);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.ScheduledItem))
-            .ReturnsAsync(messageTemplate);
-
-        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
-        var result = await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — template renders talk name and URL
-        Assert.NotNull(result);
-        Assert.Equal("My talk: Building .NET Apps - https://josephguadagno.net/talks/dotnet", result!.Text);
-    }
-
-    [Fact]
-    public async Task RunAsync_WhenTalkTemplateIsNull_FallsBackToTalkPost()
-    {
-        // Arrange
-        var scheduledItem = new Domain.Models.ScheduledItem
-        {
-            Id = 1, ItemType = ScheduledItemType.Talks, ItemPrimaryKey = 42,
-            Message = "talk message", SendOnDateTime = DateTimeOffset.UtcNow
-        };
-        var talk = BuildTalk();
-        var associatedEngagement = BuildEngagement(talk.Id);
-
-        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
-        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockEngagementManager = new Mock<IEngagementManager>();
-        mockEngagementManager.Setup(m => m.GetTalkAsync(42)).ReturnsAsync(talk);
-        mockEngagementManager.Setup(m => m.GetAsync(talk.Id)).ReturnsAsync(associatedEngagement);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.ScheduledItem))
-            .ReturnsAsync((MessageTemplate?)null);
-
-        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
-        var result = await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — fallback generates talk post
-        Assert.NotNull(result);
-        Assert.Contains("My talk:", result!.Text);
-        Assert.Contains("Building .NET Apps", result!.Text);
-    }
-
-    // ── Per-type template selection: YouTubeSources ───────────────────────────
-
-    [Fact]
-    public async Task RunAsync_ShouldRequestNewYouTubeItemTemplate_WhenItemTypeIsYouTubeSources()
-    {
-        // Arrange
-        var scheduledItem = new Domain.Models.ScheduledItem
-        {
-            Id = 1, ItemType = ScheduledItemType.YouTubeSources, ItemPrimaryKey = 42,
-            Message = "youtube message", SendOnDateTime = DateTimeOffset.UtcNow
-        };
-        var youTubeSource = BuildYouTubeSource();
-
-        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
-        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
-        mockYouTubeSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(youTubeSource);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), It.IsAny<string>()))
-            .ReturnsAsync((MessageTemplate?)null);
-
-        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            mockYouTubeSourceManager, new Mock<IEngagementManager>(), mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
-        await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — must request the YouTube-specific template
-        mockMessageTemplateDataStore.Verify(
-            m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewYouTubeItem),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task RunAsync_WhenYouTubeTemplateFound_RendersVideoTitleAndUrl()
-    {
-        // Arrange
-        var scheduledItem = new Domain.Models.ScheduledItem
-        {
-            Id = 1, ItemType = ScheduledItemType.YouTubeSources, ItemPrimaryKey = 42,
-            Message = "youtube message", SendOnDateTime = DateTimeOffset.UtcNow
-        };
-        var youTubeSource = BuildYouTubeSource();
-        var messageTemplate = new MessageTemplate
-        {
-            SocialMediaPlatformId = 2,
-            MessageType = MessageTemplates.MessageTypes.NewYouTubeItem,
-            Template = "New video: {{ title }} - {{ url }}"
-        };
-
-        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
-        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
-        mockYouTubeSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(youTubeSource);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewYouTubeItem))
-            .ReturnsAsync(messageTemplate);
-
-        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            mockYouTubeSourceManager, new Mock<IEngagementManager>(), mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
-        var result = await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — template renders video title and URL
-        Assert.NotNull(result);
-        Assert.Equal("New video: Building Better Apps with .NET - https://youtube.com/watch?v=abc123def", result!.Text);
-    }
-
-    [Fact]
-    public async Task RunAsync_WhenYouTubeTemplateIsNull_FallsBackToVideoPost()
-    {
-        // Arrange
-        var scheduledItem = new Domain.Models.ScheduledItem
-        {
-            Id = 1, ItemType = ScheduledItemType.YouTubeSources, ItemPrimaryKey = 42,
-            Message = "youtube message", SendOnDateTime = DateTimeOffset.UtcNow
-        };
-        var youTubeSource = BuildYouTubeSource();
-
-        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
-        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
-        mockYouTubeSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(youTubeSource);
-
-        var mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        mockMessageTemplateDataStore.Setup(m => m.GetAsync(It.IsAny<int>(), MessageTemplates.MessageTypes.NewYouTubeItem))
-            .ReturnsAsync((MessageTemplate?)null);
-
-        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            mockYouTubeSourceManager, new Mock<IEngagementManager>(), mockMessageTemplateDataStore,
-            BuildPlatformManager());
-
-        // Act
-        var result = await sut.RunAsync(BuildEventGridEvent(1));
-
-        // Assert — fallback generates video post
-        Assert.NotNull(result);
-        Assert.Contains("Video:", result!.Text);
-        Assert.Contains("Building Better Apps with .NET", result!.Text);
+        Assert.Null(result!.ImageUrl);
     }
 }
-

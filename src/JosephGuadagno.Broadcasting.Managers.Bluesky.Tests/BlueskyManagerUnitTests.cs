@@ -18,17 +18,37 @@ public class BlueskyManagerUnitTests
     private readonly Mock<ILogger<BlueskyManager>> _mockLogger;
     private readonly Mock<IBlueskySettings> _mockBlueskySettings;
     private readonly HttpClient _httpClient;
+    private readonly Mock<ISocialMediaPlatformManager> _mockSocialMediaPlatformManager;
+    private readonly Mock<IMessageTemplateDataStore> _mockMessageTemplateDataStore;
+    private readonly Mock<ISyndicationFeedSourceManager> _mockSyndicationFeedSourceManager;
+    private readonly Mock<IYouTubeSourceManager> _mockYouTubeSourceManager;
+    private readonly Mock<IEngagementManager> _mockEngagementManager;
 
     public BlueskyManagerUnitTests()
     {
         _mockLogger = new Mock<ILogger<BlueskyManager>>();
         _mockBlueskySettings = new Mock<IBlueskySettings>();
         _httpClient = new HttpClient();
+        _mockSocialMediaPlatformManager = new Mock<ISocialMediaPlatformManager>();
+        _mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
+        _mockSyndicationFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
+        _mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
+        _mockEngagementManager = new Mock<IEngagementManager>();
 
         // Setup default settings
         _mockBlueskySettings.Setup(s => s.BlueskyUserName).Returns("testuser");
         _mockBlueskySettings.Setup(s => s.BlueskyPassword).Returns("testpassword");
     }
+
+    private BlueskyManager CreateSut() => new(
+        _httpClient,
+        _mockBlueskySettings.Object,
+        _mockLogger.Object,
+        _mockSocialMediaPlatformManager.Object,
+        _mockMessageTemplateDataStore.Object,
+        _mockSyndicationFeedSourceManager.Object,
+        _mockYouTubeSourceManager.Object,
+        _mockEngagementManager.Object);
 
     #region GetEmbeddedExternalRecord Tests
 
@@ -36,7 +56,7 @@ public class BlueskyManagerUnitTests
     public async Task GetEmbeddedExternalRecord_WithEmptyUrl_ReturnsNull()
     {
         // Arrange
-        var sut = new BlueskyManager(_httpClient, _mockBlueskySettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetEmbeddedExternalRecord("");
@@ -49,7 +69,7 @@ public class BlueskyManagerUnitTests
     public async Task GetEmbeddedExternalRecord_WithNullUrl_ReturnsNull()
     {
         // Arrange
-        var sut = new BlueskyManager(_httpClient, _mockBlueskySettings.Object, _mockLogger.Object);
+        var sut = CreateSut();
 
         // Act
         var result = await sut.GetEmbeddedExternalRecord(null);
@@ -62,8 +82,7 @@ public class BlueskyManagerUnitTests
     public async Task PublishAsync_WithNullRequest_ThrowsArgumentNullException()
     {
         // Arrange
-        ISocialMediaPublisher sut =
-            new BlueskyManager(_httpClient, _mockBlueskySettings.Object, _mockLogger.Object);
+        ISocialMediaPublisher sut = CreateSut();
 
         // Act
         var act = () => sut.PublishAsync(null!);
@@ -76,8 +95,7 @@ public class BlueskyManagerUnitTests
     public async Task PublishAsync_WithBlankText_ThrowsArgumentException()
     {
         // Arrange
-        ISocialMediaPublisher sut =
-            new BlueskyManager(_httpClient, _mockBlueskySettings.Object, _mockLogger.Object);
+        ISocialMediaPublisher sut = CreateSut();
 
         // Act
         var act = () => sut.PublishAsync(new Domain.Models.SocialMediaPublishRequest { Text = " " });
