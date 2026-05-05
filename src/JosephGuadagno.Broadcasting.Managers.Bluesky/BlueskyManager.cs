@@ -2,6 +2,8 @@ using idunno.AtProto;
 using idunno.AtProto.Repo;
 using idunno.Bluesky;
 using idunno.Bluesky.Embed;
+using idunno.Bluesky.RichText;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -48,6 +50,54 @@ public class BlueskyManager(HttpClient httpClient, IBlueskySettings blueskySetti
     public async Task<CreateRecordResult?> PostText(string postText)
     {
         return await Post(new PostBuilder(postText));
+    }
+
+    public async Task<string?> PublishAsync(SocialMediaPublishRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.Text);
+
+        var postBuilder = new PostBuilder(request.Text);
+
+        if (!string.IsNullOrWhiteSpace(request.ShortenedUrl) && !string.IsNullOrWhiteSpace(request.LinkUrl))
+        {
+            if (!request.Text.EndsWith(' '))
+            {
+                postBuilder.Append(" ");
+            }
+
+            postBuilder.Append(new Link(request.ShortenedUrl, request.ShortenedUrl));
+
+            var embeddedExternalRecord = !string.IsNullOrEmpty(request.ImageUrl)
+                ? await GetEmbeddedExternalRecordWithThumbnail(request.LinkUrl, request.ImageUrl)
+                : await GetEmbeddedExternalRecord(request.LinkUrl);
+
+            if (embeddedExternalRecord is not null)
+            {
+                postBuilder.EmbedRecord(embeddedExternalRecord);
+            }
+        }
+        else if (!string.IsNullOrEmpty(request.ImageUrl) && !string.IsNullOrEmpty(request.LinkUrl))
+        {
+            var embeddedExternalRecord =
+                await GetEmbeddedExternalRecordWithThumbnail(request.LinkUrl, request.ImageUrl);
+            if (embeddedExternalRecord is not null)
+            {
+                postBuilder.EmbedRecord(embeddedExternalRecord);
+            }
+        }
+
+        if (request.Hashtags is not null)
+        {
+            foreach (var hashtag in request.Hashtags)
+            {
+                postBuilder.Append(" ");
+                postBuilder.Append(new HashTag(hashtag));
+            }
+        }
+
+        var response = await Post(postBuilder);
+        return response?.Cid.ToString();
     }
 
     public async Task<CreateRecordResult?> Post(PostBuilder postBuilder)

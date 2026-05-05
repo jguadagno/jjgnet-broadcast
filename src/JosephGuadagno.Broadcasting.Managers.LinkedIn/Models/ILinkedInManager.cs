@@ -1,7 +1,13 @@
-﻿namespace JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
+
+namespace JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 
 public interface ILinkedInManager
+    : ISocialMediaPublisher
 {
+    Task<string> ComposeMessageAsync(ScheduledItem scheduledItem, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Gets the current user's profile based on the access token
     /// </summary>

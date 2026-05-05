@@ -11,8 +11,6 @@ using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using Scriban;
-using Scriban.Runtime;
 
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
@@ -22,8 +20,7 @@ public class ProcessScheduledItemFired(
     ISyndicationFeedSourceManager syndicationFeedSourceManager,
     IYouTubeSourceManager youTubeSourceManager,
     IUserOAuthTokenManager userOAuthTokenManager,
-    IMessageTemplateDataStore messageTemplateDataStore,
-    ISocialMediaPlatformManager socialMediaPlatformManager,
+    ILinkedInManager linkedInManager,
     ILogger<ProcessScheduledItemFired> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInProcessScheduledItemFired)]
@@ -91,24 +88,7 @@ public class ProcessScheduledItemFired(
                     return null;
             }
 
-            // Attempt Scriban template rendering; fall back to scheduledItem.Message if unavailable
-            var messageType = scheduledItem.ItemType switch
-            {
-                ScheduledItemType.Engagements => MessageTemplates.MessageTypes.NewSpeakingEngagement,
-                ScheduledItemType.Talks => MessageTemplates.MessageTypes.ScheduledItem,
-                ScheduledItemType.SyndicationFeedSources => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
-                ScheduledItemType.YouTubeSources => MessageTemplates.MessageTypes.NewYouTubeItem,
-                _ => MessageTemplates.MessageTypes.RandomPost
-            };
-            var linkedInPlatform = await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.LinkedIn);
-            var messageTemplate = linkedInPlatform != null
-                ? await messageTemplateDataStore.GetAsync(linkedInPlatform.Id, messageType)
-                : null;
-            string? renderedText = null;
-            if (!string.IsNullOrWhiteSpace(messageTemplate?.Template))
-                renderedText = await TryRenderTemplateAsync(scheduledItem, messageTemplate.Template);
-
-            linkedInPost.Text = renderedText ?? scheduledItem.Message;
+            linkedInPost.Text = await linkedInManager.ComposeMessageAsync(scheduledItem);
             linkedInPost.AccessToken = token.AccessToken;
             linkedInPost.ImageUrl = scheduledItem.ImageUrl;
 
@@ -210,53 +190,4 @@ public class ProcessScheduledItemFired(
         return post;
     }
 
-    private async Task<string?> TryRenderTemplateAsync(ScheduledItem scheduledItem, string templateContent)
-    {
-        try
-        {
-            string title = "", url = "", description = "", tags = "";
-            switch (scheduledItem.ItemType)
-            {
-                case ScheduledItemType.SyndicationFeedSources:
-                    var feed = await syndicationFeedSourceManager.GetAsync(scheduledItem.ItemPrimaryKey);
-                    title = feed.Title;
-                    url = feed.ShortenedUrl ?? feed.Url;
-                    tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : "";
-                    break;
-                case ScheduledItemType.YouTubeSources:
-                    var yt = await youTubeSourceManager.GetAsync(scheduledItem.ItemPrimaryKey);
-                    title = yt.Title;
-                    url = yt.ShortenedUrl ?? yt.Url;
-                    tags = yt.Tags?.Count > 0 ? string.Join(",", yt.Tags) : "";
-                    break;
-                case ScheduledItemType.Engagements:
-                    var engagement = await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey);
-                    title = engagement.Name;
-                    url = engagement.Url;
-                    description = engagement.Comments ?? "";
-                    break;
-                case ScheduledItemType.Talks:
-                    var talk = await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey);
-                    title = talk.Name;
-                    url = talk.UrlForTalk ?? "";
-                    description = talk.Comments ?? "";
-                    break;
-                default:
-                    return null;
-            }
-
-            var template = Template.Parse(templateContent);
-            var scriptObject = new ScriptObject();
-            scriptObject.Import(new { title, url, description, tags, image_url = scheduledItem.ImageUrl });
-            var context = new TemplateContext();
-            context.PushGlobal(scriptObject);
-            var rendered = await template.RenderAsync(context);
-            return string.IsNullOrWhiteSpace(rendered) ? null : rendered.Trim();
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Scriban template rendering failed for LinkedIn scheduled item {Id}", scheduledItem.Id);
-            return null;
-        }
-    }
 }
