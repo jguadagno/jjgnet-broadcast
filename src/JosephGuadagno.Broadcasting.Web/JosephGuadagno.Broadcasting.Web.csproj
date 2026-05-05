@@ -49,7 +49,7 @@
         <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.2.4" />
         <PackageReference Include="AutoMapper" Version="16.1.1" />
         <PackageReference Include="Azure.Identity" Version="1.21.0" />
-        <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.4.0" />
+        <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.5.0" />
         <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.10.0" />
         <PackageReference Include="Microsoft.Extensions.Azure" Version="1.14.0" />
         <PackageReference Include="Microsoft.Extensions.Caching.SqlServer" Version="10.0.7" />
