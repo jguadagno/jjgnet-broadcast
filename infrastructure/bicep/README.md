@@ -7,7 +7,7 @@ Modular Bicep IaC templates for the JJGNet Broadcasting Azure environment.
 - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) ≥ 2.40
 - [Bicep CLI](https://docs.microsoft.com/en-us/azure/azure-resource-manager/bicep/install) ≥ 0.20 (`az bicep install`)
 - Contributor or Owner role on resource group `jjgnet`
-- Subscription: `4f42033c-3579-4a94-8023-a3561518ae7f`
+- Subscription: `ee7c6464-c10f-4b39-becd-e9e002b306bc`
 
 ## Structure
 
@@ -43,7 +43,7 @@ infrastructure/
 
 ```bash
 az login
-az account set --subscription 4f42033c-3579-4a94-8023-a3561518ae7f
+az account set --subscription ee7c6464-c10f-4b39-becd-e9e002b306bc
 ```
 
 ### 2. Validate the template

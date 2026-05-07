@@ -2,7 +2,7 @@ using './main.bicep'
 
 // =============================================================================
 // JJGNet Broadcasting — Production Parameters
-// Subscription : 4f42033c-3579-4a94-8023-a3561518ae7f
+// Subscription : ee7c6464-c10f-4b39-becd-e9e002b306bc
 // Resource Group: jjgnet
 // Populated from: az group export + az resource list (2025-04-05)
 // =============================================================================

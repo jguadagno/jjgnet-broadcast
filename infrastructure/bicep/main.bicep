@@ -3,7 +3,7 @@ targetScope = 'resourceGroup'
 // =============================================================================
 // JJGNet Broadcasting — Azure Infrastructure Orchestrator
 // Resource Group : jjgnet
-// Subscription   : 4f42033c-3579-4a94-8023-a3561518ae7f
+// Subscription   : ee7c6464-c10f-4b39-becd-e9e002b306bc
 // =============================================================================
 
 @description('Primary Azure region for most resources (App Services, SQL, Functions).')
