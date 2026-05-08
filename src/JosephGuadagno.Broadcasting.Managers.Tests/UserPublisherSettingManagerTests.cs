@@ -13,7 +13,8 @@ public class UserPublisherSettingManagerTests
 
     public UserPublisherSettingManagerTests()
     {
-        _sut = new UserPublisherSettingManager(_dataStore.Object, _platformManager.Object);
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        _sut = new UserPublisherSettingManager(_dataStore.Object, _platformManager.Object, cache);
     }
 
     [Fact]
