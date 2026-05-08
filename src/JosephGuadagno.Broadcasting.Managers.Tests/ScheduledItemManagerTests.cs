@@ -13,7 +13,8 @@ public class ScheduledItemManagerTests
     public ScheduledItemManagerTests()
     {
         _repository = new Mock<IScheduledItemDataStore>();
-        _scheduledItemManager = new ScheduledItemManager(_repository.Object);
+        var cache = new Mock<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
+        _scheduledItemManager = new ScheduledItemManager(_repository.Object, cache.Object);
     }
 
     [Fact]
