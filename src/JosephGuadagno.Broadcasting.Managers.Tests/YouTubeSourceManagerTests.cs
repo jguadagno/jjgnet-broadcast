@@ -1,19 +1,23 @@
-﻿using Moq;
+﻿using FluentAssertions;
+using Moq;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
 public class YouTubeSourceManagerTests
 {
     private readonly Mock<IYouTubeSourceDataStore> _repository;
+    private readonly IMemoryCache _cache;
     private readonly YouTubeSourceManager _youTubeSourceManager;
 
     public YouTubeSourceManagerTests()
     {
         _repository = new Mock<IYouTubeSourceDataStore>();
-        _youTubeSourceManager = new YouTubeSourceManager(_repository.Object);
+        _cache = new MemoryCache(new MemoryCacheOptions());
+        _youTubeSourceManager = new YouTubeSourceManager(_repository.Object, _cache);
     }
 
     [Fact]
@@ -75,6 +79,55 @@ public class YouTubeSourceManagerTests
         // Assert
         Assert.Equal(sources, result);
         _repository.Verify(r => r.GetAllAsync("owner-1", default), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_OnCacheHit_ShouldReturnCachedResultWithoutCallingDataStore()
+    {
+        // Arrange
+        var sources = new List<YouTubeSource> { new YouTubeSource { Id = 1, CreatedByEntraOid = "" } };
+        _repository.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(sources);
+
+        // Act — first call populates cache, second is served from cache
+        await _youTubeSourceManager.GetAllAsync();
+        var result = await _youTubeSourceManager.GetAllAsync();
+
+        // Assert
+        result.Should().BeEquivalentTo(sources);
+        _repository.Verify(r => r.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOid_OnCacheHit_ShouldReturnCachedResultWithoutCallingDataStore()
+    {
+        // Arrange
+        var sources = new List<YouTubeSource> { new YouTubeSource { Id = 1, CreatedByEntraOid = "owner-1" } };
+        _repository.Setup(r => r.GetAllAsync("owner-1", It.IsAny<CancellationToken>())).ReturnsAsync(sources);
+
+        // Act — first call populates cache, second is served from cache
+        await _youTubeSourceManager.GetAllAsync("owner-1");
+        var result = await _youTubeSourceManager.GetAllAsync("owner-1");
+
+        // Assert
+        result.Should().BeEquivalentTo(sources);
+        _repository.Verify(r => r.GetAllAsync("owner-1", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SaveAsync_ShouldInvalidateCacheSoNextCallHitsDataStore()
+    {
+        // Arrange
+        var source = new YouTubeSource { Id = 1, CreatedByEntraOid = "owner-1" };
+        _repository.Setup(r => r.GetAllAsync("owner-1", It.IsAny<CancellationToken>())).ReturnsAsync(new List<YouTubeSource> { source });
+        _repository.Setup(r => r.SaveAsync(source, default)).ReturnsAsync(OperationResult<YouTubeSource>.Success(source));
+
+        // Act — populate cache, then save (invalidates), then fetch again
+        await _youTubeSourceManager.GetAllAsync("owner-1");
+        await _youTubeSourceManager.SaveAsync(source);
+        await _youTubeSourceManager.GetAllAsync("owner-1");
+
+        // Assert — data store called twice: before and after invalidation
+        _repository.Verify(r => r.GetAllAsync("owner-1", It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     [Fact]

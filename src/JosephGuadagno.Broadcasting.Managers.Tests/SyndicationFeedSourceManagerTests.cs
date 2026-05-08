@@ -1,19 +1,23 @@
-﻿using Moq;
+﻿using FluentAssertions;
+using Moq;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
 public class SyndicationFeedSourceManagerTests
 {
     private readonly Mock<ISyndicationFeedSourceDataStore> _repository;
+    private readonly IMemoryCache _cache;
     private readonly SyndicationFeedSourceManager _syndicationFeedSourceManager;
 
     public SyndicationFeedSourceManagerTests()
     {
         _repository = new Mock<ISyndicationFeedSourceDataStore>();
-        _syndicationFeedSourceManager = new SyndicationFeedSourceManager(_repository.Object);
+        _cache = new MemoryCache(new MemoryCacheOptions());
+        _syndicationFeedSourceManager = new SyndicationFeedSourceManager(_repository.Object, _cache);
     }
 
     [Fact]
@@ -75,6 +79,55 @@ public class SyndicationFeedSourceManagerTests
         // Assert
         Assert.Equal(sources, result);
         _repository.Verify(r => r.GetAllAsync("owner-1", default), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_OnCacheHit_ShouldReturnCachedResultWithoutCallingDataStore()
+    {
+        // Arrange
+        var sources = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "" } };
+        _repository.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(sources);
+
+        // Act — first call populates cache, second is served from cache
+        await _syndicationFeedSourceManager.GetAllAsync();
+        var result = await _syndicationFeedSourceManager.GetAllAsync();
+
+        // Assert
+        result.Should().BeEquivalentTo(sources);
+        _repository.Verify(r => r.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOwnerOid_OnCacheHit_ShouldReturnCachedResultWithoutCallingDataStore()
+    {
+        // Arrange
+        var sources = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "owner-1" } };
+        _repository.Setup(r => r.GetAllAsync("owner-1", It.IsAny<CancellationToken>())).ReturnsAsync(sources);
+
+        // Act — first call populates cache, second is served from cache
+        await _syndicationFeedSourceManager.GetAllAsync("owner-1");
+        var result = await _syndicationFeedSourceManager.GetAllAsync("owner-1");
+
+        // Assert
+        result.Should().BeEquivalentTo(sources);
+        _repository.Verify(r => r.GetAllAsync("owner-1", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SaveAsync_ShouldInvalidateCacheSoNextCallHitsDataStore()
+    {
+        // Arrange
+        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "owner-1" };
+        _repository.Setup(r => r.GetAllAsync("owner-1", It.IsAny<CancellationToken>())).ReturnsAsync(new List<SyndicationFeedSource> { source });
+        _repository.Setup(r => r.SaveAsync(source, default)).ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(source));
+
+        // Act — populate cache, then save (invalidates), then fetch again
+        await _syndicationFeedSourceManager.GetAllAsync("owner-1");
+        await _syndicationFeedSourceManager.SaveAsync(source);
+        await _syndicationFeedSourceManager.GetAllAsync("owner-1");
+
+        // Assert — data store called twice: before and after invalidation
+        _repository.Verify(r => r.GetAllAsync("owner-1", It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     [Fact]

@@ -176,6 +176,7 @@ void ConfigureKeyVault(IServiceCollection services)
 void ConfigureFunction(IServiceCollection services)
 {
     services.AddHttpClient();
+    services.AddMemoryCache();
 
     services.TryAddSingleton<IEventPublisher, EventPublisher>();
 
