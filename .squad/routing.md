@@ -27,3 +27,4 @@
 | GitHub Actions CI/CD pipelines, Event Grid, Azure resource deployment | Link | Neo | Full infra-as-code ownership |
 | .NET Aspire AppHost, Bicep, local dev orchestration, container config | Cypher | Link | Local + staging environment config |
 | Manual human tasks (Azure portal, local secrets, config, secret rotation, permissions) | Joe | — | 👤 Human — coordinator pauses and waits for Joe |
+| Well-scoped single-file fixes, adding tests to existing patterns, backend CRUD | @copilot | Tank/Trinity | 🤖 Async — assign via GitHub issue |
