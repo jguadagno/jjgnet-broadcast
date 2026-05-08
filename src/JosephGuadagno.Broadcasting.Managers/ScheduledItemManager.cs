@@ -104,7 +104,15 @@ public class ScheduledItemManager : IScheduledItemManager
 
     public async Task<bool> SentScheduledItemAsync(int primaryKey, DateTimeOffset sentOn, CancellationToken cancellationToken = default)
     {
-        return await _scheduledItemDataStore.SentScheduledItemAsync(primaryKey, sentOn, cancellationToken);
+        var entity = await _scheduledItemDataStore.GetAsync(primaryKey, cancellationToken);
+        if (entity is null) return false;
+
+        var result = await _scheduledItemDataStore.SentScheduledItemAsync(primaryKey, sentOn, cancellationToken);
+        if (result)
+        {
+            InvalidateUserCaches(entity.CreatedByEntraOid);
+        }
+        return result;
     }
 
     public async Task<List<ScheduledItem>> GetOrphanedScheduledItemsAsync(CancellationToken cancellationToken = default)
