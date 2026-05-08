@@ -58,4 +58,20 @@ Trinity (Backend API Developer) implements core API functionality including CRUD
 
 ---
 
+### 2026-05-08 — Issue #937 PR #941: Fix SentScheduledItemAsync cache invalidation
+
+**Status:** ✅ COMPLETE — commit `5cf213d` on `issue-937-user-owned-caching`; all tests pass
+
+**What was delivered:**
+- `ScheduledItemManager.SentScheduledItemAsync(int, DateTimeOffset, CancellationToken)`: applied fetch-before-mutate pattern — `GetAsync` first to capture `CreatedByEntraOid`, early `return false` if item not found, `InvalidateUserCaches(entity.CreatedByEntraOid)` after a successful data-store update
+- Single-arg overload delegates to the full overload unchanged, picks up fix automatically
+- Comment posted on PR #941
+
+**Key patterns confirmed:**
+1. When `SentScheduledItemAsync` is a void-like mutation, still fetch entity first to get owner for cache invalidation — same as `DeleteAsync(int primaryKey)` pattern.
+2. Both overloads are handled by fixing only the full overload since the single-arg delegate-chains to it.
+3. Branch lives in worktree at `D:\Projects\jjgnet-broadcast-937` — always work there, never `git checkout` in main tree.
+
+---
+
 ## Learnings

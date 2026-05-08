@@ -44,6 +44,11 @@ public class ProcessNewSpeakingEngagementFired(
             }
 
             var engagement = await engagementManager.GetAsync(newSpeakingEngagementEvent.Id);
+            if (engagement is null)
+            {
+                logger.LogWarning("Engagement {EngagementId} not found. Skipping.", newSpeakingEngagementEvent.Id);
+                return null;
+            }
 
             logger.LogDebug("Processing new speaking engagement '{Id}' with name '{Name}'",
                 engagement.Id, LogSanitizer.Sanitize(engagement.Name));
@@ -59,7 +64,13 @@ public class ProcessNewSpeakingEngagementFired(
 
             var tweetText = await twitterManager.ComposeMessageAsync(scheduledItem);
 
-            var properties = new Dictionary<string, string>
+            if (string.IsNullOrWhiteSpace(tweetText))
+            {
+                logger.LogWarning("Composed message was empty for engagement {EngagementId}. Skipping.", engagement.Id);
+                return null;
+            }
+
+            var properties= new Dictionary<string, string>
             {
                 { "post", tweetText },
                 { "name", engagement.Name },
