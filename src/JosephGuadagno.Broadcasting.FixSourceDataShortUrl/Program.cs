@@ -50,6 +50,7 @@ services.AddSingleton<IBitlyConfiguration>(new BitlyConfiguration
 });
 services.AddSingleton<Bitly>();
 services.AddDbContext<BroadcastingContext>(options => options.UseSqlServer("name=ConnectionStrings:JJGNetDatabaseSqlServer"));
+services.AddMemoryCache();
 services.AddSingleton<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
 services.AddSingleton<IYouTubeSourceManager, YouTubeSourceManager>();
 services.AddSingleton<ISyndicationFeedSourceDataStore, SyndicationFeedSourceDataStore>();
