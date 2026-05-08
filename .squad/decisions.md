@@ -539,3 +539,111 @@ That made a stacked PR the safest reviewable shape. It keeps one issue per PR, p
 - PR #911: `feat(#897): define ISocialMediaPublisher common interface`
 - PR #912: `refactor(#902): move LinkedIn composition to manager`
 
+---
+
+# Decision: .squad/ Housekeeping PR Policy
+
+**Date:** 2026-05-08T08:37:47.421-07:00
+**Author:** Neo
+**Issue:** #803
+**PR:** #934
+**Status:** Implemented — merged to main
+
+## Decision
+
+`.squad/`-only PRs bypass the `pr-metadata` CI validation gate. Any PR where **every** changed file is under `.squad/` will skip branch-naming, PR-title-format, and single-issue-linking checks.
+
+## Rationale
+
+Agent housekeeping commits (state, decisions, history updates) are not feature work. Forcing them through the same strict naming and issue-linking gate as code PRs is unnecessary friction. The bypass is implemented in the existing `pr-metadata` job — no new infrastructure.
+
+## Implementation
+
+Modified `.github/workflows/ci.yml` `pr-metadata` job. After the Dependabot bypass, added:
+
+```bash
+changed_files="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" --jq '.[].filename' 2>/dev/null || true)"
+if [[ -n "$changed_files" ]]; then
+  non_squad_files="$(printf '%s\n' "$changed_files" | grep -v '^\.squad/' || true)"
+  if [[ -z "$non_squad_files" ]]; then
+    echo ".squad/-only PR on branch '$BRANCH_NAME' — skipping PR metadata validation."
+    exit 0
+  fi
+fi
+```
+
+## Security Properties
+
+- **Fail-secure**: API failure → validation proceeds normally. No bypass on error.
+- **`build-and-test` unaffected**: runs on every PR.
+- **`codeql-analysis` unaffected**: runs on every PR.
+- **Scope-limited**: one non-`.squad/` file forces full validation.
+
+## Team Impact
+
+Scribe (or any agent) can now open a PR from any branch containing only `.squad/` changes without following the conventional-commit PR title or `Closes #N` body format.
+
+---
+
+# Decision: IMemoryCache caching pattern for dual-overload managers
+
+**Date:** 2026-05
+**Author:** Trinity
+**Related:** Issue #935, PR #938, Issue #78
+
+## Context
+
+`SyndicationFeedSourceManager` and `YouTubeSourceManager` each expose two `GetAllAsync()` overloads:
+- `GetAllAsync(CancellationToken)` — global (all records)
+- `GetAllAsync(string ownerEntraOid, CancellationToken)` — user-scoped
+
+The `SocialMediaPlatformManager` was the established caching reference, but it only has list-scoped and id-scoped keys (`CacheKeyAllActive`, `CacheKeyAllIncludingInactive`, `CacheKeyById`). The dual-overload managers require a different key strategy.
+
+## Decision
+
+Use two cache keys per manager:
+
+- **Global key** (`*_All`): covers `GetAllAsync()` with no OID filter
+- **Per-user key** (`*_User_{ownerEntraOid}`): covers `GetAllAsync(ownerEntraOid)`
+
+```csharp
+private const string CacheKeyAll = "SyndicationFeedSources_All";
+private static string CacheKeyByUser(string ownerEntraOid) => $"SyndicationFeedSources_User_{ownerEntraOid}";
+```
+
+Invalidation rules:
+- `SaveAsync(entity)` / `DeleteAsync(entity)`: call `InvalidateUserCaches(entity.CreatedByEntraOid)` — removes both global and per-user key
+- `DeleteAsync(int primaryKey)`: remove only global key (`_cache.Remove(CacheKeyAll)`) — no OID available; user-scoped cache expires naturally within 5 minutes
+
+## Consequences
+
+- Cache hit rates are higher since global and user-scoped queries are cached independently
+- A `DeleteAsync(int)` leaves a stale user-scoped entry for up to 5 minutes — acceptable for this use case
+- All managers that have both global and user-scoped `GetAllAsync` overloads should follow this same dual-key pattern
+
+---
+
+# 2026-05-08: PR #934 merged — #803 complete
+
+**By:** Joe (jguadagno)
+**What:** PR #934 (.squad-only CI bypass for pr-metadata job) has been merged to main. Issue #803 is closed.
+**Why:** Confirmed by Joe.
+
+## Summary
+
+Sprint 31 (Milestone 27) active with focus on caching enhancements. PR #934 merged to main:
+- `.squad/`-only PRs now bypass `pr-metadata` branch-naming, title-format, and issue-linking checks
+- Implementation: `pr-metadata` job in `.github/workflows/ci.yml` detects when all changed files are under `.squad/` and exits early
+- Security: fail-secure (API failure → proceeds with normal validation), `build-and-test` and `codeql-analysis` unaffected
+- Impact: Scribe and other agents can open `.squad/`-only PRs from any branch without forced conventional-commit naming
+
+## Caching Work in Progress (Sprint 31)
+
+Four caching issues assigned to Milestone 27:
+- **#78** (parent): Add caching to WebApi
+- **#935** (P3): Add caching to SyndicationFeedSourceManager and YouTubeSourceManager — PR #938 open
+- **#936** (P1): Add caching to MessageTemplateManager — in progress
+- **#937** (P2): Add user-scoped caching to Engagements, Schedules, and UserPublisherSettings managers — in progress
+
+Pattern: Dual-key `IMemoryCache` with 5-minute absolute expiry (global + user-scoped keys where applicable).
+
