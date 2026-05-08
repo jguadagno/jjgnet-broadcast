@@ -1,4 +1,5 @@
 using Moq;
+using Microsoft.Extensions.Caching.Memory;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -13,7 +14,8 @@ public class ScheduledItemManagerTests
     public ScheduledItemManagerTests()
     {
         _repository = new Mock<IScheduledItemDataStore>();
-        _scheduledItemManager = new ScheduledItemManager(_repository.Object);
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        _scheduledItemManager = new ScheduledItemManager(_repository.Object, cache);
     }
 
     [Fact]
@@ -204,6 +206,8 @@ public class ScheduledItemManagerTests
     public async Task SentScheduledItemAsync_WithIdOnly_ShouldCallRepositoryWithUtcNow()
     {
         // Arrange
+        var entity = new ScheduledItem { Id = 1 };
+        _repository.Setup(r => r.GetAsync(1, default)).ReturnsAsync(entity);
         _repository.Setup(r => r.SentScheduledItemAsync(1, It.IsAny<DateTimeOffset>())).ReturnsAsync(true);
 
         // Act
@@ -218,6 +222,8 @@ public class ScheduledItemManagerTests
     public async Task SentScheduledItemAsync_WithIdAndDate_ShouldCallRepository()
     {
         // Arrange
+        var entity = new ScheduledItem { Id = 1 };
+        _repository.Setup(r => r.GetAsync(1, default)).ReturnsAsync(entity);
         var sentOn = DateTimeOffset.UtcNow;
         _repository.Setup(r => r.SentScheduledItemAsync(1, sentOn)).ReturnsAsync(true);
 
@@ -244,3 +250,4 @@ public class ScheduledItemManagerTests
         _repository.Verify(r => r.GetOrphanedScheduledItemsAsync("owner-1", default), Times.Once);
     }
 }
+

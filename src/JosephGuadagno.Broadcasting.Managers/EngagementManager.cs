@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using NodaTime;
 
@@ -14,11 +15,18 @@ public class EngagementManager: IEngagementManager
 {
     private readonly IEngagementDataStore _engagementDataStore;
     private readonly ILogger<EngagementManager> _logger;
+    private readonly IMemoryCache _cache;
 
-    public EngagementManager(IEngagementDataStore engagementDataStore, ILogger<EngagementManager> logger)
+    private static string CacheKeyAllByOwner(string ownerEntraOid) => $"Engagements_All_{ownerEntraOid}";
+
+    private static readonly MemoryCacheEntryOptions CacheOptions =
+        new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
+
+    public EngagementManager(IEngagementDataStore engagementDataStore, ILogger<EngagementManager> logger, IMemoryCache cache)
     {
         _engagementDataStore = engagementDataStore;
         _logger = logger;
+        _cache = cache;
     }
     
     public async Task<Engagement> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
@@ -48,6 +56,10 @@ public class EngagementManager: IEngagementManager
             _logger.LogError(ex, "Failed to save engagement {EngagementId} with name '{EngagementName}'", entity.Id, entity.Name);
             return OperationResult<Engagement>.Failure("An error occurred while saving the engagement", ex);
         }
+        finally
+        {
+            InvalidateUserCaches(entity.CreatedByEntraOid);
+        }
     }
     
     public async Task<List<Engagement>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -57,16 +69,30 @@ public class EngagementManager: IEngagementManager
 
     public async Task<List<Engagement>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
     {
-        return await _engagementDataStore.GetAllAsync(ownerEntraOid, cancellationToken);
+        var cacheKey = CacheKeyAllByOwner(ownerEntraOid);
+        if (_cache.TryGetValue(cacheKey, out List<Engagement>? cached) && cached is not null)
+        {
+            return cached;
+        }
+
+        var result = await _engagementDataStore.GetAllAsync(ownerEntraOid, cancellationToken);
+        _cache.Set(cacheKey, result, CacheOptions);
+        return result;
     }
 
     public async Task<OperationResult<bool>> DeleteAsync(Engagement entity, CancellationToken cancellationToken = default)
     {
+        InvalidateUserCaches(entity.CreatedByEntraOid);
         return await _engagementDataStore.DeleteAsync(entity, cancellationToken);
     }
 
     public async Task<OperationResult<bool>> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
+        var entity = await _engagementDataStore.GetAsync(primaryKey, cancellationToken);
+        if (entity is not null)
+        {
+            InvalidateUserCaches(entity.CreatedByEntraOid);
+        }
         return await _engagementDataStore.DeleteAsync(primaryKey, cancellationToken);
     }
 
@@ -140,5 +166,13 @@ public class EngagementManager: IEngagementManager
     public async Task<PagedResult<Talk>> GetTalksForEngagementAsync(int engagementId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         return await _engagementDataStore.GetTalksForEngagementAsync(engagementId, page, pageSize, cancellationToken);
+    }
+
+    private void InvalidateUserCaches(string? ownerEntraOid)
+    {
+        if (!string.IsNullOrEmpty(ownerEntraOid))
+        {
+            _cache.Remove(CacheKeyAllByOwner(ownerEntraOid));
+        }
     }
 }
