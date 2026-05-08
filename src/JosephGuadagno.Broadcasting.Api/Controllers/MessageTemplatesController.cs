@@ -20,7 +20,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 [Produces("application/json")]
 public class MessageTemplatesController : ControllerBase
 {
-    private readonly IMessageTemplateDataStore _messageTemplateDataStore;
+    private readonly IMessageTemplateManager _messageTemplateManager;
     private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
     private readonly ILogger<MessageTemplatesController> _logger;
     private readonly IMapper _mapper;
@@ -28,15 +28,15 @@ public class MessageTemplatesController : ControllerBase
     /// <summary>
     /// Handles the interactions with Message Templates
     /// </summary>
-    /// <param name="messageTemplateDataStore">The message template data store</param>
+    /// <param name="messageTemplateManager">The message template manager</param>
     /// <param name="socialMediaPlatformManager">The social media platform manager</param>
     /// <param name="logger">The logger</param>
     /// <param name="mapper">The AutoMapper instance</param>
-    public MessageTemplatesController(IMessageTemplateDataStore messageTemplateDataStore,
+    public MessageTemplatesController(IMessageTemplateManager messageTemplateManager,
         ISocialMediaPlatformManager socialMediaPlatformManager,
         ILogger<MessageTemplatesController> logger, IMapper mapper)
     {
-        _messageTemplateDataStore = messageTemplateDataStore;
+        _messageTemplateManager = messageTemplateManager;
         _socialMediaPlatformManager = socialMediaPlatformManager;
         _logger = logger;
         _mapper = mapper;
@@ -63,12 +63,12 @@ public class MessageTemplatesController : ControllerBase
         PagedResult<MessageTemplate> result;
         if (User.IsSiteAdministrator())
         {
-            result = await _messageTemplateDataStore.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
+            result = await _messageTemplateManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
         }
         else
         {
             var ownerOid = User.GetOwnerOid();
-            result = await _messageTemplateDataStore.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
+            result = await _messageTemplateManager.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
         }
 
         var items = _mapper.Map<List<MessageTemplateResponse>>(result.Items);
@@ -105,7 +105,7 @@ public class MessageTemplatesController : ControllerBase
             return NotFound();
         }
         
-        var template = await _messageTemplateDataStore.GetAsync(socialMediaPlatform.Id, messageType);
+        var template = await _messageTemplateManager.GetAsync(socialMediaPlatform.Id, messageType);
         if (template is null)
         {
             _logger.LogWarning("MessageTemplate not found for PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, LogSanitizer.Sanitize(messageType));
@@ -153,7 +153,7 @@ public class MessageTemplatesController : ControllerBase
             return NotFound();
         }
 
-        var existing = await _messageTemplateDataStore.GetAsync(socialMediaPlatform.Id, messageType);
+        var existing = await _messageTemplateManager.GetAsync(socialMediaPlatform.Id, messageType);
         if (existing is null)
         {
             _logger.LogWarning("MessageTemplate not found for update: PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, LogSanitizer.Sanitize(messageType));
@@ -169,7 +169,7 @@ public class MessageTemplatesController : ControllerBase
         messageTemplate.SocialMediaPlatformId = socialMediaPlatform.Id;
         messageTemplate.MessageType = messageType;
         messageTemplate.CreatedByEntraOid = existing.CreatedByEntraOid;
-        var updated = await _messageTemplateDataStore.UpdateAsync(messageTemplate);
+        var updated = await _messageTemplateManager.UpdateAsync(messageTemplate);
         if (updated is null)
         {
             _logger.LogWarning("MessageTemplate update failed: PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, LogSanitizer.Sanitize(messageType));

@@ -2,9 +2,31 @@
 
 ## Summary
 
-Trinity (Backend API Developer) implements core API functionality including CRUD endpoints, authentication/authorization workflows, OAuth token refresh, and data persistence. Work spans three layers: Controllers (HTTP routing), Managers (business logic), and Data/Data.Sql (Entity Framework Core persistence). Key contributions include EngagementSocialMediaPlatforms CRUD endpoints, UserApprovalManager for RBAC workflows, OAuth token refresh with token versioning, and ownership isolation enforcement. Trinity follows Neo's architectural patterns: explicit service contracts with DTOs, response mapping to isolate Data layer changes from API contracts, and role-based authorization. Established pattern: implement feature vertically from API controller through Manager to Data layer, write explicit request/response types in API, and map Data objects to DTOs before returning. Close collaboration with Tank (integration tests), Switch (Web-layer service mapping), and Neo (architectural reviews). Notable: Trinity maintains API contract stability by mapping internal changes to stable response shapes, preventing breaking changes to Web-layer consumers. Key decision: use DTOs consistently for all API responses to maintain contracts.
+Trinity (Backend API Developer) implements core API functionality including CRUD endpoints, authentication/authorization workflows, OAuth token refresh, and data persistence. Work spans three layers: Controllers (HTTP routing), Managers (business logic), and Data/Data.Sql (Entity Framework Core persistence). Key contributions include EngagementSocialMediaPlatforms CRUD endpoints, UserApprovalManager for RBAC workflows, OAuth token refresh with token versioning, ownership isolation enforcement, and `IMemoryCache` caching layer for managers. Trinity follows Neo's architectural patterns: explicit service contracts with DTOs, response mapping to isolate Data layer changes from API contracts, and role-based authorization. Established pattern: implement feature vertically from API controller through Manager to Data layer, write explicit request/response types in API, and map Data objects to DTOs before returning. Close collaboration with Tank (integration tests), Switch (Web-layer service mapping), and Neo (architectural reviews). Notable: Trinity maintains API contract stability by mapping internal changes to stable response shapes, preventing breaking changes to Web-layer consumers. Key decision: use DTOs consistently for all API responses to maintain contracts.
 
-### 2026-05-XX — Issue #899: Move Twitter message composition to TwitterManager
+### 2026-05-XX — Issue #936: Add IMemoryCache caching to MessageTemplateManager
+
+**Status:** ✅ COMPLETE — PR #940 on `issue-936-messagetemplates-caching`; 253 tests passing
+
+**What was delivered:**
+- `IMessageTemplateManager` (Domain/Interfaces): interface with `GetAsync`, `GetAllAsync` (admin + owner-filtered overloads with filter/sort/page), and `UpdateAsync`
+- `MessageTemplateManager` (Managers): `IMemoryCache` implementation
+  - Full list cached at `MessageTemplate_All` with 5-min absolute expiry
+  - Individual items cached at `MessageTemplate_{platformId}_{messageType}`
+  - `ApplyFilterSortPage` private helper handles in-memory filter/sort/pagination for both admin and owner-filtered paths
+  - `InvalidateListCaches()` + individual key removal on `UpdateAsync`
+- `MessageTemplatesController`: swapped `IMessageTemplateDataStore` → `IMessageTemplateManager` (4 call sites)
+- `Program.cs`: added `services.TryAddScoped<IMessageTemplateManager, MessageTemplateManager>()` after the DataStore registration
+- `MessageTemplatesControllerTests`: mocks `IMessageTemplateManager` instead of `IMessageTemplateDataStore`; admin and owner-filtered path tests unchanged in intent
+
+**Key patterns confirmed:**
+1. When a controller was calling `IDataStore` directly with no Manager, create `IManager` + `Manager` from scratch following `SocialMediaPlatformManager` as the gold standard.
+2. `ApplyFilterSortPage` static helper: pull all items from cache once, then filter/sort/page in-memory. Avoids separate cache keys per query combination.
+3. `InvalidateListCaches()` on any mutation is sufficient when there is no Add/Delete — only `UpdateAsync` exists.
+4. Git branch confusion guard: ALWAYS run `git branch --show-current` before any `git add` or `git commit`. Multiple branch switches in a session can leave HEAD on an unexpected branch.
+
+---
+
 
 **Status:** ✅ COMPLETE — PR #924 on `issue-899-twitter-message-composition`; 11 tests passing
 
