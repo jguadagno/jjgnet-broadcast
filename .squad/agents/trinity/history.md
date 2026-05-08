@@ -75,3 +75,10 @@ Trinity (Backend API Developer) implements core API functionality including CRUD
 ---
 
 ## Learnings
+
+### 2026-05-08 — PR #939 blocking fix (null checks + IsNullOrWhiteSpace guards)
+
+1. Always add a null check after `IEngagementManager.GetAsync` before accessing any property — the method returns `null` when the engagement is not found, causing a `NullReferenceException` on the next line.
+2. Match the Bluesky `IsNullOrWhiteSpace` guard pattern exactly in every other platform function; Bluesky was the reference implementation but Facebook, Twitter, and LinkedIn were missing it.
+3. The team directive in `decisions.md` prohibits `--filter "FullyQualifiedName!~SyndicationFeedReader"` in PR bodies — always use the no-filter command when writing the Testing section.
+4. When inspecting a PR body string with Python for replacement, use `repr()` to check exact backslash escaping before constructing replace patterns — `\\src\\` in the file renders differently depending on how it was captured.
