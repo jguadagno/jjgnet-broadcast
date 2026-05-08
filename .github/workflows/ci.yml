@@ -20,6 +20,9 @@ jobs:
           BRANCH_NAME: ${{ github.head_ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
@@ -27,6 +30,18 @@ jobs:
           if [[ "$BRANCH_NAME" =~ ^dependabot/ ]]; then
             echo "Dependabot PR detected on branch '$BRANCH_NAME' — skipping branch/title metadata validation."
             exit 0
+          fi
+
+          # .squad/-only PRs are agent housekeeping (state, decisions, history).
+          # They bypass branch naming, title format, and issue-linking requirements.
+          # Fail-secure: if the file list cannot be fetched, fall through to normal validation.
+          changed_files="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" --jq '.[].filename' 2>/dev/null || true)"
+          if [[ -n "$changed_files" ]]; then
+            non_squad_files="$(printf '%s\n' "$changed_files" | grep -v '^\.squad/' || true)"
+            if [[ -z "$non_squad_files" ]]; then
+              echo ".squad/-only PR on branch '$BRANCH_NAME' — skipping PR metadata validation."
+              exit 0
+            fi
           fi
 
           branch_pattern='^(issue-[0-9]+(-[a-z][a-z0-9]*)*|feature/[0-9]+(-[a-z][a-z0-9]*)*)$'
