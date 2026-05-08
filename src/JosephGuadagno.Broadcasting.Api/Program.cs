@@ -222,6 +222,7 @@ void ConfigureRepositories(IServiceCollection services)
 
     // MessageTemplate
     services.TryAddScoped<IMessageTemplateDataStore, MessageTemplateDataStore>();
+    services.TryAddScoped<IMessageTemplateManager, MessageTemplateManager>();
 
     // SocialMediaPlatform
     services.TryAddScoped<ISocialMediaPlatformDataStore, SocialMediaPlatformDataStore>();

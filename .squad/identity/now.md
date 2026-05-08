@@ -1,65 +1,53 @@
 # Team Focus — Now
 
-> **Last updated:** 2026-05-01T12:00:00Z
-> **Sprint:** 30 — Milestone 26
-> **Status:** Sprint 29 CLOSED (PR #909 #890/#893 + PR #910 misc fixes merged to main). Sprint 30 ACTIVE. #897 (ISocialMediaPublisher interface) COMPLETE. #902→#899–#900–#901 composition refactor sequence UNBLOCKED.
-> **Next:** #902 (LinkedIn composition) starts immediately; #899–#900–#901 (Twitter, Facebook, Bluesky) follow after #902 pattern validation. Joe executes parallel tasks (#892, #856, #896) independently.
+> **Last updated:** 2026-05-08T16:15:00Z
+> **Sprint:** 31 — Milestone 27
+> **Status:** Sprint 30 CLOSED (ISocialMediaPublisher #897 complete; composition refactor #902 merged). Sprint 31 ACTIVE — caching enhancements. #803 COMPLETE (PR #934 merged to main).
+> **Next:** Sprint 31 caching work: #935 (P3, PR #938 open), #936 (P1), #937 (P2) under way; #933 (speaking engagement functions) in progress; #930 (NuGet deprecation) queued.
 
 ## Current Focus
 
-**Sprint 28 — COMPLETE** ✅
-- ✅ #852 — LinkedIn OAuth token expiry data layer (merged)
-- ✅ #853 — Token expiry notification API (merged)
-- ✅ #904 — Code quality session (merged PR #908)
-
-**Sprint 29 — COMPLETE** ✅
-- ✅ #890 — Add from ≤ to guard to GetExpiringWindowAsync (Trinity implementation + Tank tests)
-- ✅ #893 — Log warning when Settings:WebBaseUrl is missing (Trinity implementation + Tank tests)
-- ✅ PR #909 merged (#890 + #893 implementation)
-- ✅ PR #910 merged (misc fixes)
-
-**Sprint 30 — ACTIVE** 🔄
+**Sprint 30 — COMPLETE** ✅
 - ✅ #897 — Define ISocialMediaPublisher common interface (COMPLETE — test coverage finalized, DI wiring verified)
-- 🔜 #902 — Move LinkedIn message composition to LinkedInManager (start immediately after #897 merge)
-- 🔜 #899, #900, #901 — Move Twitter/Facebook/Bluesky message composition (parallel after #902 pattern validation)
+- ✅ #902 — Move LinkedIn message composition to LinkedInManager (COMPLETE — merged to main)
 
-**Joe's Parallel Tasks (Non-blocking):**
-- ⏳ #892 — Add Settings:WebBaseUrl config to Functions and Web (post-#893)
-- ⏳ #856 — Retire LinkedIn Key Vault secrets in Azure Portal
-- ⏳ #896 — Move jjgnet resource group to new Azure subscription
+**Sprint 31 — ACTIVE** 🔄
+- ✅ #803 — Allow `.squad` updates to commit from main (COMPLETE — PR #934 merged to main)
+- 🔜 #78 — Add caching to WebApi (parent issue)
+  - 🔜 #935 — Add caching to SyndicationFeedSourceManager and YouTubeSourceManager (P3, PR #938 open)
+  - 🔜 #936 — Add caching to MessageTemplateManager (P1)
+  - 🔜 #937 — Add user-scoped caching to Engagements, Schedules, UserPublisherSettings managers (P2)
+- 🔜 #933 — Create Azure Functions for handling new speaking engagements (Trinity agent running)
+- ⏳ #930 — NuGet package AspNetCore.HealthChecks.AzureStorage has been deprecated (queued for Trinity)
 
-**Goal:** Sprint 30 unblocks #897 (ISocialMediaPublisher interface) COMPLETE. Composition refactor sequence (#902→#899–#900–#901) begins immediately. Joe executes parallel infrastructure tasks independently.
+**Goal:** Sprint 31 delivers #803 completion (PR #934 merged) + caching phase 1 (SyndicationFeed/YouTube, MessageTemplate, user-scoped managers).
 
-## Key Patterns (Sprint 30)
+## Key Patterns (Sprint 31)
 
-1. **Shared publisher interface:** `ISocialMediaPublisher` with platform identity + unified `PublishAsync(SocialMediaPublishRequest)` entry point
-2. **Three-layer test strategy:** Interface shape + inheritance validation + platform-specific routing proof (avoids test duplication)
-3. **Composition refactor sequence:** #902 (LinkedIn pattern reference) → #899–#900–#901 (Twitter/Facebook/Bluesky parallel) after pattern validation
-4. **Risk mitigation:** Serial pattern (#902 first) reduces merge conflicts from ISocialMediaPublisher implementation divergence
-5. **Backward compatibility:** Existing manager interfaces + queue handlers unchanged; shared contract enables future runtime discovery
+1. **Dual-key caching:** Global + user-scoped `IMemoryCache` with 5-minute absolute expiry
+2. **Cache invalidation:** Remove both keys on Save/Delete(entity); global key only on Delete(id)
+3. **Stale tolerance:** Up to 5 minutes for user-scoped entries when Delete(id) only available
 
 ## Standing Work
 
-- #897–#902: ISocialMediaPublisher interface + per-platform composition refactor (Sprint 30, #897 COMPLETE)
-- #902: LinkedIn composition refactor (Tank team, next assignment post-#897 merge)
-- #899–#900–#901: Twitter, Facebook, Bluesky composition refactors (Tank team, parallel after #902 validation)
-- #892: Settings:WebBaseUrl config (Joe, post-#893)
-- #856, #896: Joe's Azure Portal + infrastructure tasks (non-blocking, async)
+- #78: Caching enhancements (parent issue, Sprint 31)
+- #933: Speaking engagement functions (Trinity, in progress)
+- #930: NuGet deprecation (queued for Trinity)
 - #724: Multi-user teams/groups — Deferred pending explicit Joe confirmation that #609 is 100% production-ready
-- #803: Allow `.squad` updates to commit from main (squad:neo, low priority)
 
 ## Team Composition
 
-**Sprint 30 (Active):**
-- #897 (ISocialMediaPublisher) — ✅ COMPLETE
-- #902 (LinkedIn composition) — Next assignment pending
-- Joe — Parallel tasks (#892, #856, #896) — can execute independently
+**Sprint 31 (Active):**
+- #78 / #935–#937 — Caching work (Trinity)
+- #933 — Speaking engagements (Trinity agent)
+- #930 — NuGet deprecation (queued)
+- Joe — Parallel infrastructure tasks
 
 **Rotating Roles:** Squad roster available in `.squad/team.md`
 
 ---
 
-**Last Updated:** 2026-05-01T12:00:00Z
-**Sprint:** 30 (ISocialMediaPublisher + Composition Refactor) — #897 COMPLETE
-**Current Focus:** #902 (LinkedIn composition refactor) — begins immediately post-#897 merge; #899–#900–#901 ready for parallel execution after #902 pattern validation
-**Next Decision Point:** #902 completion unlocks #899–#900–#901 parallel execution
+**Last Updated:** 2026-05-08T16:15:00Z
+**Sprint:** 31 (Caching enhancements + housekeeping PR bypass) — #803 COMPLETE, #78 in progress
+**Current Focus:** #935 (P3) PR #938 open; #936 (P1) and #937 (P2) in progress
+**Next Decision Point:** #935–#937 completion → Sprint 32 readiness

@@ -37,6 +37,10 @@ public static class ConfigurationFunctionNames
     public const string BlueskyProcessNewSyndicationDataFired = "BlueskyProcessNewSyndicationDataFired";
     public const string BlueskyProcessNewYouTubeDataFired = "BlueskyProcessNewYouTubeDataFired";
     public const string BlueskyProcessScheduledItemFired = "BlueskyProcessScheduledItemFired";
+    public const string BlueskyProcessNewSpeakingEngagementFired = "BlueskyProcessNewSpeakingEngagementFired";
+    public const string FacebookProcessNewSpeakingEngagementFired = "FacebookProcessNewSpeakingEngagementFired";
+    public const string LinkedInProcessNewSpeakingEngagementFired = "LinkedInProcessNewSpeakingEngagementFired";
+    public const string TwitterProcessNewSpeakingEngagementFired = "TwitterProcessNewSpeakingEngagementFired";
 
     // Email
     public const string EmailSendEmail = "EmailSendEmail";

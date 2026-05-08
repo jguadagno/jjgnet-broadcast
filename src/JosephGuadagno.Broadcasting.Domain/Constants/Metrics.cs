@@ -14,12 +14,14 @@ public static class Metrics
     public const string BlueskyProcessedScheduledItemFired = "BlueskyProcessedScheduledItemFired";
     public const string BlueskyProcessedRandomPost = "BlueskyProcessedRandomPost";
     public const string BlueskyPostSent = "BlueskyPostSent";
+    public const string BlueskyProcessedNewSpeakingEngagement = "BlueskyProcessedNewSpeakingEngagement";
 
     public const string FacebookProcessedNewSyndicationData = "FacebookProcessedNewSyndicationData";
     public const string FacebookProcessedRandomPost = "FacebookProcessedRandomPost";
     public const string FacebookProcessedNewYouTubeData = "FacebookProcessedNewYouTubeData";
     public const string FacebookProcessedScheduledItemFired = "FacebookProcessedScheduledItemFired";
     public const string FacebookPostPageStatus = "FacebookPostPageStatus";
+    public const string FacebookProcessedNewSpeakingEngagement = "FacebookProcessedNewSpeakingEngagement";
 
     public const string LinkedInProcessedNewSyndicationData = "LinkedInProcessedNewSyndicationData";
     public const string LinkedInProcessedRandomPost = "LinkedInProcessedRandomPost";
@@ -28,10 +30,12 @@ public static class Metrics
     public const string LinkedInPostImage = "LinkedInPostImage";
     public const string LinkedInPostLink = "LinkedInPostLink";
     public const string LinkedInPostText = "LinkedInPostText";
+    public const string LinkedInProcessedNewSpeakingEngagement = "LinkedInProcessedNewSpeakingEngagement";
 
     public const string TwitterProcessedNewSyndicationData = "TwitterProcessedNewSyndicationData";
     public const string TwitterProcessedNewYouTubeData = "TwitterProcessedNewYouTubeData";
     public const string TwitterProcessScheduledItemFired = "TwitterProcessScheduledItemFired";
     public const string TwitterProcessedRandomPost = "TwitterProcessedRandomPost";
     public const string TwitterPostSent = "TwitterPostSent";
+    public const string TwitterProcessedNewSpeakingEngagement = "TwitterProcessedNewSpeakingEngagement";
 }

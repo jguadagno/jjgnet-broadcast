@@ -2,9 +2,31 @@
 
 ## Summary
 
-Trinity (Backend API Developer) implements core API functionality including CRUD endpoints, authentication/authorization workflows, OAuth token refresh, and data persistence. Work spans three layers: Controllers (HTTP routing), Managers (business logic), and Data/Data.Sql (Entity Framework Core persistence). Key contributions include EngagementSocialMediaPlatforms CRUD endpoints, UserApprovalManager for RBAC workflows, OAuth token refresh with token versioning, and ownership isolation enforcement. Trinity follows Neo's architectural patterns: explicit service contracts with DTOs, response mapping to isolate Data layer changes from API contracts, and role-based authorization. Established pattern: implement feature vertically from API controller through Manager to Data layer, write explicit request/response types in API, and map Data objects to DTOs before returning. Close collaboration with Tank (integration tests), Switch (Web-layer service mapping), and Neo (architectural reviews). Notable: Trinity maintains API contract stability by mapping internal changes to stable response shapes, preventing breaking changes to Web-layer consumers. Key decision: use DTOs consistently for all API responses to maintain contracts.
+Trinity (Backend API Developer) implements core API functionality including CRUD endpoints, authentication/authorization workflows, OAuth token refresh, and data persistence. Work spans three layers: Controllers (HTTP routing), Managers (business logic), and Data/Data.Sql (Entity Framework Core persistence). Key contributions include EngagementSocialMediaPlatforms CRUD endpoints, UserApprovalManager for RBAC workflows, OAuth token refresh with token versioning, ownership isolation enforcement, and `IMemoryCache` caching layer for managers. Trinity follows Neo's architectural patterns: explicit service contracts with DTOs, response mapping to isolate Data layer changes from API contracts, and role-based authorization. Established pattern: implement feature vertically from API controller through Manager to Data layer, write explicit request/response types in API, and map Data objects to DTOs before returning. Close collaboration with Tank (integration tests), Switch (Web-layer service mapping), and Neo (architectural reviews). Notable: Trinity maintains API contract stability by mapping internal changes to stable response shapes, preventing breaking changes to Web-layer consumers. Key decision: use DTOs consistently for all API responses to maintain contracts.
 
-### 2026-05-XX — Issue #899: Move Twitter message composition to TwitterManager
+### 2026-05-XX — Issue #936: Add IMemoryCache caching to MessageTemplateManager
+
+**Status:** ✅ COMPLETE — PR #940 on `issue-936-messagetemplates-caching`; 253 tests passing
+
+**What was delivered:**
+- `IMessageTemplateManager` (Domain/Interfaces): interface with `GetAsync`, `GetAllAsync` (admin + owner-filtered overloads with filter/sort/page), and `UpdateAsync`
+- `MessageTemplateManager` (Managers): `IMemoryCache` implementation
+  - Full list cached at `MessageTemplate_All` with 5-min absolute expiry
+  - Individual items cached at `MessageTemplate_{platformId}_{messageType}`
+  - `ApplyFilterSortPage` private helper handles in-memory filter/sort/pagination for both admin and owner-filtered paths
+  - `InvalidateListCaches()` + individual key removal on `UpdateAsync`
+- `MessageTemplatesController`: swapped `IMessageTemplateDataStore` → `IMessageTemplateManager` (4 call sites)
+- `Program.cs`: added `services.TryAddScoped<IMessageTemplateManager, MessageTemplateManager>()` after the DataStore registration
+- `MessageTemplatesControllerTests`: mocks `IMessageTemplateManager` instead of `IMessageTemplateDataStore`; admin and owner-filtered path tests unchanged in intent
+
+**Key patterns confirmed:**
+1. When a controller was calling `IDataStore` directly with no Manager, create `IManager` + `Manager` from scratch following `SocialMediaPlatformManager` as the gold standard.
+2. `ApplyFilterSortPage` static helper: pull all items from cache once, then filter/sort/page in-memory. Avoids separate cache keys per query combination.
+3. `InvalidateListCaches()` on any mutation is sufficient when there is no Add/Delete — only `UpdateAsync` exists.
+4. Git branch confusion guard: ALWAYS run `git branch --show-current` before any `git add` or `git commit`. Multiple branch switches in a session can leave HEAD on an unexpected branch.
+
+---
+
 
 **Status:** ✅ COMPLETE — PR #924 on `issue-899-twitter-message-composition`; 11 tests passing
 
@@ -36,4 +58,49 @@ Trinity (Backend API Developer) implements core API functionality including CRUD
 
 ---
 
+### 2026-05-08 — Issue #933: ProcessNewSpeakingEngagementFired Azure Functions
+
+**Status:** ✅ COMPLETE — PR #939 on `issue-933-speaking-engagement-functions`; 242 tests passing
+
+**What was delivered:**
+- `Bluesky/ProcessNewSpeakingEngagementFired.cs` — Event Grid trigger → `IBlueskyManager.ComposeMessageAsync` → `BlueskyPostMessage` output queue (truncated to 300)
+- `Facebook/ProcessNewSpeakingEngagementFired.cs` — Event Grid trigger → `IFacebookManager.ComposeMessageAsync` → `FacebookPostStatus` output queue
+- `LinkedIn/ProcessNewSpeakingEngagementFired.cs` — per-user OAuth via `IUserOAuthTokenManager`; null-guard on `CreatedByEntraOid` before token lookup
+- `Twitter/ProcessNewSpeakingEngagementFired.cs` — Event Grid trigger → `ITwitterManager.ComposeMessageAsync` → `TwitterTweetMessage` output queue
+- `ConfigurationFunctionNames.cs`: 4 new function-name constants
+- `Metrics.cs`: 4 new telemetry event constants
+
+**Key patterns confirmed:**
+1. `LinkedInPostLink` (and `FacebookPostStatus`, `TwitterTweetMessage`) live in `JosephGuadagno.Broadcasting.Domain.Models.Messages`. `BlueskyPostMessage` is the exception — it's in `JosephGuadagno.Broadcasting.Managers.Bluesky.Models`.
+2. `ITwitterManager` lives in the **Domain** layer (`JosephGuadagno.Broadcasting.Domain.Interfaces`), not in a `Managers.Twitter` project. Unlike every other platform manager whose interface lives in the manager project.
+3. `ILinkedInManager` is in `JosephGuadagno.Broadcasting.Managers.LinkedIn.Models` (unusual — the interface file is physically in the `Models/` folder, not `Interfaces/`).
+4. `engagement.CreatedByEntraOid` is `string?` (nullable). Always null-guard before calling `IUserOAuthTokenManager.GetByUserAndPlatformAsync` to avoid CS8604.
+5. Per-user isolation (OAuth token lookup) is LinkedIn-only; Bluesky, Facebook, and Twitter use shared credentials.
+6. The synthetic `ScheduledItem` approach: set `ItemType = ScheduledItemType.Engagements` and `ItemPrimaryKey = engagement.Id`. The platform manager internally re-fetches the engagement when rendering Scriban templates.
+
+---
+
+### 2026-05-08 — Issue #937 PR #941: Fix SentScheduledItemAsync cache invalidation
+
+**Status:** ✅ COMPLETE — commit `5cf213d` on `issue-937-user-owned-caching`; all tests pass
+
+**What was delivered:**
+- `ScheduledItemManager.SentScheduledItemAsync(int, DateTimeOffset, CancellationToken)`: applied fetch-before-mutate pattern — `GetAsync` first to capture `CreatedByEntraOid`, early `return false` if item not found, `InvalidateUserCaches(entity.CreatedByEntraOid)` after a successful data-store update
+- Single-arg overload delegates to the full overload unchanged, picks up fix automatically
+- Comment posted on PR #941
+
+**Key patterns confirmed:**
+1. When `SentScheduledItemAsync` is a void-like mutation, still fetch entity first to get owner for cache invalidation — same as `DeleteAsync(int primaryKey)` pattern.
+2. Both overloads are handled by fixing only the full overload since the single-arg delegate-chains to it.
+3. Branch lives in worktree at `D:\Projects\jjgnet-broadcast-937` — always work there, never `git checkout` in main tree.
+
+---
+
 ## Learnings
+
+### 2026-05-08 — PR #939 blocking fix (null checks + IsNullOrWhiteSpace guards)
+
+1. Always add a null check after `IEngagementManager.GetAsync` before accessing any property — the method returns `null` when the engagement is not found, causing a `NullReferenceException` on the next line.
+2. Match the Bluesky `IsNullOrWhiteSpace` guard pattern exactly in every other platform function; Bluesky was the reference implementation but Facebook, Twitter, and LinkedIn were missing it.
+3. The team directive in `decisions.md` prohibits `--filter "FullyQualifiedName!~SyndicationFeedReader"` in PR bodies — always use the no-filter command when writing the Testing section.
+4. When inspecting a PR body string with Python for replacement, use `repr()` to check exact backslash escaping before constructing replace patterns — `\\src\\` in the file renders differently depending on how it was captured.

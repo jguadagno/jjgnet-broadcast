@@ -166,6 +166,27 @@ For speaking engagements, need 4 new functions, one per platform, with names add
 - **Squad assignment patterns:** `squad:cypher` = GitHub Actions CI/CD + Azure infrastructure deployment; `squad:trinity` = API + Azure Functions business logic + persistence layer. Don't confuse Azure resource management (Cypher) with Azure Functions code (Trinity).
 - **Functions folder pattern:** Each platform has a dedicated folder with standardized function naming (`ProcessNew*Fired`, `ProcessScheduled*Fired`, `ProcessRandom*`). New functions should follow this pattern exactly and register in `ConfigurationFunctionNames`.
 - **Caching scope for APIs:** Most API controllers are cache-naive. The `SocialMediaPlatformManager` pattern (full-list cache + in-memory pagination) is the template. Replicate it for reference data (MessageTemplates, SocialMediaPlatforms) and user-owned data (Engagements, Schedules). Invalidation strategy: `InvalidateListCaches()` on mutation.
+- **PR comment markdown in PowerShell (2026-05-08):** Never use `gh pr review --body` or `gh pr comment --body` inline in PowerShell — the shell mangles special characters and causes backslash escaping. Always write to a .md temp file, convert to JSON with Python, then post via `gh api` with `--input`. This pattern ensures clean backtick formatting, proper em-dashes, and no encoding corruption.
+
+---
+
+## 2026-05-08 — Malformed PR Comments Replaced on PRs #939, #940, #941
+
+**Status:** ✅ COMPLETE — Clean comments posted; old comments minimized
+
+**Action:** Identified and replaced malformed review comments that contained backslash-word patterns (`\ScheduledItemAsync\` instead of `` `ScheduledItemAsync` ``) and garbled UTF-8 characters (e.g., `ΓÇö` for em-dash). Used the correct workflow:
+1. Wrote clean comment body to temp .md file
+2. Converted to JSON with Python: `json.dumps({'body': body})`
+3. Posted via `gh api repos/{owner}/{repo}/issues/{N}/comments --input file.json`
+4. Cleaned up temp files immediately
+5. Edited old malformed comments to just say "*(replaced — see updated review below)*"
+
+**Comments posted:**
+- PR #939: New clean comment with 3 blocking issues (null dereference, missing guard, test command fix)
+- PR #940: Reposted APPROVED verdict for gold-standard caching pattern
+- PR #941: New clean comment on cache invalidation issue in `SentScheduledItemAsync`
+
+**Learning:** Always use file-based JSON workflow for PR comments instead of inline `--body` flag. PowerShell mangles Markdown inline, leading to backslash escaping issues and encoding corruption. The temp file + Python JSON + `--input` pattern prevents this entirely.
 
 ---
 

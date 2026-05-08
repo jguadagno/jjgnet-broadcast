@@ -17,7 +17,7 @@ namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
 
 public class MessageTemplatesControllerTests
 {
-    private readonly Mock<IMessageTemplateDataStore> _messageTemplateDataStoreMock;
+    private readonly Mock<IMessageTemplateManager> _messageTemplateManagerMock;
     private readonly Mock<ISocialMediaPlatformManager> _socialMediaPlatformManagerMock;
     private readonly Mock<ILogger<MessageTemplatesController>> _loggerMock;
 
@@ -27,7 +27,7 @@ public class MessageTemplatesControllerTests
 
     public MessageTemplatesControllerTests()
     {
-        _messageTemplateDataStoreMock = new Mock<IMessageTemplateDataStore>();
+        _messageTemplateManagerMock = new Mock<IMessageTemplateManager>();
         _socialMediaPlatformManagerMock = new Mock<ISocialMediaPlatformManager>();
         _loggerMock = new Mock<ILogger<MessageTemplatesController>>();
     }
@@ -39,7 +39,7 @@ public class MessageTemplatesControllerTests
     private MessageTemplatesController CreateSut(string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
     {
         var controller = new MessageTemplatesController(
-            _messageTemplateDataStoreMock.Object,
+            _messageTemplateManagerMock.Object,
             _socialMediaPlatformManagerMock.Object,
             _loggerMock.Object,
             _mapper)
@@ -66,7 +66,7 @@ public class MessageTemplatesControllerTests
     };
 
     // -------------------------------------------------------------------------
-    // Security: GetAsync ΓÇö non-owner returns 403
+    // Security: GetAsync — non-owner returns 403
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -80,7 +80,7 @@ public class MessageTemplatesControllerTests
         _socialMediaPlatformManagerMock
             .Setup(m => m.GetByNameAsync("TestPlatform", It.IsAny<CancellationToken>()))
             .ReturnsAsync(platform);
-        _messageTemplateDataStoreMock
+        _messageTemplateManagerMock
             .Setup(m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<CancellationToken>()))
             .ReturnsAsync(template);
 
@@ -91,13 +91,13 @@ public class MessageTemplatesControllerTests
 
         // Assert
         result.Result.Should().BeOfType<ForbidResult>();
-        _messageTemplateDataStoreMock.Verify(
+        _messageTemplateManagerMock.Verify(
             m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
     // -------------------------------------------------------------------------
-    // Security: UpdateAsync ΓÇö non-owner returns 403
+    // Security: UpdateAsync — non-owner returns 403
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -111,7 +111,7 @@ public class MessageTemplatesControllerTests
         _socialMediaPlatformManagerMock
             .Setup(m => m.GetByNameAsync("TestPlatform", It.IsAny<CancellationToken>()))
             .ReturnsAsync(platform);
-        _messageTemplateDataStoreMock
+        _messageTemplateManagerMock
             .Setup(m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<CancellationToken>()))
             .ReturnsAsync(template);
 
@@ -122,13 +122,13 @@ public class MessageTemplatesControllerTests
 
         // Assert
         result.Result.Should().BeOfType<ForbidResult>();
-        _messageTemplateDataStoreMock.Verify(
+        _messageTemplateManagerMock.Verify(
             m => m.UpdateAsync(It.IsAny<MessageTemplate>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
     // -------------------------------------------------------------------------
-    // Security: GetAllAsync ΓÇö SiteAdmin calls unfiltered overload
+    // Security: GetAllAsync — SiteAdmin calls unfiltered overload
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -136,8 +136,8 @@ public class MessageTemplatesControllerTests
     {
         // Arrange
         var templates = new List<MessageTemplate> { BuildTemplate() };
-        // Set up the unfiltered overload (no ownerOid ΓÇö first param is int page).
-        _messageTemplateDataStoreMock
+        // Set up the unfiltered overload (no ownerOid — first param is int page).
+        _messageTemplateManagerMock
             .Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<MessageTemplate> { Items = templates, TotalCount = templates.Count });
 
@@ -150,12 +150,12 @@ public class MessageTemplatesControllerTests
         result.Value.Should().NotBeNull();
         result.Value!.TotalCount.Should().Be(1);
 
-        // Unfiltered overload must be invoked exactly once ΓÇª
-        _messageTemplateDataStoreMock.Verify(
+        // Unfiltered overload must be invoked exactly once …
+        _messageTemplateManagerMock.Verify(
             m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
         // … and the owner-filtered overload must never be called.
-        _messageTemplateDataStoreMock.Verify(
+        _messageTemplateManagerMock.Verify(
             m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -169,7 +169,7 @@ public class MessageTemplatesControllerTests
     {
         // Arrange
         var templates = new List<MessageTemplate> { BuildTemplate() };
-        _messageTemplateDataStoreMock
+        _messageTemplateManagerMock
             .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<MessageTemplate> { Items = templates, TotalCount = templates.Count });
 
@@ -183,11 +183,11 @@ public class MessageTemplatesControllerTests
         result.Value!.TotalCount.Should().Be(1);
 
         // Owner-filtered overload must fire …
-        _messageTemplateDataStoreMock.Verify(
+        _messageTemplateManagerMock.Verify(
             m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
         // … and the unfiltered overload must never be called.
-        _messageTemplateDataStoreMock.Verify(
+        _messageTemplateManagerMock.Verify(
             m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -196,7 +196,7 @@ public class MessageTemplatesControllerTests
     public async Task GetAllAsync_WhenPageIsZero_ClampsToDefaultPage()
     {
         // Arrange
-        _messageTemplateDataStoreMock
+        _messageTemplateManagerMock
             .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<MessageTemplate> { Items = new List<MessageTemplate>(), TotalCount = 0 });
 
@@ -214,7 +214,7 @@ public class MessageTemplatesControllerTests
     public async Task GetAllAsync_WhenPageSizeIsZero_ClampsToDefaultPageSize()
     {
         // Arrange
-        _messageTemplateDataStoreMock
+        _messageTemplateManagerMock
             .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<MessageTemplate> { Items = new List<MessageTemplate>(), TotalCount = 0 });
 
