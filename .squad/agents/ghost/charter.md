@@ -70,24 +70,40 @@ When writing GitHub issue bodies, PR descriptions, or PR review comments:
 - Fenced code blocks use triple backticks with a language hint: ` ```csharp `
 - **Self-check before posting:** scan your draft for `\word\` patterns — replace every instance with `` `word` `` before submitting
 
-### ⚠️ PR Creation — MANDATORY (chronic violation, 20+ occurrences)
+### ⚠️ GitHub Comment/PR Posting — MANDATORY EXACT COMMANDS (chronic violation, 30+ occurrences)
 
-**NEVER** pass the PR body inline to `gh pr create --body "..."` — PowerShell mangles backticks and produces `\text\` garbage. **ALWAYS** write the body to a temp file first:
+**Root cause of every malformed comment:** `@"..."@` (double-quoted here-string) — PowerShell interprets backticks inside it, turning `` `false` `` into `\false\`. Always use single-quoted `@'` / `'@` — PowerShell treats everything inside as **literal text**.
 
-```powershell
-# Write body to temp file
-$prBody = @"
-## Summary
-Your PR description with ``backticks`` and **markdown** here...
-"@
-$prBody | Set-Content "$env:TEMP\pr-body.md"
+**`python3` is NOT available on this machine. Use `ConvertTo-Json`.**
 
-# Create PR using the file
-gh pr create --title "feat(#N): ..." --body-file "$env:TEMP\pr-body.md" --base main
-Remove-Item "$env:TEMP\pr-body.md" -Force
+**Posting a comment** — copy this exactly, substitute `ISSUE_OR_PR_NUMBER`:
+```
+$body = [the content between single-quote markers as a single-quoted here-string]
+$json = [PSCustomObject]@{ body = $body } | ConvertTo-Json -Depth 1
+$json | Set-Content "$env:TEMP\gh-comment.json" -Encoding UTF8
+gh api repos/jguadagno/jjgnet-broadcast/issues/ISSUE_OR_PR_NUMBER/comments --input "$env:TEMP\gh-comment.json"
+Remove-Item "$env:TEMP\gh-comment.json" -Force
 ```
 
-Same rule for `gh pr edit`: use `gh api repos/.../pulls/{N} -X PATCH --input <tmpfile>`, never `--body` inline.
+**Editing a comment** — substitute `COMMENT_ID`:
+```
+$json = [PSCustomObject]@{ body = $body } | ConvertTo-Json -Depth 1
+$json | Set-Content "$env:TEMP\gh-comment.json" -Encoding UTF8
+gh api repos/jguadagno/jjgnet-broadcast/issues/comments/COMMENT_ID -X PATCH --input "$env:TEMP\gh-comment.json"
+Remove-Item "$env:TEMP\gh-comment.json" -Force
+```
+
+**Creating/updating PR body** — substitute `PR_NUMBER`:
+```
+$json = [PSCustomObject]@{ body = $body } | ConvertTo-Json -Depth 1
+$json | Set-Content "$env:TEMP\gh-pr.json" -Encoding UTF8
+gh api repos/jguadagno/jjgnet-broadcast/pulls/PR_NUMBER -X PATCH --input "$env:TEMP\gh-pr.json"
+Remove-Item "$env:TEMP\gh-pr.json" -Force
+```
+
+**Self-check BEFORE posting:** `$body | Select-String -Pattern '\\[A-Za-z]'` — if this matches, fix the `\word\` instances to backtick-word-backtick before posting.
+
+**NEVER use:** `gh pr review --body "..."`, `gh pr comment --body "..."`, `gh pr create --body "..."`, or double-quoted `@"` here-strings for content containing backticks.
 
 ## Voice
 
