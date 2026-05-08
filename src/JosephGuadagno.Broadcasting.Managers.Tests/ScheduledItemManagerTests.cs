@@ -206,6 +206,8 @@ public class ScheduledItemManagerTests
     public async Task SentScheduledItemAsync_WithIdOnly_ShouldCallRepositoryWithUtcNow()
     {
         // Arrange
+        var entity = new ScheduledItem { Id = 1 };
+        _repository.Setup(r => r.GetAsync(1, default)).ReturnsAsync(entity);
         _repository.Setup(r => r.SentScheduledItemAsync(1, It.IsAny<DateTimeOffset>())).ReturnsAsync(true);
 
         // Act
@@ -220,6 +222,8 @@ public class ScheduledItemManagerTests
     public async Task SentScheduledItemAsync_WithIdAndDate_ShouldCallRepository()
     {
         // Arrange
+        var entity = new ScheduledItem { Id = 1 };
+        _repository.Setup(r => r.GetAsync(1, default)).ReturnsAsync(entity);
         var sentOn = DateTimeOffset.UtcNow;
         _repository.Setup(r => r.SentScheduledItemAsync(1, sentOn)).ReturnsAsync(true);
 

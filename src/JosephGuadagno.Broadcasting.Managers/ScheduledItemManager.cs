@@ -26,7 +26,7 @@ public class ScheduledItemManager : IScheduledItemManager
         _cache = cache;
     }
 
-    public async Task<ScheduledItem?> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
+    public async Task<ScheduledItem> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
         return await _scheduledItemDataStore.GetAsync(primaryKey, cancellationToken);
     }
