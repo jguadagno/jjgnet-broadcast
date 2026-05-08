@@ -4,6 +4,7 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace JosephGuadagno.Broadcasting.Managers.Tests;
 
@@ -16,7 +17,8 @@ public class EngagementManagerTests
     {
         _repository = new Mock<IEngagementDataStore>();
         var logger = new Mock<ILogger<EngagementManager>>();
-        _engagementManager = new EngagementManager(_repository.Object, logger.Object);
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        _engagementManager = new EngagementManager(_repository.Object, logger.Object, cache);
     }
 
     [Fact]

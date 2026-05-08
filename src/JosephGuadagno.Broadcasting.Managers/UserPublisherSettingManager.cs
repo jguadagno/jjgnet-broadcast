@@ -3,41 +3,68 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
-public class UserPublisherSettingManager(
-    IUserPublisherSettingDataStore userPublisherSettingDataStore,
-    ISocialMediaPlatformManager socialMediaPlatformManager) : IUserPublisherSettingManager
+public class UserPublisherSettingManager : IUserPublisherSettingManager
 {
+    private readonly IUserPublisherSettingDataStore _userPublisherSettingDataStore;
+    private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
+    private readonly IMemoryCache _cache;
+
+    private static string CacheKeyAllByOwner(string ownerOid) => $"UserPublisherSettings_All_{ownerOid}";
+
+    private static readonly MemoryCacheEntryOptions CacheOptions =
+        new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
+
+    public UserPublisherSettingManager(
+        IUserPublisherSettingDataStore userPublisherSettingDataStore,
+        ISocialMediaPlatformManager socialMediaPlatformManager,
+        IMemoryCache cache)
+    {
+        _userPublisherSettingDataStore = userPublisherSettingDataStore;
+        _socialMediaPlatformManager = socialMediaPlatformManager;
+        _cache = cache;
+    }
+
     public async Task<List<UserPublisherSetting>> GetByUserAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
-        var settings = await userPublisherSettingDataStore.GetByUserAsync(ownerOid, cancellationToken);
-        return settings.Select(ProjectForResponse).ToList();
+        var cacheKey = CacheKeyAllByOwner(ownerOid);
+        if (_cache.TryGetValue(cacheKey, out List<UserPublisherSetting>? cached) && cached is not null)
+        {
+            return cached;
+        }
+
+        var settings = await _userPublisherSettingDataStore.GetByUserAsync(ownerOid, cancellationToken);
+        var result = settings.Select(ProjectForResponse).ToList();
+        _cache.Set(cacheKey, result, CacheOptions);
+        return result;
     }
 
     public async Task<UserPublisherSetting?> GetByUserAndPlatformAsync(string ownerOid, int platformId, CancellationToken cancellationToken = default)
     {
-        var setting = await userPublisherSettingDataStore.GetByUserAndPlatformAsync(ownerOid, platformId, cancellationToken);
+        var setting = await _userPublisherSettingDataStore.GetByUserAndPlatformAsync(ownerOid, platformId, cancellationToken);
         return setting is null ? null : ProjectForResponse(setting);
     }
 
     public async Task<UserPublisherSetting?> SaveAsync(UserPublisherSettingUpdate setting, CancellationToken cancellationToken = default)
     {
-        var platform = await socialMediaPlatformManager.GetByIdAsync(setting.SocialMediaPlatformId, cancellationToken);
+        var platform = await _socialMediaPlatformManager.GetByIdAsync(setting.SocialMediaPlatformId, cancellationToken);
         if (platform is null)
         {
             return null;
         }
 
-        var existing = await userPublisherSettingDataStore.GetByUserAndPlatformAsync(
+        var existing = await _userPublisherSettingDataStore.GetByUserAndPlatformAsync(
             setting.CreatedByEntraOid,
             setting.SocialMediaPlatformId,
             cancellationToken);
 
-        var persisted = await userPublisherSettingDataStore.SaveAsync(
+        var persisted = await _userPublisherSettingDataStore.SaveAsync(
             new UserPublisherSetting
             {
                 Id = existing?.Id ?? 0,
@@ -51,22 +78,32 @@ public class UserPublisherSettingManager(
             },
             cancellationToken);
 
+        InvalidateUserCaches(setting.CreatedByEntraOid);
         return persisted is null ? null : ProjectForResponse(persisted);
     }
 
     public Task<bool> DeleteAsync(string ownerOid, int platformId, CancellationToken cancellationToken = default)
     {
-        return userPublisherSettingDataStore.DeleteAsync(ownerOid, platformId, cancellationToken);
+        InvalidateUserCaches(ownerOid);
+        return _userPublisherSettingDataStore.DeleteAsync(ownerOid, platformId, cancellationToken);
     }
 
     public async Task<PagedResult<UserPublisherSetting>> GetAllAsync(string ownerOid, int page, int pageSize, string sortBy = "platformname", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
-        var pagedResult = await userPublisherSettingDataStore.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter, cancellationToken);
+        var pagedResult = await _userPublisherSettingDataStore.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter, cancellationToken);
         return new PagedResult<UserPublisherSetting>
         {
             Items = pagedResult.Items.Select(ProjectForResponse).ToList(),
             TotalCount = pagedResult.TotalCount
         };
+    }
+
+    private void InvalidateUserCaches(string? ownerOid)
+    {
+        if (!string.IsNullOrEmpty(ownerOid))
+        {
+            _cache.Remove(CacheKeyAllByOwner(ownerOid));
+        }
     }
 
     private static UserPublisherSetting ProjectForResponse(UserPublisherSetting setting)
