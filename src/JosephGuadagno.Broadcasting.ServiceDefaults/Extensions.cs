@@ -1,4 +1,5 @@
 using Azure.Data.Tables;
+using Azure.Storage.Queues;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -120,7 +121,7 @@ public static class Extensions
         if (!string.IsNullOrWhiteSpace(storageConn))
         {
             hcBuilder.AddAzureQueueStorage(
-                connectionString: storageConn,
+                clientFactory: _ => new QueueServiceClient(storageConn),
                 name: "azurestorage",
                 failureStatus: HealthStatus.Unhealthy,
                 tags: ["storage", "ready"]);
