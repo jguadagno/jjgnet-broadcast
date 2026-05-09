@@ -4,6 +4,16 @@
 
 Tank (QA Engineer) builds comprehensive test coverage across unit, integration, security, and regression test categories using xUnit, FluentAssertions, and Moq. Primary focus: ensuring backend API contracts work correctly, authorization/RBAC logic is enforced, ownership isolation prevents data leaks, and authentication flows are secure. Key test patterns include: mocking external services (HttpClientFactory via Moq), testing async operations with Task.Delay and verification, ownership isolation regression tests (verify User A cannot access User B's resources), and RBAC authorization tests (verify Viewers cannot POST, Admins can manage users). Tank works closely with Trinity (API endpoint contracts), Switch (Web-layer integration tests), and Neo (security test patterns). Established pattern: write tests before implementation (TDD), test both happy path and error cases, use descriptive test names like `GetEngagements_WhenUserIsContributor_ShouldReturnOwnEngagementsOnly`, mock external dependencies, and verify authorization boundaries. Notable: Tank maintains ownership isolation test suite to prevent regressions as new features are added. Key decision: ownership tests go in integration test class alongside endpoint tests, not as separate security-only test file.
 
+## Recent Session: Issue #945 LinkedInController Test Coverage (2026-05-09)
+
+- **Work:** Added 4 new tests to `LinkedInControllerTests.cs` covering gaps in the existing 8 tests
+- **Result:** ✅ COMPLETE — 12/12 LinkedInController tests pass; 236/236 Web tests pass
+- **Tests Added:** `Index_WhenPlatformNotFound`, `Callback_WhenCallbackUrlMissing`, `Callback_WhenTokenResponseIsNull`, `Callback_WhenTokenHasRefreshExpiry`
+- **Commit:** `ec3c255` on branch `issue-945-linkedin-di-fix`
+- **Key Learning:** The Web project has its own `ISocialMediaPlatformService` (distinct from Domain's `ISocialMediaPlatformManager`); `LinkedInController` on this branch uses the Web-layer service. Test mocks must target `ISocialMediaPlatformService`.
+
+---
+
 ## Recent Session: Sprint 30 #897 ISocialMediaPublisher Interface Tests (2026-05-01)
 
 - **Work:** Completed comprehensive test coverage for ISocialMediaPublisher contract across all four platform managers

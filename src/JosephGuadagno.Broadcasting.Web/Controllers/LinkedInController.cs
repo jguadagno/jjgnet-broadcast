@@ -3,6 +3,7 @@ using System.Text.Json;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
+using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Models.LinkedIn;
 using Microsoft.AspNetCore.Authorization;
@@ -19,7 +20,7 @@ public class LinkedInController : Controller
 {
     private readonly HttpClient _httpClient;
     private readonly IUserOAuthTokenManager _userOAuthTokenManager;
-    private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
+    private readonly ISocialMediaPlatformService _socialMediaPlatformService;
     private readonly LinkedInSettings _linkedInSettings;
     private readonly ILogger<LinkedInController> _logger;
 
@@ -31,13 +32,13 @@ public class LinkedInController : Controller
     public LinkedInController(
         HttpClient httpClient,
         IUserOAuthTokenManager userOAuthTokenManager,
-        ISocialMediaPlatformManager socialMediaPlatformManager,
+        ISocialMediaPlatformService socialMediaPlatformService,
         IOptions<LinkedInSettings> linkedInSettingsOptions,
         ILogger<LinkedInController> logger)
     {
         _httpClient = httpClient;
         _userOAuthTokenManager = userOAuthTokenManager;
-        _socialMediaPlatformManager = socialMediaPlatformManager;
+        _socialMediaPlatformService = socialMediaPlatformService;
         _linkedInSettings = linkedInSettingsOptions.Value;
         _logger = logger;
     }
@@ -54,7 +55,7 @@ public class LinkedInController : Controller
             return View(new SavedTokenInfo { HasToken = false });
         }
 
-        var platform = await _socialMediaPlatformManager.GetByNameAsync("LinkedIn");
+        var platform = await _socialMediaPlatformService.GetByNameAsync("LinkedIn");
         if (platform is null)
         {
             _logger.LogWarning("LinkedIn platform not found in database");
@@ -156,7 +157,7 @@ public class LinkedInController : Controller
         var ownerOid = User.FindFirstValue("oid")
             ?? throw new InvalidOperationException("User OID claim is missing");
 
-        var platform = await _socialMediaPlatformManager.GetByNameAsync("LinkedIn", cancellationToken)
+        var platform = await _socialMediaPlatformService.GetByNameAsync("LinkedIn", cancellationToken)
             ?? throw new InvalidOperationException("LinkedIn platform not found");
 
         var accessTokenExpiresAt = DateTimeOffset.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
