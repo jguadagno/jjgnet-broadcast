@@ -259,7 +259,6 @@ void ConfigureApplication(IServiceCollection services)
     services.AddSqlDataStores();
 
     services.TryAddScoped<IUserOAuthTokenManager, UserOAuthTokenManager>();
-    services.TryAddScoped<ISocialMediaPlatformManager, SocialMediaPlatformManager>();
     
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
@@ -269,7 +268,6 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IUserCollectorFeedSourceService, UserCollectorFeedSourceService>();
     services.TryAddScoped<IUserCollectorYouTubeChannelService, UserCollectorYouTubeChannelService>();
     services.TryAddScoped<IMessageTemplateService, MessageTemplateService>();
-    services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
     services.TryAddScoped<IYouTubeSourceService, YouTubeSourceService>();
     services.TryAddScoped<ISyndicationFeedSourceService, SyndicationFeedSourceService>();
 

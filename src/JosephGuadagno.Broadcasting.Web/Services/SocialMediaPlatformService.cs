@@ -98,4 +98,15 @@ public class SocialMediaPlatformService(IDownstreamApi apiClient, ILogger<Social
             response?.StatusCode, id);
         return false;
     }
+
+    /// <summary>
+    /// Gets an active social media platform by its name (case-insensitive).
+    /// Uses the filter parameter on the list endpoint and returns the first exact match.
+    /// </summary>
+    public async Task<SocialMediaPlatform?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+    {
+        var result = await GetAllAsync(page: 1, pageSize: 10, filter: name);
+        return result.Items.FirstOrDefault(p =>
+            string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+    }
 }

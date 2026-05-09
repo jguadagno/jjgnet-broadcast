@@ -43,4 +43,9 @@ public interface ISocialMediaPlatformService
     /// Deletes a social media platform via the API
     /// </summary>
     Task<bool> DeleteAsync(int id);
+
+    /// <summary>
+    /// Gets an active social media platform by its name (case-insensitive)
+    /// </summary>
+    Task<SocialMediaPlatform?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
 }

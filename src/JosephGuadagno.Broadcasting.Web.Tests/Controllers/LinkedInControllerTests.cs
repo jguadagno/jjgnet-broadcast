@@ -17,6 +17,7 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Controllers;
+using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Models.LinkedIn;
 
@@ -56,7 +57,7 @@ public class LinkedInControllerTests
     private const string TestOwnerOid = "test-owner-oid-12345";
 
     private readonly Mock<IUserOAuthTokenManager> _userOAuthTokenManager;
-    private readonly Mock<ISocialMediaPlatformManager> _socialMediaPlatformManager;
+    private readonly Mock<ISocialMediaPlatformService> _socialMediaPlatformService;
     private readonly LinkedInSettings _linkedInSettings;
     private readonly Mock<ILogger<LinkedInController>> _logger;
     private readonly SocialMediaPlatform _linkedInPlatform;
@@ -64,7 +65,7 @@ public class LinkedInControllerTests
     public LinkedInControllerTests()
     {
         _userOAuthTokenManager = new Mock<IUserOAuthTokenManager>();
-        _socialMediaPlatformManager = new Mock<ISocialMediaPlatformManager>();
+        _socialMediaPlatformService = new Mock<ISocialMediaPlatformService>();
         _linkedInSettings = new LinkedInSettings
         {
             ClientId = "test-client-id",
@@ -77,7 +78,7 @@ public class LinkedInControllerTests
         _linkedInPlatform = new SocialMediaPlatform { Id = 3, Name = "LinkedIn", IsActive = true };
 
         // Default: platform lookup returns LinkedIn
-        _socialMediaPlatformManager
+        _socialMediaPlatformService
             .Setup(m => m.GetByNameAsync("LinkedIn", It.IsAny<CancellationToken>()))
             .ReturnsAsync(_linkedInPlatform);
     }
@@ -88,7 +89,7 @@ public class LinkedInControllerTests
         return new LinkedInController(
             httpClient,
             _userOAuthTokenManager.Object,
-            _socialMediaPlatformManager.Object,
+            _socialMediaPlatformService.Object,
             Options.Create(_linkedInSettings),
             _logger.Object);
     }
@@ -352,5 +353,179 @@ public class LinkedInControllerTests
         var authorizeAttribute = attributes.First() as AuthorizeAttribute;
         Assert.NotNull(authorizeAttribute);
         Assert.Equal(AuthorizationPolicyNames.RequireContributor, authorizeAttribute!.Policy);
+    }
+
+    [Fact]
+    public async Task Index_WhenPlatformNotFound_ShouldReturnViewWithHasTokenFalse()
+    {
+        // Arrange
+        _socialMediaPlatformService
+            .Setup(m => m.GetByNameAsync("LinkedIn", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((SocialMediaPlatform?)null);
+
+        var controller = CreateController();
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = BuildAuthenticatedHttpContext()
+        };
+
+        // Act
+        var result = await controller.Index();
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        var model = Assert.IsType<SavedTokenInfo>(viewResult.Model);
+        Assert.False(model.HasToken);
+        _userOAuthTokenManager.Verify(
+            m => m.GetByUserAndPlatformAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Callback_WhenCallbackUrlMissing_ShouldReturnBadRequest()
+    {
+        // Arrange
+        const string stateValue = "matching-state";
+        var controller = CreateController();
+
+        var session = new TestSession();
+        session.Set("state", Encoding.UTF8.GetBytes(stateValue));
+
+        var httpContext = BuildAuthenticatedHttpContext(session: session);
+        httpContext.Request.QueryString = new QueryString($"?code=auth-code&state={stateValue}");
+
+        var mockUrlHelper = new Mock<IUrlHelper>();
+        mockUrlHelper
+            .Setup(u => u.Action(It.IsAny<UrlActionContext>()))
+            .Returns((string?)null);
+
+        controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+        controller.Url = mockUrlHelper.Object;
+
+        // Act
+        var result = await controller.Callback();
+
+        // Assert
+        Assert.IsType<BadRequestResult>(result);
+    }
+
+    [Fact]
+    public async Task Callback_WhenTokenResponseIsNull_ShouldReturnBadRequest()
+    {
+        // Arrange
+        const string stateValue = "valid-state";
+        const string authCode = "valid-auth-code";
+
+        var mockHandler = new Mock<HttpMessageHandler>(MockBehavior.Loose);
+        mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent("null", Encoding.UTF8, "application/json")
+            });
+
+        var httpClient = new HttpClient(mockHandler.Object);
+        var controller = CreateController(httpClient);
+
+        var session = new TestSession();
+        session.Set("state", Encoding.UTF8.GetBytes(stateValue));
+
+        var httpContext = BuildAuthenticatedHttpContext(session: session);
+        httpContext.Request.QueryString = new QueryString($"?code={authCode}&state={stateValue}");
+
+        var mockUrlHelper = new Mock<IUrlHelper>();
+        mockUrlHelper
+            .Setup(u => u.Action(It.IsAny<UrlActionContext>()))
+            .Returns("https://myapp.example.com/LinkedIn/Callback");
+
+        controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+        controller.Url = mockUrlHelper.Object;
+
+        // Act
+        var result = await controller.Callback();
+
+        // Assert
+        Assert.IsType<BadRequestResult>(result);
+        _userOAuthTokenManager.Verify(
+            m => m.StoreOAuthCallbackTokenAsync(
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string?>(),
+                It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Callback_WhenTokenHasRefreshExpiry_ShouldStoreWithRefreshTokenExpiry()
+    {
+        // Arrange
+        const string stateValue = "valid-state";
+        const string authCode = "valid-auth-code";
+
+        var tokenResponse = new
+        {
+            access_token = "new-access-token",
+            expires_in = 5183944,
+            refresh_token = "new-refresh-token",
+            refresh_token_expires_in = 31536000,
+            scope = "openid profile email"
+        };
+        var tokenJson = JsonSerializer.Serialize(tokenResponse);
+
+        var mockHandler = new Mock<HttpMessageHandler>(MockBehavior.Loose);
+        mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(tokenJson, Encoding.UTF8, "application/json")
+            });
+
+        var httpClient = new HttpClient(mockHandler.Object);
+        var controller = CreateController(httpClient);
+
+        var session = new TestSession();
+        session.Set("state", Encoding.UTF8.GetBytes(stateValue));
+
+        var httpContext = BuildAuthenticatedHttpContext(session: session);
+        httpContext.Request.QueryString = new QueryString($"?code={authCode}&state={stateValue}");
+
+        var mockUrlHelper = new Mock<IUrlHelper>();
+        mockUrlHelper
+            .Setup(u => u.Action(It.IsAny<UrlActionContext>()))
+            .Returns("https://myapp.example.com/LinkedIn/Callback");
+
+        controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+        controller.Url = mockUrlHelper.Object;
+
+        _userOAuthTokenManager
+            .Setup(m => m.StoreOAuthCallbackTokenAsync(
+                TestOwnerOid, 3,
+                "new-access-token",
+                "new-refresh-token",
+                It.IsAny<DateTimeOffset>(),
+                It.IsAny<DateTimeOffset?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserOAuthToken?)null);
+
+        // Act
+        var result = await controller.Callback();
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+
+        _userOAuthTokenManager.Verify(m => m.StoreOAuthCallbackTokenAsync(
+            TestOwnerOid, 3,
+            "new-access-token",
+            "new-refresh-token",
+            It.IsAny<DateTimeOffset>(),
+            It.Is<DateTimeOffset?>(d => d.HasValue), // refresh expiry must be set
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 }
