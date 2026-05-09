@@ -93,16 +93,22 @@ Remove-Item "$env:TEMP\gh-comment.json" -Force
 
 #### Creating/updating a PR body:
 
+⚠️ `--body-file` expects **plain markdown**, NOT a JSON file. The JSON wrapper is only for `gh api`.
+
 ```powershell
 $body = @'
 ## Summary
 PR description with `code` and **markdown**.
 '@
+
+# For new PR — write plain markdown to .txt, pass directly to --body-file:
+$body | Set-Content "$env:TEMP\gh-pr-body.txt" -Encoding UTF8 -NoNewline
+gh pr create --title "feat(#N): ..." --body-file "$env:TEMP\gh-pr-body.txt" --base main
+Remove-Item "$env:TEMP\gh-pr-body.txt" -Force
+
+# For existing PR — wrap in JSON, use gh api PATCH:
 $json = [PSCustomObject]@{ body = $body } | ConvertTo-Json -Depth 1
 $json | Set-Content "$env:TEMP\gh-pr.json" -Encoding UTF8
-# For new PR:
-gh pr create --title "feat(#N): ..." --body-file "$env:TEMP\gh-pr.json" --base main
-# For existing PR:
 gh api repos/jguadagno/jjgnet-broadcast/pulls/PR_NUMBER -X PATCH --input "$env:TEMP\gh-pr.json"
 Remove-Item "$env:TEMP\gh-pr.json" -Force
 ```
