@@ -259,6 +259,7 @@ void ConfigureApplication(IServiceCollection services)
     services.AddSqlDataStores();
 
     services.TryAddScoped<IUserOAuthTokenManager, UserOAuthTokenManager>();
+    services.TryAddScoped<ISocialMediaPlatformManager, SocialMediaPlatformManager>();
     
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
