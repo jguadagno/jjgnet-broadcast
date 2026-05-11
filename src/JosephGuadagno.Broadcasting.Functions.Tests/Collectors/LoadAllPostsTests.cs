@@ -61,7 +61,7 @@ public class LoadAllPostsTests
         };
 
     private void SetupFeedCheck() =>
-        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>()))
+        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FeedCheck
             {
                 Id = 1,
@@ -102,7 +102,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, null!, OwnerEntraOid);
 
         // Assert
         _syndicationFeedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Once);
@@ -139,7 +139,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        await _sut.RunAsync(request, null!);
+        await _sut.RunAsync(request, null!, OwnerEntraOid);
 
         // Assert
         _syndicationFeedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p =>
@@ -152,20 +152,16 @@ public class LoadAllPostsTests
     public async Task RunAsync_UsesCollectorOwnerOid_WhenReadingPosts()
     {
         // Arrange
-        SetupFeedCheck();
-        _syndicationFeedSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CollectorOwnerEntraOid);
-        _syndicationFeedReader.Setup(r => r.GetAsync(CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()))
+        _syndicationFeedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<SyndicationFeedSource>());
 
         var request = CreateHttpRequest();
 
         // Act
-        await _sut.RunAsync(request, null!);
+        await _sut.RunAsync(request, null!, OwnerEntraOid);
 
-        // Assert
-        _syndicationFeedSourceManager.Verify(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _syndicationFeedReader.Verify(r => r.GetAsync(CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()), Times.Once);
+        // Assert — userOid is passed directly to the reader; GetCollectorOwnerOidAsync is no longer called
+        _syndicationFeedReader.Verify(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>()), Times.Once);
     }
 
     [Fact]
@@ -184,7 +180,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, null!, OwnerEntraOid);
 
         // Assert
         _syndicationFeedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Never);
@@ -203,7 +199,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, null!, OwnerEntraOid);
 
         // Assert
         _syndicationFeedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Never);
@@ -223,7 +219,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest(checkFromDate);
 
         // Act
-        var result = await _sut.RunAsync(request, checkFromDate);
+        var result = await _sut.RunAsync(request, checkFromDate, OwnerEntraOid);
 
         // Assert
         _syndicationFeedReader.Verify(r => r.GetAsync(OwnerEntraOid, It.Is<DateTimeOffset>(d => d.Year == 2024 && d.Month == 1 && d.Day == 15)), Times.Once);
@@ -242,7 +238,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, null!, OwnerEntraOid);
 
         // Assert
         _syndicationFeedReader.Verify(r => r.GetAsync(OwnerEntraOid, DateTimeOffset.MinValue), Times.Once);
@@ -261,7 +257,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest(invalidCheckFrom);
 
         // Act
-        var result = await _sut.RunAsync(request, invalidCheckFrom);
+        var result = await _sut.RunAsync(request, invalidCheckFrom, OwnerEntraOid);
 
         // Assert
         _syndicationFeedReader.Verify(r => r.GetAsync(OwnerEntraOid, DateTimeOffset.MinValue), Times.Once);
@@ -300,7 +296,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, null!, OwnerEntraOid);
 
         // Assert
         _syndicationFeedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Exactly(2));
@@ -338,7 +334,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, null!, OwnerEntraOid);
 
         // Assert
         // Should still return OK and continue processing despite failure
@@ -357,7 +353,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, null!, OwnerEntraOid);
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -382,7 +378,7 @@ public class LoadAllPostsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, null!, OwnerEntraOid);
 
         // Assert
         _urlShortener.Verify(u => u.GetShortenedUrlAsync(item.Url, "short.example.com"), Times.Once);

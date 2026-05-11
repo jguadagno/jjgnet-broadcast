@@ -34,9 +34,10 @@ public class FeedCheckDataStoreTests : IDisposable
         _context.Dispose();
     }
 
-    private FeedCheck CreateFeedCheck(string name = "TestFeed") => new FeedCheck
+    private FeedCheck CreateFeedCheck(string name = "TestFeed", string entraOId = "test-oid") => new FeedCheck
     {
         Name = name,
+        EntraOId = entraOId,
         LastCheckedFeed = DateTimeOffset.UtcNow,
         LastItemAddedOrUpdated = DateTimeOffset.UtcNow,
         LastUpdatedOn = DateTimeOffset.UtcNow
@@ -182,12 +183,12 @@ public class FeedCheckDataStoreTests : IDisposable
     public async Task GetByNameAsync_ExistingName_ReturnsFeedCheck()
     {
         // Arrange
-        var feedCheck = CreateFeedCheck("MyFeed");
+        var feedCheck = CreateFeedCheck("MyFeed", "test-oid");
         _context.FeedChecks.Add(feedCheck);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _dataStore.GetByNameAsync("MyFeed");
+        var result = await _dataStore.GetByNameAsync("MyFeed", "test-oid");
 
         // Assert
         Assert.NotNull(result);
@@ -198,9 +199,41 @@ public class FeedCheckDataStoreTests : IDisposable
     public async Task GetByNameAsync_NonExistingName_ReturnsNull()
     {
         // Act
-        var result = await _dataStore.GetByNameAsync("NonExistent");
+        var result = await _dataStore.GetByNameAsync("NonExistent", "test-oid");
 
         // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetByNameAsync_WithEntraOId_ReturnsRecord()
+    {
+        // Arrange — record is owned by "owner-oid-abc"
+        var feedCheck = CreateFeedCheck("OwnedFeed", "owner-oid-abc");
+        _context.FeedChecks.Add(feedCheck);
+        await _context.SaveChangesAsync();
+
+        // Act — query using the same (Name, EntraOId) combination
+        var result = await _dataStore.GetByNameAsync("OwnedFeed", "owner-oid-abc");
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("OwnedFeed", result.Name);
+        Assert.Equal("owner-oid-abc", result.EntraOId);
+    }
+
+    [Fact]
+    public async Task GetByNameAsync_DifferentEntraOId_ReturnsNull()
+    {
+        // Arrange — record is owned by "owner-oid-abc"
+        var feedCheck = CreateFeedCheck("SharedFeedName", "owner-oid-abc");
+        _context.FeedChecks.Add(feedCheck);
+        await _context.SaveChangesAsync();
+
+        // Act — query using same name but a different OID (user isolation)
+        var result = await _dataStore.GetByNameAsync("SharedFeedName", "other-user-oid");
+
+        // Assert — must return null; another user's record must not be visible
         Assert.Null(result);
     }
 }
