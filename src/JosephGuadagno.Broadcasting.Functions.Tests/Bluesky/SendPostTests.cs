@@ -176,10 +176,13 @@ public class SendPostTests
     [Fact]
     public async Task Run_WhenBlueskyPostExceptionThrown_RethrowsException()
     {
-        var postMessage = BuildBlueskyPostMessage(createdByEntraOid: "test-oid");
+        var postMessage = BuildBlueskyPostMessage(
+            url: "https://example.com/article",
+            shortenedUrl: "https://short.url/abc",
+            createdByEntraOid: "test-oid");
         SetupValidCredentials("test-oid");
         _blueskyManager
-            .Setup(m => m.GetEmbeddedExternalRecord(It.IsAny<string>()))
+            .Setup(m => m.GetEmbeddedExternalRecord(postMessage.Url))
             .ThrowsAsync(new BlueskyPostException("API Error", 400, "Invalid request"));
         var sut = BuildSut();
 
