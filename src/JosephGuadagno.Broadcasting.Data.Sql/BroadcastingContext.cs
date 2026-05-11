@@ -165,8 +165,13 @@ public partial class BroadcastingContext : DbContext
             entity.HasKey(e => e.Id)
                 .HasName("FeedCheck_pk_Id");
 
-            entity.HasIndex(e => e.Name, "FeedCheck_Unique_Name")
+            entity.HasIndex(e => new { e.Name, e.EntraOId }, "UQ_FeedChecks_Name_EntraOId")
                 .IsUnique();
+
+            entity.Property(e => e.EntraOId)
+                .HasMaxLength(36)
+                .IsRequired()
+                .HasDefaultValue(string.Empty);
 
             entity.Property(e => e.Name)
                 .HasMaxLength(255)

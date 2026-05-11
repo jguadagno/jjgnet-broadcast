@@ -113,12 +113,13 @@ public class LoadAllVideos(
 
             // Save the last checked value
             var feedCheck =
-                await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos) ??
+                await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos, ownerOid) ??
                 new FeedCheck
                 {
                     Name = ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos,
                     LastCheckedFeed = startedAt,
-                    LastItemAddedOrUpdated = DateTimeOffset.Now
+                    LastItemAddedOrUpdated = DateTimeOffset.Now,
+                    EntraOId = ownerOid
                 };
             var latestAdded = newItems.Max(item => item.PublicationDate);
             var latestUpdated = newItems.Max(item => item.LastUpdatedOn);

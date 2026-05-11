@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -49,7 +50,7 @@ public class LoadAllSpeakingEngagementsTests
         };
 
     private void SetupFeedCheck() =>
-        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>()))
+        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FeedCheck
             {
                 Id = 1,
@@ -288,7 +289,7 @@ public class LoadAllSpeakingEngagementsTests
         var engagement = CreateEngagement("Test Conf", "https://test.com", 2024);
         _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement> { engagement });
         _engagementManager.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(engagement));
-        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>())).ThrowsAsync(new Exception("FeedCheck error"));
+        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ThrowsAsync(new Exception("FeedCheck error"));
 
         var request = CreateHttpRequest();
 

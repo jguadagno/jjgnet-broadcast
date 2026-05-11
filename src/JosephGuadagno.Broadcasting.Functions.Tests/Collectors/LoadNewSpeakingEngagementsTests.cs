@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -47,7 +48,7 @@ public class LoadNewSpeakingEngagementsTests
         };
 
     private void SetupFeedCheck() =>
-        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>()))
+        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FeedCheck
             {
                 Id = 1,

@@ -2,8 +2,6 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.Functions.Collectors;
-using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Extensions.Types;
@@ -28,7 +26,8 @@ public class LoadAllPosts(
     public async Task<IActionResult> RunAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post")]
         HttpRequest req,
-        string checkFrom)
+        string checkFrom,
+        string userOid)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -46,22 +45,20 @@ public class LoadAllPosts(
             }
         }
 
+        if (userOid.IsNullOrEmpty() || string.IsNullOrWhiteSpace(userOid))
+        {
+            const string message = "User OID is null or empty.  It is a required field.";
+            logger.LogWarning(message);
+            return new BadRequestObjectResult(message);
+        }
+
         try
         {
-            var ownerOid = await CollectorOwnerOidResolver.ResolveAsync(
-                syndicationFeedSourceManager,
-                logger,
-                ConfigurationFunctionNames.CollectorsFeedLoadAllPosts);
-            if (string.IsNullOrWhiteSpace(ownerOid))
-            {
-                return new BadRequestObjectResult("Unable to resolve collector owner OID from syndication feed source records.");
-            }
-
-            logger.LogDebug("Getting all items from feed from '{DateToCheckFrom}'", dateToCheckFrom);
-            var newItems = await syndicationFeedReader.GetAsync(ownerOid, dateToCheckFrom);
+            logger.LogDebug("Getting all items from feed from '{DateToCheckFrom}' for user '{UserOid}'", dateToCheckFrom, userOid);
+            var newItems = await syndicationFeedReader.GetAsync(userOid, dateToCheckFrom);
 
             // If there is nothing new, save the last checked value and exit
-            if (newItems is null || newItems.Count == 0)
+            if (newItems.Count == 0)
             {
                 logger.LogDebug("No posts found in the Json Feed");
                 return new OkObjectResult("0 posts were found");
@@ -75,7 +72,7 @@ public class LoadAllPosts(
                 var existingItem = await syndicationFeedSourceManager.GetByFeedIdentifierAsync(item.FeedIdentifier);
                 if (existingItem != null)
                 {
-                    logger.LogDebug("Skipping duplicate syndication feed item with FeedIdentifier: '{FeedIdentifier}'", item.FeedIdentifier);
+                    logger.LogDebug("Skipping duplicate syndication feed item with FeedIdentifier: '{FeedIdentifier}', for user '{UserOid}'", item.FeedIdentifier, userOid);
                     continue;
                 }
 
@@ -87,8 +84,8 @@ public class LoadAllPosts(
                     var saveResult = await syndicationFeedSourceManager.SaveAsync(item);
                     if (!saveResult.IsSuccess || saveResult.Value is null)
                     {
-                        logger.LogError("Failed to save the blog post with the id of: '{Id}' Url:'{Url}'. Error: {Error}",
-                            item.Id, item.Url, saveResult.ErrorMessage);
+                        logger.LogError("Failed to save the blog post for user '{UserOId}' with the id of: '{Id}' Url:'{Url}'. Error: {Error}",
+                            userOid, item.Id, item.Url, saveResult.ErrorMessage);
                         continue;
                     }
                     var savedItem = saveResult.Value;
@@ -102,19 +99,20 @@ public class LoadAllPosts(
                 catch (Exception e)
                 {
                     logger.LogError(e,
-                        "Failed to save the blog post with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
-                        item.Id, item.Url, e);
+                        "Failed to save the blog post for user '{UserOId}' with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
+                        userOid, item.Id, item.Url, e);
                 }
             }
 
             // Save the last checked value
             var feedCheck =
-                await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsFeedLoadNewPosts) ??
+                await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, userOid) ??
                 new FeedCheck
                 {
                     Name = ConfigurationFunctionNames.CollectorsFeedLoadNewPosts,
                     LastCheckedFeed = startedAt,
-                    LastItemAddedOrUpdated = DateTimeOffset.Now
+                    LastItemAddedOrUpdated = DateTimeOffset.Now,
+                    EntraOId = userOid
                 };
             var latestAdded = newItems.Max(item => item.PublicationDate);
             var latestUpdated = newItems.Max(item => item.LastUpdatedOn);

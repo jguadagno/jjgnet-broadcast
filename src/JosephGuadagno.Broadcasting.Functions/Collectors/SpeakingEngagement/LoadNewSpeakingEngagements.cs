@@ -39,12 +39,13 @@ public class LoadNewSpeakingEngagements(
         try
         {
             var feedCheck = await feedCheckManager.GetByNameAsync(
-                ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew
+                ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew, string.Empty
             ) ?? new FeedCheck
             {
                 Name = ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew,
                 LastCheckedFeed = startedAt,
-                LastItemAddedOrUpdated = DateTimeOffset.MinValue
+                LastItemAddedOrUpdated = DateTimeOffset.MinValue,
+                EntraOId = string.Empty
             };
 
             // Check for new items

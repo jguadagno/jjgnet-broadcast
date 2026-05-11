@@ -87,12 +87,13 @@ public class LoadAllSpeakingEngagements(
 
             // Save the last checked value
             var feedCheck =
-                await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew) ??
+                await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew, string.Empty) ??
                 new FeedCheck
                 {
                     Name = ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew,
                     LastCheckedFeed = startedAt,
-                    LastItemAddedOrUpdated = DateTimeOffset.Now
+                    LastItemAddedOrUpdated = DateTimeOffset.Now,
+                    EntraOId = string.Empty
                 };
             var latestAdded = newItems.Max(item => item.CreatedOn);
             var latestUpdated = newItems.Max(item => item.LastUpdatedOn);

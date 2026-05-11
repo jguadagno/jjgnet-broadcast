@@ -23,9 +23,9 @@ public class ScheduledItems(
             ConfigurationFunctionNames.PublishersScheduledItems, startedAt);
 
         var configuration = await feedCheckManager.GetByNameAsync(
-                                ConfigurationFunctionNames.PublishersScheduledItems
+                                ConfigurationFunctionNames.PublishersScheduledItems, string.Empty
                             ) ??
-                            new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue };
+                            new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue, EntraOId = string.Empty };
 
         // Check for items that are due to be fired
         logger.LogDebug("Checking for scheduled items that have not been fired");

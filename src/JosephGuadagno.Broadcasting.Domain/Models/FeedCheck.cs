@@ -19,4 +19,7 @@ public class FeedCheck
 
     [Required]
     public DateTimeOffset LastUpdatedOn { get; set; }
+
+    [StringLength(36)]
+    public string EntraOId { get; set; } = string.Empty;
 }

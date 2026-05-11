@@ -45,11 +45,6 @@ public class LoadNewVideos(
 
         try
         {
-            var feedCheck = await feedCheckManager.GetByNameAsync(
-                                ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos
-                            ) ??
-                            new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue };
-
             var ownerOid = await CollectorOwnerOidResolver.ResolveAsync(
                 youTubeSourceManager,
                 logger,
@@ -58,6 +53,11 @@ public class LoadNewVideos(
             {
                 return new BadRequestObjectResult("Unable to resolve collector owner OID from YouTube source records.");
             }
+
+            var feedCheck = await feedCheckManager.GetByNameAsync(
+                                ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos, ownerOid
+                            ) ??
+                            new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue, EntraOId = ownerOid };
 
             // TODO #778: Add per-user collector config support
             // Once IYouTubeReader supports per-channel reading (or a factory pattern),

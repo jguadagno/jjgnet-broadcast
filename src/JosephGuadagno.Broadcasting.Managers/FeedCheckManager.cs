@@ -42,8 +42,8 @@ public class FeedCheckManager : IFeedCheckManager
         return await _feedCheckDataStore.DeleteAsync(primaryKey, cancellationToken);
     }
 
-    public async Task<FeedCheck?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+    public async Task<FeedCheck?> GetByNameAsync(string name, string entraOId, CancellationToken cancellationToken = default)
     {
-        return await _feedCheckDataStore.GetByNameAsync(name, cancellationToken);
+        return await _feedCheckDataStore.GetByNameAsync(name, entraOId, cancellationToken);
     }
 }

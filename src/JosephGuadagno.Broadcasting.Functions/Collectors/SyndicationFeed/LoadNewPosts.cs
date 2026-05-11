@@ -45,11 +45,6 @@ public class LoadNewPosts(
 
         try
         {
-            var feedCheck = await feedCheckManager.GetByNameAsync(
-                                    ConfigurationFunctionNames.CollectorsFeedLoadNewPosts
-                                ) ??
-                                new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue };
-
             var ownerOid = await CollectorOwnerOidResolver.ResolveAsync(
                 syndicationFeedSourceManager,
                 logger,
@@ -58,6 +53,11 @@ public class LoadNewPosts(
             {
                 return new BadRequestObjectResult("Unable to resolve collector owner OID from syndication feed source records.");
             }
+
+            var feedCheck = await feedCheckManager.GetByNameAsync(
+                                    ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, ownerOid
+                                ) ??
+                                new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue, EntraOId = ownerOid };
 
             // TODO #778: Add per-user collector config support
             // Once ISyndicationFeedReader supports per-URL reading (or a factory pattern),

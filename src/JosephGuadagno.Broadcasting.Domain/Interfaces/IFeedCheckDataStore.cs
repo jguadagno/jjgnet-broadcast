@@ -1,6 +1,6 @@
 namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 
-public interface IFeedCheckDataStore : IDataStore<Domain.Models.FeedCheck>
+public interface IFeedCheckDataStore : IDataStore<Models.FeedCheck>
 {
-    public Task<Domain.Models.FeedCheck?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
+    public Task<Models.FeedCheck?> GetByNameAsync(string name, string entraOId, CancellationToken cancellationToken = default);
 }
