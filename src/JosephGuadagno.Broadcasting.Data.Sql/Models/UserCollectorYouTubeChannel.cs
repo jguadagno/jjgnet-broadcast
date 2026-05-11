@@ -23,7 +23,15 @@ public class UserCollectorYouTubeChannel
     /// </summary>
     [MaxLength(255)]
     public string ChannelId { get; set; } = string.Empty;
-    
+
+    [MaxLength(255)]
+    public string PlaylistId { get; set; } = string.Empty;
+
+    [MaxLength(255)]
+    public string? ApiKey { get; set; }
+
+    public int ResultSetPageSize { get; set; } = 50;
+
     /// <summary>
     /// Gets or sets the friendly display name for this channel
     /// </summary>

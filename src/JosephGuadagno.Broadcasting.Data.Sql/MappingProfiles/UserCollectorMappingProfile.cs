@@ -11,5 +11,6 @@ public class UserCollectorMappingProfile : Profile
     {
         CreateMap<Models.UserCollectorFeedSource, Domain.Models.UserCollectorFeedSource>().ReverseMap();
         CreateMap<Models.UserCollectorYouTubeChannel, Domain.Models.UserCollectorYouTubeChannel>().ReverseMap();
+        CreateMap<Models.UserCollectorSpeakingEngagement, Domain.Models.UserCollectorSpeakingEngagement>().ReverseMap();
     }
 }

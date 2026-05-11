@@ -105,6 +105,14 @@ Trinity (Backend API Developer) implements core API functionality including CRUD
 3. Test files prepared by a parallel agent may be missing `using System.Threading;` when they reference `CancellationToken` in Moq `Setup` lambdas — always check the build before committing.
 4. In LoadNewPosts and LoadNewVideos, the OID resolver MUST run before `GetByNameAsync` so the correct composite key (Name + ownerOid) is available for the feed-check lookup. Reorder accordingly.
 
+### 2026-05-11 — Issue #950 (sanity-check): SyndicationFeedSource→SyndicationFeedItem, YouTubeSource→YouTubeItem rename
+
+1. Use `git mv` for all file renames to preserve history; run content-replacement AFTER all renames are complete so new filenames are visible to `Get-ChildItem`.
+2. Order PowerShell `-replace` chains longest-specific first (e.g., `ISyndicationFeedSourceDataStore` before `SyndicationFeedSource`) so compound names resolve correctly and aren't double-replaced.
+3. The `feedSource` variable in `SyndicationFeedReader.cs` refers to the .NET BCL `FeedSource` (Atom/RSS) object — it is a different concept from the domain `SyndicationFeedSource` and must NOT be renamed.
+4. After a global rename, always verify exceptions (`SourceSystems`, `SourceTag`, `SyndicationFeedReader`, `UserCollector*`) with a targeted `Select-String` pass before building.
+5. SQL table renames need both a migration script (`sp_rename`) for existing environments AND updated `table-create.sql`/`data-seed.sql` for fresh environment bootstraps.
+
 ### 2026-05-08 — PR #939 blocking fix (null checks + IsNullOrWhiteSpace guards)
 
 1. Always add a null check after `IEngagementManager.GetAsync` before accessing any property — the method returns `null` when the engagement is not found, causing a `NullReferenceException` on the next line.

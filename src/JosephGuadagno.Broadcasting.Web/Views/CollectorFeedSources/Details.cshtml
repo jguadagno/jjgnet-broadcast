@@ -1,0 +1,65 @@
+@model JosephGuadagno.Broadcasting.Web.Models.UserCollectorFeedSourceViewModel
+@{
+    ViewData["Title"] = "Feed Source Details";
+}
+
+<div class="container">
+    <h1 class="display-4 mb-4">Feed Source Details</h1>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Display Name</dt>
+                <dd class="col-sm-9">@Model.DisplayName</dd>
+
+                <dt class="col-sm-3">Feed URL</dt>
+                <dd class="col-sm-9">
+                    <a href="@Model.FeedUrl" target="_blank" rel="noopener noreferrer">@Model.FeedUrl</a>
+                </dd>
+
+                <dt class="col-sm-3">Active</dt>
+                <dd class="col-sm-9">
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Inactive</span>
+                    }
+                </dd>
+
+                <dt class="col-sm-3">Created On</dt>
+                <dd class="col-sm-9">@Model.CreatedOn.ToString("F")</dd>
+
+                <dt class="col-sm-3">Last Updated</dt>
+                <dd class="col-sm-9">@Model.LastUpdatedOn.ToString("F")</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a asp-action="Index" asp-controller="CollectorFeedSources" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Back to List
+        </a>
+        @if (User.IsInRole(RoleNames.Contributor) ||
+             User.IsInRole(RoleNames.Administrator) ||
+             User.IsInRole(RoleNames.SiteAdministrator))
+        {
+            <a asp-action="Edit" asp-controller="CollectorFeedSources" asp-route-id="@Model.Id" class="btn btn-warning ms-2">
+                <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            <a asp-action="Delete" asp-controller="CollectorFeedSources" asp-route-id="@Model.Id" class="btn btn-danger ms-2">
+                <i class="bi bi-trash me-1"></i>Delete
+            </a>
+        }
+    </div>
+</div>

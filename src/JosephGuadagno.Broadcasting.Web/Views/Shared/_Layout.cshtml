@@ -105,6 +105,11 @@
                                         <i class="bi bi-textarea-t me-2"></i>Message Templates
                                     </a>
                                 </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><h6 class="dropdown-header">Collector Settings</h6></li>
+                                <li><a class="dropdown-item" asp-controller="CollectorFeedSources" asp-action="Index"><i class="bi bi-rss me-2"></i>Feed Sources</a></li>
+                                <li><a class="dropdown-item" asp-controller="CollectorYouTubeChannels" asp-action="Index"><i class="bi bi-youtube me-2"></i>YouTube Channels</a></li>
+                                <li><a class="dropdown-item" asp-controller="CollectorSpeakingEngagements" asp-action="Index"><i class="bi bi-mic me-2"></i>Speaking Engagements</a></li>
                             </ul>
                         </li>
                         @if (User.IsInRole(RoleNames.SiteAdministrator) || User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Contributor))

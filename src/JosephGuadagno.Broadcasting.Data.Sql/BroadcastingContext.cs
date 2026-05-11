@@ -653,6 +653,19 @@ public partial class BroadcastingContext : DbContext
             entity.Property(e => e.LastUpdatedOn)
                 .IsRequired()
                 .HasColumnType("datetimeoffset");
+
+            entity.Property(e => e.PlaylistId)
+                .HasMaxLength(255)
+                .IsRequired(false)
+                .HasDefaultValue(string.Empty);
+
+            entity.Property(e => e.ApiKey)
+                .HasMaxLength(255)
+                .IsRequired(false);
+
+            entity.Property(e => e.ResultSetPageSize)
+                .IsRequired()
+                .HasDefaultValue(50);
         });
 
         modelBuilder.Entity<Models.UserCollectorSpeakingEngagement>(entity =>

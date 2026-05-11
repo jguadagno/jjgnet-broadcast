@@ -76,5 +76,21 @@ public class WebMappingProfile: Profile
             .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore())
             .ForMember(dest => dest.ItemLastUpdatedOn, opt => opt.Ignore());
 
+        // UserCollector ViewModel mappings (Issue #950)
+        CreateMap<Domain.Models.UserCollectorFeedSource, Models.UserCollectorFeedSourceViewModel>()
+            .ForMember(dest => dest.IsManagedBySiteAdmin, opt => opt.Ignore());
+        CreateMap<Models.UserCollectorFeedSourceViewModel, Domain.Models.UserCollectorFeedSource>()
+            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore());
+
+        CreateMap<Domain.Models.UserCollectorYouTubeChannel, Models.UserCollectorYouTubeChannelViewModel>()
+            .ForMember(dest => dest.IsManagedBySiteAdmin, opt => opt.Ignore());
+        CreateMap<Models.UserCollectorYouTubeChannelViewModel, Domain.Models.UserCollectorYouTubeChannel>()
+            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore());
+
+        CreateMap<Domain.Models.UserCollectorSpeakingEngagement, Models.UserCollectorSpeakingEngagementViewModel>()
+            .ForMember(dest => dest.IsManagedBySiteAdmin, opt => opt.Ignore());
+        CreateMap<Models.UserCollectorSpeakingEngagementViewModel, Domain.Models.UserCollectorSpeakingEngagement>()
+            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore());
+
     }
 }

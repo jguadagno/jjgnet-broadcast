@@ -267,6 +267,7 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IUserPublisherSettingService, UserPublisherSettingService>();
     services.TryAddScoped<IUserCollectorFeedSourceService, UserCollectorFeedSourceService>();
     services.TryAddScoped<IUserCollectorYouTubeChannelService, UserCollectorYouTubeChannelService>();
+    services.TryAddScoped<IUserCollectorSpeakingEngagementService, UserCollectorSpeakingEngagementService>();
     services.TryAddScoped<IMessageTemplateService, MessageTemplateService>();
     services.TryAddScoped<IYouTubeItemService, YouTubeItemService>();
     services.TryAddScoped<ISyndicationFeedItemService, SyndicationFeedItemService>();

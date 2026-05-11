@@ -23,6 +23,16 @@ public class UserCollectorYouTubeChannelRequest
     /// Gets or sets whether this channel configuration is active
     /// </summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>Gets or sets the YouTube playlist ID to poll for new items.</summary>
+    public string PlaylistId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the Google API key for YouTube Data API access.</summary>
+    public string? ApiKey { get; set; }
+
+    /// <summary>Gets or sets the maximum results per YouTube API page (1–200).</summary>
+    [Range(1, 200)]
+    public int ResultSetPageSize { get; set; } = 50;
 }
 
 /// <summary>
@@ -49,6 +59,10 @@ public class UserCollectorYouTubeChannelResponse
     /// Gets or sets whether this channel configuration is active
     /// </summary>
     public bool IsActive { get; set; }
+
+    public string PlaylistId { get; set; } = string.Empty;
+    // Note: ApiKey is intentionally EXCLUDED from the response DTO (never send API keys to clients)
+    public int ResultSetPageSize { get; set; }
 
     /// <summary>
     /// Gets or sets when this configuration was created

@@ -151,6 +151,56 @@ public class UserCollectorYouTubeChannelsController(
     }
 
     /// <summary>
+    /// Updates an existing YouTube channel configuration
+    /// </summary>
+    /// <param name="id">The configuration identifier</param>
+    /// <param name="request">The YouTube channel configuration payload</param>
+    /// <returns>The updated YouTube channel configuration</returns>
+    [HttpPut("{id:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorYouTubeChannelResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UserCollectorYouTubeChannelResponse>> UpdateAsync(
+        int id,
+        [FromBody] UserCollectorYouTubeChannelRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            logger.LogWarning("UpdateAsync called with invalid model state for ID {Id}", id);
+            return BadRequest(ModelState);
+        }
+
+        var existing = await userCollectorYouTubeChannelManager.GetByIdAsync(id);
+        if (existing is null)
+        {
+            return NotFound();
+        }
+
+        if (User.ResolveOwnerOid(existing.CreatedByEntraOid, requireAdminWhenTargetingOtherUser: true) is null)
+        {
+            logger.LogWarning("User {CurrentOid} attempted to update YouTube channel config {Id} owned by {OwnerOid}",
+                LogSanitizer.Sanitize(User.GetOwnerOid()), id, LogSanitizer.Sanitize(existing.CreatedByEntraOid));
+            return Forbid();
+        }
+
+        var config = mapper.Map<UserCollectorYouTubeChannel>(request);
+        config.Id = id;
+        config.CreatedByEntraOid = existing.CreatedByEntraOid;
+
+        var saved = await userCollectorYouTubeChannelManager.SaveAsync(config);
+        if (saved is null)
+        {
+            logger.LogWarning("Failed to update YouTube channel config for ID {Id}", id);
+            return BadRequest("Unable to update YouTube channel configuration");
+        }
+
+        return Ok(mapper.Map<UserCollectorYouTubeChannelResponse>(saved));
+    }
+
+    /// <summary>
     /// Deletes a YouTube channel configuration
     /// </summary>
     /// <param name="id">The configuration identifier</param>

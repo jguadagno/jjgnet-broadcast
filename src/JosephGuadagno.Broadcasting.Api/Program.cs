@@ -237,6 +237,8 @@ void ConfigureRepositories(IServiceCollection services)
     services.TryAddScoped<IUserCollectorFeedSourceManager, UserCollectorFeedSourceManager>();
     services.TryAddScoped<IUserCollectorYouTubeChannelDataStore, UserCollectorYouTubeChannelDataStore>();
     services.TryAddScoped<IUserCollectorYouTubeChannelManager, UserCollectorYouTubeChannelManager>();
+    services.TryAddScoped<IUserCollectorSpeakingEngagementDataStore, UserCollectorSpeakingEngagementDataStore>();
+    services.TryAddScoped<IUserCollectorSpeakingEngagementManager, UserCollectorSpeakingEngagementManager>();
     
     services.TryAddScoped<IEngagementSocialMediaPlatformDataStore, EngagementSocialMediaPlatformDataStore>();
 

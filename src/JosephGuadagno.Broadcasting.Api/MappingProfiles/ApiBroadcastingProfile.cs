@@ -93,5 +93,13 @@ public class ApiBroadcastingProfile : Profile
             .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
             .ForMember(d => d.CreatedOn, o => o.Ignore())
             .ForMember(d => d.LastUpdatedOn, o => o.Ignore());
+
+        // User Collector Speaking Engagement
+        CreateMap<UserCollectorSpeakingEngagementRequest, UserCollectorSpeakingEngagement>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
+            .ForMember(d => d.CreatedOn, o => o.Ignore())
+            .ForMember(d => d.LastUpdatedOn, o => o.Ignore());
+        CreateMap<UserCollectorSpeakingEngagement, UserCollectorSpeakingEngagementResponse>();
     }
 }
