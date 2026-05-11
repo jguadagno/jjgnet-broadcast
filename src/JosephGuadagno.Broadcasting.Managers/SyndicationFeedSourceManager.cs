@@ -78,11 +78,6 @@ public class SyndicationFeedSourceManager : ISyndicationFeedSourceManager
         return result;
     }
 
-    public async Task<SyndicationFeedSource?> GetByUrlAsync(string url, CancellationToken cancellationToken = default)
-    {
-        return await _syndicationFeedSourceDataStore.GetByUrlAsync(url, cancellationToken);
-    }
-
     public async Task<SyndicationFeedSource?> GetByFeedIdentifierAsync(string feedIdentifier, CancellationToken cancellationToken = default)
     {
         return await _syndicationFeedSourceDataStore.GetByFeedIdentifierAsync(feedIdentifier, cancellationToken);
@@ -91,11 +86,6 @@ public class SyndicationFeedSourceManager : ISyndicationFeedSourceManager
     public async Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default)
     {
         return await _syndicationFeedSourceDataStore.GetCollectorOwnerOidAsync(cancellationToken);
-    }
-
-    public async Task<SyndicationFeedSource?> GetRandomSyndicationDataAsync(DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default)
-    {
-        return await _syndicationFeedSourceDataStore.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories, cancellationToken);
     }
 
     public async Task<SyndicationFeedSource?> GetRandomSyndicationDataAsync(string ownerEntraOid, DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default)

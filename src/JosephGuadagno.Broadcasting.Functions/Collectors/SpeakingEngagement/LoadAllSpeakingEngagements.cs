@@ -14,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.SpeakingEngagement;
 public class LoadAllSpeakingEngagements(
     ISpeakingEngagementsReader speakerEngagementsReader,
     IEngagementManager engagementManager,
+    IUserCollectorSpeakingEngagementManager userCollectorSpeakingEngagementManager,
     IFeedCheckManager feedCheckManager,
     ILogger<LoadAllSpeakingEngagements> logger)
 {
@@ -21,11 +22,17 @@ public class LoadAllSpeakingEngagements(
     public async Task<IActionResult> RunAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post")]
         HttpRequest req,
+        string ownerOid,
         string checkFrom)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadAll, startedAt);
+
+        if (string.IsNullOrWhiteSpace(ownerOid))
+        {
+            return new BadRequestObjectResult("The 'ownerOid' query parameter is required.");
+        }
 
         // Check for the date to check from
         var dateToCheckFrom = DateTimeOffset.MinValue;
@@ -41,71 +48,85 @@ public class LoadAllSpeakingEngagements(
 
         try
         {
-            logger.LogDebug("Getting all items from speaking engagements from '{DateToCheckFrom}'", dateToCheckFrom);
-            var newItems = await speakerEngagementsReader.GetAll(dateToCheckFrom);
-
-            // If there is nothing new, save the last checked value and exit
-            if (newItems == null || newItems.Count == 0)
+            var userConfigs = await userCollectorSpeakingEngagementManager.GetByUserAsync(ownerOid);
+            if (userConfigs.Count == 0)
             {
-                logger.LogDebug("No speaking engagements were found in the speaking engagement feed");
-                return new OkObjectResult("0 speaking engagements were found");
+                return new BadRequestObjectResult($"No speaking engagement configuration found for owner '{ownerOid}'.");
             }
 
-            // Save the new items
-            var savedCount = 0;
-            foreach (var item in newItems)
+            var totalSavedCount = 0;
+            var totalFoundCount = 0;
+
+            foreach (var config in userConfigs.Where(c => c.IsActive))
             {
-                // attempt to save the item
-                try
+                logger.LogDebug("Getting all speaking engagements from '{FileUrl}' for owner '{OwnerOid}' since '{DateToCheckFrom}'",
+                    config.SpeakingEngagementsFile, ownerOid, dateToCheckFrom);
+
+                var newItems = await speakerEngagementsReader.GetAll(config.SpeakingEngagementsFile, dateToCheckFrom);
+
+                if (newItems == null || newItems.Count == 0)
                 {
-                    var saveResult = await engagementManager.SaveAsync(item);
-                    if (!saveResult.IsSuccess || saveResult.Value is null)
+                    logger.LogDebug("No speaking engagements found in '{FileUrl}'", config.SpeakingEngagementsFile);
+                    continue;
+                }
+
+                totalFoundCount += newItems.Count;
+
+                var savedCount = 0;
+                foreach (var item in newItems)
+                {
+                    try
                     {
-                        logger.LogError("Failed to save the engagement with the id of: '{Id}' Url:'{Url}'. Error: {Error}",
-                            item.Id, item.Url, saveResult.ErrorMessage);
-                        continue;
+                        var saveResult = await engagementManager.SaveAsync(item);
+                        if (!saveResult.IsSuccess || saveResult.Value is null)
+                        {
+                            logger.LogError("Failed to save the engagement with the id of: '{Id}' Url:'{Url}'. Error: {Error}",
+                                item.Id, item.Url, saveResult.ErrorMessage);
+                            continue;
+                        }
+                        var engagement = saveResult.Value;
+                        var properties = new Dictionary<string, string>
+                        {
+                            { "Id", engagement.Id.ToString() },
+                            { "Url", engagement.Url },
+                            { "Name", engagement.Name },
+                            { "StartDateTime", engagement.StartDateTime.ToString("o") },
+                            { "EndDateTime", engagement.EndDateTime.ToString("o") }
+                        };
+                        logger.LogCustomEvent(Metrics.SpeakingEngagementAddedOrUpdated, properties);
+                        savedCount++;
                     }
-                    var engagement = saveResult.Value;
-                    var properties = new Dictionary<string, string>
+                    catch (Exception e)
                     {
-                        { "Id", engagement.Id.ToString() },
-                        { "Url", engagement.Url },
-                        { "Name", engagement.Name },
-                        { "StartDateTime", engagement.StartDateTime.ToString("o") },
-                        { "EndDateTime", engagement.EndDateTime.ToString("o") }
+                        logger.LogError(e,
+                            "Failed to save the engagement with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
+                            item.Id, item.Url, e);
+                    }
+                }
+
+                var feedCheck =
+                    await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew, ownerOid) ??
+                    new FeedCheck
+                    {
+                        Name = ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew,
+                        LastCheckedFeed = startedAt,
+                        LastItemAddedOrUpdated = DateTimeOffset.Now,
+                        EntraOId = ownerOid
                     };
-                    logger.LogCustomEvent(Metrics.SpeakingEngagementAddedOrUpdated, properties);
-                    savedCount++;
-                }
-                catch (Exception e)
-                {
-                    logger.LogError(e,
-                        "Failed to save the engagement with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
-                        item.Id, item.Url, e);
-                }
+                var latestAdded = newItems.Max(item => item.CreatedOn);
+                var latestUpdated = newItems.Max(item => item.LastUpdatedOn);
+                feedCheck.LastItemAddedOrUpdated = latestUpdated > latestAdded
+                    ? latestUpdated
+                    : latestAdded;
+
+                await feedCheckManager.SaveAsync(feedCheck);
+
+                totalSavedCount += savedCount;
+                logger.LogInformation("Loaded {SavedCount} of {TotalCount} speaking engagement(s) for owner '{OwnerOid}'",
+                    savedCount, newItems.Count, ownerOid);
             }
 
-            // Save the last checked value
-            var feedCheck =
-                await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew, string.Empty) ??
-                new FeedCheck
-                {
-                    Name = ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew,
-                    LastCheckedFeed = startedAt,
-                    LastItemAddedOrUpdated = DateTimeOffset.Now,
-                    EntraOId = string.Empty
-                };
-            var latestAdded = newItems.Max(item => item.CreatedOn);
-            var latestUpdated = newItems.Max(item => item.LastUpdatedOn);
-            feedCheck.LastItemAddedOrUpdated = latestUpdated > latestAdded
-                ? latestUpdated
-                : latestAdded;
-
-            await feedCheckManager.SaveAsync(feedCheck);
-
-            // Return
-            logger.LogInformation("Loaded {SavedCount} of {TotalPostsCount} speaking engagements(s)", savedCount, newItems.Count);
-            return new OkObjectResult($"Loaded {savedCount} of {newItems.Count} speaking engagements(s)");
+            return new OkObjectResult($"Loaded {totalSavedCount} of {totalFoundCount} speaking engagement(s)");
         }
         catch (Exception exception)
         {

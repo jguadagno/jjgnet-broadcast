@@ -18,8 +18,10 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Collectors;
 
 public class LoadAllSpeakingEngagementsTests
 {
+    private const string OwnerOid = "test-owner-oid";
     private readonly Mock<ISpeakingEngagementsReader> _speakingEngagementsReader;
     private readonly Mock<IEngagementManager> _engagementManager;
+    private readonly Mock<IUserCollectorSpeakingEngagementManager> _userCollectorSpeakingEngagementManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly LoadAllSpeakingEngagements _sut;
 
@@ -27,11 +29,20 @@ public class LoadAllSpeakingEngagementsTests
     {
         _speakingEngagementsReader = new Mock<ISpeakingEngagementsReader>();
         _engagementManager = new Mock<IEngagementManager>();
+        _userCollectorSpeakingEngagementManager = new Mock<IUserCollectorSpeakingEngagementManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
+
+        _userCollectorSpeakingEngagementManager
+            .Setup(m => m.GetByUserAsync(It.IsAny<string>()))
+            .ReturnsAsync(new List<UserCollectorSpeakingEngagement>
+            {
+                new UserCollectorSpeakingEngagement { CreatedByEntraOid = OwnerOid, SpeakingEngagementsFile = "http://test-engagements.json", IsActive = true }
+            });
 
         _sut = new LoadAllSpeakingEngagements(
             _speakingEngagementsReader.Object,
             _engagementManager.Object,
+            _userCollectorSpeakingEngagementManager.Object,
             _feedCheckManager.Object,
             NullLogger<LoadAllSpeakingEngagements>.Instance);
     }
@@ -83,13 +94,13 @@ public class LoadAllSpeakingEngagementsTests
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement> { item });
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement> { item });
         _engagementManager.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(savedItem));
 
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerOid, null!);
 
         // Assert
         _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Once);
@@ -107,13 +118,13 @@ public class LoadAllSpeakingEngagementsTests
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement> { item });
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement> { item });
         _engagementManager.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(savedItem));
 
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerOid, null!);
 
         // Assert
         // Verify that GetByNameAndUrlAndYearAsync is NEVER called (no deduplication)
@@ -127,12 +138,12 @@ public class LoadAllSpeakingEngagementsTests
         // Arrange
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement>());
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement>());
 
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerOid, null!);
 
         // Assert
         _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
@@ -147,15 +158,15 @@ public class LoadAllSpeakingEngagementsTests
         var checkFromDate = "2024-01-15";
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement>());
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement>());
 
         var request = CreateHttpRequest(checkFromDate);
 
         // Act
-        var result = await _sut.RunAsync(request, checkFromDate);
+        var result = await _sut.RunAsync(request, OwnerOid, checkFromDate);
 
         // Assert
-        _speakingEngagementsReader.Verify(r => r.GetAll(It.Is<DateTimeOffset>(d => d.Year == 2024 && d.Month == 1 && d.Day == 15)), Times.Once);
+        _speakingEngagementsReader.Verify(r => r.GetAll(It.IsAny<string>(), It.Is<DateTimeOffset>(d => d.Year == 2024 && d.Month == 1 && d.Day == 15)), Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
     }
@@ -166,15 +177,15 @@ public class LoadAllSpeakingEngagementsTests
         // Arrange
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement>());
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement>());
 
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerOid, null!);
 
         // Assert
-        _speakingEngagementsReader.Verify(r => r.GetAll(It.Is<DateTimeOffset>(d => d == DateTimeOffset.MinValue || d == DateTime.MinValue)), Times.Once);
+        _speakingEngagementsReader.Verify(r => r.GetAll(It.IsAny<string>(), It.Is<DateTimeOffset>(d => d == DateTimeOffset.MinValue || d == DateTime.MinValue)), Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
     }
 
@@ -185,15 +196,15 @@ public class LoadAllSpeakingEngagementsTests
         var invalidCheckFrom = "not-a-date";
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement>());
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement>());
 
         var request = CreateHttpRequest(invalidCheckFrom);
 
         // Act
-        var result = await _sut.RunAsync(request, invalidCheckFrom);
+        var result = await _sut.RunAsync(request, OwnerOid, invalidCheckFrom);
 
         // Assert
-        _speakingEngagementsReader.Verify(r => r.GetAll(It.Is<DateTimeOffset>(d => d == DateTimeOffset.MinValue || d == DateTime.MinValue)), Times.Once);
+        _speakingEngagementsReader.Verify(r => r.GetAll(It.IsAny<string>(), It.Is<DateTimeOffset>(d => d == DateTimeOffset.MinValue || d == DateTime.MinValue)), Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
     }
 
@@ -207,7 +218,7 @@ public class LoadAllSpeakingEngagementsTests
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>()))
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement> { engagement1, engagement2, engagement3 });
         
         var saved1 = CreateEngagement("Conf A", "https://a.com", 2024);
@@ -224,7 +235,7 @@ public class LoadAllSpeakingEngagementsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerOid, null!);
 
         // Assert
         _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Exactly(3));
@@ -241,7 +252,7 @@ public class LoadAllSpeakingEngagementsTests
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>()))
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement> { engagement1, engagement2 });
         
         // First engagement fails to save
@@ -256,7 +267,7 @@ public class LoadAllSpeakingEngagementsTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerOid, null!);
 
         // Assert
         // Should still return OK and continue processing despite failure
@@ -270,12 +281,12 @@ public class LoadAllSpeakingEngagementsTests
     {
         // Arrange
         SetupFeedCheck();
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ThrowsAsync(new Exception("Reader error"));
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ThrowsAsync(new Exception("Reader error"));
 
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerOid, null!);
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -287,14 +298,14 @@ public class LoadAllSpeakingEngagementsTests
     {
         // Arrange
         var engagement = CreateEngagement("Test Conf", "https://test.com", 2024);
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement> { engagement });
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<Engagement> { engagement });
         _engagementManager.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(engagement));
-        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ThrowsAsync(new Exception("FeedCheck error"));
+        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>(), It.IsAny<string>())).ThrowsAsync(new Exception("FeedCheck error"));
 
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerOid, null!);
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -307,12 +318,12 @@ public class LoadAllSpeakingEngagementsTests
         // Arrange
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync((List<Engagement>)null!);
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync((List<Engagement>)null!);
 
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerOid, null!);
 
         // Assert
         _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);

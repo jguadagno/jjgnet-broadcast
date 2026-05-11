@@ -229,6 +229,39 @@ Neo approved after Round 3 verification. Joseph merged PR #739 to main. Security
 
 ---
 
+## 2026-05-XX — Issue #950: Update FeedCheck Test Mocks for EntraOId Parameter
+
+**Status:** ✅ COMPLETE  
+**Branch:** `issue-950-sanity-check`  
+**Commit:** `2d49b01`
+
+### Work Summary
+
+Updated all FeedCheck-related test files to accommodate the new `string entraOId` parameter added to `IFeedCheckDataStore.GetByNameAsync` and `IFeedCheckManager.GetByNameAsync` as part of the EntraOId user-separation feature.
+
+### Files Updated (8 total)
+
+1. **`FeedCheckDataStoreTests.cs`** — Added `entraOId` to `CreateFeedCheck()` helper; updated 2 existing `GetByNameAsync` calls; added 2 new user-isolation tests:
+   - `GetByNameAsync_WithEntraOId_ReturnsRecord` — correct (Name, EntraOId) combo returns record
+   - `GetByNameAsync_DifferentEntraOId_ReturnsNull` — same name, different OID returns null (user isolation)
+2. **`FeedCheckManagerTests.cs`** — Updated Moq setup/act/verify to 3-param signature `(name, entraOId, CancellationToken)`
+3. **`LoadNewPostsTests.cs`**, **`LoadNewVideosTests.cs`**, **`LoadAllPostsTests.cs`**, **`LoadAllVideosTests.cs`** — `SetupFeedCheck()` helpers updated to 3-param mock setup
+4. **`LoadAllPostsTests.cs`** (extra fix) — `RunAsync_UsesCollectorOwnerOid_WhenReadingPosts` test was stale: production `LoadAllPosts.cs` was refactored by Trinity to accept `userOid` directly as a parameter instead of calling `GetCollectorOwnerOidAsync`. Updated test to verify `GetAsync(OwnerEntraOid, ...)` is called directly.
+
+### Key Learnings
+
+- **Stale tests from production refactoring:** When a method changes from resolving an OID internally (via `GetCollectorOwnerOidAsync`) to accepting it as a parameter, tests that verify the internal call become stale even if unrelated to the current feature. Always check if `Performed invocations: No invocations performed` Moq errors point to removed code paths.
+- **Mock overload resolution:** Moq silently returns null when `.Setup()` param count doesn't match the interface. For optional `CancellationToken`, always include `It.IsAny<CancellationToken>()` explicitly in setup.
+- **EF in-memory tests with new filter columns:** New user-isolation tests in `FeedCheckDataStoreTests.cs` only pass once the production `FeedCheckDataStore.GetByNameAsync` actually filters by both `Name` AND `EntraOId` — Trinity completed this in the same branch.
+
+### Test Results
+
+- `FeedCheckDataStoreTests`: 12/12 pass (including 2 new)
+- `FeedCheckManagerTests`: 6/6 pass
+- `Functions.Tests` (full suite): 158/158 pass
+
+---
+
 ## 2026-05-XX — Issue #820: Unit Tests for YouTubeSourcesController and SyndicationFeedSourcesController
 
 **Status:** ✅ COMPLETE  

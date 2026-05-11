@@ -98,6 +98,13 @@ Trinity (Backend API Developer) implements core API functionality including CRUD
 
 ## Learnings
 
+### 2026-05-11 — Issue #950: EntraOId user separation for FeedCheck C# layer
+
+1. When a parallel agent (Morpheus) deletes a shared utility file (e.g., `CollectorOwnerOidResolver.cs`) while doing SQL-only work, restore it immediately — the deletion cascades into CS0103 build errors across every caller.
+2. The `GetByNameAsync` composite-key pattern (Name + EntraOId) is the correct approach for any table gaining per-user row-level isolation; update the interface, data store, manager, and ALL callers atomically in one PR.
+3. Test files prepared by a parallel agent may be missing `using System.Threading;` when they reference `CancellationToken` in Moq `Setup` lambdas — always check the build before committing.
+4. In LoadNewPosts and LoadNewVideos, the OID resolver MUST run before `GetByNameAsync` so the correct composite key (Name + ownerOid) is available for the feed-check lookup. Reorder accordingly.
+
 ### 2026-05-08 — PR #939 blocking fix (null checks + IsNullOrWhiteSpace guards)
 
 1. Always add a null check after `IEngagementManager.GetAsync` before accessing any property — the method returns `null` when the engagement is not found, causing a `NullReferenceException` on the next line.

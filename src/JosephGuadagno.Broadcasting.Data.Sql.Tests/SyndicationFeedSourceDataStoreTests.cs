@@ -51,7 +51,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
                 PublicationDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 AddedOn = DateTimeOffset.UtcNow,
                 LastUpdatedOn = DateTimeOffset.UtcNow,
-                CreatedByEntraOid = ""
+                CreatedByEntraOid = "user1"
             },
             new SyndicationFeedSource
             {
@@ -64,7 +64,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
                 PublicationDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 AddedOn = DateTimeOffset.UtcNow,
                 LastUpdatedOn = DateTimeOffset.UtcNow,
-                CreatedByEntraOid = ""
+                CreatedByEntraOid = "user1"
             },
             new SyndicationFeedSource
             {
@@ -78,7 +78,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
                 ItemLastUpdatedOn = new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero),
                 AddedOn = DateTimeOffset.UtcNow,
                 LastUpdatedOn = DateTimeOffset.UtcNow,
-                CreatedByEntraOid = ""
+                CreatedByEntraOid = "user1"
             },
             new SyndicationFeedSource
             {
@@ -91,7 +91,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
                 PublicationDate = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 AddedOn = DateTimeOffset.UtcNow,
                 LastUpdatedOn = DateTimeOffset.UtcNow,
-                CreatedByEntraOid = ""
+                CreatedByEntraOid = "user1"
             },
             new SyndicationFeedSource
             {
@@ -104,7 +104,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
                 PublicationDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 AddedOn = DateTimeOffset.UtcNow,
                 LastUpdatedOn = DateTimeOffset.UtcNow,
-                CreatedByEntraOid = ""
+                CreatedByEntraOid = "user1"
             }
         };
         _context.SyndicationFeedSources.AddRange(sources);
@@ -130,7 +130,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         SeedData();
         var cutoffDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
         
-        var result = await _dataStore.GetRandomSyndicationDataAsync(cutoffDate, new List<string>());
+        var result = await _dataStore.GetRandomSyndicationDataAsync("user1", cutoffDate, new List<string>());
 
         Assert.NotNull(result);
         Assert.True(result.PublicationDate >= cutoffDate || result.ItemLastUpdatedOn >= cutoffDate);
@@ -144,7 +144,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         SeedData();
         var cutoffDate = new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero);
         
-        var result = await _dataStore.GetRandomSyndicationDataAsync(cutoffDate, new List<string>());
+        var result = await _dataStore.GetRandomSyndicationDataAsync("user1", cutoffDate, new List<string>());
 
         Assert.NotNull(result);
         Assert.Equal(3, result.Id);
@@ -157,7 +157,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         var cutoffDate = new DateTimeOffset(2023, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var excludedCategories = new List<string> { "csharp" };
 
-        var result = await _dataStore.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories);
+        var result = await _dataStore.GetRandomSyndicationDataAsync("user1", cutoffDate, excludedCategories);
 
         Assert.NotNull(result);
         if (result.Tags.Count > 0)
@@ -177,7 +177,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         var cutoffDate = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var excludedCategories = new List<string> { "csharp", "dotnet" };
 
-        var result = await _dataStore.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories);
+        var result = await _dataStore.GetRandomSyndicationDataAsync("user1", cutoffDate, excludedCategories);
 
         Assert.NotNull(result);
         if (result.Tags.Count > 0)
@@ -197,7 +197,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         var cutoffDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var excludedCategories = new List<string> { "csharp" };
 
-        var result = await _dataStore.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories);
+        var result = await _dataStore.GetRandomSyndicationDataAsync("user1", cutoffDate, excludedCategories);
 
         Assert.NotNull(result);
         // Post 1 is excluded (has csharp)
@@ -212,7 +212,7 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
         SeedData();
         var cutoffDate = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
-        var result = await _dataStore.GetRandomSyndicationDataAsync(cutoffDate, new List<string>());
+        var result = await _dataStore.GetRandomSyndicationDataAsync("user1", cutoffDate, new List<string>());
 
         Assert.Null(result);
     }
@@ -235,30 +235,25 @@ public class SyndicationFeedSourceDataStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task GetAllAsync_ReturnsAllRecords()
+    public async Task GetAllAsync_Paged_ReturnsAllRecords()
     {
         SeedData();
-        var result = await _dataStore.GetAllAsync();
+        var result = await _dataStore.GetAllAsync(1, 10);
         Assert.NotNull(result);
-        Assert.Equal(5, result.Count);
+        Assert.Equal(5, result.TotalCount);
+        Assert.Equal(5, result.Items.Count);
     }
 
     [Fact]
-    public async Task GetByUrlAsync_ReturnsRecord_WhenUrlExists()
+    public async Task GetAllAsync_ByOwner_Paged_ReturnsAllRecords()
     {
         SeedData();
-        var result = await _dataStore.GetByUrlAsync("url1");
+        var result = await _dataStore.GetAllAsync("user1", 1, 10);
         Assert.NotNull(result);
-        Assert.Equal(1, result.Id);
+        Assert.Equal(5, result.TotalCount);
+        Assert.Equal(5, result.Items.Count);
     }
 
-    [Fact]
-    public async Task GetByUrlAsync_ReturnsNull_WhenUrlDoesNotExist()
-    {
-        SeedData();
-        var result = await _dataStore.GetByUrlAsync("non-existing-url");
-        Assert.Null(result);
-    }
 
     [Fact]
     public async Task SaveAsync_AddsNewRecord_WhenIdIsZero()

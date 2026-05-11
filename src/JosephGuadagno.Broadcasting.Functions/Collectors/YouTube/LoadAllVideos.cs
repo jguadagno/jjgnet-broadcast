@@ -2,7 +2,6 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.Functions.Collectors;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
@@ -27,12 +26,18 @@ public class LoadAllVideos(
     [Function(ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos)]
     public async Task<IActionResult> RunAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post")]
-        HttpRequest req, 
+        HttpRequest req,
+        string ownerOid,
         string checkFrom)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos, startedAt);
+
+        if (string.IsNullOrWhiteSpace(ownerOid))
+        {
+            return new BadRequestObjectResult("The 'ownerOid' query parameter is required.");
+        }
 
         // Check for the date to check from
         var dateToCheckFrom = DateTimeOffset.MinValue;
@@ -48,14 +53,6 @@ public class LoadAllVideos(
 
         try
         {
-            var ownerOid = await CollectorOwnerOidResolver.ResolveAsync(
-                youTubeSourceManager,
-                logger,
-                ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos);
-            if (string.IsNullOrWhiteSpace(ownerOid))
-            {
-                return new BadRequestObjectResult("Unable to resolve collector owner OID from YouTube source records.");
-            }
 
             logger.LogDebug("Getting all items from YouTube for the playlist since '{DateToCheckFrom}'", dateToCheckFrom);
             var newItems = await youTubeReader.GetAsync(ownerOid, dateToCheckFrom);

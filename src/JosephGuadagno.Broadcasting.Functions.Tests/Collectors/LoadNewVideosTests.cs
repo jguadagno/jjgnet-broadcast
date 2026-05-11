@@ -23,6 +23,7 @@ public class LoadNewVideosTests
     private const string CollectorOwnerEntraOid = "collector-owner-entra-oid";
     private readonly Mock<IYouTubeReader> _youTubeReader;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
+    private readonly Mock<IUserCollectorYouTubeChannelManager> _userCollectorYouTubeChannelManager;
     private readonly Mock<IYouTubeSourceManager> _youTubeSourceManager;
     private readonly Mock<IUrlShortener> _urlShortener;
     private readonly Mock<IEventPublisher> _eventPublisher;
@@ -32,18 +33,24 @@ public class LoadNewVideosTests
     {
         _youTubeReader = new Mock<IYouTubeReader>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
+        _userCollectorYouTubeChannelManager = new Mock<IUserCollectorYouTubeChannelManager>();
         _youTubeSourceManager = new Mock<IYouTubeSourceManager>();
         _urlShortener = new Mock<IUrlShortener>();
         _eventPublisher = new Mock<IEventPublisher>();
 
         _eventPublisher.Setup(e => e.PublishYouTubeEventsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<YouTubeSource>>()))
             .Returns(Task.CompletedTask);
-        _youTubeSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>())).ReturnsAsync(OwnerEntraOid);
+        _userCollectorYouTubeChannelManager.Setup(m => m.GetAllActiveAsync())
+            .ReturnsAsync(new List<UserCollectorYouTubeChannel>
+            {
+                new UserCollectorYouTubeChannel { CreatedByEntraOid = OwnerEntraOid, ChannelId = "test-channel", IsActive = true }
+            });
 
         _sut = new LoadNewVideos(
             _youTubeReader.Object,
             Options.Create(new Settings { ShortenedDomainToUse = "short.example.com", OwnerEntraOid = OwnerEntraOid }),
             _feedCheckManager.Object,
+            _userCollectorYouTubeChannelManager.Object,
             _youTubeSourceManager.Object,
             _urlShortener.Object,
             _eventPublisher.Object,
@@ -168,8 +175,11 @@ public class LoadNewVideosTests
     {
         // Arrange
         SetupFeedCheck();
-        _youTubeSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CollectorOwnerEntraOid);
+        _userCollectorYouTubeChannelManager.Setup(m => m.GetAllActiveAsync())
+            .ReturnsAsync(new List<UserCollectorYouTubeChannel>
+            {
+                new UserCollectorYouTubeChannel { CreatedByEntraOid = CollectorOwnerEntraOid, ChannelId = "test-channel", IsActive = true }
+            });
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>()))
             .ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _youTubeReader.Setup(r => r.GetAsync(CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()))
@@ -179,7 +189,7 @@ public class LoadNewVideosTests
         await _sut.RunAsync(null!);
 
         // Assert
-        _youTubeSourceManager.Verify(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _userCollectorYouTubeChannelManager.Verify(m => m.GetAllActiveAsync(), Times.Once);
         _youTubeReader.Verify(r => r.GetAsync(CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()), Times.Once);
     }
 
@@ -296,19 +306,19 @@ public class LoadNewVideosTests
     }
 
     [Fact]
-    public async Task RunAsync_ReturnsBadRequest_WhenCollectorOwnerOidCannotBeResolved()
+    public async Task RunAsync_ReturnsOk_WhenNoActiveChannelConfigsFound()
     {
         // Arrange
         SetupFeedCheck();
-        _youTubeSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string?)null);
+        _userCollectorYouTubeChannelManager.Setup(m => m.GetAllActiveAsync())
+            .ReturnsAsync(new List<UserCollectorYouTubeChannel>());
 
         // Act
         var result = await _sut.RunAsync(null!);
 
         // Assert
         _youTubeReader.Verify(r => r.GetAsync(It.IsAny<string>(), It.IsAny<DateTimeOffset>()), Times.Never);
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Contains("owner OID", badRequestResult.Value!.ToString());
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Contains("No active", okResult.Value!.ToString());
     }
 }

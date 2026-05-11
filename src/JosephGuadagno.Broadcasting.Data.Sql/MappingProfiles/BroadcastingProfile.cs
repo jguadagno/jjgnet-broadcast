@@ -62,5 +62,10 @@ public class BroadcastingProfile: Profile
             .ForMember(
                 destination => destination.SocialMediaPlatform,
                 options => options.Ignore());
+
+        CreateMap<Models.UserCollectorFeedSource, Domain.Models.UserCollectorFeedSource>().ReverseMap();
+        CreateMap<Models.UserCollectorYouTubeChannel, Domain.Models.UserCollectorYouTubeChannel>().ReverseMap();
+        CreateMap<Models.UserCollectorSpeakingEngagement, Domain.Models.UserCollectorSpeakingEngagement>().ReverseMap();
+        CreateMap<Models.UserCollectorScheduledItem, Domain.Models.UserCollectorScheduledItem>().ReverseMap();
     }
 }

@@ -26,11 +26,6 @@ public class SpeakingEngagementsReader: ISpeakingEngagementsReader
             throw new ArgumentNullException(nameof(settings), "The SpeakingEngagementsReaderSettings cannot be null");
         }
 
-        if (string.IsNullOrEmpty(settings.SpeakingEngagementsFile))
-        {
-            throw new ApplicationException("The SpeakingEngagementsFile of the SpeakingEngagementsReaderSettings is required");
-        }
-
         _httpClient = httpClient;
         _settings = settings;
         _logger = logger;
@@ -38,26 +33,51 @@ public class SpeakingEngagementsReader: ISpeakingEngagementsReader
 
     public async Task<List<Engagement>> GetAll(DateTimeOffset sinceWhen)
     {
-        var speakingEngagements = await LoadAllSpeakingEngagements();
+        if (string.IsNullOrEmpty(_settings.SpeakingEngagementsFile))
+        {
+            throw new InvalidOperationException("SpeakingEngagementsFile is not configured. Use GetAll(string fileUrl, DateTimeOffset sinceWhen) for per-user file URLs.");
+        }
+
+        var speakingEngagements = await LoadAllSpeakingEngagementsFromUrl(_settings.SpeakingEngagementsFile);
         return speakingEngagements.Where(e => e.LastUpdatedOn > sinceWhen).ToList();
     }
 
     public async Task<List<Engagement>> GetAll()
     {
-        return await LoadAllSpeakingEngagements();
+        if (string.IsNullOrEmpty(_settings.SpeakingEngagementsFile))
+        {
+            throw new InvalidOperationException("SpeakingEngagementsFile is not configured. Use GetAll(string fileUrl) for per-user file URLs.");
+        }
+
+        return await LoadAllSpeakingEngagementsFromUrl(_settings.SpeakingEngagementsFile);
     }
 
-    private async Task<List<Engagement>> LoadAllSpeakingEngagements()
+    public async Task<List<Engagement>> GetAll(string fileUrl, DateTimeOffset sinceWhen)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileUrl);
+
+        var speakingEngagements = await LoadAllSpeakingEngagementsFromUrl(fileUrl);
+        return speakingEngagements.Where(e => e.LastUpdatedOn > sinceWhen).ToList();
+    }
+
+    public async Task<List<Engagement>> GetAll(string fileUrl)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileUrl);
+
+        return await LoadAllSpeakingEngagementsFromUrl(fileUrl);
+    }
+
+    private async Task<List<Engagement>> LoadAllSpeakingEngagementsFromUrl(string fileUrl)
     {
         var engagements = new List<Engagement>();
 
-        _logger.LogDebug("Reading all the speaking engagements from '{Url}'", _settings.SpeakingEngagementsFile);
+        _logger.LogDebug("Reading all the speaking engagements from '{Url}'", fileUrl);
 
         try
         {
             // Load the data
             List<Models.Engagement>? speakingEngagements =
-                await _httpClient.GetFromJsonAsync<List<Models.Engagement>>(_settings.SpeakingEngagementsFile);
+                await _httpClient.GetFromJsonAsync<List<Models.Engagement>>(fileUrl);
 
             if (speakingEngagements is null)
             {
@@ -100,12 +120,12 @@ public class SpeakingEngagementsReader: ISpeakingEngagementsReader
             }
 
             // Return the new collection
-            _logger.LogDebug("Read {Count} all the speaking engagements from '{Url}'", engagements.Count, _settings.SpeakingEngagementsFile);
+            _logger.LogDebug("Read {Count} all the speaking engagements from '{Url}'", engagements.Count, fileUrl);
             return engagements;
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Failed to load all the speaking engagements from '{Url}'", _settings.SpeakingEngagementsFile);
+            _logger.LogError(exception, "Failed to load all the speaking engagements from '{Url}'", fileUrl);
             return engagements;
         }
     }

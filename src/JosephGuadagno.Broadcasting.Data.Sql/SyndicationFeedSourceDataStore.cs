@@ -1,6 +1,8 @@
 using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -11,7 +13,7 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
 {
     private const string SourceType = "SyndicationFeed";
 
-    public async Task<Domain.Models.SyndicationFeedSource> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
+    public async Task<SyndicationFeedSource> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
         var dbSyndicationFeedSource = await broadcastingContext.SyndicationFeedSources
             .FirstOrDefaultAsync(s => s.Id == primaryKey, cancellationToken);
@@ -23,10 +25,10 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
                 .ToListAsync(cancellationToken);
         }
         
-        return mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
+        return mapper.Map<SyndicationFeedSource>(dbSyndicationFeedSource);
     }
 
-    public async Task<OperationResult<Domain.Models.SyndicationFeedSource>> SaveAsync(Domain.Models.SyndicationFeedSource entity, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<SyndicationFeedSource>> SaveAsync(SyndicationFeedSource entity, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -53,17 +55,17 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
             }
 
             return saved is not null
-                ? OperationResult<Domain.Models.SyndicationFeedSource>.Success(mapper.Map<Domain.Models.SyndicationFeedSource>(saved))
-                : OperationResult<Domain.Models.SyndicationFeedSource>.Failure("Failed to save syndication feed source");
+                ? OperationResult<SyndicationFeedSource>.Success(mapper.Map<SyndicationFeedSource>(saved))
+                : OperationResult<SyndicationFeedSource>.Failure("Failed to save syndication feed source");
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to save syndication feed source {FeedId}", entity.Id);
-            return OperationResult<Domain.Models.SyndicationFeedSource>.Failure("An error occurred while saving the syndication feed source", ex);
+            return OperationResult<SyndicationFeedSource>.Failure("An error occurred while saving the syndication feed source", ex);
         }
     }
 
-    public async Task<List<Domain.Models.SyndicationFeedSource>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<List<SyndicationFeedSource>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var dbSyndicationFeedSources = await broadcastingContext.SyndicationFeedSources
             .AsNoTracking()
@@ -79,10 +81,10 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
             source.SourceTags = tagsBySourceId.TryGetValue(source.Id, out var tags) ? tags : new List<Models.SourceTag>();
         }
 
-        return mapper.Map<List<Domain.Models.SyndicationFeedSource>>(dbSyndicationFeedSources);
+        return mapper.Map<List<SyndicationFeedSource>>(dbSyndicationFeedSources);
     }
 
-    public async Task<List<Domain.Models.SyndicationFeedSource>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
+    public async Task<List<SyndicationFeedSource>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
     {
         var dbSyndicationFeedSources = await broadcastingContext.SyndicationFeedSources
             .AsNoTracking()
@@ -99,10 +101,10 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
             source.SourceTags = tagsBySourceId.TryGetValue(source.Id, out var tags) ? tags : new List<Models.SourceTag>();
         }
 
-        return mapper.Map<List<Domain.Models.SyndicationFeedSource>>(dbSyndicationFeedSources);
+        return mapper.Map<List<SyndicationFeedSource>>(dbSyndicationFeedSources);
     }
 
-    public async Task<OperationResult<bool>> DeleteAsync(Domain.Models.SyndicationFeedSource entity, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<bool>> DeleteAsync(SyndicationFeedSource entity, CancellationToken cancellationToken = default)
     {
         return await DeleteAsync(entity.Id, cancellationToken);
     }
@@ -131,7 +133,7 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
         }
     }
 
-    public async Task<Domain.Models.SyndicationFeedSource?> GetByFeedIdentifierAsync(string feedIdentifier, CancellationToken cancellationToken = default)
+    public async Task<SyndicationFeedSource?> GetByFeedIdentifierAsync(string feedIdentifier, CancellationToken cancellationToken = default)
     {
         var dbSyndicationFeedSource = await broadcastingContext.SyndicationFeedSources
             .AsNoTracking()
@@ -145,24 +147,7 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
                 .ToListAsync(cancellationToken);
         }
         
-        return dbSyndicationFeedSource is null ? null : mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
-    }
-
-    public async Task<Domain.Models.SyndicationFeedSource?> GetByUrlAsync(string url, CancellationToken cancellationToken = default)
-    {
-        var dbSyndicationFeedSource = await broadcastingContext.SyndicationFeedSources
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Url == url, cancellationToken);
-        
-        if (dbSyndicationFeedSource is not null)
-        {
-            dbSyndicationFeedSource.SourceTags = await broadcastingContext.SourceTags
-                .AsNoTracking()
-                .Where(st => st.SourceId == dbSyndicationFeedSource.Id && st.SourceType == SourceType)
-                .ToListAsync(cancellationToken);
-        }
-        
-        return dbSyndicationFeedSource is null ? null : mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
+        return dbSyndicationFeedSource is null ? null : mapper.Map<SyndicationFeedSource>(dbSyndicationFeedSource);
     }
 
     public async Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default)
@@ -177,38 +162,7 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
         return string.IsNullOrWhiteSpace(ownerOid) ? null : ownerOid;
     }
 
-    public async Task<Domain.Models.SyndicationFeedSource?> GetRandomSyndicationDataAsync(DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default)
-    {
-        var query = broadcastingContext.SyndicationFeedSources
-            .AsNoTracking()
-            .Where(s => s.PublicationDate >= cutoffDate || s.ItemLastUpdatedOn >= cutoffDate);
-
-        if (excludedCategories.Count > 0)
-        {
-            var excludedSourceIds = await broadcastingContext.SourceTags
-                .Where(st => st.SourceType == SourceType && excludedCategories.Contains(st.Tag))
-                .Select(st => st.SourceId)
-                .Distinct()
-                .ToListAsync(cancellationToken);
-
-            query = query.Where(s => !excludedSourceIds.Contains(s.Id));
-        }
-
-        var dbSyndicationFeedSource = await query.OrderBy(u => Guid.NewGuid())
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (dbSyndicationFeedSource is not null)
-        {
-            dbSyndicationFeedSource.SourceTags = await broadcastingContext.SourceTags
-                .AsNoTracking()
-                .Where(st => st.SourceId == dbSyndicationFeedSource.Id && st.SourceType == SourceType)
-                .ToListAsync(cancellationToken);
-        }
-
-        return dbSyndicationFeedSource is null ? null : mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
-    }
-
-    public async Task<Domain.Models.SyndicationFeedSource?> GetRandomSyndicationDataAsync(string ownerEntraOid, DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default)
+    public async Task<SyndicationFeedSource?> GetRandomSyndicationDataAsync(string ownerEntraOid, DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default)
     {
         var query = broadcastingContext.SyndicationFeedSources
             .AsNoTracking()
@@ -237,7 +191,7 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
                 .ToListAsync(cancellationToken);
         }
 
-        return dbSyndicationFeedSource is null ? null : mapper.Map<Domain.Models.SyndicationFeedSource>(dbSyndicationFeedSource);
+        return dbSyndicationFeedSource is null ? null : mapper.Map<SyndicationFeedSource>(dbSyndicationFeedSource);
     }
 
     private async Task SyncSourceTagsAsync(int sourceId, IList<string> tags, CancellationToken cancellationToken)
@@ -261,7 +215,7 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
         await broadcastingContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<Domain.Models.PagedResult<Domain.Models.SyndicationFeedSource>> GetAllAsync(int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<SyndicationFeedSource>> GetAllAsync(int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
         IQueryable<Models.SyndicationFeedSource> query = broadcastingContext.SyndicationFeedSources
             .AsNoTracking();
@@ -272,7 +226,7 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
             query = query.Where(s => s.Title.ToLower().Contains(lowerFilter));
         }
 
-        var sortByLower = sortBy?.ToLowerInvariant();
+        var sortByLower = sortBy.ToLowerInvariant();
         if (sortByLower == nameof(Models.SyndicationFeedSource.Author).ToLowerInvariant())
         {
             query = sortDescending ? query.OrderByDescending(s => s.Author) : query.OrderBy(s => s.Author);
@@ -303,14 +257,14 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
             item.SourceTags = tagsBySourceId.TryGetValue(item.Id, out var tags) ? tags : new List<Models.SourceTag>();
         }
 
-        return new Domain.Models.PagedResult<Domain.Models.SyndicationFeedSource>
+        return new PagedResult<SyndicationFeedSource>
         {
-            Items = mapper.Map<List<Domain.Models.SyndicationFeedSource>>(dbItems),
+            Items = mapper.Map<List<SyndicationFeedSource>>(dbItems),
             TotalCount = totalCount
         };
     }
 
-    public async Task<Domain.Models.PagedResult<Domain.Models.SyndicationFeedSource>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<SyndicationFeedSource>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
         IQueryable<Models.SyndicationFeedSource> query = broadcastingContext.SyndicationFeedSources
             .AsNoTracking()
@@ -322,7 +276,7 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
             query = query.Where(s => s.Title.ToLower().Contains(lowerFilter));
         }
 
-        var sortByLower = sortBy?.ToLowerInvariant();
+        var sortByLower = sortBy.ToLowerInvariant();
         if (sortByLower == nameof(Models.SyndicationFeedSource.Author).ToLowerInvariant())
         {
             query = sortDescending ? query.OrderByDescending(s => s.Author) : query.OrderBy(s => s.Author);
@@ -353,9 +307,9 @@ public class SyndicationFeedSourceDataStore(BroadcastingContext broadcastingCont
             item.SourceTags = tagsBySourceId.TryGetValue(item.Id, out var tags) ? tags : new List<Models.SourceTag>();
         }
 
-        return new Domain.Models.PagedResult<Domain.Models.SyndicationFeedSource>
+        return new PagedResult<SyndicationFeedSource>
         {
-            Items = mapper.Map<List<Domain.Models.SyndicationFeedSource>>(dbItems),
+            Items = mapper.Map<List<SyndicationFeedSource>>(dbItems),
             TotalCount = totalCount
         };
     }

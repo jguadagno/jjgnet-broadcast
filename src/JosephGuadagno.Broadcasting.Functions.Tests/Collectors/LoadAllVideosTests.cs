@@ -102,7 +102,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Once);
@@ -139,7 +139,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        await _sut.RunAsync(request, null!);
+        await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.Is<YouTubeSource>(v =>
@@ -149,22 +149,21 @@ public class LoadAllVideosTests
     }
 
     [Fact]
-    public async Task RunAsync_UsesCollectorOwnerOid_WhenReadingVideos()
+    public async Task RunAsync_UsesOwnerOidParameter_WhenReadingVideos()
     {
         // Arrange
         SetupFeedCheck();
-        _youTubeSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CollectorOwnerEntraOid);
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>()))
+            .ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _youTubeReader.Setup(r => r.GetAsync(CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<YouTubeSource>());
 
         var request = CreateHttpRequest();
 
         // Act
-        await _sut.RunAsync(request, null!);
+        await _sut.RunAsync(request, CollectorOwnerEntraOid, null!);
 
         // Assert
-        _youTubeSourceManager.Verify(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()), Times.Once);
         _youTubeReader.Verify(r => r.GetAsync(CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()), Times.Once);
     }
 
@@ -184,7 +183,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Never);
@@ -203,7 +202,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Never);
@@ -223,7 +222,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest(checkFromDate);
 
         // Act
-        var result = await _sut.RunAsync(request, checkFromDate);
+        var result = await _sut.RunAsync(request, OwnerEntraOid, checkFromDate);
 
         // Assert
         _youTubeReader.Verify(r => r.GetAsync(OwnerEntraOid, It.Is<DateTimeOffset>(d => d.Year == 2024 && d.Month == 1 && d.Day == 15)), Times.Once);
@@ -242,7 +241,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
         _youTubeReader.Verify(r => r.GetAsync(OwnerEntraOid, It.Is<DateTimeOffset>(d => d == DateTimeOffset.MinValue || d == DateTime.MinValue)), Times.Once);
@@ -261,7 +260,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest(invalidCheckFrom);
 
         // Act
-        var result = await _sut.RunAsync(request, invalidCheckFrom);
+        var result = await _sut.RunAsync(request, OwnerEntraOid, invalidCheckFrom);
 
         // Assert
         _youTubeReader.Verify(r => r.GetAsync(OwnerEntraOid, It.Is<DateTimeOffset>(d => d == DateTimeOffset.MinValue || d == DateTime.MinValue)), Times.Once);
@@ -300,7 +299,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
         _youTubeSourceManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeSource>()), Times.Exactly(2));
@@ -319,7 +318,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -344,7 +343,7 @@ public class LoadAllVideosTests
         var request = CreateHttpRequest();
 
         // Act
-        var result = await _sut.RunAsync(request, null!);
+        var result = await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
         _urlShortener.Verify(u => u.GetShortenedUrlAsync(item.Url, "short.example.com"), Times.Once);

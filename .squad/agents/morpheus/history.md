@@ -168,3 +168,13 @@ GO
 ```
 
 **Applied to:** SyndicationFeedSourceDataStore, YouTubeSourceDataStore (all GetAllAsync overloads), EngagementDataStore, ScheduledItemDataStore (paged overloads only). DB indexes added for Engagements, SyndicationFeedSources, YouTubeSources, ScheduledItems, SocialMediaPlatforms sort/filter columns.
+
+### FeedChecks user separation (Issue #950)
+
+**Pattern:** When a table must support both system-level (timer-triggered, no user) and user-scoped records, use empty string (`''`) as the sentinel EntraOId for system rows rather than NULL. This keeps the column `NOT NULL`, allows a clean composite unique constraint `(Name, EntraOId)`, and avoids nullable comparison edge cases in SQL Server unique indexes.
+
+**Migration pattern:** Add column as `NULL` first → `UPDATE ... SET = ''` → `ALTER COLUMN ... NOT NULL` → `ADD CONSTRAINT DEFAULT`. This two-step approach allows backfilling existing rows safely before tightening nullability.
+
+**Constraint swap pattern:** Use `IF EXISTS` guard before dropping the old single-column unique constraint; use `IF NOT EXISTS` guard before adding the new composite unique constraint. Both guards are idempotent so the migration is safe to re-run.
+
+**Applied to:** `dbo.FeedChecks` — dropped `FeedChecks_Unique_Name`, added `UQ_FeedChecks_Name_EntraOId` on `(Name, EntraOId)`, added `DF_FeedChecks_EntraOId` default `('')`.

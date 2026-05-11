@@ -21,11 +21,6 @@ public class SyndicationFeedReader: ISyndicationFeedReader
         {
             throw new ArgumentNullException(nameof(syndicationFeedReaderSettings), "The SyndicationFeedReaderSettings cannot be null");
         }
-            
-        if (string.IsNullOrEmpty(syndicationFeedReaderSettings.FeedUrl))
-        {
-            throw new ArgumentNullException(nameof(syndicationFeedReaderSettings.FeedUrl), "The FeedUrl of the SyndicationFeedReaderSettings is required");
-        }
 
         _syndicationFeedReaderSettings = syndicationFeedReaderSettings;
         _logger = logger;
@@ -78,6 +73,13 @@ public class SyndicationFeedReader: ISyndicationFeedReader
     public async Task<List<SyndicationFeedSource>> GetAsync(string ownerOid, DateTimeOffset sinceWhen)
     {
         return await Task.Run(() => GetSinceDate(ownerOid, sinceWhen));
+    }
+
+    public Task<List<SyndicationFeedSource>> GetAsync(string feedUrl, string ownerOid, DateTimeOffset sinceWhen)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(feedUrl);
+        ValidateOwnerOid(ownerOid);
+        return Task.Run(() => GetSinceDateFromUrl(feedUrl, ownerOid, sinceWhen));
     }
 
     public List<SyndicationFeedSource> GetSyndicationItems(string ownerOid, DateTimeOffset sinceWhen, List<string>? excludeCategories = null)
@@ -161,5 +163,46 @@ public class SyndicationFeedReader: ISyndicationFeedReader
         {
             throw new ArgumentException("The owner OID is required.", nameof(ownerOid));
         }
+    }
+
+    private List<SyndicationFeedSource> GetSinceDateFromUrl(string feedUrl, string ownerOid, DateTimeOffset sinceWhen)
+    {
+        var currentTime = DateTime.UtcNow;
+
+        _logger.LogDebug("Checking syndication feed '{FeedUrl}' for new posts since '{SinceWhen:u}'",
+            feedUrl, sinceWhen);
+
+        List<SyndicationItem> items;
+
+        try
+        {
+            using var reader = XmlReader.Create(feedUrl);
+            var feed = SyndicationFeed.Load(reader);
+
+            items = feed.Items.Where(i => (i.PublishDate > sinceWhen) || (i.LastUpdatedTime > sinceWhen))
+                .ToList();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error parsing the syndication feed for: {FeedUrl}", feedUrl);
+            throw;
+        }
+
+        _logger.LogDebug("Found {PostsCount} posts", items.Count);
+
+        return items.Select(syndicationItem => new SyndicationFeedSource()
+            {
+                FeedIdentifier = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri!,
+                Author = syndicationItem.Authors?.FirstOrDefault()?.Name ?? "Unknown",
+                PublicationDate = syndicationItem.PublishDate.UtcDateTime,
+                ItemLastUpdatedOn = syndicationItem.LastUpdatedTime.UtcDateTime,
+                Title = syndicationItem.Title.Text,
+                Url = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri ?? string.Empty,
+                AddedOn = currentTime,
+                LastUpdatedOn = currentTime,
+                CreatedByEntraOid = ownerOid,
+                Tags = syndicationItem.Categories?.Select(c => c.Name).ToList() ?? []
+            })
+            .ToList();
     }
 }

@@ -8,7 +8,7 @@ public interface IScheduledItemDataStore : IDataRepository<ScheduledItem>
     public Task<List<ScheduledItem>> GetUnsentScheduledItemsAsync(CancellationToken cancellationToken = default);
     public Task<List<ScheduledItem>> GetScheduledItemsByCalendarMonthAsync(int year, int month, CancellationToken cancellationToken = default);
     public Task<bool> SentScheduledItemAsync(int primaryKey, DateTimeOffset sentOn, CancellationToken cancellationToken = default);
-    Task<IEnumerable<Domain.Models.ScheduledItem>> GetOrphanedScheduledItemsAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<ScheduledItem>> GetOrphanedScheduledItemsAsync(CancellationToken cancellationToken = default);
     
     Task<List<ScheduledItem>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default);
     Task<List<ScheduledItem>> GetUnsentScheduledItemsAsync(string ownerEntraOid, CancellationToken cancellationToken = default);

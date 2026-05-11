@@ -18,6 +18,11 @@
 
 ## Learnings
 
+### 2026-05-11: Per-User Publisher Settings Directive Captured
+- **Directive file:** `.squad/decisions/inbox/scribe-all-settings-per-user-20260511.md`
+- **Summary:** Joe directive to expand per-user pattern (FeedCheck) to ALL publisher settings. Mirrors collector pattern (UserCollectorYouTubeChannel, etc.) with new UserPublisher* tables for each platform.
+- **Pattern Impact:** Extends existing user-separation architecture to publishers (Twitter/X, LinkedIn, Bluesky, Facebook, etc.). Functions must loop per-user for all publishers.
+
 <!-- Append learnings below -->
 
 ### Session: RBAC Phase 2 Followup — Complete & Merged (2026-04-02)

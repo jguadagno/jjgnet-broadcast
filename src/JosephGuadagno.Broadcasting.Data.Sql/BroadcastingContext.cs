@@ -50,6 +50,8 @@ public partial class BroadcastingContext : DbContext
     public DbSet<Models.UserOAuthToken> UserOAuthTokens => Set<Models.UserOAuthToken>();
     public DbSet<Models.UserCollectorFeedSource> UserCollectorFeedSources => Set<Models.UserCollectorFeedSource>();
     public DbSet<Models.UserCollectorYouTubeChannel> UserCollectorYouTubeChannels => Set<Models.UserCollectorYouTubeChannel>();
+    public DbSet<Models.UserCollectorSpeakingEngagement> UserCollectorSpeakingEngagements => Set<Models.UserCollectorSpeakingEngagement>();
+    public DbSet<Models.UserCollectorScheduledItem> UserCollectorScheduledItems => Set<Models.UserCollectorScheduledItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -651,6 +653,78 @@ public partial class BroadcastingContext : DbContext
             entity.Property(e => e.LastUpdatedOn)
                 .IsRequired()
                 .HasColumnType("datetimeoffset");
+        });
+
+        modelBuilder.Entity<Models.UserCollectorSpeakingEngagement>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_UserCollectorSpeakingEngagements")
+                .IsClustered();
+
+            entity.HasIndex(e => new { e.CreatedByEntraOid, e.SpeakingEngagementsFile }, "UQ_UserCollectorSpeakingEngagements_Owner_File")
+                .IsUnique();
+
+            entity.HasIndex(e => e.CreatedByEntraOid, "IX_UserCollectorSpeakingEngagements_Owner");
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.SpeakingEngagementsFile)
+                .HasMaxLength(2048)
+                .IsRequired();
+
+            entity.Property(e => e.DisplayName)
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("sysdatetimeoffset()");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("sysdatetimeoffset()");
+        });
+
+        modelBuilder.Entity<Models.UserCollectorScheduledItem>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_UserCollectorScheduledItems")
+                .IsClustered();
+
+            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserCollectorScheduledItems_Owner")
+                .IsUnique();
+
+            entity.HasIndex(e => e.CreatedByEntraOid, "IX_UserCollectorScheduledItems_Owner");
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.DisplayName)
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("sysdatetimeoffset()");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("sysdatetimeoffset()");
         });
 
         modelBuilder.Entity<EngagementSocialMediaPlatform>(entity =>

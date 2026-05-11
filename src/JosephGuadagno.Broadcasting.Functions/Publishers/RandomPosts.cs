@@ -31,7 +31,13 @@ public class RandomPosts(
         }
 
         logger.LogDebug("Getting all items from feed from '{CutoffDate:u}'", cutoffDate);
-        var syndicationFeedSource = await syndicationFeedSourceManager.GetRandomSyndicationDataAsync(cutoffDate, randomPostSettings.ExcludedCategories);
+        var ownerOid = await syndicationFeedSourceManager.GetCollectorOwnerOidAsync();
+        if (string.IsNullOrWhiteSpace(ownerOid))
+        {
+            logger.LogWarning("Could not resolve a collector owner OID from existing syndication feed source records.");
+            return;
+        }
+        var syndicationFeedSource = await syndicationFeedSourceManager.GetRandomSyndicationDataAsync(ownerOid, cutoffDate, randomPostSettings.ExcludedCategories);
 
         if (syndicationFeedSource is null)
         {

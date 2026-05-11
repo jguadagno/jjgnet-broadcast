@@ -160,35 +160,35 @@ public class SyndicationFeedSourceManagerTests
     }
 
     [Fact]
-    public async Task GetByUrlAsync_ShouldCallRepository()
+    public async Task GetCollectorOwnerOidAsync_ShouldCallRepository()
     {
         // Arrange
-        var source = new SyndicationFeedSource { Id = 1, Url = "http://test.com", FeedIdentifier = "Test", CreatedByEntraOid = "" };
-        _repository.Setup(r => r.GetByUrlAsync("http://test.com", default)).ReturnsAsync(source);
+        _repository.Setup(r => r.GetCollectorOwnerOidAsync(default)).ReturnsAsync("owner-1");
 
         // Act
-        var result = await _syndicationFeedSourceManager.GetByUrlAsync("http://test.com");
+        var result = await _syndicationFeedSourceManager.GetCollectorOwnerOidAsync();
 
         // Assert
-        Assert.Equal(source, result);
-        _repository.Verify(r => r.GetByUrlAsync("http://test.com", default), Times.Once);
+        Assert.Equal("owner-1", result);
+        _repository.Verify(r => r.GetCollectorOwnerOidAsync(default), Times.Once);
     }
 
     [Fact]
     public async Task GetRandomSyndicationDataAsync_ShouldCallRepository()
     {
         // Arrange
-        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "" };
+        var source = new SyndicationFeedSource { Id = 1, FeedIdentifier = "Test", CreatedByEntraOid = "owner-1" };
         var cutoffDate = DateTimeOffset.UtcNow;
         var excludedCategories = new List<string> { "Exclude" };
-        _repository.Setup(r => r.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories, default)).ReturnsAsync(source);
+        _repository.Setup(r => r.GetCollectorOwnerOidAsync(default)).ReturnsAsync("owner-1");
+        _repository.Setup(r => r.GetRandomSyndicationDataAsync("owner-1", cutoffDate, excludedCategories, default)).ReturnsAsync(source);
 
         // Act
-        var result = await _syndicationFeedSourceManager.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories);
+        var result = await _syndicationFeedSourceManager.GetRandomSyndicationDataAsync("owner-1", cutoffDate, excludedCategories);
 
         // Assert
         Assert.Equal(source, result);
-        _repository.Verify(r => r.GetRandomSyndicationDataAsync(cutoffDate, excludedCategories, default), Times.Once);
+        _repository.Verify(r => r.GetRandomSyndicationDataAsync("owner-1", cutoffDate, excludedCategories, default), Times.Once);
     }
 
     [Fact]
