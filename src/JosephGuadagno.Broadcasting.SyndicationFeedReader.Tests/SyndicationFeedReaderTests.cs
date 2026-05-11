@@ -52,31 +52,28 @@ public class SyndicationFeedReaderTests
     }
     
     [Fact]
-    public void Constructor_WithFeedSettingsUrlNull_ShouldThrowException()
+    public void Constructor_WithNullFeedUrl_ShouldNotThrow()
     {
-        // Arrange
+        // Arrange — FeedUrl is now optional in the constructor; per-user URL is passed at call time
         var logger = new LoggerFactory().CreateLogger<SyndicationFeedReader>();
-        
-        // Act / Assert
-        Assert.Throws<ArgumentNullException>(() =>
-        {
-            var syndicationFeedReaderSettings = new SyndicationFeedReaderSettings();
-            var syndicationFeedReader = new SyndicationFeedReader(syndicationFeedReaderSettings, logger);
-        });
+        var syndicationFeedReaderSettings = new SyndicationFeedReaderSettings();
+
+        // Act & Assert — no exception expected
+        var syndicationFeedReader = new SyndicationFeedReader(syndicationFeedReaderSettings, logger);
+        Assert.NotNull(syndicationFeedReader);
     }
-    
+
     [Fact]
-    public void Constructor_WithFeedSettingsUrlEmpty_ShouldThrowException()
+    public async Task GetAsync_WithNullPerUserFeedUrl_ShouldThrowArgumentException()
     {
-        // Arrange
+        // Arrange — per-user overload must validate feedUrl
         var logger = new LoggerFactory().CreateLogger<SyndicationFeedReader>();
-        
-        // Act / Assert
-        Assert.Throws<ArgumentNullException>(() =>
-        {
-            var syndicationFeedReaderSettings = new SyndicationFeedReaderSettings{FeedUrl = string.Empty};
-            var syndicationFeedReader = new SyndicationFeedReader(syndicationFeedReaderSettings, logger);
-        });
+        var syndicationFeedReaderSettings = new SyndicationFeedReaderSettings();
+        var reader = new SyndicationFeedReader(syndicationFeedReaderSettings, logger);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            reader.GetAsync(null!, "oid-123", DateTimeOffset.UtcNow));
     }
         
     // ### GetSinceDate Tests ###
