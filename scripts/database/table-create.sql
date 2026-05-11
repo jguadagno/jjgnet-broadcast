@@ -91,12 +91,15 @@ create table dbo.FeedChecks
     Id                     int identity
         constraint FeedChecks_pk_Id
             primary key,
-    Name                   nvarchar(255)                       not null
-        constraint FeedChecks_Unique_Name
-            unique,
+    Name                   nvarchar(255)                       not null,
+    EntraOId               nvarchar(36)   not null
+        constraint DF_FeedChecks_EntraOId
+            default (''),
     LastCheckedFeed        datetimeoffset default getutcdate() not null,
     LastItemAddedOrUpdated datetimeoffset default GETUTCDATE() not null,
-    LastUpdatedOn          datetimeoffset default getutcdate() not null
+    LastUpdatedOn          datetimeoffset default getutcdate() not null,
+    constraint UQ_FeedChecks_Name_EntraOId
+        unique (Name, EntraOId)
 )
 go
 
