@@ -25,4 +25,6 @@ public class BlueskyPostMessage
     /// it is used as the embed source URL.
     /// </summary>
     public string? ImageUrl { get; set; }
+    /// <summary>The Entra OID of the user who owns the content. Used to resolve per-user credentials at send time.</summary>
+    public string? CreatedByEntraOid { get; set; }
 }

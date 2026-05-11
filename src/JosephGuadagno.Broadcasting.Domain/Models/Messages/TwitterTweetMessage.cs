@@ -14,4 +14,6 @@ public class TwitterTweetMessage
     /// Full media upload via the Twitter v1.1 media API is required for actual image attachment.
     /// </summary>
     public string? ImageUrl { get; set; }
+    /// <summary>The Entra OID of the user who owns the content. Used to resolve per-user credentials at send time.</summary>
+    public string? CreatedByEntraOid { get; set; }
 }

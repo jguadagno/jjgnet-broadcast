@@ -36,6 +36,7 @@
   <ItemGroup>
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.Sql\JosephGuadagno.Broadcasting.Data.Sql.csproj" />
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Data.KeyVault\JosephGuadagno.Broadcasting.Data.KeyVault.csproj" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

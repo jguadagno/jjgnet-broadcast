@@ -68,7 +68,7 @@ public class ProcessNewYouTubeDataFired(
         };
         logger.LogCustomEvent(Metrics.TwitterProcessedNewYouTubeData, properties);
         logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", youTubeSource.Id, youTubeSource.Title);
-        return new TwitterTweetMessage { Text = status };
+        return new TwitterTweetMessage { Text = status, CreatedByEntraOid = youTubeSource.CreatedByEntraOid };
     }
         
     private string ComposeTweet(YouTubeSource youTubeSource)

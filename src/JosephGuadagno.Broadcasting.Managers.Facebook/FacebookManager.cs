@@ -134,6 +134,27 @@ public class FacebookManager : IFacebookManager
         return await PostMessageInternalAsync(message, link, picture);
     }
 
+    /// <inheritdoc />
+    public async Task<string> PostMessageAndLinkToPage(string message, string link, string pageId, string pageAccessToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(message);
+        ArgumentException.ThrowIfNullOrEmpty(link);
+        ArgumentException.ThrowIfNullOrEmpty(pageId);
+        ArgumentException.ThrowIfNullOrEmpty(pageAccessToken);
+        return await PostMessageInternalAsync(message, link, null, pageId, pageAccessToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<string> PostMessageLinkAndPictureToPage(string message, string link, string picture, string pageId, string pageAccessToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(message);
+        ArgumentException.ThrowIfNullOrEmpty(link);
+        ArgumentException.ThrowIfNullOrEmpty(picture);
+        ArgumentException.ThrowIfNullOrEmpty(pageId);
+        ArgumentException.ThrowIfNullOrEmpty(pageAccessToken);
+        return await PostMessageInternalAsync(message, link, picture, pageId, pageAccessToken);
+    }
+
     /// <summary>
     /// Refreshes the token
     /// </summary>
@@ -207,10 +228,15 @@ public class FacebookManager : IFacebookManager
 
     private async Task<string> PostMessageInternalAsync(string message, string? link = null, string? picture = null)
     {
+        return await PostMessageInternalAsync(message, link, picture, _facebookApplicationSettings.PageId, _facebookApplicationSettings.PageAccessToken);
+    }
+
+    private async Task<string> PostMessageInternalAsync(string message, string? link, string? picture, string pageId, string pageAccessToken)
+    {
         try
         {
             var urlBuilder = new StringBuilder(GraphApiRoot)
-                .Append(_facebookApplicationSettings.PageId)
+                .Append(pageId)
                 .Append("/feed?message=")
                 .Append(System.Web.HttpUtility.UrlEncode(message));
 
@@ -224,7 +250,7 @@ public class FacebookManager : IFacebookManager
                 urlBuilder.Append("&picture=").Append(System.Web.HttpUtility.UrlEncode(picture));
             }
 
-            urlBuilder.Append("&access_token=").Append(_facebookApplicationSettings.PageAccessToken);
+            urlBuilder.Append("&access_token=").Append(pageAccessToken);
 
             var url = urlBuilder.ToString();
 

@@ -76,7 +76,8 @@ public class ProcessScheduledItemFired(
                     ? blueskyPostText[..MaxPostLength]
                     : blueskyPostText,
                 Url = sourceUrl,
-                ImageUrl = scheduledItem.ImageUrl
+                ImageUrl = scheduledItem.ImageUrl,
+                CreatedByEntraOid = scheduledItem.CreatedByEntraOid
             };
         }
         catch (Exception e)

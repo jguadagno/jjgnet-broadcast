@@ -65,6 +65,7 @@ public class ProcessNewYouTubeDataFired(
                 blueskyPostMessage.Hashtags = youTubeSource.Tags.ToList();
             }
 
+            blueskyPostMessage.CreatedByEntraOid = youTubeSource.CreatedByEntraOid;
             // Return
             var properties = new Dictionary<string, string>
             {

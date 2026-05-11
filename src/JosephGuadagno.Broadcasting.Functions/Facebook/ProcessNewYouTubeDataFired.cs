@@ -88,7 +88,8 @@ public class ProcessNewYouTubeDataFired(
         var facebookPostStatus = new FacebookPostStatus
         {
             StatusText =  $"{statusText} {postTitle} {hashTagList}",
-            LinkUri = youTubeSource.Url
+            LinkUri = youTubeSource.Url,
+            CreatedByEntraOid = youTubeSource.CreatedByEntraOid
         };
 
         logger.LogDebug(

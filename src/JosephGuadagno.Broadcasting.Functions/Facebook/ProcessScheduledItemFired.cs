@@ -70,6 +70,7 @@ public class ProcessScheduledItemFired(
 
             facebookPostStatus.StatusText = await facebookManager.ComposeMessageAsync(scheduledItem);
             facebookPostStatus.ImageUrl = scheduledItem.ImageUrl;
+            facebookPostStatus.CreatedByEntraOid = scheduledItem.CreatedByEntraOid;
 
             var properties = new Dictionary<string, string>
             {

@@ -65,6 +65,7 @@ public class ProcessNewSyndicationDataFired(
                 blueskyPostMessage.Hashtags = syndicationFeedSource.Tags.ToList();
             }
 
+            blueskyPostMessage.CreatedByEntraOid = syndicationFeedSource.CreatedByEntraOid;
             // Return
             var properties = new Dictionary<string, string>
             {

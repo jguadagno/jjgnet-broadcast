@@ -69,7 +69,7 @@ public class ProcessNewSyndicationDataFired(
         };
         logger.LogCustomEvent(Metrics.FacebookProcessedNewSyndicationData, properties);
         logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", syndicationFeedSource.Id, syndicationFeedSource.Title);
-        return new TwitterTweetMessage { Text = status };
+        return new TwitterTweetMessage { Text = status, CreatedByEntraOid = syndicationFeedSource.CreatedByEntraOid };
     }
         
     private string ComposeTweet(SyndicationFeedSource syndicationFeedSource)

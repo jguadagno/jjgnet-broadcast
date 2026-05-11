@@ -59,7 +59,7 @@ public class ProcessScheduledItemFired(
             logger.LogCustomEvent(Metrics.TwitterProcessScheduledItemFired, properties);
             logger.LogDebug("Generated the tweet for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
-            return new TwitterTweetMessage { Text = tweetText, ImageUrl = scheduledItem.ImageUrl };
+            return new TwitterTweetMessage { Text = tweetText, ImageUrl = scheduledItem.ImageUrl, CreatedByEntraOid = scheduledItem.CreatedByEntraOid };
         }
         catch (Exception e)
         {

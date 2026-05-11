@@ -1,6 +1,9 @@
 using FluentAssertions;
+using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace JosephGuadagno.Broadcasting.Managers.Tests;
@@ -9,12 +12,18 @@ public class UserPublisherSettingManagerTests
 {
     private readonly Mock<IUserPublisherSettingDataStore> _dataStore = new();
     private readonly Mock<ISocialMediaPlatformManager> _platformManager = new();
+    private readonly Mock<IKeyVault> _keyVault = new();
     private readonly UserPublisherSettingManager _sut;
 
     public UserPublisherSettingManagerTests()
     {
-        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
-        _sut = new UserPublisherSettingManager(_dataStore.Object, _platformManager.Object, cache);
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        _sut = new UserPublisherSettingManager(
+            _dataStore.Object,
+            _platformManager.Object,
+            _keyVault.Object,
+            cache,
+            NullLogger<UserPublisherSettingManager>.Instance);
     }
 
     [Fact]

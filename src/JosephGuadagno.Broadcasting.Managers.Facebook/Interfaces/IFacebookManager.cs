@@ -36,6 +36,16 @@ public interface IFacebookManager
     Task<string> PostMessageLinkAndPictureToPage(string message, string link, string picture);
 
     /// <summary>
+    /// Posts a message with a link to a Facebook Page using explicit per-user credentials.
+    /// </summary>
+    Task<string> PostMessageAndLinkToPage(string message, string link, string pageId, string pageAccessToken);
+
+    /// <summary>
+    /// Posts a message with a link and a custom picture thumbnail using explicit per-user credentials.
+    /// </summary>
+    Task<string> PostMessageLinkAndPictureToPage(string message, string link, string picture, string pageId, string pageAccessToken);
+
+    /// <summary>
     /// Refreshes the token
     /// </summary>
     /// <param name="tokenToRefresh">The token to refresh</param>

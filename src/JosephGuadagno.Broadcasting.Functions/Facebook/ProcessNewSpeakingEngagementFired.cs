@@ -84,7 +84,8 @@ public class ProcessNewSpeakingEngagementFired(
             return new FacebookPostStatus
             {
                 StatusText = statusText,
-                LinkUri = engagement.Url
+                LinkUri = engagement.Url,
+                CreatedByEntraOid = engagement.CreatedByEntraOid
             };
         }
         catch (Exception e)

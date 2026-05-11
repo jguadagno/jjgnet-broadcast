@@ -87,7 +87,8 @@ public class ProcessNewSyndicationDataFired(
         var facebookPostStatus = new FacebookPostStatus
         {
             StatusText =  $"{statusText} {postTitle} {hashTagList}",
-            LinkUri = syndicationFeedSource.Url
+            LinkUri = syndicationFeedSource.Url,
+            CreatedByEntraOid = syndicationFeedSource.CreatedByEntraOid
         };
 
         logger.LogDebug(
