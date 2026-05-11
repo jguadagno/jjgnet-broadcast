@@ -65,6 +65,11 @@ public class UserCollectorYouTubeChannelResponse
     public int ResultSetPageSize { get; set; }
 
     /// <summary>
+    /// Gets or sets whether a Google API key has been configured for this channel.
+    /// </summary>
+    public bool HasApiKey { get; set; }
+
+    /// <summary>
     /// Gets or sets when this configuration was created
     /// </summary>
     public DateTimeOffset CreatedOn { get; set; }

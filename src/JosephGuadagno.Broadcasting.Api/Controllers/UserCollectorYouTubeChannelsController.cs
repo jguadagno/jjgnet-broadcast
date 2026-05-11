@@ -137,6 +137,14 @@ public class UserCollectorYouTubeChannelsController(
         var config = mapper.Map<UserCollectorYouTubeChannel>(request);
         config.CreatedByEntraOid = resolvedOwnerOid;
 
+        if (!string.IsNullOrWhiteSpace(request.ApiKey))
+        {
+            config.ApiKeySecretName = await userCollectorYouTubeChannelManager.StoreApiKeyToKeyVaultAsync(
+                resolvedOwnerOid,
+                request.ChannelId,
+                request.ApiKey);
+        }
+
         var saved = await userCollectorYouTubeChannelManager.SaveAsync(config);
         if (saved is null)
         {
@@ -189,6 +197,19 @@ public class UserCollectorYouTubeChannelsController(
         var config = mapper.Map<UserCollectorYouTubeChannel>(request);
         config.Id = id;
         config.CreatedByEntraOid = existing.CreatedByEntraOid;
+
+        if (!string.IsNullOrWhiteSpace(request.ApiKey))
+        {
+            config.ApiKeySecretName = await userCollectorYouTubeChannelManager.StoreApiKeyToKeyVaultAsync(
+                existing.CreatedByEntraOid,
+                request.ChannelId,
+                request.ApiKey);
+        }
+        else
+        {
+            // Preserve the existing secret name when no new API key is provided
+            config.ApiKeySecretName = existing.ApiKeySecretName;
+        }
 
         var saved = await userCollectorYouTubeChannelManager.SaveAsync(config);
         if (saved is null)

@@ -659,7 +659,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired(false)
                 .HasDefaultValue(string.Empty);
 
-            entity.Property(e => e.ApiKey)
+            entity.Property(e => e.ApiKeySecretName)
                 .HasMaxLength(255)
                 .IsRequired(false);
 

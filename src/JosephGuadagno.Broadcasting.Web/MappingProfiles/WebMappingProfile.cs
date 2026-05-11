@@ -83,9 +83,11 @@ public class WebMappingProfile: Profile
             .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore());
 
         CreateMap<Domain.Models.UserCollectorYouTubeChannel, Models.UserCollectorYouTubeChannelViewModel>()
-            .ForMember(dest => dest.IsManagedBySiteAdmin, opt => opt.Ignore());
+            .ForMember(dest => dest.IsManagedBySiteAdmin, opt => opt.Ignore())
+            .ForMember(dest => dest.ApiKey, opt => opt.Ignore());
         CreateMap<Models.UserCollectorYouTubeChannelViewModel, Domain.Models.UserCollectorYouTubeChannel>()
-            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore());
+            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore())
+            .ForMember(dest => dest.ApiKeySecretName, opt => opt.Ignore());
 
         CreateMap<Domain.Models.UserCollectorSpeakingEngagement, Models.UserCollectorSpeakingEngagementViewModel>()
             .ForMember(dest => dest.IsManagedBySiteAdmin, opt => opt.Ignore());

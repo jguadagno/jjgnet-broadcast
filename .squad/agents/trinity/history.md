@@ -113,9 +113,13 @@ Trinity (Backend API Developer) implements core API functionality including CRUD
 4. After a global rename, always verify exceptions (`SourceSystems`, `SourceTag`, `SyndicationFeedReader`, `UserCollector*`) with a targeted `Select-String` pass before building.
 5. SQL table renames need both a migration script (`sp_rename`) for existing environments AND updated `table-create.sql`/`data-seed.sql` for fresh environment bootstraps.
 
-### 2026-05-08 — PR #939 blocking fix (null checks + IsNullOrWhiteSpace guards)
 
-1. Always add a null check after `IEngagementManager.GetAsync` before accessing any property — the method returns `null` when the engagement is not found, causing a `NullReferenceException` on the next line.
-2. Match the Bluesky `IsNullOrWhiteSpace` guard pattern exactly in every other platform function; Bluesky was the reference implementation but Facebook, Twitter, and LinkedIn were missing it.
-3. The team directive in `decisions.md` prohibits `--filter "FullyQualifiedName!~SyndicationFeedReader"` in PR bodies — always use the no-filter command when writing the Testing section.
-4. When inspecting a PR body string with Python for replacement, use `repr()` to check exact backslash escaping before constructing replace patterns — `\\src\\` in the file renders differently depending on how it was captured.
+### 2026-05-13 — Issue #954: UserCollectorYouTubeChannel ApiKey → Key Vault
+
+1. When removing a domain-model property that the Web layer uses as a "pass-through" to the API (the domain model is serialized and POSTed to the API endpoint), keep it on the domain model as a **transient field** alongside the new persisted field (`ApiKeySecretName`). The EF model should only have the persisted column; the mapping profile ignores the transient field in both directions.
+2. Use `ReverseMap()` with a leading `.ForMember(dest => dest.TransientProp, o => o.Ignore())` for EF↔Domain maps when the domain model has transient-only properties that the EF model doesn't have. The reverse direction (Domain→EF) auto-ignores unmapped source properties.
+3. `WebMappingProfile` must ignore `ApiKey` in Domain→ViewModel (never pre-populate a password field) and `ApiKeySecretName` in ViewModel→Domain (controller handles KV; the ViewModel's `ApiKey` flows via the transient domain property).
+4. The `BroadcastingProfile` and `UserCollectorMappingProfile` in `Data.Sql` are BOTH registering the same `EF ↔ Domain` YouTube channel map. Both must be updated when the domain model changes, or the second registration will silently override the first and cause `AssertConfigurationIsValid` failures.
+5. The Key Vault secret-name pattern used by `UserPublisherSettingManager` (`youtube-channel-apikey-{sanitizedOwnerOid}-{sanitizedChannelId}` with `[^a-zA-Z0-9\-]→-`) must be reproduced verbatim so ops can find secrets by naming convention across all entities.
+6. When converting a primary-constructor manager class to a standard constructor (to inject `IKeyVault` + `ILogger`), explicitly declare all private readonly fields and wire them from the constructor. The DI container resolves the three dependencies automatically from `TryAddScoped` — no `Program.cs` changes needed.
+

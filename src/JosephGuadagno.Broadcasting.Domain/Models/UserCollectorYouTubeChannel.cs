@@ -26,7 +26,14 @@ public class UserCollectorYouTubeChannel
     [StringLength(255)]
     public string PlaylistId { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the Google API key for YouTube Data API access. Handle as sensitive data.</summary>
+    /// <summary>Gets or sets the Azure Key Vault secret name that holds the Google API key for YouTube Data API access.</summary>
+    [StringLength(255)]
+    public string? ApiKeySecretName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the raw Google API key. This is a transient field used only to pass the key
+    /// through the Web→API layer. It is never stored in the database.
+    /// </summary>
     [StringLength(255)]
     public string? ApiKey { get; set; }
 

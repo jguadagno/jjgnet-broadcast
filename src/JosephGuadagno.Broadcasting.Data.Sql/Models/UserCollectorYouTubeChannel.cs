@@ -28,7 +28,7 @@ public class UserCollectorYouTubeChannel
     public string PlaylistId { get; set; } = string.Empty;
 
     [MaxLength(255)]
-    public string? ApiKey { get; set; }
+    public string? ApiKeySecretName { get; set; }
 
     public int ResultSetPageSize { get; set; } = 50;
 
