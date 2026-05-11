@@ -1,4 +1,4 @@
-﻿using Google.Apis.Services;
+using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
@@ -56,16 +56,16 @@ public class YouTubeReader: IYouTubeReader
         _youTubeService = youTubeService;
     }
 
-    public List<YouTubeSource> GetSinceDate(string ownerOid, DateTimeOffset sinceWhen)
+    public List<YouTubeItem> GetSinceDate(string ownerOid, DateTimeOffset sinceWhen)
     {
         return GetAsync(ownerOid, sinceWhen).Result;
     }
 
-    public async Task<List<YouTubeSource>> GetAsync(string ownerOid, DateTimeOffset sinceWhen)
+    public async Task<List<YouTubeItem>> GetAsync(string ownerOid, DateTimeOffset sinceWhen)
     {
         ValidateOwnerOid(ownerOid);
         var currentTime = DateTime.Now;
-        var videoItems = new List<YouTubeSource>();
+        var videoItems = new List<YouTubeItem>();
             
         var playlistItemsRequest = _youTubeService.PlaylistItems.List("snippet");
         playlistItemsRequest.PlaylistId = _youTubeSettings.PlaylistId;
@@ -93,7 +93,7 @@ public class YouTubeReader: IYouTubeReader
 
                         if (publishedAt > sinceWhen)
                         {
-                            videoItems.Add(new YouTubeSource()
+                            videoItems.Add(new YouTubeItem()
                             {
                                 VideoId = playlistItem.Snippet.ResourceId.VideoId,
                                 Author = playlistItem.Snippet.ChannelTitle,

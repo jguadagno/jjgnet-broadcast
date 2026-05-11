@@ -25,7 +25,7 @@ public class BroadcastingProfile: Profile
             .ForMember(dest => dest.SocialMediaPlatform, opt => opt.Ignore());
         CreateMap<Models.TokenRefresh, Domain.Models.TokenRefresh>().ReverseMap();
 
-        CreateMap<Models.SyndicationFeedSource, Domain.Models.SyndicationFeedSource>()
+        CreateMap<Models.SyndicationFeedItem, Domain.Models.SyndicationFeedItem>()
             .ForMember(
                 destination => destination.Tags,
                 options => options.MapFrom(source => source.SourceTags.Select(st => st.Tag).ToList()))
@@ -37,7 +37,7 @@ public class BroadcastingProfile: Profile
                 destination => destination.SourceTags,
                 options => options.Ignore());
 
-        CreateMap<Models.YouTubeSource, Domain.Models.YouTubeSource>()
+        CreateMap<Models.YouTubeItem, Domain.Models.YouTubeItem>()
             .ForMember(
                 destination => destination.Tags,
                 options => options.MapFrom(source => source.SourceTags.Select(st => st.Tag).ToList()))

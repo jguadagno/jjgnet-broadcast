@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Threading;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -308,7 +308,7 @@ public class LinkedInManagerUnitTests
         var scheduledItem = new ScheduledItem
         {
             Id = 1,
-            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedItems,
             ItemPrimaryKey = 42,
             Message = "fallback",
             SendOnDateTime = DateTimeOffset.UtcNow,
@@ -330,10 +330,10 @@ public class LinkedInManagerUnitTests
                 Template = "{{ title }} - {{ url }} {{ image_url }}"
             });
 
-        var mockFeedManager = new Mock<ISyndicationFeedSourceManager>();
+        var mockFeedManager = new Mock<ISyndicationFeedItemManager>();
         mockFeedManager
             .Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SyndicationFeedSource
+            .ReturnsAsync(new SyndicationFeedItem
             {
                 Id = 42,
                 FeedIdentifier = "feed-1",
@@ -348,7 +348,7 @@ public class LinkedInManagerUnitTests
         var sut = CreateSut(
             socialMediaPlatformManager: mockPlatformManager,
             messageTemplateDataStore: mockTemplateStore,
-            syndicationFeedSourceManager: mockFeedManager);
+            SyndicationFeedItemManager: mockFeedManager);
 
         var result = await sut.ComposeMessageAsync(scheduledItem);
 
@@ -445,7 +445,7 @@ public class LinkedInManagerUnitTests
         var scheduledItem = new ScheduledItem
         {
             Id = 1,
-            ItemType = Domain.Enums.ScheduledItemType.YouTubeSources,
+            ItemType = Domain.Enums.ScheduledItemType.YouTubeItems,
             ItemPrimaryKey = 42,
             Message = "fallback message",
             SendOnDateTime = DateTimeOffset.UtcNow
@@ -466,7 +466,7 @@ public class LinkedInManagerUnitTests
                 Template = "{{ title }}"
             });
 
-        var mockYouTubeManager = new Mock<IYouTubeSourceManager>();
+        var mockYouTubeManager = new Mock<IYouTubeItemManager>();
         mockYouTubeManager
             .Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("boom"));
@@ -474,7 +474,7 @@ public class LinkedInManagerUnitTests
         var sut = CreateSut(
             socialMediaPlatformManager: mockPlatformManager,
             messageTemplateDataStore: mockTemplateStore,
-            youTubeSourceManager: mockYouTubeManager);
+            YouTubeItemManager: mockYouTubeManager);
 
         var result = await sut.ComposeMessageAsync(scheduledItem);
 
@@ -516,15 +516,15 @@ public class LinkedInManagerUnitTests
     private LinkedInManager CreateSut(
         Mock<ISocialMediaPlatformManager>? socialMediaPlatformManager = null,
         Mock<IMessageTemplateDataStore>? messageTemplateDataStore = null,
-        Mock<ISyndicationFeedSourceManager>? syndicationFeedSourceManager = null,
-        Mock<IYouTubeSourceManager>? youTubeSourceManager = null,
+        Mock<ISyndicationFeedItemManager>? SyndicationFeedItemManager = null,
+        Mock<IYouTubeItemManager>? YouTubeItemManager = null,
         Mock<IEngagementManager>? engagementManager = null)
         => new LinkedInManager(
             _httpClient,
             _mockLogger.Object,
             (socialMediaPlatformManager ?? new Mock<ISocialMediaPlatformManager>()).Object,
             (messageTemplateDataStore ?? new Mock<IMessageTemplateDataStore>()).Object,
-            (syndicationFeedSourceManager ?? new Mock<ISyndicationFeedSourceManager>()).Object,
-            (youTubeSourceManager ?? new Mock<IYouTubeSourceManager>()).Object,
+            (SyndicationFeedItemManager ?? new Mock<ISyndicationFeedItemManager>()).Object,
+            (YouTubeItemManager ?? new Mock<IYouTubeItemManager>()).Object,
             (engagementManager ?? new Mock<IEngagementManager>()).Object);
 }

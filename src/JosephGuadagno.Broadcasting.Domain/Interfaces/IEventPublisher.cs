@@ -10,11 +10,11 @@ public interface IEventPublisher
 {
     /// <exception cref="Exceptions.EventPublishException">Thrown when publishing fails after all retry attempts.</exception>
     public Task PublishSyndicationFeedEventsAsync(string subject,
-        IReadOnlyCollection<SyndicationFeedSource> sourceDataItems);
+        IReadOnlyCollection<SyndicationFeedItem> sourceDataItems);
 
     /// <exception cref="Exceptions.EventPublishException">Thrown when publishing fails after all retry attempts.</exception>
     public Task PublishYouTubeEventsAsync(string subject,
-        IReadOnlyCollection<YouTubeSource> youTubeSourceDataItems);
+        IReadOnlyCollection<YouTubeItem> YouTubeItemDataItems);
 
     /// <exception cref="Exceptions.EventPublishException">Thrown when publishing fails after all retry attempts.</exception>
     public Task PublishSpeakingEngagementEventsAsync(string subject,

@@ -475,7 +475,7 @@ The same rationale as #902: keeps the Function focused on queue mechanics; moves
 Any new platform following this composition pattern should:
 1. Add `Task<string> ComposeMessageAsync(ScheduledItem, CancellationToken)` to the interface
 2. Add `IServiceScopeFactory?` as an optional constructor param in the manager
-3. Implement `GetMessageType(ScheduledItemType)` mapping: Engagements→NewSpeakingEngagement, Talks→ScheduledItem, SyndicationFeedSources→NewSyndicationFeedItem, YouTubeSources→NewYouTubeItem, _→RandomPost
+3. Implement `GetMessageType(ScheduledItemType)` mapping: Engagements→NewSpeakingEngagement, Talks→ScheduledItem, SyndicationFeedItems→NewSyndicationFeedItem, YouTubeItems→NewYouTubeItem, _→RandomPost
 4. Implement `TryRenderTemplateAsync` with platform lookup → template fetch → Scriban render → fallback to `scheduledItem.Message`
 5. Simplify the corresponding Azure Function to call `ComposeMessageAsync` and remove per-type helpers
 
@@ -607,8 +607,8 @@ Use two cache keys per manager:
 - **Per-user key** (`*_User_{ownerEntraOid}`): covers `GetAllAsync(ownerEntraOid)`
 
 ```csharp
-private const string CacheKeyAll = "SyndicationFeedSources_All";
-private static string CacheKeyByUser(string ownerEntraOid) => $"SyndicationFeedSources_User_{ownerEntraOid}";
+private const string CacheKeyAll = "SyndicationFeedItems_All";
+private static string CacheKeyByUser(string ownerEntraOid) => $"SyndicationFeedItems_User_{ownerEntraOid}";
 ```
 
 Invalidation rules:

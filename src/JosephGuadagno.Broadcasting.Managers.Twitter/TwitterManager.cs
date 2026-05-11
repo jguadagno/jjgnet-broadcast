@@ -1,4 +1,4 @@
-﻿using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -16,8 +16,8 @@ public class TwitterManager : ITwitterManager
     private readonly ILogger<TwitterManager> _logger;
     private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
     private readonly IMessageTemplateDataStore _messageTemplateDataStore;
-    private readonly ISyndicationFeedSourceManager _syndicationFeedSourceManager;
-    private readonly IYouTubeSourceManager _youTubeSourceManager;
+    private readonly ISyndicationFeedItemManager _SyndicationFeedItemManager;
+    private readonly IYouTubeItemManager _YouTubeItemManager;
     private readonly IEngagementManager _engagementManager;
 
     public TwitterManager(
@@ -25,16 +25,16 @@ public class TwitterManager : ITwitterManager
         ILogger<TwitterManager> logger,
         ISocialMediaPlatformManager socialMediaPlatformManager,
         IMessageTemplateDataStore messageTemplateDataStore,
-        ISyndicationFeedSourceManager syndicationFeedSourceManager,
-        IYouTubeSourceManager youTubeSourceManager,
+        ISyndicationFeedItemManager SyndicationFeedItemManager,
+        IYouTubeItemManager YouTubeItemManager,
         IEngagementManager engagementManager)
     {
         _twitterContext = twitterContext;
         _logger = logger;
         _socialMediaPlatformManager = socialMediaPlatformManager;
         _messageTemplateDataStore = messageTemplateDataStore;
-        _syndicationFeedSourceManager = syndicationFeedSourceManager;
-        _youTubeSourceManager = youTubeSourceManager;
+        _SyndicationFeedItemManager = SyndicationFeedItemManager;
+        _YouTubeItemManager = YouTubeItemManager;
         _engagementManager = engagementManager;
     }
 
@@ -107,8 +107,8 @@ public class TwitterManager : ITwitterManager
     {
         ScheduledItemType.Engagements => MessageTemplates.MessageTypes.NewSpeakingEngagement,
         ScheduledItemType.Talks => MessageTemplates.MessageTypes.ScheduledItem,
-        ScheduledItemType.SyndicationFeedSources => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
-        ScheduledItemType.YouTubeSources => MessageTemplates.MessageTypes.NewYouTubeItem,
+        ScheduledItemType.SyndicationFeedItems => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
+        ScheduledItemType.YouTubeItems => MessageTemplates.MessageTypes.NewYouTubeItem,
         _ => MessageTemplates.MessageTypes.RandomPost
     };
 
@@ -126,8 +126,8 @@ public class TwitterManager : ITwitterManager
 
             switch (scheduledItem.ItemType)
             {
-                case ScheduledItemType.SyndicationFeedSources:
-                    var feed = await _syndicationFeedSourceManager.GetAsync(
+                case ScheduledItemType.SyndicationFeedItems:
+                    var feed = await _SyndicationFeedItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey, cancellationToken);
                     title = feed.Title;
                     url = feed.ShortenedUrl ?? feed.Url;
@@ -135,8 +135,8 @@ public class TwitterManager : ITwitterManager
                     tags = feed.Tags.Count > 0 ? string.Join(",", feed.Tags) : string.Empty;
                     break;
 
-                case ScheduledItemType.YouTubeSources:
-                    var video = await _youTubeSourceManager.GetAsync(
+                case ScheduledItemType.YouTubeItems:
+                    var video = await _YouTubeItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey, cancellationToken);
                     title = video.Title;
                     url = video.ShortenedUrl ?? video.Url;

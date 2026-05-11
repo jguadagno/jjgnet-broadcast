@@ -19,16 +19,16 @@ public class ScheduledItemTypeTests
 
         Assert.Contains(ScheduledItemType.Engagements, values);
         Assert.Contains(ScheduledItemType.Talks, values);
-        Assert.Contains(ScheduledItemType.SyndicationFeedSources, values);
-        Assert.Contains(ScheduledItemType.YouTubeSources, values);
+        Assert.Contains(ScheduledItemType.SyndicationFeedItems, values);
+        Assert.Contains(ScheduledItemType.YouTubeItems, values);
         Assert.Equal(4, values.Length);
     }
 
     [Theory]
     [InlineData(ScheduledItemType.Engagements, "Engagements")]
     [InlineData(ScheduledItemType.Talks, "Talks")]
-    [InlineData(ScheduledItemType.SyndicationFeedSources, "SyndicationFeedSources")]
-    [InlineData(ScheduledItemType.YouTubeSources, "YouTubeSources")]
+    [InlineData(ScheduledItemType.SyndicationFeedItems, "SyndicationFeedItems")]
+    [InlineData(ScheduledItemType.YouTubeItems, "YouTubeItems")]
     public void ScheduledItemType_ToString_ReturnsExpectedString(ScheduledItemType itemType, string expected)
     {
         Assert.Equal(expected, itemType.ToString());
@@ -39,8 +39,8 @@ public class ScheduledItemTypeTests
     [Theory]
     [InlineData(ScheduledItemType.Engagements, "Engagements")]
     [InlineData(ScheduledItemType.Talks, "Talks")]
-    [InlineData(ScheduledItemType.SyndicationFeedSources, "SyndicationFeedSources")]
-    [InlineData(ScheduledItemType.YouTubeSources, "YouTubeSources")]
+    [InlineData(ScheduledItemType.SyndicationFeedItems, "SyndicationFeedItems")]
+    [InlineData(ScheduledItemType.YouTubeItems, "YouTubeItems")]
     public void ItemTableName_ReturnsEnumToString(ScheduledItemType itemType, string expected)
     {
         // Arrange

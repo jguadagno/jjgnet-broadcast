@@ -15,7 +15,7 @@ public class ControllerAuthorizationPolicyTests
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController) },
         { typeof(UserPublisherSettingsController), nameof(UserPublisherSettingsController) },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController) },
-        { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController) }
+        { typeof(YouTubeItemsController), nameof(YouTubeItemsController) }
     };
 
     public static TheoryData<Type, string, string> ActionPolicies => new()
@@ -55,10 +55,10 @@ public class ControllerAuthorizationPolicyTests
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.GetAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },
-        { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
-        { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.GetYouTubeSourceAsync), AuthorizationPolicyNames.RequireViewer },
-        { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.CreateYouTubeSourceAsync), AuthorizationPolicyNames.RequireContributor },
-        { typeof(YouTubeSourcesController), nameof(YouTubeSourcesController.DeleteYouTubeSourceAsync), AuthorizationPolicyNames.RequireAdministrator },
+        { typeof(YouTubeItemsController), nameof(YouTubeItemsController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(YouTubeItemsController), nameof(YouTubeItemsController.GetYouTubeItemAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(YouTubeItemsController), nameof(YouTubeItemsController.CreateYouTubeItemAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(YouTubeItemsController), nameof(YouTubeItemsController.DeleteYouTubeItemAsync), AuthorizationPolicyNames.RequireAdministrator },
     };
 
     [Theory]

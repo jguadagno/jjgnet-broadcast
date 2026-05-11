@@ -26,7 +26,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
         _logger = logger;
     }
 
-    public List<SyndicationFeedSource> GetSinceDate(string ownerOid, DateTimeOffset sinceWhen)
+    public List<SyndicationFeedItem> GetSinceDate(string ownerOid, DateTimeOffset sinceWhen)
     {
         ValidateOwnerOid(ownerOid);
         var currentTime = DateTime.UtcNow;
@@ -53,7 +53,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
             
         _logger.LogDebug("Found {PostsCount} posts", items.Count);
 
-        return items.Select(syndicationItem => new SyndicationFeedSource()
+        return items.Select(syndicationItem => new SyndicationFeedItem()
             {
                 FeedIdentifier = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri!,
                 Author = syndicationItem.Authors?.FirstOrDefault()?.Name ?? "Unknown",
@@ -70,19 +70,19 @@ public class SyndicationFeedReader: ISyndicationFeedReader
             .ToList();
     }
 
-    public async Task<List<SyndicationFeedSource>> GetAsync(string ownerOid, DateTimeOffset sinceWhen)
+    public async Task<List<SyndicationFeedItem>> GetAsync(string ownerOid, DateTimeOffset sinceWhen)
     {
         return await Task.Run(() => GetSinceDate(ownerOid, sinceWhen));
     }
 
-    public Task<List<SyndicationFeedSource>> GetAsync(string feedUrl, string ownerOid, DateTimeOffset sinceWhen)
+    public Task<List<SyndicationFeedItem>> GetAsync(string feedUrl, string ownerOid, DateTimeOffset sinceWhen)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(feedUrl);
         ValidateOwnerOid(ownerOid);
         return Task.Run(() => GetSinceDateFromUrl(feedUrl, ownerOid, sinceWhen));
     }
 
-    public List<SyndicationFeedSource> GetSyndicationItems(string ownerOid, DateTimeOffset sinceWhen, List<string>? excludeCategories = null)
+    public List<SyndicationFeedItem> GetSyndicationItems(string ownerOid, DateTimeOffset sinceWhen, List<string>? excludeCategories = null)
     {
         ValidateOwnerOid(ownerOid);
         _logger.LogDebug("Checking syndication feed '{FeedUrl}' for posts since '{SinceWhen:u}'",
@@ -117,7 +117,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
             
         _logger.LogDebug("Found {PostsCount} posts", syndicationItems.Count);
 
-        return syndicationItems.Select(syndicationItem => new SyndicationFeedSource()
+        return syndicationItems.Select(syndicationItem => new SyndicationFeedItem()
             {
                 FeedIdentifier = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri!,
                 Author = syndicationItem.Authors?.FirstOrDefault()?.Name ?? "Unknown",
@@ -134,7 +134,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
             .ToList();
     }
 
-    public SyndicationFeedSource? GetRandomSyndicationItem(string ownerOid, DateTimeOffset sinceWhen, List<string>? excludeCategories = null)
+    public SyndicationFeedItem? GetRandomSyndicationItem(string ownerOid, DateTimeOffset sinceWhen, List<string>? excludeCategories = null)
     {
         _logger.LogDebug("Getting random syndication item from feed '{FeedUrl}' since '{SinceWhen:u}'",
             _syndicationFeedReaderSettings.FeedUrl, sinceWhen);
@@ -165,7 +165,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
         }
     }
 
-    private List<SyndicationFeedSource> GetSinceDateFromUrl(string feedUrl, string ownerOid, DateTimeOffset sinceWhen)
+    private List<SyndicationFeedItem> GetSinceDateFromUrl(string feedUrl, string ownerOid, DateTimeOffset sinceWhen)
     {
         var currentTime = DateTime.UtcNow;
 
@@ -190,7 +190,7 @@ public class SyndicationFeedReader: ISyndicationFeedReader
 
         _logger.LogDebug("Found {PostsCount} posts", items.Count);
 
-        return items.Select(syndicationItem => new SyndicationFeedSource()
+        return items.Select(syndicationItem => new SyndicationFeedItem()
             {
                 FeedIdentifier = syndicationItem.Links.FirstOrDefault()?.Uri.AbsoluteUri!,
                 Author = syndicationItem.Authors?.FirstOrDefault()?.Name ?? "Unknown",

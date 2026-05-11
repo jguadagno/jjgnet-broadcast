@@ -9,7 +9,7 @@ public class ApiBroadcastingProfile : Profile
     public ApiBroadcastingProfile()
     {
         // Domain → Response DTOs
-        CreateMap<YouTubeSource, YouTubeSourceResponse>();
+        CreateMap<YouTubeItem, YouTubeItemResponse>();
         CreateMap<Engagement, EngagementResponse>();
         CreateMap<Talk, TalkResponse>();
         CreateMap<ScheduledItem, ScheduledItemResponse>();
@@ -23,7 +23,7 @@ public class ApiBroadcastingProfile : Profile
         CreateMap<LinkedInPublisherSetting, LinkedInPublisherSettingResponse>();
 
         // Request DTOs → Domain
-        CreateMap<YouTubeSourceRequest, YouTubeSource>()
+        CreateMap<YouTubeItemRequest, YouTubeItem>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.AddedOn, o => o.Ignore())
             .ForMember(d => d.ItemLastUpdatedOn, o => o.Ignore())
@@ -69,8 +69,8 @@ public class ApiBroadcastingProfile : Profile
         CreateMap<LinkedInPublisherSettingRequest, LinkedInPublisherSettingUpdate>();
 
         // Syndication Feed Source
-        CreateMap<SyndicationFeedSource, SyndicationFeedSourceResponse>();
-        CreateMap<SyndicationFeedSourceRequest, SyndicationFeedSource>()
+        CreateMap<SyndicationFeedItem, SyndicationFeedItemResponse>();
+        CreateMap<SyndicationFeedItemRequest, SyndicationFeedItem>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.AddedOn, o => o.Ignore())
             .ForMember(d => d.ItemLastUpdatedOn, o => o.Ignore())

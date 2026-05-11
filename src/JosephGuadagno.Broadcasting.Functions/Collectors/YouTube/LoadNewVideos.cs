@@ -21,7 +21,7 @@ public class LoadNewVideos(
     IOptions<Settings> settingsOptions,
     IFeedCheckManager feedCheckManager,
     IUserCollectorYouTubeChannelManager userCollectorYouTubeChannelManager,
-    IYouTubeSourceManager youTubeSourceManager,
+    IYouTubeItemManager YouTubeItemManager,
     IUrlShortener urlShortener,
     IEventPublisher eventPublisher,
     ILogger<LoadNewVideos> logger)
@@ -83,10 +83,10 @@ public class LoadNewVideos(
                 totalFoundCount += newItems.Count;
 
                 var savedCount = 0;
-                var eventsToPublish = new List<YouTubeSource>();
+                var eventsToPublish = new List<YouTubeItem>();
                 foreach (var item in newItems)
                 {
-                    var existingItem = await youTubeSourceManager.GetByVideoIdAsync(item.VideoId);
+                    var existingItem = await YouTubeItemManager.GetByVideoIdAsync(item.VideoId);
                     if (existingItem != null)
                     {
                         logger.LogDebug("Skipping duplicate YouTube video with VideoId: '{VideoId}'", item.VideoId);
@@ -98,7 +98,7 @@ public class LoadNewVideos(
                     try
                     {
                         var saveResult = await SavePipeline.ExecuteAsync(
-                            async ct => await youTubeSourceManager.SaveAsync(item));
+                            async ct => await YouTubeItemManager.SaveAsync(item));
 
                         if (!saveResult.IsSuccess || saveResult.Value is null)
                         {

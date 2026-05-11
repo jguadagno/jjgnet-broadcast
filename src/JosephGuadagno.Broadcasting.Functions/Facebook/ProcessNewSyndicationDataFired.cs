@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
 public class ProcessNewSyndicationDataFired(
-    ISyndicationFeedSourceManager syndicationFeedSourceManager,
+    ISyndicationFeedItemManager SyndicationFeedItemManager,
     ILogger<ProcessNewSyndicationDataFired> logger)
 {
     // Debug Locally: https://docs.microsoft.com/en-us/azure/azure-functions/functions-debug-event-grid-trigger-local
@@ -44,39 +44,39 @@ public class ProcessNewSyndicationDataFired(
             logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
             return null;
         }
-        var syndicationFeedSource = await syndicationFeedSourceManager.GetAsync(syndicationFeedItemEvent.Id);
+        var SyndicationFeedItem = await SyndicationFeedItemManager.GetAsync(syndicationFeedItemEvent.Id);
 
         // Create the Facebook posts for it
-        logger.LogDebug("Processing New Syndication Feed Data Fired for '{Id}' with title of '{Title}'", syndicationFeedSource.Id, syndicationFeedSource.Title);
+        logger.LogDebug("Processing New Syndication Feed Data Fired for '{Id}' with title of '{Title}'", SyndicationFeedItem.Id, SyndicationFeedItem.Title);
 
-        var status = ComposeStatus(syndicationFeedSource);
+        var status = ComposeStatus(SyndicationFeedItem);
         
         // Done
         var properties = new Dictionary<string, string>
         {
             {"post", status.StatusText},
-            {"title", syndicationFeedSource.Title},
-            {"url", syndicationFeedSource.Url},
-            {"id", syndicationFeedSource.Id.ToString()}
+            {"title", SyndicationFeedItem.Title},
+            {"url", SyndicationFeedItem.Url},
+            {"id", SyndicationFeedItem.Id.ToString()}
         };
         logger.LogCustomEvent(Metrics.FacebookProcessedNewSyndicationData, properties);
-        logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", syndicationFeedSource.Id, syndicationFeedSource.Title);
+        logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", SyndicationFeedItem.Id, SyndicationFeedItem.Title);
         return status;
     }
         
-    private FacebookPostStatus ComposeStatus(SyndicationFeedSource syndicationFeedSource)
+    private FacebookPostStatus ComposeStatus(SyndicationFeedItem SyndicationFeedItem)
     {
 
         const int maxFacebookStatusText = 2000;
-        logger.LogDebug("Composing Facebook status for Id: '{Id}', Title:'{Title}'", syndicationFeedSource.Id, syndicationFeedSource.Title);
+        logger.LogDebug("Composing Facebook status for Id: '{Id}', Title:'{Title}'", SyndicationFeedItem.Id, SyndicationFeedItem.Title);
 
         // Build Facebook Status
-        var statusText = syndicationFeedSource.LastUpdatedOn > syndicationFeedSource.PublicationDate
+        var statusText = SyndicationFeedItem.LastUpdatedOn > SyndicationFeedItem.PublicationDate
             ? "Updated Blog Post: "
             : "New Blog Post: ";
 
-        var postTitle = syndicationFeedSource.Title;
-        var hashTagList = HashTagLists.BuildHashTagList(syndicationFeedSource.Tags);
+        var postTitle = SyndicationFeedItem.Title;
+        var hashTagList = HashTagLists.BuildHashTagList(SyndicationFeedItem.Tags);
         
         if (statusText.Length + postTitle.Length + 3 + hashTagList.Length >= maxFacebookStatusText)
         {
@@ -87,8 +87,8 @@ public class ProcessNewSyndicationDataFired(
         var facebookPostStatus = new FacebookPostStatus
         {
             StatusText =  $"{statusText} {postTitle} {hashTagList}",
-            LinkUri = syndicationFeedSource.Url,
-            CreatedByEntraOid = syndicationFeedSource.CreatedByEntraOid
+            LinkUri = SyndicationFeedItem.Url,
+            CreatedByEntraOid = SyndicationFeedItem.CreatedByEntraOid
         };
 
         logger.LogDebug(

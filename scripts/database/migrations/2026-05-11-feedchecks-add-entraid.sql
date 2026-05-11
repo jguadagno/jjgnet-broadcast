@@ -25,7 +25,7 @@ go
 
 -- Step 2: Populate existing rows with empty string (system default)
 UPDATE dbo.FeedChecks
-SET EntraOId = ''
+SET EntraOId = 'ce03be17-54af-4fd7-9762-7a367dcdc0df'
 WHERE EntraOId IS NULL;
 go
 

@@ -1,6 +1,6 @@
 -- Migration: 2026-04-27-performance-indexes.sql
 -- Adds 15 performance indexes for sort/filter columns introduced in commit 2bfcfb4.
--- Covers Engagements, SyndicationFeedSources, YouTubeSources, ScheduledItems,
+-- Covers Engagements, SyndicationFeedItems, YouTubeItems, ScheduledItems,
 -- and SocialMediaPlatforms (Issue #855).
 -- Idempotent: safe to run multiple times.
 
@@ -23,68 +23,68 @@ END
 GO
 
 -- ============================================================
--- SyndicationFeedSources
+-- SyndicationFeedItems
 -- ============================================================
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_Title' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedItems_Title' AND object_id = OBJECT_ID('dbo.SyndicationFeedItems'))
 BEGIN
-    CREATE INDEX IX_SyndicationFeedSources_Title ON dbo.SyndicationFeedSources (Title);
+    CREATE INDEX IX_SyndicationFeedItems_Title ON dbo.SyndicationFeedItems (Title);
 END
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_Author' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedItems_Author' AND object_id = OBJECT_ID('dbo.SyndicationFeedItems'))
 BEGIN
-    CREATE INDEX IX_SyndicationFeedSources_Author ON dbo.SyndicationFeedSources (Author);
+    CREATE INDEX IX_SyndicationFeedItems_Author ON dbo.SyndicationFeedItems (Author);
 END
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_PublicationDate' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedItems_PublicationDate' AND object_id = OBJECT_ID('dbo.SyndicationFeedItems'))
 BEGIN
-    CREATE INDEX IX_SyndicationFeedSources_PublicationDate ON dbo.SyndicationFeedSources (PublicationDate DESC);
+    CREATE INDEX IX_SyndicationFeedItems_PublicationDate ON dbo.SyndicationFeedItems (PublicationDate DESC);
 END
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_AddedOn' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedItems_AddedOn' AND object_id = OBJECT_ID('dbo.SyndicationFeedItems'))
 BEGIN
-    CREATE INDEX IX_SyndicationFeedSources_AddedOn ON dbo.SyndicationFeedSources (AddedOn DESC);
+    CREATE INDEX IX_SyndicationFeedItems_AddedOn ON dbo.SyndicationFeedItems (AddedOn DESC);
 END
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_CreatedByEntraOid' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedItems_CreatedByEntraOid' AND object_id = OBJECT_ID('dbo.SyndicationFeedItems'))
 BEGIN
-    CREATE INDEX IX_SyndicationFeedSources_CreatedByEntraOid ON dbo.SyndicationFeedSources (CreatedByEntraOid);
+    CREATE INDEX IX_SyndicationFeedItems_CreatedByEntraOid ON dbo.SyndicationFeedItems (CreatedByEntraOid);
 END
 GO
 
 -- ============================================================
--- YouTubeSources
+-- YouTubeItems
 -- ============================================================
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_Title' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeItems_Title' AND object_id = OBJECT_ID('dbo.YouTubeItems'))
 BEGIN
-    CREATE INDEX IX_YouTubeSources_Title ON dbo.YouTubeSources (Title);
+    CREATE INDEX IX_YouTubeItems_Title ON dbo.YouTubeItems (Title);
 END
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_Author' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeItems_Author' AND object_id = OBJECT_ID('dbo.YouTubeItems'))
 BEGIN
-    CREATE INDEX IX_YouTubeSources_Author ON dbo.YouTubeSources (Author);
+    CREATE INDEX IX_YouTubeItems_Author ON dbo.YouTubeItems (Author);
 END
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_PublicationDate' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeItems_PublicationDate' AND object_id = OBJECT_ID('dbo.YouTubeItems'))
 BEGIN
-    CREATE INDEX IX_YouTubeSources_PublicationDate ON dbo.YouTubeSources (PublicationDate DESC);
+    CREATE INDEX IX_YouTubeItems_PublicationDate ON dbo.YouTubeItems (PublicationDate DESC);
 END
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_AddedOn' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeItems_AddedOn' AND object_id = OBJECT_ID('dbo.YouTubeItems'))
 BEGIN
-    CREATE INDEX IX_YouTubeSources_AddedOn ON dbo.YouTubeSources (AddedOn DESC);
+    CREATE INDEX IX_YouTubeItems_AddedOn ON dbo.YouTubeItems (AddedOn DESC);
 END
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_CreatedByEntraOid' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeItems_CreatedByEntraOid' AND object_id = OBJECT_ID('dbo.YouTubeItems'))
 BEGIN
-    CREATE INDEX IX_YouTubeSources_CreatedByEntraOid ON dbo.YouTubeSources (CreatedByEntraOid);
+    CREATE INDEX IX_YouTubeItems_CreatedByEntraOid ON dbo.YouTubeItems (CreatedByEntraOid);
 END
 GO
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,7 +23,7 @@ public class ProcessScheduledItemFiredTests
     private static Domain.Models.ScheduledItem BuildScheduledItem(
         int id = 1,
         int primaryKey = 42,
-        ScheduledItemType itemType = ScheduledItemType.SyndicationFeedSources) => new()
+        ScheduledItemType itemType = ScheduledItemType.SyndicationFeedItems) => new()
     {
         Id = id,
         ItemType = itemType,
@@ -222,9 +222,9 @@ public class ProcessScheduledItemFiredTests
     }
 
     [Fact]
-    public async Task RunAsync_ShouldRequestNewYouTubeItemTemplate_WhenItemTypeIsYouTubeSources()
+    public async Task RunAsync_ShouldRequestNewYouTubeItemTemplate_WhenItemTypeIsYouTubeItems()
     {
-        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.YouTubeSources);
+        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.YouTubeItems);
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
         var mockTwitterManager = new Mock<ITwitterManager>();
@@ -239,7 +239,7 @@ public class ProcessScheduledItemFiredTests
     [Fact]
     public async Task RunAsync_WhenYouTubeTemplateFound_RendersVideoTitleAndUrl()
     {
-        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.YouTubeSources);
+        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.YouTubeItems);
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
         var mockTwitterManager = new Mock<ITwitterManager>();
@@ -255,7 +255,7 @@ public class ProcessScheduledItemFiredTests
     [Fact]
     public async Task RunAsync_WhenYouTubeTemplateIsNull_FallsBackToVideoPost()
     {
-        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.YouTubeSources);
+        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.YouTubeItems);
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
         var mockTwitterManager = new Mock<ITwitterManager>();

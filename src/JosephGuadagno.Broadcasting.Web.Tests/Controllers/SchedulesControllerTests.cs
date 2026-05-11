@@ -20,8 +20,8 @@ public class SchedulesControllerTests
     private readonly Mock<IScheduledItemService> _scheduledItemService;
     private readonly Mock<IScheduledItemValidationService> _validationService;
     private readonly Mock<IEngagementService> _engagementService;
-    private readonly Mock<ISyndicationFeedSourceService> _syndicationFeedSourceService;
-    private readonly Mock<IYouTubeSourceService> _youTubeSourceService;
+    private readonly Mock<ISyndicationFeedItemService> _SyndicationFeedItemService;
+    private readonly Mock<IYouTubeItemService> _YouTubeItemService;
     private readonly Mock<IMapper> _mapper;
     private readonly Mock<ILogger<SchedulesController>> _logger;
     private readonly SchedulesController _controller;
@@ -31,8 +31,8 @@ public class SchedulesControllerTests
         _scheduledItemService = new Mock<IScheduledItemService>();
         _validationService = new Mock<IScheduledItemValidationService>();
         _engagementService = new Mock<IEngagementService>();
-        _syndicationFeedSourceService = new Mock<ISyndicationFeedSourceService>();
-        _youTubeSourceService = new Mock<IYouTubeSourceService>();
+        _SyndicationFeedItemService = new Mock<ISyndicationFeedItemService>();
+        _YouTubeItemService = new Mock<IYouTubeItemService>();
         _mapper = new Mock<IMapper>();
         _logger = new Mock<ILogger<SchedulesController>>();
         _controller = new SchedulesController(
@@ -41,8 +41,8 @@ public class SchedulesControllerTests
             _mapper.Object,
             _logger.Object,
             _engagementService.Object,
-            _syndicationFeedSourceService.Object,
-            _youTubeSourceService.Object);
+            _SyndicationFeedItemService.Object,
+            _YouTubeItemService.Object);
         
         // Initialize TempData
         var httpContext = new DefaultHttpContext();
@@ -734,19 +734,19 @@ public class SchedulesControllerTests
     }
 
     [Fact]
-    public async Task SearchSyndicationFeedSources_WithQuery_ReturnsFilteredSources()
+    public async Task SearchSyndicationFeedItems_WithQuery_ReturnsFilteredSources()
     {
         // Arrange
-        var sources = new List<SyndicationFeedSource>
+        var sources = new List<SyndicationFeedItem>
         {
-            new SyndicationFeedSource { Id = 1, Title = "Tech Blog", FeedIdentifier = "f1", Author = "A", Url = "http://a.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" },
-            new SyndicationFeedSource { Id = 2, Title = "News Feed", FeedIdentifier = "f2", Author = "B", Url = "http://b.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" }
+            new SyndicationFeedItem { Id = 1, Title = "Tech Blog", FeedIdentifier = "f1", Author = "A", Url = "http://a.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" },
+            new SyndicationFeedItem { Id = 2, Title = "News Feed", FeedIdentifier = "f2", Author = "B", Url = "http://b.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" }
         };
-        _syndicationFeedSourceService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
-            .ReturnsAsync(new PagedResult<SyndicationFeedSource> { Items = sources, TotalCount = sources.Count });
+        _SyndicationFeedItemService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(new PagedResult<SyndicationFeedItem> { Items = sources, TotalCount = sources.Count });
 
         // Act
-        var result = await _controller.SearchSyndicationFeedSources("Tech");
+        var result = await _controller.SearchSyndicationFeedItems("Tech");
 
         // Assert
         var jsonResult = Assert.IsType<JsonResult>(result);
@@ -754,19 +754,19 @@ public class SchedulesControllerTests
     }
 
     [Fact]
-    public async Task SearchYouTubeSources_WithQuery_ReturnsFilteredSources()
+    public async Task SearchYouTubeItems_WithQuery_ReturnsFilteredSources()
     {
         // Arrange
-        var sources = new List<YouTubeSource>
+        var sources = new List<YouTubeItem>
         {
-            new YouTubeSource { Id = 1, Title = "Intro Video", VideoId = "v1", Author = "A", Url = "http://a.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" },
-            new YouTubeSource { Id = 2, Title = "Tutorial", VideoId = "v2", Author = "B", Url = "http://b.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" }
+            new YouTubeItem { Id = 1, Title = "Intro Video", VideoId = "v1", Author = "A", Url = "http://a.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" },
+            new YouTubeItem { Id = 2, Title = "Tutorial", VideoId = "v2", Author = "B", Url = "http://b.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" }
         };
-        _youTubeSourceService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
-            .ReturnsAsync(new PagedResult<YouTubeSource> { Items = sources, TotalCount = sources.Count });
+        _YouTubeItemService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+            .ReturnsAsync(new PagedResult<YouTubeItem> { Items = sources, TotalCount = sources.Count });
 
         // Act
-        var result = await _controller.SearchYouTubeSources("Intro");
+        var result = await _controller.SearchYouTubeItems("Intro");
 
         // Assert
         var jsonResult = Assert.IsType<JsonResult>(result);

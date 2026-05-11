@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -14,8 +14,8 @@ public class TwitterManagerTests
     private readonly Mock<ILogger<TwitterManager>> _mockLogger;
     private readonly Mock<ISocialMediaPlatformManager> _mockSocialMediaPlatformManager;
     private readonly Mock<IMessageTemplateDataStore> _mockMessageTemplateDataStore;
-    private readonly Mock<ISyndicationFeedSourceManager> _mockSyndicationFeedSourceManager;
-    private readonly Mock<IYouTubeSourceManager> _mockYouTubeSourceManager;
+    private readonly Mock<ISyndicationFeedItemManager> _mockSyndicationFeedItemManager;
+    private readonly Mock<IYouTubeItemManager> _mockYouTubeItemManager;
     private readonly Mock<IEngagementManager> _mockEngagementManager;
 
     public TwitterManagerTests()
@@ -23,8 +23,8 @@ public class TwitterManagerTests
         _mockLogger = new Mock<ILogger<TwitterManager>>();
         _mockSocialMediaPlatformManager = new Mock<ISocialMediaPlatformManager>();
         _mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        _mockSyndicationFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
-        _mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
+        _mockSyndicationFeedItemManager = new Mock<ISyndicationFeedItemManager>();
+        _mockYouTubeItemManager = new Mock<IYouTubeItemManager>();
         _mockEngagementManager = new Mock<IEngagementManager>();
     }
 
@@ -33,8 +33,8 @@ public class TwitterManagerTests
             _mockLogger.Object,
             _mockSocialMediaPlatformManager.Object,
             _mockMessageTemplateDataStore.Object,
-            _mockSyndicationFeedSourceManager.Object,
-            _mockYouTubeSourceManager.Object,
+            _mockSyndicationFeedItemManager.Object,
+            _mockYouTubeItemManager.Object,
             _mockEngagementManager.Object,
             tweetResult,
             exception);
@@ -192,8 +192,8 @@ public class TwitterManagerTests
         ILogger<TwitterManager> logger,
         ISocialMediaPlatformManager socialMediaPlatformManager,
         IMessageTemplateDataStore messageTemplateDataStore,
-        ISyndicationFeedSourceManager syndicationFeedSourceManager,
-        IYouTubeSourceManager youTubeSourceManager,
+        ISyndicationFeedItemManager SyndicationFeedItemManager,
+        IYouTubeItemManager YouTubeItemManager,
         IEngagementManager engagementManager,
         Tweet? tweetResult,
         Exception? exception = null)
@@ -202,8 +202,8 @@ public class TwitterManagerTests
             logger,
             socialMediaPlatformManager,
             messageTemplateDataStore,
-            syndicationFeedSourceManager,
-            youTubeSourceManager,
+            SyndicationFeedItemManager,
+            YouTubeItemManager,
             engagementManager)
     {
         protected override Task<Tweet?> TweetAsync(string tweetText)

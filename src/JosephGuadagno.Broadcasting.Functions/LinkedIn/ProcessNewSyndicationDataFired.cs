@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
 public class ProcessNewSyndicationDataFired(
-    ISyndicationFeedSourceManager syndicationFeedSourceManager,
+    ISyndicationFeedItemManager SyndicationFeedItemManager,
     IUserOAuthTokenManager userOAuthTokenManager,
     ILogger<ProcessNewSyndicationDataFired> logger)
 {
@@ -40,54 +40,54 @@ public class ProcessNewSyndicationDataFired(
             logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
             return null;
         }
-        var syndicationFeedSource = await syndicationFeedSourceManager.GetAsync(syndicationFeedItemEvent.Id);
+        var SyndicationFeedItem = await SyndicationFeedItemManager.GetAsync(syndicationFeedItemEvent.Id);
 
-        logger.LogDebug("Processing New Syndication Feed Data Fired for '{Id}' with title of '{Title}'", syndicationFeedSource.Id, syndicationFeedSource.Title);
+        logger.LogDebug("Processing New Syndication Feed Data Fired for '{Id}' with title of '{Title}'", SyndicationFeedItem.Id, SyndicationFeedItem.Title);
 
         // Resolve per-user OAuth token — no silent fallback to shared token
         var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
-            syndicationFeedSource.CreatedByEntraOid,
+            SyndicationFeedItem.CreatedByEntraOid,
             SocialMediaPlatformIds.LinkedIn);
 
         if (token is null)
         {
             logger.LogWarning(
                 "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping syndication item {ItemId}",
-                LogSanitizer.Sanitize(syndicationFeedSource.CreatedByEntraOid),
-                syndicationFeedSource.Id);
+                LogSanitizer.Sanitize(SyndicationFeedItem.CreatedByEntraOid),
+                SyndicationFeedItem.Id);
             return null;
         }
 
-        var status = ComposeStatus(syndicationFeedSource, token.AccessToken);
+        var status = ComposeStatus(SyndicationFeedItem, token.AccessToken);
 
         var properties = new Dictionary<string, string>
         {
             {"post", status.Text},
-            {"title", syndicationFeedSource.Title},
-            {"url", syndicationFeedSource.Url},
-            {"id", syndicationFeedSource.Id.ToString()}
+            {"title", SyndicationFeedItem.Title},
+            {"url", SyndicationFeedItem.Url},
+            {"id", SyndicationFeedItem.Id.ToString()}
         };
         logger.LogCustomEvent(Metrics.LinkedInProcessedNewSyndicationData, properties);
-        logger.LogDebug("Done composing LinkedIn status for '{Id}' with title of '{Title}'", syndicationFeedSource.Id, syndicationFeedSource.Title);
+        logger.LogDebug("Done composing LinkedIn status for '{Id}' with title of '{Title}'", SyndicationFeedItem.Id, SyndicationFeedItem.Title);
         return status;
     }
 
-    private LinkedInPostLink ComposeStatus(SyndicationFeedSource syndicationFeedSource, string accessToken)
+    private LinkedInPostLink ComposeStatus(SyndicationFeedItem SyndicationFeedItem, string accessToken)
     {
-        logger.LogDebug("Composing LinkedIn post for Id: '{Id}', Title:'{Title}'", syndicationFeedSource.Id, syndicationFeedSource.Title);
-        var statusText = syndicationFeedSource.LastUpdatedOn > syndicationFeedSource.PublicationDate
+        logger.LogDebug("Composing LinkedIn post for Id: '{Id}', Title:'{Title}'", SyndicationFeedItem.Id, SyndicationFeedItem.Title);
+        var statusText = SyndicationFeedItem.LastUpdatedOn > SyndicationFeedItem.PublicationDate
                 ? "Updated Blog Post: "
                 : "New Blog Post: ";
 
         var post = new LinkedInPostLink
         {
-            Text = $"{statusText} {syndicationFeedSource.Title} {HashTagLists.BuildHashTagList(syndicationFeedSource.Tags)}",
-            Title = syndicationFeedSource.Title,
-            LinkUrl = syndicationFeedSource.Url,
+            Text = $"{statusText} {SyndicationFeedItem.Title} {HashTagLists.BuildHashTagList(SyndicationFeedItem.Tags)}",
+            Title = SyndicationFeedItem.Title,
+            LinkUrl = SyndicationFeedItem.Url,
             AccessToken = accessToken
         };
 
-        logger.LogDebug("Composed LinkedIn status for '{Id}' with title of '{Title}'", syndicationFeedSource.Id, syndicationFeedSource.Title);
+        logger.LogDebug("Composed LinkedIn status for '{Id}' with title of '{Title}'", SyndicationFeedItem.Id, SyndicationFeedItem.Title);
 
         return post;
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Reflection;
@@ -182,11 +182,11 @@ public class Startup
         services.TryAddScoped<IScheduledItemDataStore, ScheduledItemDataStore>();
         services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
 
-        services.AddSingleton<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
-        services.AddSingleton<IYouTubeSourceManager, YouTubeSourceManager>();
+        services.AddSingleton<IYouTubeItemDataStore, YouTubeItemDataStore>();
+        services.AddSingleton<IYouTubeItemManager, YouTubeItemManager>();
 
-        services.AddSingleton<ISyndicationFeedSourceDataStore, SyndicationFeedSourceDataStore>();
-        services.AddSingleton<ISyndicationFeedSourceManager, SyndicationFeedSourceManager>();
+        services.AddSingleton<ISyndicationFeedItemDataStore, SyndicationFeedItemDataStore>();
+        services.AddSingleton<ISyndicationFeedItemManager, SyndicationFeedItemManager>();
 
         services.AddSingleton<IFeedCheckDataStore, FeedCheckDataStore>();
         services.AddSingleton<IFeedCheckManager, FeedCheckManager>();

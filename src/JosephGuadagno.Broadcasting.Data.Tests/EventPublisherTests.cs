@@ -1,4 +1,4 @@
-﻿using Azure.Messaging.EventGrid;
+using Azure.Messaging.EventGrid;
 
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
@@ -50,7 +50,7 @@ public class EventPublisherTests
     [Fact]
     public async Task PublishSyndicationFeedEventsAsync_NullSubject_ThrowsArgumentNullException()
     {
-        var items = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<SyndicationFeedItem> { new SyndicationFeedItem { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
             _publisher.PublishSyndicationFeedEventsAsync(null!, items));
     }
@@ -58,7 +58,7 @@ public class EventPublisherTests
     [Fact]
     public async Task PublishSyndicationFeedEventsAsync_EmptySubject_ThrowsArgumentNullException()
     {
-        var items = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<SyndicationFeedItem> { new SyndicationFeedItem { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
             _publisher.PublishSyndicationFeedEventsAsync(string.Empty, items));
     }
@@ -66,7 +66,7 @@ public class EventPublisherTests
     [Fact]
     public async Task PublishSyndicationFeedEventsAsync_EmptyCollection_CompletesWithoutPublishing()
     {
-        var items = new List<SyndicationFeedSource>();
+        var items = new List<SyndicationFeedItem>();
         await _publisher.PublishSyndicationFeedEventsAsync("subject", items);
         _publisher.ClientMock.Verify(
             c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()),
@@ -77,7 +77,7 @@ public class EventPublisherTests
     public async Task PublishSyndicationFeedEventsAsync_TopicNotFound_ThrowsInvalidOperationException()
     {
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings>());
-        var items = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<SyndicationFeedItem> { new SyndicationFeedItem { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _publisher.PublishSyndicationFeedEventsAsync("subject", items));
     }
@@ -87,7 +87,7 @@ public class EventPublisherTests
     {
         var topicSettings = CreateTopicSettings(Topics.NewSyndicationFeedItem);
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
-        var items = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<SyndicationFeedItem> { new SyndicationFeedItem { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Mock.Of<Azure.Response>());
         await _publisher.PublishSyndicationFeedEventsAsync("subject", items);
@@ -99,7 +99,7 @@ public class EventPublisherTests
     {
         var topicSettings = CreateTopicSettings(Topics.NewSyndicationFeedItem);
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
-        var items = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<SyndicationFeedItem> { new SyndicationFeedItem { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Failed"));
         await Assert.ThrowsAsync<EventPublishException>(() =>
@@ -112,7 +112,7 @@ public class EventPublisherTests
     {
         var topicSettings = CreateTopicSettings(Topics.NewSyndicationFeedItem);
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
-        var items = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<SyndicationFeedItem> { new SyndicationFeedItem { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         _publisher.ClientMock.SetupSequence(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Transient failure"))
             .ReturnsAsync(Mock.Of<Azure.Response>());
@@ -125,7 +125,7 @@ public class EventPublisherTests
     {
         var topicSettings = CreateTopicSettings(Topics.NewSyndicationFeedItem);
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
-        var items = new List<SyndicationFeedSource> { new SyndicationFeedSource { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<SyndicationFeedItem> { new SyndicationFeedItem { Id = 1, FeedIdentifier = "f1", Author = "a", Title = "t", Url = "https://example.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Persistent failure"));
         await Assert.ThrowsAsync<EventPublishException>(() =>
@@ -140,7 +140,7 @@ public class EventPublisherTests
     [Fact]
     public async Task PublishYouTubeEventsAsync_NullSubject_ThrowsArgumentNullException()
     {
-        var items = new List<YouTubeSource> { new YouTubeSource { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<YouTubeItem> { new YouTubeItem { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
             _publisher.PublishYouTubeEventsAsync(null!, items));
     }
@@ -148,7 +148,7 @@ public class EventPublisherTests
     [Fact]
     public async Task PublishYouTubeEventsAsync_EmptySubject_ThrowsArgumentNullException()
     {
-        var items = new List<YouTubeSource> { new YouTubeSource { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<YouTubeItem> { new YouTubeItem { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
             _publisher.PublishYouTubeEventsAsync(string.Empty, items));
     }
@@ -156,7 +156,7 @@ public class EventPublisherTests
     [Fact]
     public async Task PublishYouTubeEventsAsync_EmptyCollection_CompletesWithoutPublishing()
     {
-        var items = new List<YouTubeSource>();
+        var items = new List<YouTubeItem>();
         await _publisher.PublishYouTubeEventsAsync("subject", items);
         _publisher.ClientMock.Verify(
             c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()),
@@ -167,7 +167,7 @@ public class EventPublisherTests
     public async Task PublishYouTubeEventsAsync_TopicNotFound_ThrowsInvalidOperationException()
     {
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings>());
-        var items = new List<YouTubeSource> { new YouTubeSource { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<YouTubeItem> { new YouTubeItem { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _publisher.PublishYouTubeEventsAsync("subject", items));
     }
@@ -177,7 +177,7 @@ public class EventPublisherTests
     {
         var topicSettings = CreateTopicSettings(Topics.NewYouTubeItem);
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
-        var items = new List<YouTubeSource> { new YouTubeSource { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<YouTubeItem> { new YouTubeItem { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Mock.Of<Azure.Response>());
         await _publisher.PublishYouTubeEventsAsync("subject", items);
@@ -189,7 +189,7 @@ public class EventPublisherTests
     {
         var topicSettings = CreateTopicSettings(Topics.NewYouTubeItem);
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
-        var items = new List<YouTubeSource> { new YouTubeSource { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<YouTubeItem> { new YouTubeItem { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Failed"));
         await Assert.ThrowsAsync<EventPublishException>(() =>
@@ -202,7 +202,7 @@ public class EventPublisherTests
     {
         var topicSettings = CreateTopicSettings(Topics.NewYouTubeItem);
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
-        var items = new List<YouTubeSource> { new YouTubeSource { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<YouTubeItem> { new YouTubeItem { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         _publisher.ClientMock.SetupSequence(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Transient failure"))
             .ReturnsAsync(Mock.Of<Azure.Response>());
@@ -215,7 +215,7 @@ public class EventPublisherTests
     {
         var topicSettings = CreateTopicSettings(Topics.NewYouTubeItem);
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
-        var items = new List<YouTubeSource> { new YouTubeSource { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
+        var items = new List<YouTubeItem> { new YouTubeItem { Id = 1, VideoId = "v1", Author = "a", Title = "t", Url = "https://youtube.com/v1", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "" } };
         _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Persistent failure"));
         await Assert.ThrowsAsync<EventPublishException>(() =>
@@ -230,7 +230,7 @@ public class EventPublisherTests
     [Fact]
     public async Task PublishScheduledItemFiredEventsAsync_NullSubject_ThrowsArgumentNullException()
     {
-        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
+        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedItems, ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
             _publisher.PublishScheduledItemFiredEventsAsync(null!, items));
     }
@@ -238,7 +238,7 @@ public class EventPublisherTests
     [Fact]
     public async Task PublishScheduledItemFiredEventsAsync_EmptySubject_ThrowsArgumentNullException()
     {
-        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
+        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedItems, ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
             _publisher.PublishScheduledItemFiredEventsAsync(string.Empty, items));
     }
@@ -257,7 +257,7 @@ public class EventPublisherTests
     public async Task PublishScheduledItemFiredEventsAsync_TopicNotFound_ThrowsInvalidOperationException()
     {
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings>());
-        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
+        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedItems, ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _publisher.PublishScheduledItemFiredEventsAsync("subject", items));
     }
@@ -267,7 +267,7 @@ public class EventPublisherTests
     {
         var topicSettings = CreateTopicSettings(Topics.ScheduledItemFired);
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
-        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
+        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedItems, ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
         _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Mock.Of<Azure.Response>());
         await _publisher.PublishScheduledItemFiredEventsAsync("subject", items);
@@ -279,7 +279,7 @@ public class EventPublisherTests
     {
         var topicSettings = CreateTopicSettings(Topics.ScheduledItemFired);
         _settingsMock.Setup(s => s.TopicEndpointSettings).Returns(new List<ITopicEndpointSettings> { topicSettings });
-        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
+        var items = new List<ScheduledItem> { new ScheduledItem { Id = 1, ItemType = ScheduledItemType.SyndicationFeedItems, ItemPrimaryKey = 1, Message = "m", SendOnDateTime = DateTimeOffset.UtcNow } };
         _publisher.ClientMock.Setup(c => c.SendEventsAsync(It.IsAny<IEnumerable<EventGridEvent>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Failed"));
         await Assert.ThrowsAsync<EventPublishException>(() =>

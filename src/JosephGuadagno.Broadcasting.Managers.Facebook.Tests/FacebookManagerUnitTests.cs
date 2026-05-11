@@ -25,8 +25,8 @@ public class FacebookManagerUnitTests
     private readonly HttpClient _httpClient;
     private readonly Mock<ISocialMediaPlatformManager> _mockSocialMediaPlatformManager;
     private readonly Mock<IMessageTemplateDataStore> _mockMessageTemplateDataStore;
-    private readonly Mock<ISyndicationFeedSourceManager> _mockSyndicationFeedSourceManager;
-    private readonly Mock<IYouTubeSourceManager> _mockYouTubeSourceManager;
+    private readonly Mock<ISyndicationFeedItemManager> _mockSyndicationFeedItemManager;
+    private readonly Mock<IYouTubeItemManager> _mockYouTubeItemManager;
     private readonly Mock<IEngagementManager> _mockEngagementManager;
 
     public FacebookManagerUnitTests()
@@ -37,8 +37,8 @@ public class FacebookManagerUnitTests
         _httpClient = new HttpClient(_mockHttpMessageHandler.Object);
         _mockSocialMediaPlatformManager = new Mock<ISocialMediaPlatformManager>();
         _mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        _mockSyndicationFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
-        _mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
+        _mockSyndicationFeedItemManager = new Mock<ISyndicationFeedItemManager>();
+        _mockYouTubeItemManager = new Mock<IYouTubeItemManager>();
         _mockEngagementManager = new Mock<IEngagementManager>();
 
         // Setup default settings
@@ -307,7 +307,7 @@ public class FacebookManagerUnitTests
         var scheduledItem = new ScheduledItem
         {
             Id = 1,
-            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedItems,
             ItemPrimaryKey = 42,
             Message = "fallback",
             SendOnDateTime = DateTimeOffset.UtcNow,
@@ -332,9 +332,9 @@ public class FacebookManagerUnitTests
                 Template = "{{ title }} - {{ url }} {{ image_url }}"
             });
 
-        _mockSyndicationFeedSourceManager
+        _mockSyndicationFeedItemManager
             .Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SyndicationFeedSource
+            .ReturnsAsync(new SyndicationFeedItem
             {
                 Id = 42,
                 FeedIdentifier = "feed-1",
@@ -391,7 +391,7 @@ public class FacebookManagerUnitTests
         var scheduledItem = new ScheduledItem
         {
             Id = 1,
-            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedItems,
             ItemPrimaryKey = 42,
             Message = "fallback message",
             SendOnDateTime = DateTimeOffset.UtcNow
@@ -414,7 +414,7 @@ public class FacebookManagerUnitTests
         var scheduledItem = new ScheduledItem
         {
             Id = 1,
-            ItemType = Domain.Enums.ScheduledItemType.YouTubeSources,
+            ItemType = Domain.Enums.ScheduledItemType.YouTubeItems,
             ItemPrimaryKey = 42,
             Message = "fallback message",
             SendOnDateTime = DateTimeOffset.UtcNow
@@ -438,7 +438,7 @@ public class FacebookManagerUnitTests
                 Template = "{{ title }}"
             });
 
-        _mockYouTubeSourceManager
+        _mockYouTubeItemManager
             .Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("boom"));
 
@@ -492,8 +492,8 @@ public class FacebookManagerUnitTests
     private FacebookManager CreateSut(
         Mock<ISocialMediaPlatformManager>? socialMediaPlatformManager = null,
         Mock<IMessageTemplateDataStore>? messageTemplateDataStore = null,
-        Mock<ISyndicationFeedSourceManager>? syndicationFeedSourceManager = null,
-        Mock<IYouTubeSourceManager>? youTubeSourceManager = null,
+        Mock<ISyndicationFeedItemManager>? SyndicationFeedItemManager = null,
+        Mock<IYouTubeItemManager>? YouTubeItemManager = null,
         Mock<IEngagementManager>? engagementManager = null)
     {
         return new FacebookManager(
@@ -502,8 +502,8 @@ public class FacebookManagerUnitTests
             _mockLogger.Object,
             (socialMediaPlatformManager ?? _mockSocialMediaPlatformManager).Object,
             (messageTemplateDataStore ?? _mockMessageTemplateDataStore).Object,
-            (syndicationFeedSourceManager ?? _mockSyndicationFeedSourceManager).Object,
-            (youTubeSourceManager ?? _mockYouTubeSourceManager).Object,
+            (SyndicationFeedItemManager ?? _mockSyndicationFeedItemManager).Object,
+            (YouTubeItemManager ?? _mockYouTubeItemManager).Object,
             (engagementManager ?? _mockEngagementManager).Object);
     }
 }

@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
 public class ProcessNewYouTubeDataFired(
-    IYouTubeSourceManager youtubeSourceManager,
+    IYouTubeItemManager YouTubeItemManager,
     ILogger<ProcessNewYouTubeDataFired> logger)
 {
     // Debug Locally: https://docs.microsoft.com/en-us/azure/azure-functions/functions-debug-event-grid-trigger-local
@@ -45,39 +45,39 @@ public class ProcessNewYouTubeDataFired(
             logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
             return null;
         }
-        var youTubeSource = await youtubeSourceManager.GetAsync(newYouTubeItemEvent.Id);
+        var YouTubeItem = await YouTubeItemManager.GetAsync(newYouTubeItemEvent.Id);
 
         // Create the Facebook posts for it
-        logger.LogDebug("Processing New YouTube Feed Data Fired for '{Id}' with title of '{Title}'", youTubeSource.Id, youTubeSource.Title);
+        logger.LogDebug("Processing New YouTube Feed Data Fired for '{Id}' with title of '{Title}'", YouTubeItem.Id, YouTubeItem.Title);
         
-        var status = ComposeStatus(youTubeSource);
+        var status = ComposeStatus(YouTubeItem);
         
         // Done
         var properties = new Dictionary<string, string>
         {
             {"post", status.StatusText},
-            {"title", youTubeSource.Title},
-            {"url", youTubeSource.Url},
-            {"id", youTubeSource.Id.ToString()}
+            {"title", YouTubeItem.Title},
+            {"url", YouTubeItem.Url},
+            {"id", YouTubeItem.Id.ToString()}
         };
         logger.LogCustomEvent(Metrics.FacebookProcessedNewYouTubeData, properties);
-        logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", youTubeSource.Id, youTubeSource.Title);
+        logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", YouTubeItem.Id, YouTubeItem.Title);
         return status;
     }
         
-    private FacebookPostStatus ComposeStatus(YouTubeSource youTubeSource)
+    private FacebookPostStatus ComposeStatus(YouTubeItem YouTubeItem)
     {
 
         const int maxFacebookStatusText = 2000;
-        logger.LogDebug("Composing Facebook status for Id: '{Id}', Title:'{Title}'", youTubeSource.Id, youTubeSource.Title);
+        logger.LogDebug("Composing Facebook status for Id: '{Id}', Title:'{Title}'", YouTubeItem.Id, YouTubeItem.Title);
         
         // Build Facebook Status
-        var statusText = youTubeSource.LastUpdatedOn > youTubeSource.PublicationDate
+        var statusText = YouTubeItem.LastUpdatedOn > YouTubeItem.PublicationDate
             ? "Updated Video Post: "
             : "New Video Post: ";
 
-        var postTitle = youTubeSource.Title;
-        var hashTagList = HashTagLists.BuildHashTagList(youTubeSource.Tags);
+        var postTitle = YouTubeItem.Title;
+        var hashTagList = HashTagLists.BuildHashTagList(YouTubeItem.Tags);
         
         if (statusText.Length + postTitle.Length + 3 + hashTagList.Length >= maxFacebookStatusText)
         {
@@ -88,8 +88,8 @@ public class ProcessNewYouTubeDataFired(
         var facebookPostStatus = new FacebookPostStatus
         {
             StatusText =  $"{statusText} {postTitle} {hashTagList}",
-            LinkUri = youTubeSource.Url,
-            CreatedByEntraOid = youTubeSource.CreatedByEntraOid
+            LinkUri = YouTubeItem.Url,
+            CreatedByEntraOid = YouTubeItem.CreatedByEntraOid
         };
 
         logger.LogDebug(

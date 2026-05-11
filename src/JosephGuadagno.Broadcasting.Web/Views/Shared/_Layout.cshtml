@@ -53,16 +53,8 @@
             </button>
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav flex-grow-1">
-                    <li class="nav-item">
-                        <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                    </li>
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Engagements" asp-action="Index">
-                                <i class="fa-solid fa-person-chalkboard me-1"></i>Engagements
-                            </a>
-                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="scheduleDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="False">
                                 <i class="bi bi-calendar me-1"></i>Schedules
@@ -82,6 +74,28 @@
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="contentDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="False">
+                                <i class="fa-solid fa-icons me-1"></i>Content
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="contentDropdown">
+                                <li>
+                                    <a class="nav-link" asp-area="" asp-controller="Engagements" asp-action="Index">
+                                        <i class="fa-solid fa-person-chalkboard me-1"></i>Engagements
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="" asp-controller="SyndicationFeedItems" asp-action="Index">
+                                        <i class="bi bi-rss me-2"></i>Syndication Feed Items
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="" asp-controller="YouTubeItems" asp-action="Index">
+                                        <i class="bi bi-youtube me-2"></i>YouTube Items
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="False">
                                 <i class="bi bi-shield-lock me-1"></i>Admin
                             </a>
@@ -91,26 +105,7 @@
                                         <i class="bi bi-textarea-t me-2"></i>Message Templates
                                     </a>
                                 </li>
-                                <li>
-                                    <a class="dropdown-item" asp-area="" asp-controller="SyndicationFeedSources" asp-action="Index">
-                                        <i class="bi bi-rss me-2"></i>Syndication Feed Sources
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" asp-area="" asp-controller="YouTubeSources" asp-action="Index">
-                                        <i class="bi bi-youtube me-2"></i>YouTube Sources
-                                    </a>
-                                </li>
                             </ul>
-                        </li>
-                        <li class="nav-item">
-                            
-                        </li>
-                        <li class="nav-item">
-                            
-                        </li>
-                        <li class="nav-item">
-                            
                         </li>
                         @if (User.IsInRole(RoleNames.SiteAdministrator) || User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Contributor))
                         {

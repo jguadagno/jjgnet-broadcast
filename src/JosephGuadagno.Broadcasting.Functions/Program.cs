@@ -194,11 +194,11 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IScheduledItemDataStore, ScheduledItemDataStore>();
     services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
 
-    services.TryAddScoped<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
-    services.TryAddScoped<IYouTubeSourceManager, YouTubeSourceManager>();
+    services.TryAddScoped<IYouTubeItemDataStore, YouTubeItemDataStore>();
+    services.TryAddScoped<IYouTubeItemManager, YouTubeItemManager>();
 
-    services.TryAddScoped<ISyndicationFeedSourceDataStore, SyndicationFeedSourceDataStore>();
-    services.TryAddScoped<ISyndicationFeedSourceManager, SyndicationFeedSourceManager>();
+    services.TryAddScoped<ISyndicationFeedItemDataStore, SyndicationFeedItemDataStore>();
+    services.TryAddScoped<ISyndicationFeedItemManager, SyndicationFeedItemManager>();
 
     services.TryAddScoped<IFeedCheckDataStore, FeedCheckDataStore>();
     services.TryAddScoped<IFeedCheckManager, FeedCheckManager>();

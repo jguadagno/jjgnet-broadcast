@@ -11,7 +11,7 @@ public interface IScheduledItemValidationService
     /// <summary>
     /// Validates that a source item exists for the given type and primary key
     /// </summary>
-    /// <param name="itemType">The type of item (Engagements, Talks, SyndicationFeedSources, YouTubeSources)</param>
+    /// <param name="itemType">The type of item (Engagements, Talks, SyndicationFeedItems, YouTubeItems)</param>
     /// <param name="itemPrimaryKey">The primary key of the item</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A lookup result with validation status and item details</returns>

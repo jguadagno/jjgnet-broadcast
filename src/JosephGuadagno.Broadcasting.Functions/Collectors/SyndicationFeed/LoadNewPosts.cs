@@ -19,7 +19,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.SyndicationFeed;
 public class LoadNewPosts(
     ISyndicationFeedReader syndicationFeedReader,
     IOptions<Settings> settingsOptions,
-    ISyndicationFeedSourceManager syndicationFeedSourceManager,
+    ISyndicationFeedItemManager SyndicationFeedItemManager,
     IUserCollectorFeedSourceManager userCollectorFeedSourceManager,
     IFeedCheckManager feedCheckManager,
     IUrlShortener urlShortener,
@@ -83,10 +83,10 @@ public class LoadNewPosts(
                 totalFoundCount += newItems.Count;
 
                 var savedCount = 0;
-                var eventsToPublish = new List<SyndicationFeedSource>();
+                var eventsToPublish = new List<SyndicationFeedItem>();
                 foreach (var item in newItems)
                 {
-                    var existingItem = await syndicationFeedSourceManager.GetByFeedIdentifierAsync(item.FeedIdentifier);
+                    var existingItem = await SyndicationFeedItemManager.GetByFeedIdentifierAsync(item.FeedIdentifier);
                     if (existingItem != null)
                     {
                         logger.LogDebug("Skipping duplicate syndication feed item with FeedIdentifier: '{FeedIdentifier}'", item.FeedIdentifier);
@@ -98,7 +98,7 @@ public class LoadNewPosts(
                     try
                     {
                         var saveResult = await SavePipeline.ExecuteAsync(
-                            async ct => await syndicationFeedSourceManager.SaveAsync(item));
+                            async ct => await SyndicationFeedItemManager.SaveAsync(item));
 
                         if (!saveResult.IsSuccess || saveResult.Value is null)
                         {

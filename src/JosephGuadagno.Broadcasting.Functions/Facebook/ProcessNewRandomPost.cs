@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
-public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedSourceManager, ILogger<ProcessNewRandomPost> logger)
+public class ProcessNewRandomPost(ISyndicationFeedItemManager SyndicationFeedItemManager, ILogger<ProcessNewRandomPost> logger)
 {
     [Function(ConfigurationFunctionNames.FacebookProcessRandomPostFired)]
     [QueueOutput(Queues.FacebookPostStatusToPage)]
@@ -38,13 +38,13 @@ public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedS
                 logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
                 return null;
             }
-            var syndicationFeedSource = await syndicationFeedSourceManager.GetAsync(source.Id);
+            var SyndicationFeedItem = await SyndicationFeedItemManager.GetAsync(source.Id);
 
             // Handle the event - compose the Facebook post status
             const int maxFacebookStatusText = 2000;
             var statusText = "ICYMI: Blog Post: ";
-            var postTitle = syndicationFeedSource.Title;
-            var hashTagList = HashTagLists.BuildHashTagList(syndicationFeedSource.Tags);
+            var postTitle = SyndicationFeedItem.Title;
+            var hashTagList = HashTagLists.BuildHashTagList(SyndicationFeedItem.Tags);
 
             if (statusText.Length + postTitle.Length + 3 + hashTagList.Length >= maxFacebookStatusText)
             {
@@ -55,18 +55,18 @@ public class ProcessNewRandomPost(ISyndicationFeedSourceManager syndicationFeedS
             var facebookPostStatus = new FacebookPostStatus
             {
                 StatusText = $"{statusText} {postTitle} {hashTagList}",
-                LinkUri = syndicationFeedSource.Url
+                LinkUri = SyndicationFeedItem.Url
             };
 
             // Return
             var properties = new Dictionary<string, string>
             {
-                {"title", syndicationFeedSource.Title},
-                {"url", syndicationFeedSource.Url},
+                {"title", SyndicationFeedItem.Title},
+                {"url", SyndicationFeedItem.Url},
                 {"post", facebookPostStatus.StatusText}
             };
             logger.LogCustomEvent(Metrics.FacebookProcessedRandomPost, properties);
-            logger.LogDebug("Picked a random post {Title}", syndicationFeedSource.Title);
+            logger.LogDebug("Picked a random post {Title}", SyndicationFeedItem.Title);
             return facebookPostStatus;
         }
         catch (Exception e)

@@ -35,8 +35,8 @@ public partial class BroadcastingContext : DbContext
     public virtual DbSet<Talk> Talks { get; set; } = null!;
     public virtual DbSet<FeedCheck> FeedChecks { get; set; } = null!;
     public virtual DbSet<TokenRefresh> TokenRefreshes { get; set; } = null!;
-    public virtual DbSet<SyndicationFeedSource> SyndicationFeedSources { get; set; } = null!;
-    public virtual DbSet<YouTubeSource> YouTubeSources { get; set; } = null!;
+    public virtual DbSet<SyndicationFeedItem> SyndicationFeedItems { get; set; } = null!;
+    public virtual DbSet<YouTubeItem> YouTubeItems { get; set; } = null!;
     public virtual DbSet<MessageTemplate> MessageTemplates { get; set; } = null!;
     public virtual DbSet<ApplicationUser> ApplicationUsers { get; set; } = null!;
     public virtual DbSet<Role> Roles { get; set; } = null!;
@@ -214,10 +214,10 @@ public partial class BroadcastingContext : DbContext
                 .HasDefaultValueSql("(getutcdate())");
         });
 
-        modelBuilder.Entity<SyndicationFeedSource>(entity =>
+        modelBuilder.Entity<SyndicationFeedItem>(entity =>
         {
             entity.HasKey(e => e.Id)
-                .HasName("SyndicationFeedSource_pk_Id");
+                .HasName("SyndicationFeedItem_pk_Id");
 
             entity.Property(e => e.FeedIdentifier)
                 .HasMaxLength(450)
@@ -259,10 +259,10 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired(false);
         });
 
-        modelBuilder.Entity<YouTubeSource>(entity =>
+        modelBuilder.Entity<YouTubeItem>(entity =>
         {
             entity.HasKey(e => e.Id)
-                .HasName("YouTubeSource_pk_Id");
+                .HasName("YouTubeItem_pk_Id");
 
             entity.Property(e => e.VideoId)
                 .HasMaxLength(20)

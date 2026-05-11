@@ -30,8 +30,8 @@ public class BroadcastingContextTests : IDisposable
         Assert.NotNull(_context.Talks);
         Assert.NotNull(_context.FeedChecks);
         Assert.NotNull(_context.TokenRefreshes);
-        Assert.NotNull(_context.SyndicationFeedSources);
-        Assert.NotNull(_context.YouTubeSources);
+        Assert.NotNull(_context.SyndicationFeedItems);
+        Assert.NotNull(_context.YouTubeItems);
         Assert.NotNull(_context.UserPublisherSettings);
     }
 
@@ -163,10 +163,10 @@ public class BroadcastingContextTests : IDisposable
     }
 
     [Fact]
-    public async Task BroadcastingContext_AddSyndicationFeedSource_CanBeRetrieved()
+    public async Task BroadcastingContext_AddSyndicationFeedItem_CanBeRetrieved()
     {
         // Arrange
-        var feedSource = new SyndicationFeedSource
+        var feedSource = new SyndicationFeedItem
         {
             FeedIdentifier = "feed-1",
             Author = "Test Author",
@@ -179,20 +179,20 @@ public class BroadcastingContextTests : IDisposable
         };
 
         // Act
-        _context.SyndicationFeedSources.Add(feedSource);
+        _context.SyndicationFeedItems.Add(feedSource);
         await _context.SaveChangesAsync();
 
         // Assert
-        var retrieved = await _context.SyndicationFeedSources.FindAsync(feedSource.Id);
+        var retrieved = await _context.SyndicationFeedItems.FindAsync(feedSource.Id);
         Assert.NotNull(retrieved);
         Assert.Equal("feed-1", retrieved.FeedIdentifier);
     }
 
     [Fact]
-    public async Task BroadcastingContext_AddYouTubeSource_CanBeRetrieved()
+    public async Task BroadcastingContext_AddYouTubeItem_CanBeRetrieved()
     {
         // Arrange
-        var youTubeSource = new YouTubeSource
+        var YouTubeItem = new YouTubeItem
         {
             VideoId = "abc123",
             Author = "Test Channel",
@@ -205,11 +205,11 @@ public class BroadcastingContextTests : IDisposable
         };
 
         // Act
-        _context.YouTubeSources.Add(youTubeSource);
+        _context.YouTubeItems.Add(YouTubeItem);
         await _context.SaveChangesAsync();
 
         // Assert
-        var retrieved = await _context.YouTubeSources.FindAsync(youTubeSource.Id);
+        var retrieved = await _context.YouTubeItems.FindAsync(YouTubeItem.Id);
         Assert.NotNull(retrieved);
         Assert.Equal("abc123", retrieved.VideoId);
     }
