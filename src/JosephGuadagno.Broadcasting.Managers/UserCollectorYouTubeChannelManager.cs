@@ -41,11 +41,16 @@ public class UserCollectorYouTubeChannelManager : IUserCollectorYouTubeChannelMa
     }
 
     /// <inheritdoc />
-    public Task<UserCollectorYouTubeChannel?> GetByIdAsync(
+    public async Task<UserCollectorYouTubeChannel?> GetByIdAsync(
         int id, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(id);
-        return _dataStore.GetByIdAsync(id, cancellationToken);
+        var config = await _dataStore.GetByIdAsync(id, cancellationToken);
+        if (config is not null)
+        {
+            await SetHasApiKeyAsync(config, cancellationToken);
+        }
+        return config;
     }
 
     /// <inheritdoc />
@@ -56,14 +61,19 @@ public class UserCollectorYouTubeChannelManager : IUserCollectorYouTubeChannelMa
     }
 
     /// <inheritdoc />
-    public Task<UserCollectorYouTubeChannel?> SaveAsync(
+    public async Task<UserCollectorYouTubeChannel?> SaveAsync(
         UserCollectorYouTubeChannel config, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentException.ThrowIfNullOrWhiteSpace(config.CreatedByEntraOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(config.ChannelId);
 
-        return _dataStore.SaveAsync(config, cancellationToken);
+        var saved = await _dataStore.SaveAsync(config, cancellationToken);
+        if (saved is not null)
+        {
+            await SetHasApiKeyAsync(saved, cancellationToken);
+        }
+        return saved;
     }
 
     /// <inheritdoc />
@@ -111,24 +121,39 @@ public class UserCollectorYouTubeChannelManager : IUserCollectorYouTubeChannelMa
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(id);
 
         var config = await _dataStore.GetByIdAsync(id, cancellationToken);
-        if (config is null || string.IsNullOrWhiteSpace(config.ApiKeySecretName))
+        if (config is null)
         {
             return null;
         }
-
+        var secretName = BuildSecretName(ownerOid, config.ChannelId);
         try
         {
-            var secret = await _keyVault.GetSecretAsync(config.ApiKeySecretName);
+            var secret = await _keyVault.GetSecretAsync(secretName);
             return secret.Value;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex,
                 "Failed to retrieve YouTube API key from Key Vault for secret '{SecretName}', owner '{OwnerOid}', config {Id}",
-                config.ApiKeySecretName,
+                secretName,
                 LogSanitizer.Sanitize(ownerOid),
                 id);
             return null;
+        }
+    }
+
+    private async Task SetHasApiKeyAsync(UserCollectorYouTubeChannel config, CancellationToken cancellationToken = default)
+    {
+        if (config is null) return;
+        try
+        {
+            var secretName = BuildSecretName(config.CreatedByEntraOid, config.ChannelId);
+            var secret = await _keyVault.GetSecretAsync(secretName);
+            config.HasApiKey = !string.IsNullOrWhiteSpace(secret?.Value);
+        }
+        catch
+        {
+            config.HasApiKey = false;
         }
     }
 

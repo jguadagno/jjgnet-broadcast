@@ -139,7 +139,7 @@ public class UserCollectorYouTubeChannelsController(
 
         if (!string.IsNullOrWhiteSpace(request.ApiKey))
         {
-            config.ApiKeySecretName = await userCollectorYouTubeChannelManager.StoreApiKeyToKeyVaultAsync(
+            await userCollectorYouTubeChannelManager.StoreApiKeyToKeyVaultAsync(
                 resolvedOwnerOid,
                 request.ChannelId,
                 request.ApiKey);
@@ -200,15 +200,10 @@ public class UserCollectorYouTubeChannelsController(
 
         if (!string.IsNullOrWhiteSpace(request.ApiKey))
         {
-            config.ApiKeySecretName = await userCollectorYouTubeChannelManager.StoreApiKeyToKeyVaultAsync(
+            await userCollectorYouTubeChannelManager.StoreApiKeyToKeyVaultAsync(
                 existing.CreatedByEntraOid,
                 request.ChannelId,
                 request.ApiKey);
-        }
-        else
-        {
-            // Preserve the existing secret name when no new API key is provided
-            config.ApiKeySecretName = existing.ApiKeySecretName;
         }
 
         var saved = await userCollectorYouTubeChannelManager.SaveAsync(config);

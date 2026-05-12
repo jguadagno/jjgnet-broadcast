@@ -27,10 +27,7 @@ public class UserCollectorYouTubeChannel
     [MaxLength(255)]
     public string PlaylistId { get; set; } = string.Empty;
 
-    [MaxLength(255)]
-    public string? ApiKeySecretName { get; set; }
-
-    public int ResultSetPageSize { get; set; } = 50;
+    public int ResultSetPageSize{ get; set; } = 50;
 
     /// <summary>
     /// Gets or sets the friendly display name for this channel

@@ -87,14 +87,12 @@ public class ApiBroadcastingProfile : Profile
             .ForMember(d => d.LastUpdatedOn, o => o.Ignore());
 
         // User Collector YouTube Channel
-        CreateMap<UserCollectorYouTubeChannel, UserCollectorYouTubeChannelResponse>()
-            .ForMember(d => d.HasApiKey, o => o.MapFrom(s => !string.IsNullOrWhiteSpace(s.ApiKeySecretName)));
+        CreateMap<UserCollectorYouTubeChannel, UserCollectorYouTubeChannelResponse>();
         CreateMap<UserCollectorYouTubeChannelRequest, UserCollectorYouTubeChannel>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
             .ForMember(d => d.CreatedOn, o => o.Ignore())
-            .ForMember(d => d.LastUpdatedOn, o => o.Ignore())
-            .ForMember(d => d.ApiKeySecretName, o => o.Ignore());
+            .ForMember(d => d.LastUpdatedOn, o => o.Ignore());
 
         // User Collector Speaking Engagement
         CreateMap<UserCollectorSpeakingEngagementRequest, UserCollectorSpeakingEngagement>()

@@ -12,6 +12,7 @@ public class UserCollectorMappingProfile : Profile
         CreateMap<Models.UserCollectorFeedSource, Domain.Models.UserCollectorFeedSource>().ReverseMap();
         CreateMap<Models.UserCollectorYouTubeChannel, Domain.Models.UserCollectorYouTubeChannel>()
             .ForMember(dest => dest.ApiKey, opt => opt.Ignore())
+            .ForMember(dest => dest.HasApiKey, opt => opt.Ignore())
             .ReverseMap();
         CreateMap<Models.UserCollectorSpeakingEngagement, Domain.Models.UserCollectorSpeakingEngagement>().ReverseMap();
     }
