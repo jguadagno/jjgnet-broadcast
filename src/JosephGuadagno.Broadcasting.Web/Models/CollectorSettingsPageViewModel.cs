@@ -10,4 +10,5 @@ public class CollectorSettingsPageViewModel
     public bool IsManagedBySiteAdmin { get; set; }
     public List<UserCollectorFeedSourceViewModel> FeedSources { get; set; } = [];
     public List<UserCollectorYouTubeChannelViewModel> YouTubeChannels { get; set; } = [];
+    public List<UserCollectorSpeakingEngagementViewModel> SpeakingEngagements { get; set; } = [];
 }
