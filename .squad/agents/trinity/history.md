@@ -129,6 +129,12 @@ Fixed all 4 blocking issues and 3 warnings from Neo's review:
 
 ## Learnings
 
+### 2026-05-12 — Issue #950: Full CSRF Token Validation Sweep
+
+1. CodeQL `cs/web/missing-token-validation` alerts can be stale: by the time the sweep ran, all 8 API controllers already had `[IgnoreAntiforgeryToken]` at the class level and all Web `[HttpPost]` methods already had `[ValidateAntiForgeryToken]`. Always read the actual file before applying a mechanical fix.
+2. The correct audit order is: (a) read the file, (b) check for the attribute, (c) only edit if truly missing. A grep-only approach without reading the file can produce false negatives when attribute names are split across lines or preceded by unusual whitespace.
+3. Additional Web controllers (LinkedInController, HomeController, HelpController, AccountController) had zero `[HttpPost]` methods — they are GET-only and do not require `[ValidateAntiForgeryToken]`.
+
 ### 2026-05-11 — Issue #950: EntraOId user separation for FeedCheck C# layer
 
 1. When a parallel agent (Morpheus) deletes a shared utility file (e.g., `CollectorOwnerOidResolver.cs`) while doing SQL-only work, restore it immediately — the deletion cascades into CS0103 build errors across every caller.
@@ -144,6 +150,12 @@ Fixed all 4 blocking issues and 3 warnings from Neo's review:
 4. After a global rename, always verify exceptions (`SourceSystems`, `SourceTag`, `SyndicationFeedReader`, `UserCollector*`) with a targeted `Select-String` pass before building.
 5. SQL table renames need both a migration script (`sp_rename`) for existing environments AND updated `table-create.sql`/`data-seed.sql` for fresh environment bootstraps.
 
+
+### 2026-05-12 — Issue #950 (sanity-check): CollectorSettings page refactor
+
+1. When removing inline POST actions from a settings controller (in favour of dedicated CRUD controllers), audit the `using` directives immediately — domain model types (`UserCollectorFeedSource`, `UserCollectorYouTubeChannel`) and utilities (`LogSanitizer`) referenced only by the removed methods become dead imports and should be removed to keep the file clean.
+2. `BuildPageViewModelAsync` is the single source of truth for populating the page view model; adding a new collector type only requires: fetch via service (admin/non-admin branch), inline projection to ViewModel, assign to the new collection property.
+3. The inline projection pattern (`.Select(x => new ViewModel { ... }).ToList()`) is the established pattern in this controller — do not introduce AutoMapper for new collections added to `BuildPageViewModelAsync` unless the rest of the method already uses it.
 
 ### 2026-05-13 — Issue #954: UserCollectorYouTubeChannel ApiKey → Key Vault
 
