@@ -4,6 +4,19 @@
 
 Trinity (Backend API Developer) implements core API functionality including CRUD endpoints, authentication/authorization workflows, OAuth token refresh, and data persistence. Work spans three layers: Controllers (HTTP routing), Managers (business logic), and Data/Data.Sql (Entity Framework Core persistence). Key contributions include EngagementSocialMediaPlatforms CRUD endpoints, UserApprovalManager for RBAC workflows, OAuth token refresh with token versioning, ownership isolation enforcement, and `IMemoryCache` caching layer for managers. Trinity follows Neo's architectural patterns: explicit service contracts with DTOs, response mapping to isolate Data layer changes from API contracts, and role-based authorization. Established pattern: implement feature vertically from API controller through Manager to Data layer, write explicit request/response types in API, and map Data objects to DTOs before returning. Close collaboration with Tank (integration tests), Switch (Web-layer service mapping), and Neo (architectural reviews). Notable: Trinity maintains API contract stability by mapping internal changes to stable response shapes, preventing breaking changes to Web-layer consumers. Key decision: use DTOs consistently for all API responses to maintain contracts.
 
+### 2026-05-12 — Team: Decisions Merged to Central Log
+
+**Status:** ✅ COMPLETE — 9 decisions merged from inbox to `.squad/decisions.md`
+
+Trinity's decisions recorded:
+- **2026-05-11:** FeedCheck EntraOId — Empty String for System Collectors (source-to-item taxonomy established)
+- **2026-05-11:** Rename SyndicationFeedSource → SyndicationFeedItem, YouTubeSource → YouTubeItem (135 files, ✅ tests passing)
+- **2026-05-13:** UserCollectorYouTubeChannel ApiKey → Azure Key Vault (implement)
+
+Trinity's work on `issue-950-sanity-check` is now formally recorded. Awaiting fix for 4 blocking issues identified in Neo's review (B1-B4) before merge.
+
+---
+
 ### 2026-05-XX — Issue #936: Add IMemoryCache caching to MessageTemplateManager
 
 **Status:** ✅ COMPLETE — PR #940 on `issue-936-messagetemplates-caching`; 253 tests passing
