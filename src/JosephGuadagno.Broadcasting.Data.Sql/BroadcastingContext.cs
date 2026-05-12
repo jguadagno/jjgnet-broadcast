@@ -659,10 +659,6 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired(false)
                 .HasDefaultValue(string.Empty);
 
-            entity.Property(e => e.ApiKeySecretName)
-                .HasMaxLength(255)
-                .IsRequired(false);
-
             entity.Property(e => e.ResultSetPageSize)
                 .IsRequired()
                 .HasDefaultValue(50);

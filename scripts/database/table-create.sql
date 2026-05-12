@@ -485,7 +485,6 @@ begin
         CreatedByEntraOid nvarchar(36)   not null,
         ChannelId         nvarchar(50)   not null,
         PlaylistId        nvarchar(255)  not null default '',
-        ApiKeySecretName  nvarchar(255)  null,
         ResultSetPageSize int            not null default 50,
         DisplayName       nvarchar(255)  not null,
         IsActive          bit            not null
