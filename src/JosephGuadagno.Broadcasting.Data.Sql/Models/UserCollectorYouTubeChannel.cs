@@ -15,13 +15,13 @@ public class UserCollectorYouTubeChannel
     /// <summary>
     /// Gets or sets the Entra Object ID of the user who owns this config
     /// </summary>
-    [MaxLength(100)]
+    [MaxLength(36)]
     public string CreatedByEntraOid { get; set; } = string.Empty;
     
     /// <summary>
     /// Gets or sets the YouTube channel ID to poll
     /// </summary>
-    [MaxLength(255)]
+    [MaxLength(50)]
     public string ChannelId { get; set; } = string.Empty;
 
     [MaxLength(255)]

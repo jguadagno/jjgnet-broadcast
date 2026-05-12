@@ -656,7 +656,7 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.PlaylistId)
                 .HasMaxLength(255)
-                .IsRequired(false)
+                .IsRequired()
                 .HasDefaultValue(string.Empty);
 
             entity.Property(e => e.ResultSetPageSize)
