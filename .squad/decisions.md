@@ -769,3 +769,57 @@ Secret-name format: youtube-channel-apikey-{sanitizedOwnerOid}-{sanitizedChannel
 
 ---
 
+
+
+---
+
+### 2026-05-12T06:09:40-07:00: User directive
+**By:** Joseph Guadagno (via Copilot)
+**What:** Always use `claude-opus-4.6` for Trinity. Based on user research, this is the preferred model for Trinity's backend/code tasks.
+**Why:** User request — captured for team memory
+
+
+---
+
+# Trinity: Neo Code Review Fixes — issue-950-sanity-check
+
+**Date:** 2026-05-14
+**Branch:** `issue-950-sanity-check`
+**Commit:** 6a56416
+
+## Summary
+
+Fixed all 4 blocking issues and 3 warnings identified in Neo's review of the `issue-950-sanity-check` branch. All 157 Functions tests pass; build succeeds.
+
+## Decisions Made
+
+### 1. Namespace declarations are required on all class files (Blocking 1)
+
+`UserCollectorSpeakingEngagementManager` and `UserCollectorScheduledItemManager` were missing `namespace JosephGuadagno.Broadcasting.Managers;` declarations entirely, compiling into the global namespace. File-scoped namespace declarations were added.
+
+### 2. Per-user YouTube credentials via `IYouTubeSettings` overload (Blocking 2)
+
+`IYouTubeReader.GetAsync` gained a third overload: `GetAsync(string ownerOid, DateTimeOffset sinceWhen, IYouTubeSettings settings)`. Implementation in `YouTubeReader` extracts a private `GetItemsAsync` helper shared by both public overloads; the new overload creates a per-user `YouTubeService` from the caller-supplied settings rather than the global DI-injected settings.
+
+`LoadNewVideos` resolves the API key from Azure Key Vault via `GetApiKeyAsync`, builds a `YouTubeSettings` instance per channel config, and passes it to the new overload. Channels without a resolvable key are skipped with a warning log.
+
+### 3. `AddSqlDataStores()` must register all data stores (Blocking 3)
+
+`IUserCollectorSpeakingEngagementDataStore` and `IUserCollectorScheduledItemDataStore` were never added to `ServiceCollectionExtensions.AddSqlDataStores()`. These registrations are required by Web and Functions projects.
+
+### 4. API must register `IUserCollectorScheduledItemManager` (Warning 1)
+
+Added `IUserCollectorScheduledItemDataStore` and `IUserCollectorScheduledItemManager` to API `Program.cs` registrations.
+
+### 5. No duplicate DI registrations (Warning 2)
+
+Duplicate `IYouTubeItemDataStore` / `IYouTubeItemManager` registrations in API `Program.cs` were removed. `TryAddScoped` is idempotent but the dead code was confusing.
+
+### 6. DTOs required for all domain entities exposed via API (Warning 3)
+
+`UserCollectorScheduledItemRequest` (editable fields: `DisplayName`, `IsActive`) and `UserCollectorScheduledItemResponse` (full read shape) created following the `UserCollectorSpeakingEngagementDtos.cs` pattern. AutoMapper mappings added to `ApiBroadcastingProfile`.
+
+### 7. Tests must be updated when production interfaces change
+
+When `IYouTubeReader.GetAsync` signature changed, `LoadNewVideosTests` needed updating to: (a) mock `GetApiKeyAsync` returning a test key, and (b) use the 3-arg `GetAsync` overload in all setups and verifications.
+
