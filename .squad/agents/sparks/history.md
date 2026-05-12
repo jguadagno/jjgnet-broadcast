@@ -8,6 +8,7 @@ Sparks (Frontend/Polish Specialist) focuses on UI/UX refinements, Bootstrap 5 mi
 
 | Date | Task | Outcome |
 |------|------|---------|
+| 2026-05-12 | Refactor CollectorSettings/Index.cshtml — remove modals, add SpeakingEngagements section (#950) | ✅ Replaced all modal Add/Edit/Delete triggers with redirect links; added Speaking Engagements card; applied table-dark to all section tables; removed modal divs and JS scripts; build succeeded 0 errors |
 | 2026-03-20 | Added CodeQL analysis to ci.yml (#326) | ✅ CodeQL job added as separate job with csharp language, push to main trigger added to workflow |
 | 2026-04-03 | Implement health checks for Api and Web (#635) | ✅ Added SQL Server and Azure Storage health checks to ServiceDefaults; PR #641 created |
 | 2026-05-02 | Schedule Add/Edit UI validation (#67) | ✅ Implemented ItemType dropdown and AJAX validation UI; branch feature/67-schedule-item-validation-ui pushed |
@@ -17,6 +18,12 @@ Sparks (Frontend/Polish Specialist) focuses on UI/UX refinements, Bootstrap 5 mi
 | 2026-04-27 | Add sorting, filtering, searching to all index pages (#870) | ✅ Schedules index full sort/filter/H1/Bootstrap 5 fix; Engagements index H1; SyndicationFeedSources + YouTubeSources thead-dark → table-dark; wired Schedules service sort/filter to API; PR #876 |
 
 ## Learnings
+
+### 2026-05-12 — CollectorSettings Modal → Redirect Refactor
+- **Pattern:** When multiple inline modals (Add + Edit per entity type) share a single settings page, replace them with redirect links to dedicated controller actions. Modals require data-attribute state transfer and JS listeners; dedicated pages get clean model binding, asp-validation-for spans, and server-side validation for free.
+- **thead class:** All section tables on settings pages should use `<thead class="table-dark">` — consistent with Bootstrap 5 charter and other index pages.
+- **CollectorFeedSources views:** Were already present on the branch when Sparks arrived — verify existing work before creating new files.
+- **SpeakingEngagements section icon:** `bi-mic-fill` used for speaking engagements card header.
 
 ### 2026-05-02 — MessageTemplates Platform Filter Dropdown
 - **File:** `Views/MessageTemplates/Index.cshtml`
