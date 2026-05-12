@@ -17,6 +17,24 @@ Trinity's work on `issue-950-sanity-check` is now formally recorded. Awaiting fi
 
 ---
 
+### 2026-05-14 — Neo Review Fixes: issue-950-sanity-check
+
+**Status:** ✅ COMPLETE — commit 6a56416; 157 Functions tests passing, build clean
+
+Fixed all 4 blocking issues and 3 warnings from Neo's review:
+- **B1:** Added missing `namespace JosephGuadagno.Broadcasting.Managers;` to both manager files
+- **B2:** Added `IYouTubeReader.GetAsync(ownerOid, sinceWhen, IYouTubeSettings)` per-user overload; refactored `YouTubeReader` to share `GetItemsAsync` private helper; wired `LoadNewVideos` to resolve Key Vault API key per channel
+- **B3:** Registered `IUserCollectorSpeakingEngagementDataStore` + `IUserCollectorScheduledItemDataStore` in `AddSqlDataStores()`
+- **W1:** Registered `IUserCollectorScheduledItemDataStore` + manager in API `Program.cs`
+- **W2:** Removed duplicate `IYouTubeItemDataStore`/`IYouTubeItemManager` block from API `Program.cs`
+- **W3:** Created `UserCollectorScheduledItemRequest/Response` DTOs + AutoMapper mappings
+
+**Learnings:**
+- When an interface changes signature, all mocks in tests using that interface must be updated immediately — the build won't catch mock signature mismatches, only test failures will.
+- `GetApiKeyAsync` requires a mock in any test that exercises a code path using `IUserCollectorYouTubeChannelManager`; Moq returns `null` by default for reference types, which can silently skip logic.
+
+---
+
 ### 2026-05-XX — Issue #936: Add IMemoryCache caching to MessageTemplateManager
 
 **Status:** ✅ COMPLETE — PR #940 on `issue-936-messagetemplates-caching`; 253 tests passing
