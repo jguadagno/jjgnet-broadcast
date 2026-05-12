@@ -84,6 +84,10 @@ public class CollectorYouTubeChannelsController(
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Add(UserCollectorYouTubeChannelViewModel viewModel)
     {
+        if (string.IsNullOrWhiteSpace(viewModel.ApiKey))
+        {
+            ModelState.AddModelError(nameof(viewModel.ApiKey), "API Key is required.");
+        }
         if (!ModelState.IsValid) return View(viewModel);
 
         var model = mapper.Map<UserCollectorYouTubeChannel>(viewModel);
@@ -133,6 +137,10 @@ public class CollectorYouTubeChannelsController(
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(UserCollectorYouTubeChannelViewModel viewModel)
     {
+        if (!viewModel.HasApiKey && string.IsNullOrWhiteSpace(viewModel.ApiKey))
+        {
+            ModelState.AddModelError(nameof(viewModel.ApiKey), "API Key is required when no key has been previously stored.");
+        }
         if (!ModelState.IsValid) return View(viewModel);
 
         var existing = await service.GetByIdAsync(viewModel.Id);

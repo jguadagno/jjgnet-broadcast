@@ -20,6 +20,7 @@
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
                 <input type="hidden" asp-for="Id" />
 
+                <input type="hidden" asp-for="HasApiKey" />
                 <div class="mb-3">
                     <label asp-for="DisplayName" class="form-label"></label>
                     <input asp-for="DisplayName" class="form-control" />
@@ -41,9 +42,31 @@
 
                 <div class="mb-3">
                     <label asp-for="ApiKey" class="form-label"></label>
-                    <input asp-for="ApiKey" class="form-control" type="password" autocomplete="new-password" />
+                    @if (!Model.HasApiKey)
+                    {
+                        <span class="text-danger">*</span>
+                    }
+                    @if (Model.HasApiKey)
+                    {
+                        <input asp-for="ApiKey" class="form-control" type="password" autocomplete="new-password" />
+                    }
+                    else
+                    {
+                        <input asp-for="ApiKey" class="form-control" type="password" autocomplete="new-password" required />
+                    }
                     <span asp-validation-for="ApiKey" class="text-danger"></span>
-                    <div class="form-text">Leave blank to keep the existing API key. Stored securely.</div>
+                    @if (Model.HasApiKey)
+                    {
+                        <div class="form-text text-muted">
+                            <i class="bi bi-check-circle-fill text-success"></i> An API key is currently stored. Leave blank to keep the existing key.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="form-text text-danger">
+                            <i class="bi bi-exclamation-triangle-fill"></i> No API key is stored. An API key is required.
+                        </div>
+                    }
                 </div>
 
                 <div class="mb-3">

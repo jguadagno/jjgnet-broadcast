@@ -88,11 +88,18 @@ public class ApiBroadcastingProfile : Profile
 
         // User Collector YouTube Channel
         CreateMap<UserCollectorYouTubeChannel, UserCollectorYouTubeChannelResponse>();
-        CreateMap<UserCollectorYouTubeChannelRequest, UserCollectorYouTubeChannel>()
+        CreateMap<CreateUserCollectorYouTubeChannelRequest, UserCollectorYouTubeChannel>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
             .ForMember(d => d.CreatedOn, o => o.Ignore())
-            .ForMember(d => d.LastUpdatedOn, o => o.Ignore());
+            .ForMember(d => d.LastUpdatedOn, o => o.Ignore())
+            .ForMember(d => d.HasApiKey, o => o.Ignore());
+        CreateMap<UpdateUserCollectorYouTubeChannelRequest, UserCollectorYouTubeChannel>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
+            .ForMember(d => d.CreatedOn, o => o.Ignore())
+            .ForMember(d => d.LastUpdatedOn, o => o.Ignore())
+            .ForMember(d => d.HasApiKey, o => o.Ignore());
 
         // User Collector Speaking Engagement
         CreateMap<UserCollectorSpeakingEngagementRequest, UserCollectorSpeakingEngagement>()

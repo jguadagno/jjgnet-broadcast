@@ -120,7 +120,7 @@ public class UserCollectorYouTubeChannelsController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<UserCollectorYouTubeChannelResponse>> SaveAsync(
         [FromQuery] string? ownerOid,
-        [FromBody] UserCollectorYouTubeChannelRequest request)
+        [FromBody] CreateUserCollectorYouTubeChannelRequest request)
     {
         if (!ModelState.IsValid)
         {
@@ -173,7 +173,7 @@ public class UserCollectorYouTubeChannelsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserCollectorYouTubeChannelResponse>> UpdateAsync(
         int id,
-        [FromBody] UserCollectorYouTubeChannelRequest request)
+        [FromBody] UpdateUserCollectorYouTubeChannelRequest request)
     {
         if (!ModelState.IsValid)
         {
@@ -192,6 +192,11 @@ public class UserCollectorYouTubeChannelsController(
             logger.LogWarning("User {CurrentOid} attempted to update YouTube channel config {Id} owned by {OwnerOid}",
                 LogSanitizer.Sanitize(User.GetOwnerOid()), id, LogSanitizer.Sanitize(existing.CreatedByEntraOid));
             return Forbid();
+        }
+
+        if (!existing.HasApiKey && string.IsNullOrWhiteSpace(request.ApiKey))
+        {
+            return BadRequest("ApiKey is required when no API key has been previously stored.");
         }
 
         var config = mapper.Map<UserCollectorYouTubeChannel>(request);

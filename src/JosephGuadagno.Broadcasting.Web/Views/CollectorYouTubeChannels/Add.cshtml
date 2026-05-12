@@ -40,9 +40,10 @@
 
                 <div class="mb-3">
                     <label asp-for="ApiKey" class="form-label"></label>
-                    <input asp-for="ApiKey" class="form-control" type="password" autocomplete="new-password" />
+                    <span class="text-danger">*</span>
+                    <input asp-for="ApiKey" class="form-control" type="password" required />
                     <span asp-validation-for="ApiKey" class="text-danger"></span>
-                    <div class="form-text">Optional. The Google API key for YouTube Data API access. Stored securely.</div>
+                    <div class="form-text">The Google API key for YouTube Data API access. Stored securely.</div>
                 </div>
 
                 <div class="mb-3">

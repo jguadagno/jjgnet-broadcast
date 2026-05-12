@@ -39,4 +39,10 @@ public class UserCollectorYouTubeChannelViewModel
     public DateTimeOffset LastUpdatedOn { get; set; }
 
     public bool IsManagedBySiteAdmin { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether a Google API key is currently stored in Key Vault for this channel.
+    /// When false on Edit, ApiKey is required to supply a new one.
+    /// </summary>
+    public bool HasApiKey { get; set; }
 }

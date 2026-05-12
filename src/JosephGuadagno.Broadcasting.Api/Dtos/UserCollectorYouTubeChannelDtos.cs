@@ -3,31 +3,56 @@ using System.ComponentModel.DataAnnotations;
 namespace JosephGuadagno.Broadcasting.Api.Dtos;
 
 /// <summary>
-/// Request DTO for creating or updating a per-user YouTube channel configuration
+/// Request DTO for creating a per-user YouTube channel configuration.
+/// ApiKey is required on creation — a channel cannot be polled without a Google API key.
 /// </summary>
-public class UserCollectorYouTubeChannelRequest
+public class CreateUserCollectorYouTubeChannelRequest
 {
-    /// <summary>
-    /// Gets or sets the YouTube channel ID to poll
-    /// </summary>
+    /// <summary>Gets or sets the YouTube channel ID to poll.</summary>
     [Required]
     public string ChannelId { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Gets or sets the friendly display name for this channel
-    /// </summary>
+    /// <summary>Gets or sets the friendly display name for this channel.</summary>
     [Required]
     public string DisplayName { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Gets or sets whether this channel configuration is active
-    /// </summary>
+    /// <summary>Gets or sets whether this channel configuration is active.</summary>
     public bool IsActive { get; set; } = true;
 
     /// <summary>Gets or sets the YouTube playlist ID to poll for new items.</summary>
     public string PlaylistId { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the Google API key for YouTube Data API access.</summary>
+    [Required]
+    public string ApiKey { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the maximum results per YouTube API page (1–200).</summary>
+    [Range(1, 200)]
+    public int ResultSetPageSize { get; set; } = 50;
+}
+
+/// <summary>
+/// Request DTO for updating a per-user YouTube channel configuration.
+/// ApiKey is optional — omit to keep the existing key already stored in Key Vault.
+/// If no key is currently stored (HasApiKey == false on the existing record), ApiKey is required.
+/// </summary>
+public class UpdateUserCollectorYouTubeChannelRequest
+{
+    /// <summary>Gets or sets the YouTube channel ID to poll.</summary>
+    [Required]
+    public string ChannelId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the friendly display name for this channel.</summary>
+    [Required]
+    public string DisplayName { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets whether this channel configuration is active.</summary>
+    public bool IsActive { get; set; } = true;
+
+    /// <summary>Gets or sets the YouTube playlist ID to poll for new items.</summary>
+    public string PlaylistId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the Google API key for YouTube Data API access. Leave null/empty to keep the existing key.</summary>
     public string? ApiKey { get; set; }
 
     /// <summary>Gets or sets the maximum results per YouTube API page (1–200).</summary>
