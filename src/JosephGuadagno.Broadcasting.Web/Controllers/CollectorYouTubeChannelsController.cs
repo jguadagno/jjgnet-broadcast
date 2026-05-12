@@ -14,22 +14,12 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Controller for managing per-user YouTube channel collector configurations.
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
-public class CollectorYouTubeChannelsController : Controller
+public class CollectorYouTubeChannelsController(
+    IUserCollectorYouTubeChannelService service,
+    IMapper mapper,
+    ILogger<CollectorYouTubeChannelsController> logger)
+    : Controller
 {
-    private readonly IUserCollectorYouTubeChannelService _service;
-    private readonly IMapper _mapper;
-    private readonly ILogger<CollectorYouTubeChannelsController> _logger;
-
-    public CollectorYouTubeChannelsController(
-        IUserCollectorYouTubeChannelService service,
-        IMapper mapper,
-        ILogger<CollectorYouTubeChannelsController> logger)
-    {
-        _service = service;
-        _mapper = mapper;
-        _logger = logger;
-    }
-
     /// <summary>
     /// Lists the current user's YouTube channel configurations.
     /// </summary>
@@ -39,8 +29,8 @@ public class CollectorYouTubeChannelsController : Controller
         bool sortDescending = false,
         string? filter = null)
     {
-        var items = await _service.GetCurrentUserAsync();
-        var viewModels = _mapper.Map<List<UserCollectorYouTubeChannelViewModel>>(items);
+        var items = await service.GetCurrentUserAsync();
+        var viewModels = mapper.Map<List<UserCollectorYouTubeChannelViewModel>>(items);
 
         ViewBag.Page = page;
         ViewBag.PageSize = Pagination.DefaultPageSize;
@@ -60,7 +50,7 @@ public class CollectorYouTubeChannelsController : Controller
     /// </summary>
     public async Task<IActionResult> Details(int id)
     {
-        var channel = await _service.GetByIdAsync(id);
+        var channel = await service.GetByIdAsync(id);
         if (channel == null) return NotFound();
 
         if (!User.IsInRole(RoleNames.SiteAdministrator))
@@ -73,7 +63,7 @@ public class CollectorYouTubeChannelsController : Controller
             }
         }
 
-        var viewModel = _mapper.Map<UserCollectorYouTubeChannelViewModel>(channel);
+        var viewModel = mapper.Map<UserCollectorYouTubeChannelViewModel>(channel);
         return View(viewModel);
     }
 
@@ -96,13 +86,13 @@ public class CollectorYouTubeChannelsController : Controller
     {
         if (!ModelState.IsValid) return View(viewModel);
 
-        var model = _mapper.Map<UserCollectorYouTubeChannel>(viewModel);
+        var model = mapper.Map<UserCollectorYouTubeChannel>(viewModel);
         model.CreatedByEntraOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId) ?? string.Empty;
 
-        var result = await _service.AddCurrentUserAsync(model);
+        var result = await service.AddCurrentUserAsync(model);
         if (result == null)
         {
-            _logger.LogWarning("Failed to add YouTube channel for user, ChannelId: {ChannelId}",
+            logger.LogWarning("Failed to add YouTube channel for user, ChannelId: {ChannelId}",
                 LogSanitizer.Sanitize(viewModel.ChannelId));
             TempData["ErrorMessage"] = "Failed to add the YouTube channel.";
             return View(viewModel);
@@ -118,7 +108,7 @@ public class CollectorYouTubeChannelsController : Controller
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(int id)
     {
-        var channel = await _service.GetByIdAsync(id);
+        var channel = await service.GetByIdAsync(id);
         if (channel == null) return NotFound();
 
         if (!User.IsInRole(RoleNames.SiteAdministrator))
@@ -131,7 +121,7 @@ public class CollectorYouTubeChannelsController : Controller
             }
         }
 
-        var viewModel = _mapper.Map<UserCollectorYouTubeChannelViewModel>(channel);
+        var viewModel = mapper.Map<UserCollectorYouTubeChannelViewModel>(channel);
         return View(viewModel);
     }
 
@@ -145,7 +135,7 @@ public class CollectorYouTubeChannelsController : Controller
     {
         if (!ModelState.IsValid) return View(viewModel);
 
-        var existing = await _service.GetByIdAsync(viewModel.Id);
+        var existing = await service.GetByIdAsync(viewModel.Id);
         if (existing == null) return NotFound();
 
         var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
@@ -157,22 +147,22 @@ public class CollectorYouTubeChannelsController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var model = _mapper.Map<UserCollectorYouTubeChannel>(viewModel);
+        var model = mapper.Map<UserCollectorYouTubeChannel>(viewModel);
         model.CreatedByEntraOid = existing.CreatedByEntraOid;
 
         UserCollectorYouTubeChannel? result;
         if (isSiteAdmin && existing.CreatedByEntraOid != currentUserOid)
         {
-            result = await _service.UpdateByUserAsync(existing.CreatedByEntraOid, model);
+            result = await service.UpdateByUserAsync(existing.CreatedByEntraOid, model);
         }
         else
         {
-            result = await _service.UpdateCurrentUserAsync(model);
+            result = await service.UpdateCurrentUserAsync(model);
         }
 
         if (result == null)
         {
-            _logger.LogWarning("Failed to update YouTube channel {Id}", viewModel.Id);
+            logger.LogWarning("Failed to update YouTube channel {Id}", viewModel.Id);
             ModelState.AddModelError(string.Empty, "Failed to update the YouTube channel.");
             return View(viewModel);
         }
@@ -188,7 +178,7 @@ public class CollectorYouTubeChannelsController : Controller
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Delete(int id)
     {
-        var channel = await _service.GetByIdAsync(id);
+        var channel = await service.GetByIdAsync(id);
         if (channel == null) return NotFound();
 
         if (!User.IsInRole(RoleNames.SiteAdministrator))
@@ -201,7 +191,7 @@ public class CollectorYouTubeChannelsController : Controller
             }
         }
 
-        var viewModel = _mapper.Map<UserCollectorYouTubeChannelViewModel>(channel);
+        var viewModel = mapper.Map<UserCollectorYouTubeChannelViewModel>(channel);
         return View(viewModel);
     }
 
@@ -214,7 +204,7 @@ public class CollectorYouTubeChannelsController : Controller
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
-        var channel = await _service.GetByIdAsync(id);
+        var channel = await service.GetByIdAsync(id);
         if (channel == null) return NotFound();
 
         var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
@@ -229,11 +219,11 @@ public class CollectorYouTubeChannelsController : Controller
         bool result;
         if (isSiteAdmin && channel.CreatedByEntraOid != currentUserOid)
         {
-            result = await _service.DeleteByUserAsync(channel.CreatedByEntraOid, id);
+            result = await service.DeleteByUserAsync(channel.CreatedByEntraOid, id);
         }
         else
         {
-            result = await _service.DeleteCurrentUserAsync(id);
+            result = await service.DeleteCurrentUserAsync(id);
         }
 
         if (result)
@@ -242,7 +232,7 @@ public class CollectorYouTubeChannelsController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = _mapper.Map<UserCollectorYouTubeChannelViewModel>(channel);
+        var viewModel = mapper.Map<UserCollectorYouTubeChannelViewModel>(channel);
         ModelState.AddModelError(string.Empty, "Failed to delete the YouTube channel.");
         return View(viewModel);
     }

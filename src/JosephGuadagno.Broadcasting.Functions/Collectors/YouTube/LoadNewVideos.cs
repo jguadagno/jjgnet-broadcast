@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
+using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
@@ -70,7 +71,23 @@ public class LoadNewVideos(
                 logger.LogDebug("Checking playlist for videos for owner '{OwnerOid}' since '{LastItemAddedOrUpdated}'",
                     config.CreatedByEntraOid, feedCheck.LastItemAddedOrUpdated);
 
-                var newItems = await youTubeReader.GetAsync(config.CreatedByEntraOid, feedCheck.LastItemAddedOrUpdated);
+                var apiKey = await userCollectorYouTubeChannelManager.GetApiKeyAsync(config.CreatedByEntraOid, config.Id);
+                if (string.IsNullOrWhiteSpace(apiKey))
+                {
+                    logger.LogWarning("No API key found in Key Vault for YouTube channel config Id={ConfigId}, owner '{OwnerOid}'. Skipping.",
+                        config.Id, config.CreatedByEntraOid);
+                    continue;
+                }
+
+                var perUserSettings = new YouTubeSettings
+                {
+                    ApiKey = apiKey,
+                    ChannelId = config.ChannelId,
+                    PlaylistId = config.PlaylistId,
+                    ResultSetPageSize = config.ResultSetPageSize > 0 ? config.ResultSetPageSize : 10
+                };
+
+                var newItems = await youTubeReader.GetAsync(config.CreatedByEntraOid, feedCheck.LastItemAddedOrUpdated, perUserSettings);
 
                 if (newItems.Count == 0)
                 {

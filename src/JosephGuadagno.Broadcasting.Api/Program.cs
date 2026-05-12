@@ -239,6 +239,8 @@ void ConfigureRepositories(IServiceCollection services)
     services.TryAddScoped<IUserCollectorYouTubeChannelManager, UserCollectorYouTubeChannelManager>();
     services.TryAddScoped<IUserCollectorSpeakingEngagementDataStore, UserCollectorSpeakingEngagementDataStore>();
     services.TryAddScoped<IUserCollectorSpeakingEngagementManager, UserCollectorSpeakingEngagementManager>();
+    services.TryAddScoped<IUserCollectorScheduledItemDataStore, UserCollectorScheduledItemDataStore>();
+    services.TryAddScoped<IUserCollectorScheduledItemManager, UserCollectorScheduledItemManager>();
     
     services.TryAddScoped<IEngagementSocialMediaPlatformDataStore, EngagementSocialMediaPlatformDataStore>();
 
@@ -260,8 +262,6 @@ void ConfigureRepositories(IServiceCollection services)
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
-    services.TryAddScoped<IYouTubeItemDataStore, YouTubeItemDataStore>();
-    services.TryAddScoped<IYouTubeItemManager, YouTubeItemManager>();
 }
 
 void ConfigureKeyVault(IServiceCollection services)

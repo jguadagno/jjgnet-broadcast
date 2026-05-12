@@ -15,17 +15,17 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
 public class YouTubeItemsController : Controller
 {
-    private readonly IYouTubeItemService _YouTubeItemService;
+    private readonly IYouTubeItemService _youTubeItemService;
     private readonly IMapper _mapper;
 
     /// <summary>
     /// Constructor for the YouTubeItemsController
     /// </summary>
-    /// <param name="YouTubeItemService">The YouTube source service</param>
+    /// <param name="youTubeItemService">The YouTube source service</param>
     /// <param name="mapper">The mapper service</param>
-    public YouTubeItemsController(IYouTubeItemService YouTubeItemService, IMapper mapper)
+    public YouTubeItemsController(IYouTubeItemService youTubeItemService, IMapper mapper)
     {
-        _YouTubeItemService = YouTubeItemService;
+        _youTubeItemService = youTubeItemService;
         _mapper = mapper;
     }
 
@@ -35,7 +35,7 @@ public class YouTubeItemsController : Controller
     /// <returns>Returns a List&lt;<see cref="YouTubeItemViewModel"/>&gt;.</returns>
     public async Task<IActionResult> Index(int page = Pagination.DefaultPage, string sortBy = "name", bool sortDescending = false, string? filter = null)
     {
-        var result = await _YouTubeItemService.GetAllAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
+        var result = await _youTubeItemService.GetAllAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
         var viewSources = _mapper.Map<List<YouTubeItemViewModel>>(result.Items);
 
         ViewBag.Page = page;
@@ -58,7 +58,7 @@ public class YouTubeItemsController : Controller
     /// <returns>A <see cref="YouTubeItemViewModel"/></returns>
     public async Task<IActionResult> Details(int id)
     {
-        var source = await _YouTubeItemService.GetAsync(id);
+        var source = await _youTubeItemService.GetAsync(id);
         if (source == null)
         {
             return NotFound();
@@ -106,7 +106,7 @@ public class YouTubeItemsController : Controller
         var sourceToAdd = _mapper.Map<YouTubeItem>(sourceViewModel);
         sourceToAdd.CreatedByEntraOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId) ?? string.Empty;
         
-        var savedSource = await _YouTubeItemService.SaveAsync(sourceToAdd);
+        var savedSource = await _youTubeItemService.SaveAsync(sourceToAdd);
         if (savedSource == null)
         {
             TempData["ErrorMessage"] = "Failed to add the YouTube source.";
@@ -126,7 +126,7 @@ public class YouTubeItemsController : Controller
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Delete(int id)
     {
-        var source = await _YouTubeItemService.GetAsync(id);
+        var source = await _youTubeItemService.GetAsync(id);
         if (source == null)
         {
             return NotFound();
@@ -157,7 +157,7 @@ public class YouTubeItemsController : Controller
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
-        var source = await _YouTubeItemService.GetAsync(id);
+        var source = await _youTubeItemService.GetAsync(id);
         if (source == null) return NotFound();
 
         if (!User.IsInRole(RoleNames.SiteAdministrator))
@@ -170,7 +170,7 @@ public class YouTubeItemsController : Controller
             }
         }
 
-        var result = await _YouTubeItemService.DeleteAsync(id);
+        var result = await _youTubeItemService.DeleteAsync(id);
         if (result)
         {
             TempData["SuccessMessage"] = "YouTube source deleted successfully.";

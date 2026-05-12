@@ -4,6 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+
+namespace JosephGuadagno.Broadcasting.Managers;
+
 public class UserCollectorScheduledItemManager(IUserCollectorScheduledItemDataStore dataStore) : IUserCollectorScheduledItemManager
 {
     /// <inheritdoc />
