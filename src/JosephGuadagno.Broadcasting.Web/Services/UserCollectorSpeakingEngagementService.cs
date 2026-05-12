@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
@@ -16,22 +17,22 @@ public class UserCollectorSpeakingEngagementService(
 
     public async Task<List<UserCollectorSpeakingEngagement>> GetCurrentUserAsync()
     {
-        var response = await apiClient.GetForUserAsync<List<UserCollectorSpeakingEngagement>>(ApiServiceName, options =>
+        var response = await apiClient.GetForUserAsync<PagedResponse<UserCollectorSpeakingEngagement>>(ApiServiceName, options =>
         {
-            options.RelativePath = BaseUrl;
+            options.RelativePath = $"{BaseUrl}?pageSize={Pagination.MaxPageSize}";
         });
 
-        return response ?? [];
+        return response?.Items.ToList() ?? [];
     }
 
     public async Task<List<UserCollectorSpeakingEngagement>> GetByUserAsync(string ownerOid)
     {
-        var response = await apiClient.GetForUserAsync<List<UserCollectorSpeakingEngagement>>(ApiServiceName, options =>
+        var response = await apiClient.GetForUserAsync<PagedResponse<UserCollectorSpeakingEngagement>>(ApiServiceName, options =>
         {
-            options.RelativePath = BuildRelativePath(ownerOid);
+            options.RelativePath = BuildRelativePath(ownerOid) + $"&pageSize={Pagination.MaxPageSize}";
         });
 
-        return response ?? [];
+        return response?.Items.ToList() ?? [];
     }
 
     public async Task<UserCollectorSpeakingEngagement?> GetByIdAsync(int id)

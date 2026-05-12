@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
@@ -16,22 +17,22 @@ public class UserCollectorYouTubeChannelService(
 
     public async Task<List<UserCollectorYouTubeChannel>> GetCurrentUserAsync()
     {
-        var response = await apiClient.GetForUserAsync<List<UserCollectorYouTubeChannel>>(ApiServiceName, options =>
+        var response = await apiClient.GetForUserAsync<PagedResponse<UserCollectorYouTubeChannel>>(ApiServiceName, options =>
         {
-            options.RelativePath = YouTubeChannelBaseUrl;
+            options.RelativePath = $"{YouTubeChannelBaseUrl}?pageSize={Pagination.MaxPageSize}";
         });
 
-        return response ?? [];
+        return response?.Items.ToList() ?? [];
     }
 
     public async Task<List<UserCollectorYouTubeChannel>> GetByUserAsync(string ownerOid)
     {
-        var response = await apiClient.GetForUserAsync<List<UserCollectorYouTubeChannel>>(ApiServiceName, options =>
+        var response = await apiClient.GetForUserAsync<PagedResponse<UserCollectorYouTubeChannel>>(ApiServiceName, options =>
         {
-            options.RelativePath = BuildRelativePath(ownerOid);
+            options.RelativePath = BuildRelativePath(ownerOid) + $"&pageSize={Pagination.MaxPageSize}";
         });
 
-        return response ?? [];
+        return response?.Items.ToList() ?? [];
     }
 
     public async Task<UserCollectorYouTubeChannel?> GetByIdAsync(int id)

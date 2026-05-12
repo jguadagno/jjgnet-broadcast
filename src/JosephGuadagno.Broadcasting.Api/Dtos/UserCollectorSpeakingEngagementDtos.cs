@@ -23,4 +23,9 @@ public class UserCollectorSpeakingEngagementResponse
     public bool IsActive { get; set; }
     public DateTimeOffset CreatedOn { get; set; }
     public DateTimeOffset LastUpdatedOn { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Entra Object ID of the user who owns this configuration
+    /// </summary>
+    public string CreatedByEntraOid { get; set; } = string.Empty;
 }

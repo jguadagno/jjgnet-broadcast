@@ -78,4 +78,9 @@ public class UserCollectorYouTubeChannelResponse
     /// Gets or sets when this configuration was last updated
     /// </summary>
     public DateTimeOffset LastUpdatedOn { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Entra Object ID of the user who owns this configuration
+    /// </summary>
+    public string CreatedByEntraOid { get; set; } = string.Empty;
 }
