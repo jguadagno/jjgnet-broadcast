@@ -157,7 +157,15 @@ Fixed all 4 blocking issues and 3 warnings from Neo's review:
 2. `BuildPageViewModelAsync` is the single source of truth for populating the page view model; adding a new collector type only requires: fetch via service (admin/non-admin branch), inline projection to ViewModel, assign to the new collection property.
 3. The inline projection pattern (`.Select(x => new ViewModel { ... }).ToList()`) is the established pattern in this controller — do not introduce AutoMapper for new collections added to `BuildPageViewModelAsync` unless the rest of the method already uses it.
 
-### 2026-05-13 — Issue #954: UserCollectorYouTubeChannel ApiKey → Key Vault
+### 2026-05-12 — Issue #954 follow-up: ApiKey required enforcement for YouTube channel Add/Edit
+
+1. When a single API request DTO is used for both Create (POST) and Update (PUT), and the required-ness of a field differs between the two operations, split into two concrete DTOs: `CreateXxxRequest` (field `[Required]`) and `UpdateXxxRequest` (field `string?`). Add an AutoMapper profile entry for each. The Open API contract stays stable; only the DTO type names are internal.
+2. For the Update case, `[Required]` validation is done manually in the controller AFTER fetching the existing record: check `!existing.HasApiKey && string.IsNullOrWhiteSpace(request.ApiKey)` and return `BadRequest` — not a ModelState error — because by the time the domain fetch happens, ModelState validation is already complete.
+3. AutoMapper will throw `AutoMapperConfigurationException` on `AssertConfigurationIsValid` if a destination property has no source property and is not explicitly ignored. Always add `.ForMember(d => d.HasApiKey, o => o.Ignore())` when mapping from a DTO to the domain model because `HasApiKey` is a server-computed flag, not a client-supplied value.
+4. In the Razor Web layer, `bool HasApiKey` must be on the ViewModel AND round-tripped via a `<input type="hidden" asp-for="HasApiKey" />` in the Edit view. Without the hidden field, the POST always receives `false`, which would incorrectly force the user to re-enter the key on every edit.
+5. Razor tag helpers (`asp-for`) cannot have C# ternary expressions in attribute declarations — RZ1031. Conditional HTML attributes (like `required`) on tag-helper elements must be handled with a full `@if/else` block wrapping the entire element.
+
+
 
 1. When removing a domain-model property that the Web layer uses as a "pass-through" to the API (the domain model is serialized and POSTed to the API endpoint), keep it on the domain model as a **transient field** alongside the new persisted field (`ApiKeySecretName`). The EF model should only have the persisted column; the mapping profile ignores the transient field in both directions.
 2. Use `ReverseMap()` with a leading `.ForMember(dest => dest.TransientProp, o => o.Ignore())` for EF↔Domain maps when the domain model has transient-only properties that the EF model doesn't have. The reverse direction (Domain→EF) auto-ignores unmapped source properties.
