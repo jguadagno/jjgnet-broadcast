@@ -106,12 +106,12 @@
     /// <returns></returns>
     public string GetSocialIcon(string platform)
     {
-        return platform switch
+        return platform.ToLowerInvariant() switch
         {
-            "Facebook" => "bi-facebook",
-            "Twitter" => "bi-twitter-x",
-            "LinkedIn" => "bi-linkedin",
-            "Bluesky" => "bi-bluesky",
+            "facebook" => "bi-facebook",
+            "twitter" => "bi-twitter-x",
+            "linkedin" => "bi-linkedin",
+            "bluesky" => "bi-bluesky",
             _ => "bi-broadcast"
         };
     }

@@ -27,11 +27,11 @@
 
                 <div class="mb-3">
                     <label asp-for="FeedUrl" class="form-label"></label>
-                    <input asp-for="FeedUrl" class="form-control" type="url" />
+                    <input asp-for="FeedUrl" class="form-control" data-rule-url2="true" />
                     <span asp-validation-for="FeedUrl" class="text-danger"></span>
                 </div>
 
-                <div class="mb-3 form-check">
+                <div class="mb-3 form-switch">
                     <input asp-for="IsActive" class="form-check-input" />
                     <label asp-for="IsActive" class="form-check-label">Active</label>
                 </div>
@@ -48,7 +48,10 @@
         </div>
     </div>
 </div>
-
+ 
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    @* <script language="javascript"> *@
+    @*     $("#FeedUrl").rules("add", {url2: true}); *@
+    @* </script> *@
 }

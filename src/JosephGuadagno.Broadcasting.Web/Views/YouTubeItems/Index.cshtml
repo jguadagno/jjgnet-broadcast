@@ -83,9 +83,21 @@ else
         @foreach (var source in Model)
         {
             <tr>
-                <td>@source.Title</td>
+                <td>
+                    @source.Title
+                    @if (!string.IsNullOrEmpty(source.Url))
+                    {
+                        <a href="@source.Url" title="@source.Title" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a>
+                    }
+                </td>
                 <td>@source.Author</td>
-                <td>@source.VideoId</td>
+                <td>
+                    @source.VideoId
+                    @if (!string.IsNullOrEmpty(source.Url))
+                    {
+                        <a href="@source.Url" title="@source.Title" target="_blank"><i class="bi bi-box-arrow-up-right"></i></a>
+                    }
+                </td>
                 <td><local-time value="@source.PublicationDate" /></td>
                 <td><local-time value="@source.AddedOn" /></td>
                 <td class="text-end">
