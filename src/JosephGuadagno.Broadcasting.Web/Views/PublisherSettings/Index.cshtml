@@ -25,35 +25,65 @@
     </div>
 }
 
-<div class="row g-4">
-    @foreach (var platform in Model.Platforms)
-    {
-        <div class="col-12 col-xl-6">
-            <div class="card h-100 @(platform.IsConfigured ? "shadow-sm" : "border-secondary-subtle")">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div>
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Platform</th>
+                <th>Status</th>
+                <th>Configured</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var platform in Model.Platforms)
+            {
+                <tr>
+                    <td>
                         <i class="bi @(string.IsNullOrWhiteSpace(platform.PlatformIcon) ? "bi-broadcast" : platform.PlatformIcon) me-2"></i>
-                        <strong>@platform.DisplayName</strong>
-                    </div>
-                    @if (platform.IsConfigured)
-                    {
-                        <span class="badge @(platform.IsEnabled ? "text-bg-success" : "text-bg-secondary")">
-                            @(platform.IsEnabled ? "Enabled" : "Disabled")
-                        </span>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(platform.CredentialSetupDocumentationUrl))
-                    {
-                        <a href="@platform.CredentialSetupDocumentationUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-info ms-2">
-                            <i class="bi bi-book"></i> Setup guide
-                        </a>
-                    }
-                </div>
-                <partial name="@platform.PartialViewName" model="platform" />
-            </div>
-        </div>
-    }
+                        @platform.DisplayName
+                    </td>
+                    <td>
+                        @if (!platform.IsConfigured)
+                        {
+                            <span class="badge text-bg-secondary">Not supported</span>
+                        }
+                        else if (platform.IsEnabled)
+                        {
+                            <span class="badge text-bg-success">Enabled</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">Disabled</span>
+                        }
+                    </td>
+                    <td>
+                        @if (platform.IsConfigured)
+                        {
+                            @if (platform.Id > 0)
+                            {
+                                <i class="bi bi-check-circle-fill text-success" title="Settings saved"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-dash-circle text-muted" title="Not yet configured"></i>
+                            }
+                        }
+                    </td>
+                    <td class="text-end">
+                        @if (platform.IsConfigured)
+                        {
+                            <a asp-action="Edit"
+                               asp-route-id="@platform.SocialMediaPlatformId"
+                               asp-route-userOid="@(Model.IsManagedBySiteAdmin ? Model.TargetUserEntraOid : null)"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil me-1"></i>Edit
+                            </a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>
 
-@section Scripts {
-    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
-}
