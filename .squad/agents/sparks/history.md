@@ -16,6 +16,7 @@ Sparks (Frontend/Polish Specialist) focuses on UI/UX refinements, Bootstrap 5 mi
 | 2026-04-24 | Fix dt/dd HTML pairing in Schedules Details view (#845) | ✅ Changed all value `<dt>` elements to `<dd>` inside the `<dl class="row">` — 8 pairs now correctly use `<dt>` (label) + `<dd>` (value); PR #848 |
 | 2026-04-11 | Fix AddPlatform 400 error (#708) | ✅ Removed redundant asp-route-engagementId from form causing model binding conflict; EngagementId now only posted via hidden field in ViewModel |
 | 2026-04-27 | Add sorting, filtering, searching to all index pages (#870) | ✅ Schedules index full sort/filter/H1/Bootstrap 5 fix; Engagements index H1; SyndicationFeedSources + YouTubeSources thead-dark → table-dark; wired Schedules service sort/filter to API; PR #876 |
+| 2026-05-14 | Refactor MessageTemplates GetSocialIcon helper (#950) | ✅ Removed @functions block; injected ISocialMediaPlatformService into controller; built ViewBag.PlatformIcons dictionary with "bi-broadcast" fallback; updated view to use dictionary lookup; build 0 errors; branch issue-950-sanity-check |
 
 ## Learnings
 
