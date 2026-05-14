@@ -17,6 +17,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 public class MessageTemplatesController : Controller
 {
     private readonly IMessageTemplateService _messageTemplateService;
+    private readonly ISocialMediaPlatformService _socialMediaPlatformService;
     private readonly IMapper _mapper;
     private readonly ILogger<MessageTemplatesController> _logger;
 
@@ -24,12 +25,15 @@ public class MessageTemplatesController : Controller
     /// The constructor for the message templates controller.
     /// </summary>
     /// <param name="messageTemplateService">The message template service</param>
+    /// <param name="socialMediaPlatformService">The social media platform service</param>
     /// <param name="mapper">The mapper service</param>
     /// <param name="logger">The logger</param>
-    public MessageTemplatesController(IMessageTemplateService messageTemplateService, IMapper mapper,
+    public MessageTemplatesController(IMessageTemplateService messageTemplateService,
+        ISocialMediaPlatformService socialMediaPlatformService, IMapper mapper,
         ILogger<MessageTemplatesController> logger)
     {
         _messageTemplateService = messageTemplateService;
+        _socialMediaPlatformService = socialMediaPlatformService;
         _mapper = mapper;
         _logger = logger;
     }
@@ -41,6 +45,11 @@ public class MessageTemplatesController : Controller
     {
         var result = await _messageTemplateService.GetAllAsync(page: 1, pageSize: 100, sortBy, sortDescending, filter);
         var allViewModels = _mapper.Map<List<MessageTemplateViewModel>>(result?.Items ?? []);
+
+        var platformsResult = await _socialMediaPlatformService.GetAllAsync(pageSize: 100);
+        var platformIcons = (platformsResult?.Items ?? [])
+            .ToDictionary(p => p.Name, p => p.Icon ?? "bi-broadcast");
+        ViewBag.PlatformIcons = platformIcons;
 
         var platforms = allViewModels.Select(t => t.Platform).Distinct().OrderBy(p => p).ToList();
 
