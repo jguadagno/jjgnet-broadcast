@@ -19,6 +19,13 @@ Sparks (Frontend/Polish Specialist) focuses on UI/UX refinements, Bootstrap 5 mi
 
 ## Learnings
 
+### 2026-05-14 — MessageTemplates: Replace GetSocialIcon with SocialMediaPlatform.Icon
+- **Files:** `Controllers/MessageTemplatesController.cs`, `Views/MessageTemplates/Index.cshtml`
+- **Change:** Removed the hardcoded `@functions { GetSocialIcon(string platform) }` helper from the view. Injected `ISocialMediaPlatformService` as a third constructor parameter in the controller. In `Index()`, called `GetAllAsync(pageSize: 100)` to build a `Dictionary<string, string>` keyed on `platform.Name` with value `platform.Icon ?? "bi-broadcast"`, stored in `ViewBag.PlatformIcons`.
+- **View pattern:** Cast `ViewBag.PlatformIcons` once before the `@foreach` loop (`var platformIcons = (Dictionary<string, string>)ViewBag.PlatformIcons;`), then use `TryGetValue` inside the loop with `??= "bi-broadcast"` null-coalesce fallback. No inline `@{ }` block needed inside the loop — Razor executes inline C# statements directly in loop body.
+- **Key rule:** `SocialMediaPlatform.Icon` is `string?` — always apply `?? "bi-broadcast"` fallback both when building the dictionary (controller) and when resolving the value (view).
+- **Branch:** `issue-950-sanity-check`
+
 ### 2026-05-12 — CollectorSettings Modal → Redirect Refactor
 - **Pattern:** When multiple inline modals (Add + Edit per entity type) share a single settings page, replace them with redirect links to dedicated controller actions. Modals require data-attribute state transfer and JS listeners; dedicated pages get clean model binding, asp-validation-for spans, and server-side validation for free.
 - **thead class:** All section tables on settings pages should use `<thead class="table-dark">` — consistent with Bootstrap 5 charter and other index pages.

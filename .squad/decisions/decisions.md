@@ -1,3 +1,12 @@
+# Decision: Sanity Check / Stabilization Sprint Directive
+
+**Date:** 2026-05-14  
+**Author:** Joseph Guadagno (via Copilot)  
+**What:** Current focus is the sanity check sprint. Joe is testing and validating all recent work. Non-critical issues get filed as GitHub issues rather than fixed immediately. The team will NOT pick up new issues from the backlog until the codebase is stable enough to safely deploy.  
+**Why:** User directive — captured for team memory
+
+---
+
 # Decision: Epic #667 Database Layer Review — Breaking Change Deployment Strategy
 
 **Date:** 2026-04-08  
