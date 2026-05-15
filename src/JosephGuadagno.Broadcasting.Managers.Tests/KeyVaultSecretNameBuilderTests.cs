@@ -6,15 +6,15 @@ namespace JosephGuadagno.Broadcasting.Managers.Tests;
 public class KeyVaultSecretNameBuilderTests
 {
     [Theory]
-    [InlineData("owner-1", "publisher", "bluesky", "app-password", "publisher-owner-1-bluesky-app-password")]
-    [InlineData("owner-1", "publisher", "twitter", "consumer-key", "publisher-owner-1-twitter-consumer-key")]
-    [InlineData("owner-1", "publisher", "linkedin", "access-token", "publisher-owner-1-linkedin-access-token")]
-    [InlineData("owner-1", "publisher", "facebook", "page-access-token", "publisher-owner-1-facebook-page-access-token")]
-    [InlineData("owner-1", "collector", "youtube-channel", "api-key", "collector-owner-1-youtube-channel-api-key")]
+    [InlineData(KeyVaultSecretOwnerType.Publisher, "owner-1", KeyVaultSecretNames.Platform.Bluesky, KeyVaultSecretNames.SettingName.AppPassword, "publisher-owner-1-bluesky-app-password")]
+    [InlineData(KeyVaultSecretOwnerType.Publisher, "owner-1", KeyVaultSecretNames.Platform.Twitter, KeyVaultSecretNames.SettingName.ConsumerKey, "publisher-owner-1-twitter-consumer-key")]
+    [InlineData(KeyVaultSecretOwnerType.Publisher, "owner-1", KeyVaultSecretNames.Platform.LinkedIn, KeyVaultSecretNames.SettingName.AccessToken, "publisher-owner-1-linkedin-access-token")]
+    [InlineData(KeyVaultSecretOwnerType.Publisher, "owner-1", KeyVaultSecretNames.Platform.Facebook, KeyVaultSecretNames.SettingName.PageAccessToken, "publisher-owner-1-facebook-page-access-token")]
+    [InlineData(KeyVaultSecretOwnerType.Collector, "owner-1", KeyVaultSecretNames.Platform.YouTubeChannel, KeyVaultSecretNames.SettingName.ApiKey, "collector-owner-1-youtube-channel-api-key")]
     public void Build_WithCleanOwner_ReturnsExpectedFormat(
-        string ownerOid, string type, string platform, string settingName, string expected)
+        KeyVaultSecretOwnerType ownerType, string ownerOid, string platform, string settingName, string expected)
     {
-        var result = KeyVaultSecretNameBuilder.Build(type, ownerOid, platform, settingName);
+        var result = KeyVaultSecretNameBuilder.Build(ownerType, ownerOid, platform, settingName);
 
         result.Should().Be(expected);
     }
@@ -25,7 +25,7 @@ public class KeyVaultSecretNameBuilderTests
     [InlineData("owner_underscore", "publisher-owner-underscore-bluesky-app-password")]
     public void Build_WithSpecialCharsInOwner_SanitizesToHyphens(string ownerOid, string expected)
     {
-        var result = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "bluesky", "app-password");
+        var result = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Bluesky, KeyVaultSecretNames.SettingName.AppPassword);
 
         result.Should().Be(expected);
     }
@@ -36,7 +36,7 @@ public class KeyVaultSecretNameBuilderTests
     public void Build_WithDiscriminator_InsertsDiscriminatorBetweenPlatformAndSettingName(
         string ownerOid, string discriminator, string expected)
     {
-        var result = KeyVaultSecretNameBuilder.Build("collector", ownerOid, "youtube-channel", "api-key", discriminator);
+        var result = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Collector, ownerOid, KeyVaultSecretNames.Platform.YouTubeChannel, KeyVaultSecretNames.SettingName.ApiKey, discriminator);
 
         result.Should().Be(expected);
     }
@@ -44,8 +44,8 @@ public class KeyVaultSecretNameBuilderTests
     [Fact]
     public void Build_WithNullDiscriminator_OmitsDiscriminatorSegment()
     {
-        var withDiscriminator = KeyVaultSecretNameBuilder.Build("collector", "owner-1", "youtube-channel", "api-key", "channel-x");
-        var withoutDiscriminator = KeyVaultSecretNameBuilder.Build("collector", "owner-1", "youtube-channel", "api-key");
+        var withDiscriminator = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Collector, "owner-1", KeyVaultSecretNames.Platform.YouTubeChannel, KeyVaultSecretNames.SettingName.ApiKey, "channel-x");
+        var withoutDiscriminator = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Collector, "owner-1", KeyVaultSecretNames.Platform.YouTubeChannel, KeyVaultSecretNames.SettingName.ApiKey);
 
         withDiscriminator.Should().Be("collector-owner-1-youtube-channel-channel-x-api-key");
         withoutDiscriminator.Should().Be("collector-owner-1-youtube-channel-api-key");

@@ -59,7 +59,7 @@ public class UserPublisherBlueskySettingsManager : IUserPublisherBlueskySettings
     public async Task<string?> GetAppPasswordAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "bluesky", "app-password");
+        var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Bluesky, KeyVaultSecretNames.SettingName.AppPassword);
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -80,7 +80,7 @@ public class UserPublisherBlueskySettingsManager : IUserPublisherBlueskySettings
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(appPassword);
-        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "bluesky", "app-password");
+        var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Bluesky, KeyVaultSecretNames.SettingName.AppPassword);
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, appPassword, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored Bluesky app password in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
