@@ -53,96 +53,49 @@
             </button>
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav flex-grow-1">
-                    <li class="nav-item">
-                        <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                    </li>
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Engagements" asp-action="Index">
-                                <i class="fa-solid fa-person-chalkboard me-1"></i>Engagements
-                            </a>
-                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="scheduleDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="False">
                                 <i class="bi bi-calendar me-1"></i>Schedules
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="scheduleDropdown">
-                                <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Index">All</a></li>    
-                                <li><hr class="dropdown-divider"></li>    
+                                <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Index">All</a></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Calendar">
                                     <i class="bi bi-calendar-month me-1"></i>Calendar
-                                </a></li>    
+                                </a></li>
                                 <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Upcoming">
                                     <i class="bi bi-envelope me-1"></i>Upcoming
-                                </a></li>    
+                                </a></li>
                                 <li><a class="dropdown-item" asp-area="" asp-controller="Schedules" asp-action="Unsent">
                                     <i class="bi bi-envelope-dash me-1"></i>Unsent
-                                </a></li>    
+                                </a></li>
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="False">
-                                <i class="bi bi-shield-lock me-1"></i>Admin
+                            <a class="nav-link dropdown-toggle" href="#" id="contentDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="False">
+                                <i class="fa-solid fa-icons me-1"></i>Content
                             </a>
-                            <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                            <ul class="dropdown-menu" aria-labelledby="contentDropdown">
                                 <li>
-                                    <a class="dropdown-item" asp-area="" asp-controller="MessageTemplates" asp-action="Index">
-                                        <i class="bi bi-textarea-t me-2"></i>Message Templates
+                                    <a class="dropdown-item" asp-area="" asp-controller="Engagements" asp-action="Index">
+                                        <i class="fa-solid fa-person-chalkboard me-2"></i>Engagements
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" asp-area="" asp-controller="SyndicationFeedSources" asp-action="Index">
-                                        <i class="bi bi-rss me-2"></i>Syndication Feed Sources
+                                    <a class="dropdown-item" asp-area="" asp-controller="SyndicationFeedItems" asp-action="Index">
+                                        <i class="bi bi-rss me-2"></i>Syndication Feed Items
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" asp-area="" asp-controller="YouTubeSources" asp-action="Index">
-                                        <i class="bi bi-youtube me-2"></i>YouTube Sources
+                                    <a class="dropdown-item" asp-area="" asp-controller="YouTubeItems" asp-action="Index">
+                                        <i class="bi bi-youtube me-2"></i>YouTube Items
                                     </a>
                                 </li>
                             </ul>
                         </li>
-                        <li class="nav-item">
-                            
-                        </li>
-                        <li class="nav-item">
-                            
-                        </li>
-                        <li class="nav-item">
-                            
-                        </li>
-                        @if (User.IsInRole(RoleNames.SiteAdministrator) || User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Contributor))
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="siteAdminDropdown" role="button"
-                                   data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-shield-lock me-1"></i>Site Admin
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="siteAdminDropdown">
-                                    <li>
-                                        <h6 class="dropdown-header">Platform Management</h6>
-                                    </li>
-                                    <li><a class="dropdown-item" asp-area="" asp-controller="SocialMediaPlatforms" asp-action="Index">
-                                        <i class="bi bi-share me-2"></i>Social Media Platforms
-                                    </a></li>
-                                    @if (User.IsInRole(RoleNames.SiteAdministrator))
-                                    {
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <h6 class="dropdown-header">Account Management</h6>
-                                        </li>
-                                        <li><a class="dropdown-item" asp-area="" asp-controller="SiteAdmin" asp-action="Users">
-                                            <i class="bi bi-people me-2"></i>Users
-                                        </a></li>
-                                    }
-                                </ul>
-                            </li>
-                        }
                     }
-                    <li class="nav-item">
-                        <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                    </li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">

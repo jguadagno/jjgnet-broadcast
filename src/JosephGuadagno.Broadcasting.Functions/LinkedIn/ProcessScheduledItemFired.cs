@@ -17,8 +17,8 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 public class ProcessScheduledItemFired(
     IScheduledItemManager scheduledItemManager,
     IEngagementManager engagementManager,
-    ISyndicationFeedSourceManager syndicationFeedSourceManager,
-    IYouTubeSourceManager youTubeSourceManager,
+    ISyndicationFeedItemManager SyndicationFeedItemManager,
+    IYouTubeItemManager YouTubeItemManager,
     IUserOAuthTokenManager userOAuthTokenManager,
     ILinkedInManager linkedInManager,
     ILogger<ProcessScheduledItemFired> logger)
@@ -77,11 +77,11 @@ public class ProcessScheduledItemFired(
                 case ScheduledItemType.Talks:
                     linkedInPost = await GetPostForTalk(scheduledItem.ItemPrimaryKey);
                     break;
-                case ScheduledItemType.SyndicationFeedSources:
+                case ScheduledItemType.SyndicationFeedItems:
                     linkedInPost = await GetPostForSyndicationSource(scheduledItem.ItemPrimaryKey);
                     break;
-                case ScheduledItemType.YouTubeSources:
-                    linkedInPost = await GetPostForYouTubeSource(scheduledItem.ItemPrimaryKey);
+                case ScheduledItemType.YouTubeItems:
+                    linkedInPost = await GetPostForYouTubeItem(scheduledItem.ItemPrimaryKey);
                     break;
                 default:
                     logger.LogError("The table name '{TableName}' is not supported", scheduledItem.ItemTableName);
@@ -160,9 +160,9 @@ public class ProcessScheduledItemFired(
         logger.LogDebug("Getting the text for syndication source for '{PrimaryKey}'", primaryKey);
         try
         {
-            var syndicationFeedSource = await syndicationFeedSourceManager.GetAsync(primaryKey);
-            post.Title = syndicationFeedSource.Title;
-            post.LinkUrl = syndicationFeedSource.ShortenedUrl ?? syndicationFeedSource.Url;
+            var SyndicationFeedItem = await SyndicationFeedItemManager.GetAsync(primaryKey);
+            post.Title = SyndicationFeedItem.Title;
+            post.LinkUrl = SyndicationFeedItem.ShortenedUrl ?? SyndicationFeedItem.Url;
         }
         catch (Exception e)
         {
@@ -172,15 +172,15 @@ public class ProcessScheduledItemFired(
         return post;
     }
 
-    private async Task<LinkedInPostLink> GetPostForYouTubeSource(int primaryKey)
+    private async Task<LinkedInPostLink> GetPostForYouTubeItem(int primaryKey)
     {
         var post = new LinkedInPostLink();
         logger.LogDebug("Getting the text for YouTube source for '{PrimaryKey}'", primaryKey);
         try
         {
-            var youTubeSource = await youTubeSourceManager.GetAsync(primaryKey);
-            post.Title = youTubeSource.Title;
-            post.LinkUrl = youTubeSource.ShortenedUrl ?? youTubeSource.Url;
+            var YouTubeItem = await YouTubeItemManager.GetAsync(primaryKey);
+            post.Title = YouTubeItem.Title;
+            post.LinkUrl = YouTubeItem.ShortenedUrl ?? YouTubeItem.Url;
         }
         catch (Exception e)
         {

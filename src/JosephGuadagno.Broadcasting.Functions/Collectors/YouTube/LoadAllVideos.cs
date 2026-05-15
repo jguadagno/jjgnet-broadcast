@@ -2,7 +2,6 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.Functions.Collectors;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
@@ -18,7 +17,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube;
 public class LoadAllVideos(
     IYouTubeReader youTubeReader,
     IOptions<Settings> settingsOptions,
-    IYouTubeSourceManager youTubeSourceManager,
+    IYouTubeItemManager YouTubeItemManager,
     IFeedCheckManager feedCheckManager,
     IUrlShortener urlShortener,
     ILogger<LoadAllVideos> logger)
@@ -27,12 +26,18 @@ public class LoadAllVideos(
     [Function(ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos)]
     public async Task<IActionResult> RunAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post")]
-        HttpRequest req, 
+        HttpRequest req,
+        string ownerOid,
         string checkFrom)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos, startedAt);
+
+        if (string.IsNullOrWhiteSpace(ownerOid))
+        {
+            return new BadRequestObjectResult("The 'ownerOid' query parameter is required.");
+        }
 
         // Check for the date to check from
         var dateToCheckFrom = DateTimeOffset.MinValue;
@@ -48,14 +53,6 @@ public class LoadAllVideos(
 
         try
         {
-            var ownerOid = await CollectorOwnerOidResolver.ResolveAsync(
-                youTubeSourceManager,
-                logger,
-                ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos);
-            if (string.IsNullOrWhiteSpace(ownerOid))
-            {
-                return new BadRequestObjectResult("Unable to resolve collector owner OID from YouTube source records.");
-            }
 
             logger.LogDebug("Getting all items from YouTube for the playlist since '{DateToCheckFrom}'", dateToCheckFrom);
             var newItems = await youTubeReader.GetAsync(ownerOid, dateToCheckFrom);
@@ -72,7 +69,7 @@ public class LoadAllVideos(
             foreach (var item in newItems)
             {
                 // Skip if item already exists
-                var existingItem = await youTubeSourceManager.GetByVideoIdAsync(item.VideoId);
+                var existingItem = await YouTubeItemManager.GetByVideoIdAsync(item.VideoId);
                 if (existingItem != null)
                 {
                     logger.LogDebug("Skipping duplicate YouTube video with VideoId: '{VideoId}'", item.VideoId);
@@ -85,7 +82,7 @@ public class LoadAllVideos(
                 // attempt to save the item
                 try
                 {
-                    var saveResult = await youTubeSourceManager.SaveAsync(item);
+                    var saveResult = await YouTubeItemManager.SaveAsync(item);
 
                     if (!saveResult.IsSuccess || saveResult.Value is null)
                     {
@@ -113,12 +110,13 @@ public class LoadAllVideos(
 
             // Save the last checked value
             var feedCheck =
-                await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos) ??
+                await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos, ownerOid) ??
                 new FeedCheck
                 {
                     Name = ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos,
                     LastCheckedFeed = startedAt,
-                    LastItemAddedOrUpdated = DateTimeOffset.Now
+                    LastItemAddedOrUpdated = DateTimeOffset.Now,
+                    EntraOId = ownerOid
                 };
             var latestAdded = newItems.Max(item => item.PublicationDate);
             var latestUpdated = newItems.Max(item => item.LastUpdatedOn);

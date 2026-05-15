@@ -27,6 +27,7 @@ public class FeedCheckDataStore(BroadcastingContext broadcastingContext, IMapper
             else
             {
                 dbFeedCheck.Name = entity.Name;
+                dbFeedCheck.EntraOId = entity.EntraOId;
                 dbFeedCheck.LastUpdatedOn = entity.LastUpdatedOn;
                 dbFeedCheck.LastCheckedFeed = entity.LastCheckedFeed;
                 dbFeedCheck.LastItemAddedOrUpdated = entity.LastItemAddedOrUpdated;
@@ -72,10 +73,10 @@ public class FeedCheckDataStore(BroadcastingContext broadcastingContext, IMapper
         }
     }
 
-    public async Task<Domain.Models.FeedCheck?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+    public async Task<Domain.Models.FeedCheck?> GetByNameAsync(string name, string entraOId, CancellationToken cancellationToken = default)
     {
         var dbFeedCheck = await broadcastingContext.FeedChecks.AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Name == name, cancellationToken);
+            .FirstOrDefaultAsync(c => c.Name == name && c.EntraOId == entraOId, cancellationToken);
         return dbFeedCheck is null ? null : mapper.Map<Domain.Models.FeedCheck>(dbFeedCheck);
     }
 }

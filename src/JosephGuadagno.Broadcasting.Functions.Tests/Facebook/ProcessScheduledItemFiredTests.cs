@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Messaging.EventGrid;
-using JosephGuadagno.Broadcasting.Domain.Constants;
+
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -23,7 +23,7 @@ public class ProcessScheduledItemFiredTests
     }
 
     private static Domain.Models.ScheduledItem BuildScheduledItem(int id = 1, int primaryKey = 42,
-        ScheduledItemType itemType = ScheduledItemType.SyndicationFeedSources) => new()
+        ScheduledItemType itemType = ScheduledItemType.SyndicationFeedItems) => new()
     {
         Id = id,
         ItemType = itemType,
@@ -32,7 +32,7 @@ public class ProcessScheduledItemFiredTests
         SendOnDateTime = DateTimeOffset.UtcNow
     };
 
-    private static SyndicationFeedSource BuildFeedSource() => new()
+    private static SyndicationFeedItem BuildFeedSource() => new()
     {
         Id = 42,
         FeedIdentifier = "feed-1",
@@ -70,7 +70,7 @@ public class ProcessScheduledItemFiredTests
         EngagementId = engagementId
     };
 
-    private static YouTubeSource BuildYouTubeSource(int id = 42) => new()
+    private static YouTubeItem BuildYouTubeItem(int id = 42) => new()
     {
         Id = id,
         VideoId = "abc123def",
@@ -87,8 +87,8 @@ public class ProcessScheduledItemFiredTests
 
     private static Functions.Facebook.ProcessScheduledItemFired BuildSut(
         Mock<IScheduledItemManager> scheduledItemManager,
-        Mock<ISyndicationFeedSourceManager> feedSourceManager,
-        Mock<IYouTubeSourceManager> youTubeSourceManager,
+        Mock<ISyndicationFeedItemManager> feedSourceManager,
+        Mock<IYouTubeItemManager> YouTubeItemManager,
         Mock<IEngagementManager> engagementManager,
         Mock<IFacebookManager> facebookManager)
     {
@@ -96,7 +96,7 @@ public class ProcessScheduledItemFiredTests
             scheduledItemManager.Object,
             engagementManager.Object,
             feedSourceManager.Object,
-            youTubeSourceManager.Object,
+            YouTubeItemManager.Object,
             facebookManager.Object,
             NullLogger<Functions.Facebook.ProcessScheduledItemFired>.Instance);
     }
@@ -119,13 +119,13 @@ public class ProcessScheduledItemFiredTests
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
 
-        var mockFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
+        var mockFeedSourceManager = new Mock<ISyndicationFeedItemManager>();
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var facebookManager = BuildFacebookManager("Test Blog Post Title - https://example.com/post");
 
         var sut = BuildSut(mockScheduledItemManager, mockFeedSourceManager,
-            new Mock<IYouTubeSourceManager>(), new Mock<IEngagementManager>(), facebookManager);
+            new Mock<IYouTubeItemManager>(), new Mock<IEngagementManager>(), facebookManager);
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -146,13 +146,13 @@ public class ProcessScheduledItemFiredTests
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
 
-        var mockFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
+        var mockFeedSourceManager = new Mock<ISyndicationFeedItemManager>();
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var facebookManager = BuildFacebookManager();
 
         var sut = BuildSut(mockScheduledItemManager, mockFeedSourceManager,
-            new Mock<IYouTubeSourceManager>(), new Mock<IEngagementManager>(), facebookManager);
+            new Mock<IYouTubeItemManager>(), new Mock<IEngagementManager>(), facebookManager);
 
         // Act
         await sut.RunAsync(BuildEventGridEvent(1));
@@ -174,11 +174,11 @@ public class ProcessScheduledItemFiredTests
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
 
-        var mockFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
+        var mockFeedSourceManager = new Mock<ISyndicationFeedItemManager>();
         mockFeedSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(feedSource);
 
         var sut = BuildSut(mockScheduledItemManager, mockFeedSourceManager,
-            new Mock<IYouTubeSourceManager>(), new Mock<IEngagementManager>(), BuildFacebookManager());
+            new Mock<IYouTubeItemManager>(), new Mock<IEngagementManager>(), BuildFacebookManager());
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -201,8 +201,8 @@ public class ProcessScheduledItemFiredTests
         var mockEngagementManager = new Mock<IEngagementManager>();
         mockEngagementManager.Setup(m => m.GetAsync(42)).ReturnsAsync(engagement);
 
-        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildFacebookManager("engagement text"));
+        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedItemManager>(),
+            new Mock<IYouTubeItemManager>(), mockEngagementManager, BuildFacebookManager("engagement text"));
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -226,8 +226,8 @@ public class ProcessScheduledItemFiredTests
         var mockEngagementManager = new Mock<IEngagementManager>();
         mockEngagementManager.Setup(m => m.GetTalkAsync(42)).ReturnsAsync(talk);
 
-        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(), mockEngagementManager, BuildFacebookManager("talk text"));
+        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedItemManager>(),
+            new Mock<IYouTubeItemManager>(), mockEngagementManager, BuildFacebookManager("talk text"));
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -239,20 +239,20 @@ public class ProcessScheduledItemFiredTests
     }
 
     [Fact]
-    public async Task RunAsync_YouTubeSource_SetsLinkUriFromVideoUrl()
+    public async Task RunAsync_YouTubeItem_SetsLinkUriFromVideoUrl()
     {
         // Arrange
-        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.YouTubeSources);
-        var youTubeSource = BuildYouTubeSource();
+        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.YouTubeItems);
+        var YouTubeItem = BuildYouTubeItem();
 
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
 
-        var mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
-        mockYouTubeSourceManager.Setup(m => m.GetAsync(42)).ReturnsAsync(youTubeSource);
+        var mockYouTubeItemManager = new Mock<IYouTubeItemManager>();
+        mockYouTubeItemManager.Setup(m => m.GetAsync(42)).ReturnsAsync(YouTubeItem);
 
-        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedSourceManager>(),
-            mockYouTubeSourceManager, new Mock<IEngagementManager>(), BuildFacebookManager("video text"));
+        var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedItemManager>(),
+            mockYouTubeItemManager, new Mock<IEngagementManager>(), BuildFacebookManager("video text"));
 
         // Act
         var result = await sut.RunAsync(BuildEventGridEvent(1));

@@ -132,10 +132,10 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
                  !broadcastingContext.Engagements.Any(e => e.Id == s.ItemPrimaryKey)) ||
                 (s.ItemTableName == ScheduledItemType.Talks.ToString() &&
                  !broadcastingContext.Talks.Any(t => t.Id == s.ItemPrimaryKey)) ||
-                (s.ItemTableName == ScheduledItemType.SyndicationFeedSources.ToString() &&
-                 !broadcastingContext.SyndicationFeedSources.Any(sf => sf.Id == s.ItemPrimaryKey)) ||
-                (s.ItemTableName == ScheduledItemType.YouTubeSources.ToString() &&
-                 !broadcastingContext.YouTubeSources.Any(y => y.Id == s.ItemPrimaryKey))
+                (s.ItemTableName == ScheduledItemType.SyndicationFeedItems.ToString() &&
+                 !broadcastingContext.SyndicationFeedItems.Any(sf => sf.Id == s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.YouTubeItems.ToString() &&
+                 !broadcastingContext.YouTubeItems.Any(y => y.Id == s.ItemPrimaryKey))
             )
             .ToListAsync(cancellationToken);
 
@@ -151,10 +151,10 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
                  !broadcastingContext.Engagements.Any(e => e.Id == s.ItemPrimaryKey)) ||
                 (s.ItemTableName == ScheduledItemType.Talks.ToString() &&
                  !broadcastingContext.Talks.Any(t => t.Id == s.ItemPrimaryKey)) ||
-                (s.ItemTableName == ScheduledItemType.SyndicationFeedSources.ToString() &&
-                 !broadcastingContext.SyndicationFeedSources.Any(sf => sf.Id == s.ItemPrimaryKey)) ||
-                (s.ItemTableName == ScheduledItemType.YouTubeSources.ToString() &&
-                 !broadcastingContext.YouTubeSources.Any(y => y.Id == s.ItemPrimaryKey))
+                (s.ItemTableName == ScheduledItemType.SyndicationFeedItems.ToString() &&
+                 !broadcastingContext.SyndicationFeedItems.Any(sf => sf.Id == s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.YouTubeItems.ToString() &&
+                 !broadcastingContext.YouTubeItems.Any(y => y.Id == s.ItemPrimaryKey))
             )
             .ToListAsync(cancellationToken);
 
@@ -290,10 +290,10 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
                  !broadcastingContext.Engagements.Any(e => e.Id == s.ItemPrimaryKey)) ||
                 (s.ItemTableName == ScheduledItemType.Talks.ToString() &&
                  !broadcastingContext.Talks.Any(t => t.Id == s.ItemPrimaryKey)) ||
-                (s.ItemTableName == ScheduledItemType.SyndicationFeedSources.ToString() &&
-                 !broadcastingContext.SyndicationFeedSources.Any(sf => sf.Id == s.ItemPrimaryKey)) ||
-                (s.ItemTableName == ScheduledItemType.YouTubeSources.ToString() &&
-                 !broadcastingContext.YouTubeSources.Any(y => y.Id == s.ItemPrimaryKey))
+                (s.ItemTableName == ScheduledItemType.SyndicationFeedItems.ToString() &&
+                 !broadcastingContext.SyndicationFeedItems.Any(sf => sf.Id == s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.YouTubeItems.ToString() &&
+                 !broadcastingContext.YouTubeItems.Any(y => y.Id == s.ItemPrimaryKey))
             );
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query
@@ -317,10 +317,10 @@ public class ScheduledItemDataStore(BroadcastingContext broadcastingContext, IMa
                  !broadcastingContext.Engagements.Any(e => e.Id == s.ItemPrimaryKey)) ||
                 (s.ItemTableName == ScheduledItemType.Talks.ToString() &&
                  !broadcastingContext.Talks.Any(t => t.Id == s.ItemPrimaryKey)) ||
-                (s.ItemTableName == ScheduledItemType.SyndicationFeedSources.ToString() &&
-                 !broadcastingContext.SyndicationFeedSources.Any(sf => sf.Id == s.ItemPrimaryKey)) ||
-                (s.ItemTableName == ScheduledItemType.YouTubeSources.ToString() &&
-                 !broadcastingContext.YouTubeSources.Any(y => y.Id == s.ItemPrimaryKey))
+                (s.ItemTableName == ScheduledItemType.SyndicationFeedItems.ToString() &&
+                 !broadcastingContext.SyndicationFeedItems.Any(sf => sf.Id == s.ItemPrimaryKey)) ||
+                (s.ItemTableName == ScheduledItemType.YouTubeItems.ToString() &&
+                 !broadcastingContext.YouTubeItems.Any(y => y.Id == s.ItemPrimaryKey))
             );
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query

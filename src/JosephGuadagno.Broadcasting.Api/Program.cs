@@ -11,8 +11,11 @@ using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.AzureHelpers.Storage;
 using JosephGuadagno.AzureHelpers.Storage.Interfaces;
+using JosephGuadagno.Broadcasting.Data.KeyVault;
+using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
 using Scalar.AspNetCore;
@@ -187,6 +190,7 @@ void ConfigureTelemetryAndLogging(IServiceCollection services, string logPath, s
 void ConfigureApplication(IServiceCollection services)
 {
     ConfigureRepositories(services);
+    ConfigureKeyVault(services);
 }
 
 void ConfigureRepositories(IServiceCollection services)
@@ -233,16 +237,20 @@ void ConfigureRepositories(IServiceCollection services)
     services.TryAddScoped<IUserCollectorFeedSourceManager, UserCollectorFeedSourceManager>();
     services.TryAddScoped<IUserCollectorYouTubeChannelDataStore, UserCollectorYouTubeChannelDataStore>();
     services.TryAddScoped<IUserCollectorYouTubeChannelManager, UserCollectorYouTubeChannelManager>();
+    services.TryAddScoped<IUserCollectorSpeakingEngagementDataStore, UserCollectorSpeakingEngagementDataStore>();
+    services.TryAddScoped<IUserCollectorSpeakingEngagementManager, UserCollectorSpeakingEngagementManager>();
+    services.TryAddScoped<IUserCollectorScheduledItemDataStore, UserCollectorScheduledItemDataStore>();
+    services.TryAddScoped<IUserCollectorScheduledItemManager, UserCollectorScheduledItemManager>();
     
     services.TryAddScoped<IEngagementSocialMediaPlatformDataStore, EngagementSocialMediaPlatformDataStore>();
 
-    // SyndicationFeedSource
-    services.TryAddScoped<ISyndicationFeedSourceDataStore, SyndicationFeedSourceDataStore>();
-    services.TryAddScoped<ISyndicationFeedSourceManager, SyndicationFeedSourceManager>();
+    // SyndicationFeedItem
+    services.TryAddScoped<ISyndicationFeedItemDataStore, SyndicationFeedItemDataStore>();
+    services.TryAddScoped<ISyndicationFeedItemManager, SyndicationFeedItemManager>();
 
-    // YouTubeSource
-    services.TryAddScoped<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
-    services.TryAddScoped<IYouTubeSourceManager, YouTubeSourceManager>();
+    // YouTubeItem
+    services.TryAddScoped<IYouTubeItemDataStore, YouTubeItemDataStore>();
+    services.TryAddScoped<IYouTubeItemManager, YouTubeItemManager>();
 
     // RBAC Phase 1
     services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
@@ -254,6 +262,13 @@ void ConfigureRepositories(IServiceCollection services)
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
-    services.TryAddScoped<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
-    services.TryAddScoped<IYouTubeSourceManager, YouTubeSourceManager>();
+}
+
+void ConfigureKeyVault(IServiceCollection services)
+{
+    services.AddAzureClients(clientBuilder =>
+    {
+        clientBuilder.AddSecretClient(builder.Configuration.GetSection("KeyVault"));
+    });
+    services.TryAddScoped<IKeyVault, KeyVault>();
 }

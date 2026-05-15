@@ -80,7 +80,7 @@ public class ProcessNewSpeakingEngagementFired(
             logger.LogCustomEvent(Metrics.TwitterProcessedNewSpeakingEngagement, properties);
             logger.LogDebug("Generated the tweet for speaking engagement {Id}", engagement.Id);
 
-            return new TwitterTweetMessage { Text = tweetText };
+            return new TwitterTweetMessage { Text = tweetText, CreatedByEntraOid = engagement.CreatedByEntraOid };
         }
         catch (Exception e)
         {

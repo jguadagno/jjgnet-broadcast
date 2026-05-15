@@ -4,6 +4,6 @@ public enum ScheduledItemType
 {
     Engagements,
     Talks,
-    SyndicationFeedSources,
-    YouTubeSources
+    SyndicationFeedItems,
+    YouTubeItems
 }

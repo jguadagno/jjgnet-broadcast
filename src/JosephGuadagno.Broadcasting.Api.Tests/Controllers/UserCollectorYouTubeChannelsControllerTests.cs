@@ -154,7 +154,7 @@ public class UserCollectorYouTubeChannelsControllerTests
     {
         // Arrange
         const string currentUserOid = "current-user-oid-11111111";
-        var request = new UserCollectorYouTubeChannelRequest
+        var request = new CreateUserCollectorYouTubeChannelRequest
         {
             ChannelId = "UC-new-channel-123",
             DisplayName = "New Channel",
@@ -196,7 +196,7 @@ public class UserCollectorYouTubeChannelsControllerTests
         const string ownerOid = "owner-oid-11111111";
         const string nonOwnerOid = "non-owner-oid-22222222";
 
-        var request = new UserCollectorYouTubeChannelRequest
+        var request = new CreateUserCollectorYouTubeChannelRequest
         {
             ChannelId = "UC-malicious-channel-456",
             DisplayName = "Hacked Channel",
@@ -225,7 +225,7 @@ public class UserCollectorYouTubeChannelsControllerTests
             .Callback<UserCollectorYouTubeChannel, CancellationToken>((config, _) => capturedConfig = config)
             .ReturnsAsync((UserCollectorYouTubeChannel config, CancellationToken _) => config);
 
-        var request = new UserCollectorYouTubeChannelRequest
+        var request = new CreateUserCollectorYouTubeChannelRequest
         {
             ChannelId = "UC-updated-channel-456",
             DisplayName = "Updated Channel",
@@ -259,7 +259,7 @@ public class UserCollectorYouTubeChannelsControllerTests
             .Callback<UserCollectorYouTubeChannel, CancellationToken>((config, _) => capturedConfig = config)
             .ReturnsAsync((UserCollectorYouTubeChannel config, CancellationToken _) => config);
 
-        var request = new UserCollectorYouTubeChannelRequest
+        var request = new CreateUserCollectorYouTubeChannelRequest
         {
             ChannelId = "UC-target-channel-456",
             DisplayName = "Target User Channel",

@@ -33,14 +33,15 @@ public class SpeakingEngagementsReaderTests
     }
 
     [Fact]
-    public void Constructor_WithEmptySpeakerEngagementsFile_ThrowsApplicationException()
+    public async Task GetAll_WithEmptySettingsFile_ThrowsInvalidOperationException()
     {
-        // Arrange
+        // Arrange — constructor no longer validates the file; validation is deferred to GetAll()
         _mockSettings.Setup(s => s.SpeakingEngagementsFile).Returns(string.Empty);
+        var reader = new SpeakingEngagementsReader(_httpClient, _mockSettings.Object, _mockLogger.Object);
 
         // Act & Assert
-        var ex = Assert.Throws<ApplicationException>(() => new SpeakingEngagementsReader(_httpClient, _mockSettings.Object, _mockLogger.Object));
-        Assert.Equal("The SpeakingEngagementsFile of the SpeakingEngagementsReaderSettings is required", ex.Message);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => reader.GetAll());
+        Assert.Contains("SpeakingEngagementsFile is not configured", ex.Message);
     }
 
     [Fact]

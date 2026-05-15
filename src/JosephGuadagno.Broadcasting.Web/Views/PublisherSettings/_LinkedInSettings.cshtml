@@ -42,7 +42,7 @@
                     <li>Client secret: @(Model.HasClientSecret ? Model.MaskedValue : "Not set")</li>
                     <li>Access token: @(Model.HasAccessToken ? Model.MaskedValue : "Not set")</li>
                 </ul>
-                <div class="form-check mb-3">
+                <div class="form-check form-switch mb-3">
                     <input asp-for="ChangeCredentials" class="form-check-input" />
                     <label asp-for="ChangeCredentials" class="form-check-label">Change credentials</label>
                 </div>

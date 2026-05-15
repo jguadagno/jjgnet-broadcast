@@ -86,7 +86,8 @@ public class ProcessNewSpeakingEngagementFired(
             return new BlueskyPostMessage
             {
                 Text = postText.Length > MaxPostLength ? postText[..MaxPostLength] : postText,
-                Url = engagement.Url
+                Url = engagement.Url,
+                CreatedByEntraOid = engagement.CreatedByEntraOid
             };
         }
         catch (Exception e)

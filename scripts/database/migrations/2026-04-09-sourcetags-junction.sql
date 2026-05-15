@@ -23,23 +23,23 @@ CREATE UNIQUE INDEX UX_SourceTags_SourceId_SourceType_Tag
     ON dbo.SourceTags (SourceId, SourceType, Tag);
 GO
 
--- Migrate existing delimited tag data from SyndicationFeedSources
+-- Migrate existing delimited tag data from SyndicationFeedItems
 -- STRING_SPLIT without ordinal arg: SQL Server 2016+ compatible (ordering not needed for tag seeding)
 INSERT INTO dbo.SourceTags (SourceId, SourceType, Tag)
 SELECT s.Id, 'SyndicationFeed', LTRIM(RTRIM(value))
-FROM dbo.SyndicationFeedSources s
+FROM dbo.SyndicationFeedItems s
 CROSS APPLY STRING_SPLIT(s.Tags, ',')
 WHERE s.Tags IS NOT NULL AND s.Tags != '';
 GO
 
--- Migrate existing delimited tag data from YouTubeSources
+-- Migrate existing delimited tag data from YouTubeItems
 INSERT INTO dbo.SourceTags (SourceId, SourceType, Tag)
 SELECT y.Id, 'YouTube', LTRIM(RTRIM(value))
-FROM dbo.YouTubeSources y
+FROM dbo.YouTubeItems y
 CROSS APPLY STRING_SPLIT(y.Tags, ',')
 WHERE y.Tags IS NOT NULL AND y.Tags != '';
 GO
 
--- NOTE: The Tags column on SyndicationFeedSources and YouTubeSources is retained
+-- NOTE: The Tags column on SyndicationFeedItems and YouTubeItems is retained
 --       for backward compatibility. It will be removed in a future migration once
 --       all consumers have been verified to use SourceTags.

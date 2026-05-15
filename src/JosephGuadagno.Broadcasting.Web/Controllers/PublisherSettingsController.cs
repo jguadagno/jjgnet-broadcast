@@ -45,6 +45,31 @@ public class PublisherSettingsController : Controller
         return View(viewModel);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Edit(int id, string? userOid = null)
+    {
+        var resolution = await ResolveTargetUserAsync(userOid);
+        if (resolution.FailureResult is not null)
+        {
+            return resolution.FailureResult;
+        }
+
+        var platform = await _socialMediaPlatformService.GetByIdAsync(id);
+        if (platform is null)
+        {
+            return NotFound();
+        }
+
+        var currentSettings = resolution.Context!.IsManagedBySiteAdmin
+            ? await _userPublisherSettingService.GetByUserAsync(resolution.Context.TargetUserOid)
+            : await _userPublisherSettingService.GetCurrentUserAsync();
+
+        var setting = currentSettings.FirstOrDefault(s => s.SocialMediaPlatformId == id);
+        var viewModel = CreateViewModel(platform, resolution.Context.TargetUserOid, setting, resolution.Context.IsManagedBySiteAdmin);
+
+        return View(viewModel);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public Task<IActionResult> SaveBluesky(BlueskyPublisherSettingsViewModel model)
@@ -143,8 +168,8 @@ public class PublisherSettingsController : Controller
 
         if (!ModelState.IsValid)
         {
-            var invalidPage = await BuildPageViewModelAsync(resolution.Context!, model);
-            return View("Index", invalidPage);
+            model.IsManagedBySiteAdmin = resolution.Context!.IsManagedBySiteAdmin;
+            return View("Edit", model);
         }
 
         var request = mapRequest(model);
@@ -155,11 +180,11 @@ public class PublisherSettingsController : Controller
         if (savedSetting is null)
         {
             TempData["ErrorMessage"] = $"Unable to save {model.PlatformName} publisher settings right now.";
-            return RedirectToAction(nameof(Index), BuildRouteValues(resolution.Context));
+            return RedirectToAction(nameof(Edit), BuildEditRouteValues(model.SocialMediaPlatformId, resolution.Context!));
         }
 
         TempData["SuccessMessage"] = successMessage;
-        return RedirectToAction(nameof(Index), BuildRouteValues(resolution.Context));
+        return RedirectToAction(nameof(Edit), BuildEditRouteValues(model.SocialMediaPlatformId, resolution.Context!));
     }
 
     private async Task<UserPublisherSettingsPageViewModel> BuildPageViewModelAsync(
@@ -329,6 +354,13 @@ public class PublisherSettingsController : Controller
     private static object? BuildRouteValues(TargetPublisherSettingsContext context)
     {
         return context.IsManagedBySiteAdmin ? new { userOid = context.TargetUserOid } : null;
+    }
+
+    private static object BuildEditRouteValues(int platformId, TargetPublisherSettingsContext context)
+    {
+        return context.IsManagedBySiteAdmin
+            ? new { id = platformId, userOid = context.TargetUserOid }
+            : (object)new { id = platformId };
     }
 
     private static string? GetSettingValue(UserPublisherSetting? setting, string key)

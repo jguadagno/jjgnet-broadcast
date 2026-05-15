@@ -41,10 +41,16 @@
     }
 </form>
 
+@{
+    var platformIcons = (Dictionary<string, string>)ViewBag.PlatformIcons;
+}
+
 @foreach (var platform in platforms)
 {
+    platformIcons.TryGetValue(platform.Key, out var platformIcon);
+    platformIcon ??= "bi-broadcast";
     <h4 class="mt-4 mb-2">
-        <i class="bi @GetSocialIcon(platform.Key) me-2"></i>@platform.Key
+        <i class="bi @platformIcon me-2"></i>@platform.Key
     </h4>
     <table class="table table-striped table-hover table-bordered">
         <thead>
@@ -97,22 +103,4 @@
     </script>
 }
 
-@functions {
 
-    /// <summary>
-    /// Returns the icon for the social platform
-    /// </summary>
-    /// <param name="platform">The platform name</param>
-    /// <returns></returns>
-    public string GetSocialIcon(string platform)
-    {
-        return platform switch
-        {
-            "Facebook" => "bi-facebook",
-            "Twitter" => "bi-twitter-x",
-            "LinkedIn" => "bi-linkedin",
-            "Bluesky" => "bi-bluesky",
-            _ => "bi-broadcast"
-        };
-    }
-}

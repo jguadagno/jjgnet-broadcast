@@ -86,6 +86,8 @@ public class UserCollectorYouTubeChannelDataStore(
             existing.DisplayName = config.DisplayName;
             existing.IsActive = config.IsActive;
             existing.LastUpdatedOn = DateTimeOffset.UtcNow;
+            existing.PlaylistId = config.PlaylistId;
+            existing.ResultSetPageSize = config.ResultSetPageSize;
 
             await broadcastingContext.SaveChangesAsync(cancellationToken);
 

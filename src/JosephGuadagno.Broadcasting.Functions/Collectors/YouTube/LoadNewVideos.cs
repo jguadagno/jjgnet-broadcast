@@ -2,10 +2,10 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.Functions.Collectors;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
+using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
@@ -21,7 +21,8 @@ public class LoadNewVideos(
     IYouTubeReader youTubeReader,
     IOptions<Settings> settingsOptions,
     IFeedCheckManager feedCheckManager,
-    IYouTubeSourceManager youTubeSourceManager,
+    IUserCollectorYouTubeChannelManager userCollectorYouTubeChannelManager,
+    IYouTubeItemManager YouTubeItemManager,
     IUrlShortener urlShortener,
     IEventPublisher eventPublisher,
     ILogger<LoadNewVideos> logger)
@@ -45,105 +46,123 @@ public class LoadNewVideos(
 
         try
         {
-            var feedCheck = await feedCheckManager.GetByNameAsync(
-                                ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos
-                            ) ??
-                            new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue };
-
-            var ownerOid = await CollectorOwnerOidResolver.ResolveAsync(
-                youTubeSourceManager,
-                logger,
-                ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos);
-            if (string.IsNullOrWhiteSpace(ownerOid))
+            var configs = await userCollectorYouTubeChannelManager.GetAllActiveAsync();
+            if (configs.Count == 0)
             {
-                return new BadRequestObjectResult("Unable to resolve collector owner OID from YouTube source records.");
+                logger.LogDebug("No active YouTube channel configurations found");
+                return new OkObjectResult("No active YouTube channel configurations found");
             }
 
-            // TODO #778: Add per-user collector config support
-            // Once IYouTubeReader supports per-channel reading (or a factory pattern),
-            // iterate userCollectorYouTubeChannelManager.GetAllActiveAsync() and process each config's
-            // ChannelId with the config's CreatedByEntraOid. Current implementation uses global YouTube settings.
+            var totalSavedCount = 0;
+            var totalFoundCount = 0;
 
-            // Check for new items
-            logger.LogDebug("Checking playlist for videos since '{LastItemAddedOrUpdated}'",
-                feedCheck.LastItemAddedOrUpdated);
-            var newItems = await youTubeReader.GetAsync(ownerOid, feedCheck.LastItemAddedOrUpdated);
-
-            // If there is nothing new, save the last checked value and exit
-            if (newItems.Count == 0)
+            foreach (var config in configs)
             {
-                feedCheck.LastCheckedFeed = startedAt;
-                await feedCheckManager.SaveAsync(feedCheck);
-                logger.LogDebug("No new videos found in the playlist");
-                return new OkObjectResult("0 videos were found");
-            }
-
-            // Save the new items to SourceDataRepository
-            var savedCount = 0;
-            var eventsToPublish = new List<YouTubeSource>();
-            foreach (var item in newItems)
-            {
-                // Skip if item already exists
-                var existingItem = await youTubeSourceManager.GetByVideoIdAsync(item.VideoId);
-                if (existingItem != null)
+                var feedCheck = await feedCheckManager.GetByNameAsync(
+                    ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos, config.CreatedByEntraOid
+                ) ?? new FeedCheck
                 {
-                    logger.LogDebug("Skipping duplicate YouTube video with VideoId: '{VideoId}'", item.VideoId);
+                    Name = ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos,
+                    LastCheckedFeed = startedAt,
+                    LastItemAddedOrUpdated = DateTimeOffset.MinValue,
+                    EntraOId = config.CreatedByEntraOid
+                };
+
+                logger.LogDebug("Checking playlist for videos for owner '{OwnerOid}' since '{LastItemAddedOrUpdated}'",
+                    config.CreatedByEntraOid, feedCheck.LastItemAddedOrUpdated);
+
+                var apiKey = await userCollectorYouTubeChannelManager.GetApiKeyAsync(config.CreatedByEntraOid, config.Id);
+                if (string.IsNullOrWhiteSpace(apiKey))
+                {
+                    logger.LogWarning("No API key found in Key Vault for YouTube channel config Id={ConfigId}, owner '{OwnerOid}'. Skipping.",
+                        config.Id, config.CreatedByEntraOid);
                     continue;
                 }
 
-                // shorten the url
-                item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settingsOptions.Value.ShortenedDomainToUse);
-
-                // attempt to save the item
-                try
+                var perUserSettings = new YouTubeSettings
                 {
-                    var saveResult = await SavePipeline.ExecuteAsync(
-                        async ct => await youTubeSourceManager.SaveAsync(item));
+                    ApiKey = apiKey,
+                    ChannelId = config.ChannelId,
+                    PlaylistId = config.PlaylistId,
+                    ResultSetPageSize = config.ResultSetPageSize > 0 ? config.ResultSetPageSize : 10
+                };
 
-                    if (!saveResult.IsSuccess || saveResult.Value is null)
+                var newItems = await youTubeReader.GetAsync(config.CreatedByEntraOid, feedCheck.LastItemAddedOrUpdated, perUserSettings);
+
+                if (newItems.Count == 0)
+                {
+                    feedCheck.LastCheckedFeed = startedAt;
+                    await feedCheckManager.SaveAsync(feedCheck);
+                    logger.LogDebug("No new videos for owner '{OwnerOid}'", config.CreatedByEntraOid);
+                    continue;
+                }
+
+                totalFoundCount += newItems.Count;
+
+                var savedCount = 0;
+                var eventsToPublish = new List<YouTubeItem>();
+                foreach (var item in newItems)
+                {
+                    var existingItem = await YouTubeItemManager.GetByVideoIdAsync(item.VideoId);
+                    if (existingItem != null)
                     {
-                        logger.LogError("Failed to save the video with the VideoId of: '{VideoId}' Url:'{Url}'. Error: {Error}",
-                            item.VideoId, item.Url, saveResult.ErrorMessage);
+                        logger.LogDebug("Skipping duplicate YouTube video with VideoId: '{VideoId}'", item.VideoId);
                         continue;
                     }
-                    var savedItem = saveResult.Value;
-                    eventsToPublish.Add(savedItem);
-                    var properties = new Dictionary<string, string>
+
+                    item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settingsOptions.Value.ShortenedDomainToUse);
+
+                    try
                     {
-                        { "Id", savedItem.Id.ToString() }, { "VideoId", savedItem.VideoId },
-                        { "Url", savedItem.Url }, { "Title", savedItem.Title }
-                    };
-                    logger.LogCustomEvent(Metrics.VideoAddedOrUpdated, properties);
-                    savedCount++;
+                        var saveResult = await SavePipeline.ExecuteAsync(
+                            async ct => await YouTubeItemManager.SaveAsync(item));
+
+                        if (!saveResult.IsSuccess || saveResult.Value is null)
+                        {
+                            logger.LogError("Failed to save the video with the VideoId of: '{VideoId}' Url:'{Url}'. Error: {Error}",
+                                item.VideoId, item.Url, saveResult.ErrorMessage);
+                            continue;
+                        }
+                        var savedItem = saveResult.Value;
+                        eventsToPublish.Add(savedItem);
+                        var properties = new Dictionary<string, string>
+                        {
+                            { "Id", savedItem.Id.ToString() }, { "VideoId", savedItem.VideoId },
+                            { "Url", savedItem.Url }, { "Title", savedItem.Title }
+                        };
+                        logger.LogCustomEvent(Metrics.VideoAddedOrUpdated, properties);
+                        savedCount++;
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogError(e,
+                            "Failed to save the video with the VideoId of: '{VideoId}' Url:'{Url}'. Exception: {ExceptionMessage}",
+                            item.VideoId, item.Url, e);
+                        continue;
+                    }
                 }
-                catch (Exception e)
-                {
-                    logger.LogError(e,
-                        "Failed to save the video with the VideoId of: '{VideoId}' Url:'{Url}'. Exception: {ExceptionMessage}",
-                        item.VideoId, item.Url, e);
-                    continue;
-                }
+
+                await eventPublisher.PublishYouTubeEventsAsync(
+                    ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos,
+                    eventsToPublish);
+
+                feedCheck.LastCheckedFeed = startedAt;
+                feedCheck.LastUpdatedOn = DateTimeOffset.UtcNow;
+                feedCheck.EntraOId = config.CreatedByEntraOid;
+                var latestAdded = newItems.Max(item => item.PublicationDate);
+                var latestUpdated = newItems.Max(item => item.LastUpdatedOn);
+                feedCheck.LastItemAddedOrUpdated = latestUpdated > latestAdded
+                    ? latestUpdated
+                    : latestAdded;
+
+                await feedCheckManager.SaveAsync(feedCheck);
+
+                totalSavedCount += savedCount;
+                logger.LogInformation("Loaded {SavedCount} of {TotalVideoCount} video(s) for owner '{OwnerOid}'",
+                    savedCount, newItems.Count, config.CreatedByEntraOid);
             }
 
-            // Publish the events -- throws EventPublishException on failure
-            await eventPublisher.PublishYouTubeEventsAsync(
-                ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos,
-                eventsToPublish);
-
-            // Save the last checked value
-            feedCheck.LastCheckedFeed = startedAt;
-            feedCheck.LastUpdatedOn = DateTimeOffset.UtcNow;
-            var latestAdded = newItems.Max(item => item.PublicationDate);
-            var latestUpdated = newItems.Max(item => item.LastUpdatedOn);
-            feedCheck.LastItemAddedOrUpdated = latestUpdated > latestAdded
-                ? latestUpdated
-                : latestAdded;
-
-            await feedCheckManager.SaveAsync(feedCheck);
-
-            // Return
-            logger.LogInformation("Loaded {SavedCount} of {TotalVideoCount} video(s)", savedCount, newItems.Count);
-            return new OkObjectResult($"Loaded {savedCount} of {newItems.Count} video(s)");
+            return new OkObjectResult($"Loaded {totalSavedCount} of {totalFoundCount} video(s) across {configs.Count} channel(s)");
         }
         catch (Exception exception)
         {

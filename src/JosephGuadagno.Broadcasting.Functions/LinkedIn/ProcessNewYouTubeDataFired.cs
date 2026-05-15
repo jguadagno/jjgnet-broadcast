@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
 public class ProcessNewYouTubeDataFired(
-    IYouTubeSourceManager youtubeSourceManager,
+    IYouTubeItemManager YouTubeItemManager,
     IUserOAuthTokenManager userOAuthTokenManager,
     ILogger<ProcessNewYouTubeDataFired> logger)
 {
@@ -40,54 +40,54 @@ public class ProcessNewYouTubeDataFired(
             logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
             return null;
         }
-        var youTubeSource = await youtubeSourceManager.GetAsync(newYouTubeItemEvent.Id);
+        var YouTubeItem = await YouTubeItemManager.GetAsync(newYouTubeItemEvent.Id);
 
-        logger.LogDebug("Processing New YouTube Feed Data Fired for '{Id}' with title of '{Title}'", youTubeSource.Id, youTubeSource.Title);
+        logger.LogDebug("Processing New YouTube Feed Data Fired for '{Id}' with title of '{Title}'", YouTubeItem.Id, YouTubeItem.Title);
 
         // Resolve per-user OAuth token — no silent fallback to shared token
         var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
-            youTubeSource.CreatedByEntraOid,
+            YouTubeItem.CreatedByEntraOid,
             SocialMediaPlatformIds.LinkedIn);
 
         if (token is null)
         {
             logger.LogWarning(
                 "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping YouTube item {ItemId}",
-                LogSanitizer.Sanitize(youTubeSource.CreatedByEntraOid),
-                youTubeSource.Id);
+                LogSanitizer.Sanitize(YouTubeItem.CreatedByEntraOid),
+                YouTubeItem.Id);
             return null;
         }
 
-        var status = ComposeStatus(youTubeSource, token.AccessToken);
+        var status = ComposeStatus(YouTubeItem, token.AccessToken);
 
         var properties = new Dictionary<string, string>
         {
             {"post", status.Text},
-            {"title", youTubeSource.Title},
-            {"url", youTubeSource.Url},
-            {"id", youTubeSource.Id.ToString()}
+            {"title", YouTubeItem.Title},
+            {"url", YouTubeItem.Url},
+            {"id", YouTubeItem.Id.ToString()}
         };
         logger.LogCustomEvent(Metrics.LinkedInProcessedNewSyndicationData, properties);
-        logger.LogDebug("Done composing LinkedIn status for '{Id}' with title of '{Title}'", youTubeSource.Id, youTubeSource.Title);
+        logger.LogDebug("Done composing LinkedIn status for '{Id}' with title of '{Title}'", YouTubeItem.Id, YouTubeItem.Title);
         return status;
     }
 
-    private LinkedInPostLink ComposeStatus(YouTubeSource youTubeSource, string accessToken)
+    private LinkedInPostLink ComposeStatus(YouTubeItem YouTubeItem, string accessToken)
     {
-        logger.LogDebug("Composing LinkedIn post for Id: '{Id}', Title:'{Title}'", youTubeSource.Id, youTubeSource.Title);
-        var statusText = youTubeSource.LastUpdatedOn > youTubeSource.PublicationDate
+        logger.LogDebug("Composing LinkedIn post for Id: '{Id}', Title:'{Title}'", YouTubeItem.Id, YouTubeItem.Title);
+        var statusText = YouTubeItem.LastUpdatedOn > YouTubeItem.PublicationDate
                 ? "Updated Blog Post: "
                 : "New Blog Post: ";
 
         var post = new LinkedInPostLink
         {
-            Text = $"{statusText} {youTubeSource.Title} {HashTagLists.BuildHashTagList(youTubeSource.Tags)}",
-            Title = youTubeSource.Title,
-            LinkUrl = youTubeSource.Url,
+            Text = $"{statusText} {YouTubeItem.Title} {HashTagLists.BuildHashTagList(YouTubeItem.Tags)}",
+            Title = YouTubeItem.Title,
+            LinkUrl = YouTubeItem.Url,
             AccessToken = accessToken
         };
 
-        logger.LogDebug("Composed LinkedIn status for '{Id}' with title of '{Title}'", youTubeSource.Id, youTubeSource.Title);
+        logger.LogDebug("Composed LinkedIn status for '{Id}' with title of '{Title}'", YouTubeItem.Id, YouTubeItem.Title);
 
         return post;
     }

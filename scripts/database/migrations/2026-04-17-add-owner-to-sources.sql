@@ -1,7 +1,7 @@
 -- Migration: Add CreatedByEntraOid ownership columns to source tables
 -- Issue: #725
 -- Date: 2026-04-17
--- Description: Extends RBAC ownership tracking to SyndicationFeedSources and YouTubeSources
+-- Description: Extends RBAC ownership tracking to SyndicationFeedItems and YouTubeItems
 --              to support ownership-based delete rules: Contributors can delete only their
 --              own content, Administrators can delete any content.
 --              Column is nullable to handle existing records gracefully.
@@ -10,27 +10,27 @@ USE JJGNet;
 GO
 
 -- ============================================================
--- Add CreatedByEntraOid to SyndicationFeedSources
+-- Add CreatedByEntraOid to SyndicationFeedItems
 -- ============================================================
 IF NOT EXISTS (
     SELECT 1 FROM sys.columns
-    WHERE object_id = OBJECT_ID(N'[dbo].[SyndicationFeedSources]')
+    WHERE object_id = OBJECT_ID(N'[dbo].[SyndicationFeedItems]')
       AND name = 'CreatedByEntraOid')
 BEGIN
-    ALTER TABLE [dbo].[SyndicationFeedSources]
+    ALTER TABLE [dbo].[SyndicationFeedItems]
         ADD [CreatedByEntraOid] NVARCHAR(36) NULL;
 END
 GO
 
 -- ============================================================
--- Add CreatedByEntraOid to YouTubeSources
+-- Add CreatedByEntraOid to YouTubeItems
 -- ============================================================
 IF NOT EXISTS (
     SELECT 1 FROM sys.columns
-    WHERE object_id = OBJECT_ID(N'[dbo].[YouTubeSources]')
+    WHERE object_id = OBJECT_ID(N'[dbo].[YouTubeItems]')
       AND name = 'CreatedByEntraOid')
 BEGIN
-    ALTER TABLE [dbo].[YouTubeSources]
+    ALTER TABLE [dbo].[YouTubeItems]
         ADD [CreatedByEntraOid] NVARCHAR(36) NULL;
 END
 GO

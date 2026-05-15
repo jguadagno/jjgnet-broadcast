@@ -7,7 +7,6 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.SyndicationFeed;
-using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -21,8 +20,10 @@ public class LoadNewPostsTests
 {
     private const string OwnerEntraOid = "owner-entra-oid";
     private const string CollectorOwnerEntraOid = "collector-owner-entra-oid";
+    private const string TestFeedUrl = "http://test-feed";
     private readonly Mock<ISyndicationFeedReader> _feedReader;
-    private readonly Mock<ISyndicationFeedSourceManager> _feedSourceManager;
+    private readonly Mock<ISyndicationFeedItemManager> _feedSourceManager;
+    private readonly Mock<IUserCollectorFeedSourceManager> _userCollectorFeedSourceManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly Mock<IUrlShortener> _urlShortener;
     private readonly Mock<IEventPublisher> _eventPublisher;
@@ -31,27 +32,33 @@ public class LoadNewPostsTests
     public LoadNewPostsTests()
     {
         _feedReader = new Mock<ISyndicationFeedReader>();
-        _feedSourceManager = new Mock<ISyndicationFeedSourceManager>();
+        _feedSourceManager = new Mock<ISyndicationFeedItemManager>();
+        _userCollectorFeedSourceManager = new Mock<IUserCollectorFeedSourceManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
         _urlShortener = new Mock<IUrlShortener>();
         _eventPublisher = new Mock<IEventPublisher>();
 
-        _eventPublisher.Setup(e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<SyndicationFeedSource>>()))
+        _eventPublisher.Setup(e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<SyndicationFeedItem>>()))
             .Returns(Task.CompletedTask);
-        _feedSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>())).ReturnsAsync(OwnerEntraOid);
+        _userCollectorFeedSourceManager.Setup(m => m.GetAllActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserCollectorFeedSource>
+            {
+                new UserCollectorFeedSource { CreatedByEntraOid = OwnerEntraOid, FeedUrl = TestFeedUrl, IsActive = true }
+            });
 
         _sut = new LoadNewPosts(
             _feedReader.Object,
             Options.Create(new Settings { ShortenedDomainToUse = "short.example.com", OwnerEntraOid = OwnerEntraOid }),
             _feedSourceManager.Object,
+            _userCollectorFeedSourceManager.Object,
             _feedCheckManager.Object,
             _urlShortener.Object,
             _eventPublisher.Object,
             NullLogger<LoadNewPosts>.Instance);
     }
 
-    private static SyndicationFeedSource CreateFeedSource(string feedIdentifier = "feed-abc") =>
-        new SyndicationFeedSource
+    private static SyndicationFeedItem CreateFeedSource(string feedIdentifier = "feed-abc") =>
+        new SyndicationFeedItem
         {
             Id = 0,
             FeedIdentifier = feedIdentifier,
@@ -65,7 +72,7 @@ public class LoadNewPostsTests
         };
 
     private void SetupFeedCheck() =>
-        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>()))
+        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FeedCheck
             {
                 Id = 1,
@@ -85,16 +92,16 @@ public class LoadNewPostsTests
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _feedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedSource> { item });
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedItem> { item });
         _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("duplicate-feed-id")).ReturnsAsync(existingItem);
 
         // Act
         var result = await _sut.RunAsync(null!);
 
         // Assert
-        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Never);
+        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>()), Times.Never);
         _eventPublisher.Verify(
-            e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<SyndicationFeedSource>>(l => l.Count == 0)),
+            e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<SyndicationFeedItem>>(l => l.Count == 0)),
             Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
@@ -110,18 +117,18 @@ public class LoadNewPostsTests
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _feedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedSource> { item });
-        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("brand-new-feed-id")).ReturnsAsync((SyndicationFeedSource?)null);
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedItem> { item });
+        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("brand-new-feed-id")).ReturnsAsync((SyndicationFeedItem?)null);
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("https://short.example.com/abc");
-        _feedSourceManager.Setup(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>())).ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedItem));
+        _feedSourceManager.Setup(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>())).ReturnsAsync(OperationResult<SyndicationFeedItem>.Success(savedItem));
 
         // Act
         var result = await _sut.RunAsync(null!);
 
         // Assert
-        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Once);
+        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>()), Times.Once);
         _eventPublisher.Verify(
-            e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<SyndicationFeedSource>>(l => l.Count == 1)),
+            e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<SyndicationFeedItem>>(l => l.Count == 1)),
             Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("1", okResult.Value!.ToString());
@@ -141,23 +148,23 @@ public class LoadNewPostsTests
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>()))
             .ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _feedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>()))
-            .ReturnsAsync(new List<SyndicationFeedSource> { item });
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), OwnerEntraOid, It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<SyndicationFeedItem> { item });
         _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("owned-feed-id"))
-            .ReturnsAsync((SyndicationFeedSource?)null);
+            .ReturnsAsync((SyndicationFeedItem?)null);
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync("https://short.example.com/owned");
-        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p =>
+        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p =>
                 p.FeedIdentifier == "owned-feed-id" &&
                 p.CreatedByEntraOid == CollectorOwnerEntraOid &&
                 !string.IsNullOrWhiteSpace(p.CreatedByEntraOid))))
-            .ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedItem));
+            .ReturnsAsync(OperationResult<SyndicationFeedItem>.Success(savedItem));
 
         // Act
         await _sut.RunAsync(null!);
 
         // Assert
-        _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p =>
+        _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p =>
             p.FeedIdentifier == "owned-feed-id" &&
             p.CreatedByEntraOid == CollectorOwnerEntraOid &&
             !string.IsNullOrWhiteSpace(p.CreatedByEntraOid))), Times.Once);
@@ -168,19 +175,22 @@ public class LoadNewPostsTests
     {
         // Arrange
         SetupFeedCheck();
-        _feedSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CollectorOwnerEntraOid);
+        _userCollectorFeedSourceManager.Setup(m => m.GetAllActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserCollectorFeedSource>
+            {
+                new UserCollectorFeedSource { CreatedByEntraOid = CollectorOwnerEntraOid, FeedUrl = TestFeedUrl, IsActive = true }
+            });
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>()))
             .ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _feedReader.Setup(r => r.GetAsync(CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()))
-            .ReturnsAsync(new List<SyndicationFeedSource>());
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<SyndicationFeedItem>());
 
         // Act
         await _sut.RunAsync(null!);
 
         // Assert
-        _feedSourceManager.Verify(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _feedReader.Verify(r => r.GetAsync(CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()), Times.Once);
+        _userCollectorFeedSourceManager.Verify(m => m.GetAllActiveAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _feedReader.Verify(r => r.GetAsync(It.IsAny<string>(), CollectorOwnerEntraOid, It.IsAny<DateTimeOffset>()), Times.Once);
     }
 
     [Fact]
@@ -189,13 +199,13 @@ public class LoadNewPostsTests
         // Arrange
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _feedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedSource>());
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedItem>());
 
         // Act
         var result = await _sut.RunAsync(null!);
 
         // Assert
-        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Never);
+        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>()), Times.Never);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
     }
@@ -212,11 +222,11 @@ public class LoadNewPostsTests
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _feedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>()))
-            .ReturnsAsync(new List<SyndicationFeedSource> { newPost1, duplicatePost, newPost2 });
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), OwnerEntraOid, It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<SyndicationFeedItem> { newPost1, duplicatePost, newPost2 });
         
-        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("new-1")).ReturnsAsync((SyndicationFeedSource?)null);
-        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("new-2")).ReturnsAsync((SyndicationFeedSource?)null);
+        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("new-1")).ReturnsAsync((SyndicationFeedItem?)null);
+        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("new-2")).ReturnsAsync((SyndicationFeedItem?)null);
         _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("duplicate-1")).ReturnsAsync(existingPost);
         
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("https://short.example.com/xyz");
@@ -226,16 +236,16 @@ public class LoadNewPostsTests
         var savedPost2 = CreateFeedSource("new-2");
         savedPost2.Id = 2;
         
-        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "new-1"))).ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedPost1));
-        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "new-2"))).ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedPost2));
+        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "new-1"))).ReturnsAsync(OperationResult<SyndicationFeedItem>.Success(savedPost1));
+        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "new-2"))).ReturnsAsync(OperationResult<SyndicationFeedItem>.Success(savedPost2));
 
         // Act
         var result = await _sut.RunAsync(null!);
 
         // Assert
-        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Exactly(2));
+        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>()), Times.Exactly(2));
         _eventPublisher.Verify(
-            e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<SyndicationFeedSource>>(l => l.Count == 2)),
+            e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<SyndicationFeedItem>>(l => l.Count == 2)),
             Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("2", okResult.Value!.ToString());
@@ -246,7 +256,7 @@ public class LoadNewPostsTests
     {
         // Arrange
         SetupFeedCheck();
-        _feedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>())).ThrowsAsync(new Exception("Reader error"));
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), OwnerEntraOid, It.IsAny<DateTimeOffset>())).ThrowsAsync(new Exception("Reader error"));
 
         // Act
         var result = await _sut.RunAsync(null!);
@@ -266,17 +276,17 @@ public class LoadNewPostsTests
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _feedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedSource> { item });
-        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("post-456")).ReturnsAsync((SyndicationFeedSource?)null);
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<SyndicationFeedItem> { item });
+        _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("post-456")).ReturnsAsync((SyndicationFeedItem?)null);
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(item.Url, "short.example.com")).ReturnsAsync("https://short.example.com/abc");
-        _feedSourceManager.Setup(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>())).ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedItem));
+        _feedSourceManager.Setup(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>())).ReturnsAsync(OperationResult<SyndicationFeedItem>.Success(savedItem));
 
         // Act
         var result = await _sut.RunAsync(null!);
 
         // Assert
         _urlShortener.Verify(u => u.GetShortenedUrlAsync(item.Url, "short.example.com"), Times.Once);
-        _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.ShortenedUrl == "https://short.example.com/abc")), Times.Once);
+        _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.ShortenedUrl == "https://short.example.com/abc")), Times.Once);
     }
 
     [Fact]
@@ -291,29 +301,29 @@ public class LoadNewPostsTests
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>()))
             .ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _feedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>()))
-            .ReturnsAsync(new List<SyndicationFeedSource> { failedItem, successfulItem });
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), OwnerEntraOid, It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<SyndicationFeedItem> { failedItem, successfulItem });
         _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("transaction-failure"))
-            .ReturnsAsync((SyndicationFeedSource?)null);
+            .ReturnsAsync((SyndicationFeedItem?)null);
         _feedSourceManager.Setup(m => m.GetByFeedIdentifierAsync("transaction-success"))
-            .ReturnsAsync((SyndicationFeedSource?)null);
+            .ReturnsAsync((SyndicationFeedItem?)null);
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync("https://short.example.com/txn");
-        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "transaction-failure")))
+        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "transaction-failure")))
             .ThrowsAsync(new InvalidOperationException("The configured execution strategy 'SqlServerRetryingExecutionStrategy' does not support user-initiated transactions."));
-        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "transaction-success")))
-            .ReturnsAsync(OperationResult<SyndicationFeedSource>.Success(savedItem));
+        _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "transaction-success")))
+            .ReturnsAsync(OperationResult<SyndicationFeedItem>.Success(savedItem));
 
         // Act
         var result = await _sut.RunAsync(null!);
 
         // Assert
-        _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "transaction-failure")), Times.Exactly(4));
-        _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedSource>(p => p.FeedIdentifier == "transaction-success")), Times.Once);
+        _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "transaction-failure")), Times.Exactly(4));
+        _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "transaction-success")), Times.Once);
         _eventPublisher.Verify(
             e => e.PublishSyndicationFeedEventsAsync(
                 It.IsAny<string>(),
-                It.Is<IReadOnlyCollection<SyndicationFeedSource>>(items =>
+                It.Is<IReadOnlyCollection<SyndicationFeedItem>>(items =>
                     items.Count == 1 && items.Single().FeedIdentifier == "transaction-success")),
             Times.Once);
 
@@ -327,31 +337,31 @@ public class LoadNewPostsTests
         // Arrange
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _feedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync((List<SyndicationFeedSource>)null!);
+        _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync((List<SyndicationFeedItem>)null!);
 
         // Act
         var result = await _sut.RunAsync(null!);
 
         // Assert
-        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedSource>()), Times.Never);
+        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>()), Times.Never);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
     }
 
     [Fact]
-    public async Task RunAsync_ReturnsBadRequest_WhenCollectorOwnerOidCannotBeResolved()
+    public async Task RunAsync_ReturnsOk_WhenNoActiveConfigsFound()
     {
         // Arrange
         SetupFeedCheck();
-        _feedSourceManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string?)null);
+        _userCollectorFeedSourceManager.Setup(m => m.GetAllActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserCollectorFeedSource>());
 
         // Act
         var result = await _sut.RunAsync(null!);
 
         // Assert
-        _feedReader.Verify(r => r.GetAsync(It.IsAny<string>(), It.IsAny<DateTimeOffset>()), Times.Never);
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Contains("owner OID", badRequestResult.Value!.ToString());
+        _feedReader.Verify(r => r.GetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>()), Times.Never);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Contains("No active", okResult.Value!.ToString());
     }
 }

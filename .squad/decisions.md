@@ -475,7 +475,7 @@ The same rationale as #902: keeps the Function focused on queue mechanics; moves
 Any new platform following this composition pattern should:
 1. Add `Task<string> ComposeMessageAsync(ScheduledItem, CancellationToken)` to the interface
 2. Add `IServiceScopeFactory?` as an optional constructor param in the manager
-3. Implement `GetMessageType(ScheduledItemType)` mapping: Engagements→NewSpeakingEngagement, Talks→ScheduledItem, SyndicationFeedSources→NewSyndicationFeedItem, YouTubeSources→NewYouTubeItem, _→RandomPost
+3. Implement `GetMessageType(ScheduledItemType)` mapping: Engagements→NewSpeakingEngagement, Talks→ScheduledItem, SyndicationFeedItems→NewSyndicationFeedItem, YouTubeItems→NewYouTubeItem, _→RandomPost
 4. Implement `TryRenderTemplateAsync` with platform lookup → template fetch → Scriban render → fallback to `scheduledItem.Message`
 5. Simplify the corresponding Azure Function to call `ComposeMessageAsync` and remove per-type helpers
 
@@ -607,8 +607,8 @@ Use two cache keys per manager:
 - **Per-user key** (`*_User_{ownerEntraOid}`): covers `GetAllAsync(ownerEntraOid)`
 
 ```csharp
-private const string CacheKeyAll = "SyndicationFeedSources_All";
-private static string CacheKeyByUser(string ownerEntraOid) => $"SyndicationFeedSources_User_{ownerEntraOid}";
+private const string CacheKeyAll = "SyndicationFeedItems_All";
+private static string CacheKeyByUser(string ownerEntraOid) => $"SyndicationFeedItems_User_{ownerEntraOid}";
 ```
 
 Invalidation rules:
@@ -646,4 +646,180 @@ Four caching issues assigned to Milestone 27:
 - **#937** (P2): Add user-scoped caching to Engagements, Schedules, and UserPublisherSettings managers — in progress
 
 Pattern: Dual-key `IMemoryCache` with 5-minute absolute expiry (global + user-scoped keys where applicable).
+
+
+---
+
+## Directives
+
+### 2026-05-12T05:32Z: DI Registration Pre-Commit Gate
+**By:** Joseph Guadagno (via Copilot)
+**What:** When a new class is created that relies on DI injection, always verify that the service registration is present in Program.cs or the appropriate extension method before committing. The app builds fine without registration but throws runtime exceptions. This is a hard pre-commit gate: any PR introducing a new DI-injected class must include the corresponding registration.
+**Why:** User request — multiple recent PRs missed DI registrations causing runtime failures after successful builds. Captured for team memory.
+
+---
+
+## Architecture: Data Migrations & User Separation (Issue #950)
+
+### 2026-05-11: FeedChecks.EntraOId — Empty String as System Sentinel
+**By:** Morpheus (Data Engineer)
+**Issue:** #950 (sanity check / user separation)
+**Branch:** issue-950-sanity-check
+
+**Decision:** Add EntraOId nvarchar(36) NOT NULL DEFAULT ('') to dbo.FeedChecks and replace the single-column unique constraint on Name with a composite unique constraint on (Name, EntraOId).
+
+Empty string ('') is the canonical EntraOId value for system-level, non-user-scoped feed checks.
+
+---
+
+### 2026-05-11: Per-User YouTube PlaylistId Column
+**By:** Morpheus (Database Architect)
+**Related Issue:** #950 (sanity check / per-user configuration)
+
+**Decision:** Move PlaylistId from a global setting into the per-user YouTube collector configuration table (UserCollectorYouTubeChannels).
+
+New column: [PlaylistId] nvarchar(255) NOT NULL DEFAULT ''
+
+---
+
+### 2026-05-11: FeedCheck EntraOId — Empty String for System Collectors
+**By:** Trinity
+
+**Decision:** System-level timer-triggered Functions use string.Empty as EntraOId when calling GetByNameAsync.
+
+---
+
+### 2026-05-11: Source/Item Renaming
+**By:** Trinity
+**Status:** ✅ Committed (8653fa7)
+
+**Decision:** Rename:
+- SyndicationFeedSource → SyndicationFeedItem
+- YouTubeSource → YouTubeItem
+- SQL tables: SyndicationFeedSources → SyndicationFeedItems, YouTubeSources → YouTubeItems
+
+Scope: 135 files changed.
+
+---
+
+### 2026-05-13: UserCollectorYouTubeChannel ApiKey → Azure Key Vault
+**By:** Trinity
+**Status:** Implemented — awaiting PR
+
+**Decision:** Rename DB column from ApiKey to ApiKeySecretName. Store per-user API keys in Key Vault.
+
+Secret-name format: youtube-channel-apikey-{sanitizedOwnerOid}-{sanitizedChannelId}
+
+---
+
+## User Directives: Architecture & Settings
+
+### 2026-05-11T11:52:43-07:00: All Collector & Publisher Settings Per-User
+**By:** Joe (repo owner)
+
+**What:** Every collector and publisher setting must be stored per-user in the database, not as global app settings.
+
+**Impact:** New UserPublisher* tables needed for each platform. Functions must loop per-user for publishers too.
+
+---
+
+### 2026-05-11T11:52:43-07:00: Publisher Credential Storage — Option A Confirmed
+**By:** Joe (repo owner)
+
+**What:** Per-user publisher credentials are stored as Azure Key Vault secret names in UserPublisherSettings.Settings JSON column.
+
+**Pattern:**
+- DB stores: { "SecretName": "publisher-{platform}-{oid}" }
+- KV stores: JSON bundle of all sensitive credentials
+- Naming: publisher-twitter-{oid}, publisher-linkedin-{oid}, publisher-bluesky-{oid}, publisher-facebook-{oid}
+- Resolution: IKeyVault.GetSecretAsync(secretName) at publish time
+
+**Why:** OWASP A04 compliance. Credentials must not be in plaintext database columns.
+
+---
+
+## Code Review: Neo Formal Review of issue-950-sanity-check
+
+**Date:** 2026-05-14
+**Reviewed by:** Neo (Reviewer/Architect)
+**Branch:** issue-950-sanity-check
+**Issue:** #950
+**Verdict:** BLOCKED ❌
+
+### Blocking Issues
+
+**B1** — UserCollectorSpeakingEngagementManager.cs missing namespace
+**B2** — UserCollectorScheduledItemManager.cs missing namespace
+**B3** — LoadNewVideos ignores per-user YouTube credentials (non-functional)
+**B4** — AddSqlDataStores() missing IUserCollectorSpeakingEngagementDataStore and IUserCollectorScheduledItemDataStore
+
+### Warnings
+
+**W1** — API missing IUserCollectorScheduledItemDataStore/Manager registrations
+**W2** — API has duplicate IYouTubeItemDataStore/Manager registrations
+**W3** — ApiBroadcastingProfile missing UserCollectorScheduledItem mappings
+**W4** — Web services send domain models instead of *Request DTOs
+
+### What Was Correct
+
+- CSRF: All reviewed Web [HttpPost] methods have [ValidateAntiForgeryToken] ✅
+- API controllers all have [IgnoreAntiforgeryToken] at class level ✅
+- Ownership checks (CreatedByEntraOid) present ✅
+- Log injection: LogSanitizer.Sanitize() used ✅
+
+---
+
+
+
+---
+
+### 2026-05-12T06:09:40-07:00: User directive
+**By:** Joseph Guadagno (via Copilot)
+**What:** Always use `claude-opus-4.6` for Trinity. Based on user research, this is the preferred model for Trinity's backend/code tasks.
+**Why:** User request — captured for team memory
+
+
+---
+
+# Trinity: Neo Code Review Fixes — issue-950-sanity-check
+
+**Date:** 2026-05-14
+**Branch:** `issue-950-sanity-check`
+**Commit:** 6a56416
+
+## Summary
+
+Fixed all 4 blocking issues and 3 warnings identified in Neo's review of the `issue-950-sanity-check` branch. All 157 Functions tests pass; build succeeds.
+
+## Decisions Made
+
+### 1. Namespace declarations are required on all class files (Blocking 1)
+
+`UserCollectorSpeakingEngagementManager` and `UserCollectorScheduledItemManager` were missing `namespace JosephGuadagno.Broadcasting.Managers;` declarations entirely, compiling into the global namespace. File-scoped namespace declarations were added.
+
+### 2. Per-user YouTube credentials via `IYouTubeSettings` overload (Blocking 2)
+
+`IYouTubeReader.GetAsync` gained a third overload: `GetAsync(string ownerOid, DateTimeOffset sinceWhen, IYouTubeSettings settings)`. Implementation in `YouTubeReader` extracts a private `GetItemsAsync` helper shared by both public overloads; the new overload creates a per-user `YouTubeService` from the caller-supplied settings rather than the global DI-injected settings.
+
+`LoadNewVideos` resolves the API key from Azure Key Vault via `GetApiKeyAsync`, builds a `YouTubeSettings` instance per channel config, and passes it to the new overload. Channels without a resolvable key are skipped with a warning log.
+
+### 3. `AddSqlDataStores()` must register all data stores (Blocking 3)
+
+`IUserCollectorSpeakingEngagementDataStore` and `IUserCollectorScheduledItemDataStore` were never added to `ServiceCollectionExtensions.AddSqlDataStores()`. These registrations are required by Web and Functions projects.
+
+### 4. API must register `IUserCollectorScheduledItemManager` (Warning 1)
+
+Added `IUserCollectorScheduledItemDataStore` and `IUserCollectorScheduledItemManager` to API `Program.cs` registrations.
+
+### 5. No duplicate DI registrations (Warning 2)
+
+Duplicate `IYouTubeItemDataStore` / `IYouTubeItemManager` registrations in API `Program.cs` were removed. `TryAddScoped` is idempotent but the dead code was confusing.
+
+### 6. DTOs required for all domain entities exposed via API (Warning 3)
+
+`UserCollectorScheduledItemRequest` (editable fields: `DisplayName`, `IsActive`) and `UserCollectorScheduledItemResponse` (full read shape) created following the `UserCollectorSpeakingEngagementDtos.cs` pattern. AutoMapper mappings added to `ApiBroadcastingProfile`.
+
+### 7. Tests must be updated when production interfaces change
+
+When `IYouTubeReader.GetAsync` signature changed, `LoadNewVideosTests` needed updating to: (a) mock `GetApiKeyAsync` returning a test key, and (b) use the 3-arg `GetAsync` overload in all setups and verifications.
 

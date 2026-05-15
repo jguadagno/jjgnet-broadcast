@@ -18,8 +18,8 @@
 -- dbo.Cache            : ExpiresAtTime, AbsoluteExpiration
 -- dbo.FeedChecks       : LastCheckedFeed, LastItemAddedOrUpdated, LastUpdatedOn
 -- dbo.TokenRefreshes   : Expires, LastChecked, LastRefreshed, LastUpdatedOn
--- dbo.SyndicationFeedSources : PublicationDate, AddedOn, ItemLastUpdatedOn, LastUpdatedOn
--- dbo.YouTubeSources   : PublicationDate, AddedOn, ItemLastUpdatedOn, LastUpdatedOn
+-- dbo.SyndicationFeedItems : PublicationDate, AddedOn, ItemLastUpdatedOn, LastUpdatedOn
+-- dbo.YouTubeItems   : PublicationDate, AddedOn, ItemLastUpdatedOn, LastUpdatedOn
 -- dbo.MessageTemplates : (no datetime columns)
 --
 -- C# MODEL CHANGES APPLIED IN THIS BRANCH

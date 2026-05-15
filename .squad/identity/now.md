@@ -1,28 +1,36 @@
 # Team Focus — Now
 
-> **Last updated:** 2026-05-08T16:15:00Z
-> **Sprint:** 31 — Milestone 27
-> **Status:** Sprint 30 CLOSED (ISocialMediaPublisher #897 complete; composition refactor #902 merged). Sprint 31 ACTIVE — caching enhancements. #803 COMPLETE (PR #934 merged to main).
-> **Next:** Sprint 31 caching work: #935 (P3, PR #938 open), #936 (P1), #937 (P2) under way; #933 (speaking engagement functions) in progress; #930 (NuGet deprecation) queued.
+> **Last updated:** 2026-05-14T06:20:22Z
+> **Sprint:** 31 — Sanity Check / Stabilization Phase
+> **Status:** Paused new issue intake. Testing and validating recent work from past weeks. Fixing critical regressions; filing non-critical findings as GitHub issues.
+> **Current branch:** `issue-950-sanity-check` — MessageTemplate refactor in `MessageTemplates\Index.cshtml` replacing `GetSocialIcon()` helper with `SocialMediaPlatform.Icon` (Sparks completing). **No PR creation unless Joe explicitly requests.**
 
 ## Current Focus
 
+**Sanity Check / Stabilization Sprint** 🔍
+
+- **Mode:** Test and validate all recent work from the past few weeks
+- **Goal:** Identify critical regressions; fix immediately. Non-critical findings filed as GitHub issues, not fixed in-sprint.
+- **Active work:** `issue-950-sanity-check` branch — Sparks completing the `GetSocialIcon()` → `SocialMediaPlatform.Icon` refactor in `MessageTemplates\Index.cshtml`
+- **Blocked on:** Not starting new issue work until codebase is safe to deploy
+- **Deployment readiness:** No PR creation for sanity-check branch work unless Joe explicitly requests
+
+## Recent Sprint Completions (Pre-Sanity Check)
+
 **Sprint 30 — COMPLETE** ✅
-- ✅ #897 — Define ISocialMediaPublisher common interface (COMPLETE — test coverage finalized, DI wiring verified)
-- ✅ #902 — Move LinkedIn message composition to LinkedInManager (COMPLETE — merged to main)
+- ✅ #897 — Define ISocialMediaPublisher common interface
+- ✅ #902 — Move LinkedIn message composition to LinkedInManager
 
-**Sprint 31 — ACTIVE** 🔄
-- ✅ #803 — Allow `.squad` updates to commit from main (COMPLETE — PR #934 merged to main)
-- 🔜 #78 — Add caching to WebApi (parent issue)
-  - 🔜 #935 — Add caching to SyndicationFeedSourceManager and YouTubeSourceManager (P3, PR #938 open)
-  - 🔜 #936 — Add caching to MessageTemplateManager (P1)
-  - 🔜 #937 — Add user-scoped caching to Engagements, Schedules, UserPublisherSettings managers (P2)
-- 🔜 #933 — Create Azure Functions for handling new speaking engagements (Trinity agent running)
-- ⏳ #930 — NuGet package AspNetCore.HealthChecks.AzureStorage has been deprecated (queued for Trinity)
+**Sprint 31 — COMPLETE** ✅
+- ✅ #803 — Allow `.squad` updates to commit from main
+- ✅ #930 — NuGet package AspNetCore.HealthChecks.AzureStorage deprecation
+- ✅ #933 — Create Azure Functions for handling new speaking engagements
+- ✅ #935 — Add caching to SyndicationFeedSourceManager and YouTubeSourceManager
+- ✅ #936 — Add caching to MessageTemplateManager
+- ✅ #937 — Add user-scoped caching to Engagements, Schedules, UserPublisherSettings managers
+- 🔄 #950 — MessageTemplate refactor (Sparks, `issue-950-sanity-check`, completing)
 
-**Goal:** Sprint 31 delivers #803 completion (PR #934 merged) + caching phase 1 (SyndicationFeed/YouTube, MessageTemplate, user-scoped managers).
-
-## Key Patterns (Sprint 31)
+## Key Patterns (from Recent Work)
 
 1. **Dual-key caching:** Global + user-scoped `IMemoryCache` with 5-minute absolute expiry
 2. **Cache invalidation:** Remove both keys on Save/Delete(entity); global key only on Delete(id)
@@ -30,24 +38,19 @@
 
 ## Standing Work
 
-- #78: Caching enhancements (parent issue, Sprint 31)
-- #933: Speaking engagement functions (Trinity, in progress)
-- #930: NuGet deprecation (queued for Trinity)
+- #950: MessageTemplate refactor (Sparks, in progress, `issue-950-sanity-check`)
 - #724: Multi-user teams/groups — Deferred pending explicit Joe confirmation that #609 is 100% production-ready
 
-## Team Composition
+## Team Composition (Sanity Check Phase)
 
-**Sprint 31 (Active):**
-- #78 / #935–#937 — Caching work (Trinity)
-- #933 — Speaking engagements (Trinity agent)
-- #930 — NuGet deprecation (queued)
-- Joe — Parallel infrastructure tasks
+- **Joe** — Testing, validation, triage, deployment readiness
+- **Sparks** — Completing #950 MessageTemplate refactor on `issue-950-sanity-check`
 
 **Rotating Roles:** Squad roster available in `.squad/team.md`
 
 ---
 
-**Last Updated:** 2026-05-08T16:15:00Z
-**Sprint:** 31 (Caching enhancements + housekeeping PR bypass) — #803 COMPLETE, #78 in progress
-**Current Focus:** #935 (P3) PR #938 open; #936 (P1) and #937 (P2) in progress
-**Next Decision Point:** #935–#937 completion → Sprint 32 readiness
+**Last Updated:** 2026-05-14T06:20:22Z
+**Phase:** Sanity Check / Stabilization Sprint
+**Current Focus:** Validating all recent work; no new issue intake until codebase is deployment-ready
+**Next Decision Point:** Sanity check complete → Sprint 32 planning + backlog readiness

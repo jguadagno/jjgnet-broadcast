@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
@@ -14,7 +18,9 @@ public class UserPublisherSettingManager : IUserPublisherSettingManager
 {
     private readonly IUserPublisherSettingDataStore _userPublisherSettingDataStore;
     private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
+    private readonly IKeyVault _keyVault;
     private readonly IMemoryCache _cache;
+    private readonly ILogger<UserPublisherSettingManager> _logger;
 
     private static string CacheKeyAllByOwner(string ownerOid) => $"UserPublisherSettings_All_{ownerOid}";
 
@@ -24,11 +30,15 @@ public class UserPublisherSettingManager : IUserPublisherSettingManager
     public UserPublisherSettingManager(
         IUserPublisherSettingDataStore userPublisherSettingDataStore,
         ISocialMediaPlatformManager socialMediaPlatformManager,
-        IMemoryCache cache)
+        IKeyVault keyVault,
+        IMemoryCache cache,
+        ILogger<UserPublisherSettingManager> logger)
     {
         _userPublisherSettingDataStore = userPublisherSettingDataStore;
         _socialMediaPlatformManager = socialMediaPlatformManager;
+        _keyVault = keyVault;
         _cache = cache;
+        _logger = logger;
     }
 
     public async Task<List<UserPublisherSetting>> GetByUserAsync(string ownerOid, CancellationToken cancellationToken = default)
@@ -96,6 +106,35 @@ public class UserPublisherSettingManager : IUserPublisherSettingManager
             Items = pagedResult.Items.Select(ProjectForResponse).ToList(),
             TotalCount = pagedResult.TotalCount
         };
+    }
+
+    public async Task<Dictionary<string, string?>> GetCredentialsAsync(string ownerOid, int platformId, CancellationToken cancellationToken = default)
+    {
+        var setting = await _userPublisherSettingDataStore.GetByUserAndPlatformAsync(ownerOid, platformId, cancellationToken);
+        if (setting is null || setting.Settings.Count == 0)
+            return new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
+        // KV path: Settings contains only { "SecretName": "publisher-{platform}-{oid}" }
+        if (setting.Settings.TryGetValue("SecretName", out var secretName) && !string.IsNullOrWhiteSpace(secretName))
+        {
+            try
+            {
+                var kvSecret = await _keyVault.GetSecretAsync(secretName);
+                var json = kvSecret.Value;
+                return JsonSerializer.Deserialize<Dictionary<string, string?>>(json, new JsonSerializerOptions
+                    { PropertyNameCaseInsensitive = true })
+                    ?? new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to resolve credentials from Key Vault for secret '{SecretName}', owner '{OwnerOid}', platform {PlatformId}",
+                    secretName, LogSanitizer.Sanitize(ownerOid), platformId);
+                return new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        // Fallback: raw credentials stored directly in Settings
+        return setting.Settings;
     }
 
     private void InvalidateUserCaches(string? ownerOid)

@@ -3,6 +3,8 @@ using idunno.Bluesky.RichText;
 
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
@@ -11,13 +13,30 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
-public class SendPost(IBlueskyManager blueskyManager,ILogger<SendPost> logger)
+public class SendPost(IBlueskyManager blueskyManager, IUserPublisherSettingManager userPublisherSettingManager, ILogger<SendPost> logger)
 {
     [Function(ConfigurationFunctionNames.BlueskyPostMessage)]
     public async Task Run(
         [QueueTrigger(Queues.BlueskyPostToSend)]
         BlueskyPostMessage blueskyPostMessage)
     {
+        if (string.IsNullOrEmpty(blueskyPostMessage.CreatedByEntraOid))
+        {
+            logger.LogWarning("Bluesky post message missing CreatedByEntraOid. Skipping.");
+            return;
+        }
+
+        var credentials = await userPublisherSettingManager.GetCredentialsAsync(
+            blueskyPostMessage.CreatedByEntraOid,
+            SocialMediaPlatformIds.Bluesky);
+
+        if (!credentials.ContainsKey("Identifier") || !credentials.ContainsKey("AppPassword"))
+        {
+            logger.LogWarning("Bluesky credentials not found for owner '{OwnerOid}'. Skipping.",
+                LogSanitizer.Sanitize(blueskyPostMessage.CreatedByEntraOid));
+            return;
+        }
+
         try
         {
             logger.LogDebug("Bluesky Post Received '{Text}'", blueskyPostMessage.Text);
@@ -31,7 +50,6 @@ public class SendPost(IBlueskyManager blueskyManager,ILogger<SendPost> logger)
                 }
                 postBuilder.Append(new Link(blueskyPostMessage.ShortenedUrl, blueskyPostMessage.ShortenedUrl));
                 
-                // Get the OpenGraph info to embed; use explicit ImageUrl as thumbnail override when available
                 var embeddedExternalRecord = !string.IsNullOrEmpty(blueskyPostMessage.ImageUrl)
                     ? await blueskyManager.GetEmbeddedExternalRecordWithThumbnail(blueskyPostMessage.Url, blueskyPostMessage.ImageUrl)
                     : await blueskyManager.GetEmbeddedExternalRecord(blueskyPostMessage.Url);
@@ -42,7 +60,6 @@ public class SendPost(IBlueskyManager blueskyManager,ILogger<SendPost> logger)
             }
             else if (!string.IsNullOrEmpty(blueskyPostMessage.ImageUrl) && !string.IsNullOrEmpty(blueskyPostMessage.Url))
             {
-                // No ShortenedUrl, but Url + ImageUrl are both set — embed with custom thumbnail
                 var embeddedExternalRecord = await blueskyManager.GetEmbeddedExternalRecordWithThumbnail(
                     blueskyPostMessage.Url, blueskyPostMessage.ImageUrl);
                 if (embeddedExternalRecord != null)
@@ -59,20 +76,32 @@ public class SendPost(IBlueskyManager blueskyManager,ILogger<SendPost> logger)
                     postBuilder.Append(new HashTag(hashtag));
                 }
             }
-            
-            var response = await blueskyManager.Post(postBuilder);
-            if (response is not null)
+
+            var identifier = credentials.GetValueOrDefault("Identifier")!;
+            var appPassword = credentials.GetValueOrDefault("AppPassword")!;
+
+            var agent = new BlueskyAgent();
+            var loginResult = await agent.Login(identifier, appPassword);
+            if (!loginResult.Succeeded)
+            {
+                logger.LogError("Failed to log in to Bluesky for owner '{OwnerOid}'. StatusCode: {StatusCode}",
+                    LogSanitizer.Sanitize(blueskyPostMessage.CreatedByEntraOid), loginResult.StatusCode);
+                return;
+            }
+
+            var response = await agent.Post(postBuilder);
+            if (response.Succeeded && response.Result is not null)
             {
                 logger.LogDebug("Posting to bluesky: {Text}", postBuilder.Text);
                 var properties = new Dictionary<string, string>
                 {
-                    {"message", postBuilder.Text?? string.Empty},
-                    {"cid", response.Cid.ToString()}
+                    {"message", postBuilder.Text ?? string.Empty},
+                    {"cid", response.Result.Cid.ToString()}
                 };
                 logger.LogCustomEvent(Metrics.BlueskyPostSent, properties);
                 return;
             }
-            logger.LogError("Failed to post to Bluesky. Response was null");
+            logger.LogError("Failed to post to Bluesky. StatusCode: {StatusCode}", response.StatusCode);
         }
         catch (BlueskyPostException ex)
         {

@@ -26,8 +26,8 @@ public class ScheduledItemMappingTests
     [Theory]
     [InlineData("Engagements", ScheduledItemType.Engagements)]
     [InlineData("Talks", ScheduledItemType.Talks)]
-    [InlineData("SyndicationFeedSources", ScheduledItemType.SyndicationFeedSources)]
-    [InlineData("YouTubeSources", ScheduledItemType.YouTubeSources)]
+    [InlineData("SyndicationFeedItems", ScheduledItemType.SyndicationFeedItems)]
+    [InlineData("YouTubeItems", ScheduledItemType.YouTubeItems)]
     public void MapToDomain_ConvertsItemTableNameStringToEnum(string itemTableName, ScheduledItemType expectedItemType)
     {
         // Arrange
@@ -54,8 +54,8 @@ public class ScheduledItemMappingTests
     [Theory]
     [InlineData(ScheduledItemType.Engagements, "Engagements")]
     [InlineData(ScheduledItemType.Talks, "Talks")]
-    [InlineData(ScheduledItemType.SyndicationFeedSources, "SyndicationFeedSources")]
-    [InlineData(ScheduledItemType.YouTubeSources, "YouTubeSources")]
+    [InlineData(ScheduledItemType.SyndicationFeedItems, "SyndicationFeedItems")]
+    [InlineData(ScheduledItemType.YouTubeItems, "YouTubeItems")]
     public void MapToEntity_ConvertsEnumToItemTableNameString(ScheduledItemType itemType, string expectedTableName)
     {
         // Arrange
@@ -114,7 +114,7 @@ public class ScheduledItemMappingTests
         var domainItem = new Domain.Models.ScheduledItem
         {
             Id = 55,
-            ItemType = ScheduledItemType.YouTubeSources,
+            ItemType = ScheduledItemType.YouTubeItems,
             ItemPrimaryKey = 33,
             Message = "Entity round-trip",
             SendOnDateTime = sendOn,
@@ -127,7 +127,7 @@ public class ScheduledItemMappingTests
 
         // Assert
         Assert.Equal(55, efItem.Id);
-        Assert.Equal("YouTubeSources", efItem.ItemTableName);
+        Assert.Equal("YouTubeItems", efItem.ItemTableName);
         Assert.Equal(33, efItem.ItemPrimaryKey);
         Assert.Equal("Entity round-trip", efItem.Message);
         Assert.Equal(sendOn, efItem.SendOnDateTime);

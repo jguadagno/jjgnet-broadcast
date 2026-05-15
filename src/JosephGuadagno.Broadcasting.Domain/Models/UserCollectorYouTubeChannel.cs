@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace JosephGuadagno.Broadcasting.Domain.Models;
 
 /// <summary>
@@ -19,7 +21,27 @@ public class UserCollectorYouTubeChannel
     /// Gets or sets the YouTube channel ID to poll
     /// </summary>
     public string ChannelId { get; set; } = string.Empty;
-    
+
+    /// <summary>Gets or sets the YouTube playlist ID to poll for new items.</summary>
+    [StringLength(255)]
+    public string PlaylistId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the raw Google API key. This is a transient field used only to pass the key
+    /// through the Web→API layer. It is never stored in the database.
+    /// </summary>
+    [StringLength(255)]
+    public string? ApiKey { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether a Google API key is stored in Key Vault for this channel.
+    /// This is a non-persisted field set by the manager at query time.
+    /// </summary>
+    public bool HasApiKey { get; set; }
+
+    /// <summary>Gets or sets the maximum number of results to return per YouTube API page. Range: 1–200.</summary>
+    public int ResultSetPageSize { get; set; } = 50;
+
     /// <summary>
     /// Gets or sets the friendly display name for this channel
     /// </summary>

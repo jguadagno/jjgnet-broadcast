@@ -8,42 +8,42 @@ USE JJGNet;
 GO
 
 -- ============================================================
--- SyndicationFeedSources: NULL → NOT NULL
+-- SyndicationFeedItems: NULL → NOT NULL
 -- ============================================================
 IF EXISTS (
     SELECT 1 FROM sys.columns
-    WHERE object_id = OBJECT_ID(N'[dbo].[SyndicationFeedSources]')
+    WHERE object_id = OBJECT_ID(N'[dbo].[SyndicationFeedItems]')
       AND name = 'CreatedByEntraOid'
       AND is_nullable = 1
 )
 BEGIN
-    PRINT 'Altering SyndicationFeedSources.CreatedByEntraOid to NOT NULL';
-    ALTER TABLE [dbo].[SyndicationFeedSources]
+    PRINT 'Altering SyndicationFeedItems.CreatedByEntraOid to NOT NULL';
+    ALTER TABLE [dbo].[SyndicationFeedItems]
         ALTER COLUMN [CreatedByEntraOid] NVARCHAR(36) NOT NULL;
 END
 ELSE
 BEGIN
-    PRINT 'SyndicationFeedSources.CreatedByEntraOid is already NOT NULL or does not exist';
+    PRINT 'SyndicationFeedItems.CreatedByEntraOid is already NOT NULL or does not exist';
 END
 GO
 
 -- ============================================================
--- YouTubeSources: NULL → NOT NULL
+-- YouTubeItems: NULL → NOT NULL
 -- ============================================================
 IF EXISTS (
     SELECT 1 FROM sys.columns
-    WHERE object_id = OBJECT_ID(N'[dbo].[YouTubeSources]')
+    WHERE object_id = OBJECT_ID(N'[dbo].[YouTubeItems]')
       AND name = 'CreatedByEntraOid'
       AND is_nullable = 1
 )
 BEGIN
-    PRINT 'Altering YouTubeSources.CreatedByEntraOid to NOT NULL';
-    ALTER TABLE [dbo].[YouTubeSources]
+    PRINT 'Altering YouTubeItems.CreatedByEntraOid to NOT NULL';
+    ALTER TABLE [dbo].[YouTubeItems]
         ALTER COLUMN [CreatedByEntraOid] NVARCHAR(36) NOT NULL;
 END
 ELSE
 BEGIN
-    PRINT 'YouTubeSources.CreatedByEntraOid is already NOT NULL or does not exist';
+    PRINT 'YouTubeItems.CreatedByEntraOid is already NOT NULL or does not exist';
 END
 GO
 

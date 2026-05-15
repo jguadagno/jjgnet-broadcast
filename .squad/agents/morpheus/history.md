@@ -168,3 +168,29 @@ GO
 ```
 
 **Applied to:** SyndicationFeedSourceDataStore, YouTubeSourceDataStore (all GetAllAsync overloads), EngagementDataStore, ScheduledItemDataStore (paged overloads only). DB indexes added for Engagements, SyndicationFeedSources, YouTubeSources, ScheduledItems, SocialMediaPlatforms sort/filter columns.
+
+### FeedChecks user separation (Issue #950)
+
+**Pattern:** When a table must support both system-level (timer-triggered, no user) and user-scoped records, use empty string (`''`) as the sentinel EntraOId for system rows rather than NULL. This keeps the column `NOT NULL`, allows a clean composite unique constraint `(Name, EntraOId)`, and avoids nullable comparison edge cases in SQL Server unique indexes.
+
+**Migration pattern:** Add column as `NULL` first → `UPDATE ... SET = ''` → `ALTER COLUMN ... NOT NULL` → `ADD CONSTRAINT DEFAULT`. This two-step approach allows backfilling existing rows safely before tightening nullability.
+
+**Constraint swap pattern:** Use `IF EXISTS` guard before dropping the old single-column unique constraint; use `IF NOT EXISTS` guard before adding the new composite unique constraint. Both guards are idempotent so the migration is safe to re-run.
+
+**Applied to:** `dbo.FeedChecks` — dropped `FeedChecks_Unique_Name`, added `UQ_FeedChecks_Name_EntraOId` on `(Name, EntraOId)`, added `DF_FeedChecks_EntraOId` default `('')`.
+
+### Schema-Sync Validation — UserCollectorYouTubeChannels (2026-05-12)
+
+**Skill created:** `.squad/skills/schema-sync-validation/SKILL.md` — reusable checklist for validating SQL DDL, EF entity, fluent config, domain model, mapper, and SaveAsync are all in sync for any table.
+
+**Key drift patterns found on UserCollectorYouTubeChannels:**
+
+1. **Data annotation / fluent length mismatch (non-breaking):** `CreatedByEntraOid` entity has `[MaxLength(100)]` but SQL is `nvarchar(36)` and fluent config has `.HasMaxLength(36)`. `ChannelId` entity has `[MaxLength(255)]` but SQL is `nvarchar(50)` and fluent config has `.HasMaxLength(50)`. Fluent wins at runtime, but annotations mislead reviewers.
+
+2. **`IsRequired(false)` on NOT NULL column (breaking risk):** `PlaylistId` fluent config uses `.IsRequired(false)` but the SQL column is `NOT NULL`. EF Core will treat the property as optional, which can cause incorrect SQL generation. Should be `.IsRequired()`.
+
+3. **Drop migration without corresponding add migration:** A `2026-05-12-youtube-channels-drop-apikeysecretname.sql` migration exists, but no add migration for `ApiKeySecretName` is present in the migrations folder. `ApiKeySecretName` was apparently added directly to a database without a formal migration. The drop migration uses `IF EXISTS` guard so it's idempotent, but the migrations chain is incomplete. `table-create.sql` baseline is already clean (no `ApiKeySecretName`).
+
+**SaveAsync status:** Already correctly writes `PlaylistId` and `ResultSetPageSize`. Does NOT write `ApiKeySecretName` (already removed). Correctly writes `DisplayName`, `IsActive`, `LastUpdatedOn`. Correctly sets `CreatedOn` only on insert.
+
+**Migrations baseline check:** `table-create.sql` is the cumulative result of all migrations (PlaylistId and ResultSetPageSize present, ApiKeySecretName absent). The migrations sequence itself has the gap noted above but the baseline is authoritative for fresh environments.

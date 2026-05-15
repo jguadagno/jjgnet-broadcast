@@ -63,7 +63,6 @@ public class BlueskyPostTests
         // Arrange
         const string message = "ICYMI: (06/12/2020): \"Protecting an ASP.NET Core Web API with Microsoft Identity Platform.\" RPs and feedback are always appreciated! ";
         var postBuilder = new PostBuilder(message);
-        const string url = "https://www.josephguadagno.net/2020/06/12/protecting-an-asp-net-core-api-with-microsoft-identity-platform";
         const string shortenedUrl = "https://jjg.me/30xE7PA";
         var hashTags = new List<string>
         {

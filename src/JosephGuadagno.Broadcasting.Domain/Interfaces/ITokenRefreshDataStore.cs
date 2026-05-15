@@ -1,6 +1,6 @@
 namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 
-public interface ITokenRefreshDataStore : IDataStore<Domain.Models.TokenRefresh>
+public interface ITokenRefreshDataStore : IDataStore<Models.TokenRefresh>
 {
-    public Task<Domain.Models.TokenRefresh?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
+    public Task<Models.TokenRefresh?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
 }

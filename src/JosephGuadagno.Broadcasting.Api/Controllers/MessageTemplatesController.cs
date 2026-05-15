@@ -48,6 +48,9 @@ public class MessageTemplatesController : ControllerBase
     /// </summary>
     /// <param name="page">The page number (default: 1)</param>
     /// <param name="pageSize">The page size (default: 25)</param>
+    /// <param name="sortBy">The field to sort by (default: subject)</param>
+    /// <param name="sortDescending">When true, sorts in descending order (default: true)</param>
+    /// <param name="filter">Optional text filter applied to message template subjects</param>
     /// <returns>A paginated list of message templates</returns>
     /// <response code="200">If the call was successful</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>

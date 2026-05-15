@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
@@ -16,22 +17,22 @@ public class UserCollectorFeedSourceService(
 
     public async Task<List<UserCollectorFeedSource>> GetCurrentUserAsync()
     {
-        var response = await apiClient.GetForUserAsync<List<UserCollectorFeedSource>>(ApiServiceName, options =>
+        var response = await apiClient.GetForUserAsync<PagedResponse<UserCollectorFeedSource>>(ApiServiceName, options =>
         {
-            options.RelativePath = FeedSourceBaseUrl;
+            options.RelativePath = $"{FeedSourceBaseUrl}?pageSize={Pagination.MaxPageSize}";
         });
 
-        return response ?? [];
+        return response?.Items.ToList() ?? [];
     }
 
     public async Task<List<UserCollectorFeedSource>> GetByUserAsync(string ownerOid)
     {
-        var response = await apiClient.GetForUserAsync<List<UserCollectorFeedSource>>(ApiServiceName, options =>
+        var response = await apiClient.GetForUserAsync<PagedResponse<UserCollectorFeedSource>>(ApiServiceName, options =>
         {
-            options.RelativePath = BuildRelativePath(ownerOid);
+            options.RelativePath = BuildRelativePath(ownerOid) + $"&pageSize={Pagination.MaxPageSize}";
         });
 
-        return response ?? [];
+        return response?.Items.ToList() ?? [];
     }
 
     public async Task<UserCollectorFeedSource?> GetByIdAsync(int id)

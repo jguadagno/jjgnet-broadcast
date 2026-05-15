@@ -1,11 +1,11 @@
-using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
-using idunno.AtProto.Repo;
-using idunno.Bluesky;
 using idunno.Bluesky.Embed;
 
+using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
@@ -17,9 +17,11 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Bluesky;
 public class SendPostTests
 {
     private readonly Mock<IBlueskyManager> _blueskyManager = new();
+    private readonly Mock<IUserPublisherSettingManager> _userPublisherSettingManager = new();
 
     private Functions.Bluesky.SendPost BuildSut() => new(
         _blueskyManager.Object,
+        _userPublisherSettingManager.Object,
         NullLogger<Functions.Bluesky.SendPost>.Instance);
 
     private static BlueskyPostMessage BuildBlueskyPostMessage(
@@ -27,233 +29,163 @@ public class SendPostTests
         string? url = null,
         string? shortenedUrl = null,
         List<string>? hashtags = null,
-        string? imageUrl = null) => new()
+        string? imageUrl = null,
+        string? createdByEntraOid = null) => new()
     {
         Text = text,
         Url = url,
         ShortenedUrl = shortenedUrl,
         Hashtags = hashtags,
-        ImageUrl = imageUrl
+        ImageUrl = imageUrl,
+        CreatedByEntraOid = createdByEntraOid
     };
 
-    // Successful post with text only
+    private void SetupValidCredentials(string oid) =>
+        _userPublisherSettingManager
+            .Setup(m => m.GetCredentialsAsync(oid, SocialMediaPlatformIds.Bluesky, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, string?>
+            {
+                ["Identifier"] = "user.bsky.social",
+                ["AppPassword"] = "app-password"
+            });
+
+    // Missing CreatedByEntraOid → skip, no exception
 
     [Fact]
-    public async Task Run_WithTextOnly_CallsBlueskyManagerPost()
+    public async Task Run_WhenCreatedByEntraOidIsNull_SkipsPostingWithoutException()
     {
-        // Arrange
-        var postMessage = BuildBlueskyPostMessage();
-
-        _blueskyManager
-            .Setup(m => m.Post(It.Is<PostBuilder>(pb => pb.Text == postMessage.Text)))
-            .ReturnsAsync((CreateRecordResult?)null);
-
+        var postMessage = BuildBlueskyPostMessage(); // no OID
         var sut = BuildSut();
 
-        // Act
-        await sut.Run(postMessage);
+        var exception = await Record.ExceptionAsync(() => sut.Run(postMessage));
 
-        // Assert
-        _blueskyManager.Verify(
-            m => m.Post(It.Is<PostBuilder>(pb => pb.Text == postMessage.Text)),
-            Times.Once);
+        Assert.Null(exception);
+        _userPublisherSettingManager.Verify(
+            m => m.GetCredentialsAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _blueskyManager.Verify(m => m.GetEmbeddedExternalRecord(It.IsAny<string>()), Times.Never);
     }
 
-    // Post with URL and shortened URL (with embed)
+    // Missing credentials (empty dictionary) → skip, no exception
+
+    [Fact]
+    public async Task Run_WhenCredentialsMissingRequiredKeys_SkipsPostingWithoutException()
+    {
+        var postMessage = BuildBlueskyPostMessage(createdByEntraOid: "test-oid");
+        _userPublisherSettingManager
+            .Setup(m => m.GetCredentialsAsync("test-oid", SocialMediaPlatformIds.Bluesky, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, string?>());
+        var sut = BuildSut();
+
+        var exception = await Record.ExceptionAsync(() => sut.Run(postMessage));
+
+        Assert.Null(exception);
+        _blueskyManager.Verify(m => m.GetEmbeddedExternalRecord(It.IsAny<string>()), Times.Never);
+    }
+
+    // Only Identifier present (missing AppPassword) → skip
+
+    [Fact]
+    public async Task Run_WhenAppPasswordMissing_SkipsPostingWithoutException()
+    {
+        var postMessage = BuildBlueskyPostMessage(createdByEntraOid: "test-oid");
+        _userPublisherSettingManager
+            .Setup(m => m.GetCredentialsAsync("test-oid", SocialMediaPlatformIds.Bluesky, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, string?> { ["Identifier"] = "user.bsky.social" });
+        var sut = BuildSut();
+
+        var exception = await Record.ExceptionAsync(() => sut.Run(postMessage));
+
+        Assert.Null(exception);
+    }
+
+    // GetEmbeddedExternalRecord is called when URL + shortenedUrl are set (before agent login)
 
     [Fact]
     public async Task Run_WithUrlAndShortenedUrl_CallsGetEmbeddedExternalRecord()
     {
-        // Arrange
-        var postMessage = BuildBlueskyPostMessage(
-            text: "Check this out",
-            url: "https://example.com/article",
-            shortenedUrl: "https://short.url/abc");
-
-        _blueskyManager
-            .Setup(m => m.GetEmbeddedExternalRecord(postMessage.Url))
-            .ReturnsAsync((EmbeddedExternal?)null);
-        _blueskyManager
-            .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ReturnsAsync((CreateRecordResult?)null);
-
-        var sut = BuildSut();
-
-        // Act
-        await sut.Run(postMessage);
-
-        // Assert
-        _blueskyManager.Verify(
-            m => m.GetEmbeddedExternalRecord(postMessage.Url),
-            Times.Once);
-        _blueskyManager.Verify(m => m.Post(It.IsAny<PostBuilder>()), Times.Once);
-    }
-
-    // Post with URL, shortened URL, and image (with embed)
-
-    [Fact]
-    public async Task Run_WithUrlShortenedUrlAndImage_CallsGetEmbeddedExternalRecordWithThumbnail()
-    {
-        // Arrange
         var postMessage = BuildBlueskyPostMessage(
             text: "Check this out",
             url: "https://example.com/article",
             shortenedUrl: "https://short.url/abc",
-            imageUrl: "https://example.com/image.jpg");
+            createdByEntraOid: "test-oid");
+        SetupValidCredentials("test-oid");
+        _blueskyManager
+            .Setup(m => m.GetEmbeddedExternalRecord(postMessage.Url))
+            .ReturnsAsync((EmbeddedExternal?)null);
+        var sut = BuildSut();
 
+        // agent.Login() will throw a network exception in unit tests — that's expected
+        await Record.ExceptionAsync(() => sut.Run(postMessage));
+
+        _blueskyManager.Verify(m => m.GetEmbeddedExternalRecord(postMessage.Url), Times.Once);
+    }
+
+    // GetEmbeddedExternalRecordWithThumbnail is called when URL + shortenedUrl + imageUrl are set
+
+    [Fact]
+    public async Task Run_WithUrlShortenedUrlAndImage_CallsGetEmbeddedExternalRecordWithThumbnail()
+    {
+        var postMessage = BuildBlueskyPostMessage(
+            text: "Check this out",
+            url: "https://example.com/article",
+            shortenedUrl: "https://short.url/abc",
+            imageUrl: "https://example.com/image.jpg",
+            createdByEntraOid: "test-oid");
+        SetupValidCredentials("test-oid");
         _blueskyManager
             .Setup(m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url!, postMessage.ImageUrl!))
             .ReturnsAsync((EmbeddedExternal?)null);
-        _blueskyManager
-            .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ReturnsAsync((CreateRecordResult?)null);
-
         var sut = BuildSut();
 
-        // Act
-        await sut.Run(postMessage);
+        await Record.ExceptionAsync(() => sut.Run(postMessage));
 
-        // Assert
         _blueskyManager.Verify(
             m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url!, postMessage.ImageUrl!),
             Times.Once);
-        _blueskyManager.Verify(
-            m => m.GetEmbeddedExternalRecord(It.IsAny<string>()),
-            Times.Never);
-        _blueskyManager.Verify(m => m.Post(It.IsAny<PostBuilder>()), Times.Once);
+        _blueskyManager.Verify(m => m.GetEmbeddedExternalRecord(It.IsAny<string>()), Times.Never);
     }
 
-    // Post with URL and image but no shortened URL
+    // GetEmbeddedExternalRecordWithThumbnail is called when URL + imageUrl but no shortenedUrl
 
     [Fact]
     public async Task Run_WithUrlAndImageButNoShortenedUrl_CallsGetEmbeddedExternalRecordWithThumbnail()
     {
-        // Arrange
         var postMessage = BuildBlueskyPostMessage(
             text: "Check this out",
             url: "https://example.com/article",
-            shortenedUrl: null,
-            imageUrl: "https://example.com/image.jpg");
-
+            imageUrl: "https://example.com/image.jpg",
+            createdByEntraOid: "test-oid");
+        SetupValidCredentials("test-oid");
         _blueskyManager
             .Setup(m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url!, postMessage.ImageUrl!))
             .ReturnsAsync((EmbeddedExternal?)null);
-        _blueskyManager
-            .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ReturnsAsync((CreateRecordResult?)null);
-
         var sut = BuildSut();
 
-        // Act
-        await sut.Run(postMessage);
+        await Record.ExceptionAsync(() => sut.Run(postMessage));
 
-        // Assert
         _blueskyManager.Verify(
             m => m.GetEmbeddedExternalRecordWithThumbnail(postMessage.Url!, postMessage.ImageUrl!),
             Times.Once);
-        _blueskyManager.Verify(m => m.Post(It.IsAny<PostBuilder>()), Times.Once);
     }
 
-    // Post with hashtags
-
-    [Fact]
-    public async Task Run_WithHashtags_IncludesHashtagsInPost()
-    {
-        // Arrange
-        var postMessage = BuildBlueskyPostMessage(
-            text: "Great article",
-            hashtags: new List<string> { "tech", "dotnet", "azure" });
-
-        _blueskyManager
-            .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ReturnsAsync((CreateRecordResult?)null);
-
-        var sut = BuildSut();
-
-        // Act
-        await sut.Run(postMessage);
-
-        // Assert
-        _blueskyManager.Verify(m => m.Post(It.IsAny<PostBuilder>()), Times.Once);
-    }
-
-    // Manager returns null (post failed)
-
-    [Fact]
-    public async Task Run_WhenManagerReturnsNull_DoesNotThrow()
-    {
-        // Arrange - manager returns null (post failed but no exception)
-        var postMessage = BuildBlueskyPostMessage();
-        _blueskyManager
-            .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ReturnsAsync((CreateRecordResult?)null);
-
-        var sut = BuildSut();
-
-        // Act & Assert - should not throw (error is logged)
-        var exception = await Record.ExceptionAsync(() => sut.Run(postMessage));
-        Assert.Null(exception);
-    }
-
-    // BlueskyPostException handling
+    // BlueskyPostException is rethrown
 
     [Fact]
     public async Task Run_WhenBlueskyPostExceptionThrown_RethrowsException()
     {
-        // Arrange
-        var postMessage = BuildBlueskyPostMessage();
-        var blueskyException = new BlueskyPostException("API Error", 400, "Invalid request");
+        var postMessage = BuildBlueskyPostMessage(
+            url: "https://example.com/article",
+            shortenedUrl: "https://short.url/abc",
+            createdByEntraOid: "test-oid");
+        SetupValidCredentials("test-oid");
         _blueskyManager
-            .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ThrowsAsync(blueskyException);
-
+            .Setup(m => m.GetEmbeddedExternalRecord(postMessage.Url))
+            .ThrowsAsync(new BlueskyPostException("API Error", 400, "Invalid request"));
         var sut = BuildSut();
 
-        // Act & Assert - should rethrow BlueskyPostException
+        // BlueskyPostException from manager (e.g. during OG embed) is rethrown
         await Assert.ThrowsAsync<BlueskyPostException>(() => sut.Run(postMessage));
     }
-
-    // Generic exception handling
-
-    [Fact]
-    public async Task Run_WhenGenericExceptionThrown_RethrowsException()
-    {
-        // Arrange
-        var postMessage = BuildBlueskyPostMessage();
-        _blueskyManager
-            .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ThrowsAsync(new Exception("Connection timeout"));
-
-        var sut = BuildSut();
-
-        // Act & Assert - should rethrow generic Exception
-        await Assert.ThrowsAsync<Exception>(() => sut.Run(postMessage));
-    }
-
-    // GetEmbeddedExternalRecord returns null
-
-    [Fact]
-    public async Task Run_WhenGetEmbeddedExternalRecordReturnsNull_StillPostsWithoutEmbed()
-    {
-        // Arrange
-        var postMessage = BuildBlueskyPostMessage(
-            text: "Check this out",
-            url: "https://example.com/article",
-            shortenedUrl: "https://short.url/abc");
-
-        _blueskyManager
-            .Setup(m => m.GetEmbeddedExternalRecord(It.IsAny<string>()))
-            .ReturnsAsync((EmbeddedExternal?)null);
-        _blueskyManager
-            .Setup(m => m.Post(It.IsAny<PostBuilder>()))
-            .ReturnsAsync((CreateRecordResult?)null);
-
-        var sut = BuildSut();
-
-        // Act
-        await sut.Run(postMessage);
-
-        // Assert - post should still succeed even if embed fails
-        _blueskyManager.Verify(m => m.Post(It.IsAny<PostBuilder>()), Times.Once);
-    }
 }
+

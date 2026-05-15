@@ -1,0 +1,76 @@
+@model JosephGuadagno.Broadcasting.Web.Models.UserCollectorYouTubeChannelViewModel
+@{
+    ViewData["Title"] = "Add YouTube Channel";
+}
+
+<div class="container">
+    <h1 class="display-4 mb-4">Add YouTube Channel</h1>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <form asp-action="Add" asp-controller="CollectorYouTubeChannels" method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <div class="mb-3">
+                    <label asp-for="DisplayName" class="form-label"></label>
+                    <input asp-for="DisplayName" class="form-control" />
+                    <span asp-validation-for="DisplayName" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="ChannelId" class="form-label"></label>
+                    <input asp-for="ChannelId" class="form-control" />
+                    <span asp-validation-for="ChannelId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="PlaylistId" class="form-label"></label>
+                    <input asp-for="PlaylistId" class="form-control" />
+                    <span asp-validation-for="PlaylistId" class="text-danger"></span>
+                    <div class="form-text">Optional. Leave blank to use the channel's default uploads playlist.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="ApiKey" class="form-label"></label>
+                    <span class="text-danger">*</span>
+                    <input asp-for="ApiKey" class="form-control" type="password" required />
+                    <span asp-validation-for="ApiKey" class="text-danger"></span>
+                    <div class="form-text">The Google API key for YouTube Data API access. Stored securely.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="ResultSetPageSize" class="form-label"></label>
+                    <input asp-for="ResultSetPageSize" class="form-control" type="number" min="1" max="200" />
+                    <span asp-validation-for="ResultSetPageSize" class="text-danger"></span>
+                    <div class="form-text">Number of results to return per YouTube API page (1–200).</div>
+                </div>
+
+                <div class="mb-3 form-switch">
+                    <input asp-for="IsActive" class="form-check-input" />
+                    <label asp-for="IsActive" class="form-check-label">Active</label>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Add
+                    </button>
+                    <a asp-action="Index" asp-controller="CollectorYouTubeChannels" class="btn btn-secondary ms-2">
+                        <i class="bi bi-x-circle me-1"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

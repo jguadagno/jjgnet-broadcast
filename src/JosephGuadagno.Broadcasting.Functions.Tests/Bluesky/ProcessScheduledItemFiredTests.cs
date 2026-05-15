@@ -24,7 +24,7 @@ public class ProcessScheduledItemFiredTests
     private static Domain.Models.ScheduledItem BuildScheduledItem(
         int id = 1,
         int primaryKey = 42,
-        ScheduledItemType itemType = ScheduledItemType.SyndicationFeedSources) => new()
+        ScheduledItemType itemType = ScheduledItemType.SyndicationFeedItems) => new()
     {
         Id = id,
         ItemType = itemType,
@@ -33,7 +33,7 @@ public class ProcessScheduledItemFiredTests
         SendOnDateTime = DateTimeOffset.UtcNow
     };
 
-    private static SyndicationFeedSource BuildFeedSource(int id = 42, string url = "https://example.com/post") => new()
+    private static SyndicationFeedItem BuildFeedSource(int id = 42, string url = "https://example.com/post") => new()
     {
         Id = id,
         FeedIdentifier = "feed-1",
@@ -65,7 +65,7 @@ public class ProcessScheduledItemFiredTests
         UrlForTalk = url
     };
 
-    private static YouTubeSource BuildYouTubeSource(int id = 42, string url = "https://youtube.com/watch?v=abc") => new()
+    private static YouTubeItem BuildYouTubeItem(int id = 42, string url = "https://youtube.com/watch?v=abc") => new()
     {
         Id = id,
         VideoId = "abc",
@@ -78,19 +78,19 @@ public class ProcessScheduledItemFiredTests
         CreatedByEntraOid = ""
     };
 
-    // Constructor order: (IScheduledItemManager, IEngagementManager, ISyndicationFeedSourceManager, IYouTubeSourceManager, IBlueskyManager, ILogger)
+    // Constructor order: (IScheduledItemManager, IEngagementManager, ISyndicationFeedItemManager, IYouTubeItemManager, IBlueskyManager, ILogger)
     private static Functions.Bluesky.ProcessScheduledItemFired BuildSut(
         Mock<IScheduledItemManager> scheduledItemManager,
         Mock<IEngagementManager> engagementManager,
-        Mock<ISyndicationFeedSourceManager> feedSourceManager,
-        Mock<IYouTubeSourceManager> youTubeSourceManager,
+        Mock<ISyndicationFeedItemManager> feedSourceManager,
+        Mock<IYouTubeItemManager> YouTubeItemManager,
         Mock<IBlueskyManager> blueskyManager)
     {
         return new Functions.Bluesky.ProcessScheduledItemFired(
             scheduledItemManager.Object,
             engagementManager.Object,
             feedSourceManager.Object,
-            youTubeSourceManager.Object,
+            YouTubeItemManager.Object,
             blueskyManager.Object,
             NullLogger<Functions.Bluesky.ProcessScheduledItemFired>.Instance);
     }
@@ -102,8 +102,8 @@ public class ProcessScheduledItemFiredTests
         var sut = BuildSut(
             new Mock<IScheduledItemManager>(),
             new Mock<IEngagementManager>(),
-            new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(),
+            new Mock<ISyndicationFeedItemManager>(),
+            new Mock<IYouTubeItemManager>(),
             new Mock<IBlueskyManager>());
         var result = await sut.RunAsync(evt);
         Assert.Null(result);
@@ -115,14 +115,14 @@ public class ProcessScheduledItemFiredTests
         var scheduledItem = BuildScheduledItem();
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-        var mockFeedSource = new Mock<ISyndicationFeedSourceManager>();
+        var mockFeedSource = new Mock<ISyndicationFeedItemManager>();
         mockFeedSource.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildFeedSource());
         var mockBlueskyManager = new Mock<IBlueskyManager>();
         mockBlueskyManager
             .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("Test Blog Post Title");
         var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
-            mockFeedSource, new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+            mockFeedSource, new Mock<IYouTubeItemManager>(), mockBlueskyManager);
         var result = await sut.RunAsync(BuildEventGridEvent(1));
         Assert.NotNull(result);
         Assert.Equal("Test Blog Post Title", result!.Text);
@@ -139,7 +139,7 @@ public class ProcessScheduledItemFiredTests
             .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(string.Empty);
         var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
-            new Mock<ISyndicationFeedSourceManager>(), new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+            new Mock<ISyndicationFeedItemManager>(), new Mock<IYouTubeItemManager>(), mockBlueskyManager);
         var result = await sut.RunAsync(BuildEventGridEvent(1));
         Assert.Null(result);
     }
@@ -150,14 +150,14 @@ public class ProcessScheduledItemFiredTests
         var scheduledItem = BuildScheduledItem();
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-        var mockFeedSource = new Mock<ISyndicationFeedSourceManager>();
+        var mockFeedSource = new Mock<ISyndicationFeedItemManager>();
         mockFeedSource.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildFeedSource());
         var mockBlueskyManager = new Mock<IBlueskyManager>();
         mockBlueskyManager
             .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("Composed text");
         var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
-            mockFeedSource, new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+            mockFeedSource, new Mock<IYouTubeItemManager>(), mockBlueskyManager);
         await sut.RunAsync(BuildEventGridEvent(1));
         mockBlueskyManager.Verify(m => m.ComposeMessageAsync(scheduledItem, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -165,36 +165,36 @@ public class ProcessScheduledItemFiredTests
     [Fact]
     public async Task RunAsync_WhenItemTypeIsSyndicationFeed_SetsUrlFromFeedSource()
     {
-        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.SyndicationFeedSources);
+        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.SyndicationFeedItems);
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-        var mockFeedSource = new Mock<ISyndicationFeedSourceManager>();
+        var mockFeedSource = new Mock<ISyndicationFeedItemManager>();
         mockFeedSource.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildFeedSource(url: "https://example.com/post"));
         var mockBlueskyManager = new Mock<IBlueskyManager>();
         mockBlueskyManager
             .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("Test Blog Post Title");
         var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
-            mockFeedSource, new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+            mockFeedSource, new Mock<IYouTubeItemManager>(), mockBlueskyManager);
         var result = await sut.RunAsync(BuildEventGridEvent(1));
         Assert.NotNull(result);
         Assert.Equal("https://example.com/post", result!.Url);
     }
 
     [Fact]
-    public async Task RunAsync_WhenItemTypeIsYouTubeSource_SetsUrlFromYouTubeSource()
+    public async Task RunAsync_WhenItemTypeIsYouTubeItem_SetsUrlFromYouTubeItem()
     {
-        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.YouTubeSources);
+        var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.YouTubeItems);
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-        var mockYouTube = new Mock<IYouTubeSourceManager>();
-        mockYouTube.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildYouTubeSource(url: "https://youtube.com/watch?v=abc"));
+        var mockYouTube = new Mock<IYouTubeItemManager>();
+        mockYouTube.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildYouTubeItem(url: "https://youtube.com/watch?v=abc"));
         var mockBlueskyManager = new Mock<IBlueskyManager>();
         mockBlueskyManager
             .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("My YouTube Video");
         var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
-            new Mock<ISyndicationFeedSourceManager>(), mockYouTube, mockBlueskyManager);
+            new Mock<ISyndicationFeedItemManager>(), mockYouTube, mockBlueskyManager);
         var result = await sut.RunAsync(BuildEventGridEvent(1));
         Assert.NotNull(result);
         Assert.Equal("https://youtube.com/watch?v=abc", result!.Url);
@@ -213,7 +213,7 @@ public class ProcessScheduledItemFiredTests
             .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("Speaking at Tech Conference 2026");
         var sut = BuildSut(mockScheduledItemManager, mockEngagement,
-            new Mock<ISyndicationFeedSourceManager>(), new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+            new Mock<ISyndicationFeedItemManager>(), new Mock<IYouTubeItemManager>(), mockBlueskyManager);
         var result = await sut.RunAsync(BuildEventGridEvent(1));
         Assert.NotNull(result);
         Assert.Equal("https://conf.example.com", result!.Url);
@@ -232,7 +232,7 @@ public class ProcessScheduledItemFiredTests
             .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("My Talk Title at Tech Conference 2026");
         var sut = BuildSut(mockScheduledItemManager, mockEngagement,
-            new Mock<ISyndicationFeedSourceManager>(), new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+            new Mock<ISyndicationFeedItemManager>(), new Mock<IYouTubeItemManager>(), mockBlueskyManager);
         var result = await sut.RunAsync(BuildEventGridEvent(1));
         Assert.NotNull(result);
         Assert.Equal("https://conf.example.com/talk", result!.Url);
@@ -245,14 +245,14 @@ public class ProcessScheduledItemFiredTests
         scheduledItem.ImageUrl = "https://cdn.example.com/image.jpg";
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-        var mockFeedSource = new Mock<ISyndicationFeedSourceManager>();
+        var mockFeedSource = new Mock<ISyndicationFeedItemManager>();
         mockFeedSource.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildFeedSource());
         var mockBlueskyManager = new Mock<IBlueskyManager>();
         mockBlueskyManager
             .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("Test Blog Post Title");
         var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
-            mockFeedSource, new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+            mockFeedSource, new Mock<IYouTubeItemManager>(), mockBlueskyManager);
         var result = await sut.RunAsync(BuildEventGridEvent(1));
         Assert.NotNull(result);
         Assert.Equal("https://cdn.example.com/image.jpg", result!.ImageUrl);
@@ -265,14 +265,14 @@ public class ProcessScheduledItemFiredTests
         scheduledItem.ImageUrl = null;
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-        var mockFeedSource = new Mock<ISyndicationFeedSourceManager>();
+        var mockFeedSource = new Mock<ISyndicationFeedItemManager>();
         mockFeedSource.Setup(m => m.GetAsync(42)).ReturnsAsync(BuildFeedSource());
         var mockBlueskyManager = new Mock<IBlueskyManager>();
         mockBlueskyManager
             .Setup(m => m.ComposeMessageAsync(It.IsAny<ScheduledItem>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("Test Blog Post Title");
         var sut = BuildSut(mockScheduledItemManager, new Mock<IEngagementManager>(),
-            mockFeedSource, new Mock<IYouTubeSourceManager>(), mockBlueskyManager);
+            mockFeedSource, new Mock<IYouTubeItemManager>(), mockBlueskyManager);
         var result = await sut.RunAsync(BuildEventGridEvent(1));
         Assert.NotNull(result);
         Assert.Null(result!.ImageUrl);

@@ -42,7 +42,7 @@ create table dbo.ScheduledItems
     Id               int identity
         constraint ScheduledItems_pk
             primary key clustered,
-    -- Valid values: 'Engagements', 'Talks', 'SyndicationFeedSources', 'YouTubeSources'
+    -- Valid values: 'Engagements', 'Talks', 'SyndicationFeedItems', 'YouTubeItems'
     -- CHECK constraint CK_ScheduledItems_ItemTableName is added via migration 2026-03-16-scheduleditem-integrity.sql
     ItemTableName    varchar(255)   not null,
     ItemPrimaryKey   int   not null,
@@ -91,12 +91,15 @@ create table dbo.FeedChecks
     Id                     int identity
         constraint FeedChecks_pk_Id
             primary key,
-    Name                   nvarchar(255)                       not null
-        constraint FeedChecks_Unique_Name
-            unique,
+    Name                   nvarchar(255)                       not null,
+    EntraOId               nvarchar(36)   not null
+        constraint DF_FeedChecks_EntraOId
+            default (''),
     LastCheckedFeed        datetimeoffset default getutcdate() not null,
     LastItemAddedOrUpdated datetimeoffset default GETUTCDATE() not null,
-    LastUpdatedOn          datetimeoffset default getutcdate() not null
+    LastUpdatedOn          datetimeoffset default getutcdate() not null,
+    constraint UQ_FeedChecks_Name_EntraOId
+        unique (Name, EntraOId)
 )
 go
 
@@ -116,11 +119,11 @@ create table dbo.TokenRefreshes
 )
 go
 
--- Create the SyndicationFeedSource table
-create table dbo.SyndicationFeedSources
+-- Create the SyndicationFeedItem table
+create table dbo.SyndicationFeedItems
 (
     Id                int identity
-        constraint SyndicationFeedSource_pk_Id
+        constraint SyndicationFeedItem_pk_Id
             primary key,
     FeedIdentifier    nvarchar(max)                       not null,
     Author            nvarchar(255)                       not null,
@@ -136,11 +139,11 @@ create table dbo.SyndicationFeedSources
 )
 GO
 
--- Create the YouTubeSource table
-create table dbo.YouTubeSources
+-- Create the YouTubeItem table
+create table dbo.YouTubeItems
 (
     Id                int identity
-        constraint YouTubeSource_pk_Id
+        constraint YouTubeItem_pk_Id
             primary key,
     VideoId           nvarchar(20)                        not null,
     Author            nvarchar(255)                       not null,
@@ -399,44 +402,180 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Engagements_CreatedByE
     CREATE INDEX IX_Engagements_CreatedByEntraOid ON dbo.Engagements (CreatedByEntraOid);
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_Title' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
-    CREATE INDEX IX_SyndicationFeedSources_Title ON dbo.SyndicationFeedSources (Title);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedItems_Title' AND object_id = OBJECT_ID('dbo.SyndicationFeedItems'))
+    CREATE INDEX IX_SyndicationFeedItems_Title ON dbo.SyndicationFeedItems (Title);
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_Author' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
-    CREATE INDEX IX_SyndicationFeedSources_Author ON dbo.SyndicationFeedSources (Author);
+-- Per-user speaking engagements file URL collector configurations.
+if not exists (select 1 from sys.tables where name = 'UserCollectorSpeakingEngagements' and schema_id = schema_id('dbo'))
+begin
+    create table dbo.UserCollectorSpeakingEngagements
+    (
+        Id                        int identity
+            constraint PK_UserCollectorSpeakingEngagements
+                primary key clustered,
+        CreatedByEntraOid         nvarchar(36)   not null,
+        SpeakingEngagementsFile   nvarchar(2048) not null,
+        DisplayName               nvarchar(255)  not null,
+        IsActive                  bit            not null
+            constraint DF_UserCollectorSpeakingEngagements_IsActive
+                default (1),
+        CreatedOn                 datetimeoffset not null
+            constraint DF_UserCollectorSpeakingEngagements_CreatedOn
+                default (sysdatetimeoffset()),
+        LastUpdatedOn             datetimeoffset not null
+            constraint DF_UserCollectorSpeakingEngagements_LastUpdatedOn
+                default (sysdatetimeoffset()),
+        constraint UQ_UserCollectorSpeakingEngagements_Owner_File
+            unique (CreatedByEntraOid, SpeakingEngagementsFile)
+    )
+end
+go
+
+if not exists (select 1 from sys.indexes where name = 'IX_UserCollectorSpeakingEngagements_Owner' and object_id = object_id('dbo.UserCollectorSpeakingEngagements'))
+begin
+    create nonclustered index IX_UserCollectorSpeakingEngagements_Owner
+        on dbo.UserCollectorSpeakingEngagements (CreatedByEntraOid)
+end
+go
+
+-- Per-user RSS/Atom/JSON feed collector configurations.
+-- Each row represents a single feed URL a user wants polled.
+if not exists (select 1 from sys.tables where name = 'UserCollectorFeedSources' and schema_id = schema_id('dbo'))
+begin
+    create table dbo.UserCollectorFeedSources
+    (
+        Id                int identity
+            constraint PK_UserCollectorFeedSources
+                primary key clustered,
+        CreatedByEntraOid nvarchar(36)   not null,
+        FeedUrl           nvarchar(2048) not null,
+        DisplayName       nvarchar(255)  not null,
+        IsActive          bit            not null
+            constraint DF_UserCollectorFeedSources_IsActive
+                default (1),
+        CreatedOn         datetimeoffset not null
+            constraint DF_UserCollectorFeedSources_CreatedOn
+                default (sysdatetimeoffset()),
+        LastUpdatedOn     datetimeoffset not null
+            constraint DF_UserCollectorFeedSources_LastUpdatedOn
+                default (sysdatetimeoffset()),
+        constraint UQ_UserCollectorFeedSources_Owner_FeedUrl
+            unique (CreatedByEntraOid, FeedUrl)
+    )
+end
+go
+
+if not exists (select 1 from sys.indexes where name = 'IX_UserCollectorFeedSources_Owner' and object_id = object_id('dbo.UserCollectorFeedSources'))
+begin
+    create nonclustered index IX_UserCollectorFeedSources_Owner
+        on dbo.UserCollectorFeedSources (CreatedByEntraOid)
+end
+go
+
+-- Per-user YouTube channel collector configurations.
+-- Each row represents a YouTube channel ID a user wants polled.
+if not exists (select 1 from sys.tables where name = 'UserCollectorYouTubeChannels' and schema_id = schema_id('dbo'))
+begin
+    create table dbo.UserCollectorYouTubeChannels
+    (
+        Id                int identity
+            constraint PK_UserCollectorYouTubeChannels
+                primary key clustered,
+        CreatedByEntraOid nvarchar(36)   not null,
+        ChannelId         nvarchar(50)   not null,
+        PlaylistId        nvarchar(255)  not null default '',
+        ResultSetPageSize int            not null default 50,
+        DisplayName       nvarchar(255)  not null,
+        IsActive          bit            not null
+            constraint DF_UserCollectorYouTubeChannels_IsActive
+                default (1),
+        CreatedOn         datetimeoffset not null
+            constraint DF_UserCollectorYouTubeChannels_CreatedOn
+                default (sysdatetimeoffset()),
+        LastUpdatedOn     datetimeoffset not null
+            constraint DF_UserCollectorYouTubeChannels_LastUpdatedOn
+                default (sysdatetimeoffset()),
+        constraint UQ_UserCollectorYouTubeChannels_Owner_Channel
+            unique (CreatedByEntraOid, ChannelId)
+    )
+end
+go
+
+if not exists (select 1 from sys.indexes where name = 'IX_UserCollectorYouTubeChannels_Owner' and object_id = object_id('dbo.UserCollectorYouTubeChannels'))
+begin
+    create nonclustered index IX_UserCollectorYouTubeChannels_Owner
+        on dbo.UserCollectorYouTubeChannels (CreatedByEntraOid)
+end
+go
+
+-- Per-user scheduled items publisher configurations.
+-- Each user has at most one scheduled items config (unique on CreatedByEntraOid).
+if not exists (select 1 from sys.tables where name = 'UserCollectorScheduledItems' and schema_id = schema_id('dbo'))
+begin
+    create table dbo.UserCollectorScheduledItems
+    (
+        Id                int identity
+            constraint PK_UserCollectorScheduledItems
+                primary key clustered,
+        CreatedByEntraOid nvarchar(36)   not null,
+        DisplayName       nvarchar(255)  not null,
+        IsActive          bit            not null
+            constraint DF_UserCollectorScheduledItems_IsActive
+                default (1),
+        CreatedOn         datetimeoffset not null
+            constraint DF_UserCollectorScheduledItems_CreatedOn
+                default (sysdatetimeoffset()),
+        LastUpdatedOn     datetimeoffset not null
+            constraint DF_UserCollectorScheduledItems_LastUpdatedOn
+                default (sysdatetimeoffset()),
+        constraint UQ_UserCollectorScheduledItems_Owner
+            unique (CreatedByEntraOid)
+    )
+end
+go
+
+if not exists (select 1 from sys.indexes where name = 'IX_UserCollectorScheduledItems_Owner' and object_id = object_id('dbo.UserCollectorScheduledItems'))
+begin
+    create nonclustered index IX_UserCollectorScheduledItems_Owner
+        on dbo.UserCollectorScheduledItems (CreatedByEntraOid)
+end
+go
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedItems_Author' AND object_id = OBJECT_ID('dbo.SyndicationFeedItems'))
+    CREATE INDEX IX_SyndicationFeedItems_Author ON dbo.SyndicationFeedItems (Author);
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_PublicationDate' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
-    CREATE INDEX IX_SyndicationFeedSources_PublicationDate ON dbo.SyndicationFeedSources (PublicationDate DESC);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedItems_PublicationDate' AND object_id = OBJECT_ID('dbo.SyndicationFeedItems'))
+    CREATE INDEX IX_SyndicationFeedItems_PublicationDate ON dbo.SyndicationFeedItems (PublicationDate DESC);
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_AddedOn' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
-    CREATE INDEX IX_SyndicationFeedSources_AddedOn ON dbo.SyndicationFeedSources (AddedOn DESC);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedItems_AddedOn' AND object_id = OBJECT_ID('dbo.SyndicationFeedItems'))
+    CREATE INDEX IX_SyndicationFeedItems_AddedOn ON dbo.SyndicationFeedItems (AddedOn DESC);
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedSources_CreatedByEntraOid' AND object_id = OBJECT_ID('dbo.SyndicationFeedSources'))
-    CREATE INDEX IX_SyndicationFeedSources_CreatedByEntraOid ON dbo.SyndicationFeedSources (CreatedByEntraOid);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SyndicationFeedItems_CreatedByEntraOid' AND object_id = OBJECT_ID('dbo.SyndicationFeedItems'))
+    CREATE INDEX IX_SyndicationFeedItems_CreatedByEntraOid ON dbo.SyndicationFeedItems (CreatedByEntraOid);
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_Title' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
-    CREATE INDEX IX_YouTubeSources_Title ON dbo.YouTubeSources (Title);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeItems_Title' AND object_id = OBJECT_ID('dbo.YouTubeItems'))
+    CREATE INDEX IX_YouTubeItems_Title ON dbo.YouTubeItems (Title);
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_Author' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
-    CREATE INDEX IX_YouTubeSources_Author ON dbo.YouTubeSources (Author);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeItems_Author' AND object_id = OBJECT_ID('dbo.YouTubeItems'))
+    CREATE INDEX IX_YouTubeItems_Author ON dbo.YouTubeItems (Author);
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_PublicationDate' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
-    CREATE INDEX IX_YouTubeSources_PublicationDate ON dbo.YouTubeSources (PublicationDate DESC);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeItems_PublicationDate' AND object_id = OBJECT_ID('dbo.YouTubeItems'))
+    CREATE INDEX IX_YouTubeItems_PublicationDate ON dbo.YouTubeItems (PublicationDate DESC);
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_AddedOn' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
-    CREATE INDEX IX_YouTubeSources_AddedOn ON dbo.YouTubeSources (AddedOn DESC);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeItems_AddedOn' AND object_id = OBJECT_ID('dbo.YouTubeItems'))
+    CREATE INDEX IX_YouTubeItems_AddedOn ON dbo.YouTubeItems (AddedOn DESC);
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeSources_CreatedByEntraOid' AND object_id = OBJECT_ID('dbo.YouTubeSources'))
-    CREATE INDEX IX_YouTubeSources_CreatedByEntraOid ON dbo.YouTubeSources (CreatedByEntraOid);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_YouTubeItems_CreatedByEntraOid' AND object_id = OBJECT_ID('dbo.YouTubeItems'))
+    CREATE INDEX IX_YouTubeItems_CreatedByEntraOid ON dbo.YouTubeItems (CreatedByEntraOid);
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ScheduledItems_SendOnDateTime' AND object_id = OBJECT_ID('dbo.ScheduledItems'))

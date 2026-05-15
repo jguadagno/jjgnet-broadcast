@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.SpeakingEngagement;
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
@@ -17,6 +17,7 @@ public class LoadNewSpeakingEngagementsTests
 {
     private readonly Mock<ISpeakingEngagementsReader> _engagementsReader;
     private readonly Mock<IEngagementManager> _engagementManager;
+    private readonly Mock<IUserCollectorSpeakingEngagementManager> _userCollectorSpeakingEngagementManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly LoadNewSpeakingEngagements _sut;
 
@@ -24,11 +25,19 @@ public class LoadNewSpeakingEngagementsTests
     {
         _engagementsReader = new Mock<ISpeakingEngagementsReader>();
         _engagementManager = new Mock<IEngagementManager>();
+        _userCollectorSpeakingEngagementManager = new Mock<IUserCollectorSpeakingEngagementManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
+
+        _userCollectorSpeakingEngagementManager.Setup(m => m.GetAllActiveAsync())
+            .ReturnsAsync(new List<UserCollectorSpeakingEngagement>
+            {
+                new UserCollectorSpeakingEngagement { CreatedByEntraOid = "test-owner-oid", SpeakingEngagementsFile = "http://test-engagements.json", IsActive = true }
+            });
 
         _sut = new LoadNewSpeakingEngagements(
             _engagementsReader.Object,
             _engagementManager.Object,
+            _userCollectorSpeakingEngagementManager.Object,
             _feedCheckManager.Object,
             NullLogger<LoadNewSpeakingEngagements>.Instance);
     }
@@ -47,7 +56,7 @@ public class LoadNewSpeakingEngagementsTests
         };
 
     private void SetupFeedCheck() =>
-        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>()))
+        _feedCheckManager.Setup(f => f.GetByNameAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FeedCheck
             {
                 Id = 1,
@@ -67,7 +76,7 @@ public class LoadNewSpeakingEngagementsTests
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _engagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>()))
+        _engagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement> { item });
         _engagementManager
             .Setup(m => m.GetByNameAndUrlAndYearAsync(item.Name, item.Url, item.StartDateTime.Year))
@@ -92,7 +101,7 @@ public class LoadNewSpeakingEngagementsTests
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _engagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>()))
+        _engagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement> { item });
         _engagementManager
             .Setup(m => m.GetByNameAndUrlAndYearAsync(item.Name, item.Url, item.StartDateTime.Year))
@@ -114,7 +123,7 @@ public class LoadNewSpeakingEngagementsTests
         // Arrange
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _engagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>()))
+        _engagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement>());
 
         // Act
@@ -138,7 +147,7 @@ public class LoadNewSpeakingEngagementsTests
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _engagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>()))
+        _engagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement> { newEngagement1, duplicateEngagement, newEngagement2 });
         
         _engagementManager.Setup(m => m.GetByNameAndUrlAndYearAsync("Conf A", "https://a.com", 2024))
@@ -170,7 +179,7 @@ public class LoadNewSpeakingEngagementsTests
     {
         // Arrange
         SetupFeedCheck();
-        _engagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ThrowsAsync(new Exception("Reader error"));
+        _engagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ThrowsAsync(new Exception("Reader error"));
 
         // Act
         var result = await _sut.RunAsync(null!);
@@ -190,7 +199,7 @@ public class LoadNewSpeakingEngagementsTests
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _engagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>()))
+        _engagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement> { item });
         _engagementManager.Setup(m => m.GetByNameAndUrlAndYearAsync("CodeConf", "https://codeconf.com/2024", 2024))
             .ReturnsAsync(existingItem);
@@ -209,7 +218,7 @@ public class LoadNewSpeakingEngagementsTests
         // Arrange
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _engagementsReader.Setup(r => r.GetAll(It.IsAny<DateTimeOffset>())).ReturnsAsync((List<Engagement>)null!);
+        _engagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync((List<Engagement>)null!);
 
         // Act
         var result = await _sut.RunAsync(null!);

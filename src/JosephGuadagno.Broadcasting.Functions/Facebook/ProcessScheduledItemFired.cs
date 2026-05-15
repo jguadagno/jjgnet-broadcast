@@ -15,8 +15,8 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 public class ProcessScheduledItemFired(
     IScheduledItemManager scheduledItemManager,
     IEngagementManager engagementManager,
-    ISyndicationFeedSourceManager syndicationFeedSourceManager,
-    IYouTubeSourceManager youTubeSourceManager,
+    ISyndicationFeedItemManager SyndicationFeedItemManager,
+    IYouTubeItemManager YouTubeItemManager,
     IFacebookManager facebookManager,
     ILogger<ProcessScheduledItemFired> logger)
 {
@@ -57,11 +57,11 @@ public class ProcessScheduledItemFired(
                 case ScheduledItemType.Talks:
                     facebookPostStatus = await GetFacebookPostStatusForTalk(scheduledItem.ItemPrimaryKey);
                     break;
-                case ScheduledItemType.SyndicationFeedSources:
+                case ScheduledItemType.SyndicationFeedItems:
                     facebookPostStatus = await GetFacebookPostStatusForSyndicationSource(scheduledItem.ItemPrimaryKey);
                     break;
-                case ScheduledItemType.YouTubeSources:
-                    facebookPostStatus = await GetFacebookPostStatusForYouTubeSource(scheduledItem.ItemPrimaryKey);
+                case ScheduledItemType.YouTubeItems:
+                    facebookPostStatus = await GetFacebookPostStatusForYouTubeItem(scheduledItem.ItemPrimaryKey);
                     break;
                 default:
                     logger.LogError("The table name '{TableName}' is not supported", scheduledItem.ItemTableName);
@@ -70,6 +70,7 @@ public class ProcessScheduledItemFired(
 
             facebookPostStatus.StatusText = await facebookManager.ComposeMessageAsync(scheduledItem);
             facebookPostStatus.ImageUrl = scheduledItem.ImageUrl;
+            facebookPostStatus.CreatedByEntraOid = scheduledItem.CreatedByEntraOid;
 
             var properties = new Dictionary<string, string>
             {
@@ -98,14 +99,14 @@ public class ProcessScheduledItemFired(
 
     private async Task<FacebookPostStatus> GetFacebookPostStatusForSyndicationSource(int primaryKey)
     {
-        var syndicationFeedSource = await syndicationFeedSourceManager.GetAsync(primaryKey);
-        return new FacebookPostStatus { StatusText = string.Empty, LinkUri = syndicationFeedSource.Url };
+        var SyndicationFeedItem = await SyndicationFeedItemManager.GetAsync(primaryKey);
+        return new FacebookPostStatus { StatusText = string.Empty, LinkUri = SyndicationFeedItem.Url };
     }
 
-    private async Task<FacebookPostStatus> GetFacebookPostStatusForYouTubeSource(int primaryKey)
+    private async Task<FacebookPostStatus> GetFacebookPostStatusForYouTubeItem(int primaryKey)
     {
-        var youTubeSource = await youTubeSourceManager.GetAsync(primaryKey);
-        return new FacebookPostStatus { StatusText = string.Empty, LinkUri = youTubeSource.Url };
+        var YouTubeItem = await YouTubeItemManager.GetAsync(primaryKey);
+        return new FacebookPostStatus { StatusText = string.Empty, LinkUri = YouTubeItem.Url };
     }
 
     private async Task<FacebookPostStatus> GetFacebookPostStatusForEngagement(int primaryKey)

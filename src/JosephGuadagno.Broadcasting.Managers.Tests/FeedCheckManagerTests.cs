@@ -96,13 +96,13 @@ public class FeedCheckManagerTests
     {
         // Arrange
         var feedCheck = new FeedCheck { Id = 1, Name = "Test" };
-        _repository.Setup(r => r.GetByNameAsync("Test", default)).ReturnsAsync(feedCheck);
+        _repository.Setup(r => r.GetByNameAsync("Test", It.IsAny<string>(), default)).ReturnsAsync(feedCheck);
 
         // Act
-        var result = await _feedCheckManager.GetByNameAsync("Test");
+        var result = await _feedCheckManager.GetByNameAsync("Test", "test-oid");
 
         // Assert
         Assert.Equal(feedCheck, result);
-        _repository.Verify(r => r.GetByNameAsync("Test", default), Times.Once);
+        _repository.Verify(r => r.GetByNameAsync("Test", It.IsAny<string>(), default), Times.Once);
     }
 }

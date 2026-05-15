@@ -19,8 +19,8 @@ public class SchedulesControllerTests
 {
     private readonly Mock<IScheduledItemManager> _scheduledItemManagerMock;
     private readonly Mock<IEngagementManager> _engagementManagerMock;
-    private readonly Mock<ISyndicationFeedSourceManager> _syndicationFeedSourceManagerMock;
-    private readonly Mock<IYouTubeSourceManager> _youTubeSourceManagerMock;
+    private readonly Mock<ISyndicationFeedItemManager> _SyndicationFeedItemManagerMock;
+    private readonly Mock<IYouTubeItemManager> _YouTubeItemManagerMock;
     private readonly Mock<ILogger<SchedulesController>> _loggerMock;
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
@@ -31,8 +31,8 @@ public class SchedulesControllerTests
     {
         _scheduledItemManagerMock = new Mock<IScheduledItemManager>();
         _engagementManagerMock = new Mock<IEngagementManager>();
-        _syndicationFeedSourceManagerMock = new Mock<ISyndicationFeedSourceManager>();
-        _youTubeSourceManagerMock = new Mock<IYouTubeSourceManager>();
+        _SyndicationFeedItemManagerMock = new Mock<ISyndicationFeedItemManager>();
+        _YouTubeItemManagerMock = new Mock<IYouTubeItemManager>();
         _loggerMock = new Mock<ILogger<SchedulesController>>();
     }
 
@@ -45,8 +45,8 @@ public class SchedulesControllerTests
         var controller = new SchedulesController(
             _scheduledItemManagerMock.Object,
             _engagementManagerMock.Object,
-            _syndicationFeedSourceManagerMock.Object,
-            _youTubeSourceManagerMock.Object,
+            _SyndicationFeedItemManagerMock.Object,
+            _YouTubeItemManagerMock.Object,
             _loggerMock.Object,
             _mapper)
         {
@@ -59,7 +59,7 @@ public class SchedulesControllerTests
     private static ScheduledItem BuildScheduledItem(int id = 1, string oid = "owner-oid-12345")=> new()
     {
         Id = id,
-        ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+        ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedItems,
         ItemPrimaryKey = id * 10,
         Message = $"Check out item {id}!",
         SendOnDateTime = DateTimeOffset.UtcNow.AddDays(id),
@@ -70,7 +70,7 @@ public class SchedulesControllerTests
 
     private static ScheduledItemRequest BuildScheduledItemRequest(int id = 1) => new()
     {
-        ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+        ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedItems,
         ItemPrimaryKey = id * 10,
         Message = $"Check out item {id}!",
         SendOnDateTime = DateTimeOffset.UtcNow.AddDays(id)
@@ -170,7 +170,7 @@ public class SchedulesControllerTests
     public async Task CreateScheduledItemAsync_WhenModelStateIsInvalid_ReturnsBadRequest()
     {
         // Arrange
-        var request = new ScheduledItemRequest { ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources, ItemPrimaryKey = 0, Message = "Test", SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1) };
+        var request = new ScheduledItemRequest { ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedItems, ItemPrimaryKey = 0, Message = "Test", SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1) };
         var sut = CreateSut();
         sut.ModelState.AddModelError("Message", "Message is required");
 
@@ -188,7 +188,7 @@ public class SchedulesControllerTests
         // Arrange
         var request = new ScheduledItemRequest
         {
-            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedItems,
             ItemPrimaryKey = 100,
             Message = "New scheduled post",
             SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1)
@@ -239,7 +239,7 @@ public class SchedulesControllerTests
         // Arrange
         var request = new ScheduledItemRequest
         {
-            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedItems,
             ItemPrimaryKey = 10,
             Message = "Check out item!",
             SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1)
@@ -748,13 +748,13 @@ public class SchedulesControllerTests
     }
 
     [Fact]
-    public async Task GetScheduledItemsAsync_WithSyndicationFeedSourceItem_PopulatesFeedTitle()
+    public async Task GetScheduledItemsAsync_WithSyndicationFeedItemItem_PopulatesFeedTitle()
     {
         // Arrange
         var item = new ScheduledItem
         {
             Id = 1,
-            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedItems,
             ItemPrimaryKey = 7,
             Message = "New blog post!",
             SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
@@ -763,9 +763,9 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock
             .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
-        _syndicationFeedSourceManagerMock
+        _SyndicationFeedItemManagerMock
             .Setup(m => m.GetAsync(7))
-            .ReturnsAsync(new SyndicationFeedSource
+            .ReturnsAsync(new SyndicationFeedItem
             {
                 Id = 7,
                 Title = "Joseph's Blog",
@@ -789,13 +789,13 @@ public class SchedulesControllerTests
     }
 
     [Fact]
-    public async Task GetScheduledItemsAsync_WithYouTubeSourceItem_PopulatesYouTubeTitle()
+    public async Task GetScheduledItemsAsync_WithYouTubeItemItem_PopulatesYouTubeTitle()
     {
         // Arrange
         var item = new ScheduledItem
         {
             Id = 1,
-            ItemType = Domain.Enums.ScheduledItemType.YouTubeSources,
+            ItemType = Domain.Enums.ScheduledItemType.YouTubeItems,
             ItemPrimaryKey = 3,
             Message = "New YouTube video!",
             SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
@@ -804,9 +804,9 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock
             .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
-        _youTubeSourceManagerMock
+        _YouTubeItemManagerMock
             .Setup(m => m.GetAsync(3))
-            .ReturnsAsync(new YouTubeSource
+            .ReturnsAsync(new YouTubeItem
             {
                 Id = 3,
                 Title = "JosephGuadagno",
@@ -836,7 +836,7 @@ public class SchedulesControllerTests
         var item = new ScheduledItem
         {
             Id = 1,
-            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedSources,
+            ItemType = Domain.Enums.ScheduledItemType.SyndicationFeedItems,
             ItemPrimaryKey = 99,
             Message = "Item with broken lookup",
             SendOnDateTime = DateTimeOffset.UtcNow.AddDays(1),
@@ -845,7 +845,7 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock
             .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
-        _syndicationFeedSourceManagerMock
+        _SyndicationFeedItemManagerMock
             .Setup(m => m.GetAsync(99))
             .ThrowsAsync(new Exception("DB error"));
 

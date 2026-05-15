@@ -16,4 +16,6 @@ public partial class FeedCheck
     public DateTimeOffset LastItemAddedOrUpdated { get; set; }
 
     public DateTimeOffset LastUpdatedOn { get; set; }
+
+    public string EntraOId { get; set; } = string.Empty;
 }

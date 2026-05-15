@@ -194,11 +194,11 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IScheduledItemDataStore, ScheduledItemDataStore>();
     services.TryAddScoped<IScheduledItemManager, ScheduledItemManager>();
 
-    services.TryAddScoped<IYouTubeSourceDataStore, YouTubeSourceDataStore>();
-    services.TryAddScoped<IYouTubeSourceManager, YouTubeSourceManager>();
+    services.TryAddScoped<IYouTubeItemDataStore, YouTubeItemDataStore>();
+    services.TryAddScoped<IYouTubeItemManager, YouTubeItemManager>();
 
-    services.TryAddScoped<ISyndicationFeedSourceDataStore, SyndicationFeedSourceDataStore>();
-    services.TryAddScoped<ISyndicationFeedSourceManager, SyndicationFeedSourceManager>();
+    services.TryAddScoped<ISyndicationFeedItemDataStore, SyndicationFeedItemDataStore>();
+    services.TryAddScoped<ISyndicationFeedItemManager, SyndicationFeedItemManager>();
 
     services.TryAddScoped<IFeedCheckDataStore, FeedCheckDataStore>();
     services.TryAddScoped<IFeedCheckManager, FeedCheckManager>();
@@ -218,6 +218,10 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IUserCollectorFeedSourceManager, UserCollectorFeedSourceManager>();
     services.TryAddScoped<IUserCollectorYouTubeChannelDataStore, UserCollectorYouTubeChannelDataStore>();
     services.TryAddScoped<IUserCollectorYouTubeChannelManager, UserCollectorYouTubeChannelManager>();
+    services.TryAddScoped<IUserCollectorSpeakingEngagementDataStore, UserCollectorSpeakingEngagementDataStore>();
+    services.TryAddScoped<IUserCollectorSpeakingEngagementManager, UserCollectorSpeakingEngagementManager>();
+    services.TryAddScoped<IUserCollectorScheduledItemDataStore, UserCollectorScheduledItemDataStore>();
+    services.TryAddScoped<IUserCollectorScheduledItemManager, UserCollectorScheduledItemManager>();
 
     // RBAC Phase 1
     services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();

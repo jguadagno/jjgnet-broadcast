@@ -29,6 +29,11 @@ public class UserCollectorYouTubeChannelsController(
     /// <param name="ownerOid">
     /// Optional Entra object ID to query. Non-admin callers can only query their own configurations.
     /// </param>
+    /// <param name="page">The page number (default: 1)</param>
+    /// <param name="pageSize">The page size (default: 25)</param>
+    /// <param name="sortBy">The field to sort by (default: channelname)</param>
+    /// <param name="sortDescending">When true, sorts in descending order (default: false)</param>
+    /// <param name="filter">Optional text filter applied to YouTube channel names</param>
     /// <returns>A list of YouTube channel configurations for the resolved owner</returns>
     /// <response code="200">Returns the YouTube channel configurations for the resolved owner</response>
     /// <response code="401">The caller is not authenticated</response>
@@ -120,7 +125,7 @@ public class UserCollectorYouTubeChannelsController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<UserCollectorYouTubeChannelResponse>> SaveAsync(
         [FromQuery] string? ownerOid,
-        [FromBody] UserCollectorYouTubeChannelRequest request)
+        [FromBody] CreateUserCollectorYouTubeChannelRequest request)
     {
         if (!ModelState.IsValid)
         {
@@ -137,6 +142,14 @@ public class UserCollectorYouTubeChannelsController(
         var config = mapper.Map<UserCollectorYouTubeChannel>(request);
         config.CreatedByEntraOid = resolvedOwnerOid;
 
+        if (!string.IsNullOrWhiteSpace(request.ApiKey))
+        {
+            await userCollectorYouTubeChannelManager.StoreApiKeyToKeyVaultAsync(
+                resolvedOwnerOid,
+                request.ChannelId,
+                request.ApiKey);
+        }
+
         var saved = await userCollectorYouTubeChannelManager.SaveAsync(config);
         if (saved is null)
         {
@@ -145,6 +158,69 @@ public class UserCollectorYouTubeChannelsController(
                 LogSanitizer.Sanitize(resolvedOwnerOid),
                 LogSanitizer.Sanitize(request.ChannelId));
             return BadRequest("Unable to save YouTube channel configuration");
+        }
+
+        return Ok(mapper.Map<UserCollectorYouTubeChannelResponse>(saved));
+    }
+
+    /// <summary>
+    /// Updates an existing YouTube channel configuration
+    /// </summary>
+    /// <param name="id">The configuration identifier</param>
+    /// <param name="request">The YouTube channel configuration payload</param>
+    /// <returns>The updated YouTube channel configuration</returns>
+    [HttpPut("{id:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorYouTubeChannelResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UserCollectorYouTubeChannelResponse>> UpdateAsync(
+        int id,
+        [FromBody] UpdateUserCollectorYouTubeChannelRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            logger.LogWarning("UpdateAsync called with invalid model state for ID {Id}", id);
+            return BadRequest(ModelState);
+        }
+
+        var existing = await userCollectorYouTubeChannelManager.GetByIdAsync(id);
+        if (existing is null)
+        {
+            return NotFound();
+        }
+
+        if (User.ResolveOwnerOid(existing.CreatedByEntraOid, requireAdminWhenTargetingOtherUser: true) is null)
+        {
+            logger.LogWarning("User {CurrentOid} attempted to update YouTube channel config {Id} owned by {OwnerOid}",
+                LogSanitizer.Sanitize(User.GetOwnerOid()), id, LogSanitizer.Sanitize(existing.CreatedByEntraOid));
+            return Forbid();
+        }
+
+        if (!existing.HasApiKey && string.IsNullOrWhiteSpace(request.ApiKey))
+        {
+            return BadRequest("ApiKey is required when no API key has been previously stored.");
+        }
+
+        var config = mapper.Map<UserCollectorYouTubeChannel>(request);
+        config.Id = id;
+        config.CreatedByEntraOid = existing.CreatedByEntraOid;
+
+        if (!string.IsNullOrWhiteSpace(request.ApiKey))
+        {
+            await userCollectorYouTubeChannelManager.StoreApiKeyToKeyVaultAsync(
+                existing.CreatedByEntraOid,
+                request.ChannelId,
+                request.ApiKey);
+        }
+
+        var saved = await userCollectorYouTubeChannelManager.SaveAsync(config);
+        if (saved is null)
+        {
+            logger.LogWarning("Failed to update YouTube channel config for ID {Id}", id);
+            return BadRequest("Unable to update YouTube channel configuration");
         }
 
         return Ok(mapper.Map<UserCollectorYouTubeChannelResponse>(saved));

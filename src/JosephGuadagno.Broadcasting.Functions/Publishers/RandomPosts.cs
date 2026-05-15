@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.Publishers;
 
 public class RandomPosts(
-    ISyndicationFeedSourceManager syndicationFeedSourceManager,
+    ISyndicationFeedItemManager SyndicationFeedItemManager,
     IRandomPostSettings randomPostSettings,
     IEventPublisher eventPublisher,
     ILogger<RandomPosts> logger)
@@ -31,9 +31,15 @@ public class RandomPosts(
         }
 
         logger.LogDebug("Getting all items from feed from '{CutoffDate:u}'", cutoffDate);
-        var syndicationFeedSource = await syndicationFeedSourceManager.GetRandomSyndicationDataAsync(cutoffDate, randomPostSettings.ExcludedCategories);
+        var ownerOid = await SyndicationFeedItemManager.GetCollectorOwnerOidAsync();
+        if (string.IsNullOrWhiteSpace(ownerOid))
+        {
+            logger.LogWarning("Could not resolve a collector owner OID from existing syndication feed source records.");
+            return;
+        }
+        var SyndicationFeedItem = await SyndicationFeedItemManager.GetRandomSyndicationDataAsync(ownerOid, cutoffDate, randomPostSettings.ExcludedCategories);
 
-        if (syndicationFeedSource is null)
+        if (SyndicationFeedItem is null)
         {
             logger.LogDebug("Could not find a random post from feed since '{CutoffDate:u}'", cutoffDate);
             return;
@@ -43,27 +49,27 @@ public class RandomPosts(
         try
         {
             await eventPublisher.PublishRandomPostsEventsAsync(ConfigurationFunctionNames.PublishersRandomPosts,
-                syndicationFeedSource.Id);
+                SyndicationFeedItem.Id);
 
             logger.LogCustomEvent(Metrics.RandomPostFired, new Dictionary<string, string>
             {
-                {"title", syndicationFeedSource.Title},
-                {"url", syndicationFeedSource.Url},
-                {"id", syndicationFeedSource.Id.ToString()}
+                {"title", SyndicationFeedItem.Title},
+                {"url", SyndicationFeedItem.Url},
+                {"id", SyndicationFeedItem.Id.ToString()}
             });
 
             logger.LogDebug("Latest random post '{RandomSyndicationIdTitleText}' has been published",
-                syndicationFeedSource.Title);
+                SyndicationFeedItem.Title);
         }
         catch (EventPublishException ex)
         {
             logger.LogError(ex, "Failed to publish random post event for '{Title}' (Id: {Id})",
-                syndicationFeedSource.Title, syndicationFeedSource.Id);
+                SyndicationFeedItem.Title, SyndicationFeedItem.Id);
             logger.LogCustomEvent(Metrics.RandomPostFired, new Dictionary<string, string>
             {
-                {"title", syndicationFeedSource.Title},
-                {"url", syndicationFeedSource.Url},
-                {"id", syndicationFeedSource.Id.ToString()}
+                {"title", SyndicationFeedItem.Title},
+                {"url", SyndicationFeedItem.Url},
+                {"id", SyndicationFeedItem.Id.ToString()}
             });
             throw;
         }

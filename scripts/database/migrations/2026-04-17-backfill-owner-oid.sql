@@ -78,25 +78,25 @@ GO
 DECLARE @OwnerOid NVARCHAR(36) = 'PLACEHOLDER_OID';
 
 -- ============================================================
--- Backfill SyndicationFeedSources
+-- Backfill SyndicationFeedItems
 -- ============================================================
-UPDATE [dbo].[SyndicationFeedSources]
+UPDATE [dbo].[SyndicationFeedItems]
 SET [CreatedByEntraOid] = @OwnerOid
 WHERE [CreatedByEntraOid] IS NULL;
 
-PRINT CONCAT('Updated ', @@ROWCOUNT, ' SyndicationFeedSources records');
+PRINT CONCAT('Updated ', @@ROWCOUNT, ' SyndicationFeedItems records');
 GO
 
 DECLARE @OwnerOid NVARCHAR(36) = 'PLACEHOLDER_OID';
 
 -- ============================================================
--- Backfill YouTubeSources
+-- Backfill YouTubeItems
 -- ============================================================
-UPDATE [dbo].[YouTubeSources]
+UPDATE [dbo].[YouTubeItems]
 SET [CreatedByEntraOid] = @OwnerOid
 WHERE [CreatedByEntraOid] IS NULL;
 
-PRINT CONCAT('Updated ', @@ROWCOUNT, ' YouTubeSources records');
+PRINT CONCAT('Updated ', @@ROWCOUNT, ' YouTubeItems records');
 GO
 
 -- ============================================================

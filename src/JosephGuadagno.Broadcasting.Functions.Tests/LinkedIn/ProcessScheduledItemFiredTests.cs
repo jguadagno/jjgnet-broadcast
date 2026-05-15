@@ -23,7 +23,7 @@ public class ProcessScheduledItemFiredTests
     }
 
     private static ScheduledItem BuildScheduledItem(
-        ScheduledItemType itemType = ScheduledItemType.SyndicationFeedSources,
+        ScheduledItemType itemType = ScheduledItemType.SyndicationFeedItems,
         int id = 1,
         int primaryKey = 42) => new()
     {
@@ -36,7 +36,7 @@ public class ProcessScheduledItemFiredTests
         ImageUrl = "https://cdn.example.com/image.jpg"
     };
 
-    private static SyndicationFeedSource BuildFeedSource() => new()
+    private static SyndicationFeedItem BuildFeedSource() => new()
     {
         Id = 42,
         FeedIdentifier = "feed-1",
@@ -74,7 +74,7 @@ public class ProcessScheduledItemFiredTests
         TalkLocation = "Room A"
     };
 
-    private static YouTubeSource BuildYouTubeSource() => new()
+    private static YouTubeItem BuildYouTubeItem() => new()
     {
         Id = 42,
         Title = "Building Better Apps with .NET",
@@ -104,8 +104,8 @@ public class ProcessScheduledItemFiredTests
 
     private static Functions.LinkedIn.ProcessScheduledItemFired BuildSut(
         Mock<IScheduledItemManager> scheduledItemManager,
-        Mock<ISyndicationFeedSourceManager> feedSourceManager,
-        Mock<IYouTubeSourceManager> youTubeSourceManager,
+        Mock<ISyndicationFeedItemManager> feedSourceManager,
+        Mock<IYouTubeItemManager> YouTubeItemManager,
         Mock<IEngagementManager> engagementManager,
         Mock<IUserOAuthTokenManager> userOAuthTokenManager,
         Mock<ILinkedInManager> linkedInManager)
@@ -114,7 +114,7 @@ public class ProcessScheduledItemFiredTests
             scheduledItemManager.Object,
             engagementManager.Object,
             feedSourceManager.Object,
-            youTubeSourceManager.Object,
+            YouTubeItemManager.Object,
             userOAuthTokenManager.Object,
             linkedInManager.Object,
             NullLogger<Functions.LinkedIn.ProcessScheduledItemFired>.Instance);
@@ -129,7 +129,7 @@ public class ProcessScheduledItemFiredTests
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(scheduledItem);
 
-        var mockFeedSourceManager = new Mock<ISyndicationFeedSourceManager>();
+        var mockFeedSourceManager = new Mock<ISyndicationFeedItemManager>();
         mockFeedSourceManager.Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(feedSource);
 
         var mockLinkedInManager = new Mock<ILinkedInManager>();
@@ -140,7 +140,7 @@ public class ProcessScheduledItemFiredTests
         var sut = BuildSut(
             mockScheduledItemManager,
             mockFeedSourceManager,
-            new Mock<IYouTubeSourceManager>(),
+            new Mock<IYouTubeItemManager>(),
             new Mock<IEngagementManager>(),
             BuildUserOAuthTokenManager(),
             mockLinkedInManager);
@@ -175,8 +175,8 @@ public class ProcessScheduledItemFiredTests
 
         var sut = BuildSut(
             mockScheduledItemManager,
-            new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(),
+            new Mock<ISyndicationFeedItemManager>(),
+            new Mock<IYouTubeItemManager>(),
             new Mock<IEngagementManager>(),
             mockTokenManager,
             mockLinkedInManager);
@@ -208,8 +208,8 @@ public class ProcessScheduledItemFiredTests
 
         var sut = BuildSut(
             mockScheduledItemManager,
-            new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(),
+            new Mock<ISyndicationFeedItemManager>(),
+            new Mock<IYouTubeItemManager>(),
             mockEngagementManager,
             BuildUserOAuthTokenManager(),
             mockLinkedInManager);
@@ -241,8 +241,8 @@ public class ProcessScheduledItemFiredTests
 
         var sut = BuildSut(
             mockScheduledItemManager,
-            new Mock<ISyndicationFeedSourceManager>(),
-            new Mock<IYouTubeSourceManager>(),
+            new Mock<ISyndicationFeedItemManager>(),
+            new Mock<IYouTubeItemManager>(),
             mockEngagementManager,
             BuildUserOAuthTokenManager(),
             mockLinkedInManager);
@@ -256,16 +256,16 @@ public class ProcessScheduledItemFiredTests
     }
 
     [Fact]
-    public async Task RunAsync_WhenItemTypeIsYouTubeSources_UsesShortenedUrlAndManagerText()
+    public async Task RunAsync_WhenItemTypeIsYouTubeItems_UsesShortenedUrlAndManagerText()
     {
-        var scheduledItem = BuildScheduledItem(ScheduledItemType.YouTubeSources);
-        var youTubeSource = BuildYouTubeSource();
+        var scheduledItem = BuildScheduledItem(ScheduledItemType.YouTubeItems);
+        var YouTubeItem = BuildYouTubeItem();
 
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(scheduledItem);
 
-        var mockYouTubeSourceManager = new Mock<IYouTubeSourceManager>();
-        mockYouTubeSourceManager.Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(youTubeSource);
+        var mockYouTubeItemManager = new Mock<IYouTubeItemManager>();
+        mockYouTubeItemManager.Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(YouTubeItem);
 
         var mockLinkedInManager = new Mock<ILinkedInManager>();
         mockLinkedInManager
@@ -274,8 +274,8 @@ public class ProcessScheduledItemFiredTests
 
         var sut = BuildSut(
             mockScheduledItemManager,
-            new Mock<ISyndicationFeedSourceManager>(),
-            mockYouTubeSourceManager,
+            new Mock<ISyndicationFeedItemManager>(),
+            mockYouTubeItemManager,
             new Mock<IEngagementManager>(),
             BuildUserOAuthTokenManager(),
             mockLinkedInManager);
@@ -284,7 +284,7 @@ public class ProcessScheduledItemFiredTests
 
         Assert.NotNull(result);
         Assert.Equal("YouTube message", result!.Text);
-        Assert.Equal(youTubeSource.Title, result.Title);
-        Assert.Equal(youTubeSource.ShortenedUrl, result.LinkUrl);
+        Assert.Equal(YouTubeItem.Title, result.Title);
+        Assert.Equal(YouTubeItem.ShortenedUrl, result.LinkUrl);
     }
 }

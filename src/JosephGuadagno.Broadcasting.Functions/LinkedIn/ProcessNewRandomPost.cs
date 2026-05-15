@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
 public class ProcessNewRandomPost(
-    ISyndicationFeedSourceManager syndicationFeedSourceManager,
+    ISyndicationFeedItemManager SyndicationFeedItemManager,
     IUserOAuthTokenManager userOAuthTokenManager,
     ILogger<ProcessNewRandomPost> logger)
 {
@@ -42,39 +42,39 @@ public class ProcessNewRandomPost(
                 logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
                 return null;
             }
-            var syndicationFeedSource = await syndicationFeedSourceManager.GetAsync(source.Id);
+            var SyndicationFeedItem = await SyndicationFeedItemManager.GetAsync(source.Id);
 
             // Resolve per-user OAuth token — no silent fallback to shared token
             var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
-                syndicationFeedSource.CreatedByEntraOid,
+                SyndicationFeedItem.CreatedByEntraOid,
                 SocialMediaPlatformIds.LinkedIn);
 
             if (token is null)
             {
                 logger.LogWarning(
                     "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping random post {ItemId}",
-                    LogSanitizer.Sanitize(syndicationFeedSource.CreatedByEntraOid),
-                    syndicationFeedSource.Id);
+                    LogSanitizer.Sanitize(SyndicationFeedItem.CreatedByEntraOid),
+                    SyndicationFeedItem.Id);
                 return null;
             }
 
             var statusText = "ICYMI: ";
             var post = new LinkedInPostLink
             {
-                Text = $"{statusText} {syndicationFeedSource.Title} {HashTagLists.BuildHashTagList(syndicationFeedSource.Tags)}",
-                Title = syndicationFeedSource.Title,
-                LinkUrl = syndicationFeedSource.Url,
+                Text = $"{statusText} {SyndicationFeedItem.Title} {HashTagLists.BuildHashTagList(SyndicationFeedItem.Tags)}",
+                Title = SyndicationFeedItem.Title,
+                LinkUrl = SyndicationFeedItem.Url,
                 AccessToken = token.AccessToken
             };
 
             var properties = new Dictionary<string, string>
             {
-                {"title", syndicationFeedSource.Title},
-                {"url", syndicationFeedSource.Url},
+                {"title", SyndicationFeedItem.Title},
+                {"url", SyndicationFeedItem.Url},
                 {"post", post.Text}
             };
             logger.LogCustomEvent(Metrics.LinkedInProcessedRandomPost, properties);
-            logger.LogDebug("Picked a random post {Title}", syndicationFeedSource.Title);
+            logger.LogDebug("Picked a random post {Title}", SyndicationFeedItem.Title);
             return post;
         }
         catch (Exception e)

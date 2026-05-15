@@ -1,8 +1,6 @@
 using System.Security.Claims;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -18,17 +16,20 @@ public class CollectorSettingsController : Controller
 {
     private readonly IUserCollectorFeedSourceService _feedSourceService;
     private readonly IUserCollectorYouTubeChannelService _youTubeChannelService;
+    private readonly IUserCollectorSpeakingEngagementService _speakingEngagementService;
     private readonly IUserApprovalManager _userApprovalManager;
     private readonly ILogger<CollectorSettingsController> _logger;
 
     public CollectorSettingsController(
         IUserCollectorFeedSourceService feedSourceService,
         IUserCollectorYouTubeChannelService youTubeChannelService,
+        IUserCollectorSpeakingEngagementService speakingEngagementService,
         IUserApprovalManager userApprovalManager,
         ILogger<CollectorSettingsController> logger)
     {
         _feedSourceService = feedSourceService;
         _youTubeChannelService = youTubeChannelService;
+        _speakingEngagementService = speakingEngagementService;
         _userApprovalManager = userApprovalManager;
         _logger = logger;
     }
@@ -46,268 +47,6 @@ public class CollectorSettingsController : Controller
         return View(viewModel);
     }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddFeedSource(UserCollectorFeedSourceViewModel model, string? userOid = null)
-    {
-        var resolution = await ResolveTargetUserAsync(userOid);
-        if (resolution.FailureResult is not null)
-        {
-            return resolution.FailureResult;
-        }
-
-        if (!ModelState.IsValid)
-        {
-            var invalidPage = await BuildPageViewModelAsync(resolution.Context!);
-            return View("Index", invalidPage);
-        }
-
-        var feedSource = new UserCollectorFeedSource
-        {
-            CreatedByEntraOid = resolution.Context!.TargetUserOid,
-            FeedUrl = model.FeedUrl,
-            DisplayName = model.DisplayName,
-            IsActive = true
-        };
-
-        var result = resolution.Context.IsManagedBySiteAdmin
-            ? await _feedSourceService.AddByUserAsync(resolution.Context.TargetUserOid, feedSource)
-            : await _feedSourceService.AddCurrentUserAsync(feedSource);
-
-        if (result is null)
-        {
-            _logger.LogWarning(
-                "Failed to add feed source for owner {OwnerOid}, URL: {FeedUrl}",
-                resolution.Context.TargetUserOid,
-                LogSanitizer.Sanitize(model.FeedUrl));
-            TempData["ErrorMessage"] = "Unable to add feed source. Please try again.";
-        }
-        else
-        {
-            _logger.LogInformation(
-                "Feed source added for owner {OwnerOid}, ID: {Id}",
-                resolution.Context.TargetUserOid,
-                result.Id);
-            TempData["SuccessMessage"] = $"Feed source '{LogSanitizer.Sanitize(model.DisplayName)}' added successfully.";
-        }
-
-        return RedirectToAction(nameof(Index), BuildRouteValues(resolution.Context));
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditFeedSource(UserCollectorFeedSourceViewModel model, string? userOid = null)
-    {
-        var resolution = await ResolveTargetUserAsync(userOid);
-        if (resolution.FailureResult is not null)
-        {
-            return resolution.FailureResult;
-        }
-
-        if (!ModelState.IsValid)
-        {
-            var invalidPage = await BuildPageViewModelAsync(resolution.Context!);
-            return View("Index", invalidPage);
-        }
-
-        var feedSource = new UserCollectorFeedSource
-        {
-            Id = model.Id,
-            CreatedByEntraOid = resolution.Context!.TargetUserOid,
-            FeedUrl = model.FeedUrl,
-            DisplayName = model.DisplayName,
-            IsActive = model.IsActive
-        };
-
-        var result = resolution.Context.IsManagedBySiteAdmin
-            ? await _feedSourceService.UpdateByUserAsync(resolution.Context.TargetUserOid, feedSource)
-            : await _feedSourceService.UpdateCurrentUserAsync(feedSource);
-
-        if (result is null)
-        {
-            _logger.LogWarning(
-                "Failed to update feed source {Id} for owner {OwnerOid}",
-                model.Id,
-                resolution.Context.TargetUserOid);
-            TempData["ErrorMessage"] = "Unable to update feed source. Please try again.";
-        }
-        else
-        {
-            _logger.LogInformation(
-                "Feed source {Id} updated for owner {OwnerOid}",
-                model.Id,
-                resolution.Context.TargetUserOid);
-            TempData["SuccessMessage"] = $"Feed source '{LogSanitizer.Sanitize(model.DisplayName)}' updated successfully.";
-        }
-
-        return RedirectToAction(nameof(Index), BuildRouteValues(resolution.Context));
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteFeedSource(int id, string? userOid = null)
-    {
-        var resolution = await ResolveTargetUserAsync(userOid);
-        if (resolution.FailureResult is not null)
-        {
-            return resolution.FailureResult;
-        }
-
-        var success = resolution.Context!.IsManagedBySiteAdmin
-            ? await _feedSourceService.DeleteByUserAsync(resolution.Context.TargetUserOid, id)
-            : await _feedSourceService.DeleteCurrentUserAsync(id);
-
-        if (success)
-        {
-            _logger.LogInformation(
-                "Feed source {Id} deleted for owner {OwnerOid}",
-                id,
-                resolution.Context.TargetUserOid);
-            TempData["SuccessMessage"] = "Feed source removed successfully.";
-        }
-        else
-        {
-            _logger.LogWarning(
-                "Failed to delete feed source {Id} for owner {OwnerOid}",
-                id,
-                resolution.Context.TargetUserOid);
-            TempData["ErrorMessage"] = "Unable to remove feed source. Please try again.";
-        }
-
-        return RedirectToAction(nameof(Index), BuildRouteValues(resolution.Context));
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddYouTubeChannel(UserCollectorYouTubeChannelViewModel model, string? userOid = null)
-    {
-        var resolution = await ResolveTargetUserAsync(userOid);
-        if (resolution.FailureResult is not null)
-        {
-            return resolution.FailureResult;
-        }
-
-        if (!ModelState.IsValid)
-        {
-            var invalidPage = await BuildPageViewModelAsync(resolution.Context!);
-            return View("Index", invalidPage);
-        }
-
-        var channel = new UserCollectorYouTubeChannel
-        {
-            CreatedByEntraOid = resolution.Context!.TargetUserOid,
-            ChannelId = model.ChannelId,
-            DisplayName = model.DisplayName,
-            IsActive = true
-        };
-
-        var result = resolution.Context.IsManagedBySiteAdmin
-            ? await _youTubeChannelService.AddByUserAsync(resolution.Context.TargetUserOid, channel)
-            : await _youTubeChannelService.AddCurrentUserAsync(channel);
-
-        if (result is null)
-        {
-            _logger.LogWarning(
-                "Failed to add YouTube channel for owner {OwnerOid}, ChannelId: {ChannelId}",
-                resolution.Context.TargetUserOid,
-                LogSanitizer.Sanitize(model.ChannelId));
-            TempData["ErrorMessage"] = "Unable to add YouTube channel. Please try again.";
-        }
-        else
-        {
-            _logger.LogInformation(
-                "YouTube channel added for owner {OwnerOid}, ID: {Id}",
-                resolution.Context.TargetUserOid,
-                result.Id);
-            TempData["SuccessMessage"] = $"YouTube channel '{LogSanitizer.Sanitize(model.DisplayName)}' added successfully.";
-        }
-
-        return RedirectToAction(nameof(Index), BuildRouteValues(resolution.Context));
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditYouTubeChannel(UserCollectorYouTubeChannelViewModel model, string? userOid = null)
-    {
-        var resolution = await ResolveTargetUserAsync(userOid);
-        if (resolution.FailureResult is not null)
-        {
-            return resolution.FailureResult;
-        }
-
-        if (!ModelState.IsValid)
-        {
-            var invalidPage = await BuildPageViewModelAsync(resolution.Context!);
-            return View("Index", invalidPage);
-        }
-
-        var channel = new UserCollectorYouTubeChannel
-        {
-            Id = model.Id,
-            CreatedByEntraOid = resolution.Context!.TargetUserOid,
-            ChannelId = model.ChannelId,
-            DisplayName = model.DisplayName,
-            IsActive = model.IsActive
-        };
-
-        var result = resolution.Context.IsManagedBySiteAdmin
-            ? await _youTubeChannelService.UpdateByUserAsync(resolution.Context.TargetUserOid, channel)
-            : await _youTubeChannelService.UpdateCurrentUserAsync(channel);
-
-        if (result is null)
-        {
-            _logger.LogWarning(
-                "Failed to update YouTube channel {Id} for owner {OwnerOid}",
-                model.Id,
-                resolution.Context.TargetUserOid);
-            TempData["ErrorMessage"] = "Unable to update YouTube channel. Please try again.";
-        }
-        else
-        {
-            _logger.LogInformation(
-                "YouTube channel {Id} updated for owner {OwnerOid}",
-                model.Id,
-                resolution.Context.TargetUserOid);
-            TempData["SuccessMessage"] = $"YouTube channel '{LogSanitizer.Sanitize(model.DisplayName)}' updated successfully.";
-        }
-
-        return RedirectToAction(nameof(Index), BuildRouteValues(resolution.Context));
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteYouTubeChannel(int id, string? userOid = null)
-    {
-        var resolution = await ResolveTargetUserAsync(userOid);
-        if (resolution.FailureResult is not null)
-        {
-            return resolution.FailureResult;
-        }
-
-        var success = resolution.Context!.IsManagedBySiteAdmin
-            ? await _youTubeChannelService.DeleteByUserAsync(resolution.Context.TargetUserOid, id)
-            : await _youTubeChannelService.DeleteCurrentUserAsync(id);
-
-        if (success)
-        {
-            _logger.LogInformation(
-                "YouTube channel {Id} deleted for owner {OwnerOid}",
-                id,
-                resolution.Context.TargetUserOid);
-            TempData["SuccessMessage"] = "YouTube channel removed successfully.";
-        }
-        else
-        {
-            _logger.LogWarning(
-                "Failed to delete YouTube channel {Id} for owner {OwnerOid}",
-                id,
-                resolution.Context.TargetUserOid);
-            TempData["ErrorMessage"] = "Unable to remove YouTube channel. Please try again.";
-        }
-
-        return RedirectToAction(nameof(Index), BuildRouteValues(resolution.Context));
-    }
-
     private async Task<CollectorSettingsPageViewModel> BuildPageViewModelAsync(TargetCollectorSettingsContext context)
     {
         var feedSources = context.IsManagedBySiteAdmin
@@ -317,6 +56,10 @@ public class CollectorSettingsController : Controller
         var youTubeChannels = context.IsManagedBySiteAdmin
             ? await _youTubeChannelService.GetByUserAsync(context.TargetUserOid)
             : await _youTubeChannelService.GetCurrentUserAsync();
+
+        var speakingEngagements = context.IsManagedBySiteAdmin
+            ? await _speakingEngagementService.GetByUserAsync(context.TargetUserOid)
+            : await _speakingEngagementService.GetCurrentUserAsync();
 
         return new CollectorSettingsPageViewModel
         {
@@ -341,6 +84,16 @@ public class CollectorSettingsController : Controller
                 IsActive = ch.IsActive,
                 CreatedOn = ch.CreatedOn,
                 LastUpdatedOn = ch.LastUpdatedOn,
+                IsManagedBySiteAdmin = context.IsManagedBySiteAdmin
+            }).ToList(),
+            SpeakingEngagements = speakingEngagements.Select(se => new UserCollectorSpeakingEngagementViewModel
+            {
+                Id = se.Id,
+                SpeakingEngagementsFile = se.SpeakingEngagementsFile,
+                DisplayName = se.DisplayName,
+                IsActive = se.IsActive,
+                CreatedOn = se.CreatedOn,
+                LastUpdatedOn = se.LastUpdatedOn,
                 IsManagedBySiteAdmin = context.IsManagedBySiteAdmin
             }).ToList()
         };

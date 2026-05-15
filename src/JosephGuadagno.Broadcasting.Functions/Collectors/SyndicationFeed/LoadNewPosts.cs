@@ -2,7 +2,6 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.Functions.Collectors;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
@@ -20,7 +19,8 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.SyndicationFeed;
 public class LoadNewPosts(
     ISyndicationFeedReader syndicationFeedReader,
     IOptions<Settings> settingsOptions,
-    ISyndicationFeedSourceManager syndicationFeedSourceManager,
+    ISyndicationFeedItemManager SyndicationFeedItemManager,
+    IUserCollectorFeedSourceManager userCollectorFeedSourceManager,
     IFeedCheckManager feedCheckManager,
     IUrlShortener urlShortener,
     IEventPublisher eventPublisher,
@@ -45,103 +45,106 @@ public class LoadNewPosts(
 
         try
         {
-            var feedCheck = await feedCheckManager.GetByNameAsync(
-                                    ConfigurationFunctionNames.CollectorsFeedLoadNewPosts
-                                ) ??
-                                new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue };
-
-            var ownerOid = await CollectorOwnerOidResolver.ResolveAsync(
-                syndicationFeedSourceManager,
-                logger,
-                ConfigurationFunctionNames.CollectorsFeedLoadNewPosts);
-            if (string.IsNullOrWhiteSpace(ownerOid))
+            var configs = await userCollectorFeedSourceManager.GetAllActiveAsync();
+            if (configs.Count == 0)
             {
-                return new BadRequestObjectResult("Unable to resolve collector owner OID from syndication feed source records.");
+                logger.LogDebug("No active feed source configurations found");
+                return new OkObjectResult("No active feed source configurations found");
             }
 
-            // TODO #778: Add per-user collector config support
-            // Once ISyndicationFeedReader supports per-URL reading (or a factory pattern),
-            // iterate userCollectorFeedSourceManager.GetAllActiveAsync() and process each config's
-            // FeedUrl with the config's CreatedByEntraOid. Current implementation uses global feed settings.
+            var totalSavedCount = 0;
+            var totalFoundCount = 0;
 
-            // Check for new items
-            logger.LogDebug("Checking the syndication feed for posts since '{LastItemAddedOrUpdated}'", feedCheck.LastItemAddedOrUpdated);
-            var newItems = await syndicationFeedReader.GetAsync(ownerOid, feedCheck.LastItemAddedOrUpdated);
-
-            // If there is nothing new, save the last checked value and exit
-            if (newItems == null || newItems.Count == 0)
+            foreach (var config in configs)
             {
-                feedCheck.LastCheckedFeed = startedAt;
-                await feedCheckManager.SaveAsync(feedCheck);
-                logger.LogDebug("No new or updated posts found in the syndication feed");
-                return new OkObjectResult("0 speaking engagements were found");
-            }
-
-            // Save the new items to SyndicationFeedSource Repository
-            var savedCount = 0;
-            var eventsToPublish = new List<SyndicationFeedSource>();
-            foreach (var item in newItems)
-            {
-                // Skip if item already exists
-                var existingItem = await syndicationFeedSourceManager.GetByFeedIdentifierAsync(item.FeedIdentifier);
-                if (existingItem != null)
+                var feedCheck = await feedCheckManager.GetByNameAsync(
+                    ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, config.CreatedByEntraOid
+                ) ?? new FeedCheck
                 {
-                    logger.LogDebug("Skipping duplicate syndication feed item with FeedIdentifier: '{FeedIdentifier}'", item.FeedIdentifier);
+                    Name = ConfigurationFunctionNames.CollectorsFeedLoadNewPosts,
+                    LastCheckedFeed = startedAt,
+                    LastItemAddedOrUpdated = DateTimeOffset.MinValue,
+                    EntraOId = config.CreatedByEntraOid
+                };
+
+                logger.LogDebug("Checking feed '{FeedUrl}' for owner '{OwnerOid}' since '{LastItemAddedOrUpdated}'",
+                    config.FeedUrl, config.CreatedByEntraOid, feedCheck.LastItemAddedOrUpdated);
+
+                var newItems = await syndicationFeedReader.GetAsync(config.FeedUrl, config.CreatedByEntraOid, feedCheck.LastItemAddedOrUpdated);
+
+                if (newItems == null || newItems.Count == 0)
+                {
+                    feedCheck.LastCheckedFeed = startedAt;
+                    await feedCheckManager.SaveAsync(feedCheck);
+                    logger.LogDebug("No new posts for owner '{OwnerOid}'", config.CreatedByEntraOid);
                     continue;
                 }
 
-                // shorten the url
-                item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settingsOptions.Value.ShortenedDomainToUse);
+                totalFoundCount += newItems.Count;
 
-                // attempt to save the item
-                try
+                var savedCount = 0;
+                var eventsToPublish = new List<SyndicationFeedItem>();
+                foreach (var item in newItems)
                 {
-                    var saveResult = await SavePipeline.ExecuteAsync(
-                        async ct => await syndicationFeedSourceManager.SaveAsync(item));
-
-                    if (!saveResult.IsSuccess || saveResult.Value is null)
+                    var existingItem = await SyndicationFeedItemManager.GetByFeedIdentifierAsync(item.FeedIdentifier);
+                    if (existingItem != null)
                     {
-                        logger.LogError("Failed to save the blog post with the id of: '{Id}' Url:'{Url}'. Error: {Error}",
-                            item.Id, item.Url, saveResult.ErrorMessage);
+                        logger.LogDebug("Skipping duplicate syndication feed item with FeedIdentifier: '{FeedIdentifier}'", item.FeedIdentifier);
                         continue;
                     }
-                    var savedItem = saveResult.Value;
-                    eventsToPublish.Add(savedItem);
 
-                    var properties = new Dictionary<string, string>
+                    item.ShortenedUrl = await urlShortener.GetShortenedUrlAsync(item.Url, settingsOptions.Value.ShortenedDomainToUse);
+
+                    try
+                    {
+                        var saveResult = await SavePipeline.ExecuteAsync(
+                            async ct => await SyndicationFeedItemManager.SaveAsync(item));
+
+                        if (!saveResult.IsSuccess || saveResult.Value is null)
                         {
-                            { "Id", savedItem.Id.ToString() }, { "Url", savedItem.Url }, { "Title", savedItem.Title }
-                        };
-                    logger.LogCustomEvent(Metrics.PostAddedOrUpdated, properties);
-                    savedCount++;
+                            logger.LogError("Failed to save the blog post with the id of: '{Id}' Url:'{Url}'. Error: {Error}",
+                                item.Id, item.Url, saveResult.ErrorMessage);
+                            continue;
+                        }
+                        var savedItem = saveResult.Value;
+                        eventsToPublish.Add(savedItem);
+
+                        var properties = new Dictionary<string, string>
+                            {
+                                { "Id", savedItem.Id.ToString() }, { "Url", savedItem.Url }, { "Title", savedItem.Title }
+                            };
+                        logger.LogCustomEvent(Metrics.PostAddedOrUpdated, properties);
+                        savedCount++;
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogError(e,
+                            "Failed to save the blog post with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
+                            item.Id, item.Url, e);
+                        continue;
+                    }
                 }
-                catch (Exception e)
-                {
-                    logger.LogError(e,
-                        "Failed to save the blog post with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
-                        item.Id, item.Url, e);
-                    continue;
-                }
+
+                await eventPublisher.PublishSyndicationFeedEventsAsync(
+                    ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
+
+                feedCheck.LastCheckedFeed = startedAt;
+                feedCheck.LastUpdatedOn = DateTimeOffset.UtcNow;
+                feedCheck.EntraOId = config.CreatedByEntraOid;
+                var latestAdded = newItems.Max(item => item.PublicationDate);
+                var latestUpdated = newItems.Max(item => item.LastUpdatedOn);
+                feedCheck.LastItemAddedOrUpdated = latestUpdated > latestAdded
+                    ? latestUpdated
+                    : latestAdded;
+
+                await feedCheckManager.SaveAsync(feedCheck);
+
+                totalSavedCount += savedCount;
+                logger.LogInformation("Loaded {SavedCount} of {TotalPostsCount} post(s) for owner '{OwnerOid}'",
+                    savedCount, newItems.Count, config.CreatedByEntraOid);
             }
 
-            // Publish the events -- throws EventPublishException on failure
-            await eventPublisher.PublishSyndicationFeedEventsAsync(
-                ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
-
-            // Save the last checked value
-            feedCheck.LastCheckedFeed = startedAt;
-            feedCheck.LastUpdatedOn = DateTimeOffset.UtcNow;
-            var latestAdded = newItems.Max(item => item.PublicationDate);
-            var latestUpdated = newItems.Max(item => item.LastUpdatedOn);
-            feedCheck.LastItemAddedOrUpdated = latestUpdated > latestAdded
-                ? latestUpdated
-                : latestAdded;
-
-            await feedCheckManager.SaveAsync(feedCheck);
-
-            // Return
-            logger.LogInformation("Loaded {SavedCount} of {TotalPostsCount} post(s)", savedCount, newItems.Count);
-            return new OkObjectResult($"Loaded {savedCount} of {newItems.Count} post(s)");
+            return new OkObjectResult($"Loaded {totalSavedCount} of {totalFoundCount} post(s) across {configs.Count} feed source(s)");
         }
         catch (Exception exception)
         {

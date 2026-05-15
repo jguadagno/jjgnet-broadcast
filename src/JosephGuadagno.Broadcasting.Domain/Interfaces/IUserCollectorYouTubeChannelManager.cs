@@ -48,4 +48,23 @@ public interface IUserCollectorYouTubeChannelManager
     Task<bool> DeleteAsync(int id, string ownerOid, CancellationToken cancellationToken = default);
 
     Task<PagedResult<UserCollectorYouTubeChannel>> GetAllAsync(string ownerOid, int page, int pageSize, string sortBy = "displayname", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Stores the raw Google API key in Azure Key Vault and returns the secret name to persist in the database.
+    /// </summary>
+    /// <param name="ownerOid">The Entra Object ID of the owner</param>
+    /// <param name="youTubeChannelId">The YouTube channel ID</param>
+    /// <param name="rawApiKey">The raw API key to store</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The Key Vault secret name that was written</returns>
+    Task<string> StoreApiKeyToKeyVaultAsync(string ownerOid, string youTubeChannelId, string rawApiKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves the raw Google API key from Azure Key Vault for the given channel configuration.
+    /// </summary>
+    /// <param name="ownerOid">The Entra Object ID of the owner</param>
+    /// <param name="id">The configuration ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The raw API key, or null if not found</returns>
+    Task<string?> GetApiKeyAsync(string ownerOid, int id, CancellationToken cancellationToken = default);
 }

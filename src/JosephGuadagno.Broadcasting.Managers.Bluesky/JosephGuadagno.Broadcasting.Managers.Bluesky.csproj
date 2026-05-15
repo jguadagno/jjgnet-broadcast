@@ -37,9 +37,9 @@
       <!-- Security: override transitive 10.0.2 ΓåÆ 13.0.3 to resolve GHSA-5crp-9r3c-p9vr (High: NU1903) -->
       <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
       <PackageReference Include="idunno.Bluesky" Version="1.8.2" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
-      <PackageReference Include="Scriban" Version="7.1.0" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
+      <PackageReference Include="Scriban" Version="7.2.0" />
       <PackageReference Include="X.Web.MetaExtractor" Version="2.1.1" />
     </ItemGroup>
 

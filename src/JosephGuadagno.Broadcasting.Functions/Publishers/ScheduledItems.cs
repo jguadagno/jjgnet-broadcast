@@ -11,6 +11,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Publishers;
 
 public class ScheduledItems(
     IScheduledItemManager scheduledItemManager,
+    IUserCollectorScheduledItemManager userCollectorScheduledItemManager,
     IEventPublisher eventPublisher,
     IFeedCheckManager feedCheckManager,
     ILogger<ScheduledItems> logger)
@@ -22,62 +23,99 @@ public class ScheduledItems(
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.PublishersScheduledItems, startedAt);
 
-        var configuration = await feedCheckManager.GetByNameAsync(
-                                ConfigurationFunctionNames.PublishersScheduledItems
-                            ) ??
-                            new FeedCheck { LastCheckedFeed = startedAt, LastItemAddedOrUpdated = DateTimeOffset.MinValue };
-
-        // Check for items that are due to be fired
-        logger.LogDebug("Checking for scheduled items that have not been fired");
-        var scheduledItems =
-            await scheduledItemManager.GetScheduledItemsToSendAsync();
-
-        // If there are no scheduled items, log it, and exit
-        if (scheduledItems.Count == 0)
+        var activeConfigs = await userCollectorScheduledItemManager.GetAllActiveAsync();
+        if (activeConfigs.Count == 0)
         {
-            configuration.LastCheckedFeed = startedAt;
-            await feedCheckManager.SaveAsync(configuration);
+            logger.LogDebug("No active scheduled item configurations found");
+            return;
+        }
+
+        logger.LogDebug("Checking for scheduled items that have not been fired");
+        var allScheduledItems = await scheduledItemManager.GetScheduledItemsToSendAsync();
+
+        if (allScheduledItems.Count == 0)
+        {
+            foreach (var cfg in activeConfigs)
+            {
+                var noop = await feedCheckManager.GetByNameAsync(
+                    ConfigurationFunctionNames.PublishersScheduledItems, cfg.CreatedByEntraOid
+                ) ?? new FeedCheck
+                {
+                    Name = ConfigurationFunctionNames.PublishersScheduledItems,
+                    LastCheckedFeed = startedAt,
+                    LastItemAddedOrUpdated = DateTimeOffset.MinValue,
+                    EntraOId = cfg.CreatedByEntraOid
+                };
+                noop.LastCheckedFeed = startedAt;
+                await feedCheckManager.SaveAsync(noop);
+            }
             logger.LogDebug("No new scheduled items found");
             return;
         }
 
-        // Publish the events -- throws EventPublishException on failure
-        try
+        foreach (var config in activeConfigs)
         {
-            await eventPublisher.PublishScheduledItemFiredEventsAsync(
-                ConfigurationFunctionNames.PublishersScheduledItems, scheduledItems);
-        }
-        catch (EventPublishException ex)
-        {
-            logger.LogError(ex, "Failed to publish scheduled item events for {Count} item(s)",
-                scheduledItems.Count);
-            foreach (var scheduledItem in scheduledItems)
+            var userItems = allScheduledItems
+                .Where(item => item.CreatedByEntraOid == config.CreatedByEntraOid)
+                .ToList();
+
+            var feedCheck = await feedCheckManager.GetByNameAsync(
+                ConfigurationFunctionNames.PublishersScheduledItems, config.CreatedByEntraOid
+            ) ?? new FeedCheck
             {
-                logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
+                Name = ConfigurationFunctionNames.PublishersScheduledItems,
+                LastCheckedFeed = startedAt,
+                LastItemAddedOrUpdated = DateTimeOffset.MinValue,
+                EntraOId = config.CreatedByEntraOid
+            };
+
+            if (userItems.Count == 0)
+            {
+                feedCheck.LastCheckedFeed = startedAt;
+                await feedCheckManager.SaveAsync(feedCheck);
+                logger.LogDebug("No new scheduled items for owner '{OwnerOid}'", config.CreatedByEntraOid);
+                continue;
             }
-            throw;
+
+            try
+            {
+                await eventPublisher.PublishScheduledItemFiredEventsAsync(
+                    ConfigurationFunctionNames.PublishersScheduledItems, userItems);
+            }
+            catch (EventPublishException ex)
+            {
+                logger.LogError(ex, "Failed to publish scheduled item events for owner '{OwnerOid}' ({Count} item(s))",
+                    config.CreatedByEntraOid, userItems.Count);
+                foreach (var scheduledItem in userItems)
+                {
+                    logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
+                }
+                throw;
+            }
+
+            foreach (var scheduledItem in userItems)
+            {
+                var wasSent = await scheduledItemManager.SentScheduledItemAsync(scheduledItem.Id);
+                if (wasSent)
+                {
+                    logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
+                }
+                else
+                {
+                    logger.LogWarning(
+                        "Failed to update the sent flag for scheduled items with the id of '{ScheduledItemId}'",
+                        scheduledItem.Id);
+                }
+            }
+
+            feedCheck.LastCheckedFeed = startedAt;
+            feedCheck.LastUpdatedOn = DateTimeOffset.UtcNow;
+            await feedCheckManager.SaveAsync(feedCheck);
+
+            logger.LogInformation("Published {Count} scheduled item(s) for owner '{OwnerOid}'",
+                userItems.Count, config.CreatedByEntraOid);
         }
 
-        // Mark the messages as sent
-        foreach (var scheduledItem in scheduledItems)
-        {
-            var wasSent = await scheduledItemManager.SentScheduledItemAsync(scheduledItem.Id);
-            if (wasSent)
-            {
-                logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
-            }
-            else
-            {
-                logger.LogWarning(
-                    "Failed to update the sent flag for scheduled items with the id of '{ScheduledItemId}'",
-                    scheduledItem.Id);
-            }
-        }
-
-        // Save the last checked value
-        configuration.LastCheckedFeed = startedAt;
-        await feedCheckManager.SaveAsync(configuration);
-        
-        logger.LogDebug("Done publishing the events for schedule items");
+        logger.LogDebug("Done publishing the events for scheduled items");
     }
 }

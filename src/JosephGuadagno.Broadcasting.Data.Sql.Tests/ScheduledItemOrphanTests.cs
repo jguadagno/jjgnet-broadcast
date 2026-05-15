@@ -41,7 +41,7 @@ public class ScheduledItemOrphanTests
         {
             MakeOrphan(1, ScheduledItemType.Engagements, 100),
             MakeOrphan(2, ScheduledItemType.Talks, 200),
-            MakeOrphan(3, ScheduledItemType.SyndicationFeedSources, 300)
+            MakeOrphan(3, ScheduledItemType.SyndicationFeedItems, 300)
         };
 
         var mockStore = new Mock<IScheduledItemDataStore>();
@@ -84,8 +84,8 @@ public class ScheduledItemOrphanTests
         {
             MakeOrphan(1, ScheduledItemType.Engagements, 10),
             MakeOrphan(2, ScheduledItemType.Talks, 20),
-            MakeOrphan(3, ScheduledItemType.SyndicationFeedSources, 30),
-            MakeOrphan(4, ScheduledItemType.YouTubeSources, 40)
+            MakeOrphan(3, ScheduledItemType.SyndicationFeedItems, 30),
+            MakeOrphan(4, ScheduledItemType.YouTubeItems, 40)
         };
 
         var mockStore = new Mock<IScheduledItemDataStore>();
@@ -99,8 +99,8 @@ public class ScheduledItemOrphanTests
         // Assert — all four ScheduledItemType values are represented
         Assert.Contains(result, r => r.ItemType == ScheduledItemType.Engagements);
         Assert.Contains(result, r => r.ItemType == ScheduledItemType.Talks);
-        Assert.Contains(result, r => r.ItemType == ScheduledItemType.SyndicationFeedSources);
-        Assert.Contains(result, r => r.ItemType == ScheduledItemType.YouTubeSources);
+        Assert.Contains(result, r => r.ItemType == ScheduledItemType.SyndicationFeedItems);
+        Assert.Contains(result, r => r.ItemType == ScheduledItemType.YouTubeItems);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class ScheduledItemOrphanTests
         var orphans = new List<ScheduledItem>
         {
             MakeOrphan(1, ScheduledItemType.Engagements, 99),
-            MakeOrphan(2, ScheduledItemType.YouTubeSources, 88)
+            MakeOrphan(2, ScheduledItemType.YouTubeItems, 88)
         };
 
         var mockStore = new Mock<IScheduledItemDataStore>();
@@ -121,7 +121,7 @@ public class ScheduledItemOrphanTests
         var result = (await mockStore.Object.GetOrphanedScheduledItemsAsync()).ToList();
 
         Assert.Equal("Engagements", result[0].ItemTableName);
-        Assert.Equal("YouTubeSources", result[1].ItemTableName);
+        Assert.Equal("YouTubeItems", result[1].ItemTableName);
     }
 
     // ── Concrete implementation tests (EF InMemory) ───────────────────────────
@@ -202,8 +202,8 @@ public class ScheduledItemOrphanTests
         // Orphaned items — parents don't exist
         context.ScheduledItems.Add(new SqlModels.ScheduledItem { ItemTableName = "Engagements", ItemPrimaryKey = 99, Message = "orphan-eng", SendOnDateTime = DateTimeOffset.UtcNow });
         context.ScheduledItems.Add(new SqlModels.ScheduledItem { ItemTableName = "Talks", ItemPrimaryKey = 99, Message = "orphan-talk", SendOnDateTime = DateTimeOffset.UtcNow });
-        context.ScheduledItems.Add(new SqlModels.ScheduledItem { ItemTableName = "SyndicationFeedSources", ItemPrimaryKey = 99, Message = "orphan-sfs", SendOnDateTime = DateTimeOffset.UtcNow });
-        context.ScheduledItems.Add(new SqlModels.ScheduledItem { ItemTableName = "YouTubeSources", ItemPrimaryKey = 99, Message = "orphan-yt", SendOnDateTime = DateTimeOffset.UtcNow });
+        context.ScheduledItems.Add(new SqlModels.ScheduledItem { ItemTableName = "SyndicationFeedItems", ItemPrimaryKey = 99, Message = "orphan-sfs", SendOnDateTime = DateTimeOffset.UtcNow });
+        context.ScheduledItems.Add(new SqlModels.ScheduledItem { ItemTableName = "YouTubeItems", ItemPrimaryKey = 99, Message = "orphan-yt", SendOnDateTime = DateTimeOffset.UtcNow });
         await context.SaveChangesAsync();
 
         var result = (await store.GetOrphanedScheduledItemsAsync()).ToList();

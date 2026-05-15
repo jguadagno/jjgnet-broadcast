@@ -1,4 +1,4 @@
-﻿using Google.Apis.Services;
+using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
@@ -56,21 +56,45 @@ public class YouTubeReader: IYouTubeReader
         _youTubeService = youTubeService;
     }
 
-    public List<YouTubeSource> GetSinceDate(string ownerOid, DateTimeOffset sinceWhen)
+    public List<YouTubeItem> GetSinceDate(string ownerOid, DateTimeOffset sinceWhen)
     {
         return GetAsync(ownerOid, sinceWhen).Result;
     }
 
-    public async Task<List<YouTubeSource>> GetAsync(string ownerOid, DateTimeOffset sinceWhen)
+    public Task<List<YouTubeItem>> GetAsync(string ownerOid, DateTimeOffset sinceWhen)
     {
         ValidateOwnerOid(ownerOid);
+        return GetItemsAsync(ownerOid, sinceWhen, _youTubeSettings.PlaylistId, _youTubeSettings.ResultSetPageSize, _youTubeService);
+    }
+
+    public Task<List<YouTubeItem>> GetAsync(string ownerOid, DateTimeOffset sinceWhen, IYouTubeSettings settings)
+    {
+        ValidateOwnerOid(ownerOid);
+        ArgumentNullException.ThrowIfNull(settings);
+
+        var perUserService = new YouTubeService(new BaseClientService.Initializer
+        {
+            ApiKey = settings.ApiKey,
+            ApplicationName = GetType().ToString()
+        });
+
+        var pageSize = settings.ResultSetPageSize > 0 && settings.ResultSetPageSize <= 50
+            ? settings.ResultSetPageSize
+            : 10;
+
+        return GetItemsAsync(ownerOid, sinceWhen, settings.PlaylistId, pageSize, perUserService);
+    }
+
+    private async Task<List<YouTubeItem>> GetItemsAsync(
+        string ownerOid, DateTimeOffset sinceWhen, string playlistId, int pageSize, YouTubeService service)
+    {
         var currentTime = DateTime.Now;
-        var videoItems = new List<YouTubeSource>();
-            
-        var playlistItemsRequest = _youTubeService.PlaylistItems.List("snippet");
-        playlistItemsRequest.PlaylistId = _youTubeSettings.PlaylistId;
-        playlistItemsRequest.MaxResults = _youTubeSettings.ResultSetPageSize;
-            
+        var videoItems = new List<YouTubeItem>();
+
+        var playlistItemsRequest = service.PlaylistItems.List("snippet");
+        playlistItemsRequest.PlaylistId = playlistId;
+        playlistItemsRequest.MaxResults = pageSize;
+
         var nextPageToken = "";
 
         try
@@ -89,23 +113,21 @@ public class YouTubeReader: IYouTubeReader
                         }
 
                         var publishedAt = playlistItem.Snippet.PublishedAtDateTimeOffset.Value;
-                       
 
                         if (publishedAt > sinceWhen)
                         {
-                            videoItems.Add(new YouTubeSource()
+                            videoItems.Add(new YouTubeItem()
                             {
                                 VideoId = playlistItem.Snippet.ResourceId.VideoId,
                                 Author = playlistItem.Snippet.ChannelTitle,
                                 PublicationDate = publishedAt.UtcDateTime,
                                 LastUpdatedOn = publishedAt.UtcDateTime,
-                                //Text = searchResult.Snippet.Description,
-                                 Title = playlistItem.Snippet.Title,
-                                 Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",
-                                 AddedOn = currentTime,
-                                 CreatedByEntraOid = ownerOid
-                             });
-                         }
+                                Title = playlistItem.Snippet.Title,
+                                Url = $"https://www.youtube.com/watch?v={playlistItem.Snippet.ResourceId.VideoId}",
+                                AddedOn = currentTime,
+                                CreatedByEntraOid = ownerOid
+                            });
+                        }
                         else
                         {
                             // Need to break out of the for loop when the publishDate is less than sinceWhen
@@ -121,8 +143,7 @@ public class YouTubeReader: IYouTubeReader
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error calling the YouTube API: {ChannelId}, {PlaylistId}",
-                _youTubeSettings.ChannelId, _youTubeSettings.PlaylistId);
+            _logger.LogError(e, "Error calling the YouTube API: {PlaylistId}", playlistId);
             throw;
         }
 

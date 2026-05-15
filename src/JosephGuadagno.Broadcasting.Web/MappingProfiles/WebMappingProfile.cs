@@ -58,23 +58,41 @@ public class WebMappingProfile: Profile
         CreateMap<Domain.Models.SocialMediaPlatform, Models.SocialMediaPlatformViewModel>();
         CreateMap<Models.SocialMediaPlatformViewModel, Domain.Models.SocialMediaPlatform>();
 
-        // YouTubeSource mappings (Issue #818)
-        CreateMap<Domain.Models.YouTubeSource, Models.YouTubeSourceViewModel>()
+        // YouTubeItem mappings (Issue #818)
+        CreateMap<Domain.Models.YouTubeItem, Models.YouTubeItemViewModel>()
             .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => string.Join(", ", src.Tags)));
-        CreateMap<Models.YouTubeSourceViewModel, Domain.Models.YouTubeSource>()
+        CreateMap<Models.YouTubeItemViewModel, Domain.Models.YouTubeItem>()
             .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => 
                 string.IsNullOrWhiteSpace(src.Tags) ? new List<string>() : src.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList()))
             .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore())
             .ForMember(dest => dest.ItemLastUpdatedOn, opt => opt.Ignore());
 
-        // SyndicationFeedSource mappings (Issue #819)
-        CreateMap<Domain.Models.SyndicationFeedSource, Models.SyndicationFeedSourceViewModel>()
+        // SyndicationFeedItem mappings (Issue #819)
+        CreateMap<Domain.Models.SyndicationFeedItem, Models.SyndicationFeedItemViewModel>()
             .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => string.Join(", ", src.Tags)));
-        CreateMap<Models.SyndicationFeedSourceViewModel, Domain.Models.SyndicationFeedSource>()
+        CreateMap<Models.SyndicationFeedItemViewModel, Domain.Models.SyndicationFeedItem>()
             .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => 
                 string.IsNullOrWhiteSpace(src.Tags) ? new List<string>() : src.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList()))
             .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore())
             .ForMember(dest => dest.ItemLastUpdatedOn, opt => opt.Ignore());
+
+        // UserCollector ViewModel mappings (Issue #950)
+        CreateMap<Domain.Models.UserCollectorFeedSource, Models.UserCollectorFeedSourceViewModel>()
+            .ForMember(dest => dest.IsManagedBySiteAdmin, opt => opt.Ignore());
+        CreateMap<Models.UserCollectorFeedSourceViewModel, Domain.Models.UserCollectorFeedSource>()
+            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore());
+
+        CreateMap<Domain.Models.UserCollectorYouTubeChannel, Models.UserCollectorYouTubeChannelViewModel>()
+            .ForMember(dest => dest.IsManagedBySiteAdmin, opt => opt.Ignore())
+            .ForMember(dest => dest.ApiKey, opt => opt.Ignore());
+        CreateMap<Models.UserCollectorYouTubeChannelViewModel, Domain.Models.UserCollectorYouTubeChannel>()
+            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore())
+            .ForMember(dest => dest.HasApiKey, opt => opt.Ignore());
+
+        CreateMap<Domain.Models.UserCollectorSpeakingEngagement, Models.UserCollectorSpeakingEngagementViewModel>()
+            .ForMember(dest => dest.IsManagedBySiteAdmin, opt => opt.Ignore());
+        CreateMap<Models.UserCollectorSpeakingEngagementViewModel, Domain.Models.UserCollectorSpeakingEngagement>()
+            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore());
 
     }
 }

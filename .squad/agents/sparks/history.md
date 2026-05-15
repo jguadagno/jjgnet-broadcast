@@ -8,6 +8,7 @@ Sparks (Frontend/Polish Specialist) focuses on UI/UX refinements, Bootstrap 5 mi
 
 | Date | Task | Outcome |
 |------|------|---------|
+| 2026-05-12 | Refactor CollectorSettings/Index.cshtml — remove modals, add SpeakingEngagements section (#950) | ✅ Replaced all modal Add/Edit/Delete triggers with redirect links; added Speaking Engagements card; applied table-dark to all section tables; removed modal divs and JS scripts; build succeeded 0 errors |
 | 2026-03-20 | Added CodeQL analysis to ci.yml (#326) | ✅ CodeQL job added as separate job with csharp language, push to main trigger added to workflow |
 | 2026-04-03 | Implement health checks for Api and Web (#635) | ✅ Added SQL Server and Azure Storage health checks to ServiceDefaults; PR #641 created |
 | 2026-05-02 | Schedule Add/Edit UI validation (#67) | ✅ Implemented ItemType dropdown and AJAX validation UI; branch feature/67-schedule-item-validation-ui pushed |
@@ -15,8 +16,22 @@ Sparks (Frontend/Polish Specialist) focuses on UI/UX refinements, Bootstrap 5 mi
 | 2026-04-24 | Fix dt/dd HTML pairing in Schedules Details view (#845) | ✅ Changed all value `<dt>` elements to `<dd>` inside the `<dl class="row">` — 8 pairs now correctly use `<dt>` (label) + `<dd>` (value); PR #848 |
 | 2026-04-11 | Fix AddPlatform 400 error (#708) | ✅ Removed redundant asp-route-engagementId from form causing model binding conflict; EngagementId now only posted via hidden field in ViewModel |
 | 2026-04-27 | Add sorting, filtering, searching to all index pages (#870) | ✅ Schedules index full sort/filter/H1/Bootstrap 5 fix; Engagements index H1; SyndicationFeedSources + YouTubeSources thead-dark → table-dark; wired Schedules service sort/filter to API; PR #876 |
+| 2026-05-14 | Refactor MessageTemplates GetSocialIcon helper (#950) | ✅ Removed @functions block; injected ISocialMediaPlatformService into controller; built ViewBag.PlatformIcons dictionary with "bi-broadcast" fallback; updated view to use dictionary lookup; build 0 errors; branch issue-950-sanity-check |
 
 ## Learnings
+
+### 2026-05-14 — MessageTemplates: Replace GetSocialIcon with SocialMediaPlatform.Icon
+- **Files:** `Controllers/MessageTemplatesController.cs`, `Views/MessageTemplates/Index.cshtml`
+- **Change:** Removed the hardcoded `@functions { GetSocialIcon(string platform) }` helper from the view. Injected `ISocialMediaPlatformService` as a third constructor parameter in the controller. In `Index()`, called `GetAllAsync(pageSize: 100)` to build a `Dictionary<string, string>` keyed on `platform.Name` with value `platform.Icon ?? "bi-broadcast"`, stored in `ViewBag.PlatformIcons`.
+- **View pattern:** Cast `ViewBag.PlatformIcons` once before the `@foreach` loop (`var platformIcons = (Dictionary<string, string>)ViewBag.PlatformIcons;`), then use `TryGetValue` inside the loop with `??= "bi-broadcast"` null-coalesce fallback. No inline `@{ }` block needed inside the loop — Razor executes inline C# statements directly in loop body.
+- **Key rule:** `SocialMediaPlatform.Icon` is `string?` — always apply `?? "bi-broadcast"` fallback both when building the dictionary (controller) and when resolving the value (view).
+- **Branch:** `issue-950-sanity-check`
+
+### 2026-05-12 — CollectorSettings Modal → Redirect Refactor
+- **Pattern:** When multiple inline modals (Add + Edit per entity type) share a single settings page, replace them with redirect links to dedicated controller actions. Modals require data-attribute state transfer and JS listeners; dedicated pages get clean model binding, asp-validation-for spans, and server-side validation for free.
+- **thead class:** All section tables on settings pages should use `<thead class="table-dark">` — consistent with Bootstrap 5 charter and other index pages.
+- **CollectorFeedSources views:** Were already present on the branch when Sparks arrived — verify existing work before creating new files.
+- **SpeakingEngagements section icon:** `bi-mic-fill` used for speaking engagements card header.
 
 ### 2026-05-02 — MessageTemplates Platform Filter Dropdown
 - **File:** `Views/MessageTemplates/Index.cshtml`

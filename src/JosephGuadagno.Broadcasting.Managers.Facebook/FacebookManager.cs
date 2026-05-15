@@ -22,8 +22,8 @@ public class FacebookManager : IFacebookManager
     private readonly IFacebookApplicationSettings _facebookApplicationSettings;
     private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
     private readonly IMessageTemplateDataStore _messageTemplateDataStore;
-    private readonly ISyndicationFeedSourceManager _syndicationFeedSourceManager;
-    private readonly IYouTubeSourceManager _youTubeSourceManager;
+    private readonly ISyndicationFeedItemManager _SyndicationFeedItemManager;
+    private readonly IYouTubeItemManager _YouTubeItemManager;
     private readonly IEngagementManager _engagementManager;
 
     public FacebookManager(
@@ -32,8 +32,8 @@ public class FacebookManager : IFacebookManager
         ILogger<FacebookManager> logger,
         ISocialMediaPlatformManager socialMediaPlatformManager,
         IMessageTemplateDataStore messageTemplateDataStore,
-        ISyndicationFeedSourceManager syndicationFeedSourceManager,
-        IYouTubeSourceManager youTubeSourceManager,
+        ISyndicationFeedItemManager SyndicationFeedItemManager,
+        IYouTubeItemManager YouTubeItemManager,
         IEngagementManager engagementManager)
     {
         _httpClient = httpClient;
@@ -41,8 +41,8 @@ public class FacebookManager : IFacebookManager
         _logger = logger;
         _socialMediaPlatformManager = socialMediaPlatformManager;
         _messageTemplateDataStore = messageTemplateDataStore;
-        _syndicationFeedSourceManager = syndicationFeedSourceManager;
-        _youTubeSourceManager = youTubeSourceManager;
+        _SyndicationFeedItemManager = SyndicationFeedItemManager;
+        _YouTubeItemManager = YouTubeItemManager;
         _engagementManager = engagementManager;
     }
 
@@ -134,6 +134,27 @@ public class FacebookManager : IFacebookManager
         return await PostMessageInternalAsync(message, link, picture);
     }
 
+    /// <inheritdoc />
+    public async Task<string> PostMessageAndLinkToPage(string message, string link, string pageId, string pageAccessToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(message);
+        ArgumentException.ThrowIfNullOrEmpty(link);
+        ArgumentException.ThrowIfNullOrEmpty(pageId);
+        ArgumentException.ThrowIfNullOrEmpty(pageAccessToken);
+        return await PostMessageInternalAsync(message, link, null, pageId, pageAccessToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<string> PostMessageLinkAndPictureToPage(string message, string link, string picture, string pageId, string pageAccessToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(message);
+        ArgumentException.ThrowIfNullOrEmpty(link);
+        ArgumentException.ThrowIfNullOrEmpty(picture);
+        ArgumentException.ThrowIfNullOrEmpty(pageId);
+        ArgumentException.ThrowIfNullOrEmpty(pageAccessToken);
+        return await PostMessageInternalAsync(message, link, picture, pageId, pageAccessToken);
+    }
+
     /// <summary>
     /// Refreshes the token
     /// </summary>
@@ -207,10 +228,15 @@ public class FacebookManager : IFacebookManager
 
     private async Task<string> PostMessageInternalAsync(string message, string? link = null, string? picture = null)
     {
+        return await PostMessageInternalAsync(message, link, picture, _facebookApplicationSettings.PageId, _facebookApplicationSettings.PageAccessToken);
+    }
+
+    private async Task<string> PostMessageInternalAsync(string message, string? link, string? picture, string pageId, string pageAccessToken)
+    {
         try
         {
             var urlBuilder = new StringBuilder(GraphApiRoot)
-                .Append(_facebookApplicationSettings.PageId)
+                .Append(pageId)
                 .Append("/feed?message=")
                 .Append(System.Web.HttpUtility.UrlEncode(message));
 
@@ -224,7 +250,7 @@ public class FacebookManager : IFacebookManager
                 urlBuilder.Append("&picture=").Append(System.Web.HttpUtility.UrlEncode(picture));
             }
 
-            urlBuilder.Append("&access_token=").Append(_facebookApplicationSettings.PageAccessToken);
+            urlBuilder.Append("&access_token=").Append(pageAccessToken);
 
             var url = urlBuilder.ToString();
 
@@ -284,8 +310,8 @@ public class FacebookManager : IFacebookManager
     {
         ScheduledItemType.Engagements => MessageTemplates.MessageTypes.NewSpeakingEngagement,
         ScheduledItemType.Talks => MessageTemplates.MessageTypes.ScheduledItem,
-        ScheduledItemType.SyndicationFeedSources => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
-        ScheduledItemType.YouTubeSources => MessageTemplates.MessageTypes.NewYouTubeItem,
+        ScheduledItemType.SyndicationFeedItems => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
+        ScheduledItemType.YouTubeItems => MessageTemplates.MessageTypes.NewYouTubeItem,
         _ => MessageTemplates.MessageTypes.RandomPost
     };
 
@@ -303,21 +329,21 @@ public class FacebookManager : IFacebookManager
 
             switch (scheduledItem.ItemType)
             {
-                case ScheduledItemType.SyndicationFeedSources:
-                    var feed = await _syndicationFeedSourceManager.GetAsync(
+                case ScheduledItemType.SyndicationFeedItems:
+                    var feed = await _SyndicationFeedItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = feed.Title;
                     url = feed.ShortenedUrl ?? feed.Url;
                     tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : string.Empty;
                     break;
-                case ScheduledItemType.YouTubeSources:
-                    var youTubeSource = await _youTubeSourceManager.GetAsync(
+                case ScheduledItemType.YouTubeItems:
+                    var YouTubeItem = await _YouTubeItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
-                    title = youTubeSource.Title;
-                    url = youTubeSource.ShortenedUrl ?? youTubeSource.Url;
-                    tags = youTubeSource.Tags?.Count > 0 ? string.Join(",", youTubeSource.Tags) : string.Empty;
+                    title = YouTubeItem.Title;
+                    url = YouTubeItem.ShortenedUrl ?? YouTubeItem.Url;
+                    tags = YouTubeItem.Tags?.Count > 0 ? string.Join(",", YouTubeItem.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.Engagements:
                     var engagement = await _engagementManager.GetAsync(

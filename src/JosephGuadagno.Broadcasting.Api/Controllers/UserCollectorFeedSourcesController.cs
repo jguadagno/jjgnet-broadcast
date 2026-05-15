@@ -29,6 +29,11 @@ public class UserCollectorFeedSourcesController(
     /// <param name="ownerOid">
     /// Optional Entra object ID to query. Non-admin callers can only query their own configurations.
     /// </param>
+    /// <param name="page">The page number (default: 1)</param>
+    /// <param name="pageSize">The page size (default: 25)</param>
+    /// <param name="sortBy">The field to sort by (default: name)</param>
+    /// <param name="sortDescending">When true, sorts in descending order (default: false)</param>
+    /// <param name="filter">Optional text filter applied to feed source names</param>
     /// <returns>A list of feed source configurations for the resolved owner</returns>
     /// <response code="200">Returns the feed source configurations for the resolved owner</response>
     /// <response code="401">The caller is not authenticated</response>
@@ -145,6 +150,56 @@ public class UserCollectorFeedSourcesController(
                 LogSanitizer.Sanitize(resolvedOwnerOid),
                 LogSanitizer.Sanitize(request.FeedUrl));
             return BadRequest("Unable to save feed source configuration");
+        }
+
+        return Ok(mapper.Map<UserCollectorFeedSourceResponse>(saved));
+    }
+
+    /// <summary>
+    /// Updates an existing feed source configuration
+    /// </summary>
+    /// <param name="id">The configuration identifier</param>
+    /// <param name="request">The feed source configuration payload</param>
+    /// <returns>The updated feed source configuration</returns>
+    [HttpPut("{id:int}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorFeedSourceResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UserCollectorFeedSourceResponse>> UpdateAsync(
+        int id,
+        [FromBody] UserCollectorFeedSourceRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            logger.LogWarning("UpdateAsync called with invalid model state for ID {Id}", id);
+            return BadRequest(ModelState);
+        }
+
+        var existing = await userCollectorFeedSourceManager.GetByIdAsync(id);
+        if (existing is null)
+        {
+            return NotFound();
+        }
+
+        if (User.ResolveOwnerOid(existing.CreatedByEntraOid, requireAdminWhenTargetingOtherUser: true) is null)
+        {
+            logger.LogWarning("User {CurrentOid} attempted to update feed source config {Id} owned by {OwnerOid}",
+                LogSanitizer.Sanitize(User.GetOwnerOid()), id, LogSanitizer.Sanitize(existing.CreatedByEntraOid));
+            return Forbid();
+        }
+
+        var config = mapper.Map<UserCollectorFeedSource>(request);
+        config.Id = id;
+        config.CreatedByEntraOid = existing.CreatedByEntraOid;
+
+        var saved = await userCollectorFeedSourceManager.SaveAsync(config);
+        if (saved is null)
+        {
+            logger.LogWarning("Failed to update feed source config for ID {Id}", id);
+            return BadRequest("Unable to update feed source configuration");
         }
 
         return Ok(mapper.Map<UserCollectorFeedSourceResponse>(saved));
