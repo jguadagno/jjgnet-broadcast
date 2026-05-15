@@ -1,5 +1,31 @@
 ## Learnings
 
+### 2026-05-15 — PR #962 Formal Review: Publisher Settings Phase 1
+
+**Status:** ✅ COMPLETE — APPROVED. Comment posted. Decision written to `.squad/decisions/inbox/neo-pr962-review.md`.
+
+**Verdict:** APPROVED ✅ — No blocking issues. 29 tests pass.
+
+**What was verified:**
+- All 4 SQL tables, EF models, domain models, interfaces, data stores, mapping profile, DI
+- All 7 team directives respected
+- Upsert correctness, IDOR boundary in `DeleteAsync`, `LogSanitizer` on all log args
+- `UserPublisherSettings` shim preserved
+- 29 tests pass (including owner isolation, create vs update counts)
+
+**Observations (non-blocking):**
+- Twitter/LinkedIn/Facebook missing `GetByIdAsync_ReturnsNullForMissingId` (Bluesky has it)
+- `GETUTCDATE()` used for `datetimeoffset` defaults in SQL — consistent with existing `table-create.sql` (not a deviation)
+
+**Learnings:**
+- When reviewing Phase 1 data-layer scaffolding, compare test counts per platform for parity. A single platform having extra coverage is fine but worth flagging.
+- Primary constructor pattern (C# 12) does not violate the `_camelCase` field directive — the pattern is established in `UserCollectorYouTubeChannelDataStore` and applies codebase-wide.
+- Empty string `''` sentinel for UNIQUE constraints is N/A for per-user settings tables with no system rows.
+
+---
+
+
+
 ### 2026-05-15 — Collector Alignment Audit: Gap Analysis Complete
 
 **Status:** ✅ COMPLETE — Decision written to `.squad/decisions/inbox/neo-collectors-alignment-scope.md`. GitHub issues created (see below).

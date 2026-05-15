@@ -10,216 +10,349 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// </summary>
 public class UserPublisherSettingService(
     IDownstreamApi apiClient,
+    ISocialMediaPlatformService socialMediaPlatformService,
     ILogger<UserPublisherSettingService> logger) : IUserPublisherSettingService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
-    private const string PublisherSettingsBaseUrl = "/UserPublisherSettings";
+    private const string PublishersBaseUrl = "/Publishers";
     private const string MaskedSecretValue = "••••••••";
 
-    public async Task<List<UserPublisherSetting>> GetCurrentUserAsync()
+    public Task<List<UserPublisherSetting>> GetCurrentUserAsync()
     {
-        var response = await apiClient.GetForUserAsync<PagedResponse<UserPublisherSettingApiResponse>>(ApiServiceName, options =>
-        {
-            options.RelativePath = $"{PublisherSettingsBaseUrl}?pageSize={Pagination.MaxPageSize}";
-        });
-
-        return response?.Items.Select(MapResponse).ToList() ?? [];
+        return GetSettingsAsync(null);
     }
 
-    public async Task<List<UserPublisherSetting>> GetByUserAsync(string ownerOid)
+    public Task<List<UserPublisherSetting>> GetByUserAsync(string ownerOid)
     {
-        var response = await apiClient.GetForUserAsync<PagedResponse<UserPublisherSettingApiResponse>>(ApiServiceName, options =>
-        {
-            options.RelativePath = BuildRelativePath(ownerOid) + $"&pageSize={Pagination.MaxPageSize}";
-        });
-
-        return response?.Items.Select(MapResponse).ToList() ?? [];
+        return GetSettingsAsync(ownerOid);
     }
 
     public Task<UserPublisherSetting?> SaveCurrentUserAsync(UserPublisherSetting setting)
     {
-        return SaveAsync(BuildRelativePath(platformId: setting.SocialMediaPlatformId), setting);
+        return SaveAsync(null, setting);
     }
 
     public Task<UserPublisherSetting?> SaveByUserAsync(string ownerOid, UserPublisherSetting setting)
     {
-        return SaveAsync(BuildRelativePath(ownerOid, setting.SocialMediaPlatformId), setting);
+        return SaveAsync(ownerOid, setting);
     }
 
-    private async Task<UserPublisherSetting?> SaveAsync(string relativePath, UserPublisherSetting setting)
+    private async Task<List<UserPublisherSetting>> GetSettingsAsync(string? ownerOid)
     {
-        var savedSetting = await apiClient.PutForUserAsync<UserPublisherSettingApiRequest, UserPublisherSettingApiResponse>(
-            ApiServiceName,
-            MapRequest(setting),
-            options =>
-            {
-                options.RelativePath = relativePath;
-            });
+        var relativePath = BuildBasePath(ownerOid);
 
-        if (savedSetting is null)
+        var aggregateTask = apiClient.GetForUserAsync<PublishersAggregateApiResponse>(ApiServiceName, options =>
         {
-            logger.LogWarning(
-                "Publisher settings save returned no content for owner {OwnerOid} and platform {PlatformId}",
-                setting.CreatedByEntraOid,
-                setting.SocialMediaPlatformId);
+            options.RelativePath = relativePath;
+        });
+        var platformsTask = socialMediaPlatformService.GetAllAsync(pageSize: Pagination.MaxPageSize, includeInactive: true);
+
+        await Task.WhenAll(aggregateTask, platformsTask);
+
+        var aggregate = aggregateTask.Result;
+        if (aggregate is null)
+        {
+            return [];
         }
 
-        return savedSetting is null ? null : MapResponse(savedSetting);
-    }
+        var platforms = platformsTask.Result?.Items ?? [];
+        var results = new List<UserPublisherSetting>(4);
 
-    private static string BuildRelativePath(string? ownerOid = null, int? platformId = null)
-    {
-        var relativePath = platformId.HasValue
-            ? $"{PublisherSettingsBaseUrl}/{platformId.Value}"
-            : PublisherSettingsBaseUrl;
-
-        return string.IsNullOrWhiteSpace(ownerOid)
-            ? relativePath
-            : $"{relativePath}?ownerOid={Uri.EscapeDataString(ownerOid)}";
-    }
-
-    private static UserPublisherSettingApiRequest MapRequest(UserPublisherSetting setting)
-    {
-        var request = new UserPublisherSettingApiRequest
+        if (aggregate.Bluesky is not null)
         {
-            IsEnabled = setting.IsEnabled
-        };
+            var platform = FindPlatform(platforms, "bluesky");
+            results.Add(MapBlueskyResponse(aggregate.Bluesky, platform));
+        }
 
-        switch (NormalizePlatformName(setting.SocialMediaPlatformName ?? setting.SocialMediaPlatform?.Name))
+        if (aggregate.Twitter is not null)
+        {
+            var platform = FindPlatform(platforms, "twitter");
+            results.Add(MapTwitterResponse(aggregate.Twitter, platform));
+        }
+
+        if (aggregate.LinkedIn is not null)
+        {
+            var platform = FindPlatform(platforms, "linkedin");
+            results.Add(MapLinkedInResponse(aggregate.LinkedIn, platform));
+        }
+
+        if (aggregate.Facebook is not null)
+        {
+            var platform = FindPlatform(platforms, "facebook");
+            results.Add(MapFacebookResponse(aggregate.Facebook, platform));
+        }
+
+        return results;
+    }
+
+    private async Task<UserPublisherSetting?> SaveAsync(string? ownerOid, UserPublisherSetting setting)
+    {
+        var platform = NormalizePlatformName(setting.SocialMediaPlatformName ?? setting.SocialMediaPlatform?.Name);
+        if (string.IsNullOrEmpty(platform))
+        {
+            logger.LogWarning("Cannot save publisher setting: platform name is missing for owner '{OwnerOid}'",
+                setting.CreatedByEntraOid);
+            return null;
+        }
+
+        var platformPath = CapitalizePlatformPath(platform);
+        var relativePath = BuildPlatformPath(platformPath, ownerOid);
+
+        switch (platform)
         {
             case "bluesky":
-                request.Bluesky = new BlueskyPublisherSettingApiRequest
+            {
+                var request = BuildBlueskyRequest(setting);
+                var response = await apiClient.PutForUserAsync<BlueskySettingsApiRequest, BlueskySettingsApiResponse>(
+                    ApiServiceName, request, options => { options.RelativePath = relativePath; });
+                if (response is null)
                 {
-                    UserName = GetSettingValue(setting.Settings, nameof(BlueskyPublisherSettings.BlueskyUserName)),
-                    AppPassword = GetSettingValue(setting.Settings, nameof(BlueskyPublisherSettings.BlueskyPassword))
-                };
-                break;
-            case "twitter":
-                request.Twitter = new TwitterPublisherSettingApiRequest
-                {
-                    ConsumerKey = GetSettingValue(setting.Settings, nameof(TwitterPublisherSettings.ConsumerKey)),
-                    ConsumerSecret = GetSettingValue(setting.Settings, nameof(TwitterPublisherSettings.ConsumerSecret)),
-                    AccessToken = GetSettingValue(setting.Settings, nameof(TwitterPublisherSettings.OAuthToken)),
-                    AccessTokenSecret = GetSettingValue(setting.Settings, nameof(TwitterPublisherSettings.OAuthTokenSecret))
-                };
-                break;
-            case "facebook":
-                request.Facebook = new FacebookPublisherSettingApiRequest
-                {
-                    PageId = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.PageId)),
-                    AppId = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.AppId)),
-                    PageAccessToken = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.PageAccessToken)),
-                    AppSecret = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.AppSecret)),
-                    ClientToken = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.ClientToken)),
-                    ShortLivedAccessToken = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.ShortLivedAccessToken)),
-                    LongLivedAccessToken = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.LongLivedAccessToken))
-                };
-                break;
-            case "linkedin":
-                request.LinkedIn = new LinkedInPublisherSettingApiRequest
-                {
-                    AuthorId = GetSettingValue(setting.Settings, nameof(LinkedInPublisherSettings.AuthorId)),
-                    ClientId = GetSettingValue(setting.Settings, nameof(LinkedInPublisherSettings.ClientId)),
-                    ClientSecret = GetSettingValue(setting.Settings, nameof(LinkedInPublisherSettings.ClientSecret)),
-                    AccessToken = GetSettingValue(setting.Settings, nameof(LinkedInPublisherSettings.AccessToken))
-                };
-                break;
-        }
+                    LogSaveFailure(setting);
+                    return null;
+                }
 
-        return request;
+                return MapBlueskyResponse(response, setting.SocialMediaPlatform, setting.SocialMediaPlatformId);
+            }
+            case "twitter":
+            {
+                var request = BuildTwitterRequest(setting);
+                var response = await apiClient.PutForUserAsync<TwitterSettingsApiRequest, TwitterSettingsApiResponse>(
+                    ApiServiceName, request, options => { options.RelativePath = relativePath; });
+                if (response is null)
+                {
+                    LogSaveFailure(setting);
+                    return null;
+                }
+
+                return MapTwitterResponse(response, setting.SocialMediaPlatform, setting.SocialMediaPlatformId);
+            }
+            case "linkedin":
+            {
+                var request = BuildLinkedInRequest(setting);
+                var response = await apiClient.PutForUserAsync<LinkedInSettingsApiRequest, LinkedInSettingsApiResponse>(
+                    ApiServiceName, request, options => { options.RelativePath = relativePath; });
+                if (response is null)
+                {
+                    LogSaveFailure(setting);
+                    return null;
+                }
+
+                return MapLinkedInResponse(response, setting.SocialMediaPlatform, setting.SocialMediaPlatformId);
+            }
+            case "facebook":
+            {
+                var request = BuildFacebookRequest(setting);
+                var response = await apiClient.PutForUserAsync<FacebookSettingsApiRequest, FacebookSettingsApiResponse>(
+                    ApiServiceName, request, options => { options.RelativePath = relativePath; });
+                if (response is null)
+                {
+                    LogSaveFailure(setting);
+                    return null;
+                }
+
+                return MapFacebookResponse(response, setting.SocialMediaPlatform, setting.SocialMediaPlatformId);
+            }
+            default:
+                logger.LogWarning("Unrecognized platform '{Platform}' for owner '{OwnerOid}'",
+                    platform, setting.CreatedByEntraOid);
+                return null;
+        }
     }
 
-    private static UserPublisherSetting MapResponse(UserPublisherSettingApiResponse response)
+    private void LogSaveFailure(UserPublisherSetting setting)
     {
-        var setting = new UserPublisherSetting
+        logger.LogWarning(
+            "Publisher settings save returned no content for owner '{OwnerOid}' and platform '{PlatformName}'",
+            setting.CreatedByEntraOid,
+            setting.SocialMediaPlatformName ?? setting.SocialMediaPlatform?.Name);
+    }
+
+    private static string BuildBasePath(string? ownerOid)
+    {
+        return string.IsNullOrWhiteSpace(ownerOid)
+            ? PublishersBaseUrl
+            : $"{PublishersBaseUrl}?ownerOid={Uri.EscapeDataString(ownerOid)}";
+    }
+
+    private static string BuildPlatformPath(string platformPath, string? ownerOid)
+    {
+        var path = $"{PublishersBaseUrl}/{platformPath}";
+        return string.IsNullOrWhiteSpace(ownerOid)
+            ? path
+            : $"{path}?ownerOid={Uri.EscapeDataString(ownerOid)}";
+    }
+
+    private static string CapitalizePlatformPath(string normalizedPlatform) => normalizedPlatform switch
+    {
+        "bluesky" => "Bluesky",
+        "twitter" => "Twitter",
+        "linkedin" => "LinkedIn",
+        "facebook" => "Facebook",
+        _ => normalizedPlatform
+    };
+
+    private static SocialMediaPlatform? FindPlatform(IEnumerable<SocialMediaPlatform> platforms, string normalizedName)
+    {
+        return platforms.FirstOrDefault(p => NormalizePlatformName(p.Name) == normalizedName);
+    }
+
+    // Request builders
+
+    private static BlueskySettingsApiRequest BuildBlueskyRequest(UserPublisherSetting setting) => new()
+    {
+        IsEnabled = setting.IsEnabled,
+        UserName = GetSettingValue(setting.Settings, nameof(BlueskyPublisherSettings.BlueskyUserName)),
+        AppPassword = GetSettingValue(setting.Settings, nameof(BlueskyPublisherSettings.BlueskyPassword))
+    };
+
+    private static TwitterSettingsApiRequest BuildTwitterRequest(UserPublisherSetting setting) => new()
+    {
+        IsEnabled = setting.IsEnabled,
+        ConsumerKey = GetSettingValue(setting.Settings, nameof(TwitterPublisherSettings.ConsumerKey)),
+        ConsumerSecret = GetSettingValue(setting.Settings, nameof(TwitterPublisherSettings.ConsumerSecret)),
+        AccessToken = GetSettingValue(setting.Settings, nameof(TwitterPublisherSettings.OAuthToken)),
+        AccessTokenSecret = GetSettingValue(setting.Settings, nameof(TwitterPublisherSettings.OAuthTokenSecret))
+    };
+
+    private static LinkedInSettingsApiRequest BuildLinkedInRequest(UserPublisherSetting setting) => new()
+    {
+        IsEnabled = setting.IsEnabled,
+        AuthorId = GetSettingValue(setting.Settings, nameof(LinkedInPublisherSettings.AuthorId)),
+        ClientId = GetSettingValue(setting.Settings, nameof(LinkedInPublisherSettings.ClientId)),
+        ClientSecret = GetSettingValue(setting.Settings, nameof(LinkedInPublisherSettings.ClientSecret)),
+        AccessToken = GetSettingValue(setting.Settings, nameof(LinkedInPublisherSettings.AccessToken))
+    };
+
+    private static FacebookSettingsApiRequest BuildFacebookRequest(UserPublisherSetting setting) => new()
+    {
+        IsEnabled = setting.IsEnabled,
+        PageId = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.PageId)),
+        AppId = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.AppId)),
+        PageAccessToken = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.PageAccessToken)),
+        AppSecret = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.AppSecret)),
+        ClientToken = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.ClientToken)),
+        ShortLivedAccessToken = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.ShortLivedAccessToken)),
+        LongLivedAccessToken = GetSettingValue(setting.Settings, nameof(FacebookPublisherSettings.LongLivedAccessToken))
+    };
+
+    // Response mappers — platform overloads for GET (lookup from ISocialMediaPlatformService)
+
+    private static UserPublisherSetting MapBlueskyResponse(BlueskySettingsApiResponse r, SocialMediaPlatform? platform)
+        => MapBlueskyResponse(r, platform, platform?.Id ?? 0);
+
+    private static UserPublisherSetting MapBlueskyResponse(
+        BlueskySettingsApiResponse r, SocialMediaPlatform? platform, int platformId)
+    {
+        var setting = BuildBaseSetting(r.Id, r.CreatedByEntraOid, platformId, platform, r.IsEnabled, r.CreatedOn, r.LastUpdatedOn);
+
+        setting.Bluesky = new BlueskyPublisherSetting
         {
-            Id = response.Id,
-            CreatedByEntraOid = response.CreatedByEntraOid,
-            SocialMediaPlatformId = response.SocialMediaPlatformId,
-            SocialMediaPlatformName = response.SocialMediaPlatform?.Name,
-            SocialMediaPlatform = response.SocialMediaPlatform is null
-                ? null
-                : new SocialMediaPlatform
-                {
-                    Id = response.SocialMediaPlatform.Id,
-                    Name = response.SocialMediaPlatform.Name,
-                    Url = response.SocialMediaPlatform.Url,
-                    Icon = response.SocialMediaPlatform.Icon,
-                    IsActive = response.SocialMediaPlatform.IsActive
-                },
-            IsEnabled = response.IsEnabled,
-            CreatedOn = response.CreatedOn,
-            LastUpdatedOn = response.LastUpdatedOn
+            UserName = r.UserName,
+            HasAppPassword = r.HasAppPassword
         };
 
-        if (response.Bluesky is not null)
-        {
-            setting.Bluesky = new BlueskyPublisherSetting
-            {
-                UserName = response.Bluesky.UserName,
-                HasAppPassword = response.Bluesky.HasAppPassword
-            };
-
-            AddSettingValue(setting.Settings, nameof(BlueskyPublisherSettings.BlueskyUserName), response.Bluesky.UserName);
-            AddWriteOnlyValue(setting, nameof(BlueskyPublisherSettings.BlueskyPassword), response.Bluesky.HasAppPassword);
-        }
-
-        if (response.Twitter is not null)
-        {
-            setting.Twitter = new TwitterPublisherSetting
-            {
-                HasConsumerKey = response.Twitter.HasConsumerKey,
-                HasConsumerSecret = response.Twitter.HasConsumerSecret,
-                HasAccessToken = response.Twitter.HasAccessToken,
-                HasAccessTokenSecret = response.Twitter.HasAccessTokenSecret
-            };
-
-            AddWriteOnlyValue(setting, nameof(TwitterPublisherSettings.ConsumerKey), response.Twitter.HasConsumerKey);
-            AddWriteOnlyValue(setting, nameof(TwitterPublisherSettings.ConsumerSecret), response.Twitter.HasConsumerSecret);
-            AddWriteOnlyValue(setting, nameof(TwitterPublisherSettings.OAuthToken), response.Twitter.HasAccessToken);
-            AddWriteOnlyValue(setting, nameof(TwitterPublisherSettings.OAuthTokenSecret), response.Twitter.HasAccessTokenSecret);
-        }
-
-        if (response.Facebook is not null)
-        {
-            setting.Facebook = new FacebookPublisherSetting
-            {
-                PageId = response.Facebook.PageId,
-                AppId = response.Facebook.AppId,
-                HasPageAccessToken = response.Facebook.HasPageAccessToken,
-                HasAppSecret = response.Facebook.HasAppSecret,
-                HasClientToken = response.Facebook.HasClientToken,
-                HasShortLivedAccessToken = response.Facebook.HasShortLivedAccessToken,
-                HasLongLivedAccessToken = response.Facebook.HasLongLivedAccessToken
-            };
-
-            AddSettingValue(setting.Settings, nameof(FacebookPublisherSettings.PageId), response.Facebook.PageId);
-            AddSettingValue(setting.Settings, nameof(FacebookPublisherSettings.AppId), response.Facebook.AppId);
-            AddWriteOnlyValue(setting, nameof(FacebookPublisherSettings.PageAccessToken), response.Facebook.HasPageAccessToken);
-            AddWriteOnlyValue(setting, nameof(FacebookPublisherSettings.AppSecret), response.Facebook.HasAppSecret);
-            AddWriteOnlyValue(setting, nameof(FacebookPublisherSettings.ClientToken), response.Facebook.HasClientToken);
-            AddWriteOnlyValue(setting, nameof(FacebookPublisherSettings.ShortLivedAccessToken), response.Facebook.HasShortLivedAccessToken);
-            AddWriteOnlyValue(setting, nameof(FacebookPublisherSettings.LongLivedAccessToken), response.Facebook.HasLongLivedAccessToken);
-        }
-
-        if (response.LinkedIn is not null)
-        {
-            setting.LinkedIn = new LinkedInPublisherSetting
-            {
-                AuthorId = response.LinkedIn.AuthorId,
-                ClientId = response.LinkedIn.ClientId,
-                HasClientSecret = response.LinkedIn.HasClientSecret,
-                HasAccessToken = response.LinkedIn.HasAccessToken
-            };
-
-            AddSettingValue(setting.Settings, nameof(LinkedInPublisherSettings.AuthorId), response.LinkedIn.AuthorId);
-            AddSettingValue(setting.Settings, nameof(LinkedInPublisherSettings.ClientId), response.LinkedIn.ClientId);
-            AddWriteOnlyValue(setting, nameof(LinkedInPublisherSettings.ClientSecret), response.LinkedIn.HasClientSecret);
-            AddWriteOnlyValue(setting, nameof(LinkedInPublisherSettings.AccessToken), response.LinkedIn.HasAccessToken);
-        }
+        AddSettingValue(setting.Settings, nameof(BlueskyPublisherSettings.BlueskyUserName), r.UserName);
+        AddWriteOnlyValue(setting, nameof(BlueskyPublisherSettings.BlueskyPassword), r.HasAppPassword);
 
         return setting;
     }
+
+    private static UserPublisherSetting MapTwitterResponse(TwitterSettingsApiResponse r, SocialMediaPlatform? platform)
+        => MapTwitterResponse(r, platform, platform?.Id ?? 0);
+
+    private static UserPublisherSetting MapTwitterResponse(
+        TwitterSettingsApiResponse r, SocialMediaPlatform? platform, int platformId)
+    {
+        var setting = BuildBaseSetting(r.Id, r.CreatedByEntraOid, platformId, platform, r.IsEnabled, r.CreatedOn, r.LastUpdatedOn);
+
+        setting.Twitter = new TwitterPublisherSetting
+        {
+            HasConsumerKey = r.HasConsumerKey,
+            HasConsumerSecret = r.HasConsumerSecret,
+            HasAccessToken = r.HasAccessToken,
+            HasAccessTokenSecret = r.HasAccessTokenSecret
+        };
+
+        AddWriteOnlyValue(setting, nameof(TwitterPublisherSettings.ConsumerKey), r.HasConsumerKey);
+        AddWriteOnlyValue(setting, nameof(TwitterPublisherSettings.ConsumerSecret), r.HasConsumerSecret);
+        AddWriteOnlyValue(setting, nameof(TwitterPublisherSettings.OAuthToken), r.HasAccessToken);
+        AddWriteOnlyValue(setting, nameof(TwitterPublisherSettings.OAuthTokenSecret), r.HasAccessTokenSecret);
+
+        return setting;
+    }
+
+    private static UserPublisherSetting MapLinkedInResponse(LinkedInSettingsApiResponse r, SocialMediaPlatform? platform)
+        => MapLinkedInResponse(r, platform, platform?.Id ?? 0);
+
+    private static UserPublisherSetting MapLinkedInResponse(
+        LinkedInSettingsApiResponse r, SocialMediaPlatform? platform, int platformId)
+    {
+        var setting = BuildBaseSetting(r.Id, r.CreatedByEntraOid, platformId, platform, r.IsEnabled, r.CreatedOn, r.LastUpdatedOn);
+
+        setting.LinkedIn = new LinkedInPublisherSetting
+        {
+            AuthorId = r.AuthorId,
+            ClientId = r.ClientId,
+            HasClientSecret = r.HasClientSecret,
+            HasAccessToken = r.HasAccessToken
+        };
+
+        AddSettingValue(setting.Settings, nameof(LinkedInPublisherSettings.AuthorId), r.AuthorId);
+        AddSettingValue(setting.Settings, nameof(LinkedInPublisherSettings.ClientId), r.ClientId);
+        AddWriteOnlyValue(setting, nameof(LinkedInPublisherSettings.ClientSecret), r.HasClientSecret);
+        AddWriteOnlyValue(setting, nameof(LinkedInPublisherSettings.AccessToken), r.HasAccessToken);
+
+        return setting;
+    }
+
+    private static UserPublisherSetting MapFacebookResponse(FacebookSettingsApiResponse r, SocialMediaPlatform? platform)
+        => MapFacebookResponse(r, platform, platform?.Id ?? 0);
+
+    private static UserPublisherSetting MapFacebookResponse(
+        FacebookSettingsApiResponse r, SocialMediaPlatform? platform, int platformId)
+    {
+        var setting = BuildBaseSetting(r.Id, r.CreatedByEntraOid, platformId, platform, r.IsEnabled, r.CreatedOn, r.LastUpdatedOn);
+
+        setting.Facebook = new FacebookPublisherSetting
+        {
+            PageId = r.PageId,
+            AppId = r.AppId,
+            HasPageAccessToken = r.HasPageAccessToken,
+            HasAppSecret = r.HasAppSecret,
+            HasClientToken = r.HasClientToken,
+            HasShortLivedAccessToken = r.HasShortLivedAccessToken,
+            HasLongLivedAccessToken = r.HasLongLivedAccessToken
+        };
+
+        AddSettingValue(setting.Settings, nameof(FacebookPublisherSettings.PageId), r.PageId);
+        AddSettingValue(setting.Settings, nameof(FacebookPublisherSettings.AppId), r.AppId);
+        AddWriteOnlyValue(setting, nameof(FacebookPublisherSettings.PageAccessToken), r.HasPageAccessToken);
+        AddWriteOnlyValue(setting, nameof(FacebookPublisherSettings.AppSecret), r.HasAppSecret);
+        AddWriteOnlyValue(setting, nameof(FacebookPublisherSettings.ClientToken), r.HasClientToken);
+        AddWriteOnlyValue(setting, nameof(FacebookPublisherSettings.ShortLivedAccessToken), r.HasShortLivedAccessToken);
+        AddWriteOnlyValue(setting, nameof(FacebookPublisherSettings.LongLivedAccessToken), r.HasLongLivedAccessToken);
+
+        return setting;
+    }
+
+    private static UserPublisherSetting BuildBaseSetting(
+        int id,
+        string createdByEntraOid,
+        int socialMediaPlatformId,
+        SocialMediaPlatform? platform,
+        bool isEnabled,
+        DateTimeOffset createdOn,
+        DateTimeOffset lastUpdatedOn) => new()
+    {
+        Id = id,
+        CreatedByEntraOid = createdByEntraOid,
+        SocialMediaPlatformId = socialMediaPlatformId,
+        SocialMediaPlatformName = platform?.Name,
+        SocialMediaPlatform = platform,
+        IsEnabled = isEnabled,
+        CreatedOn = createdOn,
+        LastUpdatedOn = lastUpdatedOn
+    };
 
     private static void AddSettingValue(IDictionary<string, string?> settings, string key, string? value)
     {
@@ -261,145 +394,105 @@ public class UserPublisherSettingService(
     }
 }
 
-public sealed class UserPublisherSettingApiRequest
+// Local API mirror types — Web project does not reference the Api project
+
+public sealed class PublishersAggregateApiResponse
 {
-    public bool IsEnabled { get; set; }
-
-    public BlueskyPublisherSettingApiRequest? Bluesky { get; set; }
-
-    public TwitterPublisherSettingApiRequest? Twitter { get; set; }
-
-    public FacebookPublisherSettingApiRequest? Facebook { get; set; }
-
-    public LinkedInPublisherSettingApiRequest? LinkedIn { get; set; }
+    public BlueskySettingsApiResponse? Bluesky { get; set; }
+    public TwitterSettingsApiResponse? Twitter { get; set; }
+    public LinkedInSettingsApiResponse? LinkedIn { get; set; }
+    public FacebookSettingsApiResponse? Facebook { get; set; }
 }
 
-public sealed class BlueskyPublisherSettingApiRequest
+public sealed class BlueskySettingsApiRequest
 {
+    public bool IsEnabled { get; set; }
     public string? UserName { get; set; }
-
     public string? AppPassword { get; set; }
 }
 
-public sealed class TwitterPublisherSettingApiRequest
-{
-    public string? ConsumerKey { get; set; }
-
-    public string? ConsumerSecret { get; set; }
-
-    public string? AccessToken { get; set; }
-
-    public string? AccessTokenSecret { get; set; }
-}
-
-public sealed class FacebookPublisherSettingApiRequest
-{
-    public string? PageId { get; set; }
-
-    public string? AppId { get; set; }
-
-    public string? PageAccessToken { get; set; }
-
-    public string? AppSecret { get; set; }
-
-    public string? ClientToken { get; set; }
-
-    public string? ShortLivedAccessToken { get; set; }
-
-    public string? LongLivedAccessToken { get; set; }
-}
-
-public sealed class LinkedInPublisherSettingApiRequest
-{
-    public string? AuthorId { get; set; }
-
-    public string? ClientId { get; set; }
-
-    public string? ClientSecret { get; set; }
-
-    public string? AccessToken { get; set; }
-}
-
-public sealed class UserPublisherSettingApiResponse
+public sealed class BlueskySettingsApiResponse
 {
     public int Id { get; set; }
-
     public string CreatedByEntraOid { get; set; } = string.Empty;
-
-    public int SocialMediaPlatformId { get; set; }
-
-    public UserPublisherSettingSocialMediaPlatformApiResponse? SocialMediaPlatform { get; set; }
-
     public bool IsEnabled { get; set; }
-
-    public BlueskyPublisherSettingApiResponse? Bluesky { get; set; }
-
-    public TwitterPublisherSettingApiResponse? Twitter { get; set; }
-
-    public FacebookPublisherSettingApiResponse? Facebook { get; set; }
-
-    public LinkedInPublisherSettingApiResponse? LinkedIn { get; set; }
-
+    public string? UserName { get; set; }
+    public bool HasAppPassword { get; set; }
     public DateTimeOffset CreatedOn { get; set; }
-
     public DateTimeOffset LastUpdatedOn { get; set; }
 }
 
-public sealed class BlueskyPublisherSettingApiResponse
+public sealed class TwitterSettingsApiRequest
 {
-    public string? UserName { get; set; }
-
-    public bool HasAppPassword { get; set; }
+    public bool IsEnabled { get; set; }
+    public string? ConsumerKey { get; set; }
+    public string? ConsumerSecret { get; set; }
+    public string? AccessToken { get; set; }
+    public string? AccessTokenSecret { get; set; }
 }
 
-public sealed class TwitterPublisherSettingApiResponse
-{
-    public bool HasConsumerKey { get; set; }
-
-    public bool HasConsumerSecret { get; set; }
-
-    public bool HasAccessToken { get; set; }
-
-    public bool HasAccessTokenSecret { get; set; }
-}
-
-public sealed class FacebookPublisherSettingApiResponse
-{
-    public string? PageId { get; set; }
-
-    public string? AppId { get; set; }
-
-    public bool HasPageAccessToken { get; set; }
-
-    public bool HasAppSecret { get; set; }
-
-    public bool HasClientToken { get; set; }
-
-    public bool HasShortLivedAccessToken { get; set; }
-
-    public bool HasLongLivedAccessToken { get; set; }
-}
-
-public sealed class LinkedInPublisherSettingApiResponse
-{
-    public string? AuthorId { get; set; }
-
-    public string? ClientId { get; set; }
-
-    public bool HasClientSecret { get; set; }
-
-    public bool HasAccessToken { get; set; }
-}
-
-public sealed class UserPublisherSettingSocialMediaPlatformApiResponse
+public sealed class TwitterSettingsApiResponse
 {
     public int Id { get; set; }
-
-    public string Name { get; set; } = string.Empty;
-
-    public string? Url { get; set; }
-
-    public string? Icon { get; set; }
-
-    public bool IsActive { get; set; }
+    public string CreatedByEntraOid { get; set; } = string.Empty;
+    public bool IsEnabled { get; set; }
+    public bool HasConsumerKey { get; set; }
+    public bool HasConsumerSecret { get; set; }
+    public bool HasAccessToken { get; set; }
+    public bool HasAccessTokenSecret { get; set; }
+    public DateTimeOffset CreatedOn { get; set; }
+    public DateTimeOffset LastUpdatedOn { get; set; }
 }
+
+public sealed class LinkedInSettingsApiRequest
+{
+    public bool IsEnabled { get; set; }
+    public string? AuthorId { get; set; }
+    public string? ClientId { get; set; }
+    public string? ClientSecret { get; set; }
+    public string? AccessToken { get; set; }
+}
+
+public sealed class LinkedInSettingsApiResponse
+{
+    public int Id { get; set; }
+    public string CreatedByEntraOid { get; set; } = string.Empty;
+    public bool IsEnabled { get; set; }
+    public string? AuthorId { get; set; }
+    public string? ClientId { get; set; }
+    public bool HasClientSecret { get; set; }
+    public bool HasAccessToken { get; set; }
+    public DateTimeOffset CreatedOn { get; set; }
+    public DateTimeOffset LastUpdatedOn { get; set; }
+}
+
+public sealed class FacebookSettingsApiRequest
+{
+    public bool IsEnabled { get; set; }
+    public string? PageId { get; set; }
+    public string? AppId { get; set; }
+    public string? PageAccessToken { get; set; }
+    public string? AppSecret { get; set; }
+    public string? ClientToken { get; set; }
+    public string? ShortLivedAccessToken { get; set; }
+    public string? LongLivedAccessToken { get; set; }
+}
+
+public sealed class FacebookSettingsApiResponse
+{
+    public int Id { get; set; }
+    public string CreatedByEntraOid { get; set; } = string.Empty;
+    public bool IsEnabled { get; set; }
+    public string? PageId { get; set; }
+    public string? AppId { get; set; }
+    public bool HasPageAccessToken { get; set; }
+    public bool HasAppSecret { get; set; }
+    public bool HasClientToken { get; set; }
+    public bool HasShortLivedAccessToken { get; set; }
+    public bool HasLongLivedAccessToken { get; set; }
+    public DateTimeOffset CreatedOn { get; set; }
+    public DateTimeOffset LastUpdatedOn { get; set; }
+}
+
+
+

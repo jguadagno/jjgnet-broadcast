@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
-public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherSettingManager userPublisherSettingManager, ILogger<PostPageStatus> logger)
+public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherFacebookSettingsManager facebookSettingsManager, ILogger<PostPageStatus> logger)
 {
     [Function(ConfigurationFunctionNames.FacebookPostPageStatus)]
     public async Task Run(
@@ -26,24 +26,29 @@ public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherSett
             return;
         }
 
-        var credentials = await userPublisherSettingManager.GetCredentialsAsync(
-            facebookPostStatus.CreatedByEntraOid,
-            SocialMediaPlatformIds.Facebook);
+        var ownerOid = facebookPostStatus.CreatedByEntraOid;
+        var settings = await facebookSettingsManager.GetAsync(ownerOid);
+        if (settings is null || !settings.IsEnabled)
+        {
+            logger.LogWarning("Facebook settings not found or not enabled for owner '{OwnerOid}'. Skipping.",
+                LogSanitizer.Sanitize(ownerOid));
+            return;
+        }
 
-        var pageAccessToken = credentials.GetValueOrDefault("PageAccessToken")
-            ?? credentials.GetValueOrDefault("LongLivedAccessToken");
+        var pageAccessToken = await facebookSettingsManager.GetPageAccessTokenAsync(ownerOid)
+            ?? await facebookSettingsManager.GetLongLivedAccessTokenAsync(ownerOid);
 
         if (string.IsNullOrEmpty(pageAccessToken))
         {
             logger.LogWarning("Facebook credentials (PageAccessToken) not found for owner '{OwnerOid}'. Skipping.",
-                LogSanitizer.Sanitize(facebookPostStatus.CreatedByEntraOid));
+                LogSanitizer.Sanitize(ownerOid));
             return;
         }
 
-        if (!credentials.TryGetValue("PageId", out var pageId) || string.IsNullOrEmpty(pageId))
+        if (string.IsNullOrEmpty(settings.PageId))
         {
             logger.LogWarning("Facebook PageId not found for owner '{OwnerOid}'. Skipping.",
-                LogSanitizer.Sanitize(facebookPostStatus.CreatedByEntraOid));
+                LogSanitizer.Sanitize(ownerOid));
             return;
         }
 
@@ -52,10 +57,10 @@ public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherSett
             string? postId;
             if (!string.IsNullOrEmpty(facebookPostStatus.ImageUrl))
                 postId = await facebookManager.PostMessageLinkAndPictureToPage(
-                    facebookPostStatus.StatusText, facebookPostStatus.LinkUri, facebookPostStatus.ImageUrl, pageId, pageAccessToken);
+                    facebookPostStatus.StatusText, facebookPostStatus.LinkUri, facebookPostStatus.ImageUrl, settings.PageId, pageAccessToken);
             else
                 postId = await facebookManager.PostMessageAndLinkToPage(
-                    facebookPostStatus.StatusText, facebookPostStatus.LinkUri, pageId, pageAccessToken);
+                    facebookPostStatus.StatusText, facebookPostStatus.LinkUri, settings.PageId, pageAccessToken);
 
             if (!string.IsNullOrEmpty(postId))
             {

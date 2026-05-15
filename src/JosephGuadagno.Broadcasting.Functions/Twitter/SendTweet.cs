@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
-public class SendTweet(IUserPublisherSettingManager userPublisherSettingManager, ILogger<SendTweet> logger)
+public class SendTweet(IUserPublisherTwitterSettingsManager twitterSettingsManager, ILogger<SendTweet> logger)
 {
 
     [Function(ConfigurationFunctionNames.TwitterSendTweet)]
@@ -24,15 +24,17 @@ public class SendTweet(IUserPublisherSettingManager userPublisherSettingManager,
             return;
         }
 
-        var credentials = await userPublisherSettingManager.GetCredentialsAsync(
-            tweetMessage.CreatedByEntraOid,
-            SocialMediaPlatformIds.Twitter);
+        var ownerOid = tweetMessage.CreatedByEntraOid;
+        var consumerKey = await twitterSettingsManager.GetConsumerKeyAsync(ownerOid);
+        var consumerSecret = await twitterSettingsManager.GetConsumerSecretAsync(ownerOid);
+        var accessToken = await twitterSettingsManager.GetAccessTokenAsync(ownerOid);
+        var accessTokenSecret = await twitterSettingsManager.GetAccessTokenSecretAsync(ownerOid);
 
-        if (!credentials.ContainsKey("ConsumerKey") || !credentials.ContainsKey("ConsumerSecret")
-            || !credentials.ContainsKey("OAuthToken") || !credentials.ContainsKey("OAuthTokenSecret"))
+        if (string.IsNullOrEmpty(consumerKey) || string.IsNullOrEmpty(consumerSecret)
+            || string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(accessTokenSecret))
         {
             logger.LogWarning("Twitter credentials not found for owner '{OwnerOid}'. Skipping.",
-                LogSanitizer.Sanitize(tweetMessage.CreatedByEntraOid));
+                LogSanitizer.Sanitize(ownerOid));
             return;
         }
 
@@ -45,10 +47,10 @@ public class SendTweet(IUserPublisherSettingManager userPublisherSettingManager,
 
             var credentialStore = new InMemoryCredentialStore
             {
-                ConsumerKey = credentials.GetValueOrDefault("ConsumerKey"),
-                ConsumerSecret = credentials.GetValueOrDefault("ConsumerSecret"),
-                OAuthToken = credentials.GetValueOrDefault("OAuthToken"),
-                OAuthTokenSecret = credentials.GetValueOrDefault("OAuthTokenSecret"),
+                ConsumerKey = consumerKey,
+                ConsumerSecret = consumerSecret,
+                OAuthToken = accessToken,
+                OAuthTokenSecret = accessTokenSecret,
             };
             var authorizer = new SingleUserAuthorizer { CredentialStore = credentialStore };
             var twitterContext = new TwitterContext(authorizer);
