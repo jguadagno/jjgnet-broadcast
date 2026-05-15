@@ -1,11 +1,10 @@
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
 using idunno.Bluesky.Embed;
 
-using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
@@ -17,18 +16,18 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Bluesky;
 public class SendPostTests
 {
     private readonly Mock<IBlueskyManager> _blueskyManager = new();
-    private readonly Mock<IUserPublisherSettingManager> _userPublisherSettingManager = new();
+    private readonly Mock<IUserPublisherBlueskySettingsManager> _blueskySettingsManager = new();
 
     private Functions.Bluesky.SendPost BuildSut() => new(
         _blueskyManager.Object,
-        _userPublisherSettingManager.Object,
+        _blueskySettingsManager.Object,
         NullLogger<Functions.Bluesky.SendPost>.Instance);
 
     private static BlueskyPostMessage BuildBlueskyPostMessage(
         string text = "Test Bluesky post",
         string? url = null,
         string? shortenedUrl = null,
-        List<string>? hashtags = null,
+        System.Collections.Generic.List<string>? hashtags = null,
         string? imageUrl = null,
         string? createdByEntraOid = null) => new()
     {
@@ -40,14 +39,21 @@ public class SendPostTests
         CreatedByEntraOid = createdByEntraOid
     };
 
-    private void SetupValidCredentials(string oid) =>
-        _userPublisherSettingManager
-            .Setup(m => m.GetCredentialsAsync(oid, SocialMediaPlatformIds.Bluesky, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<string, string?>
+    private void SetupValidCredentials(string oid)
+    {
+        _blueskySettingsManager
+            .Setup(m => m.GetAsync(oid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserPublisherBlueskySettings
             {
-                ["Identifier"] = "user.bsky.social",
-                ["AppPassword"] = "app-password"
+                CreatedByEntraOid = oid,
+                IsEnabled = true,
+                UserName = "user.bsky.social",
+                HasAppPassword = true
             });
+        _blueskySettingsManager
+            .Setup(m => m.GetAppPasswordAsync(oid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("app-password");
+    }
 
     // Missing CreatedByEntraOid → skip, no exception
 
@@ -60,21 +66,21 @@ public class SendPostTests
         var exception = await Record.ExceptionAsync(() => sut.Run(postMessage));
 
         Assert.Null(exception);
-        _userPublisherSettingManager.Verify(
-            m => m.GetCredentialsAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+        _blueskySettingsManager.Verify(
+            m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
         _blueskyManager.Verify(m => m.GetEmbeddedExternalRecord(It.IsAny<string>()), Times.Never);
     }
 
-    // Missing credentials (empty dictionary) → skip, no exception
+    // Settings not found → skip, no exception
 
     [Fact]
-    public async Task Run_WhenCredentialsMissingRequiredKeys_SkipsPostingWithoutException()
+    public async Task Run_WhenSettingsNotFound_SkipsPostingWithoutException()
     {
         var postMessage = BuildBlueskyPostMessage(createdByEntraOid: "test-oid");
-        _userPublisherSettingManager
-            .Setup(m => m.GetCredentialsAsync("test-oid", SocialMediaPlatformIds.Bluesky, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<string, string?>());
+        _blueskySettingsManager
+            .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserPublisherBlueskySettings?)null);
         var sut = BuildSut();
 
         var exception = await Record.ExceptionAsync(() => sut.Run(postMessage));
@@ -83,15 +89,23 @@ public class SendPostTests
         _blueskyManager.Verify(m => m.GetEmbeddedExternalRecord(It.IsAny<string>()), Times.Never);
     }
 
-    // Only Identifier present (missing AppPassword) → skip
+    // App password not found → skip, no exception
 
     [Fact]
     public async Task Run_WhenAppPasswordMissing_SkipsPostingWithoutException()
     {
         var postMessage = BuildBlueskyPostMessage(createdByEntraOid: "test-oid");
-        _userPublisherSettingManager
-            .Setup(m => m.GetCredentialsAsync("test-oid", SocialMediaPlatformIds.Bluesky, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<string, string?> { ["Identifier"] = "user.bsky.social" });
+        _blueskySettingsManager
+            .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserPublisherBlueskySettings
+            {
+                CreatedByEntraOid = "test-oid",
+                IsEnabled = true,
+                UserName = "user.bsky.social"
+            });
+        _blueskySettingsManager
+            .Setup(m => m.GetAppPasswordAsync("test-oid", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
         var sut = BuildSut();
 
         var exception = await Record.ExceptionAsync(() => sut.Run(postMessage));
@@ -188,4 +202,3 @@ public class SendPostTests
         await Assert.ThrowsAsync<BlueskyPostException>(() => sut.Run(postMessage));
     }
 }
-

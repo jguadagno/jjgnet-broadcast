@@ -21,7 +21,6 @@ public static class BroadcastingDataSqlServiceCollectionExtensions
         services.TryAddScoped<IMessageTemplateDataStore, MessageTemplateDataStore>();
         services.TryAddScoped<ISocialMediaPlatformDataStore, SocialMediaPlatformDataStore>();
         services.TryAddScoped<IEngagementSocialMediaPlatformDataStore, EngagementSocialMediaPlatformDataStore>();
-        services.TryAddScoped<IUserPublisherSettingDataStore, UserPublisherSettingDataStore>();
         services.TryAddScoped<IUserOAuthTokenDataStore, UserOAuthTokenDataStore>();
         services.TryAddScoped<IUserCollectorFeedSourceDataStore, UserCollectorFeedSourceDataStore>();
         services.TryAddScoped<IUserCollectorYouTubeChannelDataStore, UserCollectorYouTubeChannelDataStore>();

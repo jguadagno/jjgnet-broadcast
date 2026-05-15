@@ -1,9 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
@@ -15,11 +14,11 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Facebook;
 public class PostPageStatusTests
 {
     private readonly Mock<IFacebookManager> _facebookManager = new();
-    private readonly Mock<IUserPublisherSettingManager> _userPublisherSettingManager = new();
+    private readonly Mock<IUserPublisherFacebookSettingsManager> _facebookSettingsManager = new();
 
     private Functions.Facebook.PostPageStatus BuildSut() => new(
         _facebookManager.Object,
-        _userPublisherSettingManager.Object,
+        _facebookSettingsManager.Object,
         NullLogger<Functions.Facebook.PostPageStatus>.Instance);
 
     private static FacebookPostStatus BuildFacebookPostStatus(
@@ -34,14 +33,21 @@ public class PostPageStatusTests
         CreatedByEntraOid = createdByEntraOid
     };
 
-    private void SetupValidCredentials(string oid = "test-oid") =>
-        _userPublisherSettingManager
-            .Setup(m => m.GetCredentialsAsync(oid, SocialMediaPlatformIds.Facebook, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<string, string?>
+    private void SetupValidCredentials(string oid = "test-oid")
+    {
+        _facebookSettingsManager
+            .Setup(m => m.GetAsync(oid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserPublisherFacebookSettings
             {
-                ["PageId"] = "page-123",
-                ["PageAccessToken"] = "token-abc"
+                CreatedByEntraOid = oid,
+                IsEnabled = true,
+                PageId = "page-123",
+                HasPageAccessToken = true
             });
+        _facebookSettingsManager
+            .Setup(m => m.GetPageAccessTokenAsync(oid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("token-abc");
+    }
 
     // Missing CreatedByEntraOid → skip, no exception
 
@@ -54,23 +60,23 @@ public class PostPageStatusTests
         var exception = await Record.ExceptionAsync(() => sut.Run(postStatus));
 
         Assert.Null(exception);
-        _userPublisherSettingManager.Verify(
-            m => m.GetCredentialsAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+        _facebookSettingsManager.Verify(
+            m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
         _facebookManager.Verify(
             m => m.PostMessageAndLinkToPage(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
             Times.Never);
     }
 
-    // Missing credentials → skip, no exception
+    // Settings not found → skip, no exception
 
     [Fact]
-    public async Task Run_WhenCredentialsMissing_SkipsPostingWithoutException()
+    public async Task Run_WhenSettingsNotFound_SkipsPostingWithoutException()
     {
         var postStatus = BuildFacebookPostStatus();
-        _userPublisherSettingManager
-            .Setup(m => m.GetCredentialsAsync("test-oid", SocialMediaPlatformIds.Facebook, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<string, string?>());
+        _facebookSettingsManager
+            .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserPublisherFacebookSettings?)null);
         var sut = BuildSut();
 
         var exception = await Record.ExceptionAsync(() => sut.Run(postStatus));
@@ -156,4 +162,3 @@ public class PostPageStatusTests
         await Assert.ThrowsAsync<Exception>(() => sut.Run(postStatus));
     }
 }
-

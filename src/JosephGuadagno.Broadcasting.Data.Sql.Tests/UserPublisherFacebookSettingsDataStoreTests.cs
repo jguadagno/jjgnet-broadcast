@@ -115,6 +115,16 @@ public class UserPublisherFacebookSettingsDataStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task GetByIdAsync_ReturnsNullForMissingId()
+    {
+        // Act
+        var result = await _dataStore.GetByIdAsync(99999);
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
     public async Task SaveAsync_CreatesNewSettings()
     {
         // Arrange
