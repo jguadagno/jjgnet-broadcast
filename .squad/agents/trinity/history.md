@@ -180,6 +180,14 @@ Fixed CS1573 (`Parameter has no matching param tag`) and CS0419 (ambiguous cref)
 2. `BuildPageViewModelAsync` is the single source of truth for populating the page view model; adding a new collector type only requires: fetch via service (admin/non-admin branch), inline projection to ViewModel, assign to the new collection property.
 3. The inline projection pattern (`.Select(x => new ViewModel { ... }).ToList()`) is the established pattern in this controller — do not introduce AutoMapper for new collections added to `BuildPageViewModelAsync` unless the rest of the method already uses it.
 
+### 2026-05-15 — Security Sweep: [IgnoreAntiforgeryToken] on API Controllers
+
+1. Before applying a mechanical security fix, always grep the actual files — the GitHub security bot flagged three controllers (`SyndicationFeedItemsController`, `UserCollectorSpeakingEngagementsController`, `YouTubeItemsController`) as missing `[IgnoreAntiforgeryToken]`, but all 10 API controllers already had the attribute at the class level. Zero code changes were required.
+2. A full grep of `IgnoreAntiforgeryToken` across the entire controllers directory is the fastest verification: one command shows every controller with and without the attribute, surfacing true gaps in seconds.
+3. Two controllers (`UserCollectorYouTubeChannelsController`, `UserCollectorFeedSourcesController`) have a redundant method-level `[IgnoreAntiforgeryToken]` at line 120 in addition to the class-level one. Redundant — harmless — but worth noting if those files are touched in a future PR.
+
+---
+
 ### 2026-05-15 — XML Documentation: API DTOs and Models
 
 1. When adding XML docs to DTOs that already have a class-level `<summary>` but no property docs, write the full file replacement in one edit — it's cleaner and faster than per-property edits on a large file.
