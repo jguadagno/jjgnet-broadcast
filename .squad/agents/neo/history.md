@@ -36,6 +36,32 @@ Fix: wrap all three sites with `LogSanitizer.Sanitize()` — the `using` directi
 
 ## Learnings
 
+### 2026-05-15 — PR #963 Formal Review: Publisher Settings Phase 2
+
+**Status:** ✅ COMPLETE — BLOCKED ❌ → Trinity fixed (eda470e7) → UNBLOCKED ✅. Review comment posted at https://github.com/jguadagno/jjgnet-broadcast/pull/963#issuecomment-4464281385. Decision written to decisions.md.
+
+**Verdict:** BLOCKED ❌ (1 blocking finding) → APPROVED ✅ after fix
+
+**Blocking finding — `cs/log-forging` in `UserPublisherSettingService.cs`:**
+- Line 93: `setting.CreatedByEntraOid` not sanitized
+- Lines 156-157: `platform` and `setting.CreatedByEntraOid` not sanitized
+- Lines 164-167 (`LogSaveFailure`): `setting.CreatedByEntraOid`, `setting.SocialMediaPlatformName ?? ...` not sanitized
+
+**What passed (19/19 other checks):**
+- All 5 API controllers: `[IgnoreAntiforgeryToken]`, `[Authorize]`, ownership checks, `LogSanitizer` on all log args
+- All 4 typed manager implementations: `BuildSecretName` with `SecretNameSanitizer`, `Has*` booleans only
+- All 4 manager test classes: `[Theory]` `BuildSecretName` coverage
+- Functions migration: all 3 files replace shim with typed managers
+- DI registrations correct in API, Functions, Web; SQL migration idempotent; build clean
+
+**Fix:** Trinity (trinity-5) — wrapped all 3 sites with `LogSanitizer.Sanitize()`, added missing `using`. Commit eda470e7.
+
+**Learnings:**
+- `LogSanitizer.Sanitize()` applies in the service layer, not just controllers. Private helper methods are equally subject — audit the full file.
+- When reviewing Phase 2 service/manager classes, audit every log call, including private helper methods like `LogSaveFailure`.
+
+---
+
 ### 2026-05-15 — PR #962 Formal Review: Publisher Settings Phase 1
 
 **Status:** ✅ COMPLETE — APPROVED. Comment posted. Decision written to `.squad/decisions/inbox/neo-pr962-review.md`.
