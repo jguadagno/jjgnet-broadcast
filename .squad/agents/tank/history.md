@@ -4,6 +4,22 @@
 
 Tank (QA Engineer) builds comprehensive test coverage across unit, integration, security, and regression test categories using xUnit, FluentAssertions, and Moq. Primary focus: ensuring backend API contracts work correctly, authorization/RBAC logic is enforced, ownership isolation prevents data leaks, and authentication flows are secure. Key test patterns include: mocking external services (HttpClientFactory via Moq), testing async operations with Task.Delay and verification, ownership isolation regression tests (verify User A cannot access User B's resources), and RBAC authorization tests (verify Viewers cannot POST, Admins can manage users). Tank works closely with Trinity (API endpoint contracts), Switch (Web-layer integration tests), and Neo (security test patterns). Established pattern: write tests before implementation (TDD), test both happy path and error cases, use descriptive test names like `GetEngagements_WhenUserIsContributor_ShouldReturnOwnEngagementsOnly`, mock external dependencies, and verify authorization boundaries. Notable: Tank maintains ownership isolation test suite to prevent regressions as new features are added. Key decision: ownership tests go in integration test class alongside endpoint tests, not as separate security-only test file.
 
+## Recent Session: Fix PublisherSettingsControllerTests Assertions (2026-05-15)
+
+- **Work:** Fixed 2 failing tests in `PublisherSettingsControllerTests.cs`
+- **Result:** ✅ COMPLETE — 4/4 PublisherSettingsControllerTests pass; full suite 0 failures
+- **Root Cause:** Tests were written asserting the wrong view/redirect target. `SavePlatformAsync` returns `View("Edit", model)` on invalid `ModelState`, and `RedirectToAction(nameof(Edit), ...)` on success — tests incorrectly expected `"Index"` in both cases.
+- **Fix 1:** `SaveBluesky_WhenModelIsInvalid_ShouldRebuildIndexView` → renamed to `SaveBluesky_WhenModelIsInvalid_ShouldReturnEditView`, assertion changed from `"Index"` to `"Edit"`.
+- **Fix 2:** `SaveLinkedIn_WhenValid_ShouldPersistAndRedirect` → redirect assertion changed from `Index` to `Edit`, added `id` route value check (`3`), kept `userOid` check.
+- **Commit:** `c44ad92` on branch `issue-950-sanity-check`
+
+## Learnings
+
+### Post-save redirect target in PublisherSettingsController
+`SavePlatformAsync` always redirects to `Edit` (not `Index`) after both success and invalid model state. Tests for Save* actions must assert `View("Edit", ...)` on validation failure and `RedirectToAction("Edit", ...)` on success, with route values `{ id = platformId }` (non-admin) or `{ id = platformId, userOid = targetOid }` (site-admin).
+
+---
+
 ## Recent Session: Issue #945 LinkedInController Test Coverage (2026-05-09)
 
 - **Work:** Added 4 new tests to `LinkedInControllerTests.cs` covering gaps in the existing 8 tests
