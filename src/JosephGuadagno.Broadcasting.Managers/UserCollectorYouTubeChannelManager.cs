@@ -160,7 +160,6 @@ public class UserCollectorYouTubeChannelManager : IUserCollectorYouTubeChannelMa
     private static string BuildSecretName(string ownerOid, string youTubeChannelId)
     {
         var sanitizedOwner = SecretNameSanitizer.Replace(ownerOid, "-");
-        var sanitizedChannel = SecretNameSanitizer.Replace(youTubeChannelId, "-");
-        return $"youtube-channel-apikey-{sanitizedOwner}-{sanitizedChannel}";
+        return $"collector-{sanitizedOwner}-youtube-channel-{youTubeChannelId}-api-key";
     }
 }
