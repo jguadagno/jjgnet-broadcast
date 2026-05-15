@@ -15,7 +15,7 @@ public class YouTubeReaderTests
     }
 
     [Fact(Skip = "Manually run only")]
-    public void GetAsync_WhenCalled_ReturnsVideosSinceDate()
+    public async Task GetAsync_WhenCalled_ReturnsVideosSinceDate()
     {
         // This test requires a real YouTube API key and should be run as an integration test
         // Arrange
@@ -31,7 +31,7 @@ public class YouTubeReaderTests
         var sinceWhen = DateTimeOffset.UtcNow.AddDays(-30);
 
         // Act
-        var result = reader.GetAsync(OwnerEntraOid, sinceWhen).Result;
+        var result = await reader.GetAsync(OwnerEntraOid, sinceWhen);
 
         // Assert
         Assert.NotNull(result);

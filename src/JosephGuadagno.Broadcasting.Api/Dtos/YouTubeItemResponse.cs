@@ -1,7 +1,7 @@
 namespace JosephGuadagno.Broadcasting.Api.Dtos;
 
 /// <summary>
-/// Response DTO for a YouTube source.
+/// Response DTO for a YouTube video item record, returned by the YouTube item endpoints.
 /// </summary>
 public class YouTubeItemResponse
 {

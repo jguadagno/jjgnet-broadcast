@@ -1,5 +1,9 @@
 namespace JosephGuadagno.Broadcasting.Api.Interfaces;
 
+/// <summary>
+/// Defines the application settings contract for the Broadcasting API,
+/// exposing configuration values required by the API at runtime.
+/// </summary>
 public interface ISettings
 {
     /// <summary>

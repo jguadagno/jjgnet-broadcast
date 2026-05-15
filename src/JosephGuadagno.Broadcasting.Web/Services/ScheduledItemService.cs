@@ -21,6 +21,9 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// </summary>
     /// <param name="page">The page number to get</param>
     /// <param name="pageSize">The number of items to return per page</param>
+    /// <param name="sortBy">The field name to sort results by</param>
+    /// <param name="sortDescending">When <c>true</c>, results are sorted in descending order; otherwise ascending</param>
+    /// <param name="filter">An optional filter string to narrow results</param>
     /// <returns>A List&lt;<see cref="ScheduledItem"/>&gt;s</returns>
     public async Task<PagedResult<ScheduledItem>> GetScheduledItemsAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize, string sortBy = "sendondatetime", bool sortDescending = true, string? filter = null)
     {

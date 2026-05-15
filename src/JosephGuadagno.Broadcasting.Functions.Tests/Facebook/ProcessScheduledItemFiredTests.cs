@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Messaging.EventGrid;
-using JosephGuadagno.Broadcasting.Domain.Constants;
+
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;

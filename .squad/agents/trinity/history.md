@@ -35,7 +35,30 @@ Fixed all 4 blocking issues and 3 warnings from Neo's review:
 
 ---
 
-### 2026-05-XX — Issue #936: Add IMemoryCache caching to MessageTemplateManager
+### 2026-05-XX — XML Doc CS1573 Fixes: API Controllers
+
+**Status:** ✅ COMPLETE — commit 525dc2d on `issue-950-sanity-check`
+
+Fixed CS1573 (`Parameter has no matching param tag`) and CS0419 (ambiguous cref) build warnings across all 8 affected API controllers. Changes were XML documentation only — zero logic changes.
+
+**Files changed:**
+- `EngagementsController`: added `sortBy`, `sortDescending`, `filter` to `GetAllAsync`; fixed ambiguous `<see cref="ControllerBase.CreatedAtAction"/>` → `<c>CreatedAtAction</c>`
+- `SchedulesController`: added `sortBy`, `sortDescending`, `filter` to `GetAllAsync`
+- `MessageTemplatesController`: added `sortBy`, `sortDescending`, `filter` to `GetAllAsync`
+- `SocialMediaPlatformsController`: added `page`, `pageSize`, `sortBy`, `sortDescending`, `filter` to `GetAllAsync`
+- `UserCollectorFeedSourcesController`: added `page`, `pageSize`, `sortBy`, `sortDescending`, `filter` to `GetAllAsync`
+- `UserCollectorSpeakingEngagementsController`: added `page`, `pageSize`, `sortBy`, `sortDescending`, `filter` to `GetAllAsync`
+- `UserCollectorYouTubeChannelsController`: added `page`, `pageSize`, `sortBy`, `sortDescending`, `filter` to `GetAllAsync`
+- `UserPublisherSettingsController`: added `page`, `pageSize`, `sortBy`, `sortDescending`, `filter` to `GetAllAsync`
+
+**Learnings:**
+- CS1573 fires whenever a method has XML docs with SOME `<param>` tags but is missing tags for OTHER parameters. When pagination/sort params (`sortBy`, `sortDescending`, `filter`) are added to method signatures, the existing `<param name="page">` and `<param name="pageSize">` tags cause CS1573 for the new params.
+- CS0419 fires on `<see cref="ControllerBase.CreatedAtAction"/>` because there are multiple overloads. Fix: replace with `<c>CreatedAtAction</c>` plain code element.
+- The build output for a full solution (not just the API) reveals more warnings than building API alone — always run `dotnet build .\src\` at least once to catch all projects.
+
+---
+
+
 
 **Status:** ✅ COMPLETE — PR #940 on `issue-936-messagetemplates-caching`; 253 tests passing
 
@@ -157,7 +180,16 @@ Fixed all 4 blocking issues and 3 warnings from Neo's review:
 2. `BuildPageViewModelAsync` is the single source of truth for populating the page view model; adding a new collector type only requires: fetch via service (admin/non-admin branch), inline projection to ViewModel, assign to the new collection property.
 3. The inline projection pattern (`.Select(x => new ViewModel { ... }).ToList()`) is the established pattern in this controller — do not introduce AutoMapper for new collections added to `BuildPageViewModelAsync` unless the rest of the method already uses it.
 
-### 2026-05-12 — Issue #954 follow-up: ApiKey required enforcement for YouTube channel Add/Edit
+### 2026-05-15 — XML Documentation: API DTOs and Models
+
+1. When adding XML docs to DTOs that already have a class-level `<summary>` but no property docs, write the full file replacement in one edit — it's cleaner and faster than per-property edits on a large file.
+2. For Request DTOs, reference the corresponding endpoint path in the class summary (e.g., `POST /engagements`) so readers know exactly when the DTO is used.
+3. For `DateTimeOffset` properties, always note in the summary that the value includes a UTC offset, especially on scheduling/event types. Consumers need to know the format.
+4. Never use "Gets or sets" as a property summary — it restates the accessor mechanics but says nothing about the business meaning. Describe what the property represents in domain terms.
+5. Required properties: consistently use `<remarks>This field is required.</remarks>` rather than embedding "required" in the `<summary>` — keeps summaries readable and remarks filterable.
+6. Class summaries that say "feed source" for a class renamed to `SyndicationFeedItem` or "YouTube source" for `YouTubeItem` are stale and mislead consumers. Fix them when renaming types.
+
+
 
 1. When a single API request DTO is used for both Create (POST) and Update (PUT), and the required-ness of a field differs between the two operations, split into two concrete DTOs: `CreateXxxRequest` (field `[Required]`) and `UpdateXxxRequest` (field `string?`). Add an AutoMapper profile entry for each. The Open API contract stays stable; only the DTO type names are internal.
 2. For the Update case, `[Required]` validation is done manually in the controller AFTER fetching the existing record: check `!existing.HasApiKey && string.IsNullOrWhiteSpace(request.ApiKey)` and return `BadRequest` — not a ModelState error — because by the time the domain fetch happens, ModelState validation is already complete.

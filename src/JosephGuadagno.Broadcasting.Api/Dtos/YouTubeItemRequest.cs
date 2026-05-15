@@ -3,7 +3,8 @@ using System.ComponentModel.DataAnnotations;
 namespace JosephGuadagno.Broadcasting.Api.Dtos;
 
 /// <summary>
-/// Request DTO for creating a YouTube source.
+/// Request DTO for creating a YouTube video item record. Used by the
+/// <c>POST /youtube-items</c> endpoint.
 /// </summary>
 public class YouTubeItemRequest
 {

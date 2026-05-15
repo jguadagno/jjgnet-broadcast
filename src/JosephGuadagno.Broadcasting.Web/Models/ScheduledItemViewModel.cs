@@ -34,7 +34,7 @@ public class ScheduledItemViewModel
     /// The primary key for this record.
     /// </summary>
     /// <remarks>
-    /// For <see cref="SourceData"/> it is the PartitionKey.
+    /// For SourceData it is the PartitionKey.
     /// For <see cref="EngagementViewModel"/> it is the Id field/>
     /// </remarks>
     [Required]

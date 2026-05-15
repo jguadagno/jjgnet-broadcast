@@ -3,7 +3,8 @@ using System.ComponentModel.DataAnnotations;
 namespace JosephGuadagno.Broadcasting.Api.Dtos;
 
 /// <summary>
-/// Request DTO for creating a syndication feed source.
+/// Request DTO for creating a syndication feed item record. Used by the
+/// <c>POST /syndication-feed-items</c> endpoint.
 /// </summary>
 public class SyndicationFeedItemRequest
 {

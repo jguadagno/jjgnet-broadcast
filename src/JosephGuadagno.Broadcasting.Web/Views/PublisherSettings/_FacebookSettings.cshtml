@@ -49,7 +49,7 @@
                     <li>Short-lived access token: @(Model.HasShortLivedAccessToken ? Model.MaskedValue : "Not set")</li>
                     <li>Long-lived access token: @(Model.HasLongLivedAccessToken ? Model.MaskedValue : "Not set")</li>
                 </ul>
-                <div class="form-check mb-3">
+                <div class="form-check form-switch mb-3">
                     <input asp-for="ChangeCredentials" class="form-check-input" />
                     <label asp-for="ChangeCredentials" class="form-check-label">Change credentials</label>
                 </div>

@@ -1,7 +1,7 @@
 namespace JosephGuadagno.Broadcasting.Api.Dtos;
 
 /// <summary>
-/// Response DTO for a syndication feed source.
+/// Response DTO for a syndication feed item record, returned by the syndication feed item endpoints.
 /// </summary>
 public class SyndicationFeedItemResponse
 {

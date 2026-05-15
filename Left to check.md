@@ -21,8 +21,8 @@
 ## Database
 
 - [ ] Make sure local and prod are the same
-- [ ] Make sure the `table-create` scripts are accurate
-- [ ] Make sure the `data-seed` scripts are accurate
+- [X] Make sure the `table-create` scripts are accurate
+- [X] Make sure the `data-seed` scripts are accurate
 - [ ] Get my "secrets" for publishers and collectors from configuration/key vault into the database
   - [ ] YouTube
   - [ ] LinkedIn

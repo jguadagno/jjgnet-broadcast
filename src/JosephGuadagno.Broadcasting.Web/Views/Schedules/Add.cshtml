@@ -5,7 +5,7 @@
 @section Scripts
 {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
-    <script src="/js/schedules.edit.js"></script>    
+    <script src="/js/schedules.edit.js"></script>
 }
 <h1>Schedule a new item</h1>
 <p class="lead">
@@ -111,7 +111,7 @@
         <input asp-for="MessageSentOn" type="datetime-local" class="form-control" autocomplete="off" aria-describedby="val-MessageSentOn" />
         <span id="val-MessageSentOn" asp-validation-for="MessageSentOn" class="text-danger"></span>
     </div>
-    <div class="mb-3">
+    <div class="form-switch mb-3">
         <label asp-for="MessageSent" class="form-label">Was Sent</label>
         <input asp-for="MessageSent" type="checkbox" class="form-check-input" aria-describedby="val-MessageSent" />
         <span id="val-MessageSent" asp-validation-for="MessageSent" class="text-danger"></span>

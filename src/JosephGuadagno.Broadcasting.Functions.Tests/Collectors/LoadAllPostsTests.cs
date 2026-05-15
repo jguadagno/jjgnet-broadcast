@@ -4,10 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.SyndicationFeed;
-using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -278,18 +276,18 @@ public class LoadAllPostsTests
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _syndicationFeedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<SyndicationFeedItem> { newPost1, duplicatePost, newPost2 });
-        
+
         _SyndicationFeedItemManager.Setup(m => m.GetByFeedIdentifierAsync("new-1")).ReturnsAsync((SyndicationFeedItem?)null);
         _SyndicationFeedItemManager.Setup(m => m.GetByFeedIdentifierAsync("new-2")).ReturnsAsync((SyndicationFeedItem?)null);
         _SyndicationFeedItemManager.Setup(m => m.GetByFeedIdentifierAsync("duplicate-1")).ReturnsAsync(existingPost);
-        
+
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("https://short.example.com/xyz");
-        
+
         var savedPost1 = CreateFeedSource("new-1");
         savedPost1.Id = 1;
         var savedPost2 = CreateFeedSource("new-2");
         savedPost2.Id = 2;
-        
+
         _SyndicationFeedItemManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "new-1"))).ReturnsAsync(OperationResult<SyndicationFeedItem>.Success(savedPost1));
         _SyndicationFeedItemManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "new-2"))).ReturnsAsync(OperationResult<SyndicationFeedItem>.Success(savedPost2));
 
@@ -316,16 +314,16 @@ public class LoadAllPostsTests
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _syndicationFeedReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<SyndicationFeedItem> { post1, post2 });
-        
+
         _SyndicationFeedItemManager.Setup(m => m.GetByFeedIdentifierAsync("post-1")).ReturnsAsync((SyndicationFeedItem?)null);
         _SyndicationFeedItemManager.Setup(m => m.GetByFeedIdentifierAsync("post-2")).ReturnsAsync((SyndicationFeedItem?)null);
-        
+
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("https://short.example.com/xyz");
-        
+
         // First post fails to save
         _SyndicationFeedItemManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "post-1")))
             .ThrowsAsync(new Exception("Save failed"));
-        
+
         // Second post saves successfully
         var savedPost2 = CreateFeedSource("post-2");
         savedPost2.Id = 2;
