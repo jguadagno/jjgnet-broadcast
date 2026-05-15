@@ -1,5 +1,4 @@
 using System;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
@@ -18,8 +17,6 @@ public class UserPublisherLinkedInSettingsManager : IUserPublisherLinkedInSettin
     private readonly IUserPublisherLinkedInSettingsDataStore _userPublisherLinkedInSettingsDataStore;
     private readonly IKeyVault _keyVault;
     private readonly ILogger<UserPublisherLinkedInSettingsManager> _logger;
-
-    private static readonly Regex SecretNameSanitizer = new(@"[^a-zA-Z0-9\-]", RegexOptions.Compiled);
 
     public UserPublisherLinkedInSettingsManager(
         IUserPublisherLinkedInSettingsDataStore userPublisherLinkedInSettingsDataStore,
@@ -62,7 +59,7 @@ public class UserPublisherLinkedInSettingsManager : IUserPublisherLinkedInSettin
     public async Task<string?> GetClientSecretAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = BuildSecretName(ownerOid, "client-secret");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "linkedin", "client-secret");
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -83,7 +80,7 @@ public class UserPublisherLinkedInSettingsManager : IUserPublisherLinkedInSettin
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(clientSecret);
-        var secretName = BuildSecretName(ownerOid, "client-secret");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "linkedin", "client-secret");
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, clientSecret, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored LinkedIn client secret in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
@@ -95,7 +92,7 @@ public class UserPublisherLinkedInSettingsManager : IUserPublisherLinkedInSettin
     public async Task<string?> GetAccessTokenAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = BuildSecretName(ownerOid, "access-token");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "linkedin", "access-token");
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -116,17 +113,11 @@ public class UserPublisherLinkedInSettingsManager : IUserPublisherLinkedInSettin
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
-        var secretName = BuildSecretName(ownerOid, "access-token");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "linkedin", "access-token");
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, accessToken, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored LinkedIn access token in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
             secretName,
             LogSanitizer.Sanitize(ownerOid));
-    }
-
-    private static string BuildSecretName(string ownerOid, string settingName)
-    {
-        var sanitizedOwner = SecretNameSanitizer.Replace(ownerOid, "-");
-        return $"publisher-{sanitizedOwner}-linkedin-{settingName}";
     }
 }

@@ -1,5 +1,4 @@
 using System;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
@@ -18,8 +17,6 @@ public class UserPublisherBlueskySettingsManager : IUserPublisherBlueskySettings
     private readonly IUserPublisherBlueskySettingsDataStore _userPublisherBlueskySettingsDataStore;
     private readonly IKeyVault _keyVault;
     private readonly ILogger<UserPublisherBlueskySettingsManager> _logger;
-
-    private static readonly Regex SecretNameSanitizer = new(@"[^a-zA-Z0-9\-]", RegexOptions.Compiled);
 
     public UserPublisherBlueskySettingsManager(
         IUserPublisherBlueskySettingsDataStore userPublisherBlueskySettingsDataStore,
@@ -62,7 +59,7 @@ public class UserPublisherBlueskySettingsManager : IUserPublisherBlueskySettings
     public async Task<string?> GetAppPasswordAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = BuildSecretName(ownerOid, "app-password");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "bluesky", "app-password");
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -83,7 +80,7 @@ public class UserPublisherBlueskySettingsManager : IUserPublisherBlueskySettings
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(appPassword);
-        var secretName = BuildSecretName(ownerOid, "app-password");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "bluesky", "app-password");
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, appPassword, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored Bluesky app password in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
@@ -91,9 +88,4 @@ public class UserPublisherBlueskySettingsManager : IUserPublisherBlueskySettings
             LogSanitizer.Sanitize(ownerOid));
     }
 
-    private static string BuildSecretName(string ownerOid, string settingName)
-    {
-        var sanitizedOwner = SecretNameSanitizer.Replace(ownerOid, "-");
-        return $"publisher-{sanitizedOwner}-bluesky-{settingName}";
-    }
 }

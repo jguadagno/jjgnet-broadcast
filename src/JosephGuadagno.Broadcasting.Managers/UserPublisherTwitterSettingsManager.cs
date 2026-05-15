@@ -1,5 +1,4 @@
 using System;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
@@ -18,8 +17,6 @@ public class UserPublisherTwitterSettingsManager : IUserPublisherTwitterSettings
     private readonly IUserPublisherTwitterSettingsDataStore _userPublisherTwitterSettingsDataStore;
     private readonly IKeyVault _keyVault;
     private readonly ILogger<UserPublisherTwitterSettingsManager> _logger;
-
-    private static readonly Regex SecretNameSanitizer = new(@"[^a-zA-Z0-9\-]", RegexOptions.Compiled);
 
     public UserPublisherTwitterSettingsManager(
         IUserPublisherTwitterSettingsDataStore userPublisherTwitterSettingsDataStore,
@@ -62,7 +59,7 @@ public class UserPublisherTwitterSettingsManager : IUserPublisherTwitterSettings
     public async Task<string?> GetConsumerKeyAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = BuildSecretName(ownerOid, "consumer-key");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "twitter", "consumer-key");
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -83,7 +80,7 @@ public class UserPublisherTwitterSettingsManager : IUserPublisherTwitterSettings
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(consumerKey);
-        var secretName = BuildSecretName(ownerOid, "consumer-key");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "twitter", "consumer-key");
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, consumerKey, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored Twitter consumer key in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
@@ -95,7 +92,7 @@ public class UserPublisherTwitterSettingsManager : IUserPublisherTwitterSettings
     public async Task<string?> GetConsumerSecretAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = BuildSecretName(ownerOid, "consumer-secret");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "twitter", "consumer-secret");
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -116,7 +113,7 @@ public class UserPublisherTwitterSettingsManager : IUserPublisherTwitterSettings
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(consumerSecret);
-        var secretName = BuildSecretName(ownerOid, "consumer-secret");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "twitter", "consumer-secret");
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, consumerSecret, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored Twitter consumer secret in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
@@ -128,7 +125,7 @@ public class UserPublisherTwitterSettingsManager : IUserPublisherTwitterSettings
     public async Task<string?> GetAccessTokenAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = BuildSecretName(ownerOid, "access-token");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "twitter", "access-token");
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -149,7 +146,7 @@ public class UserPublisherTwitterSettingsManager : IUserPublisherTwitterSettings
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
-        var secretName = BuildSecretName(ownerOid, "access-token");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "twitter", "access-token");
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, accessToken, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored Twitter access token in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
@@ -161,7 +158,7 @@ public class UserPublisherTwitterSettingsManager : IUserPublisherTwitterSettings
     public async Task<string?> GetAccessTokenSecretAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = BuildSecretName(ownerOid, "access-token-secret");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "twitter", "access-token-secret");
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -182,17 +179,11 @@ public class UserPublisherTwitterSettingsManager : IUserPublisherTwitterSettings
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(accessTokenSecret);
-        var secretName = BuildSecretName(ownerOid, "access-token-secret");
+        var secretName = KeyVaultSecretNameBuilder.Build("publisher", ownerOid, "twitter", "access-token-secret");
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, accessTokenSecret, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored Twitter access token secret in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
             secretName,
             LogSanitizer.Sanitize(ownerOid));
-    }
-
-    private static string BuildSecretName(string ownerOid, string settingName)
-    {
-        var sanitizedOwner = SecretNameSanitizer.Replace(ownerOid, "-");
-        return $"publisher-{sanitizedOwner}-twitter-{settingName}";
     }
 }

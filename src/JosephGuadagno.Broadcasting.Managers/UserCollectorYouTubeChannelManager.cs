@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
@@ -19,8 +18,6 @@ public class UserCollectorYouTubeChannelManager : IUserCollectorYouTubeChannelMa
     private readonly IUserCollectorYouTubeChannelDataStore _dataStore;
     private readonly IKeyVault _keyVault;
     private readonly ILogger<UserCollectorYouTubeChannelManager> _logger;
-
-    private static readonly Regex SecretNameSanitizer = new(@"[^a-zA-Z0-9\-]", RegexOptions.Compiled);
 
     public UserCollectorYouTubeChannelManager(
         IUserCollectorYouTubeChannelDataStore dataStore,
@@ -101,7 +98,7 @@ public class UserCollectorYouTubeChannelManager : IUserCollectorYouTubeChannelMa
         ArgumentException.ThrowIfNullOrWhiteSpace(youTubeChannelId);
         ArgumentException.ThrowIfNullOrWhiteSpace(rawApiKey);
 
-        var secretName = BuildSecretName(ownerOid, youTubeChannelId);
+        var secretName = KeyVaultSecretNameBuilder.Build("collector", ownerOid, "youtube-channel", "api-key", youTubeChannelId);
 
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, rawApiKey, DateTime.UtcNow.AddYears(10));
 
@@ -125,7 +122,7 @@ public class UserCollectorYouTubeChannelManager : IUserCollectorYouTubeChannelMa
         {
             return null;
         }
-        var secretName = BuildSecretName(ownerOid, config.ChannelId);
+        var secretName = KeyVaultSecretNameBuilder.Build("collector", ownerOid, "youtube-channel", "api-key", config.ChannelId);
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -147,7 +144,7 @@ public class UserCollectorYouTubeChannelManager : IUserCollectorYouTubeChannelMa
         if (config is null) return;
         try
         {
-            var secretName = BuildSecretName(config.CreatedByEntraOid, config.ChannelId);
+            var secretName = KeyVaultSecretNameBuilder.Build("collector", config.CreatedByEntraOid, "youtube-channel", "api-key", config.ChannelId);
             var secret = await _keyVault.GetSecretAsync(secretName);
             config.HasApiKey = !string.IsNullOrWhiteSpace(secret?.Value);
         }
@@ -155,11 +152,5 @@ public class UserCollectorYouTubeChannelManager : IUserCollectorYouTubeChannelMa
         {
             config.HasApiKey = false;
         }
-    }
-
-    private static string BuildSecretName(string ownerOid, string youTubeChannelId)
-    {
-        var sanitizedOwner = SecretNameSanitizer.Replace(ownerOid, "-");
-        return $"collector-{sanitizedOwner}-youtube-channel-{youTubeChannelId}-api-key";
     }
 }
