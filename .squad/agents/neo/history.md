@@ -1,3 +1,58 @@
+## Learnings
+
+### 2026-05-15 — Collector Alignment Audit: Gap Analysis Complete
+
+**Status:** ✅ COMPLETE — Decision written to `.squad/decisions/inbox/neo-collectors-alignment-scope.md`. GitHub issues created (see below).
+
+**4 collector types found:** YouTube Channel, Feed Source, Speaking Engagement, Scheduled Item.
+
+**Key findings:**
+- **No cleartext secrets anywhere.** YouTube API keys go to KV correctly. Feed/SpeakingEngagement/ScheduledItem have no credentials at all.
+- **No collector uses the `/Collectors/{name}/Settings` route pattern.** All use `UserCollector*` or `Collector*` controller-name-derived routes.
+- **ScheduledItem is missing its entire API controller and Web layer** (controller, service interface, service impl). DTOs and manager exist.
+- **YouTube `BuildSecretName` actual format:** `youtube-channel-apikey-{sanitizedOwner}-{sanitizedChannelId}` — does NOT use the `collector-` prefix. This is a naming compliance gap but not a security issue.
+- **`HasApiKey` in YouTube is a transient domain model property** (populated at runtime from KV), not a SQL column. The publisher design stores `Has*` in SQL. For YouTube, runtime computation is acceptable since the key name includes the channelId discriminator.
+- **`CollectorSettingsController`** at `/CollectorSettings` is the closest existing analogue to the `/Collectors` parent route. It's a read-only dashboard aggregating all 3 (currently) collector types.
+- **ScheduledItem is one-row-per-user** (UNIQUE constraint on `CreatedByEntraOid`) — matches the publisher single-settings pattern exactly.
+- **FeedSource and SpeakingEngagement allow multiple rows per user** — route alignment changes semantics: `POST /Collectors/FeedSource/Settings` creates, `GET /Collectors/FeedSource/Settings/{id}` gets by id.
+- The existing `UserCollector*` controllers should be kept as shims through the migration cutover.
+
+**Issues created:**
+- **#960** — feat: align collector API routes to /Collectors/{name}/Settings and complete ScheduledItem layer
+- **#961** — fix: align YouTube collector KV secret naming to collector- prefix convention
+
+---
+
+### 2026-05-15 — Publisher Settings Refactor: Finalized Design + Issues Created
+
+**Status:** ✅ COMPLETE — Architecture decision written to `.squad/decisions/inbox/neo-publisher-refactor-final.md`. GitHub Issues #958 (Phase 1) and #959 (Phase 2) created.
+
+**Finalized design decisions:**
+- **Scope:** 4 publishers (Bluesky, Twitter/X, LinkedIn, Facebook). `EventPublisherSettings` out of scope.
+- **No production data** in `UserPublisherSettings` — drop without migration.
+- **Table design:** Per-publisher tables. Plain text fields stored directly. Secrets indicated by `Has*` BIT columns only — secret values go to Key Vault.
+- **KV naming:** `publisher-{ownerOid}-{publisher}-{setting-name}` — runtime derived, no stored `*SecretName` columns. Follows `UserCollectorYouTubeChannelManager.BuildSecretName` pattern exactly.
+- **API routes:** `/Publishers/{name}/Settings` per publisher. `/Publishers` lists all. Old `UserPublisherSettingsController` kept as shim until Phase 2 cutover.
+- **Execution:** Two phases — Phase 1 = SQL + EF + domain + data stores; Phase 2 = managers + API + Web + test cleanup + table drop.
+
+**Issues created:**
+- #958 — Phase 1: per-publisher SQL tables, EF models, and data stores
+- #959 — Phase 2: managers, API routes, Web services, and test updates (depends on #958)
+
+---
+
+
+### Publisher Settings Design (2026-05-15)
+
+- `UserPublisherSettings` uses a single table with a `Settings NVARCHAR(MAX)` flat key/value JSON blob. All four publisher types (Bluesky, Twitter, LinkedIn, Facebook) share this table discriminated by `SocialMediaPlatformId`.
+- **Critical gap:** Secrets (app passwords, OAuth tokens) are stored as cleartext in the JSON column. The Key Vault path exists in `GetCredentialsAsync` (reads a `SecretName` key) but is never written by `BuildSettings()`/`SaveAsync()`. The KV integration is read-only dead code.
+- There are two parallel domain model families: `BlueskyPublisherSetting` (masked, display-only — `UserName` + `HasAppPassword` bool) and `BlueskyPublisherSettings` (full values for internal use). This dual naming is confusing and should be resolved in the refactor.
+- `EventPublisherSettings` is unrelated — it is infrastructure (Event Grid topic endpoints), not user-scoped social credentials.
+- The previous Neo analysis (analysis-731-settings-design.md, April 2026) defended the JSON blob approach on grounds of extensibility and partial-update safety. Both benefits are real but do not outweigh the cleartext secret gap when the collector pattern provides equivalent extensibility with proper KV integration.
+- Recommended API strategy: keep the unified `/UserPublisherSettings/{platformId}` surface unchanged; change only the backing storage. Clients don't break.
+
+---
+
 ## Summary
 
 Neo (Reviewer/Architect) serves as the technical authority for API design, architectural decisions, and cross-agent coordination. Key responsibilities include API endpoint standardization, versioning strategy, DTO patterns, and RBAC implementation. Neo has established patterns for response shapes, error handling, and security policies across the API layer. Major contributions include designing the API versioning and DTO strategy, implementing role-based authorization architecture, enforcing ownership isolation principles, and providing architectural guidance to Backend (Trinity), Frontend (Switch), Testing (Tank), and Polish (Sparks) agents. Neo coordinates design reviews, resolves architectural conflicts, and ensures consistency across layers. Key decision artifacts: API versioning specification, DTO/response mapping patterns, RBAC authorization design, and ownership enforcement principles. Neo's work directly influences how Trinity implements backends, how Tank writes tests, how Switch builds Web-layer services, and how Sparks integrates UI features. Pattern: Neo proposes, coordinates feedback, documents decisions in `.squad/decisions/`, and provides code examples for other agents to follow. Notable: Neo has maintained architectural consistency despite rapid feature development and maintained security boundaries across all layers.

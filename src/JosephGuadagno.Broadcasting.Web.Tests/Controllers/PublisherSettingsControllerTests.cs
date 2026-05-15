@@ -122,7 +122,7 @@ public class PublisherSettingsControllerTests
     }
 
     [Fact]
-    public async Task SaveBluesky_WhenModelIsInvalid_ShouldRebuildIndexView()
+    public async Task SaveBluesky_WhenModelIsInvalid_ShouldReturnEditView()
     {
         // Arrange
         SetUser("current-user-oid", RoleNames.Contributor);
@@ -165,7 +165,7 @@ public class PublisherSettingsControllerTests
 
         // Assert
         var viewResult = result.Should().BeOfType<ViewResult>().Subject;
-        viewResult.ViewName.Should().Be("Index");
+        viewResult.ViewName.Should().Be("Edit");
         _publisherSettingService.Verify(service => service.SaveCurrentUserAsync(It.IsAny<UserPublisherSetting>()), Times.Never);
     }
 
@@ -214,7 +214,9 @@ public class PublisherSettingsControllerTests
 
         // Assert
         var redirect = result.Should().BeOfType<RedirectToActionResult>().Subject;
-        redirect.ActionName.Should().Be(nameof(PublisherSettingsController.Index));
+        redirect.ActionName.Should().Be(nameof(PublisherSettingsController.Edit));
+        redirect.RouteValues.Should().ContainKey("id");
+        redirect.RouteValues!["id"].Should().Be(3);
         redirect.RouteValues.Should().ContainKey("userOid");
         redirect.RouteValues!["userOid"].Should().Be("target-user-oid");
         _publisherSettingService.Verify(service => service.SaveByUserAsync("target-user-oid", It.Is<UserPublisherSetting>(request =>
