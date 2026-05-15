@@ -63,7 +63,14 @@ Fixed Neo's blocking `cs/log-forging` review finding: 3 `LogWarning` call sites 
 
 ## Learnings
 
-### KeyVaultSecretNameBuilder Enum Refactor (2026-05-15)
+### Collector API Route Alignment — Issue #960 Phase 1 (2026-05-15)
+
+1. When marking old controllers `[Obsolete]`, test files that instantiate them directly will generate CS0618 build warnings. Suppress with `#pragma warning disable CS0618` at file top with a comment explaining the intent (testing backward compat during migration).
+2. `IUserCollectorScheduledItemManager.GetByUserAsync` returns `Task<List<T>>` (not `Task<T?>`). For single-row-per-user patterns, call `GetByUserAsync` and take `.FirstOrDefault()` — do NOT assume a `GetSingleByUserAsync` method exists.
+3. Upsert pattern for single-row controllers: call `GetByUserAsync`, if found set `config.Id = existing.Id` before calling `SaveAsync`; if not found pass `Id = 0` and `SaveAsync` creates it.
+4. New `Collectors/` subfolder in `Controllers/` mirrors the existing `Publishers/` subfolder pattern. Use explicit `[Route("Collectors/YouTube/Settings")]` — not `[Route("[controller]")]` — to keep the human-readable segment independent of the class name.
+
+
 
 1. `KeyVaultSecretOwnerType` enum uses `.ToString().ToLowerInvariant()` to produce "publisher"/"collector" — no switch, no lookup table needed.
 2. `const string` fields from a static class ARE compile-time constants and can be used directly in xUnit `[InlineData]` attribute arguments.
