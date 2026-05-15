@@ -58,6 +58,27 @@ Fixed CS1573 (`Parameter has no matching param tag`) and CS0419 (ambiguous cref)
 
 ---
 
+### 2026-05-15 — Issue #958 Phase 1: Per-Publisher SQL Tables, EF Models, Data Stores
+
+**Status:** ✅ COMPLETE — PR #962 on `issue-958-publisher-settings-phase1`; 28 new tests, all passing (build clean)
+
+**What was delivered:**
+- SQL migration: `scripts/database/migrations/2026-05-15-publisher-settings-per-publisher-tables.sql` — 4 new idempotent tables (Bluesky, Twitter, LinkedIn, Facebook), each with `UNIQUE (CreatedByEntraOid)` and `IsEnabled BIT DEFAULT 0`
+- EF models: 4 classes in `Data.Sql/Models/`
+- Domain models: 4 classes in `Domain/Models/`
+- Interfaces: 4 `IUserPublisher*SettingsDataStore` — `GetByUserAsync` returns `Task<T?>` (nullable single, not list)
+- Data stores: `SaveAsync` uses upsert pattern; all user-controlled log strings go through `LogSanitizer.Sanitize()`
+- AutoMapper profile: `UserPublisherSettingsMappingProfile` — 4 `ReverseMap()` pairs (no ignored fields needed)
+- DI registration: `AddSqlDataStores()`, `AddDataSqlMappingProfiles()`, `Api/Program.cs`, `Functions/Program.cs`
+- Tests: 28 xUnit tests (7 per platform) using in-memory EF
+
+**Learnings:**
+- One-to-one (one row per user) data stores return `Task<T?>` from `GetByUserAsync`, not `Task<List<T>>`. Pattern diverges from `UserCollectorYouTubeChannel` which is many-per-user.
+- `UserPublisherSettingsMappingProfile` needs NO ignored fields because unlike collector channels there are no transient properties (e.g., no `ApiKey`/`HasApiKey` duality). `ReverseMap()` alone is sufficient.
+- When a context compaction truncates a session mid-task, the "next steps" list in the summary is the authoritative checklist — re-read it and continue from the first incomplete item.
+
+---
+
 
 
 **Status:** ✅ COMPLETE — PR #940 on `issue-936-messagetemplates-caching`; 253 tests passing
@@ -179,6 +200,14 @@ Fixed CS1573 (`Parameter has no matching param tag`) and CS0419 (ambiguous cref)
 1. When removing inline POST actions from a settings controller (in favour of dedicated CRUD controllers), audit the `using` directives immediately — domain model types (`UserCollectorFeedSource`, `UserCollectorYouTubeChannel`) and utilities (`LogSanitizer`) referenced only by the removed methods become dead imports and should be removed to keep the file clean.
 2. `BuildPageViewModelAsync` is the single source of truth for populating the page view model; adding a new collector type only requires: fetch via service (admin/non-admin branch), inline projection to ViewModel, assign to the new collection property.
 3. The inline projection pattern (`.Select(x => new ViewModel { ... }).ToList()`) is the established pattern in this controller — do not introduce AutoMapper for new collections added to `BuildPageViewModelAsync` unless the rest of the method already uses it.
+
+### 2026-05-15 — Security Sweep: [IgnoreAntiforgeryToken] on API Controllers
+
+1. Before applying a mechanical security fix, always grep the actual files — the GitHub security bot flagged three controllers (`SyndicationFeedItemsController`, `UserCollectorSpeakingEngagementsController`, `YouTubeItemsController`) as missing `[IgnoreAntiforgeryToken]`, but all 10 API controllers already had the attribute at the class level. Zero code changes were required.
+2. A full grep of `IgnoreAntiforgeryToken` across the entire controllers directory is the fastest verification: one command shows every controller with and without the attribute, surfacing true gaps in seconds.
+3. Two controllers (`UserCollectorYouTubeChannelsController`, `UserCollectorFeedSourcesController`) have a redundant method-level `[IgnoreAntiforgeryToken]` at line 120 in addition to the class-level one. Redundant — harmless — but worth noting if those files are touched in a future PR.
+
+---
 
 ### 2026-05-15 — XML Documentation: API DTOs and Models
 

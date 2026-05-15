@@ -52,6 +52,10 @@ public partial class BroadcastingContext : DbContext
     public DbSet<Models.UserCollectorYouTubeChannel> UserCollectorYouTubeChannels => Set<Models.UserCollectorYouTubeChannel>();
     public DbSet<Models.UserCollectorSpeakingEngagement> UserCollectorSpeakingEngagements => Set<Models.UserCollectorSpeakingEngagement>();
     public DbSet<Models.UserCollectorScheduledItem> UserCollectorScheduledItems => Set<Models.UserCollectorScheduledItem>();
+    public DbSet<Models.UserPublisherBlueskySettings> UserPublisherBlueskySettings => Set<Models.UserPublisherBlueskySettings>();
+    public DbSet<Models.UserPublisherTwitterSettings> UserPublisherTwitterSettings => Set<Models.UserPublisherTwitterSettings>();
+    public DbSet<Models.UserPublisherLinkedInSettings> UserPublisherLinkedInSettings => Set<Models.UserPublisherLinkedInSettings>();
+    public DbSet<Models.UserPublisherFacebookSettings> UserPublisherFacebookSettings => Set<Models.UserPublisherFacebookSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -754,6 +758,133 @@ public partial class BroadcastingContext : DbContext
                 .WithMany(smp => smp.EngagementSocialMediaPlatforms)
                 .HasForeignKey(e => e.SocialMediaPlatformId)
                 .HasConstraintName("FK_EngagementSocialMediaPlatforms_SocialMediaPlatforms");
+        });
+
+        modelBuilder.Entity<Models.UserPublisherBlueskySettings>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_UserPublisherBlueskySettings")
+                .IsClustered();
+
+            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserPublisherBlueskySettings_Owner")
+                .IsUnique();
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.IsEnabled)
+                .IsRequired()
+                .HasDefaultValueSql("0");
+
+            entity.Property(e => e.UserName)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.CreatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+        });
+
+        modelBuilder.Entity<Models.UserPublisherTwitterSettings>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_UserPublisherTwitterSettings")
+                .IsClustered();
+
+            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserPublisherTwitterSettings_Owner")
+                .IsUnique();
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.IsEnabled)
+                .IsRequired()
+                .HasDefaultValueSql("0");
+
+            entity.Property(e => e.CreatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+        });
+
+        modelBuilder.Entity<Models.UserPublisherLinkedInSettings>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_UserPublisherLinkedInSettings")
+                .IsClustered();
+
+            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserPublisherLinkedInSettings_Owner")
+                .IsUnique();
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.IsEnabled)
+                .IsRequired()
+                .HasDefaultValueSql("0");
+
+            entity.Property(e => e.AuthorId)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.ClientId)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.CreatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+        });
+
+        modelBuilder.Entity<Models.UserPublisherFacebookSettings>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_UserPublisherFacebookSettings")
+                .IsClustered();
+
+            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserPublisherFacebookSettings_Owner")
+                .IsUnique();
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.IsEnabled)
+                .IsRequired()
+                .HasDefaultValueSql("0");
+
+            entity.Property(e => e.PageId)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.AppId)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.CreatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
         });
 
         OnModelCreatingPartial(modelBuilder);
