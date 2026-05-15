@@ -231,8 +231,14 @@ void ConfigureRepositories(IServiceCollection services)
     // SocialMediaPlatform
     services.TryAddScoped<ISocialMediaPlatformDataStore, SocialMediaPlatformDataStore>();
     services.TryAddScoped<ISocialMediaPlatformManager, SocialMediaPlatformManager>();
-    services.TryAddScoped<IUserPublisherSettingDataStore, UserPublisherSettingDataStore>();
-    services.TryAddScoped<IUserPublisherSettingManager, UserPublisherSettingManager>();
+    services.TryAddScoped<IUserPublisherBlueskySettingsDataStore, UserPublisherBlueskySettingsDataStore>();
+    services.TryAddScoped<IUserPublisherTwitterSettingsDataStore, UserPublisherTwitterSettingsDataStore>();
+    services.TryAddScoped<IUserPublisherLinkedInSettingsDataStore, UserPublisherLinkedInSettingsDataStore>();
+    services.TryAddScoped<IUserPublisherFacebookSettingsDataStore, UserPublisherFacebookSettingsDataStore>();
+    services.TryAddScoped<IUserPublisherBlueskySettingsManager, UserPublisherBlueskySettingsManager>();
+    services.TryAddScoped<IUserPublisherTwitterSettingsManager, UserPublisherTwitterSettingsManager>();
+    services.TryAddScoped<IUserPublisherLinkedInSettingsManager, UserPublisherLinkedInSettingsManager>();
+    services.TryAddScoped<IUserPublisherFacebookSettingsManager, UserPublisherFacebookSettingsManager>();
     services.TryAddScoped<IUserCollectorFeedSourceDataStore, UserCollectorFeedSourceDataStore>();
     services.TryAddScoped<IUserCollectorFeedSourceManager, UserCollectorFeedSourceManager>();
     services.TryAddScoped<IUserCollectorYouTubeChannelDataStore, UserCollectorYouTubeChannelDataStore>();
@@ -241,10 +247,6 @@ void ConfigureRepositories(IServiceCollection services)
     services.TryAddScoped<IUserCollectorSpeakingEngagementManager, UserCollectorSpeakingEngagementManager>();
     services.TryAddScoped<IUserCollectorScheduledItemDataStore, UserCollectorScheduledItemDataStore>();
     services.TryAddScoped<IUserCollectorScheduledItemManager, UserCollectorScheduledItemManager>();
-    services.TryAddScoped<IUserPublisherBlueskySettingsDataStore, UserPublisherBlueskySettingsDataStore>();
-    services.TryAddScoped<IUserPublisherTwitterSettingsDataStore, UserPublisherTwitterSettingsDataStore>();
-    services.TryAddScoped<IUserPublisherLinkedInSettingsDataStore, UserPublisherLinkedInSettingsDataStore>();
-    services.TryAddScoped<IUserPublisherFacebookSettingsDataStore, UserPublisherFacebookSettingsDataStore>();
     
     services.TryAddScoped<IEngagementSocialMediaPlatformDataStore, EngagementSocialMediaPlatformDataStore>();
 

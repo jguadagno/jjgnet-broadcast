@@ -210,8 +210,6 @@ void ConfigureFunction(IServiceCollection services)
 
     services.TryAddScoped<ISocialMediaPlatformDataStore, SocialMediaPlatformDataStore>();
     services.TryAddScoped<ISocialMediaPlatformManager, SocialMediaPlatformManager>();
-    services.TryAddScoped<IUserPublisherSettingDataStore, UserPublisherSettingDataStore>();
-    services.TryAddScoped<IUserPublisherSettingManager, UserPublisherSettingManager>();
     services.TryAddScoped<IUserOAuthTokenDataStore, UserOAuthTokenDataStore>();
     services.TryAddScoped<IUserOAuthTokenManager, UserOAuthTokenManager>();
     services.TryAddScoped<IUserCollectorFeedSourceDataStore, UserCollectorFeedSourceDataStore>();
@@ -226,6 +224,10 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IUserPublisherTwitterSettingsDataStore, UserPublisherTwitterSettingsDataStore>();
     services.TryAddScoped<IUserPublisherLinkedInSettingsDataStore, UserPublisherLinkedInSettingsDataStore>();
     services.TryAddScoped<IUserPublisherFacebookSettingsDataStore, UserPublisherFacebookSettingsDataStore>();
+    services.TryAddScoped<IUserPublisherBlueskySettingsManager, UserPublisherBlueskySettingsManager>();
+    services.TryAddScoped<IUserPublisherTwitterSettingsManager, UserPublisherTwitterSettingsManager>();
+    services.TryAddScoped<IUserPublisherLinkedInSettingsManager, UserPublisherLinkedInSettingsManager>();
+    services.TryAddScoped<IUserPublisherFacebookSettingsManager, UserPublisherFacebookSettingsManager>();
 
     // RBAC Phase 1
     services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();

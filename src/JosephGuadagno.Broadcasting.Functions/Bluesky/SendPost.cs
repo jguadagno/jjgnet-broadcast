@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
-public class SendPost(IBlueskyManager blueskyManager, IUserPublisherSettingManager userPublisherSettingManager, ILogger<SendPost> logger)
+public class SendPost(IBlueskyManager blueskyManager, IUserPublisherBlueskySettingsManager blueskySettingsManager, ILogger<SendPost> logger)
 {
     [Function(ConfigurationFunctionNames.BlueskyPostMessage)]
     public async Task Run(
@@ -26,14 +26,20 @@ public class SendPost(IBlueskyManager blueskyManager, IUserPublisherSettingManag
             return;
         }
 
-        var credentials = await userPublisherSettingManager.GetCredentialsAsync(
-            blueskyPostMessage.CreatedByEntraOid,
-            SocialMediaPlatformIds.Bluesky);
-
-        if (!credentials.ContainsKey("Identifier") || !credentials.ContainsKey("AppPassword"))
+        var ownerOid = blueskyPostMessage.CreatedByEntraOid;
+        var settings = await blueskySettingsManager.GetAsync(ownerOid);
+        if (settings is null || !settings.IsEnabled || string.IsNullOrEmpty(settings.UserName))
         {
-            logger.LogWarning("Bluesky credentials not found for owner '{OwnerOid}'. Skipping.",
-                LogSanitizer.Sanitize(blueskyPostMessage.CreatedByEntraOid));
+            logger.LogWarning("Bluesky settings not found or not enabled for owner '{OwnerOid}'. Skipping.",
+                LogSanitizer.Sanitize(ownerOid));
+            return;
+        }
+
+        var appPassword = await blueskySettingsManager.GetAppPasswordAsync(ownerOid);
+        if (string.IsNullOrEmpty(appPassword))
+        {
+            logger.LogWarning("Bluesky app password not found for owner '{OwnerOid}'. Skipping.",
+                LogSanitizer.Sanitize(ownerOid));
             return;
         }
 
@@ -77,11 +83,8 @@ public class SendPost(IBlueskyManager blueskyManager, IUserPublisherSettingManag
                 }
             }
 
-            var identifier = credentials.GetValueOrDefault("Identifier")!;
-            var appPassword = credentials.GetValueOrDefault("AppPassword")!;
-
             var agent = new BlueskyAgent();
-            var loginResult = await agent.Login(identifier, appPassword);
+            var loginResult = await agent.Login(settings.UserName, appPassword);
             if (!loginResult.Succeeded)
             {
                 logger.LogError("Failed to log in to Bluesky for owner '{OwnerOid}'. StatusCode: {StatusCode}",

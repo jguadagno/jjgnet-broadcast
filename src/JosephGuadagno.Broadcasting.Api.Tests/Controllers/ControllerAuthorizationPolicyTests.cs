@@ -1,6 +1,7 @@
 using System.Reflection;
 using FluentAssertions;
 using JosephGuadagno.Broadcasting.Api.Controllers;
+using JosephGuadagno.Broadcasting.Api.Controllers.Publishers;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 
@@ -13,7 +14,11 @@ public class ControllerAuthorizationPolicyTests
         { typeof(EngagementsController), nameof(EngagementsController) },
         { typeof(SchedulesController), nameof(SchedulesController) },
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController) },
-        { typeof(UserPublisherSettingsController), nameof(UserPublisherSettingsController) },
+        { typeof(PublishersController), nameof(PublishersController) },
+        { typeof(BlueskySettingsController), nameof(BlueskySettingsController) },
+        { typeof(TwitterSettingsController), nameof(TwitterSettingsController) },
+        { typeof(LinkedInSettingsController), nameof(LinkedInSettingsController) },
+        { typeof(FacebookSettingsController), nameof(FacebookSettingsController) },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController) },
         { typeof(YouTubeItemsController), nameof(YouTubeItemsController) }
     };
@@ -48,10 +53,19 @@ public class ControllerAuthorizationPolicyTests
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController.CreateAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController.DeleteAsync), AuthorizationPolicyNames.RequireAdministrator },
-        { typeof(UserPublisherSettingsController), nameof(UserPublisherSettingsController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
-        { typeof(UserPublisherSettingsController), nameof(UserPublisherSettingsController.GetAsync), AuthorizationPolicyNames.RequireViewer },
-        { typeof(UserPublisherSettingsController), nameof(UserPublisherSettingsController.SaveAsync), AuthorizationPolicyNames.RequireContributor },
-        { typeof(UserPublisherSettingsController), nameof(UserPublisherSettingsController.DeleteAsync), AuthorizationPolicyNames.RequireAdministrator },
+        { typeof(PublishersController), nameof(PublishersController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(BlueskySettingsController), nameof(BlueskySettingsController.GetAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(BlueskySettingsController), nameof(BlueskySettingsController.SaveAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(BlueskySettingsController), nameof(BlueskySettingsController.DeleteAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(TwitterSettingsController), nameof(TwitterSettingsController.GetAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(TwitterSettingsController), nameof(TwitterSettingsController.SaveAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(TwitterSettingsController), nameof(TwitterSettingsController.DeleteAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(LinkedInSettingsController), nameof(LinkedInSettingsController.GetAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(LinkedInSettingsController), nameof(LinkedInSettingsController.SaveAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(LinkedInSettingsController), nameof(LinkedInSettingsController.DeleteAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(FacebookSettingsController), nameof(FacebookSettingsController.GetAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(FacebookSettingsController), nameof(FacebookSettingsController.SaveAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(FacebookSettingsController), nameof(FacebookSettingsController.DeleteAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.GetAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },

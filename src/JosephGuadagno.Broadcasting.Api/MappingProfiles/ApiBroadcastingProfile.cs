@@ -16,11 +16,10 @@ public class ApiBroadcastingProfile : Profile
         CreateMap<MessageTemplate, MessageTemplateResponse>();
         CreateMap<SocialMediaPlatform, SocialMediaPlatformResponse>();
         CreateMap<EngagementSocialMediaPlatform, EngagementSocialMediaPlatformResponse>();
-        CreateMap<UserPublisherSetting, UserPublisherSettingResponse>();
-        CreateMap<BlueskyPublisherSetting, BlueskyPublisherSettingResponse>();
-        CreateMap<TwitterPublisherSetting, TwitterPublisherSettingResponse>();
-        CreateMap<FacebookPublisherSetting, FacebookPublisherSettingResponse>();
-        CreateMap<LinkedInPublisherSetting, LinkedInPublisherSettingResponse>();
+        CreateMap<UserPublisherBlueskySettings, BlueskySettingsResponse>();
+        CreateMap<UserPublisherTwitterSettings, TwitterSettingsResponse>();
+        CreateMap<UserPublisherLinkedInSettings, LinkedInSettingsResponse>();
+        CreateMap<UserPublisherFacebookSettings, FacebookSettingsResponse>();
 
         // Request DTOs → Domain
         CreateMap<YouTubeItemRequest, YouTubeItem>()
@@ -58,15 +57,6 @@ public class ApiBroadcastingProfile : Profile
             .ForMember(d => d.EngagementId, o => o.Ignore())
             .ForMember(d => d.Engagement, o => o.Ignore())
             .ForMember(d => d.SocialMediaPlatform, o => o.Ignore());
-
-        CreateMap<UserPublisherSettingRequest, UserPublisherSettingUpdate>()
-            .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
-            .ForMember(d => d.SocialMediaPlatformId, o => o.Ignore());
-
-        CreateMap<BlueskyPublisherSettingRequest, BlueskyPublisherSettingUpdate>();
-        CreateMap<TwitterPublisherSettingRequest, TwitterPublisherSettingUpdate>();
-        CreateMap<FacebookPublisherSettingRequest, FacebookPublisherSettingUpdate>();
-        CreateMap<LinkedInPublisherSettingRequest, LinkedInPublisherSettingUpdate>();
 
         // Syndication Feed Source
         CreateMap<SyndicationFeedItem, SyndicationFeedItemResponse>();
