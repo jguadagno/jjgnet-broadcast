@@ -1,3 +1,39 @@
+## 2026-05-15 — PR #963 Formal Review: Publisher Settings Phase 2
+
+**Status:** ✅ COMPLETE — BLOCKED ❌. Comment posted at https://github.com/jguadagno/jjgnet-broadcast/pull/963#issuecomment-4464281385. Decision written to `.squad/decisions/inbox/neo-pr963-review.md`.
+
+**Verdict:** BLOCKED ❌ — 1 blocking finding (3 instances of log injection).
+
+**What was verified:**
+- All 5 API controllers: `[IgnoreAntiforgeryToken]`, `[Authorize]`, per-action policies, `User.ResolveOwnerOid()`, `LogSanitizer` on all log args ✅
+- All 4 typed manager implementations: `BuildSecretName` with `SecretNameSanitizer`, `Has*` booleans only, constructor injection ✅
+- All 4 manager test classes: `[Theory]` `BuildSecretName` coverage; Bluesky has special-char test ✅
+- Functions migration (`SendPost`, `SendTweet`, `PostPageStatus`): shim replaced with typed managers ✅
+- DI registrations: API, Functions, `ServiceCollectionExtensions` all correct; shims removed ✅
+- `ApiBroadcastingProfile.cs`: all 4 publisher mappings present ✅
+- SQL migration: idempotent `IF OBJECT_ID` guard ✅
+- `ControllerAuthorizationPolicyTests`: all 5 new controllers registered ✅
+- Data store tests: `GetByIdAsync_ReturnsNullForMissingId` added to Twitter/LinkedIn/Facebook ✅
+- Build: 0 errors, 0 warnings ✅
+
+**Blocking finding:**
+`UserPublisherSettingService.cs` — 3 log call sites pass user-controlled strings without `LogSanitizer.Sanitize()`:
+1. Line 93: `setting.CreatedByEntraOid` in `SaveAsync` early-return warning
+2. Lines 156-157: `platform` and `setting.CreatedByEntraOid` in unrecognized platform warning
+3. Lines 164-167: both args in `LogSaveFailure` helper
+
+Fix: wrap all three sites with `LogSanitizer.Sanitize()` — the `using` directive is already present (line 8).
+
+**Non-blocking observations:**
+- Twitter/LinkedIn/Facebook `BuildSecretName` `[Theory]` tests use `"owner-1"` only (no special-char case) — coverage gap, not blocking
+- `SendTweet.cs` line 46: `tweetMessage.ImageUrl` pre-existing unsanitized log arg — predates this PR, track separately
+
+**Learnings:**
+- Web service rewrites (341 additions) can introduce log injection even when the API layer is clean. Always scan every `Log*` call in substantially-rewritten files against the `LogSanitizer.Sanitize()` requirement.
+- The `using JosephGuadagno.Broadcasting.Domain.Utilities;` directive may already be present from other `LogSanitizer` calls in the same file — check before flagging a missing import.
+
+---
+
 ## Learnings
 
 ### 2026-05-15 — PR #962 Formal Review: Publisher Settings Phase 1
