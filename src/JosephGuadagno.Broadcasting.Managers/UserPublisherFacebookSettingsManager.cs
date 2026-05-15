@@ -1,5 +1,4 @@
 using System;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
@@ -18,8 +17,6 @@ public class UserPublisherFacebookSettingsManager : IUserPublisherFacebookSettin
     private readonly IUserPublisherFacebookSettingsDataStore _userPublisherFacebookSettingsDataStore;
     private readonly IKeyVault _keyVault;
     private readonly ILogger<UserPublisherFacebookSettingsManager> _logger;
-
-    private static readonly Regex SecretNameSanitizer = new(@"[^a-zA-Z0-9\-]", RegexOptions.Compiled);
 
     public UserPublisherFacebookSettingsManager(
         IUserPublisherFacebookSettingsDataStore userPublisherFacebookSettingsDataStore,
@@ -62,7 +59,7 @@ public class UserPublisherFacebookSettingsManager : IUserPublisherFacebookSettin
     public async Task<string?> GetPageAccessTokenAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = BuildSecretName(ownerOid, "page-access-token");
+        var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Facebook, KeyVaultSecretNames.SettingName.PageAccessToken);
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -83,7 +80,7 @@ public class UserPublisherFacebookSettingsManager : IUserPublisherFacebookSettin
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(pageAccessToken);
-        var secretName = BuildSecretName(ownerOid, "page-access-token");
+        var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Facebook, KeyVaultSecretNames.SettingName.PageAccessToken);
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, pageAccessToken, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored Facebook page access token in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
@@ -95,7 +92,7 @@ public class UserPublisherFacebookSettingsManager : IUserPublisherFacebookSettin
     public async Task<string?> GetAppSecretAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = BuildSecretName(ownerOid, "app-secret");
+        var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Facebook, KeyVaultSecretNames.SettingName.AppSecret);
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -116,7 +113,7 @@ public class UserPublisherFacebookSettingsManager : IUserPublisherFacebookSettin
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(appSecret);
-        var secretName = BuildSecretName(ownerOid, "app-secret");
+        var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Facebook, KeyVaultSecretNames.SettingName.AppSecret);
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, appSecret, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored Facebook app secret in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
@@ -128,7 +125,7 @@ public class UserPublisherFacebookSettingsManager : IUserPublisherFacebookSettin
     public async Task<string?> GetClientTokenAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = BuildSecretName(ownerOid, "client-token");
+        var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Facebook, KeyVaultSecretNames.SettingName.ClientToken);
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -149,7 +146,7 @@ public class UserPublisherFacebookSettingsManager : IUserPublisherFacebookSettin
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(clientToken);
-        var secretName = BuildSecretName(ownerOid, "client-token");
+        var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Facebook, KeyVaultSecretNames.SettingName.ClientToken);
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, clientToken, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored Facebook client token in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
@@ -161,7 +158,7 @@ public class UserPublisherFacebookSettingsManager : IUserPublisherFacebookSettin
     public async Task<string?> GetShortLivedAccessTokenAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = BuildSecretName(ownerOid, "short-lived-access-token");
+        var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Facebook, KeyVaultSecretNames.SettingName.ShortLivedAccessToken);
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -182,7 +179,7 @@ public class UserPublisherFacebookSettingsManager : IUserPublisherFacebookSettin
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(shortLivedAccessToken);
-        var secretName = BuildSecretName(ownerOid, "short-lived-access-token");
+        var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Facebook, KeyVaultSecretNames.SettingName.ShortLivedAccessToken);
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, shortLivedAccessToken, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored Facebook short-lived access token in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
@@ -194,7 +191,7 @@ public class UserPublisherFacebookSettingsManager : IUserPublisherFacebookSettin
     public async Task<string?> GetLongLivedAccessTokenAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var secretName = BuildSecretName(ownerOid, "long-lived-access-token");
+        var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Facebook, KeyVaultSecretNames.SettingName.LongLivedAccessToken);
         try
         {
             var secret = await _keyVault.GetSecretAsync(secretName);
@@ -215,17 +212,11 @@ public class UserPublisherFacebookSettingsManager : IUserPublisherFacebookSettin
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(longLivedAccessToken);
-        var secretName = BuildSecretName(ownerOid, "long-lived-access-token");
+        var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Facebook, KeyVaultSecretNames.SettingName.LongLivedAccessToken);
         await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, longLivedAccessToken, DateTime.UtcNow.AddYears(10));
         _logger.LogInformation(
             "Stored Facebook long-lived access token in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
             secretName,
             LogSanitizer.Sanitize(ownerOid));
-    }
-
-    private static string BuildSecretName(string ownerOid, string settingName)
-    {
-        var sanitizedOwner = SecretNameSanitizer.Replace(ownerOid, "-");
-        return $"publisher-{sanitizedOwner}-facebook-{settingName}";
     }
 }
