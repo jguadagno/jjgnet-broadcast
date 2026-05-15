@@ -57,6 +57,9 @@ public class SchedulesController: ControllerBase
     /// </summary>
     /// <param name="page">The page number (default: 1)</param>
     /// <param name="pageSize">The page size (default: 25)</param>
+    /// <param name="sortBy">The field to sort by (default: sendondatetime)</param>
+    /// <param name="sortDescending">When true, sorts in descending order (default: true)</param>
+    /// <param name="filter">Optional text filter applied to scheduled item names</param>
     /// <returns>A paginated list of scheduled items</returns>
     /// <response code="200">Upon success</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>

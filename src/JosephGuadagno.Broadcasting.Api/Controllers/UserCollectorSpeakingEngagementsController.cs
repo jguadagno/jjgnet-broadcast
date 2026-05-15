@@ -29,6 +29,11 @@ public class UserCollectorSpeakingEngagementsController(
     /// <param name="ownerOid">
     /// Optional Entra object ID to query. Non-admin callers can only query their own configurations.
     /// </param>
+    /// <param name="page">The page number (default: 1)</param>
+    /// <param name="pageSize">The page size (default: 25)</param>
+    /// <param name="sortBy">The field to sort by (default: displayname)</param>
+    /// <param name="sortDescending">When true, sorts in descending order (default: false)</param>
+    /// <param name="filter">Optional text filter applied to speaking engagement names</param>
     /// <returns>A list of speaking engagement configurations for the resolved owner</returns>
     /// <response code="200">Returns the speaking engagement configurations for the resolved owner</response>
     /// <response code="401">The caller is not authenticated</response>

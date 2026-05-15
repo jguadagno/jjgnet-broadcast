@@ -40,6 +40,11 @@ public class SocialMediaPlatformsController : ControllerBase
     /// Gets social media platforms
     /// </summary>
     /// <param name='includeInactive'>When true, returns all platforms including inactive ones. Default is false (active only).</param>
+    /// <param name="page">The page number (default: 1)</param>
+    /// <param name="pageSize">The page size (default: 25)</param>
+    /// <param name="sortBy">The field to sort by (default: name)</param>
+    /// <param name="sortDescending">When true, sorts in descending order (default: false)</param>
+    /// <param name="filter">Optional text filter applied to platform names</param>
     /// <returns>A list of social media platforms</returns>
     /// <response code="200">If the call was successful</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>

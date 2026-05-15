@@ -49,6 +49,9 @@ public class EngagementsController: ControllerBase
     /// </summary>
     /// <param name="page">The page number (default: 1)</param>
     /// <param name="pageSize">The page size (default: 25)</param>
+    /// <param name="sortBy">The field to sort by (default: startdate)</param>
+    /// <param name="sortDescending">When true, sorts in descending order (default: true)</param>
+    /// <param name="filter">Optional text filter applied to engagement names</param>
     /// <returns>A paginated list of engagements</returns>
     /// <response code="200">If the call was successful</response>
     /// <response code="400">If the request is poorly formatted</response>
@@ -475,7 +478,7 @@ public class EngagementsController: ControllerBase
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     /// <remarks>
     /// The <see cref="ActionNameAttribute"/> is required so that
-    /// <see cref="ControllerBase.CreatedAtAction"/> can resolve this route by the C# method name
+    /// <c>CreatedAtAction</c> can resolve this route by the C# method name
     /// (including the Async suffix). Without it, ASP.NET Core strips the suffix and route lookup fails
     /// with a 500 "No route matches the supplied values" error. See issue #708.
     /// </remarks>
