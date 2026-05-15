@@ -1,5 +1,6 @@
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
 
@@ -91,7 +92,7 @@ public class UserPublisherSettingService(
         if (string.IsNullOrEmpty(platform))
         {
             logger.LogWarning("Cannot save publisher setting: platform name is missing for owner '{OwnerOid}'",
-                setting.CreatedByEntraOid);
+                LogSanitizer.Sanitize(setting.CreatedByEntraOid));
             return null;
         }
 
@@ -154,7 +155,7 @@ public class UserPublisherSettingService(
             }
             default:
                 logger.LogWarning("Unrecognized platform '{Platform}' for owner '{OwnerOid}'",
-                    platform, setting.CreatedByEntraOid);
+                    LogSanitizer.Sanitize(platform), LogSanitizer.Sanitize(setting.CreatedByEntraOid));
                 return null;
         }
     }
@@ -163,8 +164,8 @@ public class UserPublisherSettingService(
     {
         logger.LogWarning(
             "Publisher settings save returned no content for owner '{OwnerOid}' and platform '{PlatformName}'",
-            setting.CreatedByEntraOid,
-            setting.SocialMediaPlatformName ?? setting.SocialMediaPlatform?.Name);
+            LogSanitizer.Sanitize(setting.CreatedByEntraOid),
+            LogSanitizer.Sanitize(setting.SocialMediaPlatformName ?? setting.SocialMediaPlatform?.Name));
     }
 
     private static string BuildBasePath(string? ownerOid)
