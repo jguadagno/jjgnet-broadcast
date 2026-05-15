@@ -823,3 +823,209 @@ Duplicate `IYouTubeItemDataStore` / `IYouTubeItemManager` registrations in API `
 
 When `IYouTubeReader.GetAsync` signature changed, `LoadNewVideosTests` needed updating to: (a) mock `GetApiKeyAsync` returning a test key, and (b) use the 3-arg `GetAsync` overload in all setups and verifications.
 
+
+---
+
+## 2026-05-12 to 2026-05-15 — Decisions & Findings
+
+### 2026-05-12T07:50:05: User directive
+**By:** Joe (via Copilot)
+**What:** Do NOT create a PR for the UserCollectorYouTubeChannels fix. Joe is still validating the changes.
+**Why:** User request — captured for team memory. Work should be committed to branch only; no PR until Joe explicitly requests one.
+
+---
+
+### 2026-05-15T13:14:51-07:00: C# DI naming convention
+**By:** Joseph Guadagno (via Copilot)
+**What:** Constructor-injected parameter names must be camelCase. Private backing fields must be `_camelCase`. PascalCase parameters (as seen in BlueskyManager.cs `SyndicationFeedItemManager`, `YouTubeItemManager`) are non-conformant and should be corrected.
+**Why:** Standard C# naming conventions. Consistency across the codebase.
+**Reference:** `src\JosephGuadagno.Broadcasting.Managers.Bluesky\BlueskyManager.cs` (lines 39-40).
+
+---
+
+### 2026-05-15T13:49:35: User directives — Publisher settings refactor design decisions
+**By:** Joe (via Copilot)
+**What:**
+1. **KV secret naming (runtime derivation):** `{type}-{ownerOid}-{name}-{setting_name}` where `{type}` = `collector` or `publisher`. Example: `publisher-{ownerOid}-bluesky-bluesky-password`. No explicit `*SecretName` columns.
+2. **API route convention:** Use `/Publishers/{name}/Settings` and `/Collectors/{name}/Settings`.
+3. **ShortLivedAccessToken (Facebook):** Persist as a secret in Key Vault.
+4. **EventPublisherSettings:** Out of scope — application-level config, not user-scoped.
+5. **All four publishers in scope:** Bluesky, LinkedIn, Facebook, Twitter/X.
+6. **No production data migration needed:** `UserPublisherSettings` has never been used in production.
+**Why:** User decisions answering Neo's five open questions from the publisher settings architectural analysis.
+
+---
+
+# Architecture Decision: Publisher Settings Refactor — Architectural Recommendation
+
+**Date:** 2026-05-15T13:21:33-07:00
+**Author:** Neo (Lead)
+**Status:** Endorsed — Issues #958 (Phase 1) and #959 (Phase 2) created
+
+Three concrete problems driving the refactor:
+1. **Cleartext secrets in SQL.** `Settings NVARCHAR(MAX)` stores raw credential values. KV integration path in `GetCredentialsAsync` exists but is never populated by the write path.
+2. **Magic string key names.** Typos fail at runtime, not compile time.
+3. **Inconsistency with the collector pattern.** Alignment reduces cognitive load.
+
+**Phasing:**
+- **Phase 1 (#958):** SQL + EF models, new per-publisher tables, data stores. No API or Web changes.
+- **Phase 2 (#959):** Manager, API, DTOs, Web, tests. After Phase 1 is deployed and validated.
+
+**Constraint:** `EventPublisherSettings` is out of scope — infrastructure (Event Grid), not user-scoped credentials.
+
+---
+
+# Architecture Decision: Extract `BuildSecretName` to Shared Utility
+
+**Date:** 2026-05-15T14:06:58.645-07:00
+**Author:** Neo (Lead)
+**Status:** Decision — fold into #961
+
+**Location:** `JosephGuadagno.Broadcasting.Domain.Utilities.KeyVaultSecretNameBuilder` (static class)
+**Namespace:** `JosephGuadagno.Broadcasting.Domain.Utilities`
+
+**Signature:**
+```csharp
+public static string Build(
+    KeyVaultSecretOwnerType ownerType,  // Collector or Publisher
+    string ownerOid,
+    string name,
+    string settingName) → string
+```
+
+**Output:** `{ownerType}-{sanitizedOwnerOid}-{sanitizedName}-{sanitizedSettingName}`
+
+**Examples:**
+- `Build(Collector, ownerOid, "youtube-channel-{channelId}", "api-key")` → `collector-{oid}-youtube-channel-{channelId}-api-key`
+- `Build(Publisher, ownerOid, "bluesky", "app-password")` → `publisher-{oid}-bluesky-app-password`
+
+**Migration concern:** Changing KV secret name format breaks existing secrets at rest. Requires two-step deployment (write new key, verify Functions, delete old key). Existing `BuildSecretName` in `UserCollectorYouTubeChannelManager` is private — delete it, replace 3 call sites.
+
+---
+
+# Architecture Decision: Collectors Alignment with Publisher Settings Pattern
+
+**Date:** 2026-05-15T13:55:01.142-07:00
+**Author:** Neo (Lead)
+**Status:** Decision — Issues #960 and #961 created
+
+4 collector types found. Data layer already complete for all 4. No cleartext secrets anywhere.
+
+**Gap summary:**
+
+| Dimension | YouTube | FeedSource | SpeakingEngagement | ScheduledItem |
+|---|---|---|---|---|
+| API route `/Collectors/{name}/Settings` | ❌ | ❌ | ❌ | ❌ (missing entirely) |
+| Web CRUD controller | ✅ | ✅ | ✅ | ❌ |
+| Web service interface | ✅ | ✅ | ✅ | ❌ |
+| KV naming `collector-` prefix | ❌ | N/A | N/A | N/A |
+| No cleartext secrets | ✅ | ✅ | ✅ | ✅ |
+
+**Key findings:**
+- `HasApiKey` in YouTube is a **transient** domain property (populated at runtime from KV), not a SQL column.
+- ScheduledItem is one-row-per-user (UNIQUE on `CreatedByEntraOid`) — matches publisher single-settings pattern.
+- `youtube-channel-apikey-{owner}-{channel}` → missing `collector-` prefix (naming compliance gap, not security incident).
+
+**Issues created:**
+- **#960** — feat: align collector API routes to /Collectors/{name}/Settings and complete ScheduledItem layer
+- **#961** — fix: align YouTube collector KV secret naming to collector- prefix convention
+
+---
+
+# Code Review: PR #963 — Publisher Settings Phase 2
+
+**Date:** 2026-05-15
+**Author:** Neo (Lead/Architect)
+**Verdict:** BLOCKED ❌ → Fixed by Trinity (eda470e7) → UNBLOCKED ✅
+
+**Blocking finding:** Log injection (`cs/log-forging`) in `UserPublisherSettingService.cs` — 3 `LogWarning` call sites passing user-controlled values without `LogSanitizer.Sanitize()`:
+- Line 93: `setting.CreatedByEntraOid`
+- Lines 156-157: `platform`, `setting.CreatedByEntraOid`
+- Lines 164-167 (`LogSaveFailure`): `setting.CreatedByEntraOid`, `setting.SocialMediaPlatformName ?? setting.SocialMediaPlatform?.Name`
+
+**What passed (19/19 other checks):**
+- All 5 API controllers: `[IgnoreAntiforgeryToken]`, `[Authorize]`, ownership checks, `LogSanitizer` on all log args
+- All 4 typed manager implementations: `BuildSecretName` with `SecretNameSanitizer`, `Has*` booleans only (no secret value exposure)
+- All 4 manager test classes with `BuildSecretName` coverage
+- Functions migration: all 3 files replace shim with typed managers
+- DI registrations correct in API, Functions, Web
+- SQL migration: idempotent guard present
+- Build: 0 errors, 0 warnings
+
+**Fix (eda470e7):** Trinity wrapped all 3 sites with `LogSanitizer.Sanitize()` and added missing `using JosephGuadagno.Broadcasting.Domain.Utilities;`.
+
+---
+
+# Decision: CollectorSettings — Inline Actions Removed, SpeakingEngagements Added
+
+**Date:** 2026-05-12
+**Author:** Trinity
+**Branch:** issue-950-sanity-check
+
+- Removed 6 redundant inline POST actions (`Add/Edit/DeleteFeedSource`, `Add/Edit/DeleteYouTubeChannel`) from `CollectorSettingsController`.
+- `CollectorSettingsController` is now a **read-only page controller** — all mutations flow through dedicated controllers.
+- `CollectorSettingsPageViewModel` gains `SpeakingEngagements` collection, populated via the admin/non-admin branch pattern.
+- Inline `.Select(x => new ViewModel { ... }).ToList()` is the established projection pattern in `BuildPageViewModelAsync` — do not introduce AutoMapper.
+
+---
+
+# Frontend Decision: CollectorSettings Index Refactor
+
+**Date:** 2026-05-12T08:29:04-07:00
+**Author:** Sparks
+**Branch:** issue-950-sanity-check
+
+Replaced inline Add/Edit/Delete modals on `CollectorSettings/Index.cshtml` with redirect links to dedicated CRUD pages. Added Speaking Engagements card section with `bi-mic-fill` icon. Applied `<thead class="table-dark">` to all card tables.
+
+**Pattern:** For settings-style pages that previously used modals, prefer redirect links to dedicated controller actions. Reserve modals for lightweight confirmations only.
+
+---
+
+# Decision: ApiKey Required for YouTube Channel — Split DTOs
+
+**Date:** 2026-05-12
+**Author:** Trinity
+**Branch:** issue-950-sanity-check / Commit: 6a28f04
+
+- **Create POST:** `CreateUserCollectorYouTubeChannelRequest` — `ApiKey` is `[Required]`.
+- **Edit PUT:** `UpdateUserCollectorYouTubeChannelRequest` — `ApiKey` is `string?`; required only when `HasApiKey == false` on the existing record. Controller checks after fetch; Web Edit checks `viewModel.HasApiKey` from hidden field.
+- `HasApiKey` is **server-computed** — ignore from client input via AutoMapper `.ForMember(d => d.HasApiKey, o => o.Ignore())`.
+- Razor Edit view: round-trip `HasApiKey` via `<input type="hidden" asp-for="HasApiKey" />` — without it, Edit POST always receives `false`.
+
+---
+
+# CSRF Token Validation Sweep — issue-950-sanity-check
+
+**Date:** 2026-05-12
+**Author:** Trinity
+
+Full audit of all API and Web MVC controllers. **No changes required** — all controllers were already compliant:
+- API: all 8 controllers had `[IgnoreAntiforgeryToken]` at class level
+- Web: all 13 controllers had `[ValidateAntiForgeryToken]` on every `[HttpPost]`
+
+CodeQL `cs/web/missing-token-validation` alerts were stale. Read the actual files before applying mechanical security fixes.
+
+---
+
+# Decision: [IgnoreAntiforgeryToken] Sweep — API Controllers
+
+**Date:** 2026-05-15T14:15:40.968-07:00
+**Author:** Trinity
+
+Full grep of all 10 API controllers. All already have class-level `[IgnoreAntiforgeryToken]`. **No code changes required.** Security bot alerts for 3 controllers were false positives — the class-level attribute was applied in a prior sweep. Do not add per-method attributes; class-level is the established pattern.
+
+---
+
+# Decision: Sanitize User-Controlled Values in UserPublisherSettingService Log Calls
+
+**Date:** 2026-05-15
+**Author:** Trinity
+**Branch:** issue-959-publisher-settings-phase2 / PR #963 / Commit: eda470e7
+
+Fixed Neo's blocking `cs/log-forging` finding: wrapped all 3 `LogWarning` user-controlled args with `LogSanitizer.Sanitize()`. Added `using JosephGuadagno.Broadcasting.Domain.Utilities;`.
+
+**Learnings:**
+- `LogSanitizer.Sanitize()` applies in the **service layer**, not just controllers.
+- Private helper methods (like `LogSaveFailure`) are equally subject — audit the full file.
+- Always check that `using JosephGuadagno.Broadcasting.Domain.Utilities;` is present in new files that log user-controlled data.
+
