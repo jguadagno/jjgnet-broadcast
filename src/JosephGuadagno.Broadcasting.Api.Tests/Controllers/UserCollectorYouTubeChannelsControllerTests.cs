@@ -1,3 +1,4 @@
+#pragma warning disable CS0618 // intentionally testing obsolete controller during migration period
 using System.Security.Claims;
 using AutoMapper;
 using FluentAssertions;

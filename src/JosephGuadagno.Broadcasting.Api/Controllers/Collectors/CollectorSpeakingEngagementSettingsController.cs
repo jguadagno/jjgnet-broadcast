@@ -8,38 +8,35 @@ using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace JosephGuadagno.Broadcasting.Api.Controllers;
+namespace JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
 
 /// <summary>
-/// Manages per-user speaking engagements file collector configurations.
+/// Manages per-user speaking engagement collector configurations under the
+/// <c>/Collectors/SpeakingEngagement/Settings</c> route.
 /// </summary>
-/// <remarks>Use <c>/Collectors/SpeakingEngagement/Settings</c> instead.</remarks>
-[Obsolete("Use /Collectors/SpeakingEngagement/Settings instead.")]
 [ApiController]
 [Authorize]
 [IgnoreAntiforgeryToken]
-[Route("[controller]")]
+[Route("Collectors/SpeakingEngagement/Settings")]
 [Produces("application/json")]
-public class UserCollectorSpeakingEngagementsController(
-    IUserCollectorSpeakingEngagementManager userCollectorSpeakingEngagementManager,
-    ILogger<UserCollectorSpeakingEngagementsController> logger,
+public class CollectorSpeakingEngagementSettingsController(
+    IUserCollectorSpeakingEngagementManager speakingEngagementManager,
+    ILogger<CollectorSpeakingEngagementSettingsController> logger,
     IMapper mapper) : ControllerBase
 {
     /// <summary>
-    /// Gets all speaking engagement configurations visible to the current caller
+    /// Gets a paged list of speaking engagement configurations for the resolved owner.
     /// </summary>
-    /// <param name="ownerOid">
-    /// Optional Entra object ID to query. Non-admin callers can only query their own configurations.
-    /// </param>
-    /// <param name="page">The page number (default: 1)</param>
-    /// <param name="pageSize">The page size (default: 25)</param>
-    /// <param name="sortBy">The field to sort by (default: displayname)</param>
-    /// <param name="sortDescending">When true, sorts in descending order (default: false)</param>
-    /// <param name="filter">Optional text filter applied to speaking engagement names</param>
-    /// <returns>A list of speaking engagement configurations for the resolved owner</returns>
-    /// <response code="200">Returns the speaking engagement configurations for the resolved owner</response>
-    /// <response code="401">The caller is not authenticated</response>
-    /// <response code="403">The caller is not allowed to query the requested owner</response>
+    /// <param name="ownerOid">Optional Entra OID. Non-admin callers can only query their own configurations.</param>
+    /// <param name="page">The page number (default: 1).</param>
+    /// <param name="pageSize">The page size (default: 25).</param>
+    /// <param name="sortBy">The field to sort by (default: displayname).</param>
+    /// <param name="sortDescending">When true, sorts in descending order (default: false).</param>
+    /// <param name="filter">Optional text filter applied to speaking engagement names.</param>
+    /// <returns>A paged list of speaking engagement configurations for the resolved owner.</returns>
+    /// <response code="200">Returns the speaking engagement configurations for the resolved owner.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to query the requested owner.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<UserCollectorSpeakingEngagementResponse>))]
@@ -62,7 +59,7 @@ public class UserCollectorSpeakingEngagementsController(
             return Forbid();
         }
 
-        var result = await userCollectorSpeakingEngagementManager.GetAllAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter);
+        var result = await speakingEngagementManager.GetAllAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter);
         var items = mapper.Map<List<UserCollectorSpeakingEngagementResponse>>(result.Items);
         return new PagedResponse<UserCollectorSpeakingEngagementResponse>
         {
@@ -74,14 +71,14 @@ public class UserCollectorSpeakingEngagementsController(
     }
 
     /// <summary>
-    /// Gets a speaking engagement configuration by ID
+    /// Gets a speaking engagement configuration by ID.
     /// </summary>
-    /// <param name="id">The configuration identifier</param>
-    /// <returns>The speaking engagement configuration</returns>
-    /// <response code="200">Returns the speaking engagement configuration</response>
-    /// <response code="401">The caller is not authenticated</response>
-    /// <response code="403">The caller is not allowed to access this configuration</response>
-    /// <response code="404">No configuration exists with the specified ID</response>
+    /// <param name="id">The configuration identifier.</param>
+    /// <returns>The speaking engagement configuration.</returns>
+    /// <response code="200">Returns the speaking engagement configuration.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to access this configuration.</response>
+    /// <response code="404">No configuration exists with the specified ID.</response>
     [HttpGet("{id:int}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorSpeakingEngagementResponse))]
@@ -90,7 +87,7 @@ public class UserCollectorSpeakingEngagementsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserCollectorSpeakingEngagementResponse>> GetAsync(int id)
     {
-        var config = await userCollectorSpeakingEngagementManager.GetByIdAsync(id);
+        var config = await speakingEngagementManager.GetByIdAsync(id);
         if (config is null)
         {
             logger.LogWarning("Speaking engagement config not found for ID {Id}", id);
@@ -113,17 +110,15 @@ public class UserCollectorSpeakingEngagementsController(
     }
 
     /// <summary>
-    /// Creates a new speaking engagement configuration
+    /// Creates a speaking engagement configuration.
     /// </summary>
-    /// <param name="ownerOid">
-    /// Optional Entra object ID to target. Non-admin callers can only save their own configurations.
-    /// </param>
-    /// <param name="request">The speaking engagement configuration payload to save</param>
-    /// <returns>The saved speaking engagement configuration</returns>
-    /// <response code="200">Returns the saved speaking engagement configuration</response>
-    /// <response code="400">The request payload was invalid or the configuration could not be saved</response>
-    /// <response code="401">The caller is not authenticated</response>
-    /// <response code="403">The caller is not allowed to save configurations for the requested owner</response>
+    /// <param name="ownerOid">Optional Entra OID. Non-admin callers can only create configurations for themselves.</param>
+    /// <param name="request">The speaking engagement configuration payload to create.</param>
+    /// <returns>The created speaking engagement configuration.</returns>
+    /// <response code="200">Returns the created speaking engagement configuration.</response>
+    /// <response code="400">The request payload was invalid or the configuration could not be saved.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to create configurations for the requested owner.</response>
     [HttpPost]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorSpeakingEngagementResponse))]
@@ -149,7 +144,7 @@ public class UserCollectorSpeakingEngagementsController(
         var config = mapper.Map<UserCollectorSpeakingEngagement>(request);
         config.CreatedByEntraOid = resolvedOwnerOid;
 
-        var saved = await userCollectorSpeakingEngagementManager.SaveAsync(config);
+        var saved = await speakingEngagementManager.SaveAsync(config);
         if (saved is null)
         {
             logger.LogWarning(
@@ -163,11 +158,16 @@ public class UserCollectorSpeakingEngagementsController(
     }
 
     /// <summary>
-    /// Updates an existing speaking engagement configuration
+    /// Updates an existing speaking engagement configuration.
     /// </summary>
-    /// <param name="id">The configuration identifier</param>
-    /// <param name="request">The speaking engagement configuration payload</param>
-    /// <returns>The updated speaking engagement configuration</returns>
+    /// <param name="id">The configuration identifier.</param>
+    /// <param name="request">The speaking engagement configuration payload.</param>
+    /// <returns>The updated speaking engagement configuration.</returns>
+    /// <response code="200">Returns the updated speaking engagement configuration.</response>
+    /// <response code="400">The request payload was invalid or the configuration could not be updated.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to update this configuration.</response>
+    /// <response code="404">No configuration exists with the specified ID.</response>
     [HttpPut("{id:int}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorSpeakingEngagementResponse))]
@@ -185,7 +185,7 @@ public class UserCollectorSpeakingEngagementsController(
             return BadRequest(ModelState);
         }
 
-        var existing = await userCollectorSpeakingEngagementManager.GetByIdAsync(id);
+        var existing = await speakingEngagementManager.GetByIdAsync(id);
         if (existing is null)
         {
             return NotFound();
@@ -202,7 +202,7 @@ public class UserCollectorSpeakingEngagementsController(
         config.Id = id;
         config.CreatedByEntraOid = existing.CreatedByEntraOid;
 
-        var saved = await userCollectorSpeakingEngagementManager.SaveAsync(config);
+        var saved = await speakingEngagementManager.SaveAsync(config);
         if (saved is null)
         {
             logger.LogWarning("Failed to update speaking engagement config for ID {Id}", id);
@@ -213,14 +213,14 @@ public class UserCollectorSpeakingEngagementsController(
     }
 
     /// <summary>
-    /// Deletes a speaking engagement configuration
+    /// Deletes a speaking engagement configuration.
     /// </summary>
-    /// <param name="id">The configuration identifier</param>
-    /// <returns>No content when the delete succeeds</returns>
-    /// <response code="204">The speaking engagement configuration was deleted</response>
-    /// <response code="401">The caller is not authenticated</response>
-    /// <response code="403">The caller is not allowed to delete this configuration</response>
-    /// <response code="404">No configuration exists with the specified ID</response>
+    /// <param name="id">The configuration identifier.</param>
+    /// <returns>No content when the delete succeeds.</returns>
+    /// <response code="204">The speaking engagement configuration was deleted.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to delete this configuration.</response>
+    /// <response code="404">No configuration exists with the specified ID.</response>
     [HttpDelete("{id:int}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -229,7 +229,7 @@ public class UserCollectorSpeakingEngagementsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteAsync(int id)
     {
-        var config = await userCollectorSpeakingEngagementManager.GetByIdAsync(id);
+        var config = await speakingEngagementManager.GetByIdAsync(id);
         if (config is null)
         {
             logger.LogWarning("Speaking engagement config not found for delete for ID {Id}", id);
@@ -248,7 +248,7 @@ public class UserCollectorSpeakingEngagementsController(
             return Forbid();
         }
 
-        var deleted = await userCollectorSpeakingEngagementManager.DeleteAsync(id, config.CreatedByEntraOid);
+        var deleted = await speakingEngagementManager.DeleteAsync(id, config.CreatedByEntraOid);
         if (!deleted)
         {
             logger.LogWarning("Failed to delete speaking engagement config for ID {Id}", id);

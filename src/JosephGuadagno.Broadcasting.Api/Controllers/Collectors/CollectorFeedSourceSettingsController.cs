@@ -8,44 +8,47 @@ using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace JosephGuadagno.Broadcasting.Api.Controllers;
+namespace JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
 
 /// <summary>
-/// Manages per-user RSS/Atom/JSON feed collector configurations.
+/// Manages per-user RSS/Atom feed source collector configurations under the
+/// <c>/Collectors/FeedSource/Settings</c> route.
 /// </summary>
-/// <remarks>Use <c>/Collectors/FeedSource/Settings</c> instead.</remarks>
-[Obsolete("Use /Collectors/FeedSource/Settings instead.")]
 [ApiController]
 [Authorize]
 [IgnoreAntiforgeryToken]
-[Route("[controller]")]
+[Route("Collectors/FeedSource/Settings")]
 [Produces("application/json")]
-public class UserCollectorFeedSourcesController(
-    IUserCollectorFeedSourceManager userCollectorFeedSourceManager,
-    ILogger<UserCollectorFeedSourcesController> logger,
+public class CollectorFeedSourceSettingsController(
+    IUserCollectorFeedSourceManager feedSourceManager,
+    ILogger<CollectorFeedSourceSettingsController> logger,
     IMapper mapper) : ControllerBase
 {
     /// <summary>
-    /// Gets all feed source configurations visible to the current caller
+    /// Gets a paged list of feed source configurations for the resolved owner.
     /// </summary>
-    /// <param name="ownerOid">
-    /// Optional Entra object ID to query. Non-admin callers can only query their own configurations.
-    /// </param>
-    /// <param name="page">The page number (default: 1)</param>
-    /// <param name="pageSize">The page size (default: 25)</param>
-    /// <param name="sortBy">The field to sort by (default: name)</param>
-    /// <param name="sortDescending">When true, sorts in descending order (default: false)</param>
-    /// <param name="filter">Optional text filter applied to feed source names</param>
-    /// <returns>A list of feed source configurations for the resolved owner</returns>
-    /// <response code="200">Returns the feed source configurations for the resolved owner</response>
-    /// <response code="401">The caller is not authenticated</response>
-    /// <response code="403">The caller is not allowed to query the requested owner</response>
+    /// <param name="ownerOid">Optional Entra OID. Non-admin callers can only query their own configurations.</param>
+    /// <param name="page">The page number (default: 1).</param>
+    /// <param name="pageSize">The page size (default: 25).</param>
+    /// <param name="sortBy">The field to sort by (default: displayname).</param>
+    /// <param name="sortDescending">When true, sorts in descending order (default: false).</param>
+    /// <param name="filter">Optional text filter applied to feed source names.</param>
+    /// <returns>A paged list of feed source configurations for the resolved owner.</returns>
+    /// <response code="200">Returns the feed source configurations for the resolved owner.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to query the requested owner.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<UserCollectorFeedSourceResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PagedResponse<UserCollectorFeedSourceResponse>>> GetAllAsync([FromQuery] string? ownerOid = null, int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "name", bool sortDescending = false, string? filter = null)
+    public async Task<ActionResult<PagedResponse<UserCollectorFeedSourceResponse>>> GetAllAsync(
+        [FromQuery] string? ownerOid = null,
+        int page = Pagination.DefaultPage,
+        int pageSize = Pagination.DefaultPageSize,
+        string sortBy = "displayname",
+        bool sortDescending = false,
+        string? filter = null)
     {
         if (page < 1) page = Pagination.DefaultPage;
         if (pageSize < 1 || pageSize > Pagination.MaxPageSize) pageSize = Pagination.DefaultPageSize;
@@ -56,7 +59,7 @@ public class UserCollectorFeedSourcesController(
             return Forbid();
         }
 
-        var result = await userCollectorFeedSourceManager.GetAllAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter);
+        var result = await feedSourceManager.GetAllAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter);
         var items = mapper.Map<List<UserCollectorFeedSourceResponse>>(result.Items);
         return new PagedResponse<UserCollectorFeedSourceResponse>
         {
@@ -68,14 +71,14 @@ public class UserCollectorFeedSourcesController(
     }
 
     /// <summary>
-    /// Gets a feed source configuration by ID
+    /// Gets a feed source configuration by ID.
     /// </summary>
-    /// <param name="id">The configuration identifier</param>
-    /// <returns>The feed source configuration</returns>
-    /// <response code="200">Returns the feed source configuration</response>
-    /// <response code="401">The caller is not authenticated</response>
-    /// <response code="403">The caller is not allowed to access this configuration</response>
-    /// <response code="404">No configuration exists with the specified ID</response>
+    /// <param name="id">The configuration identifier.</param>
+    /// <returns>The feed source configuration.</returns>
+    /// <response code="200">Returns the feed source configuration.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to access this configuration.</response>
+    /// <response code="404">No configuration exists with the specified ID.</response>
     [HttpGet("{id:int}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorFeedSourceResponse))]
@@ -84,7 +87,7 @@ public class UserCollectorFeedSourcesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserCollectorFeedSourceResponse>> GetAsync(int id)
     {
-        var config = await userCollectorFeedSourceManager.GetByIdAsync(id);
+        var config = await feedSourceManager.GetByIdAsync(id);
         if (config is null)
         {
             logger.LogWarning("Feed source config not found for ID {Id}", id);
@@ -107,19 +110,16 @@ public class UserCollectorFeedSourcesController(
     }
 
     /// <summary>
-    /// Creates or updates a feed source configuration
+    /// Creates a feed source configuration.
     /// </summary>
-    /// <param name="ownerOid">
-    /// Optional Entra object ID to target. Non-admin callers can only save their own configurations.
-    /// </param>
-    /// <param name="request">The feed source configuration payload to save</param>
-    /// <returns>The saved feed source configuration</returns>
-    /// <response code="200">Returns the saved feed source configuration</response>
-    /// <response code="400">The request payload was invalid or the configuration could not be saved</response>
-    /// <response code="401">The caller is not authenticated</response>
-    /// <response code="403">The caller is not allowed to save configurations for the requested owner</response>
+    /// <param name="ownerOid">Optional Entra OID. Non-admin callers can only create configurations for themselves.</param>
+    /// <param name="request">The feed source configuration payload to create.</param>
+    /// <returns>The created feed source configuration.</returns>
+    /// <response code="200">Returns the created feed source configuration.</response>
+    /// <response code="400">The request payload was invalid or the configuration could not be saved.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to create configurations for the requested owner.</response>
     [HttpPost]
-    [IgnoreAntiforgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorFeedSourceResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -144,7 +144,7 @@ public class UserCollectorFeedSourcesController(
         var config = mapper.Map<UserCollectorFeedSource>(request);
         config.CreatedByEntraOid = resolvedOwnerOid;
 
-        var saved = await userCollectorFeedSourceManager.SaveAsync(config);
+        var saved = await feedSourceManager.SaveAsync(config);
         if (saved is null)
         {
             logger.LogWarning(
@@ -158,11 +158,16 @@ public class UserCollectorFeedSourcesController(
     }
 
     /// <summary>
-    /// Updates an existing feed source configuration
+    /// Updates an existing feed source configuration.
     /// </summary>
-    /// <param name="id">The configuration identifier</param>
-    /// <param name="request">The feed source configuration payload</param>
-    /// <returns>The updated feed source configuration</returns>
+    /// <param name="id">The configuration identifier.</param>
+    /// <param name="request">The feed source configuration payload.</param>
+    /// <returns>The updated feed source configuration.</returns>
+    /// <response code="200">Returns the updated feed source configuration.</response>
+    /// <response code="400">The request payload was invalid or the configuration could not be updated.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to update this configuration.</response>
+    /// <response code="404">No configuration exists with the specified ID.</response>
     [HttpPut("{id:int}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorFeedSourceResponse))]
@@ -180,7 +185,7 @@ public class UserCollectorFeedSourcesController(
             return BadRequest(ModelState);
         }
 
-        var existing = await userCollectorFeedSourceManager.GetByIdAsync(id);
+        var existing = await feedSourceManager.GetByIdAsync(id);
         if (existing is null)
         {
             return NotFound();
@@ -197,7 +202,7 @@ public class UserCollectorFeedSourcesController(
         config.Id = id;
         config.CreatedByEntraOid = existing.CreatedByEntraOid;
 
-        var saved = await userCollectorFeedSourceManager.SaveAsync(config);
+        var saved = await feedSourceManager.SaveAsync(config);
         if (saved is null)
         {
             logger.LogWarning("Failed to update feed source config for ID {Id}", id);
@@ -208,14 +213,14 @@ public class UserCollectorFeedSourcesController(
     }
 
     /// <summary>
-    /// Deletes a feed source configuration
+    /// Deletes a feed source configuration.
     /// </summary>
-    /// <param name="id">The configuration identifier</param>
-    /// <returns>No content when the delete succeeds</returns>
-    /// <response code="204">The feed source configuration was deleted</response>
-    /// <response code="401">The caller is not authenticated</response>
-    /// <response code="403">The caller is not allowed to delete this configuration</response>
-    /// <response code="404">No configuration exists with the specified ID</response>
+    /// <param name="id">The configuration identifier.</param>
+    /// <returns>No content when the delete succeeds.</returns>
+    /// <response code="204">The feed source configuration was deleted.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to delete this configuration.</response>
+    /// <response code="404">No configuration exists with the specified ID.</response>
     [HttpDelete("{id:int}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -224,7 +229,7 @@ public class UserCollectorFeedSourcesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteAsync(int id)
     {
-        var config = await userCollectorFeedSourceManager.GetByIdAsync(id);
+        var config = await feedSourceManager.GetByIdAsync(id);
         if (config is null)
         {
             logger.LogWarning("Feed source config not found for delete for ID {Id}", id);
@@ -243,7 +248,7 @@ public class UserCollectorFeedSourcesController(
             return Forbid();
         }
 
-        var deleted = await userCollectorFeedSourceManager.DeleteAsync(id, config.CreatedByEntraOid);
+        var deleted = await feedSourceManager.DeleteAsync(id, config.CreatedByEntraOid);
         if (!deleted)
         {
             logger.LogWarning("Failed to delete feed source config for ID {Id}", id);
@@ -252,5 +257,4 @@ public class UserCollectorFeedSourcesController(
 
         return NoContent();
     }
-
 }

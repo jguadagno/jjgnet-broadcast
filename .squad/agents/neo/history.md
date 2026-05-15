@@ -1,3 +1,31 @@
+## 2026-05-15 — PR #967 Formal Review: KeyVaultSecretNameBuilder Utility Extraction
+
+**Status:** ✅ COMPLETE — BLOCKED ❌. Comment posted at https://github.com/jguadagno/jjgnet-broadcast/pull/967#issuecomment-4464503690.
+
+**Verdict:** BLOCKED ❌ — 1 blocking finding (directive violation: `KeyVaultSecretOwnerType` enum not implemented)
+
+**What was verified:**
+- `KeyVaultSecretNameBuilder` static class: correct namespace, location, regex pattern ✅
+- All 5 managers refactored; local `BuildSecretName` + private `SecretNameSanitizer` deleted ✅
+- YouTube format preserved: `collector-{sanitizedOwner}-youtube-channel-{channelId}-api-key` ✅
+- `LogSanitizer.Sanitize()` intact on all log args in all 5 managers ✅
+- 11 new tests: all pass ✅
+- Build: 0 errors, 0 code warnings ✅
+
+**Blocking finding:**
+Architectural decision (decisions.md 2026-05-15T14:06) specifies `KeyVaultSecretOwnerType ownerType` (enum) as the first parameter. Implementation uses `string type`. No `KeyVaultSecretOwnerType` enum exists anywhere in the codebase. Directive violation — BLOCKING.
+
+**Fix required:** Create `KeyVaultSecretOwnerType` enum in Domain project, update `Build` signature, update all 5 call sites (4 `"publisher"` → `KeyVaultSecretOwnerType.Publisher`, 1 `"collector"` → `KeyVaultSecretOwnerType.Collector`).
+
+**Non-blocking observation:**
+- `discriminator` not sanitized — pre-existing behavior (old private method also didn't sanitize channelId). Not a regression, but utility should either sanitize it or document caller responsibility.
+
+**Learnings:**
+- When the architectural decision spec says "enum for type parameter," verify the enum type exists; using a raw string is a directive violation even when callers are all hardcoded literals.
+- The `discriminator` concept (for YouTube channelId) was not in the original decision spec but is a correct additive improvement. Accept design additions that don't break the spec intent.
+
+---
+
 ## 2026-05-15 — PR #963 Formal Review: Publisher Settings Phase 2
 
 **Status:** ✅ COMPLETE — BLOCKED ❌. Comment posted at https://github.com/jguadagno/jjgnet-broadcast/pull/963#issuecomment-4464281385. Decision written to `.squad/decisions/inbox/neo-pr963-review.md`.

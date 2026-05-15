@@ -63,6 +63,13 @@ Fixed Neo's blocking `cs/log-forging` review finding: 3 `LogWarning` call sites 
 
 ## Learnings
 
+### KeyVaultSecretNameBuilder Enum Refactor (2026-05-15)
+
+1. `KeyVaultSecretOwnerType` enum uses `.ToString().ToLowerInvariant()` to produce "publisher"/"collector" — no switch, no lookup table needed.
+2. `const string` fields from a static class ARE compile-time constants and can be used directly in xUnit `[InlineData]` attribute arguments.
+3. Enum values (e.g., `KeyVaultSecretOwnerType.Publisher`) are also valid `[InlineData]` arguments.
+4. New types go in `JosephGuadagno.Broadcasting.Domain.Utilities` namespace as sibling files alongside `KeyVaultSecretNameBuilder` and `LogSanitizer`.
+
 ### Security
 
 1. `LogSanitizer.Sanitize()` applies in the **service layer** too — not just controllers. Private helper methods that log are equally subject.
