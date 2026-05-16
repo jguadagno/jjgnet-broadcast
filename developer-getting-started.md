@@ -67,11 +67,41 @@ This will generate a local certificate.  This certificate needs to be exported a
 
 ### Database
 
-Run the following scripts in the database. This is no longer needed, as the database is now created with Aspire
+The database is created automatically by Aspire on first run using the scripts in
+`scripts/database/`. No manual setup is required for fresh environments.
+
+#### Applying migrations to an existing database
+
+When you pull new code that adds tables or columns, you may need to apply a migration to
+your local database. Migration scripts live in `scripts/database/migrations/` and are safe
+to run multiple times (all use `IF NOT EXISTS` or equivalent guards).
+
+Connect to the local SQL Server instance and run the relevant migration script. You can find
+the connection details in the Aspire dashboard under the `JJGNetSqlServer` resource. For
+example, using `sqlcmd`:
+
+```powershell
+sqlcmd -S localhost,<port> -U sa -P <password> -d JJGNet -i scripts\database\migrations\<migration-file>.sql
+```
+
+Alternatively, delete the Docker volume (`JJGNetSqlData`) and restart Aspire so the database
+is recreated from scratch:
+
+```powershell
+docker volume rm JJGNetSqlData
+```
+
+> **Note:** Deleting the volume destroys all local data. Use the migration approach to
+> preserve any test data you have saved.
+
+#### Legacy manual scripts (no longer needed for new environments)
+
+These were the original setup scripts before Aspire took over database creation. They are
+kept for reference only.
 
 * [database-create.sql](./scripts/database/database-create.sql)
 * [table-create.sql](./scripts/database/table-create.sql)
-* [data-create.sql](./scripts/database/data-create.sql)
+* [data-seed.sql](./scripts/database/data-seed.sql)
 
 ### Azure Storage
 
