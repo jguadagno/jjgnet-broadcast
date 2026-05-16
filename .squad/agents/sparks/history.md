@@ -8,8 +8,8 @@ Sparks (Frontend/Polish Specialist) focuses on UI/UX refinements, Bootstrap 5 mi
 
 | Date | Task | Outcome |
 |------|------|---------|
-| 2026-05-16 | Remove duplicate TempData message blocks from 20 views (issue-972-end-user-validation) | ✅ _Layout.cshtml already renders Success/Warning/Error TempData globally; removed redundant inline renders from Add, Edit, Details, and Index views across CollectorFeedSources, CollectorSpeakingEngagements, CollectorYouTubeChannels, CollectorScheduledItem, SyndicationFeedItems, and YouTubeItems (20 files, 206 lines removed); build 0 errors, all tests pass |
-| 2026-05-16 | Allow localhost URLs in dev via jQuery Validate url2 override (issue-972-end-user-validation) | ✅ Added `<environment include="Development">` override block to all 4 collector views; cleaned up incomplete data-rule-url2 from FeedSources/Add.cshtml; no libman changes needed — additional-methods.js already loaded |
+| 2026-05-16 | Fix Filter button "Saving..." text; use data-loading-text attribute (issue-972-end-user-validation) | ✅ Extended site.js DOMContentLoaded handler to read `data-loading-text` attribute from submit buttons, updated 9 Index views with `data-loading-text="Searching..."` on all Filter buttons, commit 6da535ca |
+| 2026-05-16 | Duplicate TempData message cleanup across 20 views (issue-972-end-user-validation) | ✅ Removed inline success/warning/error TempData renders from Add/Edit/Details/Index views across CollectorFeedSources, CollectorSpeakingEngagements, CollectorYouTubeChannels, CollectorScheduledItem, SyndicationFeedItems, YouTubeItems; consolidated all message rendering to _Layout.cshtml |
 | 2026-05-12 | Refactor CollectorSettings/Index.cshtml — remove modals, add SpeakingEngagements section (#950) | ✅ Replaced all modal Add/Edit/Delete triggers with redirect links; added Speaking Engagements card; applied table-dark to all section tables; removed modal divs and JS scripts; build succeeded 0 errors |
 | 2026-03-20 | Added CodeQL analysis to ci.yml (#326) | ✅ CodeQL job added as separate job with csharp language, push to main trigger added to workflow |
 | 2026-04-03 | Implement health checks for Api and Web (#635) | ✅ Added SQL Server and Azure Storage health checks to ServiceDefaults; PR #641 created |
@@ -51,7 +51,13 @@ Sparks (Frontend/Polish Specialist) focuses on UI/UX refinements, Bootstrap 5 mi
 - **CollectorFeedSources views:** Were already present on the branch when Sparks arrived — verify existing work before creating new files.
 - **SpeakingEngagements section icon:** `bi-mic-fill` used for speaking engagements card header.
 
-### 2026-05-02 — MessageTemplates Platform Filter Dropdown
+### 2026-05-16 — Localhost URL Validation & Filter Button Text & TempData Cleanup
+- **Tasks 1–3 from issue-972-end-user-validation were completed across Oracle (1 security fix) and Sparks (2 frontend polish fixes)**
+- **Task 1 (Oracle):** SHA-256 hash for Key Vault discriminator to prevent base64url collisions — replaces understandable but dangerous sanitization approach
+- **Task 2 (Sparks):** Filter buttons now show "Searching..." instead of "Saving..." via `data-loading-text` attribute pattern in site.js
+- **Task 3 (Sparks):** Removed duplicate TempData message renders from 20 views — consolidated to _Layout.cshtml as single source of truth
+- **Decisions documented:** All three design decisions recorded in `.squad/decisions.md` for team memory
+- **Branch:** `issue-972-end-user-validation` ready for PR
 - **File:** `Views/MessageTemplates/Index.cshtml`
 - **Change:** Added `<select name="selectedPlatform">` dropdown between text filter and Filter button; populated from `(List<string>)ViewBag.Platforms` with explicit cast required in Razor.
 - **Auto-submit pattern:** `onchange="this.form.submit()"` on the select enables immediate filtering without clicking the Filter button — good UX for low-option dropdowns.

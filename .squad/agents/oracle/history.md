@@ -123,3 +123,17 @@ Established by Joseph Guadagno:
 - Updated `Build_WithDiscriminator_InsertsHashedDiscriminatorBetweenPlatformAndSettingName` with correct hash-based expected values.
 
 **Commit:** `fix(keyvault): use SHA-256 hash for discriminator in secret names to prevent base64url collisions` (branch: issue-972-end-user-validation)
+
+### 2026-05-16: Session Close — Decisions Archive Established
+
+**Context:** Scribe processed 3 inbox decision files from issue-972-end-user-validation and merged them into decisions.md. Orchestration logs created for Oracle and Sparks agents. All team updates recorded in cross-agent history.
+
+**Actions Taken:**
+1. Merged oracle-keyvault-secret-name-sanitization.md → decisions.md (Hash Discriminator decision)
+2. Merged sparks-filter-button-loading-text.md → decisions.md (Form loading text decision)
+3. Merged sparks-localhost-url-validation.md → decisions.md (Development URL validation decision)
+4. Deleted all 3 inbox files
+5. Created orchestration logs for Oracle and Sparks
+6. No history files required summarization (all < 15360 bytes)
+
+**Status:** All session artifacts committed to .squad/. Ready for next sprint.

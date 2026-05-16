@@ -497,3 +497,106 @@ agreement — no migration was required.
 - Build: 0 warnings, 0 errors.
 - Tests: 404 passed, 0 failed.
 
+---
+
+# Current Sprint — 2026-05-16
+
+### 2026-05-16: Hash Discriminator in KeyVaultSecretNameBuilder (Supersedes Sanitize-All-Segments)
+
+**Author:** Oracle (Security Engineer)
+**Branch:** issue-972-end-user-validation
+**Status:** Implemented
+
+**What:** Azure Key Vault enforces `[a-zA-Z0-9-]{1,127}` for secret names. The initial fix replaced all `_` with `-` in `KeyVaultSecretNameBuilder`, but YouTube Channel IDs use base64url encoding where both `-` and `_` are semantically distinct. Simple substitution creates silent collisions (e.g., `UCabc_def` and `UCabc-def` map to the same Key Vault name, causing one user's secret to silently overwrite another's).
+
+**Decision:** Apply `HashDiscriminator()` using SHA-256 (first 8 bytes = 16 hex chars) to the `discriminator` parameter only. All other segments (`ownerOid`, `platform`, `settingName`) continue using `SanitizeSegment()` — they are controlled values with no collision risk.
+
+**Implementation:**
+```csharp
+private static string HashDiscriminator(string discriminator)
+{
+    if (string.IsNullOrEmpty(discriminator))
+        return string.Empty;
+    var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(discriminator));
+    return Convert.ToHexString(bytes, 0, 8).ToLowerInvariant();
+}
+```
+
+**Consequences:**
+- ✓ Distinct channel IDs → distinct Key Vault names (`UCabc_def` → `d5ca878c9efddfbd`, `UCabc-def` → `ab82aaa6dd869199`)
+- ✓ Any Unicode discriminator maps safely without special-char restrictions
+- ✓ Deterministic (same input → same output, no drift)
+- ✓ 16 hex chars fits within 127-char limit
+- ✓ Pass 1 was never in production, so no migration needed
+
+**Files Changed:**
+- `src/JosephGuadagno.Broadcasting.Domain/Utilities/KeyVaultSecretNameBuilder.cs`
+- `src/JosephGuadagno.Broadcasting.Managers.Tests/KeyVaultSecretNameBuilderTests.cs`
+
+---
+
+### 2026-05-16: Use `data-loading-text` to Control Form Submit Button Loading State
+
+**Author:** Sparks (Frontend Developer)
+**Branch:** issue-972-end-user-validation
+
+**What:** `site.js` has a shared `DOMContentLoaded` handler that disables form submit buttons on submit and replaces their label with a spinner + hardcoded `"Saving..."`. This is correct for Save/Create/Edit forms but wrong for Filter/search forms, which were also showing `"Saving..."`.
+
+**Decision:** Extend the handler to read a `data-loading-text` attribute from the submit button. If present, use its value; otherwise fall back to `"Saving..."`.
+
+```js
+var loadingText = btn.dataset.loadingText || 'Saving...';
+btn.innerHTML = '...' + loadingText;
+```
+
+**Pattern:**
+| Button purpose | Attribute needed | Displayed text |
+|---|---|---|
+| Save / Create / Edit | *(none)* | Saving... |
+| Filter / Search | `data-loading-text="Searching..."` | Searching... |
+| Custom action | `data-loading-text="Your text..."` | Your text... |
+
+**Rationale:** Zero duplication (one handler + one fallback), forward-compatible (new actions just need the attribute), consistent UX.
+
+**Files Changed:**
+- `wwwroot/js/site.js` — reads `data-loading-text`
+- 9 × `Views/*/Index.cshtml` — Filter buttons annotated
+
+---
+
+### 2026-05-16: jQuery Validate url2 Override for Localhost URL Validation in Development
+
+**Author:** Sparks (Frontend Developer)
+**Branch:** issue-972-end-user-validation
+**Status:** Decided
+
+**What:** Collector views (FeedSource and SpeakingEngagements) validate URLs with `[Url]` data annotations, mapped to jQuery Validate's `url` rule. The standard `url` rule uses a strict regex that rejects `localhost` URLs (e.g., `http://localhost:5000/feed.xml`), blocking developers from testing collectors against local dev servers.
+
+**Considered Options:**
+- **Option A (Rejected):** Inject `IWebHostEnvironment` in views — injects infrastructure concerns into presentation layer.
+- **Option B (Rejected):** Add `data-rule-url2="true"` attribute — adds `url2` as additional rule on top of `url`, so `url` still fires and rejects localhost. Also applies in all environments (no dev-only guard). Previous attempt was half-implemented/half-commented.
+- **Option C (Chosen):** Use `<environment include="Development">` tag helper to override the validator in the @Scripts section only in Development. Clean separation, no infrastructure injection, production behavior unchanged.
+
+**Decision:** In each affected view's `@section Scripts`, after `_ValidationScriptsPartial`, add:
+
+```cshtml
+<environment include="Development">
+    <script>
+        jQuery.validator.methods.url = jQuery.validator.methods.url2;
+    </script>
+</environment>
+```
+
+**Key Facts:**
+- `additional-methods.js` (which defines `url2`) was already in `_ValidationScriptsPartial.cshtml` — no libman/CDN changes
+- Override is page-scoped (fires after DOM load, applies to page validator instance only)
+- Production and Staging: standard `url` rule unchanged, localhost URLs rejected (expected)
+
+**Affected Files:**
+- `Views/CollectorFeedSources/Add.cshtml` — removed stale `data-rule-url2`, added env override
+- `Views/CollectorFeedSources/Edit.cshtml` — added env override
+- `Views/CollectorSpeakingEngagements/Add.cshtml` — added env override
+- `Views/CollectorSpeakingEngagements/Edit.cshtml` — added env override
+
+---
+
