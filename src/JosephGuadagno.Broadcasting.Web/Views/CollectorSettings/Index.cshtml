@@ -12,7 +12,7 @@
             <i class="bi bi-rss-fill me-2"></i>Collector Settings
         </h1>
         <p class="text-muted mb-0">
-            Configure the RSS/Atom/JSON feeds, YouTube channels, and speaking engagements to collect content from.
+            Configure the RSS/Atom/JSON feeds, YouTube channels, speaking engagements, and scheduled item collector.
         </p>
     </div>
 </div>
@@ -128,6 +128,59 @@
                                 </td>
                             </tr>
                         }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Scheduled Item Collector Section -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">
+            <i class="bi bi-calendar-check me-2"></i>Scheduled Item Collector
+        </h3>
+        @if (Model.ScheduledItem is null)
+        {
+            <a asp-controller="CollectorScheduledItem" asp-action="Edit" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Configure
+            </a>
+        }
+    </div>
+    <div class="card-body">
+        @if (Model.ScheduledItem is null)
+        {
+            <p class="text-muted mb-0">No scheduled item configuration. Click "Configure" to set it up.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Display Name</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>@Model.ScheduledItem.DisplayName</td>
+                            <td>
+                                <span class="badge @(Model.ScheduledItem.IsActive ? "text-bg-success" : "text-bg-secondary")">
+                                    @(Model.ScheduledItem.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </td>
+                            <td>
+                                <a asp-controller="CollectorScheduledItem" asp-action="Edit" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                                <a asp-controller="CollectorScheduledItem" asp-action="Delete" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i> Remove
+                                </a>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>

@@ -11,4 +11,5 @@ public class CollectorSettingsPageViewModel
     public List<UserCollectorFeedSourceViewModel> FeedSources { get; set; } = [];
     public List<UserCollectorYouTubeChannelViewModel> YouTubeChannels { get; set; } = [];
     public List<UserCollectorSpeakingEngagementViewModel> SpeakingEngagements { get; set; } = [];
+    public UserCollectorScheduledItemViewModel? ScheduledItem { get; set; }
 }

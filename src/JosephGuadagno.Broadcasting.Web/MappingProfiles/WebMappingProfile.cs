@@ -94,5 +94,13 @@ public class WebMappingProfile: Profile
         CreateMap<Models.UserCollectorSpeakingEngagementViewModel, Domain.Models.UserCollectorSpeakingEngagement>()
             .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore());
 
+        CreateMap<Domain.Models.UserCollectorScheduledItem, Models.UserCollectorScheduledItemViewModel>()
+            .ForMember(dest => dest.IsManagedBySiteAdmin, opt => opt.Ignore());
+        CreateMap<Models.UserCollectorScheduledItemViewModel, Domain.Models.UserCollectorScheduledItem>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedOn, opt => opt.Ignore())
+            .ForMember(dest => dest.LastUpdatedOn, opt => opt.Ignore());
+
     }
 }

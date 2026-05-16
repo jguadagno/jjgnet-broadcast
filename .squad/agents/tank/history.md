@@ -4,6 +4,16 @@
 
 Tank (QA Engineer) builds comprehensive test coverage across unit, integration, security, and regression test categories using xUnit, FluentAssertions, and Moq. Primary focus: ensuring backend API contracts work correctly, authorization/RBAC logic is enforced, ownership isolation prevents data leaks, and authentication flows are secure. Key test patterns include: mocking external services (HttpClientFactory via Moq), testing async operations with Task.Delay and verification, ownership isolation regression tests (verify User A cannot access User B's resources), and RBAC authorization tests (verify Viewers cannot POST, Admins can manage users). Tank works closely with Trinity (API endpoint contracts), Switch (Web-layer integration tests), and Neo (security test patterns). Established pattern: write tests before implementation (TDD), test both happy path and error cases, use descriptive test names like `GetEngagements_WhenUserIsContributor_ShouldReturnOwnEngagementsOnly`, mock external dependencies, and verify authorization boundaries. Notable: Tank maintains ownership isolation test suite to prevent regressions as new features are added. Key decision: ownership tests go in integration test class alongside endpoint tests, not as separate security-only test file.
 
+## Recent Session: Issue #969 — Collector Controllers in ControllerAuthorizationPolicyTests (2026-05-15)
+
+- **Work:** Added 5 Collector API controllers to `ControllerAuthorizationPolicyTests`
+- **Result:** ✅ COMPLETE — 157/157 tests pass; PR #970 opened; issue #969 commented
+- **Controllers Added:** `CollectorsController` (1 action), `CollectorYouTubeSettingsController` (5 actions), `CollectorFeedSourceSettingsController` (5 actions), `CollectorSpeakingEngagementSettingsController` (5 actions), `CollectorScheduledItemSettingsController` (3 actions)
+- **Pattern:** Each controller added to `ControllerTypes` (class-level `[Authorize]` check) and all public actions added to `ActionPolicies` with their exact policy (`RequireViewer` for GET, `RequireContributor` for POST/PUT/DELETE)
+- **Commit:** `40060071` on branch `issue-969-collector-authz-policy-tests`
+
+---
+
 ## Recent Session: Fix PublisherSettingsControllerTests Assertions (2026-05-15)
 
 - **Work:** Fixed 2 failing tests in `PublisherSettingsControllerTests.cs`
