@@ -41,6 +41,17 @@ public class KeyVaultSecretNameBuilderTests
         result.Should().Be(expected);
     }
 
+    [Theory]
+    [InlineData("UC_my_channel", "collector-owner-1-youtube-channel-UC-my-channel-api-key")]
+    [InlineData("channel_id_123", "collector-owner-1-youtube-channel-channel-id-123-api-key")]
+    [InlineData("UC@special#chars!", "collector-owner-1-youtube-channel-UC-special-chars--api-key")]
+    public void Build_WithSpecialCharsInDiscriminator_SanitizesToHyphens(string discriminator, string expected)
+    {
+        var result = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Collector, "owner-1", KeyVaultSecretNames.Platform.YouTubeChannel, KeyVaultSecretNames.SettingName.ApiKey, discriminator);
+
+        result.Should().Be(expected);
+    }
+
     [Fact]
     public void Build_WithNullDiscriminator_OmitsDiscriminatorSegment()
     {

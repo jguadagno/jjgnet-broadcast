@@ -24,9 +24,18 @@ public static class KeyVaultSecretNameBuilder
     public static string Build(KeyVaultSecretOwnerType ownerType, string ownerOid, string platform, string settingName, string? discriminator = null)
     {
         var type = ownerType.ToString().ToLowerInvariant();
-        var sanitizedOwner = SecretNameSanitizer.Replace(ownerOid, "-");
+        var sanitizedOwner = SanitizeSegment(ownerOid);
+        var sanitizedPlatform = SanitizeSegment(platform);
+        var sanitizedSettingName = SanitizeSegment(settingName);
         return discriminator is null
-            ? $"{type}-{sanitizedOwner}-{platform}-{settingName}"
-            : $"{type}-{sanitizedOwner}-{platform}-{discriminator}-{settingName}";
+            ? $"{type}-{sanitizedOwner}-{sanitizedPlatform}-{sanitizedSettingName}"
+            : $"{type}-{sanitizedOwner}-{sanitizedPlatform}-{SanitizeSegment(discriminator)}-{sanitizedSettingName}";
     }
+
+    /// <summary>
+    /// Replaces any character that is not a letter, digit, or hyphen with a hyphen.
+    /// Azure Key Vault secret names only permit <c>[a-zA-Z0-9-]</c>.
+    /// </summary>
+    private static string SanitizeSegment(string segment) =>
+        SecretNameSanitizer.Replace(segment, "-");
 }
