@@ -1,15 +1,28 @@
 @model JosephGuadagno.Broadcasting.Web.Models.FacebookPublisherSettingsViewModel
 
-<div class="card-body">
-    <form asp-action="SaveFacebook" method="post" novalidate>
+@{
+    ViewData["Title"] = "Edit Facebook Settings";
+}
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <div>
+        <h1 class="mb-1">
+            <i class="bi bi-facebook me-2"></i>Facebook Settings
+        </h1>
+        <p class="text-muted mb-0">Configure the settings for publishing to Facebook.</p>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form asp-action="Save" method="post" novalidate>
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
             <input asp-for="Id" type="hidden" />
-            <input asp-for="CreatedByEntraOid" type="hidden" />
-            <input asp-for="SocialMediaPlatformId" type="hidden" />
-            <input asp-for="PlatformName" type="hidden" />
-            <input asp-for="PlatformIcon" type="hidden" />
-            <input asp-for="GraphApiVersion" type="hidden" />
-            <input asp-for="GraphApiRootUrl" type="hidden" />
             <input asp-for="HasPageAccessToken" type="hidden" />
             <input asp-for="HasAppSecret" type="hidden" />
             <input asp-for="HasClientToken" type="hidden" />
@@ -18,7 +31,7 @@
 
             <div class="form-check form-switch mb-3">
                 <input asp-for="IsEnabled" class="form-check-input" />
-                <label asp-for="IsEnabled" class="form-check-label">Enable @Model.PlatformName publishing</label>
+                <label asp-for="IsEnabled" class="form-check-label">Enable Facebook publishing</label>
             </div>
 
             <div class="row g-3 mb-3">
@@ -56,27 +69,32 @@
                 <div class="row g-3">
                     <div class="col-12">
                         <label asp-for="PageAccessToken" class="form-label"></label>
-                        <input asp-for="PageAccessToken" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored page access token" />
+                        <input asp-for="PageAccessToken" class="form-control" autocomplete="new-password"
+                               placeholder="Leave blank to keep the stored page access token" />
                         <span asp-validation-for="PageAccessToken" class="text-danger"></span>
                     </div>
                     <div class="col-12">
                         <label asp-for="AppSecret" class="form-label"></label>
-                        <input asp-for="AppSecret" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored app secret" />
+                        <input asp-for="AppSecret" class="form-control" autocomplete="new-password"
+                               placeholder="Leave blank to keep the stored app secret" />
                         <span asp-validation-for="AppSecret" class="text-danger"></span>
                     </div>
                     <div class="col-12">
                         <label asp-for="ClientToken" class="form-label"></label>
-                        <input asp-for="ClientToken" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored client token" />
+                        <input asp-for="ClientToken" class="form-control" autocomplete="new-password"
+                               placeholder="Leave blank to keep the stored client token" />
                         <span asp-validation-for="ClientToken" class="text-danger"></span>
                     </div>
                     <div class="col-12">
                         <label asp-for="ShortLivedAccessToken" class="form-label"></label>
-                        <input asp-for="ShortLivedAccessToken" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored short-lived access token" />
+                        <input asp-for="ShortLivedAccessToken" class="form-control" autocomplete="new-password"
+                               placeholder="Leave blank to keep the stored short-lived access token" />
                         <span asp-validation-for="ShortLivedAccessToken" class="text-danger"></span>
                     </div>
                     <div class="col-12">
                         <label asp-for="LongLivedAccessToken" class="form-label"></label>
-                        <input asp-for="LongLivedAccessToken" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored long-lived access token" />
+                        <input asp-for="LongLivedAccessToken" class="form-control" autocomplete="new-password"
+                               placeholder="Leave blank to keep the stored long-lived access token" />
                         <span asp-validation-for="LongLivedAccessToken" class="text-danger"></span>
                     </div>
                 </div>
@@ -86,6 +104,12 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-floppy me-2"></i>Save
                 </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </form>
     </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

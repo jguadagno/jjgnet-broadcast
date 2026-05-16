@@ -60,6 +60,16 @@
 
 ## Recent Sessions
 
+### 2026-05-16 — Issue #972 Missing Publisher Settings Tables
+
+- **Work:** Added four per-publisher settings tables to `scripts\database\table-create.sql`
+  - Tables missing: `UserPublisherBlueskySettings`, `UserPublisherTwitterSettings`, `UserPublisherLinkedInSettings`, `UserPublisherFacebookSettings`
+  - Root cause: Phase 1 migration (`2026-05-15-publisher-settings-per-publisher-tables.sql`) added the tables but `table-create.sql` was never updated
+  - Aspire AppHost only runs `database-create.sql` + `table-create.sql` + `data-seed.sql` — migration files are ignored on fresh boots
+  - Copied exact DDL from migration with identical IF NOT EXISTS guards; inserted after existing `UserPublisherSettings` block
+- **Outcome:** Build 0 errors/0 warnings; committed to `issue-972-end-user-validation` (7b88ea23)
+- **Status:** ✅ COMPLETE
+
 ### 2026-04-25 — Issue #778 User Collector Configs
 
 - **Work:** Database migration + EF Core entities for per-user collector onboarding
@@ -100,6 +110,10 @@
 2. `ScheduledItemDataStore` — Filter: `Message`; Sort: `sendondate`, `message`, `messagesent`
 
 ## Learnings
+
+### Migration scripts must ALSO land in table-create.sql (2026-05-16)
+
+Every migration under `scripts\database\migrations\` creates tables that ONLY exist in that file until they are also added to `scripts\database\table-create.sql`. The Aspire AppHost bootstraps fresh environments by concatenating ONLY `database-create.sql` + `table-create.sql` + `data-seed.sql`. Migration files are never auto-run by the AppHost. Omitting a migration's DDL from `table-create.sql` causes `CommandError` (table not found) on any fresh Aspire-managed environment. **Rule:** every migration that creates a new table must include a corresponding IF NOT EXISTS block in `table-create.sql` in the same PR.
 
 ### EF Core 8 Bool Sentinel Pattern (2026-05-16)
 

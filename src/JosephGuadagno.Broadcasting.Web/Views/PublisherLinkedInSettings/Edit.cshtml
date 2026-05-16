@@ -1,20 +1,34 @@
 @model JosephGuadagno.Broadcasting.Web.Models.LinkedInPublisherSettingsViewModel
 
-<div class="card-body">
-    <form asp-action="SaveLinkedIn" method="post" novalidate>
+@{
+    ViewData["Title"] = "Edit LinkedIn Settings";
+}
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <div>
+        <h1 class="mb-1">
+            <i class="bi bi-linkedin me-2"></i>LinkedIn Settings
+        </h1>
+        <p class="text-muted mb-0">Configure the settings for publishing to LinkedIn.</p>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form asp-action="Save" method="post" novalidate>
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
             <input asp-for="Id" type="hidden" />
-            <input asp-for="CreatedByEntraOid" type="hidden" />
-            <input asp-for="SocialMediaPlatformId" type="hidden" />
-            <input asp-for="PlatformName" type="hidden" />
-            <input asp-for="PlatformIcon" type="hidden" />
-            <input asp-for="AccessTokenUrl" type="hidden" />
             <input asp-for="HasClientSecret" type="hidden" />
             <input asp-for="HasAccessToken" type="hidden" />
 
             <div class="form-check form-switch mb-3">
                 <input asp-for="IsEnabled" class="form-check-input" />
-                <label asp-for="IsEnabled" class="form-check-label">Enable @Model.PlatformName publishing</label>
+                <label asp-for="IsEnabled" class="form-check-label">Enable LinkedIn publishing</label>
             </div>
 
             <div class="row g-3 mb-3">
@@ -49,12 +63,14 @@
                 <div class="row g-3">
                     <div class="col-12">
                         <label asp-for="ClientSecret" class="form-label"></label>
-                        <input asp-for="ClientSecret" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored client secret" />
+                        <input asp-for="ClientSecret" class="form-control" autocomplete="new-password"
+                               placeholder="Leave blank to keep the stored client secret" />
                         <span asp-validation-for="ClientSecret" class="text-danger"></span>
                     </div>
                     <div class="col-12">
                         <label asp-for="AccessToken" class="form-label"></label>
-                        <input asp-for="AccessToken" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep the stored access token" />
+                        <input asp-for="AccessToken" class="form-control" autocomplete="new-password"
+                               placeholder="Leave blank to keep the stored access token" />
                         <span asp-validation-for="AccessToken" class="text-danger"></span>
                     </div>
                 </div>
@@ -64,6 +80,12 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-floppy me-2"></i>Save
                 </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </form>
     </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}
