@@ -8,42 +8,47 @@ using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace JosephGuadagno.Broadcasting.Api.Controllers;
+namespace JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
 
 /// <summary>
-/// Manages per-user YouTube channel collector configurations
+/// Manages per-user YouTube channel collector configurations under the
+/// <c>/Collectors/YouTube/Settings</c> route.
 /// </summary>
 [ApiController]
 [Authorize]
 [IgnoreAntiforgeryToken]
-[Route("[controller]")]
+[Route("Collectors/YouTube/Settings")]
 [Produces("application/json")]
-public class UserCollectorYouTubeChannelsController(
-    IUserCollectorYouTubeChannelManager userCollectorYouTubeChannelManager,
-    ILogger<UserCollectorYouTubeChannelsController> logger,
+public class CollectorYouTubeSettingsController(
+    IUserCollectorYouTubeChannelManager youTubeChannelManager,
+    ILogger<CollectorYouTubeSettingsController> logger,
     IMapper mapper) : ControllerBase
 {
     /// <summary>
-    /// Gets all YouTube channel configurations visible to the current caller
+    /// Gets a paged list of YouTube channel configurations for the resolved owner.
     /// </summary>
-    /// <param name="ownerOid">
-    /// Optional Entra object ID to query. Non-admin callers can only query their own configurations.
-    /// </param>
-    /// <param name="page">The page number (default: 1)</param>
-    /// <param name="pageSize">The page size (default: 25)</param>
-    /// <param name="sortBy">The field to sort by (default: channelname)</param>
-    /// <param name="sortDescending">When true, sorts in descending order (default: false)</param>
-    /// <param name="filter">Optional text filter applied to YouTube channel names</param>
-    /// <returns>A list of YouTube channel configurations for the resolved owner</returns>
-    /// <response code="200">Returns the YouTube channel configurations for the resolved owner</response>
-    /// <response code="401">The caller is not authenticated</response>
-    /// <response code="403">The caller is not allowed to query the requested owner</response>
+    /// <param name="ownerOid">Optional Entra OID. Non-admin callers can only query their own configurations.</param>
+    /// <param name="page">The page number (default: 1).</param>
+    /// <param name="pageSize">The page size (default: 25).</param>
+    /// <param name="sortBy">The field to sort by (default: channelname).</param>
+    /// <param name="sortDescending">When true, sorts in descending order (default: false).</param>
+    /// <param name="filter">Optional text filter applied to YouTube channel names.</param>
+    /// <returns>A paged list of YouTube channel configurations for the resolved owner.</returns>
+    /// <response code="200">Returns the YouTube channel configurations for the resolved owner.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to query the requested owner.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponse<UserCollectorYouTubeChannelResponse>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PagedResponse<UserCollectorYouTubeChannelResponse>>> GetAllAsync([FromQuery] string? ownerOid = null, int page = Pagination.DefaultPage, int pageSize = Pagination.DefaultPageSize, string sortBy = "channelname", bool sortDescending = false, string? filter = null)
+    public async Task<ActionResult<PagedResponse<UserCollectorYouTubeChannelResponse>>> GetAllAsync(
+        [FromQuery] string? ownerOid = null,
+        int page = Pagination.DefaultPage,
+        int pageSize = Pagination.DefaultPageSize,
+        string sortBy = "channelname",
+        bool sortDescending = false,
+        string? filter = null)
     {
         if (page < 1) page = Pagination.DefaultPage;
         if (pageSize < 1 || pageSize > Pagination.MaxPageSize) pageSize = Pagination.DefaultPageSize;
@@ -54,7 +59,7 @@ public class UserCollectorYouTubeChannelsController(
             return Forbid();
         }
 
-        var result = await userCollectorYouTubeChannelManager.GetAllAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter);
+        var result = await youTubeChannelManager.GetAllAsync(resolvedOwnerOid, page, pageSize, sortBy, sortDescending, filter);
         var items = mapper.Map<List<UserCollectorYouTubeChannelResponse>>(result.Items);
         return new PagedResponse<UserCollectorYouTubeChannelResponse>
         {
@@ -66,14 +71,14 @@ public class UserCollectorYouTubeChannelsController(
     }
 
     /// <summary>
-    /// Gets a YouTube channel configuration by ID
+    /// Gets a YouTube channel configuration by ID.
     /// </summary>
-    /// <param name="id">The configuration identifier</param>
-    /// <returns>The YouTube channel configuration</returns>
-    /// <response code="200">Returns the YouTube channel configuration</response>
-    /// <response code="401">The caller is not authenticated</response>
-    /// <response code="403">The caller is not allowed to access this configuration</response>
-    /// <response code="404">No configuration exists with the specified ID</response>
+    /// <param name="id">The configuration identifier.</param>
+    /// <returns>The YouTube channel configuration.</returns>
+    /// <response code="200">Returns the YouTube channel configuration.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to access this configuration.</response>
+    /// <response code="404">No configuration exists with the specified ID.</response>
     [HttpGet("{id:int}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorYouTubeChannelResponse))]
@@ -82,7 +87,7 @@ public class UserCollectorYouTubeChannelsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserCollectorYouTubeChannelResponse>> GetAsync(int id)
     {
-        var config = await userCollectorYouTubeChannelManager.GetByIdAsync(id);
+        var config = await youTubeChannelManager.GetByIdAsync(id);
         if (config is null)
         {
             logger.LogWarning("YouTube channel config not found for ID {Id}", id);
@@ -105,19 +110,16 @@ public class UserCollectorYouTubeChannelsController(
     }
 
     /// <summary>
-    /// Creates or updates a YouTube channel configuration
+    /// Creates a YouTube channel configuration.
     /// </summary>
-    /// <param name="ownerOid">
-    /// Optional Entra object ID to target. Non-admin callers can only save their own configurations.
-    /// </param>
-    /// <param name="request">The YouTube channel configuration payload to save</param>
-    /// <returns>The saved YouTube channel configuration</returns>
-    /// <response code="200">Returns the saved YouTube channel configuration</response>
-    /// <response code="400">The request payload was invalid or the configuration could not be saved</response>
-    /// <response code="401">The caller is not authenticated</response>
-    /// <response code="403">The caller is not allowed to save configurations for the requested owner</response>
+    /// <param name="ownerOid">Optional Entra OID. Non-admin callers can only create configurations for themselves.</param>
+    /// <param name="request">The YouTube channel configuration payload to create.</param>
+    /// <returns>The created YouTube channel configuration.</returns>
+    /// <response code="200">Returns the created YouTube channel configuration.</response>
+    /// <response code="400">The request payload was invalid or the configuration could not be saved.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to create configurations for the requested owner.</response>
     [HttpPost]
-    [IgnoreAntiforgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorYouTubeChannelResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -144,13 +146,13 @@ public class UserCollectorYouTubeChannelsController(
 
         if (!string.IsNullOrWhiteSpace(request.ApiKey))
         {
-            await userCollectorYouTubeChannelManager.StoreApiKeyToKeyVaultAsync(
+            await youTubeChannelManager.StoreApiKeyToKeyVaultAsync(
                 resolvedOwnerOid,
                 request.ChannelId,
                 request.ApiKey);
         }
 
-        var saved = await userCollectorYouTubeChannelManager.SaveAsync(config);
+        var saved = await youTubeChannelManager.SaveAsync(config);
         if (saved is null)
         {
             logger.LogWarning(
@@ -164,11 +166,16 @@ public class UserCollectorYouTubeChannelsController(
     }
 
     /// <summary>
-    /// Updates an existing YouTube channel configuration
+    /// Updates an existing YouTube channel configuration.
     /// </summary>
-    /// <param name="id">The configuration identifier</param>
-    /// <param name="request">The YouTube channel configuration payload</param>
-    /// <returns>The updated YouTube channel configuration</returns>
+    /// <param name="id">The configuration identifier.</param>
+    /// <param name="request">The YouTube channel configuration payload.</param>
+    /// <returns>The updated YouTube channel configuration.</returns>
+    /// <response code="200">Returns the updated YouTube channel configuration.</response>
+    /// <response code="400">The request payload was invalid or the configuration could not be updated.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to update this configuration.</response>
+    /// <response code="404">No configuration exists with the specified ID.</response>
     [HttpPut("{id:int}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorYouTubeChannelResponse))]
@@ -186,7 +193,7 @@ public class UserCollectorYouTubeChannelsController(
             return BadRequest(ModelState);
         }
 
-        var existing = await userCollectorYouTubeChannelManager.GetByIdAsync(id);
+        var existing = await youTubeChannelManager.GetByIdAsync(id);
         if (existing is null)
         {
             return NotFound();
@@ -210,13 +217,13 @@ public class UserCollectorYouTubeChannelsController(
 
         if (!string.IsNullOrWhiteSpace(request.ApiKey))
         {
-            await userCollectorYouTubeChannelManager.StoreApiKeyToKeyVaultAsync(
+            await youTubeChannelManager.StoreApiKeyToKeyVaultAsync(
                 existing.CreatedByEntraOid,
                 request.ChannelId,
                 request.ApiKey);
         }
 
-        var saved = await userCollectorYouTubeChannelManager.SaveAsync(config);
+        var saved = await youTubeChannelManager.SaveAsync(config);
         if (saved is null)
         {
             logger.LogWarning("Failed to update YouTube channel config for ID {Id}", id);
@@ -227,14 +234,14 @@ public class UserCollectorYouTubeChannelsController(
     }
 
     /// <summary>
-    /// Deletes a YouTube channel configuration
+    /// Deletes a YouTube channel configuration.
     /// </summary>
-    /// <param name="id">The configuration identifier</param>
-    /// <returns>No content when the delete succeeds</returns>
-    /// <response code="204">The YouTube channel configuration was deleted</response>
-    /// <response code="401">The caller is not authenticated</response>
-    /// <response code="403">The caller is not allowed to delete this configuration</response>
-    /// <response code="404">No configuration exists with the specified ID</response>
+    /// <param name="id">The configuration identifier.</param>
+    /// <returns>No content when the delete succeeds.</returns>
+    /// <response code="204">The YouTube channel configuration was deleted.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is not allowed to delete this configuration.</response>
+    /// <response code="404">No configuration exists with the specified ID.</response>
     [HttpDelete("{id:int}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -243,7 +250,7 @@ public class UserCollectorYouTubeChannelsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteAsync(int id)
     {
-        var config = await userCollectorYouTubeChannelManager.GetByIdAsync(id);
+        var config = await youTubeChannelManager.GetByIdAsync(id);
         if (config is null)
         {
             logger.LogWarning("YouTube channel config not found for delete for ID {Id}", id);
@@ -262,7 +269,7 @@ public class UserCollectorYouTubeChannelsController(
             return Forbid();
         }
 
-        var deleted = await userCollectorYouTubeChannelManager.DeleteAsync(id, config.CreatedByEntraOid);
+        var deleted = await youTubeChannelManager.DeleteAsync(id, config.CreatedByEntraOid);
         if (!deleted)
         {
             logger.LogWarning("Failed to delete YouTube channel config for ID {Id}", id);
@@ -271,5 +278,4 @@ public class UserCollectorYouTubeChannelsController(
 
         return NoContent();
     }
-
 }
