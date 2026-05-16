@@ -63,7 +63,15 @@ Fixed Neo's blocking `cs/log-forging` review finding: 3 `LogWarning` call sites 
 
 ## Learnings
 
-### Collector API Route Alignment — Issue #960 Phase 1 (2026-05-15)
+### Collector Web Layer — Issue #960 Phase 2 (2026-05-16)
+
+1. When adding route aliases to an MVC controller that uses conventional routing, switch to attribute routing with both `[Route("OldName")]` and `[Route("NewName")]` at class level. The `Index` action needs `[HttpGet("")]` and `[HttpGet("Index")]` to cover both bare path and explicit action URL.
+2. Single-row-per-user Web controllers: no `id` parameter needed — actions are parameterless (or take optional `ownerOid` for admin). The API handles the upsert internally.
+3. `UserCollectorScheduledItemService.SaveAsync` passes `item.CreatedByEntraOid` as `?ownerOid=` query param so the API can enforce ownership/admin checks.
+4. `WebMappingProfile` ViewModel→Domain maps for single-row models need `Id`, `CreatedByEntraOid`, `CreatedOn`, and `LastUpdatedOn` all ignored — the controller sets them explicitly before calling `SaveAsync`.
+5. Nullable ViewModel (`UserCollectorScheduledItemViewModel?`) is the right Index view model for single-row-per-user — renders "not configured" state without a separate sentinel value.
+
+
 
 1. When marking old controllers `[Obsolete]`, test files that instantiate them directly will generate CS0618 build warnings. Suppress with `#pragma warning disable CS0618` at file top with a comment explaining the intent (testing backward compat during migration).
 2. `IUserCollectorScheduledItemManager.GetByUserAsync` returns `Task<List<T>>` (not `Task<T?>`). For single-row-per-user patterns, call `GetByUserAsync` and take `.FirstOrDefault()` — do NOT assume a `GetSingleByUserAsync` method exists.
