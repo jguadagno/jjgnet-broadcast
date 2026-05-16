@@ -27,7 +27,7 @@
 
                 <div class="mb-3">
                     <label asp-for="FeedUrl" class="form-label"></label>
-                    <input asp-for="FeedUrl" class="form-control" data-rule-url2="true" />
+                    <input asp-for="FeedUrl" class="form-control" />
                     <span asp-validation-for="FeedUrl" class="text-danger"></span>
                 </div>
 
@@ -51,7 +51,10 @@
  
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
-    @* <script language="javascript"> *@
-    @*     $("#FeedUrl").rules("add", {url2: true}); *@
-    @* </script> *@
+    <environment include="Development">
+        <script>
+            // Allow localhost URLs in development by overriding the url validator
+            jQuery.validator.methods.url = jQuery.validator.methods.url2;
+        </script>
+    </environment>
 }

@@ -52,4 +52,10 @@
 
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <environment include="Development">
+        <script>
+            // Allow localhost URLs in development by overriding the url validator
+            jQuery.validator.methods.url = jQuery.validator.methods.url2;
+        </script>
+    </environment>
 }
