@@ -63,6 +63,18 @@ Fixed Neo's blocking `cs/log-forging` review finding: 3 `LogWarning` call sites 
 
 ## Learnings
 
+### Collector Web Service URL Fix — Issue #973 (2026-05-16)
+
+**Status:** ✅ COMPLETE — PR #974 on `issue-973`
+
+After the collector API route refactor (issue #960), three Web service base URL constants still pointed to the old `/UserCollector*` routes. Updated all three constants to match the new `/Collectors/{name}/Settings` hierarchy. Build clean (0 warnings, 0 errors). All tests passing.
+
+**Learnings:**
+- When refactoring API routes, always audit all Web service files for stale base URL constants — the compiler won't catch a mismatch between a string constant and a renamed route.
+- `private const string` base URL constants in Web service files are the single source of truth for API routing from the Web layer — one constant controls all CRUD operations for that resource.
+
+---
+
 ### Collector Web Layer — Issue #960 Phase 2 (2026-05-16)
 
 1. When adding route aliases to an MVC controller that uses conventional routing, switch to attribute routing with both `[Route("OldName")]` and `[Route("NewName")]` at class level. The `Index` action needs `[HttpGet("")]` and `[HttpGet("Index")]` to cover both bare path and explicit action URL.
@@ -144,4 +156,10 @@ Fixed Neo's blocking `cs/log-forging` review finding: 3 `LogWarning` call sites 
 
 1. NEVER use `gh pr create --body "..."` inline — PowerShell mangles backslashes. ALWAYS write body to file first.
 2. Before all GitHub output, scan for `\word\` patterns and replace with backticks.
+
+---
+
+### Web Controller Route Alignment — 2026-05-16
+
+Adding a class-level `[Route]` to an MVC controller switches it from convention routing to **attribute routing mode** — actions without their own HTTP-verb/route templates become silently unreachable and `asp-controller`/`asp-action` URL generation returns null. The fix is to pair every class-level `[Route("...")]` with explicit action-level templates: `[HttpGet("")]` + `[HttpGet("Index")]` for the default Index action, `[HttpGet("Edit/{id}")]` / `[HttpPost("Edit")]` / `[HttpGet("Delete/{id}")]` / `[HttpPost("Delete")]` etc. for CRUD actions. `CollectorSettingsController` is the reference implementation already following this pattern.
 

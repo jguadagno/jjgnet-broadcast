@@ -98,3 +98,13 @@
 **Data stores with sort/filter overloads:**
 1. `MessageTemplateDataStore` — Filter: `MessageType`; Sort: `messagetype`, `platformid`
 2. `ScheduledItemDataStore` — Filter: `Message`; Sort: `sendondate`, `message`, `messagesent`
+
+## Learnings
+
+### EF Core 8 Bool Sentinel Pattern (2026-05-16)
+
+EF Core 8 warns on `bool` properties with `HasDefaultValue`/`HasDefaultValueSql` because it can't distinguish CLR default (`false`) from "not explicitly set". Three resolution strategies:
+
+1. **DB default = `true`, no model initializer** (`SocialMediaPlatform.IsActive`): keep `HasDefaultValueSql("1")` and add `.HasSentinel(true)`. Sentinel = DB default = `true` means EF uses DB default when value is `true`, and correctly inserts `false` when set to false.
+2. **DB default = `false`** (`UserPublisherSetting.IsEnabled`, all `UserPublisher*Settings.IsEnabled`): remove `HasDefaultValueSql("0")` entirely. CLR default `false` == DB default, so EF always inserts the C# value — no behavioral change. DB column retains its `DEFAULT (0)` for raw SQL.
+3. **DB default = `true`, model has `= true` initializer** (`UserCollectorSpeakingEngagement.IsActive`, `UserCollectorScheduledItem.IsActive`): remove `HasDefaultValue(true)`. The model initializer ensures new instances default to `true`; EF always inserts the C# value.
