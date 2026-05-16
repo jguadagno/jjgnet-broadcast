@@ -34,7 +34,7 @@
             <option value="@p" selected="@(p == (string)ViewBag.SelectedPlatform)">@p</option>
         }
     </select>
-    <button type="submit" class="btn btn-outline-secondary">Filter</button>
+    <button type="submit" class="btn btn-outline-secondary" data-loading-text="Searching...">Filter</button>
     @if (!string.IsNullOrEmpty(ViewBag.Filter as string) || !string.IsNullOrEmpty(ViewBag.SelectedPlatform as string))
     {
         <a asp-action="Index" asp-controller="MessageTemplates" asp-route-sortBy="@ViewBag.SortBy" asp-route-sortDescending="@ViewBag.SortDescending" class="btn btn-outline-danger">Clear</a>
