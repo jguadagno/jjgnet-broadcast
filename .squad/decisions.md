@@ -132,6 +132,18 @@ public static string Build(
 
 ---
 
+# Decision: Self-Contained Collector/Publisher Model Architecture
+
+**Date:** 2026-05-16T10:25:34-07:00
+**Author:** Joseph (via Copilot)
+**Status:** Directive — Architectural principle for all collector/publisher work
+
+Each collector and publisher is treated as a **self-contained model**. Minimize shared components and APIs. Adding or removing a collector or publisher should NOT require a big refactor. Each collector/publisher owns its own service, controller, views, and DTOs. Shared code should be kept to an absolute minimum.
+
+**Rationale:** Ensures the architecture stays modular and maintainable as publishers/collectors are added or removed over time.
+
+---
+
 # Code Review: PR #963 — Publisher Settings Phase 2
 
 **Date:** 2026-05-15

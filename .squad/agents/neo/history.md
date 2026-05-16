@@ -74,6 +74,34 @@ Fix: wrap all three sites with `LogSanitizer.Sanitize()` — the `using` directi
 
 ---
 
+## 2026-05-16 — GitHub Issue #975: Site Admin CRUD for Publisher/Collector Settings
+
+**Status:** ✅ COMPLETE — issue created and opened
+
+**Issue Details:**
+- **Number:** #975
+- **Title:** feat: Build Site Admin section for CRUD management of publisher and collector settings for any user
+- **Labels:** squad, enhancement
+- **Scope:** New feature for administrators to manage publisher and collector settings on behalf of end users
+
+**Context:**
+- Complements the per-user self-service settings pages already refactored (Trinity's 5 per-publisher controllers)
+- Operational requirement: admins need the ability to troubleshoot, override, or reset any user's settings without requiring that user's login
+- Self-contained architecture directive supports this: each publisher/collector already has dedicated controller/service
+
+**Technical notes:**
+- New admin controller: parallel to existing per-publisher (Bluesky, LinkedIn, Facebook, Twitter) + per-collector (YouTube, FeedSource, SpeakingEngagement, ScheduledItem) pattern
+- API endpoint: `/Admin/Settings/{settingType}/{name}` where `settingType` ∈ {publishers, collectors} and `name` ∈ {bluesky, youtube, etc.}
+- Authorization: `[Authorize(Policy = "AdminOnly")]` — only admins with elevated role
+- Dependency: relies on Trinity's self-contained refactor being stable first
+
+**Learnings:**
+- Site admin CRUD is a planned follow-up, not a blocker for per-user refactors
+- Self-contained directive makes admin override simple: admin controller just delegates to existing typed managers/services with `?adminOverride=true` or separate logic path
+- Enqueuing this now keeps it visible for sprint planning
+
+---
+
 ## Learnings
 
 ### 2026-05-15 — PR #963 Formal Review: Publisher Settings Phase 2
