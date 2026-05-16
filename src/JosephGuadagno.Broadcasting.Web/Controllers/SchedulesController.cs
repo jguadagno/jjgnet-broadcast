@@ -59,14 +59,10 @@ public class SchedulesController : Controller
     /// <returns>A List&lt;<see cref="ScheduledItemViewModel"/>&gt;</returns>
     public async Task<IActionResult> Index(int page = Pagination.DefaultPage, string sortBy = "sendondatetime", bool sortDescending = true, string? filter = null)
     {
-        var itemsTask = _scheduledItemService.GetScheduledItemsAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
-        var orphanedTask = _scheduledItemService.GetOrphanedScheduledItemsAsync(1, 1);
-        await Task.WhenAll(itemsTask, orphanedTask);
-
-        var result = await itemsTask;
+        var result = await _scheduledItemService.GetScheduledItemsAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
         var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(result.Items);
 
-        var orphanedResult = await orphanedTask;
+        var orphanedResult = await _scheduledItemService.GetOrphanedScheduledItemsAsync(1, 1);
         ViewBag.OrphanedCount = orphanedResult.TotalCount;
 
         ViewBag.Page = page;

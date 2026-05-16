@@ -43,19 +43,17 @@ public class CollectorsController(
             return Forbid();
         }
 
-        var youTubeTask = youTubeChannelManager.GetByUserAsync(resolvedOwnerOid);
-        var feedTask = feedSourceManager.GetByUserAsync(resolvedOwnerOid);
-        var speakingTask = speakingEngagementManager.GetByUserAsync(resolvedOwnerOid);
-        var scheduledTask = scheduledItemManager.GetByUserAsync(resolvedOwnerOid);
-
-        await Task.WhenAll(youTubeTask, feedTask, speakingTask, scheduledTask);
+        var youTube = await youTubeChannelManager.GetByUserAsync(resolvedOwnerOid);
+        var feed = await feedSourceManager.GetByUserAsync(resolvedOwnerOid);
+        var speaking = await speakingEngagementManager.GetByUserAsync(resolvedOwnerOid);
+        var scheduled = await scheduledItemManager.GetByUserAsync(resolvedOwnerOid);
 
         return Ok(new CollectorsSummaryResponse
         {
-            YouTubeChannelCount = youTubeTask.Result.Count,
-            FeedSourceCount = feedTask.Result.Count,
-            SpeakingEngagementCount = speakingTask.Result.Count,
-            ScheduledItemConfigured = scheduledTask.Result.Count > 0
+            YouTubeChannelCount = youTube.Count,
+            FeedSourceCount = feed.Count,
+            SpeakingEngagementCount = speaking.Count,
+            ScheduledItemConfigured = scheduled.Count > 0
         });
     }
 }
