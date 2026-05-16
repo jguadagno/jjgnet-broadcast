@@ -8,6 +8,8 @@ Sparks (Frontend/Polish Specialist) focuses on UI/UX refinements, Bootstrap 5 mi
 
 | Date | Task | Outcome |
 |------|------|---------|
+| 2026-05-16 | Remove duplicate TempData message blocks from 20 views (issue-972-end-user-validation) | ✅ _Layout.cshtml already renders Success/Warning/Error TempData globally; removed redundant inline renders from Add, Edit, Details, and Index views across CollectorFeedSources, CollectorSpeakingEngagements, CollectorYouTubeChannels, CollectorScheduledItem, SyndicationFeedItems, and YouTubeItems (20 files, 206 lines removed); build 0 errors, all tests pass |
+| 2026-05-16 | Allow localhost URLs in dev via jQuery Validate url2 override (issue-972-end-user-validation) | ✅ Added `<environment include="Development">` override block to all 4 collector views; cleaned up incomplete data-rule-url2 from FeedSources/Add.cshtml; no libman changes needed — additional-methods.js already loaded |
 | 2026-05-12 | Refactor CollectorSettings/Index.cshtml — remove modals, add SpeakingEngagements section (#950) | ✅ Replaced all modal Add/Edit/Delete triggers with redirect links; added Speaking Engagements card; applied table-dark to all section tables; removed modal divs and JS scripts; build succeeded 0 errors |
 | 2026-03-20 | Added CodeQL analysis to ci.yml (#326) | ✅ CodeQL job added as separate job with csharp language, push to main trigger added to workflow |
 | 2026-04-03 | Implement health checks for Api and Web (#635) | ✅ Added SQL Server and Azure Storage health checks to ServiceDefaults; PR #641 created |
@@ -19,6 +21,22 @@ Sparks (Frontend/Polish Specialist) focuses on UI/UX refinements, Bootstrap 5 mi
 | 2026-05-14 | Refactor MessageTemplates GetSocialIcon helper (#950) | ✅ Removed @functions block; injected ISocialMediaPlatformService into controller; built ViewBag.PlatformIcons dictionary with "bi-broadcast" fallback; updated view to use dictionary lookup; build 0 errors; branch issue-950-sanity-check |
 
 ## Learnings
+
+### 2026-05-16 — jQuery Validate url2 Override for Localhost Dev Testing
+- **Files:** `Views/CollectorFeedSources/Add.cshtml`, `Views/CollectorFeedSources/Edit.cshtml`, `Views/CollectorSpeakingEngagements/Add.cshtml`, `Views/CollectorSpeakingEngagements/Edit.cshtml`
+- **Problem:** jQuery Validate's `url` rule rejects `localhost` URLs. Both view models use `[Url]` data annotation which unobtrusive validation maps to the `url` rule, blocking local dev testing.
+- **Fix:** `additional-methods.js` (which contains `url2`) is already loaded in `_ValidationScriptsPartial.cshtml` for all environments. Added a `<environment include="Development">` script block after the partial in each view's `@section Scripts` that overrides the validator: `jQuery.validator.methods.url = jQuery.validator.methods.url2;`
+- **Key rule:** This override is global to the page — it replaces the `url` rule's regex with `url2`'s more permissive one. In Production the `url` rule remains strict. The override fires only in Development.
+- **Cleanup:** `CollectorFeedSources/Add.cshtml` had a stale `data-rule-url2="true"` attribute on the input and commented-out `rules()` script — both removed. `data-rule-url2` adds url2 as an *additional* rule on top of `url`; it does not replace it, so localhost would still fail via the `url` check.
+- **Branch:** `issue-972-end-user-validation`
+
+### 2026-05-16 — Duplicate TempData Message Renders Across Views
+- **Root cause:** `_Layout.cshtml` renders `TempData["SuccessMessage"]`, `TempData["WarningMessage"]`, and `TempData["ErrorMessage"]` globally inside `<main>`, before `@RenderBody()`. Individual views that also contained inline TempData renders caused the same message to appear twice.
+- **Pattern detected:** TempData is consumed once per request. When `_Layout.cshtml` reads `TempData["SuccessMessage"]`, it is marked as read. However, Razor views render the layout first, then the body — so if both layout and view body call `TempData["SuccessMessage"]`, the layout wins and the body block is empty (no double-render on a *second* request), but during the *same render pass* both blocks execute against the same in-flight TempData dictionary, causing the message to appear twice.
+- **Fix:** Keep all TempData message rendering in `_Layout.cshtml` only. Remove every `@if (TempData["SuccessMessage"] != null)`, `@if (TempData["ErrorMessage"] != null)` block from individual views.
+- **Scope:** The duplication pattern was systemic — affected Add, Edit, Details, and Index views across 6 controller groups (20 files total).
+- **Rule:** Never render TempData notifications in individual views when `_Layout.cshtml` already handles them globally. `_Layout.cshtml` is the single source of truth for flash messages.
+- **Branch:** `issue-972-end-user-validation`
 
 ### 2026-05-14 — MessageTemplates: Replace GetSocialIcon with SocialMediaPlatform.Icon
 - **Files:** `Controllers/MessageTemplatesController.cs`, `Views/MessageTemplates/Index.cshtml`
