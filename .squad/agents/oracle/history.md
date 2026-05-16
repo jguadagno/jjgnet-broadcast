@@ -81,3 +81,19 @@ Established by Joseph Guadagno:
 - Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
 - Charter updated with enforcement rule (## How I Work)
 - Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code
+
+### 2026-05-16: YouTube Key Vault Secret Name Underscore Violation
+
+**Context:** Users saving a YouTube Channel collector caused Key Vault secret creation to fail with a naming violation. The secret name contained underscores because the `discriminator` parameter (the YouTube Channel ID, e.g. `UC_my_channel`) was inserted raw into the secret name without sanitization.
+
+**Root Cause:** `KeyVaultSecretNameBuilder.Build()` applied `SecretNameSanitizer` only to `ownerOid`. The `discriminator` parameter — a user-supplied YouTube Channel ID — was concatenated directly into the name string, bypassing all sanitization.
+
+**Fix:** Extracted a `SanitizeSegment()` private helper from the existing compiled regex (`[^a-zA-Z0-9\-]` → `"-"`) and applied it to **all** string components: `ownerOid`, `platform`, `settingName`, and `discriminator`. The `platform` and `settingName` parameters are currently always passed as `KeyVaultSecretNames` constants (already clean), but sanitizing them is a required defence-in-depth guard.
+
+**Tests Added:** `Build_WithSpecialCharsInDiscriminator_SanitizesToHyphens` (3 cases covering `_`, mixed `_` with digits, and `@#!` characters).
+
+**Security Rule to Remember:**
+- **Every component that feeds into a Key Vault secret name must pass through `SanitizeSegment()`** before concatenation — no exceptions, even for "constant" values.
+- YouTube Channel IDs are user-supplied and CAN contain underscores or other special characters; never trust them as pre-sanitized.
+
+**Commit:** `fix(keyvault): sanitize underscores in Key Vault secret names` (branch: issue-972-end-user-validation)
