@@ -16,16 +16,7 @@
 </div>
 
 <div class="row row-cols-1 row-cols-md-2 g-4">
-    @{
-        var platforms = new[]
-        {
-            new { Name = "Bluesky", Icon = "bi-cloud", IsConfigured = Model?.Bluesky is not null, IsEnabled = Model?.Bluesky?.IsEnabled ?? false, Controller = "PublisherBlueskySettings" },
-            new { Name = "Twitter / X", Icon = "bi-twitter-x", IsConfigured = Model?.Twitter is not null, IsEnabled = Model?.Twitter?.IsEnabled ?? false, Controller = "PublisherTwitterSettings" },
-            new { Name = "LinkedIn", Icon = "bi-linkedin", IsConfigured = Model?.LinkedIn is not null, IsEnabled = Model?.LinkedIn?.IsEnabled ?? false, Controller = "PublisherLinkedInSettings" },
-            new { Name = "Facebook", Icon = "bi-facebook", IsConfigured = Model?.Facebook is not null, IsEnabled = Model?.Facebook?.IsEnabled ?? false, Controller = "PublisherFacebookSettings" }
-        };
-    }
-    @foreach (var platform in platforms)
+    @foreach (var platform in Model.Platforms)
     {
         <div class="col">
             <div class="card h-100 shadow-sm">
