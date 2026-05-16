@@ -229,3 +229,73 @@ Fixed Neo's blocking `cs/log-forging` finding: wrapped all 3 `LogWarning` user-c
 - Private helper methods (like `LogSaveFailure`) are equally subject — audit the full file.
 - Always check that `using JosephGuadagno.Broadcasting.Domain.Utilities;` is present in new files that log user-controlled data.
 
+---
+
+# Decision: Every migration that creates tables MUST also update table-create.sql
+
+**Date:** 2026-05-16T09:52:31.833-07:00
+**Author:** Morpheus (Data Engineer)
+**Branch:** issue-972-end-user-validation
+**Commit:** 7b88ea23
+
+## Context
+
+The Aspire AppHost (`AppHost.cs`) bootstraps the JJGNet database on fresh
+environments by concatenating exactly three scripts:
+
+1. `scripts\database\database-create.sql`
+2. `scripts\database\table-create.sql`
+3. `scripts\database\data-seed.sql`
+
+Files under `scripts\database\migrations\` are **not** automatically run by the
+AppHost. They are production deployment artifacts only.
+
+## Problem Observed
+
+Issue #972: `/Publishers/Settings/Index` threw `CommandError` ("Invalid object
+name 'UserPublisherLinkedInSettings'") on any fresh Aspire-managed environment.
+Root cause: the Phase 1 migration (`2026-05-15-publisher-settings-per-publisher-tables.sql`)
+created the four per-publisher tables but never added them to `table-create.sql`.
+
+## Decision
+
+**Every migration PR that creates a new table MUST include the same DDL (with
+`IF NOT EXISTS` guards) in `scripts\database\table-create.sql` in the same PR.**
+
+This is a hard gate for all data-layer PRs. Reviewers should check that both
+files are updated together.
+
+## Rationale
+
+- Omitting a table from `table-create.sql` silently breaks fresh environments
+  (local Aspire, CI spin-ups, new developer onboarding).
+- The IF NOT EXISTS guards make `table-create.sql` idempotent — safe for Aspire
+  replay even if the migration has already been applied to a running database.
+
+---
+
+# Decision: Audit Web Service Base URL Constants on API Route Refactors
+
+**Date:** 2026-05-16T09:01:41.335-07:00
+**Author:** Trinity
+**Branch:** issue-973 / PR #974
+**Issue:** #973
+
+## Decision
+
+When API controller routes are refactored, the corresponding Web service `private const string` base URL constants must be updated in the same PR or as an immediate follow-up. These constants are the sole routing source of truth for Web→API calls and the compiler gives no indication when they go stale.
+
+## Context
+
+After the collector API route refactor (issue #960) moved controllers from `/UserCollector*` to `/Collectors/{name}/Settings`, three Web service files retained the old constants:
+
+- `UserCollectorYouTubeChannelService.cs`: `/UserCollectorYouTubeChannels` → `/Collectors/YouTube/Settings`
+- `UserCollectorFeedSourceService.cs`: `/UserCollectorFeedSources` → `/Collectors/FeedSource/Settings`
+- `UserCollectorSpeakingEngagementService.cs`: `/UserCollectorSpeakingEngagements` → `/Collectors/SpeakingEngagement/Settings`
+
+This caused all three collector CRUD operations to return 404 silently.
+
+## Recommendation
+
+Add a checklist item to the API route refactor process: after changing `[Route(...)]` on any API controller, grep the Web `Services/` folder for the old route string to catch stale constants.
+
