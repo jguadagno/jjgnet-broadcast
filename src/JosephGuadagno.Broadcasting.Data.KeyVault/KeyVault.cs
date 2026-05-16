@@ -9,13 +9,13 @@ public class KeyVault: IKeyVault
 {
     private readonly SecretClient _secretClient;
     private readonly ILogger<KeyVault> _logger;
-    
+
     public KeyVault(SecretClient secretClient, ILogger<KeyVault> logger)
     {
         _secretClient = secretClient;
         _logger = logger;
     }
-    
+
     /// <summary>
     /// Updates the secret value and expiration date
     /// </summary>
@@ -29,7 +29,7 @@ public class KeyVault: IKeyVault
     public async Task UpdateSecretValueAndPropertiesAsync(string secretName, string secretValue, DateTime expiresOn)
     {
         // Try to load and disable the existing secret version.
-        // On initial setup the secret does not exist yet — skip the disable step in that case.
+        // On initial set up the secret does not exist yet — skip the disable step in that case.
         try
         {
             var originalSecretResponse = await _secretClient.GetSecretAsync(secretName);
@@ -50,7 +50,7 @@ public class KeyVault: IKeyVault
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
             // Secret does not exist yet (initial setup) — no old version to disable.
-            _logger.LogInformation("Secret '{SecretName}' does not exist yet; skipping disable of previous version.", secretName);
+            _logger.LogInformation("Secret '{SecretName}' does not exist yet; skipping disable of previous version", secretName);
         }
 
         // Create new secret (or first version on initial setup)
