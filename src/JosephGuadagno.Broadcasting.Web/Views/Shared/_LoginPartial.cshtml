@@ -10,7 +10,7 @@
 						<ul class="dropdown-menu">
 								@if (User.IsInRole(RoleNames.SiteAdministrator) || User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Contributor))
 								{
-										
+
 										<li>
 												<a class="dropdown-item" asp-area="" asp-controller="MessageTemplates"
 												   asp-action="Index">
@@ -31,17 +31,17 @@
 												<hr class="dropdown-divider">
 										</li>
 										<li><h6 class="dropdown-header">Publisher Settings</h6></li>
-                            <li><a class="dropdown-item" asp-controller="Publishers" asp-action="Index">
-                                <i class="bi bi-broadcast-pin me-2"></i>All Publisher Settings</a></li>
-                            <li><a class="dropdown-item" asp-controller="PublisherBlueskySettings" asp-action="Index">
-                                <i class="bi bi-cloud me-2"></i>Bluesky</a></li>
-                            <li><a class="dropdown-item" asp-controller="PublisherTwitterSettings" asp-action="Index">
-                                <i class="bi bi-twitter-x me-2"></i>Twitter / X</a></li>
-                            <li><a class="dropdown-item" asp-controller="PublisherLinkedInSettings" asp-action="Index">
-                                <i class="bi bi-linkedin me-2"></i>LinkedIn</a></li>
-                            <li><a class="dropdown-item" asp-controller="PublisherFacebookSettings" asp-action="Index">
-                                <i class="bi bi-facebook me-2"></i>Facebook</a></li>
-										<li>
+                    <li><a class="dropdown-item" asp-controller="Publishers" asp-action="Index">
+                        <i class="bi bi-broadcast-pin me-2"></i>All Publisher Settings</a></li>
+                    <li><a class="dropdown-item" asp-controller="PublisherBlueskySettings" asp-action="Index">
+                        <i class="bi bi-bluesky me-2"></i>Bluesky</a></li>
+                    <li><a class="dropdown-item" asp-controller="PublisherFacebookSettings" asp-action="Index">
+	                    <i class="bi bi-facebook me-2"></i>Facebook</a></li>
+                    <li><a class="dropdown-item" asp-controller="PublisherLinkedInSettings" asp-action="Index">
+                        <i class="bi bi-linkedin me-2"></i>LinkedIn</a></li>
+                    <li><a class="dropdown-item" asp-controller="PublisherTwitterSettings" asp-action="Index">
+	                    <i class="bi bi-twitter-x me-2"></i>Twitter / X</a></li>
+                    <li>
 												<hr class="dropdown-divider">
 										</li>
 								}
