@@ -1,3 +1,4 @@
+using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
@@ -15,11 +16,17 @@ public class UserPublisherLinkedInSettingsService(
 
     public async Task<UserPublisherLinkedInSettings?> GetCurrentUserAsync()
     {
-        var response = await apiClient.GetForUserAsync<UserPublisherLinkedInSettings>(ApiServiceName, options =>
+        try
         {
-            options.RelativePath = LinkedInBaseUrl;
-        });
-        return response;
+            return await apiClient.GetForUserAsync<UserPublisherLinkedInSettings>(ApiServiceName, options =>
+            {
+                options.RelativePath = LinkedInBaseUrl;
+            });
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
     }
 
     public async Task<UserPublisherLinkedInSettings?> SaveCurrentUserAsync(

@@ -1,3 +1,4 @@
+using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
@@ -15,11 +16,17 @@ public class UserPublisherFacebookSettingsService(
 
     public async Task<UserPublisherFacebookSettings?> GetCurrentUserAsync()
     {
-        var response = await apiClient.GetForUserAsync<UserPublisherFacebookSettings>(ApiServiceName, options =>
+        try
         {
-            options.RelativePath = FacebookBaseUrl;
-        });
-        return response;
+            return await apiClient.GetForUserAsync<UserPublisherFacebookSettings>(ApiServiceName, options =>
+            {
+                options.RelativePath = FacebookBaseUrl;
+            });
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
     }
 
     public async Task<UserPublisherFacebookSettings?> SaveCurrentUserAsync(

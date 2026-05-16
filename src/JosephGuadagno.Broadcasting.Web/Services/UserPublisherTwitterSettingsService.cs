@@ -1,3 +1,4 @@
+using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
@@ -15,11 +16,17 @@ public class UserPublisherTwitterSettingsService(
 
     public async Task<UserPublisherTwitterSettings?> GetCurrentUserAsync()
     {
-        var response = await apiClient.GetForUserAsync<UserPublisherTwitterSettings>(ApiServiceName, options =>
+        try
         {
-            options.RelativePath = TwitterBaseUrl;
-        });
-        return response;
+            return await apiClient.GetForUserAsync<UserPublisherTwitterSettings>(ApiServiceName, options =>
+            {
+                options.RelativePath = TwitterBaseUrl;
+            });
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
     }
 
     public async Task<UserPublisherTwitterSettings?> SaveCurrentUserAsync(

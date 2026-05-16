@@ -1,3 +1,4 @@
+using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
@@ -15,11 +16,17 @@ public class UserPublisherBlueskySettingsService(
 
     public async Task<UserPublisherBlueskySettings?> GetCurrentUserAsync()
     {
-        var response = await apiClient.GetForUserAsync<UserPublisherBlueskySettings>(ApiServiceName, options =>
+        try
         {
-            options.RelativePath = BlueskyBaseUrl;
-        });
-        return response;
+            return await apiClient.GetForUserAsync<UserPublisherBlueskySettings>(ApiServiceName, options =>
+            {
+                options.RelativePath = BlueskyBaseUrl;
+            });
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
     }
 
     public async Task<UserPublisherBlueskySettings?> SaveCurrentUserAsync(
