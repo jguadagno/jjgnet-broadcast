@@ -14,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Each user has at most one scheduled item configuration.
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
+[Route("Collectors/ScheduledItems")]
 public class CollectorScheduledItemController(
     IUserCollectorScheduledItemService service,
     ILogger<CollectorScheduledItemController> logger)
@@ -22,7 +23,8 @@ public class CollectorScheduledItemController(
     /// <summary>
     /// Shows the current user's scheduled item configuration.
     /// </summary>
-    [HttpGet]
+    [HttpGet("")]
+    [HttpGet("Index")]
     public async Task<IActionResult> Index()
     {
         var ownerOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
@@ -51,7 +53,7 @@ public class CollectorScheduledItemController(
     /// <summary>
     /// Displays the edit/create form for the scheduled item configuration.
     /// </summary>
-    [HttpGet]
+    [HttpGet("Edit")]
     public async Task<IActionResult> Edit()
     {
         var ownerOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
@@ -78,7 +80,7 @@ public class CollectorScheduledItemController(
     /// <summary>
     /// Creates or updates the scheduled item configuration for the current user.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Edit")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(UserCollectorScheduledItemViewModel viewModel)
     {
@@ -114,7 +116,7 @@ public class CollectorScheduledItemController(
     /// <summary>
     /// Shows the delete confirmation page.
     /// </summary>
-    [HttpGet]
+    [HttpGet("Delete")]
     public async Task<IActionResult> Delete()
     {
         var ownerOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
@@ -140,7 +142,7 @@ public class CollectorScheduledItemController(
     /// <summary>
     /// Deletes the scheduled item configuration after confirmation.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Delete")]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed()

@@ -12,8 +12,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Controller for per-user collector settings.
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
-[Route("CollectorSettings")]
-[Route("Collectors")]
+[Route("Collectors/Settings")]
 public class CollectorSettingsController : Controller
 {
     private readonly IUserCollectorFeedSourceService _feedSourceService;

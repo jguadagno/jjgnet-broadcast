@@ -13,6 +13,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Controller for per-user publisher settings.
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
+[Route("Publishers/Settings")]
 public class PublisherSettingsController : Controller
 {
     private readonly IUserPublisherSettingService _userPublisherSettingService;
@@ -32,7 +33,8 @@ public class PublisherSettingsController : Controller
         _logger = logger;
     }
 
-    [HttpGet]
+    [HttpGet("")]
+    [HttpGet("Index")]
     public async Task<IActionResult> Index(string? userOid = null)
     {
         var resolution = await ResolveTargetUserAsync(userOid);
@@ -45,7 +47,7 @@ public class PublisherSettingsController : Controller
         return View(viewModel);
     }
 
-    [HttpGet]
+    [HttpGet("Edit/{id}")]
     public async Task<IActionResult> Edit(int id, string? userOid = null)
     {
         var resolution = await ResolveTargetUserAsync(userOid);
@@ -70,7 +72,7 @@ public class PublisherSettingsController : Controller
         return View(viewModel);
     }
 
-    [HttpPost]
+    [HttpPost("SaveBluesky")]
     [ValidateAntiForgeryToken]
     public Task<IActionResult> SaveBluesky(BlueskyPublisherSettingsViewModel model)
     {
@@ -88,7 +90,7 @@ public class PublisherSettingsController : Controller
         }, "Bluesky settings saved.");
     }
 
-    [HttpPost]
+    [HttpPost("SaveTwitter")]
     [ValidateAntiForgeryToken]
     public Task<IActionResult> SaveTwitter(TwitterPublisherSettingsViewModel model)
     {
@@ -108,7 +110,7 @@ public class PublisherSettingsController : Controller
         }, "Twitter/X settings saved.");
     }
 
-    [HttpPost]
+    [HttpPost("SaveFacebook")]
     [ValidateAntiForgeryToken]
     public Task<IActionResult> SaveFacebook(FacebookPublisherSettingsViewModel model)
     {
@@ -133,7 +135,7 @@ public class PublisherSettingsController : Controller
         }, "Facebook settings saved.");
     }
 
-    [HttpPost]
+    [HttpPost("SaveLinkedIn")]
     [ValidateAntiForgeryToken]
     public Task<IActionResult> SaveLinkedIn(LinkedInPublisherSettingsViewModel model)
     {

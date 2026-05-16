@@ -14,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Controller for managing per-user speaking engagement collector configurations.
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
+[Route("Collectors/SpeakingEngagement/Settings")]
 public class CollectorSpeakingEngagementsController : Controller
 {
     private readonly IUserCollectorSpeakingEngagementService _service;
@@ -33,6 +34,8 @@ public class CollectorSpeakingEngagementsController : Controller
     /// <summary>
     /// Lists the current user's speaking engagement configurations.
     /// </summary>
+    [HttpGet("")]
+    [HttpGet("Index")]
     public async Task<IActionResult> Index(
         int page = Pagination.DefaultPage,
         string sortBy = "displayName",
@@ -58,6 +61,7 @@ public class CollectorSpeakingEngagementsController : Controller
     /// <summary>
     /// Shows details for a speaking engagement configuration.
     /// </summary>
+    [HttpGet("Details/{id}")]
     public async Task<IActionResult> Details(int id)
     {
         var engagement = await _service.GetByIdAsync(id);
@@ -80,6 +84,7 @@ public class CollectorSpeakingEngagementsController : Controller
     /// <summary>
     /// Displays the add speaking engagement form.
     /// </summary>
+    [HttpGet("Add")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public IActionResult Add()
     {
@@ -89,7 +94,7 @@ public class CollectorSpeakingEngagementsController : Controller
     /// <summary>
     /// Creates a new speaking engagement configuration for the current user.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Add")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Add(UserCollectorSpeakingEngagementViewModel viewModel)
@@ -115,6 +120,7 @@ public class CollectorSpeakingEngagementsController : Controller
     /// <summary>
     /// Displays the edit speaking engagement form.
     /// </summary>
+    [HttpGet("Edit/{id}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(int id)
     {
@@ -138,7 +144,7 @@ public class CollectorSpeakingEngagementsController : Controller
     /// <summary>
     /// Updates an existing speaking engagement configuration.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Edit")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(UserCollectorSpeakingEngagementViewModel viewModel)
@@ -184,7 +190,7 @@ public class CollectorSpeakingEngagementsController : Controller
     /// <summary>
     /// Shows the delete confirmation page.
     /// </summary>
-    [HttpGet]
+    [HttpGet("Delete/{id}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Delete(int id)
     {
@@ -208,7 +214,7 @@ public class CollectorSpeakingEngagementsController : Controller
     /// <summary>
     /// Deletes a speaking engagement configuration after confirmation.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Delete")]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]

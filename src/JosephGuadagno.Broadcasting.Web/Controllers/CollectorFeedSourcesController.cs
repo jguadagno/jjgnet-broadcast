@@ -14,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Controller for managing per-user feed source collector configurations.
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
+[Route("Collectors/FeedSource/Settings")]
 public class CollectorFeedSourcesController : Controller
 {
     private readonly IUserCollectorFeedSourceService _service;
@@ -33,6 +34,8 @@ public class CollectorFeedSourcesController : Controller
     /// <summary>
     /// Lists the current user's feed sources.
     /// </summary>
+    [HttpGet("")]
+    [HttpGet("Index")]
     public async Task<IActionResult> Index(
         int page = Pagination.DefaultPage,
         string sortBy = "displayName",
@@ -58,6 +61,7 @@ public class CollectorFeedSourcesController : Controller
     /// <summary>
     /// Shows details for a feed source.
     /// </summary>
+    [HttpGet("Details/{id}")]
     public async Task<IActionResult> Details(int id)
     {
         var source = await _service.GetByIdAsync(id);
@@ -80,6 +84,7 @@ public class CollectorFeedSourcesController : Controller
     /// <summary>
     /// Displays the add feed source form.
     /// </summary>
+    [HttpGet("Add")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public IActionResult Add()
     {
@@ -89,7 +94,7 @@ public class CollectorFeedSourcesController : Controller
     /// <summary>
     /// Creates a new feed source for the current user.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Add")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Add(UserCollectorFeedSourceViewModel viewModel)
@@ -115,6 +120,7 @@ public class CollectorFeedSourcesController : Controller
     /// <summary>
     /// Displays the edit feed source form.
     /// </summary>
+    [HttpGet("Edit/{id}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(int id)
     {
@@ -138,7 +144,7 @@ public class CollectorFeedSourcesController : Controller
     /// <summary>
     /// Updates an existing feed source.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Edit")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(UserCollectorFeedSourceViewModel viewModel)
@@ -184,7 +190,7 @@ public class CollectorFeedSourcesController : Controller
     /// <summary>
     /// Shows the delete confirmation page.
     /// </summary>
-    [HttpGet]
+    [HttpGet("Delete/{id}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Delete(int id)
     {
@@ -208,7 +214,7 @@ public class CollectorFeedSourcesController : Controller
     /// <summary>
     /// Deletes a feed source after confirmation.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Delete")]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
