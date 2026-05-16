@@ -510,7 +510,8 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.IsActive)
                 .IsRequired()
-                .HasDefaultValueSql("1");
+                .HasDefaultValueSql("1")
+                .HasSentinel(true);
         });
 
         modelBuilder.Entity<UserPublisherSetting>(entity =>
@@ -530,8 +531,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsEnabled)
-                .IsRequired()
-                .HasDefaultValueSql("0");
+                .IsRequired();
 
             entity.Property(e => e.Settings);
 
@@ -692,8 +692,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsActive)
-                .IsRequired()
-                .HasDefaultValue(true);
+                .IsRequired();
 
             entity.Property(e => e.CreatedOn)
                 .IsRequired()
@@ -726,8 +725,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsActive)
-                .IsRequired()
-                .HasDefaultValue(true);
+                .IsRequired();
 
             entity.Property(e => e.CreatedOn)
                 .IsRequired()
@@ -774,8 +772,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsEnabled)
-                .IsRequired()
-                .HasDefaultValueSql("0");
+                .IsRequired();
 
             entity.Property(e => e.UserName)
                 .HasMaxLength(255);
@@ -805,8 +802,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsEnabled)
-                .IsRequired()
-                .HasDefaultValueSql("0");
+                .IsRequired();
 
             entity.Property(e => e.CreatedOn)
                 .IsRequired()
@@ -833,8 +829,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsEnabled)
-                .IsRequired()
-                .HasDefaultValueSql("0");
+                .IsRequired();
 
             entity.Property(e => e.AuthorId)
                 .HasMaxLength(255);
@@ -867,8 +862,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsEnabled)
-                .IsRequired()
-                .HasDefaultValueSql("0");
+                .IsRequired();
 
             entity.Property(e => e.PageId)
                 .HasMaxLength(255);
