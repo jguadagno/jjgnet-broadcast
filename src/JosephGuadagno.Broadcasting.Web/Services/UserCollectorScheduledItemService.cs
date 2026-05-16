@@ -1,4 +1,5 @@
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
 
@@ -38,7 +39,7 @@ public class UserCollectorScheduledItemService(
         {
             logger.LogWarning(
                 "Scheduled item save returned no content for owner {OwnerOid}",
-                item.CreatedByEntraOid);
+                LogSanitizer.Sanitize(item.CreatedByEntraOid));
         }
 
         return response;
@@ -60,7 +61,7 @@ public class UserCollectorScheduledItemService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to delete scheduled item config for owner {OwnerOid}", ownerOid);
+            logger.LogError(ex, "Failed to delete scheduled item config for owner {OwnerOid}", LogSanitizer.Sanitize(ownerOid));
             return false;
         }
     }
