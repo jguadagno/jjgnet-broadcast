@@ -1,6 +1,7 @@
 using System.Reflection;
 using FluentAssertions;
 using JosephGuadagno.Broadcasting.Api.Controllers;
+using JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
 using JosephGuadagno.Broadcasting.Api.Controllers.Publishers;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
@@ -15,6 +16,11 @@ public class ControllerAuthorizationPolicyTests
         { typeof(SchedulesController), nameof(SchedulesController) },
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController) },
         { typeof(PublishersController), nameof(PublishersController) },
+        { typeof(CollectorsController), nameof(CollectorsController) },
+        { typeof(CollectorYouTubeSettingsController), nameof(CollectorYouTubeSettingsController) },
+        { typeof(CollectorFeedSourceSettingsController), nameof(CollectorFeedSourceSettingsController) },
+        { typeof(CollectorSpeakingEngagementSettingsController), nameof(CollectorSpeakingEngagementSettingsController) },
+        { typeof(CollectorScheduledItemSettingsController), nameof(CollectorScheduledItemSettingsController) },
         { typeof(BlueskySettingsController), nameof(BlueskySettingsController) },
         { typeof(TwitterSettingsController), nameof(TwitterSettingsController) },
         { typeof(LinkedInSettingsController), nameof(LinkedInSettingsController) },
@@ -54,6 +60,25 @@ public class ControllerAuthorizationPolicyTests
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController.DeleteAsync), AuthorizationPolicyNames.RequireAdministrator },
         { typeof(PublishersController), nameof(PublishersController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(CollectorsController), nameof(CollectorsController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(CollectorYouTubeSettingsController), nameof(CollectorYouTubeSettingsController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(CollectorYouTubeSettingsController), nameof(CollectorYouTubeSettingsController.GetAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(CollectorYouTubeSettingsController), nameof(CollectorYouTubeSettingsController.SaveAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(CollectorYouTubeSettingsController), nameof(CollectorYouTubeSettingsController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(CollectorYouTubeSettingsController), nameof(CollectorYouTubeSettingsController.DeleteAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(CollectorFeedSourceSettingsController), nameof(CollectorFeedSourceSettingsController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(CollectorFeedSourceSettingsController), nameof(CollectorFeedSourceSettingsController.GetAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(CollectorFeedSourceSettingsController), nameof(CollectorFeedSourceSettingsController.SaveAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(CollectorFeedSourceSettingsController), nameof(CollectorFeedSourceSettingsController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(CollectorFeedSourceSettingsController), nameof(CollectorFeedSourceSettingsController.DeleteAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(CollectorSpeakingEngagementSettingsController), nameof(CollectorSpeakingEngagementSettingsController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(CollectorSpeakingEngagementSettingsController), nameof(CollectorSpeakingEngagementSettingsController.GetAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(CollectorSpeakingEngagementSettingsController), nameof(CollectorSpeakingEngagementSettingsController.SaveAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(CollectorSpeakingEngagementSettingsController), nameof(CollectorSpeakingEngagementSettingsController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(CollectorSpeakingEngagementSettingsController), nameof(CollectorSpeakingEngagementSettingsController.DeleteAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(CollectorScheduledItemSettingsController), nameof(CollectorScheduledItemSettingsController.GetAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(CollectorScheduledItemSettingsController), nameof(CollectorScheduledItemSettingsController.UpsertAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(CollectorScheduledItemSettingsController), nameof(CollectorScheduledItemSettingsController.DeleteAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(BlueskySettingsController), nameof(BlueskySettingsController.GetAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(BlueskySettingsController), nameof(BlueskySettingsController.SaveAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(BlueskySettingsController), nameof(BlueskySettingsController.DeleteAsync), AuthorizationPolicyNames.RequireContributor },
