@@ -311,3 +311,189 @@ This caused all three collector CRUD operations to return 404 silently.
 
 Add a checklist item to the API route refactor process: after changing `[Route(...)]` on any API controller, grep the Web `Services/` folder for the old route string to catch stale constants.
 
+---
+
+# Decision: Replace Task.WhenAll with Sequential Awaits for Scoped DbContext
+
+**Author:** Trinity  
+**Date:** 2026-05-16  
+**Commit:** 20fc6b79  
+**Status:** IMPLEMENTED
+
+## Context
+
+Three controllers used `Task.WhenAll` to fan out multiple manager calls in parallel:
+
+- `PublishersController.GetAllAsync` — 4 platform managers (Bluesky, Twitter, LinkedIn, Facebook)
+- `CollectorsController.GetAllAsync` — 4 collector managers (YouTube, Feed, Speaking, Scheduled)
+- `SchedulesController.Index` — 2 scheduled item calls
+
+All managers inject `BroadcastingContext` which is registered as a **scoped** service — one instance per HTTP request. EF Core's `DbContext` is **not thread-safe** for concurrent operations.
+
+## Problem
+
+Firing tasks before the first `await` (or using `Task.WhenAll`) starts all operations concurrently on the same `DbContext` instance. This causes the underlying SQL connection to enter a closed/corrupt state:
+
+> "BeginExecuteReader requires an open and available Connection. The connection's current state is closed."
+
+This was the confirmed root cause of the GET /Publishers/Index failure (5th query in the call chain).
+
+## Decision
+
+Replace all three `Task.WhenAll` fan-outs with sequential `await` calls. The performance trade-off (slightly higher latency) is acceptable — these aggregate endpoints make 2–4 lightweight DB reads and the correctness gain far outweighs the latency cost.
+
+## Rule Going Forward
+
+**Never use `Task.WhenAll` — or start multiple tasks before awaiting — when the underlying services share a single scoped `DbContext`.** Use sequential awaits instead.
+
+If true parallel DB access is needed in the future, inject a `IDbContextFactory<BroadcastingContext>` and create a separate context per task.
+
+## Files Changed
+
+- `src\JosephGuadagno.Broadcasting.Api\Controllers\Publishers\PublishersController.cs`
+- `src\JosephGuadagno.Broadcasting.Api\Controllers\Collectors\CollectorsController.cs`
+- `src\JosephGuadagno.Broadcasting.Web\Controllers\SchedulesController.cs`
+
+---
+
+# Decision: Guard UpdateSecretValueAndPropertiesAsync Against Missing Secret (Initial Setup)
+
+**Date:** 2026-05-16T14:19:11.017-07:00
+**Author:** Trinity
+**Commit:** 1cbeac20
+
+## Problem
+
+`KeyVault.UpdateSecretValueAndPropertiesAsync` failed on the very first save for any publisher
+(Bluesky, LinkedIn, Facebook, Twitter). When no secret exists yet in Key Vault, the Azure SDK
+`SecretClient.GetSecretAsync` throws `RequestFailedException(404)` — it does **not** return null.
+
+The method had a null-response guard (`if (originalSecretResponse is null) throw ...`) but no
+guard for the 404 case, so `RequestFailedException` propagated uncaught and blocked initial setup.
+
+## Root Cause
+
+Azure SDK contract: `SecretClient.GetSecretAsync` throws on 404, never returns null. The existing
+null check was unreachable for the "secret does not exist" scenario.
+
+## Decision
+
+Wrap the "get + disable old version" block in:
+
+```csharp
+catch (RequestFailedException ex) when (ex.Status == 404)
+{
+    // Secret does not exist yet (initial setup) — no old version to disable.
+    _logger.LogInformation("Secret '{SecretName}' does not exist yet; skipping disable of previous version.", secretName);
+}
+```
+
+When the secret is absent, skip the disable step and fall through directly to `SetSecretAsync`
+to create the first version. The null-response `ApplicationException` guard is retained for genuine
+SDK failures on non-404 paths.
+
+## Files Changed
+
+- `src\JosephGuadagno.Broadcasting.Data.KeyVault\KeyVault.cs` — fix applied
+- `src\JosephGuadagno.Broadcasting.Data.KeyVault.Tests\KeyVaultTests.cs` — new test added:
+  `UpdateSecretValueAndPropertiesAsync_WhenSecretDoesNotExist_ShouldCreateSecretWithoutDisablingOldVersion`
+
+## Test Results
+
+11/11 KeyVault tests pass. Full solution build: 0 errors, 0 warnings.
+
+---
+
+# Decision: Publishers/Index DbCommand Failure — Root Cause & Defensive Patterns
+
+**Date:** 2026-05-16
+**Author:** Trinity (Backend Developer)
+**Status:** Adopted (commits `7b88ea23`, `3ef227a2`)
+
+---
+
+## Context
+
+`/Publishers/Index` was failing with a `Failed executing DbCommand` error against
+`UserPublisherFacebookSettings`. The per-publisher settings tables were introduced
+via a SQL migration (`2026-05-15-publisher-settings-per-publisher-tables.sql`) but
+were never added to `scripts/database/table-create.sql`, which is the only script
+the Aspire AppHost runs for fresh environments.
+
+---
+
+## Decisions
+
+### 1. Migration tables must be backfilled into `table-create.sql`
+
+Every SQL migration that creates a new table **must** also add that table to
+`scripts/database/table-create.sql` with an `IF NOT EXISTS` guard. This keeps
+the Aspire AppHost bootstrapping script in sync for fresh/CI environments.
+
+**Rationale:** The AppHost's composition root concatenates only three scripts:
+`database-create.sql`, `table-create.sql`, and `data-seed.sql`. Migrations are
+run manually against existing environments. Any table that exists only in a
+migration file will be silently absent in any fresh environment started via Aspire.
+
+**Pattern enforced:**
+
+```sql
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'MyNewTable')
+BEGIN
+    CREATE TABLE [MyNewTable] ( ... )
+END
+```
+
+---
+
+### 2. Data store operations must have try/catch with null-return fallback
+
+All four CRUD operations (`GetByUserAsync`, `GetByIdAsync`, `SaveAsync`,
+`DeleteAsync`) in every `*DataStore` class **should** catch `Exception` and
+return `null` / `false` rather than letting DB exceptions propagate to
+controllers.
+
+**Rationale:** `PublishersController.GetAllAsync` fans out to all four
+publisher data stores via `Task.WhenAll`. One uncaught `SqlException` (e.g.,
+a missing table, a transient connection error) caused the **entire** aggregate
+to fail and the page to render an error. With the try/catch, missing or
+unconfigured publisher settings degrade gracefully to "not configured" instead
+of taking down the whole page.
+
+**Pattern enforced:**
+
+```csharp
+try
+{
+    return await _context.UserPublisherFacebookSettings
+        .FirstOrDefaultAsync(u => u.UserId == userId);
+}
+catch (Exception ex)
+{
+    _logger.LogError(ex, "Error in {Method} for user {UserId}",
+        nameof(GetByUserAsync), LogSanitizer.Sanitize(userId));
+    return null;
+}
+```
+
+---
+
+### 3. No migration script needed when schema is already correct
+
+Before writing a migration, compare the EF entity model, Domain model,
+`BroadcastingContext` Fluent API configuration, and all SQL scripts to confirm
+an actual column mismatch exists. In this case, all four sources were in
+agreement — no migration was required.
+
+---
+
+## Impact
+
+- No schema mismatch — no data changes.
+- `table-create.sql` fix (`7b88ea23`) ensures fresh Aspire environments start
+  with all required tables.
+- try/catch fix (`3ef227a2`) ensures a single publisher data store failure does
+  not cascade to a full page error.
+- Build: 0 warnings, 0 errors.
+- Tests: 404 passed, 0 failed.
+
