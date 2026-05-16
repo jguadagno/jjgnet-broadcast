@@ -13,7 +13,7 @@ public class UserCollectorFeedSourceService(
     ILogger<UserCollectorFeedSourceService> logger) : IUserCollectorFeedSourceService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
-    private const string FeedSourceBaseUrl = "/UserCollectorFeedSources";
+    private const string FeedSourceBaseUrl = "/Collectors/FeedSource/Settings";
 
     public async Task<List<UserCollectorFeedSource>> GetCurrentUserAsync()
     {

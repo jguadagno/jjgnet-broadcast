@@ -13,7 +13,7 @@ public class UserCollectorSpeakingEngagementService(
     ILogger<UserCollectorSpeakingEngagementService> logger) : IUserCollectorSpeakingEngagementService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
-    private const string BaseUrl = "/UserCollectorSpeakingEngagements";
+    private const string BaseUrl = "/Collectors/SpeakingEngagement/Settings";
 
     public async Task<List<UserCollectorSpeakingEngagement>> GetCurrentUserAsync()
     {

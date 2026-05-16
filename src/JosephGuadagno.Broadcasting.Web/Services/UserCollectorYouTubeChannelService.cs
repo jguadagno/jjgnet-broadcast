@@ -13,7 +13,7 @@ public class UserCollectorYouTubeChannelService(
     ILogger<UserCollectorYouTubeChannelService> logger) : IUserCollectorYouTubeChannelService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
-    private const string YouTubeChannelBaseUrl = "/UserCollectorYouTubeChannels";
+    private const string YouTubeChannelBaseUrl = "/Collectors/YouTube/Settings";
 
     public async Task<List<UserCollectorYouTubeChannel>> GetCurrentUserAsync()
     {
