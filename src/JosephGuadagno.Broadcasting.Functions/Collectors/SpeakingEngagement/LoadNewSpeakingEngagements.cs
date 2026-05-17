@@ -79,13 +79,12 @@ public class LoadNewSpeakingEngagements(
                 var savedCount = 0;
                 foreach (var item in newItems)
                 {
-                    var existingEngagement = await engagementManager.GetByNameAndUrlAndYearAsync(
-                        item.Name, item.Url, item.StartDateTime.Year);
-                    if (existingEngagement != null)
+                    if (!await engagementManager.IsEngagementUniqueToUser(
+                        item.Name, item.Url, item.StartDateTime.Year, config.CreatedByEntraOid))
                     {
                         logger.LogDebug(
-                            "Skipping duplicate speaking engagement '{Name}' ({Url}, {Year})",
-                            item.Name, item.Url, item.StartDateTime.Year);
+                            "Skipping duplicate speaking engagement '{Name}' ({Url}, {Year}) for owner '{OwnerOid}'",
+                            item.Name, item.Url, item.StartDateTime.Year, config.CreatedByEntraOid);
                         continue;
                     }
 

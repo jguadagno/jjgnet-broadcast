@@ -222,6 +222,12 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         return dbEngagement is null ? null : mapper.Map<Domain.Models.Engagement>(dbEngagement);
     }
 
+    public async Task<bool> IsEngagementUniqueToUser(string name, string url, int year, string ownerOid, CancellationToken cancellationToken = default)
+    {
+        return !await broadcastingContext.Engagements.AsNoTracking()
+            .AnyAsync(e => e.Name == name && e.Url == url && e.StartDateTime.Year == year && e.CreatedByEntraOid == ownerOid, cancellationToken);
+    }
+
     public async Task<Domain.Models.PagedResult<Domain.Models.Engagement>> GetAllAsync(int page, int pageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null, CancellationToken cancellationToken = default)
     {
         IQueryable<Models.Engagement> query = broadcastingContext.Engagements

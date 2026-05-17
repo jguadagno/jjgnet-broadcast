@@ -236,4 +236,49 @@ public class SyndicationFeedItemManagerTests
         Assert.Null(result);
         _repository.Verify(r => r.GetByFeedIdentifierAsync("missing", default), Times.Once);
     }
+
+    [Fact]
+    public async Task IsFeedItemUniqueToUser_ReturnsTrue_WhenItemDoesNotExistForUser()
+    {
+        // Arrange
+        _repository.Setup(r => r.IsFeedItemUniqueToUser("feed-123", "user-oid-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _syndicationFeedItemManager.IsFeedItemUniqueToUser("feed-123", "user-oid-1");
+
+        // Assert
+        result.Should().BeTrue();
+        _repository.Verify(r => r.IsFeedItemUniqueToUser("feed-123", "user-oid-1", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task IsFeedItemUniqueToUser_ReturnsFalse_WhenItemAlreadyExistsForUser()
+    {
+        // Arrange
+        _repository.Setup(r => r.IsFeedItemUniqueToUser("feed-123", "user-oid-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _syndicationFeedItemManager.IsFeedItemUniqueToUser("feed-123", "user-oid-1");
+
+        // Assert
+        result.Should().BeFalse();
+        _repository.Verify(r => r.IsFeedItemUniqueToUser("feed-123", "user-oid-1", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task IsFeedItemUniqueToUser_ReturnsTrue_WhenItemExistsForDifferentUser()
+    {
+        // Arrange
+        _repository.Setup(r => r.IsFeedItemUniqueToUser("feed-123", "user-oid-2", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _syndicationFeedItemManager.IsFeedItemUniqueToUser("feed-123", "user-oid-2");
+
+        // Assert
+        result.Should().BeTrue();
+        _repository.Verify(r => r.IsFeedItemUniqueToUser("feed-123", "user-oid-2", It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

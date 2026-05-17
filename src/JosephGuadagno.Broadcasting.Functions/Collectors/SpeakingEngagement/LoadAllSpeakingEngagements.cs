@@ -75,6 +75,15 @@ public class LoadAllSpeakingEngagements(
                 var savedCount = 0;
                 foreach (var item in newItems)
                 {
+                    if (!await engagementManager.IsEngagementUniqueToUser(
+                        item.Name, item.Url, item.StartDateTime.Year, ownerOid))
+                    {
+                        logger.LogDebug(
+                            "Skipping duplicate speaking engagement '{Name}' ({Url}, {Year}) for owner '{OwnerOid}'",
+                            item.Name, item.Url, item.StartDateTime.Year, ownerOid);
+                        continue;
+                    }
+
                     try
                     {
                         var saveResult = await engagementManager.SaveAsync(item);

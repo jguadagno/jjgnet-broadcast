@@ -83,6 +83,11 @@ public class SyndicationFeedItemManager : ISyndicationFeedItemManager
         return await _syndicationFeedItemDataStore.GetByFeedIdentifierAsync(feedIdentifier, cancellationToken);
     }
 
+    public async Task<bool> IsFeedItemUniqueToUser(string feedIdentifier, string ownerOid, CancellationToken cancellationToken = default)
+    {
+        return await _syndicationFeedItemDataStore.IsFeedItemUniqueToUser(feedIdentifier, ownerOid, cancellationToken);
+    }
+
     public async Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default)
     {
         return await _syndicationFeedItemDataStore.GetCollectorOwnerOidAsync(cancellationToken);

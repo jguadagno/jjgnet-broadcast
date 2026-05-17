@@ -1,4 +1,5 @@
 using AutoMapper;
+using FluentAssertions;
 using JosephGuadagno.Broadcasting.Data.Sql.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -752,6 +753,63 @@ public class EngagementDataStoreTests : IDisposable
         Assert.Equal(2, result.Items.Count);
         Assert.Equal("Alpha Tech Conference", result.Items[0].Name);
         Assert.Equal("Zebra Tech Conference", result.Items[1].Name);
+    }
+
+    [Fact]
+    public async Task IsEngagementUniqueToUser_ReturnsTrue_WhenEngagementDoesNotExistForUser()
+    {
+        // Arrange - no engagements seeded
+
+        // Act
+        var result = await _dataStore.IsEngagementUniqueToUser("Conf A", "https://example.com", 2025, "owner-1");
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsEngagementUniqueToUser_ReturnsFalse_WhenEngagementAlreadyExistsForUser()
+    {
+        // Arrange
+        var eng = CreateEngagement(id: 1, name: "Conf A", ownerOid: "owner-1");
+        _context.Engagements.Add(eng);
+        await _context.SaveChangesAsync();
+
+        // Act - same name, url, year, owner
+        var result = await _dataStore.IsEngagementUniqueToUser("Conf A", "https://example.com", 2025, "owner-1");
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task IsEngagementUniqueToUser_ReturnsTrue_WhenSameEngagementExistsForDifferentUser()
+    {
+        // Arrange - engagement exists for owner-1
+        var eng = CreateEngagement(id: 1, name: "Conf A", ownerOid: "owner-1");
+        _context.Engagements.Add(eng);
+        await _context.SaveChangesAsync();
+
+        // Act - check for owner-2
+        var result = await _dataStore.IsEngagementUniqueToUser("Conf A", "https://example.com", 2025, "owner-2");
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsEngagementUniqueToUser_ReturnsTrue_WhenDifferentEngagementExistsForSameUser()
+    {
+        // Arrange - different conference name for same owner
+        var eng = CreateEngagement(id: 1, name: "Conf B", ownerOid: "owner-1");
+        _context.Engagements.Add(eng);
+        await _context.SaveChangesAsync();
+
+        // Act - check for "Conf A" (different name) for same owner
+        var result = await _dataStore.IsEngagementUniqueToUser("Conf A", "https://example.com", 2025, "owner-1");
+
+        // Assert
+        result.Should().BeTrue();
     }
 }
 

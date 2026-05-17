@@ -152,6 +152,11 @@ public class EngagementManager: IEngagementManager
     {
         return await _engagementDataStore.GetByNameAndUrlAndYearAsync(name, url, year, cancellationToken);
     }
+
+    public async Task<bool> IsEngagementUniqueToUser(string name, string url, int year, string ownerOid, CancellationToken cancellationToken = default)
+    {
+        return await _engagementDataStore.IsEngagementUniqueToUser(name, url, year, ownerOid, cancellationToken);
+    }
     
     public async Task<PagedResult<Engagement>> GetAllAsync(int page, int pageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null, CancellationToken cancellationToken = default)
     {

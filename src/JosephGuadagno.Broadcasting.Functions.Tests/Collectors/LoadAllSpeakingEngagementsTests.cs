@@ -38,6 +38,10 @@ public class LoadAllSpeakingEngagementsTests
                 new UserCollectorSpeakingEngagement { CreatedByEntraOid = OwnerOid, SpeakingEngagementsFile = "http://test-engagements.json", IsActive = true }
             });
 
+        _engagementManager
+            .Setup(m => m.IsEngagementUniqueToUser(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
         _sut = new LoadAllSpeakingEngagements(
             _speakingEngagementsReader.Object,
             _engagementManager.Object,
@@ -108,9 +112,9 @@ public class LoadAllSpeakingEngagementsTests
     }
 
     [Fact]
-    public async Task RunAsync_DoesNotCheckForDuplicates_WhenSavingEngagements()
+    public async Task RunAsync_ChecksForDuplicates_WhenSavingEngagements()
     {
-        // Arrange - LoadAllSpeakingEngagements does NOT check for duplicates (unlike LoadNewSpeakingEngagements)
+        // Arrange - LoadAllSpeakingEngagements now checks for duplicates via IsEngagementUniqueToUser
         var item = CreateEngagement("Conference", "https://conf.com", 2024);
         var savedItem = CreateEngagement("Conference", "https://conf.com", 2024);
         savedItem.Id = 50;
@@ -126,8 +130,7 @@ public class LoadAllSpeakingEngagementsTests
         var result = await _sut.RunAsync(request, OwnerOid, null!);
 
         // Assert
-        // Verify that GetByNameAndUrlAndYearAsync is NEVER called (no deduplication)
-        _engagementManager.Verify(m => m.GetByNameAndUrlAndYearAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        _engagementManager.Verify(m => m.IsEngagementUniqueToUser(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
         _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Once);
     }
 
@@ -323,6 +326,29 @@ public class LoadAllSpeakingEngagementsTests
 
         // Act
         var result = await _sut.RunAsync(request, OwnerOid, null!);
+
+        // Assert
+        _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Contains("0", okResult.Value!.ToString());
+    }
+
+    [Fact]
+    public async Task RunAsync_SkipsDuplicate_WhenEngagementAlreadyExistsForUser()
+    {
+        // Arrange
+        var item = CreateEngagement();
+        SetupFeedCheck();
+        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
+        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
+            .ReturnsAsync(new List<Engagement> { item });
+        _engagementManager
+            .Setup(m => m.IsEngagementUniqueToUser(item.Name, item.Url, item.StartDateTime.Year, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        var request = CreateHttpRequest();
+        var result = await _sut.RunAsync(request, OwnerOid, string.Empty);
 
         // Assert
         _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);

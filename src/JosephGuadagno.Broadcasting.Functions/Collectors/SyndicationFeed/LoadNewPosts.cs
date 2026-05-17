@@ -86,8 +86,7 @@ public class LoadNewPosts(
                 var eventsToPublish = new List<SyndicationFeedItem>();
                 foreach (var item in newItems)
                 {
-                    var existingItem = await syndicationFeedItemManager.GetByFeedIdentifierAsync(item.FeedIdentifier);
-                    if (existingItem != null)
+                    if (!await syndicationFeedItemManager.IsFeedItemUniqueToUser(item.FeedIdentifier, config.CreatedByEntraOid))
                     {
                         logger.LogDebug("Skipping duplicate syndication feed item with FeedIdentifier: '{FeedIdentifier}'", item.FeedIdentifier);
                         continue;

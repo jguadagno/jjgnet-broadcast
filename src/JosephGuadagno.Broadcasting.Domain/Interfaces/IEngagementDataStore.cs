@@ -12,6 +12,7 @@ public interface IEngagementDataStore : IDataStore<Engagement>
     public Task<OperationResult<bool>> RemoveTalkFromEngagementAsync(Talk talk, CancellationToken cancellationToken = default);
     public Task<Talk?> GetTalkAsync(int talkId, CancellationToken cancellationToken = default);
     public Task<Engagement?> GetByNameAndUrlAndYearAsync(string name, string url, int year, CancellationToken cancellationToken = default);
+    Task<bool> IsEngagementUniqueToUser(string name, string url, int year, string ownerOid, CancellationToken cancellationToken = default);
     
     Task<List<Engagement>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default);
     Task<PagedResult<Engagement>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "startdate", bool sortDescending = true, string? filter = null, CancellationToken cancellationToken = default);

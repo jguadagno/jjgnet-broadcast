@@ -68,9 +68,8 @@ public class LoadAllPosts(
             var savedCount = 0;
             foreach (var item in newItems)
             {
-                // Skip if item already exists
-                var existingItem = await syndicationFeedItemManager.GetByFeedIdentifierAsync(item.FeedIdentifier);
-                if (existingItem != null)
+                // Skip if item already exists for this user
+                if (!await syndicationFeedItemManager.IsFeedItemUniqueToUser(item.FeedIdentifier, userOid))
                 {
                     logger.LogDebug("Skipping duplicate syndication feed item with FeedIdentifier: '{FeedIdentifier}', for user '{UserOid}'", item.FeedIdentifier, userOid);
                     continue;
