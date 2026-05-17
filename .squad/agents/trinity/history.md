@@ -145,3 +145,6 @@ Fixed Neo's blocking `cs/log-forging` review finding: 3 `LogWarning` call sites 
 1. NEVER use `gh pr create --body "..."` inline — PowerShell mangles backslashes. ALWAYS write body to file first.
 2. Before all GitHub output, scan for `\word\` patterns and replace with backticks.
 
+### GetForUserAsync<T> — 404 handling pattern (2026-05-17)
+
+Any Web service that calls `IDownstreamApi.GetForUserAsync<T>` for a **single nullable object** (not a collection) MUST wrap the call in `catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)` and return `null`. The API legitimately returns 404 for first-time users who have no configuration yet; without the catch the exception propagates and crashes the page. The controller already handles `null` gracefully. Log the 404 as `LogInformation` (not `LogWarning`) — it is expected, not an error. Always sanitize the OID via `LogSanitizer.Sanitize(ownerOid)`.
