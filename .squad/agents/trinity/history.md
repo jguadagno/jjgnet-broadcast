@@ -158,3 +158,6 @@ The failing SQL shown in the task description omits `[u].[CreatedOn]` (11 column
 
 **Learning:** Never use `Task.WhenAll` (or fire-and-forget task creation before the first await) when the underlying managers share a single scoped `DbContext`. The pattern `var t1 = Foo(); var t2 = Bar(); await Task.WhenAll(t1, t2)` looks like a safe optimization but is a correctness bug with EF Core scoped contexts. Use sequential awaits instead.
 
+### GetForUserAsync<T> — 404 handling pattern (2026-05-17)
+
+Any Web service that calls `IDownstreamApi.GetForUserAsync<T>` for a **single nullable object** (not a collection) MUST wrap the call in `catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)` and return `null`. The API legitimately returns 404 for first-time users who have no configuration yet; without the catch the exception propagates and crashes the page. The controller already handles `null` gracefully. Log the 404 as `LogInformation` (not `LogWarning`) — it is expected, not an error. Always sanitize the OID via `LogSanitizer.Sanitize(ownerOid)`.
