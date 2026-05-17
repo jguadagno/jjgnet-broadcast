@@ -2,6 +2,7 @@ using System.Net;
 
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 
 using Microsoft.Identity.Abstractions;
@@ -45,7 +46,7 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
     /// <returns>A <see cref="ScheduledItem"/></returns>
     public async Task<ScheduledItem?> GetScheduledItemAsync(int scheduledItemId)
     {
-        var scheduledItem = await apiClient.GetForUserAsync<ScheduledItem>(ApiServiceName, options =>
+        var scheduledItem = await apiClient.GetOptionalForUserAsync<ScheduledItem>(ApiServiceName, options =>
         {
             options.RelativePath = $"{ScheduledItemBaseUrl}/{scheduledItemId}";
         });

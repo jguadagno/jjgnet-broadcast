@@ -1,6 +1,7 @@
 using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 
 using Microsoft.Identity.Abstractions;
@@ -47,7 +48,7 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
     /// <returns>An <see cref="Engagement"/></returns>
     public async Task<Engagement?> GetEngagementAsync(int engagementId)
     {
-        var engagement = await apiClient.GetForUserAsync<Engagement>(ApiServiceName, options =>
+        var engagement = await apiClient.GetOptionalForUserAsync<Engagement>(ApiServiceName, options =>
         {
             options.RelativePath = $"{EngagementBaseUrl}/{engagementId}";
         });
@@ -127,7 +128,7 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
     /// <returns>A <see cref="Talk"/></returns>
     public async Task<Talk?> GetEngagementTalkAsync(int engagementId, int talkId)
     {
-        var talk = await apiClient.GetForUserAsync<Talk>(ApiServiceName, options =>
+        var talk = await apiClient.GetOptionalForUserAsync<Talk>(ApiServiceName, options =>
         {
             options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/talks/{talkId}";
         });

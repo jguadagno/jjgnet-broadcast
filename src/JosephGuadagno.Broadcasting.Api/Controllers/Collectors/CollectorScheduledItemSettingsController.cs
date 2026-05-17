@@ -33,13 +33,13 @@ public class CollectorScheduledItemSettingsController(
     /// <response code="200">Returns the scheduled item configuration.</response>
     /// <response code="401">The caller is not authenticated.</response>
     /// <response code="403">The caller is not allowed to query the requested owner.</response>
-    /// <response code="404">No scheduled item configuration exists for the resolved owner.</response>
+    /// <response code="204">No scheduled item configuration exists for the resolved owner yet.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserCollectorScheduledItemResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult<UserCollectorScheduledItemResponse>> GetAsync([FromQuery] string? ownerOid = null)
     {
         var resolvedOwnerOid = User.ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
@@ -52,8 +52,8 @@ public class CollectorScheduledItemSettingsController(
         var config = configs.FirstOrDefault();
         if (config is null)
         {
-            logger.LogWarning("Scheduled item config not found for owner {OwnerOid}", LogSanitizer.Sanitize(resolvedOwnerOid));
-            return NotFound();
+            logger.LogInformation("Scheduled item config not yet configured for owner {OwnerOid}", LogSanitizer.Sanitize(resolvedOwnerOid));
+            return NoContent();
         }
 
         return Ok(mapper.Map<UserCollectorScheduledItemResponse>(config));

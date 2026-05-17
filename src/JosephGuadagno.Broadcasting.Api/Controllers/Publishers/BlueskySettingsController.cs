@@ -29,13 +29,13 @@ public class BlueskySettingsController(
     /// <response code="200">Returns the Bluesky settings.</response>
     /// <response code="401">Not authenticated.</response>
     /// <response code="403">Caller may not query the requested owner.</response>
-    /// <response code="404">No Bluesky settings for the resolved owner.</response>
+    /// <response code="204">No Bluesky settings for the resolved owner yet.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BlueskySettingsResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult<BlueskySettingsResponse>> GetAsync([FromQuery] string? ownerOid = null)
     {
         var resolvedOwnerOid = User.ResolveOwnerOid(ownerOid, requireAdminWhenTargetingOtherUser: true);
@@ -47,8 +47,8 @@ public class BlueskySettingsController(
         var settings = await manager.GetAsync(resolvedOwnerOid);
         if (settings is null)
         {
-            logger.LogWarning("Bluesky settings not found for owner '{OwnerOid}'", LogSanitizer.Sanitize(resolvedOwnerOid));
-            return NotFound();
+            logger.LogInformation("Bluesky settings not yet configured for owner '{OwnerOid}'", LogSanitizer.Sanitize(resolvedOwnerOid));
+            return NoContent();
         }
 
         return Ok(mapper.Map<BlueskySettingsResponse>(settings));

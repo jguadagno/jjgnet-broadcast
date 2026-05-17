@@ -102,6 +102,32 @@ Fix: wrap all three sites with `LogSanitizer.Sanitize()` — the `using` directi
 
 ---
 
+---
+
+## 2026-05-17 — Created GitHub Issues #978 and #979: Onboarding and Default Templates
+
+**Status:** ✅ COMPLETE — Issues created
+
+**Issue #978: feat: Add post-approval user onboarding setup flow**
+- **Goal:** Create guided onboarding flow post-approval for configuring collectors, publishers, and message templates
+- **Key requirements:** Multi-step flow showing status, skip capability, navigation indicator
+- **Integration point:** Existing `UseUserApprovalGate()` middleware in Web project
+- **URL:** https://github.com/jguadagno/jjgnet-broadcast/issues/978
+
+**Issue #979: feat: Provide default message templates for new publishers**
+- **Goal:** Offer system-provided default templates for Bluesky, Twitter, LinkedIn, Facebook
+- **Key requirements:** One-action adoption from defaults, full customization possible, no forced defaults if user already has template
+- **Related:** References Issue #978 — onboarding flow's template step should offer these defaults
+- **Service:** `MessageTemplateService.cs` (Web layer)
+- **URL:** https://github.com/jguadagno/jjgnet-broadcast/issues/979
+
+**Decisions:**
+- Both issues labeled `enhancement` (no `squad:*` labels — future work, not assigned)
+- Issue #979 explicitly references Issue #978 for workflow integration
+- Issues complement recent publisher/collector settings refactor work
+
+---
+
 ## Learnings
 
 ### 2026-05-15 — PR #963 Formal Review: Publisher Settings Phase 2

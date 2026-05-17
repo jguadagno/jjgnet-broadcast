@@ -1,6 +1,7 @@
 using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 
 using Microsoft.Identity.Abstractions;
@@ -39,7 +40,7 @@ public class SocialMediaPlatformService(IDownstreamApi apiClient, ILogger<Social
     /// </summary>
     public async Task<SocialMediaPlatform?> GetByIdAsync(int id)
     {
-        return await apiClient.GetForUserAsync<SocialMediaPlatform>(ApiServiceName, options =>
+        return await apiClient.GetOptionalForUserAsync<SocialMediaPlatform>(ApiServiceName, options =>
         {
             options.RelativePath = $"{PlatformBaseUrl}/{id}";
         });

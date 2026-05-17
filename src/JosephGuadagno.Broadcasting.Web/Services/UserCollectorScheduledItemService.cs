@@ -1,6 +1,6 @@
-using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
+using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
 
@@ -18,20 +18,10 @@ public class UserCollectorScheduledItemService(
 
     public async Task<UserCollectorScheduledItem?> GetAsync(string ownerOid)
     {
-        try
+        return await apiClient.GetOptionalForUserAsync<UserCollectorScheduledItem>(ApiServiceName, options =>
         {
-            return await apiClient.GetForUserAsync<UserCollectorScheduledItem>(ApiServiceName, options =>
-            {
-                options.RelativePath = $"{BaseUrl}?ownerOid={Uri.EscapeDataString(ownerOid)}";
-            });
-        }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-        {
-            logger.LogInformation(
-                "No scheduled item config found for owner {OwnerOid}",
-                LogSanitizer.Sanitize(ownerOid));
-            return null;
-        }
+            options.RelativePath = $"{BaseUrl}?ownerOid={Uri.EscapeDataString(ownerOid)}";
+        });
     }
 
     public async Task<UserCollectorScheduledItem?> SaveAsync(UserCollectorScheduledItem item)

@@ -1,5 +1,6 @@
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
 
@@ -37,7 +38,7 @@ public class UserCollectorYouTubeChannelService(
 
     public async Task<UserCollectorYouTubeChannel?> GetByIdAsync(int id)
     {
-        var response = await apiClient.GetForUserAsync<UserCollectorYouTubeChannel>(ApiServiceName, options =>
+        var response = await apiClient.GetOptionalForUserAsync<UserCollectorYouTubeChannel>(ApiServiceName, options =>
         {
             options.RelativePath = $"{YouTubeChannelBaseUrl}/{id}";
         });

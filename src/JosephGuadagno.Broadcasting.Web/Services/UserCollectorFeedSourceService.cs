@@ -1,5 +1,6 @@
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
 
@@ -37,7 +38,7 @@ public class UserCollectorFeedSourceService(
 
     public async Task<UserCollectorFeedSource?> GetByIdAsync(int id)
     {
-        var response = await apiClient.GetForUserAsync<UserCollectorFeedSource>(ApiServiceName, options =>
+        var response = await apiClient.GetOptionalForUserAsync<UserCollectorFeedSource>(ApiServiceName, options =>
         {
             options.RelativePath = $"{FeedSourceBaseUrl}/{id}";
         });

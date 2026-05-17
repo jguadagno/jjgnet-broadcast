@@ -48,6 +48,31 @@ Trinity focuses on vertical API→Manager→Data patterns. Self-contained contro
 
 ---
 
+### 2026-05-17 — 204-vs-404 Fix: Singleton User-Config GET Endpoints
+
+**Status:** ✅ COMPLETE — build succeeded, 0 errors, 0 warnings; all tests pass (2 pre-existing KeyVault failures unrelated to this work)
+
+**Decision:** Neo approved `neo-404-vs-204-optional-resources.md` — singleton GET endpoints (one row per user, identified by ownerOid only) must return `204 No Content` when no record exists. `404 Not Found` implies a bad ID, which is wrong for first-time-user flow.
+
+**What was delivered:**
+
+1. **5 API controllers changed** (singleton GET only; DELETE methods retain 404):
+   - `CollectorScheduledItemSettingsController`, `BlueskySettingsController`, `FacebookSettingsController`, `TwitterSettingsController`, `LinkedInSettingsController`
+   - `[ProducesResponseType(404)]` → `[ProducesResponseType(204)]`; `LogWarning` → `LogInformation`; `NotFound()` → `NoContent()`; XML doc updated
+
+2. **New extension** `src\JosephGuadagno.Broadcasting.Web\Extensions\DownstreamApiExtensions.cs`:
+   - `GetOptionalForUserAsync<T>` on `IDownstreamApi` — catches `HttpRequestException` where `StatusCode == NotFound`, returns null. Defense-in-depth wrapper usable by any Web service.
+
+3. **5 already-working Web services** converted from try/catch-404 to `GetOptionalForUserAsync<T>` (dead code removed since API now returns 204):
+   - `UserCollectorScheduledItemService`, `UserPublisherBlueskySettingsService`, `UserPublisherFacebookSettingsService`, `UserPublisherTwitterSettingsService`, `UserPublisherLinkedInSettingsService`
+
+4. **10 previously-unguarded single-item GET call sites** in 9 Web services switched from `GetForUserAsync<T>` to `GetOptionalForUserAsync<T>`:
+   - `EngagementService` (GetEngagementAsync + GetEngagementTalkAsync), `MessageTemplateService`, `ScheduledItemService`, `SocialMediaPlatformService`, `SyndicationFeedItemService`, `UserCollectorFeedSourceService`, `UserCollectorSpeakingEngagementService`, `UserCollectorYouTubeChannelService`, `YouTubeItemService`
+
+**Rule established:** ID-based GETs (int id in route) keep 404. Singleton-by-ownerOid GETs use 204. DELETE always returns 404 when missing.
+
+---
+
 ### 2026-05-16 — KeyVault initial-setup bug in UpdateSecretValueAndPropertiesAsync
 
 **Bug:** `KeyVault.UpdateSecretValueAndPropertiesAsync` tried to load and disable the existing secret version before creating a new one. On initial setup (no secret exists yet), `SecretClient.GetSecretAsync` throws `RequestFailedException(404)` — it does NOT return null. The method had a null check but no 404 guard, so the exception propagated as-is and blocked the very first `SaveAsync` for any publisher (Bluesky, LinkedIn, Facebook, Twitter).
