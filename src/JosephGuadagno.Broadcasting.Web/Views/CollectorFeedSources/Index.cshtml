@@ -46,26 +46,26 @@
 }
 else
 {
-    <table class="table table-striped table-hover table-bordered">
-        <thead class="table-dark">
+	<table class="table table-striped table-hover table-bordered">
+		<thead>
         <tr>
             <th scope="col">
-                <a asp-action="Index" asp-controller="CollectorFeedSources" asp-route-sortBy="displayname" asp-route-sortDescending="@NextSortDirection("displayname")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                <a asp-action="Index" asp-controller="CollectorFeedSources" asp-route-sortBy="displayname" asp-route-sortDescending="@NextSortDirection("displayname")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-body">
                     Display Name @Html.Raw(SortIcon("displayname"))
                 </a>
             </th>
             <th scope="col">
-                <a asp-action="Index" asp-controller="CollectorFeedSources" asp-route-sortBy="feedurl" asp-route-sortDescending="@NextSortDirection("feedurl")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                <a asp-action="Index" asp-controller="CollectorFeedSources" asp-route-sortBy="feedurl" asp-route-sortDescending="@NextSortDirection("feedurl")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-body">
                     Feed URL @Html.Raw(SortIcon("feedurl"))
                 </a>
             </th>
             <th scope="col">
-                <a asp-action="Index" asp-controller="CollectorFeedSources" asp-route-sortBy="isactive" asp-route-sortDescending="@NextSortDirection("isactive")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                <a asp-action="Index" asp-controller="CollectorFeedSources" asp-route-sortBy="isactive" asp-route-sortDescending="@NextSortDirection("isactive")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-body">
                     Active @Html.Raw(SortIcon("isactive"))
                 </a>
             </th>
             <th scope="col">
-                <a asp-action="Index" asp-controller="CollectorFeedSources" asp-route-sortBy="createdon" asp-route-sortDescending="@NextSortDirection("createdon")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-white">
+                <a asp-action="Index" asp-controller="CollectorFeedSources" asp-route-sortBy="createdon" asp-route-sortDescending="@NextSortDirection("createdon")" asp-route-filter="@ViewBag.Filter" class="text-decoration-none text-body">
                     Created On @Html.Raw(SortIcon("createdon"))
                 </a>
             </th>
