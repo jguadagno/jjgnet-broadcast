@@ -6,11 +6,13 @@ Sparks (Frontend/Polish Specialist) focuses on UI/UX refinements, Bootstrap 5 mi
 
 ## Recent Sessions
 
-### 2026-05-16 — Filter Button Text & TempData Consolidation (issue-972-end-user-validation)
-- ✅ Filter buttons now display "Searching..." via `data-loading-text` attribute pattern (site.js updated)
-- ✅ Consolidated TempData message renders from 20 views → _Layout.cshtml as single source of truth
-- ✅ jQuery Validate url2 override for localhost dev testing (Add/Edit views updated)
-- Decisions documented in decisions.md; branch ready for PR
+### 2026-05-17 — Index Table Button & Alignment Consistency
+- ✅ Standardized all Index table action buttons: `btn-outline-secondary` → `btn-outline-primary` for Details/Edit/action buttons across 9 views
+- ✅ Added `text-end` to action column `<th>` headers and `<td>` cells across 10 Index views
+- Destructive buttons (`btn-danger`, `btn-outline-warning/success`) and filter form buttons left unchanged
+- Build verified: 0 errors, 0 warnings
+- Orchestration log: `20260517T113430-sparks.md`
+- Session log: `20260517-button-consistency.md`
 
 ### 2026-05-14 — MessageTemplates GetSocialIcon Refactor (issue-950-sanity-check)
 - ✅ Replaced @functions helper with injected ISocialMediaPlatformService
