@@ -51,7 +51,7 @@
             </a>
         </th>
         <th scope="col" class="col-2">Updated</th>
-        <th scope="col" class="col-2">&nbsp;</th>
+        <th scope="col" class="col-2 text-end">&nbsp;</th>
     </tr>
     </thead>
     <tbody>
@@ -66,10 +66,10 @@
             <td><local-time value="@engagement.EndDateTime"/></td>
             <td><local-time value="@engagement.LastUpdatedOn" date-only="true"/></td>
             <td class="text-end">
-                <a asp-action="Details" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-sm btn-outline-secondary">
+                <a asp-action="Details" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-eye"></i>
                 </a>
-                <a asp-action="Edit" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-sm btn-outline-secondary">
+                <a asp-action="Edit" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-pencil-square"></i>
                 </a>
                 <a asp-action="Delete" asp-controller="Engagements" asp-route-id="@engagement.Id" class="btn btn-sm btn-danger">

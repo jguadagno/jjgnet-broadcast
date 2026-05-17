@@ -97,7 +97,7 @@
                         @if (User.IsInRole(RoleNames.SiteAdministrator) || User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Contributor))
                         {
                             <a asp-action="Edit"asp-controller="SocialMediaPlatforms" asp-route-id="@platform.Id"
-                               class="btn btn-sm btn-outline-secondary" title="Edit">
+                               class="btn btn-sm btn-outline-primary" title="Edit">
                                 <i class="bi bi-pencil-square"></i>
                             </a>
 

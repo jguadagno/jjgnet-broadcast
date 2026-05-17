@@ -61,7 +61,7 @@ else
                     Added On @Html.Raw(SortIcon("addedon"))
                 </a>
             </th>
-            <th scope="col" class="col-2">&nbsp;</th>
+            <th scope="col" class="col-2 text-end">&nbsp;</th>
         </tr>
         </thead>
         <tbody>
@@ -79,7 +79,7 @@ else
                 <td><local-time value="@source.PublicationDate" /></td>
                 <td><local-time value="@source.AddedOn" /></td>
                 <td class="text-end">
-                    <a asp-action="Details" asp-controller="SyndicationFeedItems" asp-route-id="@source.Id" class="btn btn-sm btn-outline-secondary">
+                    <a asp-action="Details" asp-controller="SyndicationFeedItems" asp-route-id="@source.Id" class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-eye"></i>
                     </a>
                     @if (User.IsInRole(RoleNames.Administrator) ||

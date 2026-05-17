@@ -62,7 +62,7 @@
             </th>
             <th scope="col" class="col-3">Description</th>
             <th scope="col">Template</th>
-            <th scope="col" class="col-1">&nbsp;</th>
+            <th scope="col" class="col-1 text-end">&nbsp;</th>
         </tr>
         </thead>
         <tbody>
@@ -77,11 +77,11 @@
                 <td>
                     <span title="@template.Template" data-bs-toggle="tooltip" data-bs-placement="top">@truncated</span>
                 </td>
-                <td>
+                <td class="text-end">
                     <a asp-action="Edit" asp-controller="MessageTemplates"
                        asp-route-platform="@template.Platform"
                        asp-route-messageType="@template.MessageType"
-                       class="btn btn-outline-secondary btn-sm">
+                       class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-pencil"></i>
                     </a>
                 </td>

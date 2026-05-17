@@ -86,7 +86,7 @@ else
 										Created On @Html.Raw(SortIcon("createdon"))
 								</a>
 						</th>
-						<th scope="col" class="col-2">&nbsp;</th>
+						<th scope="col" class="col-2 text-end">&nbsp;</th>
 				</tr>
 				</thead>
 				<tbody>
@@ -109,7 +109,7 @@ else
 								<td>@item.CreatedOn.ToString("g")</td>
 								<td class="text-end">
 										<a asp-action="Details" asp-controller="CollectorYouTubeChannels" asp-route-id="@item.Id"
-										   class="btn btn-sm btn-outline-secondary">
+										   class="btn btn-sm btn-outline-primary">
 												<i class="bi bi-eye"></i>
 										</a>
 										@if (User.IsInRole(RoleNames.Contributor) ||
