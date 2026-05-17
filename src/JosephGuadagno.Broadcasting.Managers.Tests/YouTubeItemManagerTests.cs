@@ -202,4 +202,49 @@ public class YouTubeItemManagerTests
         Assert.Null(result);
         _repository.Verify(r => r.GetByVideoIdAsync("missing"), Times.Once);
     }
+
+    [Fact]
+    public async Task IsVideoUniqueToUser_ReturnsTrue_WhenVideoDoesNotExistForUser()
+    {
+        // Arrange
+        _repository.Setup(r => r.IsVideoUniqueToUser("vid1", "owner-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _youTubeItemManager.IsVideoUniqueToUser("vid1", "owner-1");
+
+        // Assert
+        result.Should().BeTrue();
+        _repository.Verify(r => r.IsVideoUniqueToUser("vid1", "owner-1", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task IsVideoUniqueToUser_ReturnsFalse_WhenVideoAlreadyExistsForUser()
+    {
+        // Arrange
+        _repository.Setup(r => r.IsVideoUniqueToUser("vid1", "owner-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _youTubeItemManager.IsVideoUniqueToUser("vid1", "owner-1");
+
+        // Assert
+        result.Should().BeFalse();
+        _repository.Verify(r => r.IsVideoUniqueToUser("vid1", "owner-1", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task IsVideoUniqueToUser_ReturnsTrue_WhenVideoExistsForDifferentUser()
+    {
+        // Arrange — same videoId, different owner: unique for owner-2
+        _repository.Setup(r => r.IsVideoUniqueToUser("vid1", "owner-2", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _youTubeItemManager.IsVideoUniqueToUser("vid1", "owner-2");
+
+        // Assert
+        result.Should().BeTrue();
+        _repository.Verify(r => r.IsVideoUniqueToUser("vid1", "owner-2", It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

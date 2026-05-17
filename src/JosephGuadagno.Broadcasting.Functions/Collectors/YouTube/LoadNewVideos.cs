@@ -74,7 +74,7 @@ public class LoadNewVideos(
                 var apiKey = await userCollectorYouTubeChannelManager.GetApiKeyAsync(config.CreatedByEntraOid, config.Id);
                 if (string.IsNullOrWhiteSpace(apiKey))
                 {
-                    logger.LogWarning("No API key found in Key Vault for YouTube channel config Id={ConfigId}, owner '{OwnerOid}'. Skipping.",
+                    logger.LogWarning("No API key found in Key Vault for YouTube channel config Id={ConfigId}, owner '{OwnerOid}', skipping",
                         config.Id, config.CreatedByEntraOid);
                     continue;
                 }
@@ -103,8 +103,8 @@ public class LoadNewVideos(
                 var eventsToPublish = new List<YouTubeItem>();
                 foreach (var item in newItems)
                 {
-                    var existingItem = await youTubeItemManager.GetByVideoIdAsync(item.VideoId);
-                    if (existingItem != null)
+                    // Skip if item already exists for this user
+                    if (!await youTubeItemManager.IsVideoUniqueToUser(item.VideoId, config.CreatedByEntraOid))
                     {
                         logger.LogDebug("Skipping duplicate YouTube video with VideoId: '{VideoId}'", item.VideoId);
                         continue;

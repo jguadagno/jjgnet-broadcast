@@ -88,6 +88,11 @@ public class YouTubeItemManager : IYouTubeItemManager
         return await _youTubeItemDataStore.GetByVideoIdAsync(videoId, cancellationToken);
     }
 
+    public async Task<bool> IsVideoUniqueToUser(string videoId, string ownerOid, CancellationToken cancellationToken = default)
+    {
+        return await _youTubeItemDataStore.IsVideoUniqueToUser(videoId, ownerOid, cancellationToken);
+    }
+
     public async Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default)
     {
         return await _youTubeItemDataStore.GetCollectorOwnerOidAsync(cancellationToken);

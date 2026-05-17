@@ -68,9 +68,8 @@ public class LoadAllVideos(
             var savedCount = 0;
             foreach (var item in newItems)
             {
-                // Skip if item already exists
-                var existingItem = await youTubeItemManager.GetByVideoIdAsync(item.VideoId);
-                if (existingItem != null)
+                // Skip if item already exists for this user
+                if (!await youTubeItemManager.IsVideoUniqueToUser(item.VideoId, ownerOid))
                 {
                     logger.LogDebug("Skipping duplicate YouTube video with VideoId: '{VideoId}'", item.VideoId);
                     continue;
