@@ -18,12 +18,11 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
 public class CollectorsController(
     IUserCollectorYouTubeChannelManager youTubeChannelManager,
     IUserCollectorFeedSourceManager feedSourceManager,
-    IUserCollectorSpeakingEngagementManager speakingEngagementManager,
-    IUserCollectorScheduledItemManager scheduledItemManager) : ControllerBase
+    IUserCollectorSpeakingEngagementManager speakingEngagementManager) : ControllerBase
 {
     /// <summary>
-    /// Gets a summary of all collector configurations (YouTube channels, feed sources, speaking engagements,
-    /// and scheduled item) for the resolved owner in a single call.
+    /// Gets a summary of all collector configurations (YouTube channels, feed sources, and speaking engagements)
+    /// for the resolved owner in a single call.
     /// </summary>
     /// <param name="ownerOid">Optional Entra OID. Non-admin callers can only query their own settings.</param>
     /// <returns>A summary of collector configuration counts and configured status for the resolved owner.</returns>
@@ -46,14 +45,12 @@ public class CollectorsController(
         var youTube = await youTubeChannelManager.GetByUserAsync(resolvedOwnerOid);
         var feed = await feedSourceManager.GetByUserAsync(resolvedOwnerOid);
         var speaking = await speakingEngagementManager.GetByUserAsync(resolvedOwnerOid);
-        var scheduled = await scheduledItemManager.GetByUserAsync(resolvedOwnerOid);
 
         return Ok(new CollectorsSummaryResponse
         {
             YouTubeChannelCount = youTube.Count,
             FeedSourceCount = feed.Count,
             SpeakingEngagementCount = speaking.Count,
-            ScheduledItemConfigured = scheduled.Count > 0
         });
     }
 }

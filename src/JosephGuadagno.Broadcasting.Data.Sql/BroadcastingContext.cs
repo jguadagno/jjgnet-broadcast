@@ -51,7 +51,6 @@ public partial class BroadcastingContext : DbContext
     public DbSet<Models.UserCollectorFeedSource> UserCollectorFeedSources => Set<Models.UserCollectorFeedSource>();
     public DbSet<Models.UserCollectorYouTubeChannel> UserCollectorYouTubeChannels => Set<Models.UserCollectorYouTubeChannel>();
     public DbSet<Models.UserCollectorSpeakingEngagement> UserCollectorSpeakingEngagements => Set<Models.UserCollectorSpeakingEngagement>();
-    public DbSet<Models.UserCollectorScheduledItem> UserCollectorScheduledItems => Set<Models.UserCollectorScheduledItem>();
     public DbSet<Models.UserPublisherBlueskySettings> UserPublisherBlueskySettings => Set<Models.UserPublisherBlueskySettings>();
     public DbSet<Models.UserPublisherTwitterSettings> UserPublisherTwitterSettings => Set<Models.UserPublisherTwitterSettings>();
     public DbSet<Models.UserPublisherLinkedInSettings> UserPublisherLinkedInSettings => Set<Models.UserPublisherLinkedInSettings>();
@@ -685,39 +684,6 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.SpeakingEngagementsFile)
                 .HasMaxLength(2048)
-                .IsRequired();
-
-            entity.Property(e => e.DisplayName)
-                .HasMaxLength(255)
-                .IsRequired();
-
-            entity.Property(e => e.IsActive)
-                .IsRequired();
-
-            entity.Property(e => e.CreatedOn)
-                .IsRequired()
-                .HasColumnType("datetimeoffset")
-                .HasDefaultValueSql("sysdatetimeoffset()");
-
-            entity.Property(e => e.LastUpdatedOn)
-                .IsRequired()
-                .HasColumnType("datetimeoffset")
-                .HasDefaultValueSql("sysdatetimeoffset()");
-        });
-
-        modelBuilder.Entity<Models.UserCollectorScheduledItem>(entity =>
-        {
-            entity.HasKey(e => e.Id)
-                .HasName("PK_UserCollectorScheduledItems")
-                .IsClustered();
-
-            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserCollectorScheduledItems_Owner")
-                .IsUnique();
-
-            entity.HasIndex(e => e.CreatedByEntraOid, "IX_UserCollectorScheduledItems_Owner");
-
-            entity.Property(e => e.CreatedByEntraOid)
-                .HasMaxLength(36)
                 .IsRequired();
 
             entity.Property(e => e.DisplayName)

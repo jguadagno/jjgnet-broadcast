@@ -12,13 +12,12 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Controller for per-user collector settings.
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
-[Route("Collectors/Settings")]
+[Route("Collectors/")]
 public class CollectorSettingsController : Controller
 {
     private readonly IUserCollectorFeedSourceService _feedSourceService;
     private readonly IUserCollectorYouTubeChannelService _youTubeChannelService;
     private readonly IUserCollectorSpeakingEngagementService _speakingEngagementService;
-    private readonly IUserCollectorScheduledItemService _scheduledItemService;
     private readonly IUserApprovalManager _userApprovalManager;
     private readonly ILogger<CollectorSettingsController> _logger;
 
@@ -26,14 +25,12 @@ public class CollectorSettingsController : Controller
         IUserCollectorFeedSourceService feedSourceService,
         IUserCollectorYouTubeChannelService youTubeChannelService,
         IUserCollectorSpeakingEngagementService speakingEngagementService,
-        IUserCollectorScheduledItemService scheduledItemService,
         IUserApprovalManager userApprovalManager,
         ILogger<CollectorSettingsController> logger)
     {
         _feedSourceService = feedSourceService;
         _youTubeChannelService = youTubeChannelService;
         _speakingEngagementService = speakingEngagementService;
-        _scheduledItemService = scheduledItemService;
         _userApprovalManager = userApprovalManager;
         _logger = logger;
     }
@@ -65,8 +62,6 @@ public class CollectorSettingsController : Controller
         var speakingEngagements = context.IsManagedBySiteAdmin
             ? await _speakingEngagementService.GetByUserAsync(context.TargetUserOid)
             : await _speakingEngagementService.GetCurrentUserAsync();
-
-        var scheduledItem = await _scheduledItemService.GetAsync(context.TargetUserOid);
 
         return new CollectorSettingsPageViewModel
         {
@@ -103,16 +98,6 @@ public class CollectorSettingsController : Controller
                 LastUpdatedOn = se.LastUpdatedOn,
                 IsManagedBySiteAdmin = context.IsManagedBySiteAdmin
             }).ToList(),
-            ScheduledItem = scheduledItem is not null
-                ? new UserCollectorScheduledItemViewModel
-                {
-                    DisplayName = scheduledItem.DisplayName,
-                    IsActive = scheduledItem.IsActive,
-                    CreatedOn = scheduledItem.CreatedOn,
-                    LastUpdatedOn = scheduledItem.LastUpdatedOn,
-                    IsManagedBySiteAdmin = context.IsManagedBySiteAdmin
-                }
-                : null
         };
     }
 
