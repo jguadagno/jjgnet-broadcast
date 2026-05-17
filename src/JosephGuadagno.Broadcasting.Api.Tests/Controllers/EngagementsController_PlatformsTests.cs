@@ -22,7 +22,7 @@ namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
 ///   POST   /engagements/{id}/platforms
 ///   DELETE /engagements/{id}/platforms/{platformId}
 /// </summary>
-public class EngagementsController_PlatformsTests
+public class EngagementsControllerPlatformsTests
 {
     // =========================================================================
     // Fields / constructor
@@ -34,9 +34,9 @@ public class EngagementsController_PlatformsTests
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
     // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
-    private static readonly IMapper _mapper = ApiTestMapper.Instance;
+    private static readonly IMapper Mapper = ApiTestMapper.Instance;
 
-    public EngagementsController_PlatformsTests()
+    public EngagementsControllerPlatformsTests()
     {
         _engagementManagerMock = new Mock<IEngagementManager>();
         _dataStoreMock = new Mock<IEngagementSocialMediaPlatformDataStore>();
@@ -60,7 +60,7 @@ public class EngagementsController_PlatformsTests
             _engagementManagerMock.Object,
             _dataStoreMock.Object,
             _loggerMock.Object,
-            _mapper)
+            Mapper)
         {
             ControllerContext = ApiControllerTestHelpers.CreateControllerContext(ownerOid),
             ProblemDetailsFactory = new TestProblemDetailsFactory()

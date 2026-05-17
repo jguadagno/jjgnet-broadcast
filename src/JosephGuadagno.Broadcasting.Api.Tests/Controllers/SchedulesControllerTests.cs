@@ -19,20 +19,20 @@ public class SchedulesControllerTests
 {
     private readonly Mock<IScheduledItemManager> _scheduledItemManagerMock;
     private readonly Mock<IEngagementManager> _engagementManagerMock;
-    private readonly Mock<ISyndicationFeedItemManager> _SyndicationFeedItemManagerMock;
-    private readonly Mock<IYouTubeItemManager> _YouTubeItemManagerMock;
+    private readonly Mock<ISyndicationFeedItemManager> _syndicationFeedItemManagerMock;
+    private readonly Mock<IYouTubeItemManager> _youTubeItemManagerMock;
     private readonly Mock<ILogger<SchedulesController>> _loggerMock;
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
     // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
-    private static readonly IMapper _mapper = ApiTestMapper.Instance;
+    private static readonly IMapper Mapper = ApiTestMapper.Instance;
 
     public SchedulesControllerTests()
     {
         _scheduledItemManagerMock = new Mock<IScheduledItemManager>();
         _engagementManagerMock = new Mock<IEngagementManager>();
-        _SyndicationFeedItemManagerMock = new Mock<ISyndicationFeedItemManager>();
-        _YouTubeItemManagerMock = new Mock<IYouTubeItemManager>();
+        _syndicationFeedItemManagerMock = new Mock<ISyndicationFeedItemManager>();
+        _youTubeItemManagerMock = new Mock<IYouTubeItemManager>();
         _loggerMock = new Mock<ILogger<SchedulesController>>();
     }
 
@@ -45,10 +45,10 @@ public class SchedulesControllerTests
         var controller = new SchedulesController(
             _scheduledItemManagerMock.Object,
             _engagementManagerMock.Object,
-            _SyndicationFeedItemManagerMock.Object,
-            _YouTubeItemManagerMock.Object,
+            _syndicationFeedItemManagerMock.Object,
+            _youTubeItemManagerMock.Object,
             _loggerMock.Object,
-            _mapper)
+            Mapper)
         {
             ControllerContext = ApiControllerTestHelpers.CreateControllerContext(ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()
@@ -763,7 +763,7 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock
             .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
-        _SyndicationFeedItemManagerMock
+        _syndicationFeedItemManagerMock
             .Setup(m => m.GetAsync(7))
             .ReturnsAsync(new SyndicationFeedItem
             {
@@ -804,7 +804,7 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock
             .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
-        _YouTubeItemManagerMock
+        _youTubeItemManagerMock
             .Setup(m => m.GetAsync(3))
             .ReturnsAsync(new YouTubeItem
             {
@@ -845,7 +845,7 @@ public class SchedulesControllerTests
         _scheduledItemManagerMock
             .Setup(m => m.GetAllAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<ScheduledItem> { Items = [item], TotalCount = 1 });
-        _SyndicationFeedItemManagerMock
+        _syndicationFeedItemManagerMock
             .Setup(m => m.GetAsync(99))
             .ThrowsAsync(new Exception("DB error"));
 

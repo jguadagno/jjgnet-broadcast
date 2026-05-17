@@ -23,7 +23,7 @@ public class EngagementsControllerTests
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
     // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
-    private static readonly IMapper _mapper = ApiTestMapper.Instance;
+    private static readonly IMapper Mapper = ApiTestMapper.Instance;
 
     public EngagementsControllerTests()
     {
@@ -38,7 +38,7 @@ public class EngagementsControllerTests
 
     private EngagementsController CreateSut(string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
     {
-        var controller = new EngagementsController(_engagementManagerMock.Object, _engagementSocialMediaPlatformDataStoreMock.Object, _loggerMock.Object, _mapper)
+        var controller = new EngagementsController(_engagementManagerMock.Object, _engagementSocialMediaPlatformDataStoreMock.Object, _loggerMock.Object, Mapper)
         {
             ControllerContext = ApiControllerTestHelpers.CreateControllerContext(ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()

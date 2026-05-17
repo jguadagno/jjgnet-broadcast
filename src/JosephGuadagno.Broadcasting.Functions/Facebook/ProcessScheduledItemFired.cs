@@ -15,8 +15,8 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 public class ProcessScheduledItemFired(
     IScheduledItemManager scheduledItemManager,
     IEngagementManager engagementManager,
-    ISyndicationFeedItemManager SyndicationFeedItemManager,
-    IYouTubeItemManager YouTubeItemManager,
+    ISyndicationFeedItemManager syndicationFeedItemManager,
+    IYouTubeItemManager youTubeItemManager,
     IFacebookManager facebookManager,
     ILogger<ProcessScheduledItemFired> logger)
 {
@@ -99,14 +99,14 @@ public class ProcessScheduledItemFired(
 
     private async Task<FacebookPostStatus> GetFacebookPostStatusForSyndicationSource(int primaryKey)
     {
-        var SyndicationFeedItem = await SyndicationFeedItemManager.GetAsync(primaryKey);
-        return new FacebookPostStatus { StatusText = string.Empty, LinkUri = SyndicationFeedItem.Url };
+        var syndicationFeedItem = await syndicationFeedItemManager.GetAsync(primaryKey);
+        return new FacebookPostStatus { StatusText = string.Empty, LinkUri = syndicationFeedItem.Url };
     }
 
     private async Task<FacebookPostStatus> GetFacebookPostStatusForYouTubeItem(int primaryKey)
     {
-        var YouTubeItem = await YouTubeItemManager.GetAsync(primaryKey);
-        return new FacebookPostStatus { StatusText = string.Empty, LinkUri = YouTubeItem.Url };
+        var youTubeItem = await youTubeItemManager.GetAsync(primaryKey);
+        return new FacebookPostStatus { StatusText = string.Empty, LinkUri = youTubeItem.Url };
     }
 
     private async Task<FacebookPostStatus> GetFacebookPostStatusForEngagement(int primaryKey)

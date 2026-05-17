@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
-public class ProcessNewRandomPost(ISyndicationFeedItemManager SyndicationFeedItemManager, ILogger<ProcessNewRandomPost> logger)
+public class ProcessNewRandomPost(ISyndicationFeedItemManager syndicationFeedItemManager, ILogger<ProcessNewRandomPost> logger)
 {
     [Function(ConfigurationFunctionNames.BlueskyProcessRandomPostFired)]
     [QueueOutput(Queues.BlueskyPostToSend)]
@@ -38,7 +38,7 @@ public class ProcessNewRandomPost(ISyndicationFeedItemManager SyndicationFeedIte
                 logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
                 return null;
             }
-            var sourceData = await SyndicationFeedItemManager.GetAsync(source.Id);
+            var sourceData = await syndicationFeedItemManager.GetAsync(source.Id);
 
             // Handle the event - eventGridData to build the post
             // Need to create a PostBuilder to send this based on these docs

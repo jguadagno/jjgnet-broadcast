@@ -11,13 +11,13 @@ public class YouTubeItemManagerTests
 {
     private readonly Mock<IYouTubeItemDataStore> _repository;
     private readonly IMemoryCache _cache;
-    private readonly YouTubeItemManager _YouTubeItemManager;
+    private readonly YouTubeItemManager _youTubeItemManager;
 
     public YouTubeItemManagerTests()
     {
         _repository = new Mock<IYouTubeItemDataStore>();
         _cache = new MemoryCache(new MemoryCacheOptions());
-        _YouTubeItemManager = new YouTubeItemManager(_repository.Object, _cache);
+        _youTubeItemManager = new YouTubeItemManager(_repository.Object, _cache);
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class YouTubeItemManagerTests
         _repository.Setup(r => r.GetAsync(1)).ReturnsAsync(source);
 
         // Act
-        var result = await _YouTubeItemManager.GetAsync(1);
+        var result = await _youTubeItemManager.GetAsync(1);
 
         // Assert
         Assert.Equal(source, result);
@@ -43,7 +43,7 @@ public class YouTubeItemManagerTests
         _repository.Setup(r => r.SaveAsync(source, default)).ReturnsAsync(OperationResult<YouTubeItem>.Success(source));
 
         // Act
-        var result = await _YouTubeItemManager.SaveAsync(source);
+        var result = await _youTubeItemManager.SaveAsync(source);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -59,7 +59,7 @@ public class YouTubeItemManagerTests
         _repository.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(sources);
 
         // Act
-        var result = await _YouTubeItemManager.GetAllAsync();
+        var result = await _youTubeItemManager.GetAllAsync();
 
         // Assert
         Assert.Equal(sources, result);
@@ -74,7 +74,7 @@ public class YouTubeItemManagerTests
         _repository.Setup(r => r.GetAllAsync("owner-1", default)).ReturnsAsync(sources);
 
         // Act
-        var result = await _YouTubeItemManager.GetAllAsync("owner-1");
+        var result = await _youTubeItemManager.GetAllAsync("owner-1");
 
         // Assert
         Assert.Equal(sources, result);
@@ -89,8 +89,8 @@ public class YouTubeItemManagerTests
         _repository.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(sources);
 
         // Act — first call populates cache, second is served from cache
-        await _YouTubeItemManager.GetAllAsync();
-        var result = await _YouTubeItemManager.GetAllAsync();
+        await _youTubeItemManager.GetAllAsync();
+        var result = await _youTubeItemManager.GetAllAsync();
 
         // Assert
         result.Should().BeEquivalentTo(sources);
@@ -105,8 +105,8 @@ public class YouTubeItemManagerTests
         _repository.Setup(r => r.GetAllAsync("owner-1", It.IsAny<CancellationToken>())).ReturnsAsync(sources);
 
         // Act — first call populates cache, second is served from cache
-        await _YouTubeItemManager.GetAllAsync("owner-1");
-        var result = await _YouTubeItemManager.GetAllAsync("owner-1");
+        await _youTubeItemManager.GetAllAsync("owner-1");
+        var result = await _youTubeItemManager.GetAllAsync("owner-1");
 
         // Assert
         result.Should().BeEquivalentTo(sources);
@@ -122,9 +122,9 @@ public class YouTubeItemManagerTests
         _repository.Setup(r => r.SaveAsync(source, default)).ReturnsAsync(OperationResult<YouTubeItem>.Success(source));
 
         // Act — populate cache, then save (invalidates), then fetch again
-        await _YouTubeItemManager.GetAllAsync("owner-1");
-        await _YouTubeItemManager.SaveAsync(source);
-        await _YouTubeItemManager.GetAllAsync("owner-1");
+        await _youTubeItemManager.GetAllAsync("owner-1");
+        await _youTubeItemManager.SaveAsync(source);
+        await _youTubeItemManager.GetAllAsync("owner-1");
 
         // Assert — data store called twice: before and after invalidation
         _repository.Verify(r => r.GetAllAsync("owner-1", It.IsAny<CancellationToken>()), Times.Exactly(2));
@@ -138,7 +138,7 @@ public class YouTubeItemManagerTests
         _repository.Setup(r => r.DeleteAsync(source, default)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         // Act
-        var result = await _YouTubeItemManager.DeleteAsync(source);
+        var result = await _youTubeItemManager.DeleteAsync(source);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -152,7 +152,7 @@ public class YouTubeItemManagerTests
         _repository.Setup(r => r.DeleteAsync(1, default)).ReturnsAsync(OperationResult<bool>.Success(true));
 
         // Act
-        var result = await _YouTubeItemManager.DeleteAsync(1);
+        var result = await _youTubeItemManager.DeleteAsync(1);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -167,7 +167,7 @@ public class YouTubeItemManagerTests
         _repository.Setup(r => r.GetByUrlAsync("http://test.com")).ReturnsAsync(source);
 
         // Act
-        var result = await _YouTubeItemManager.GetByUrlAsync("http://test.com");
+        var result = await _youTubeItemManager.GetByUrlAsync("http://test.com");
 
         // Assert
         Assert.Equal(source, result);
@@ -182,7 +182,7 @@ public class YouTubeItemManagerTests
         _repository.Setup(r => r.GetByVideoIdAsync("testvideoid")).ReturnsAsync(source);
 
         // Act
-        var result = await _YouTubeItemManager.GetByVideoIdAsync("testvideoid");
+        var result = await _youTubeItemManager.GetByVideoIdAsync("testvideoid");
 
         // Assert
         Assert.Equal(source, result);
@@ -196,7 +196,7 @@ public class YouTubeItemManagerTests
         _repository.Setup(r => r.GetByVideoIdAsync("missing")).ReturnsAsync((YouTubeItem?)null);
 
         // Act
-        var result = await _YouTubeItemManager.GetByVideoIdAsync("missing");
+        var result = await _youTubeItemManager.GetByVideoIdAsync("missing");
 
         // Assert
         Assert.Null(result);

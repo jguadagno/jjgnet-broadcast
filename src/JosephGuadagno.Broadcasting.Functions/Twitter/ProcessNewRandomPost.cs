@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
-public class ProcessNewRandomPost(ISyndicationFeedItemManager SyndicationFeedItemManager, ILogger<ProcessNewRandomPost> logger)
+public class ProcessNewRandomPost(ISyndicationFeedItemManager syndicationFeedItemManager, ILogger<ProcessNewRandomPost> logger)
 {
     [Function(ConfigurationFunctionNames.TwitterProcessRandomPostFired)]
     [QueueOutput(Queues.TwitterTweetsToSend)]
@@ -37,22 +37,22 @@ public class ProcessNewRandomPost(ISyndicationFeedItemManager SyndicationFeedIte
                 logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
                 return null;
             }
-            var SyndicationFeedItem = await SyndicationFeedItemManager.GetAsync(source.Id);
+            var syndicationFeedItem = await syndicationFeedItemManager.GetAsync(source.Id);
 
             // Handle the event - eventGridData to build the tweet
-            var hashtags = HashTagLists.BuildHashTagList(SyndicationFeedItem.Tags);
+            var hashtags = HashTagLists.BuildHashTagList(syndicationFeedItem.Tags);
             var status =
-                $"ICYMI: ({SyndicationFeedItem.PublicationDate.Date.ToShortDateString()}): \"{SyndicationFeedItem.Title}.\" RTs and feedback are always appreciated! {SyndicationFeedItem.ShortenedUrl} {hashtags}";
+                $"ICYMI: ({syndicationFeedItem.PublicationDate.Date.ToShortDateString()}): \"{syndicationFeedItem.Title}.\" RTs and feedback are always appreciated! {syndicationFeedItem.ShortenedUrl} {hashtags}";
 
             // Return
             var properties = new Dictionary<string, string>
             {
-                {"title", SyndicationFeedItem.Title},
-                {"url", SyndicationFeedItem.Url},
+                {"title", syndicationFeedItem.Title},
+                {"url", syndicationFeedItem.Url},
                 {"tweet", status}
             };
             logger.LogCustomEvent(Metrics.TwitterProcessedRandomPost, properties);
-            logger.LogDebug("Picked a random post {Title}", SyndicationFeedItem.Title);
+            logger.LogDebug("Picked a random post {Title}", syndicationFeedItem.Title);
             return new TwitterTweetMessage { Text = status };
         }
         catch (Exception e)

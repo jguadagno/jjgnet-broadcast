@@ -7,8 +7,8 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.FixSourceDataShortUrl;
 
 public class App(
-    IYouTubeItemManager YouTubeItemManager,
-    ISyndicationFeedItemManager SyndicationFeedItemManager,
+    IYouTubeItemManager youTubeItemManager,
+    ISyndicationFeedItemManager syndicationFeedItemManager,
     Bitly bitly,
     Settings settings,
     ILogger<App> logger)
@@ -16,7 +16,7 @@ public class App(
     public async Task Run()
     {
         logger.LogInformation("Getting items from the SyndicationFeed ");
-        var syndicationItems = await SyndicationFeedItemManager.GetAllAsync();
+        var syndicationItems = await syndicationFeedItemManager.GetAllAsync();
         if (!syndicationItems.Any())
         {
             logger.LogInformation("There were no syndication items found");
@@ -41,7 +41,7 @@ public class App(
 
                 sourceData.ShortenedUrl = shortenedUrl.Link;
                 sourceData.LastUpdatedOn = DateTime.UtcNow;
-                await SyndicationFeedItemManager.SaveAsync(sourceData);
+                await syndicationFeedItemManager.SaveAsync(sourceData);
                 logger.LogInformation("Updated Syndication Feed item for '{SourceUrl}'", sourceData.Url);
             }
             catch (Exception ex)
@@ -51,7 +51,7 @@ public class App(
         }
 
         logger.LogInformation("Getting items from the YouTube table");
-        var youtubeItems = await YouTubeItemManager.GetAllAsync();
+        var youtubeItems = await youTubeItemManager.GetAllAsync();
         foreach (var sourceData in youtubeItems)
         {
             if (sourceData.ShortenedUrl is not null &&  sourceData.ShortenedUrl.Contains(settings.BitlyShortenedDomain))
@@ -71,7 +71,7 @@ public class App(
 
                 sourceData.ShortenedUrl = shortenedUrl.Link;
                 sourceData.LastUpdatedOn = DateTime.UtcNow;
-                await YouTubeItemManager.SaveAsync(sourceData);
+                await youTubeItemManager.SaveAsync(sourceData);
                 logger.LogInformation("Updated YouTube Item for '{SourceUrl}'", sourceData.Url);
             }
             catch (Exception ex)

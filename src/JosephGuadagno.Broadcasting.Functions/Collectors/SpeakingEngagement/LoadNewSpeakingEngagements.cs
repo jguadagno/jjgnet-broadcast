@@ -116,7 +116,6 @@ public class LoadNewSpeakingEngagements(
                         logger.LogError(e,
                             "Failed to save the engagement with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
                             item.Id, item.Url, e);
-                        continue;
                     }
                 }
 

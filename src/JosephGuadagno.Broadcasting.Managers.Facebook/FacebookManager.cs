@@ -22,8 +22,8 @@ public class FacebookManager : IFacebookManager
     private readonly IFacebookApplicationSettings _facebookApplicationSettings;
     private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
     private readonly IMessageTemplateDataStore _messageTemplateDataStore;
-    private readonly ISyndicationFeedItemManager _SyndicationFeedItemManager;
-    private readonly IYouTubeItemManager _YouTubeItemManager;
+    private readonly ISyndicationFeedItemManager _syndicationFeedItemManager;
+    private readonly IYouTubeItemManager _youTubeItemManager;
     private readonly IEngagementManager _engagementManager;
 
     public FacebookManager(
@@ -32,8 +32,8 @@ public class FacebookManager : IFacebookManager
         ILogger<FacebookManager> logger,
         ISocialMediaPlatformManager socialMediaPlatformManager,
         IMessageTemplateDataStore messageTemplateDataStore,
-        ISyndicationFeedItemManager SyndicationFeedItemManager,
-        IYouTubeItemManager YouTubeItemManager,
+        ISyndicationFeedItemManager syndicationFeedItemManager,
+        IYouTubeItemManager youTubeItemManager,
         IEngagementManager engagementManager)
     {
         _httpClient = httpClient;
@@ -41,8 +41,8 @@ public class FacebookManager : IFacebookManager
         _logger = logger;
         _socialMediaPlatformManager = socialMediaPlatformManager;
         _messageTemplateDataStore = messageTemplateDataStore;
-        _SyndicationFeedItemManager = SyndicationFeedItemManager;
-        _YouTubeItemManager = YouTubeItemManager;
+        _syndicationFeedItemManager = syndicationFeedItemManager;
+        _youTubeItemManager = youTubeItemManager;
         _engagementManager = engagementManager;
     }
 
@@ -330,7 +330,7 @@ public class FacebookManager : IFacebookManager
             switch (scheduledItem.ItemType)
             {
                 case ScheduledItemType.SyndicationFeedItems:
-                    var feed = await _SyndicationFeedItemManager.GetAsync(
+                    var feed = await _syndicationFeedItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = feed.Title;
@@ -338,12 +338,12 @@ public class FacebookManager : IFacebookManager
                     tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.YouTubeItems:
-                    var YouTubeItem = await _YouTubeItemManager.GetAsync(
+                    var youTubeItem = await _youTubeItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
-                    title = YouTubeItem.Title;
-                    url = YouTubeItem.ShortenedUrl ?? YouTubeItem.Url;
-                    tags = YouTubeItem.Tags?.Count > 0 ? string.Join(",", YouTubeItem.Tags) : string.Empty;
+                    title = youTubeItem.Title;
+                    url = youTubeItem.ShortenedUrl ?? youTubeItem.Url;
+                    tags = youTubeItem.Tags?.Count > 0 ? string.Join(",", youTubeItem.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.Engagements:
                     var engagement = await _engagementManager.GetAsync(

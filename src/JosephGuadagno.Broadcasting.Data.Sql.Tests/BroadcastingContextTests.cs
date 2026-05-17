@@ -192,7 +192,7 @@ public class BroadcastingContextTests : IDisposable
     public async Task BroadcastingContext_AddYouTubeItem_CanBeRetrieved()
     {
         // Arrange
-        var YouTubeItem = new YouTubeItem
+        var youTubeItem = new YouTubeItem
         {
             VideoId = "abc123",
             Author = "Test Channel",
@@ -205,11 +205,11 @@ public class BroadcastingContextTests : IDisposable
         };
 
         // Act
-        _context.YouTubeItems.Add(YouTubeItem);
+        _context.YouTubeItems.Add(youTubeItem);
         await _context.SaveChangesAsync();
 
         // Assert
-        var retrieved = await _context.YouTubeItems.FindAsync(YouTubeItem.Id);
+        var retrieved = await _context.YouTubeItems.FindAsync(youTubeItem.Id);
         Assert.NotNull(retrieved);
         Assert.Equal("abc123", retrieved.VideoId);
     }

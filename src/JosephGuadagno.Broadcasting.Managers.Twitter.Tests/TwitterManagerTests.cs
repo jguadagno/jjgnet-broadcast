@@ -192,8 +192,8 @@ public class TwitterManagerTests
         ILogger<TwitterManager> logger,
         ISocialMediaPlatformManager socialMediaPlatformManager,
         IMessageTemplateDataStore messageTemplateDataStore,
-        ISyndicationFeedItemManager SyndicationFeedItemManager,
-        IYouTubeItemManager YouTubeItemManager,
+        ISyndicationFeedItemManager syndicationFeedItemManager,
+        IYouTubeItemManager youTubeItemManager,
         IEngagementManager engagementManager,
         Tweet? tweetResult,
         Exception? exception = null)
@@ -202,8 +202,8 @@ public class TwitterManagerTests
             logger,
             socialMediaPlatformManager,
             messageTemplateDataStore,
-            SyndicationFeedItemManager,
-            YouTubeItemManager,
+            syndicationFeedItemManager,
+            youTubeItemManager,
             engagementManager)
     {
         protected override Task<Tweet?> TweetAsync(string tweetText)

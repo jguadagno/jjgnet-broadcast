@@ -8,7 +8,7 @@ public class Visibility
     private const string VisibilityConnectionsOnly = "CONNECTIONS";
     
     [JsonPropertyName("com.linkedin.ugc.MemberNetworkVisibility")]
-    public string com_linkedin_ugc_MemberNetworkVisibility => VisibilityEnum switch
+    public string ComLinkedinUgcMemberNetworkVisibility => VisibilityEnum switch
     {
         VisibilityEnum.Anyone => VisibilityAnyone,
         VisibilityEnum.ConnectionsOnly => VisibilityConnectionsOnly,

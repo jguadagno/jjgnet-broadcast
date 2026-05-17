@@ -14,7 +14,7 @@ public interface IEventPublisher
 
     /// <exception cref="Exceptions.EventPublishException">Thrown when publishing fails after all retry attempts.</exception>
     public Task PublishYouTubeEventsAsync(string subject,
-        IReadOnlyCollection<YouTubeItem> YouTubeItemDataItems);
+        IReadOnlyCollection<YouTubeItem> youTubeItemDataItems);
 
     /// <exception cref="Exceptions.EventPublishException">Thrown when publishing fails after all retry attempts.</exception>
     public Task PublishSpeakingEngagementEventsAsync(string subject,

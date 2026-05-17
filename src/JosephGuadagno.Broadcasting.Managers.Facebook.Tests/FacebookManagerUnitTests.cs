@@ -492,8 +492,8 @@ public class FacebookManagerUnitTests
     private FacebookManager CreateSut(
         Mock<ISocialMediaPlatformManager>? socialMediaPlatformManager = null,
         Mock<IMessageTemplateDataStore>? messageTemplateDataStore = null,
-        Mock<ISyndicationFeedItemManager>? SyndicationFeedItemManager = null,
-        Mock<IYouTubeItemManager>? YouTubeItemManager = null,
+        Mock<ISyndicationFeedItemManager>? syndicationFeedItemManager = null,
+        Mock<IYouTubeItemManager>? youTubeItemManager = null,
         Mock<IEngagementManager>? engagementManager = null)
     {
         return new FacebookManager(
@@ -502,8 +502,8 @@ public class FacebookManagerUnitTests
             _mockLogger.Object,
             (socialMediaPlatformManager ?? _mockSocialMediaPlatformManager).Object,
             (messageTemplateDataStore ?? _mockMessageTemplateDataStore).Object,
-            (SyndicationFeedItemManager ?? _mockSyndicationFeedItemManager).Object,
-            (YouTubeItemManager ?? _mockYouTubeItemManager).Object,
+            (syndicationFeedItemManager ?? _mockSyndicationFeedItemManager).Object,
+            (youTubeItemManager ?? _mockYouTubeItemManager).Object,
             (engagementManager ?? _mockEngagementManager).Object);
     }
 }

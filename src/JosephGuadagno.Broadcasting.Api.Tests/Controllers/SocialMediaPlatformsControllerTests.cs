@@ -19,7 +19,7 @@ public class SocialMediaPlatformsControllerTests
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
     // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
-    private static readonly IMapper _mapper = ApiTestMapper.Instance;
+    private static readonly IMapper Mapper = ApiTestMapper.Instance;
 
     public SocialMediaPlatformsControllerTests()
     {
@@ -36,7 +36,7 @@ public class SocialMediaPlatformsControllerTests
         var controller = new SocialMediaPlatformsController(
             _managerMock.Object,
             _loggerMock.Object,
-            _mapper)
+            Mapper)
         {
             ControllerContext = ApiControllerTestHelpers.CreateControllerContext(),
             ProblemDetailsFactory = new TestProblemDetailsFactory()

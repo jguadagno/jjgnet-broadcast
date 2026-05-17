@@ -19,7 +19,7 @@ public class YouTubeItemsControllerTests
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
     // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
-    private static readonly IMapper _mapper = ApiTestMapper.Instance;
+    private static readonly IMapper Mapper = ApiTestMapper.Instance;
 
     public YouTubeItemsControllerTests()
     {
@@ -36,7 +36,7 @@ public class YouTubeItemsControllerTests
         var controller = new YouTubeItemsController(
             _managerMock.Object,
             _loggerMock.Object,
-            _mapper)
+            Mapper)
         {
             ControllerContext = ApiControllerTestHelpers.CreateControllerContext(ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()

@@ -83,14 +83,14 @@ public class ProcessScheduledItemFiredTests
         Mock<IScheduledItemManager> scheduledItemManager,
         Mock<IEngagementManager> engagementManager,
         Mock<ISyndicationFeedItemManager> feedSourceManager,
-        Mock<IYouTubeItemManager> YouTubeItemManager,
+        Mock<IYouTubeItemManager> youTubeItemManager,
         Mock<IBlueskyManager> blueskyManager)
     {
         return new Functions.Bluesky.ProcessScheduledItemFired(
             scheduledItemManager.Object,
             engagementManager.Object,
             feedSourceManager.Object,
-            YouTubeItemManager.Object,
+            youTubeItemManager.Object,
             blueskyManager.Object,
             NullLogger<Functions.Bluesky.ProcessScheduledItemFired>.Instance);
     }

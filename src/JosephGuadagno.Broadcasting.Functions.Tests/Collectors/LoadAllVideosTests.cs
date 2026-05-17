@@ -22,7 +22,7 @@ public class LoadAllVideosTests
     private const string OwnerEntraOid = "owner-entra-oid";
     private const string CollectorOwnerEntraOid = "collector-owner-entra-oid";
     private readonly Mock<IYouTubeReader> _youTubeReader;
-    private readonly Mock<IYouTubeItemManager> _YouTubeItemManager;
+    private readonly Mock<IYouTubeItemManager> _youTubeItemManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly Mock<IUrlShortener> _urlShortener;
     private readonly LoadAllVideos _sut;
@@ -30,15 +30,15 @@ public class LoadAllVideosTests
     public LoadAllVideosTests()
     {
         _youTubeReader = new Mock<IYouTubeReader>();
-        _YouTubeItemManager = new Mock<IYouTubeItemManager>();
+        _youTubeItemManager = new Mock<IYouTubeItemManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
         _urlShortener = new Mock<IUrlShortener>();
-        _YouTubeItemManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>())).ReturnsAsync(OwnerEntraOid);
+        _youTubeItemManager.Setup(m => m.GetCollectorOwnerOidAsync(It.IsAny<CancellationToken>())).ReturnsAsync(OwnerEntraOid);
 
         _sut = new LoadAllVideos(
             _youTubeReader.Object,
             Options.Create(new Settings { ShortenedDomainToUse = "short.example.com", OwnerEntraOid = OwnerEntraOid }),
-            _YouTubeItemManager.Object,
+            _youTubeItemManager.Object,
             _feedCheckManager.Object,
             _urlShortener.Object,
             NullLogger<LoadAllVideos>.Instance);
@@ -93,9 +93,9 @@ public class LoadAllVideosTests
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _youTubeReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<YouTubeItem> { item });
-        _YouTubeItemManager.Setup(m => m.GetByVideoIdAsync("new-video-id")).ReturnsAsync((YouTubeItem?)null);
+        _youTubeItemManager.Setup(m => m.GetByVideoIdAsync("new-video-id")).ReturnsAsync((YouTubeItem?)null);
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("https://short.example.com/xyz");
-        _YouTubeItemManager.Setup(m => m.SaveAsync(It.IsAny<YouTubeItem>())).ReturnsAsync(OperationResult<YouTubeItem>.Success(savedItem));
+        _youTubeItemManager.Setup(m => m.SaveAsync(It.IsAny<YouTubeItem>())).ReturnsAsync(OperationResult<YouTubeItem>.Success(savedItem));
 
         var request = CreateHttpRequest();
 
@@ -103,7 +103,7 @@ public class LoadAllVideosTests
         var result = await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
-        _YouTubeItemManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeItem>()), Times.Once);
+        _youTubeItemManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeItem>()), Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("1", okResult.Value!.ToString());
     }
@@ -124,11 +124,11 @@ public class LoadAllVideosTests
             .ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _youTubeReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<YouTubeItem> { item });
-        _YouTubeItemManager.Setup(m => m.GetByVideoIdAsync("owned-video-id"))
+        _youTubeItemManager.Setup(m => m.GetByVideoIdAsync("owned-video-id"))
             .ReturnsAsync((YouTubeItem?)null);
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync("https://short.example.com/owned");
-        _YouTubeItemManager.Setup(m => m.SaveAsync(It.Is<YouTubeItem>(v =>
+        _youTubeItemManager.Setup(m => m.SaveAsync(It.Is<YouTubeItem>(v =>
                 v.VideoId == "owned-video-id" &&
                 v.CreatedByEntraOid == CollectorOwnerEntraOid &&
                 !string.IsNullOrWhiteSpace(v.CreatedByEntraOid))))
@@ -140,7 +140,7 @@ public class LoadAllVideosTests
         await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
-        _YouTubeItemManager.Verify(m => m.SaveAsync(It.Is<YouTubeItem>(v =>
+        _youTubeItemManager.Verify(m => m.SaveAsync(It.Is<YouTubeItem>(v =>
             v.VideoId == "owned-video-id" &&
             v.CreatedByEntraOid == CollectorOwnerEntraOid &&
             !string.IsNullOrWhiteSpace(v.CreatedByEntraOid))), Times.Once);
@@ -176,7 +176,7 @@ public class LoadAllVideosTests
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _youTubeReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<YouTubeItem> { item });
-        _YouTubeItemManager.Setup(m => m.GetByVideoIdAsync("duplicate-video-id")).ReturnsAsync(existingItem);
+        _youTubeItemManager.Setup(m => m.GetByVideoIdAsync("duplicate-video-id")).ReturnsAsync(existingItem);
 
         var request = CreateHttpRequest();
 
@@ -184,7 +184,7 @@ public class LoadAllVideosTests
         var result = await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
-        _YouTubeItemManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeItem>()), Times.Never);
+        _youTubeItemManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeItem>()), Times.Never);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
     }
@@ -203,7 +203,7 @@ public class LoadAllVideosTests
         var result = await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
-        _YouTubeItemManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeItem>()), Times.Never);
+        _youTubeItemManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeItem>()), Times.Never);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
     }
@@ -280,9 +280,9 @@ public class LoadAllVideosTests
         _youTubeReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<YouTubeItem> { newVideo1, duplicateVideo, newVideo2 });
         
-        _YouTubeItemManager.Setup(m => m.GetByVideoIdAsync("new-1")).ReturnsAsync((YouTubeItem?)null);
-        _YouTubeItemManager.Setup(m => m.GetByVideoIdAsync("new-2")).ReturnsAsync((YouTubeItem?)null);
-        _YouTubeItemManager.Setup(m => m.GetByVideoIdAsync("duplicate-1")).ReturnsAsync(existingVideo);
+        _youTubeItemManager.Setup(m => m.GetByVideoIdAsync("new-1")).ReturnsAsync((YouTubeItem?)null);
+        _youTubeItemManager.Setup(m => m.GetByVideoIdAsync("new-2")).ReturnsAsync((YouTubeItem?)null);
+        _youTubeItemManager.Setup(m => m.GetByVideoIdAsync("duplicate-1")).ReturnsAsync(existingVideo);
         
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("https://short.example.com/xyz");
         
@@ -291,8 +291,8 @@ public class LoadAllVideosTests
         var savedVideo2 = CreateVideoSource("new-2");
         savedVideo2.Id = 2;
         
-        _YouTubeItemManager.Setup(m => m.SaveAsync(It.Is<YouTubeItem>(v => v.VideoId == "new-1"))).ReturnsAsync(OperationResult<YouTubeItem>.Success(savedVideo1));
-        _YouTubeItemManager.Setup(m => m.SaveAsync(It.Is<YouTubeItem>(v => v.VideoId == "new-2"))).ReturnsAsync(OperationResult<YouTubeItem>.Success(savedVideo2));
+        _youTubeItemManager.Setup(m => m.SaveAsync(It.Is<YouTubeItem>(v => v.VideoId == "new-1"))).ReturnsAsync(OperationResult<YouTubeItem>.Success(savedVideo1));
+        _youTubeItemManager.Setup(m => m.SaveAsync(It.Is<YouTubeItem>(v => v.VideoId == "new-2"))).ReturnsAsync(OperationResult<YouTubeItem>.Success(savedVideo2));
 
         var request = CreateHttpRequest();
 
@@ -300,7 +300,7 @@ public class LoadAllVideosTests
         var result = await _sut.RunAsync(request, OwnerEntraOid, null!);
 
         // Assert
-        _YouTubeItemManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeItem>()), Times.Exactly(2));
+        _youTubeItemManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeItem>()), Times.Exactly(2));
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("2", okResult.Value!.ToString());
         Assert.Contains("3", okResult.Value!.ToString()); // 2 of 3 videos
@@ -334,9 +334,9 @@ public class LoadAllVideosTests
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _youTubeReader.Setup(r => r.GetAsync(OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync(new List<YouTubeItem> { item });
-        _YouTubeItemManager.Setup(m => m.GetByVideoIdAsync("video-123")).ReturnsAsync((YouTubeItem?)null);
+        _youTubeItemManager.Setup(m => m.GetByVideoIdAsync("video-123")).ReturnsAsync((YouTubeItem?)null);
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(item.Url, "short.example.com")).ReturnsAsync("https://short.example.com/abc");
-        _YouTubeItemManager.Setup(m => m.SaveAsync(It.IsAny<YouTubeItem>())).ReturnsAsync(OperationResult<YouTubeItem>.Success(savedItem));
+        _youTubeItemManager.Setup(m => m.SaveAsync(It.IsAny<YouTubeItem>())).ReturnsAsync(OperationResult<YouTubeItem>.Success(savedItem));
 
         var request = CreateHttpRequest();
 
@@ -345,7 +345,7 @@ public class LoadAllVideosTests
 
         // Assert
         _urlShortener.Verify(u => u.GetShortenedUrlAsync(item.Url, "short.example.com"), Times.Once);
-        _YouTubeItemManager.Verify(m => m.SaveAsync(It.Is<YouTubeItem>(v => v.ShortenedUrl == "https://short.example.com/abc")), Times.Once);
+        _youTubeItemManager.Verify(m => m.SaveAsync(It.Is<YouTubeItem>(v => v.ShortenedUrl == "https://short.example.com/abc")), Times.Once);
     }
 }
 

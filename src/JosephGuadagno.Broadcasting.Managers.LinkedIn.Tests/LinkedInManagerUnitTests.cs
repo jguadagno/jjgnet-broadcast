@@ -348,7 +348,7 @@ public class LinkedInManagerUnitTests
         var sut = CreateSut(
             socialMediaPlatformManager: mockPlatformManager,
             messageTemplateDataStore: mockTemplateStore,
-            SyndicationFeedItemManager: mockFeedManager);
+            syndicationFeedItemManager: mockFeedManager);
 
         var result = await sut.ComposeMessageAsync(scheduledItem);
 
@@ -474,7 +474,7 @@ public class LinkedInManagerUnitTests
         var sut = CreateSut(
             socialMediaPlatformManager: mockPlatformManager,
             messageTemplateDataStore: mockTemplateStore,
-            YouTubeItemManager: mockYouTubeManager);
+            youTubeItemManager: mockYouTubeManager);
 
         var result = await sut.ComposeMessageAsync(scheduledItem);
 
@@ -516,15 +516,15 @@ public class LinkedInManagerUnitTests
     private LinkedInManager CreateSut(
         Mock<ISocialMediaPlatformManager>? socialMediaPlatformManager = null,
         Mock<IMessageTemplateDataStore>? messageTemplateDataStore = null,
-        Mock<ISyndicationFeedItemManager>? SyndicationFeedItemManager = null,
-        Mock<IYouTubeItemManager>? YouTubeItemManager = null,
+        Mock<ISyndicationFeedItemManager>? syndicationFeedItemManager = null,
+        Mock<IYouTubeItemManager>? youTubeItemManager = null,
         Mock<IEngagementManager>? engagementManager = null)
         => new LinkedInManager(
             _httpClient,
             _mockLogger.Object,
             (socialMediaPlatformManager ?? new Mock<ISocialMediaPlatformManager>()).Object,
             (messageTemplateDataStore ?? new Mock<IMessageTemplateDataStore>()).Object,
-            (SyndicationFeedItemManager ?? new Mock<ISyndicationFeedItemManager>()).Object,
-            (YouTubeItemManager ?? new Mock<IYouTubeItemManager>()).Object,
+            (syndicationFeedItemManager ?? new Mock<ISyndicationFeedItemManager>()).Object,
+            (youTubeItemManager ?? new Mock<IYouTubeItemManager>()).Object,
             (engagementManager ?? new Mock<IEngagementManager>()).Object);
 }

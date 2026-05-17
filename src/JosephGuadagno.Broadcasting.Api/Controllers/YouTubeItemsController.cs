@@ -19,22 +19,22 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 [Produces("application/json")]
 public class YouTubeItemsController : ControllerBase
 {
-    private readonly IYouTubeItemManager _YouTubeItemManager;
+    private readonly IYouTubeItemManager _youTubeItemManager;
     private readonly ILogger<YouTubeItemsController> _logger;
     private readonly IMapper _mapper;
 
     /// <summary>
     /// Handles the interactions with YouTube Sources
     /// </summary>
-    /// <param name="YouTubeItemManager"></param>
+    /// <param name="youTubeItemManager"></param>
     /// <param name="logger"></param>
     /// <param name="mapper"></param>
     public YouTubeItemsController(
-        IYouTubeItemManager YouTubeItemManager,
+        IYouTubeItemManager youTubeItemManager,
         ILogger<YouTubeItemsController> logger,
         IMapper mapper)
     {
-        _YouTubeItemManager = YouTubeItemManager;
+        _youTubeItemManager = youTubeItemManager;
         _logger = logger;
         _mapper = mapper;
     }
@@ -58,12 +58,12 @@ public class YouTubeItemsController : ControllerBase
         PagedResult<YouTubeItem> result;
         if (User.IsSiteAdministrator())
         {
-            result = await _YouTubeItemManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
+            result = await _youTubeItemManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
         }
         else
         {
             var ownerOid = User.GetOwnerOid();
-            result = await _YouTubeItemManager.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
+            result = await _youTubeItemManager.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
         }
 
         var items = _mapper.Map<List<YouTubeItemResponse>>(result.Items);
@@ -94,7 +94,7 @@ public class YouTubeItemsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<YouTubeItemResponse>> GetYouTubeItemAsync(int id)
     {
-        var source = await _YouTubeItemManager.GetAsync(id);
+        var source = await _youTubeItemManager.GetAsync(id);
         if (source is null)
             return NotFound();
 
@@ -130,7 +130,7 @@ public class YouTubeItemsController : ControllerBase
         source.AddedOn = DateTimeOffset.UtcNow;
         source.LastUpdatedOn = DateTimeOffset.UtcNow;
 
-        var result = await _YouTubeItemManager.SaveAsync(source);
+        var result = await _youTubeItemManager.SaveAsync(source);
         if (result.IsSuccess && result.Value != null)
         {
             _logger.LogInformation("YouTubeItem created with Id {YouTubeItemId}", result.Value.Id);
@@ -158,7 +158,7 @@ public class YouTubeItemsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteYouTubeItemAsync(int id)
     {
-        var source = await _YouTubeItemManager.GetAsync(id);
+        var source = await _youTubeItemManager.GetAsync(id);
         if (source is null)
         {
             _logger.LogWarning("YouTubeItem {YouTubeItemId} not found for deletion", id);
@@ -168,7 +168,7 @@ public class YouTubeItemsController : ControllerBase
         if (!User.IsSiteAdministrator() && source.CreatedByEntraOid != User.GetOwnerOid())
             return Forbid();
 
-        var wasDeleted= await _YouTubeItemManager.DeleteAsync(id);
+        var wasDeleted= await _youTubeItemManager.DeleteAsync(id);
         if (wasDeleted.IsSuccess)
         {
             _logger.LogInformation("YouTubeItem {YouTubeItemId} deleted successfully", id);

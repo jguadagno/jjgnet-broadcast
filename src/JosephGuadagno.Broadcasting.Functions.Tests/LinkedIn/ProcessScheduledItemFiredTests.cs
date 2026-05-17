@@ -105,7 +105,7 @@ public class ProcessScheduledItemFiredTests
     private static Functions.LinkedIn.ProcessScheduledItemFired BuildSut(
         Mock<IScheduledItemManager> scheduledItemManager,
         Mock<ISyndicationFeedItemManager> feedSourceManager,
-        Mock<IYouTubeItemManager> YouTubeItemManager,
+        Mock<IYouTubeItemManager> youTubeItemManager,
         Mock<IEngagementManager> engagementManager,
         Mock<IUserOAuthTokenManager> userOAuthTokenManager,
         Mock<ILinkedInManager> linkedInManager)
@@ -114,7 +114,7 @@ public class ProcessScheduledItemFiredTests
             scheduledItemManager.Object,
             engagementManager.Object,
             feedSourceManager.Object,
-            YouTubeItemManager.Object,
+            youTubeItemManager.Object,
             userOAuthTokenManager.Object,
             linkedInManager.Object,
             NullLogger<Functions.LinkedIn.ProcessScheduledItemFired>.Instance);
@@ -259,13 +259,13 @@ public class ProcessScheduledItemFiredTests
     public async Task RunAsync_WhenItemTypeIsYouTubeItems_UsesShortenedUrlAndManagerText()
     {
         var scheduledItem = BuildScheduledItem(ScheduledItemType.YouTubeItems);
-        var YouTubeItem = BuildYouTubeItem();
+        var youTubeItem = BuildYouTubeItem();
 
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(scheduledItem);
 
         var mockYouTubeItemManager = new Mock<IYouTubeItemManager>();
-        mockYouTubeItemManager.Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(YouTubeItem);
+        mockYouTubeItemManager.Setup(m => m.GetAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(youTubeItem);
 
         var mockLinkedInManager = new Mock<ILinkedInManager>();
         mockLinkedInManager
@@ -284,7 +284,7 @@ public class ProcessScheduledItemFiredTests
 
         Assert.NotNull(result);
         Assert.Equal("YouTube message", result!.Text);
-        Assert.Equal(YouTubeItem.Title, result.Title);
-        Assert.Equal(YouTubeItem.ShortenedUrl, result.LinkUrl);
+        Assert.Equal(youTubeItem.Title, result.Title);
+        Assert.Equal(youTubeItem.ShortenedUrl, result.LinkUrl);
     }
 }

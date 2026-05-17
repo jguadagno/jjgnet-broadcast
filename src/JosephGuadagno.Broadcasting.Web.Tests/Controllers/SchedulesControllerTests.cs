@@ -20,8 +20,8 @@ public class SchedulesControllerTests
     private readonly Mock<IScheduledItemService> _scheduledItemService;
     private readonly Mock<IScheduledItemValidationService> _validationService;
     private readonly Mock<IEngagementService> _engagementService;
-    private readonly Mock<ISyndicationFeedItemService> _SyndicationFeedItemService;
-    private readonly Mock<IYouTubeItemService> _YouTubeItemService;
+    private readonly Mock<ISyndicationFeedItemService> _syndicationFeedItemService;
+    private readonly Mock<IYouTubeItemService> _youTubeItemService;
     private readonly Mock<IMapper> _mapper;
     private readonly Mock<ILogger<SchedulesController>> _logger;
     private readonly SchedulesController _controller;
@@ -31,8 +31,8 @@ public class SchedulesControllerTests
         _scheduledItemService = new Mock<IScheduledItemService>();
         _validationService = new Mock<IScheduledItemValidationService>();
         _engagementService = new Mock<IEngagementService>();
-        _SyndicationFeedItemService = new Mock<ISyndicationFeedItemService>();
-        _YouTubeItemService = new Mock<IYouTubeItemService>();
+        _syndicationFeedItemService = new Mock<ISyndicationFeedItemService>();
+        _youTubeItemService = new Mock<IYouTubeItemService>();
         _mapper = new Mock<IMapper>();
         _logger = new Mock<ILogger<SchedulesController>>();
         _controller = new SchedulesController(
@@ -41,8 +41,8 @@ public class SchedulesControllerTests
             _mapper.Object,
             _logger.Object,
             _engagementService.Object,
-            _SyndicationFeedItemService.Object,
-            _YouTubeItemService.Object);
+            _syndicationFeedItemService.Object,
+            _youTubeItemService.Object);
         
         // Initialize TempData
         var httpContext = new DefaultHttpContext();
@@ -742,7 +742,7 @@ public class SchedulesControllerTests
             new SyndicationFeedItem { Id = 1, Title = "Tech Blog", FeedIdentifier = "f1", Author = "A", Url = "http://a.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" },
             new SyndicationFeedItem { Id = 2, Title = "News Feed", FeedIdentifier = "f2", Author = "B", Url = "http://b.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" }
         };
-        _SyndicationFeedItemService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+        _syndicationFeedItemService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
             .ReturnsAsync(new PagedResult<SyndicationFeedItem> { Items = sources, TotalCount = sources.Count });
 
         // Act
@@ -762,7 +762,7 @@ public class SchedulesControllerTests
             new YouTubeItem { Id = 1, Title = "Intro Video", VideoId = "v1", Author = "A", Url = "http://a.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" },
             new YouTubeItem { Id = 2, Title = "Tutorial", VideoId = "v2", Author = "B", Url = "http://b.com", PublicationDate = DateTimeOffset.UtcNow, AddedOn = DateTimeOffset.UtcNow, LastUpdatedOn = DateTimeOffset.UtcNow, CreatedByEntraOid = "oid" }
         };
-        _YouTubeItemService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
+        _youTubeItemService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>()))
             .ReturnsAsync(new PagedResult<YouTubeItem> { Items = sources, TotalCount = sources.Count });
 
         // Act
