@@ -86,7 +86,7 @@ public class MessageTemplatesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a message template by platform and message type
+    /// Gets a message template by platform and message type for the current user
     /// </summary>
     /// <param name="platform">The platform name</param>
     /// <param name="messageType">The message type</param>
@@ -107,20 +107,118 @@ public class MessageTemplatesController : ControllerBase
             _logger.LogWarning("Social media platform not found: {Platform}", LogSanitizer.Sanitize(platform));
             return NotFound();
         }
-        
-        var template = await _messageTemplateManager.GetAsync(socialMediaPlatform.Id, messageType);
+
+        var ownerOid = User.IsSiteAdministrator()
+            ? MessageTemplates.SystemOwnerEntraOid
+            : User.GetOwnerOid();
+        var template = await _messageTemplateManager.GetAsync(socialMediaPlatform.Id, messageType, ownerOid);
         if (template is null)
         {
-            _logger.LogWarning("MessageTemplate not found for PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, LogSanitizer.Sanitize(messageType));
+            _logger.LogWarning("MessageTemplate not found for PlatformId={PlatformId}, MessageType={MessageType}, OwnerOid={OwnerOid}",
+                socialMediaPlatform.Id, LogSanitizer.Sanitize(messageType), LogSanitizer.Sanitize(ownerOid));
             return NotFound();
         }
 
-        if (!User.IsSiteAdministrator() && template.CreatedByEntraOid != User.GetOwnerOid())
+        return _mapper.Map<MessageTemplateResponse>(template);
+    }
+
+    /// <summary>
+    /// Gets the system default template for a platform and message type
+    /// </summary>
+    /// <param name="platform">The platform name</param>
+    /// <param name="messageType">The message type</param>
+    /// <returns>A <see cref="MessageTemplateResponse"/></returns>
+    /// <response code="200">If the item was found</response>
+    /// <response code="404">If the item was not found</response>
+    /// <response code="401">If the current user was unauthorized to access this endpoint</response>
+    [HttpGet("defaults/{platform}/{messageType}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MessageTemplateResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<MessageTemplateResponse>> GetDefaultAsync(string platform, string messageType)
+    {
+        var socialMediaPlatform = await _socialMediaPlatformManager.GetByNameAsync(platform);
+        if (socialMediaPlatform is null)
         {
-            return Forbid();
+            _logger.LogWarning("Social media platform not found: {Platform}", LogSanitizer.Sanitize(platform));
+            return NotFound();
+        }
+
+        var template = await _messageTemplateManager.GetAsync(socialMediaPlatform.Id, messageType, MessageTemplates.SystemOwnerEntraOid);
+        if (template is null)
+        {
+            return NotFound();
         }
 
         return _mapper.Map<MessageTemplateResponse>(template);
+    }
+
+    /// <summary>
+    /// Gets all system default message templates
+    /// </summary>
+    /// <returns>A list of system default <see cref="MessageTemplateResponse"/> items</returns>
+    /// <response code="200">If the call was successful</response>
+    /// <response code="401">If the current user was unauthorized to access this endpoint</response>
+    [HttpGet("defaults")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<MessageTemplateResponse>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IEnumerable<MessageTemplateResponse>>> GetAllDefaultsAsync()
+    {
+        var templates = await _messageTemplateManager.GetAllDefaultsAsync();
+        return Ok(_mapper.Map<List<MessageTemplateResponse>>(templates));
+    }
+
+    /// <summary>
+    /// Creates a new user-owned message template (cloned or custom)
+    /// </summary>
+    /// <param name="platform">The platform name</param>
+    /// <param name="messageType">The message type</param>
+    /// <param name="request">The message template data</param>
+    /// <returns>The created <see cref="MessageTemplateResponse"/></returns>
+    /// <response code="201">If the item was created</response>
+    /// <response code="400">If the model is invalid</response>
+    /// <response code="404">If the platform was not found</response>
+    /// <response code="401">If the current user was unauthorized to access this endpoint</response>
+    [HttpPost("{platform}/{messageType}")]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(MessageTemplateResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<MessageTemplateResponse>> CreateAsync(string platform, string messageType,
+        [FromBody] MessageTemplateRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var socialMediaPlatform = await _socialMediaPlatformManager.GetByNameAsync(platform);
+        if (socialMediaPlatform is null)
+        {
+            _logger.LogWarning("Social media platform not found: {Platform}", LogSanitizer.Sanitize(platform));
+            return NotFound();
+        }
+
+        var messageTemplate = _mapper.Map<MessageTemplate>(request);
+        messageTemplate.SocialMediaPlatformId = socialMediaPlatform.Id;
+        messageTemplate.MessageType = messageType;
+        messageTemplate.CreatedByEntraOid = User.GetOwnerOid();
+
+        var created = await _messageTemplateManager.CreateAsync(messageTemplate);
+        if (created is null)
+        {
+            _logger.LogWarning("MessageTemplate create failed: PlatformId={PlatformId}, MessageType={MessageType}",
+                socialMediaPlatform.Id, LogSanitizer.Sanitize(messageType));
+            return BadRequest();
+        }
+
+        _logger.LogInformation("MessageTemplate created for Platform={Platform}, MessageType={MessageType}",
+            LogSanitizer.Sanitize(platform), LogSanitizer.Sanitize(messageType));
+        return CreatedAtAction(nameof(GetAsync), new { platform, messageType },
+            _mapper.Map<MessageTemplateResponse>(created));
     }
 
     /// <summary>
@@ -156,22 +254,18 @@ public class MessageTemplatesController : ControllerBase
             return NotFound();
         }
 
-        var existing = await _messageTemplateManager.GetAsync(socialMediaPlatform.Id, messageType);
+        var ownerOid = User.GetOwnerOid();
+        var existing = await _messageTemplateManager.GetAsync(socialMediaPlatform.Id, messageType, ownerOid);
         if (existing is null)
         {
             _logger.LogWarning("MessageTemplate not found for update: PlatformId={PlatformId}, MessageType={MessageType}", socialMediaPlatform.Id, LogSanitizer.Sanitize(messageType));
             return NotFound();
         }
 
-        if (!User.IsSiteAdministrator() && existing.CreatedByEntraOid != User.GetOwnerOid())
-        {
-            return Forbid();
-        }
-
         var messageTemplate = _mapper.Map<MessageTemplate>(request);
         messageTemplate.SocialMediaPlatformId = socialMediaPlatform.Id;
         messageTemplate.MessageType = messageType;
-        messageTemplate.CreatedByEntraOid = existing.CreatedByEntraOid;
+        messageTemplate.CreatedByEntraOid = ownerOid;
         var updated = await _messageTemplateManager.UpdateAsync(messageTemplate);
         if (updated is null)
         {

@@ -304,7 +304,7 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
 
         modelBuilder.Entity<MessageTemplate>(entity =>
         {
-            entity.HasKey(e => new { e.SocialMediaPlatformId, e.MessageType })
+            entity.HasKey(e => new { e.SocialMediaPlatformId, e.MessageType, e.CreatedByEntraOid })
                 .HasName("PK_MessageTemplates");
 
             entity.Property(e => e.SocialMediaPlatformId)
@@ -321,7 +321,9 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
                 .HasMaxLength(500);
 
             entity.Property(e => e.CreatedByEntraOid)
-                .HasMaxLength(36);
+                .HasMaxLength(36)
+                .IsRequired()
+                .HasDefaultValue(string.Empty);
 
             entity.HasOne(e => e.SocialMediaPlatform)
                 .WithMany()

@@ -185,8 +185,8 @@ create table dbo.MessageTemplates
     MessageType   nvarchar(50)  not null,
     Template      nvarchar(max) not null,
     Description   nvarchar(500) null,
-    CreatedByEntraOid nvarchar(36) null,
-    constraint PK_MessageTemplates primary key (SocialMediaPlatformId, MessageType)
+    CreatedByEntraOid nvarchar(36) not null default '',
+    constraint PK_MessageTemplates primary key (SocialMediaPlatformId, MessageType, CreatedByEntraOid)
 )
 go
 
