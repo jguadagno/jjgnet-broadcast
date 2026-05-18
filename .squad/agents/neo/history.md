@@ -294,5 +294,29 @@ There are TWO distinct class families in `JosephGuadagno.Broadcasting.Domain.Mod
 
 ---
 
+### 2026-05-18 — Phase 3 complete: All Process* Functions migrated to IMessageTemplateLookup + IPostComposer
+
+**Branch:** `issue-980-publisher-architecture-refactor` — commit `47e8ecec`
+
+**Files changed (total: 28 files):**
+- **Modified:** `Domain/Interfaces/IMessageTemplateDataStore.cs` — new user-scoped overload `GetAsync(int, string, string ownerEntraOid, CancellationToken)`
+- **Modified:** `Data.Sql/MessageTemplateDataStore.cs` — implemented new user-scoped overload
+- **Modified:** `Managers/MessageTemplateLookup.cs` — removed TODO; now calls user-scoped `GetAsync(platform.Id, messageType, ownerEntraOid, ...)`
+- **Rewritten (20 files):** All `Process*` functions across Bluesky, Twitter, Facebook, LinkedIn — removed `I[Platform]Manager`, added `IMessageTemplateLookup messageLookup` and `IPostComposer postComposer`
+- **Updated (4 test files):** All `ProcessScheduledItemFiredTests.cs` — replaced platform manager mocks with `IMessageTemplateLookup` + `IPostComposer` mocks
+
+**Key patterns established:**
+- Every `Process*` function now: fetches entity → validates `ownerEntraOid` → builds `SocialMediaPublishRequest` → template lookup → compose → return DTO
+- Null/empty `ownerEntraOid` → log warning, return null (skip enqueue)
+- Null template → log warning with `LogSanitizer.Sanitize(ownerEntraOid)`, return null
+- Null composed text → log warning, return null
+- LinkedIn functions: `IUserOAuthTokenManager` retained (OAuth still needed in Phase 3; moves to `PostLink` in Phase 5)
+- Twitter/Facebook `ProcessScheduledItemFired`: now fetch underlying entity for `SocialMediaPublishRequest` (previously only delegated to manager)
+- `IList<string>` (Tags) → `IReadOnlyCollection<string>?` (Hashtags): must call `.ToList()` — `IList<T>` does not implicitly assign to `IReadOnlyCollection<T>` in C# even though it implements it
+
+**Build/test result:** 0 errors, 0 warnings; 155 Functions tests passed, all suites green
+
+---
+
 ### 2026-05-15 — PR #963 Formal Review: Publisher Settings Phase 2
 
