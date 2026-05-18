@@ -381,3 +381,95 @@ Removed `Scriban` package reference from all 4 manager csproj files.
 
 All tests pass. 0 failures. (SyndicationFeedReader network tests excluded per CI policy.)
 
+---
+
+## Decision: Phase 5 Complete — Send* Functions Dequeue SocialMediaPublishRequest
+
+**Date**: 2026-05-18  
+**Branch**: `issue-980-publisher-architecture-refactor`  
+**Commit**: `bcfbf962`  
+**Status:** COMPLETE ✅
+
+### Summary
+
+Phase 5 of the publisher architecture refactor (#980) is complete. All Send* Functions
+now dequeue `SocialMediaPublishRequest`, look up per-user credentials, inject them into
+the request, and call `manager.PublishAsync(request)`. All 20 Process* Functions now
+enqueue `SocialMediaPublishRequest` instead of platform-specific DTOs.
+
+### Files Changed (33)
+
+#### Process* Functions (20 files — return type change only)
+
+| Platform  | Files Changed |
+|-----------|--------------|
+| Twitter   | ProcessNewSyndicationDataFired, ProcessScheduledItemFired, ProcessNewYouTubeDataFired, ProcessNewSpeakingEngagementFired, ProcessNewRandomPost |
+| Bluesky   | ProcessNewSyndicationDataFired, ProcessScheduledItemFired, ProcessNewYouTubeDataFired, ProcessNewSpeakingEngagementFired, ProcessNewRandomPost |
+| Facebook  | ProcessNewSyndicationDataFired, ProcessScheduledItemFired, ProcessNewYouTubeDataFired, ProcessNewSpeakingEngagementFired, ProcessNewRandomPost |
+| LinkedIn  | ProcessNewSyndicationDataFired, ProcessScheduledItemFired, ProcessNewYouTubeDataFired, ProcessNewSpeakingEngagementFired, ProcessNewRandomPost |
+
+LinkedIn Process* functions also had `IUserOAuthTokenManager` removed from constructors
+(token lookup moved to `PostLink.cs`).
+
+#### Send* Functions (4 files)
+
+- **`Twitter/SendTweet.cs`**: Added `ITwitterManager`; changed trigger type to
+  `SocialMediaPublishRequest`; looks up 4 Twitter credentials, injects them, calls
+  `twitterManager.PublishAsync(request)`; removed `LinqToTwitter` direct usage.
+- **`Bluesky/SendPost.cs`**: Changed trigger type to `SocialMediaPublishRequest`;
+  looks up Bluesky username + app password, injects as `request.AuthorId` and
+  `request.AccessToken`; calls `blueskyManager.PublishAsync(request)`; removed manual
+  `PostBuilder`/`BlueskyAgent` construction.
+- **`Facebook/PostPageStatus.cs`**: Changed trigger type to `SocialMediaPublishRequest`;
+  looks up page credentials, injects as `request.AccessToken` and `request.AuthorId`;
+  calls `facebookManager.PublishAsync(request)`.
+- **`LinkedIn/PostLink.cs`**: Changed trigger type to `SocialMediaPublishRequest`;
+  added `IUserOAuthTokenManager` and `IUserPublisherLinkedInSettingsManager`; looks up
+  OAuth token + `AuthorId`; calls `linkedInManager.PublishAsync(request)`; removed
+  `HttpClient` (manager handles image download); **fixes pre-existing `AuthorId` null bug**.
+
+#### Managers (2 files)
+
+- **`BlueskyManager.cs`**: `PublishAsync` now creates a per-user `BlueskyAgent` using
+  `request.AuthorId` (handle) and `request.AccessToken` (app password); builds
+  `PostBuilder` with link facets and hashtag facets from `request.Hashtags`; throws
+  `BlueskyPostException` on login or post failure. Private `GetEmbeddedExternalRecordAsync`
+  and `GetEmbeddedExternalRecordWithThumbnailAsync` overloads added that accept a
+  `BlueskyAgent` parameter (used by the per-user flow). Public interface methods unchanged.
+- **`FacebookManager.cs`**: `PublishAsync` now uses `request.AccessToken` (page access
+  token) and `request.AuthorId` (page ID) via the existing 4/5-arg internal overloads;
+  throws `ArgumentException` if either credential is missing.
+
+#### Tests (6 files updated)
+
+- `SendPostTests.cs`, `PostPageStatusTests.cs`, `PostLinkTests.cs` — updated to use
+  `SocialMediaPublishRequest`, mock `PublishAsync`, updated constructor signatures.
+- `ProcessScheduledItemFiredTests.cs` (Bluesky, Facebook, LinkedIn) — updated for
+  constructor changes (LinkedIn: removed `IUserOAuthTokenManager` mock).
+
+### Decisions Made
+
+1. **Bluesky hashtag strategy**: Phase 5 appends hashtags from `request.Hashtags` list
+   (same as old `SendPost.cs`). The decisions.md note about "AT Protocol text scanning"
+   is deferred — hashtags are still rendered inline via template `{{ tags }}` and appended
+   as facets from the list.
+
+2. **No service-level fallback**: Both `BlueskyManager.PublishAsync` and
+   `FacebookManager.PublishAsync` throw if per-user credentials are missing. There is no
+   fallback to service-level settings, in line with the architecture decision
+   ("no shared/system accounts on any platform").
+
+3. **LinkedIn `AuthorId` bug fixed**: The old LinkedIn Process* functions never set
+   `AuthorId` in the `LinkedInPostLink` DTO. The new `PostLink.cs` correctly looks up
+   `settings.AuthorId` from `IUserPublisherLinkedInSettingsManager`.
+
+### Phase 6 Remaining Work
+
+- Delete old DTO files from `Domain/Models/Messages/`:
+  - `BlueskyPostMessage.cs`
+  - `TwitterTweetMessage.cs`
+  - `FacebookPostStatus.cs`
+  - `LinkedInPostLink.cs`
+- These DTOs are no longer enqueued or dequeued by any function but may still be
+  referenced in test helpers or legacy code — verify before deleting.
+
