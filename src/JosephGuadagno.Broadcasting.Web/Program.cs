@@ -250,6 +250,7 @@ void ConfigureApplication(IServiceCollection services)
 {
     services.AddHttpClient();
     services.AddMemoryCache();
+    services.AddHttpContextAccessor();
     
     // Register BroadcastingContext via transitive dependency (Managers ΓåÆ Data.Sql)
     // Note: BroadcastingContext type is fully qualified to avoid needing "using Data.Sql"
@@ -273,6 +274,8 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IUserCollectorYouTubeChannelService, UserCollectorYouTubeChannelService>();
     services.TryAddScoped<IUserCollectorSpeakingEngagementService, UserCollectorSpeakingEngagementService>();
     services.TryAddScoped<IMessageTemplateService, MessageTemplateService>();
+    services.TryAddScoped<ISetupService, SetupService>();
+
     services.TryAddScoped<IYouTubeItemService, YouTubeItemService>();
     services.TryAddScoped<ISyndicationFeedItemService, SyndicationFeedItemService>();
 

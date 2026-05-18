@@ -1,0 +1,15 @@
+@model JosephGuadagno.Broadcasting.Web.Models.SetupStatus
+
+@if (!Model.IsComplete)
+{
+    <li class="nav-item">
+        <a class="nav-link d-flex align-items-center gap-1"
+           asp-controller="Setup"
+           asp-action="Index"
+           title="Your account setup is incomplete — click to finish">
+            <i class="bi bi-gear-fill"></i>
+            <span>Setup</span>
+            <span class="badge text-bg-warning ms-1">!</span>
+        </a>
+    </li>
+}

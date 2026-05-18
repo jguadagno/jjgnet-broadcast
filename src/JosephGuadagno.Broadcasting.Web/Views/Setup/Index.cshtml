@@ -1,0 +1,224 @@
+@model JosephGuadagno.Broadcasting.Web.Models.SetupStatus
+
+@{
+    ViewData["Title"] = "Account Setup";
+}
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <div>
+        <h1 class="mb-1"><i class="bi bi-gear-fill me-2"></i>Account Setup</h1>
+        <p class="text-muted mb-0">
+            Complete the three steps below to start broadcasting your content.
+            You can skip steps and return at any time.
+        </p>
+    </div>
+    @if (Model.IsComplete)
+    {
+        <span class="badge text-bg-success fs-6 px-3 py-2">
+            <i class="bi bi-check-circle-fill me-1"></i>Setup Complete
+        </span>
+    }
+    else
+    {
+        <span class="badge text-bg-warning fs-6 px-3 py-2">
+            <i class="bi bi-exclamation-circle-fill me-1"></i>Setup Incomplete
+        </span>
+    }
+</div>
+
+@if (Model.IsComplete)
+{
+    <div class="alert alert-success" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <strong>You're all set!</strong> Your account is fully configured and ready to broadcast.
+    </div>
+}
+else
+{
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-info-circle me-2"></i>
+        Complete the steps below to enable broadcasting. Check marks appear once each area is configured.
+    </div>
+}
+
+<div class="row g-4">
+
+    @* ── Step 1: Collectors ────────────────────────────────────────────────── *@
+    @{
+        var collectorBorderClass = Model.HasCollector ? "border-success" : "border-warning";
+        var collectorHeaderClass = Model.HasCollector ? "bg-success text-white" : "bg-warning";
+    }
+    <div class="col-12">
+        <div class="card @collectorBorderClass">
+            <div class="card-header @collectorHeaderClass d-flex justify-content-between align-items-center">
+                <h2 class="card-title h5 mb-0">
+                    @if (Model.HasCollector)
+                    {
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-1-circle me-2"></i>
+                    }
+                    Step 1 — Configure Collectors
+                </h2>
+                @if (Model.HasCollector)
+                {
+                    <span class="badge text-bg-light">Configured</span>
+                }
+                else
+                {
+                    <span class="badge text-bg-light">Not yet set up</span>
+                }
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Collectors gather content to broadcast — RSS / Atom / JSON feeds, YouTube channels,
+                    or speaking engagements. Add at least one source to get started.
+                </p>
+                @if (Model.HasCollector)
+                {
+                    <a asp-controller="CollectorSettings" asp-action="Index" class="btn btn-outline-success">
+                        <i class="bi bi-pencil me-1"></i>Manage Collectors
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="CollectorSettings" asp-action="Index" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Configure Collectors
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ── Step 2: Publishers ───────────────────────────────────────────────── *@
+    @{
+        var publisherBorderClass = Model.HasPublisher ? "border-success" : "border-warning";
+        var publisherHeaderClass = Model.HasPublisher ? "bg-success text-white" : "bg-warning";
+    }
+    <div class="col-12">
+        <div class="card @publisherBorderClass">
+            <div class="card-header @publisherHeaderClass d-flex justify-content-between align-items-center">
+                <h2 class="card-title h5 mb-0">
+                    @if (Model.HasPublisher)
+                    {
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-2-circle me-2"></i>
+                    }
+                    Step 2 — Enable Publishers
+                </h2>
+                @if (Model.HasPublisher)
+                {
+                    <span class="badge text-bg-light">Configured</span>
+                }
+                else
+                {
+                    <span class="badge text-bg-light">Not yet set up</span>
+                }
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Publishers send your content to social media platforms.
+                    Enable at least one platform: Bluesky, Twitter, LinkedIn, or Facebook.
+                </p>
+                @if (Model.ConfiguredPublisherPlatforms.Count > 0)
+                {
+                    <p class="mb-2">
+                        <strong>Enabled:</strong>
+                        @foreach (var platform in Model.ConfiguredPublisherPlatforms)
+                        {
+                            <span class="badge text-bg-success ms-1">@platform</span>
+                        }
+                    </p>
+                }
+                @if (Model.HasPublisher)
+                {
+                    <a asp-controller="Publishers" asp-action="Index" class="btn btn-outline-success">
+                        <i class="bi bi-pencil me-1"></i>Manage Publishers
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="Publishers" asp-action="Index" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Configure Publishers
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ── Step 3: Message Templates ────────────────────────────────────────── *@
+    @{
+        var templateBorderClass = Model.HasMessageTemplates ? "border-success" : "border-warning";
+        var templateHeaderClass = Model.HasMessageTemplates ? "bg-success text-white" : "bg-warning";
+    }
+    <div class="col-12">
+        <div class="card @templateBorderClass">
+            <div class="card-header @templateHeaderClass d-flex justify-content-between align-items-center">
+                <h2 class="card-title h5 mb-0">
+                    @if (Model.HasMessageTemplates)
+                    {
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-3-circle me-2"></i>
+                    }
+                    Step 3 — Create Message Templates
+                </h2>
+                @if (Model.HasMessageTemplates)
+                {
+                    <span class="badge text-bg-light">Configured</span>
+                }
+                else
+                {
+                    <span class="badge text-bg-light">Not yet set up</span>
+                }
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Message templates define how your posts are formatted using Scriban templates.
+                    @if (!Model.HasPublisher)
+                    {
+                        <text>Complete Step 2 first to know which platforms need templates.</text>
+                    }
+                    else if (!Model.HasCollector)
+                    {
+                        <text>Complete Step 1 first to know which content types need templates.</text>
+                    }
+                    else if (Model.MissingTemplatePairs.Count > 0)
+                    {
+                        <text>Missing templates for the following platform / content-type combinations:</text>
+                        <ul class="mt-2 mb-0">
+                        @foreach (var pair in Model.MissingTemplatePairs)
+                        {
+                            <li>
+                                <span class="badge text-bg-secondary me-1">@pair.Platform</span>
+                                <span class="text-muted">×</span>
+                                <span class="badge text-bg-warning ms-1">@pair.MessageType</span>
+                            </li>
+                        }
+                        </ul>
+                    }
+                </p>
+                @if (Model.HasMessageTemplates)
+                {
+                    <a asp-controller="MessageTemplates" asp-action="Index" class="btn btn-outline-success">
+                        <i class="bi bi-pencil me-1"></i>Manage Templates
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="MessageTemplates" asp-action="Index" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Create Templates
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
