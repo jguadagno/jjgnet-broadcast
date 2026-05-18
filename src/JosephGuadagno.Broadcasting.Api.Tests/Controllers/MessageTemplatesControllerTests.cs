@@ -59,23 +59,21 @@ public class MessageTemplatesControllerTests
     };
 
     // -------------------------------------------------------------------------
-    // Security: GetAsync — non-owner returns 403
+    // Security: GetAsync — user with no template gets 404 (not Forbid)
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task GetAsync_WhenNonOwner_ReturnsForbid()
+    public async Task GetAsync_WhenUserHasNoTemplate_ReturnsNotFound()
     {
-        // Arrange
-        // Template is owned by "owner-oid-12345"; the calling user has a different OID.
+        // Arrange — the user has no template; 3-arg GetAsync returns null
         var platform = BuildPlatform();
-        var template = BuildTemplate(oid: "owner-oid-12345");
 
         _socialMediaPlatformManagerMock
             .Setup(m => m.GetByNameAsync("TestPlatform", It.IsAny<CancellationToken>()))
             .ReturnsAsync(platform);
         _messageTemplateManagerMock
-            .Setup(m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(template);
+            .Setup(m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MessageTemplate?)null);
 
         var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
@@ -83,30 +81,29 @@ public class MessageTemplatesControllerTests
         var result = await sut.GetAsync("TestPlatform", "RandomPost");
 
         // Assert
-        result.Result.Should().BeOfType<ForbidResult>();
+        result.Result.Should().BeOfType<NotFoundResult>();
         _messageTemplateManagerMock.Verify(
-            m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<CancellationToken>()),
+            m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
     // -------------------------------------------------------------------------
-    // Security: UpdateAsync — non-owner returns 403
+    // Security: UpdateAsync — user with no template gets 404 (not Forbid)
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task UpdateAsync_WhenNonOwner_ReturnsForbid()
+    public async Task UpdateAsync_WhenUserHasNoTemplate_ReturnsNotFound()
     {
         // Arrange
         var platform = BuildPlatform();
-        var template = BuildTemplate(oid: "owner-oid-12345");
         var request = new MessageTemplateRequest { Template = "Updated {{ title }}!" };
 
         _socialMediaPlatformManagerMock
             .Setup(m => m.GetByNameAsync("TestPlatform", It.IsAny<CancellationToken>()))
             .ReturnsAsync(platform);
         _messageTemplateManagerMock
-            .Setup(m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(template);
+            .Setup(m => m.GetAsync(platform.Id, "RandomPost", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MessageTemplate?)null);
 
         var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
@@ -114,10 +111,131 @@ public class MessageTemplatesControllerTests
         var result = await sut.UpdateAsync("TestPlatform", "RandomPost", request);
 
         // Assert
-        result.Result.Should().BeOfType<ForbidResult>();
+        result.Result.Should().BeOfType<NotFoundResult>();
         _messageTemplateManagerMock.Verify(
             m => m.UpdateAsync(It.IsAny<MessageTemplate>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    // -------------------------------------------------------------------------
+    // GetDefaultAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetDefaultAsync_WhenDefaultExists_ReturnsOk()
+    {
+        // Arrange
+        var platform = BuildPlatform();
+        var defaultTemplate = BuildTemplate(oid: ""); // system default
+
+        _socialMediaPlatformManagerMock
+            .Setup(m => m.GetByNameAsync("TestPlatform", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(platform);
+        _messageTemplateManagerMock
+            .Setup(m => m.GetAsync(platform.Id, "RandomPost", "", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaultTemplate);
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.GetDefaultAsync("TestPlatform", "RandomPost");
+
+        // Assert
+        result.Value.Should().NotBeNull();
+        result.Value!.MessageType.Should().Be("RandomPost");
+    }
+
+    [Fact]
+    public async Task GetDefaultAsync_WhenPlatformNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        _socialMediaPlatformManagerMock
+            .Setup(m => m.GetByNameAsync("UnknownPlatform", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((SocialMediaPlatform?)null);
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.GetDefaultAsync("UnknownPlatform", "RandomPost");
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundResult>();
+    }
+
+    // -------------------------------------------------------------------------
+    // GetAllDefaultsAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetAllDefaultsAsync_ReturnsOkWithDefaults()
+    {
+        // Arrange
+        var defaults = new List<MessageTemplate>
+        {
+            BuildTemplate(oid: ""),
+            new() { SocialMediaPlatformId = 1, MessageType = "NewPost", Template = "{{ title }}", CreatedByEntraOid = "" }
+        };
+        _messageTemplateManagerMock
+            .Setup(m => m.GetAllDefaultsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaults);
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.GetAllDefaultsAsync();
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var items = okResult.Value.Should().BeAssignableTo<IEnumerable<MessageTemplateResponse>>().Subject;
+        items.Should().HaveCount(2);
+    }
+
+    // -------------------------------------------------------------------------
+    // CreateAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task CreateAsync_WhenValid_ReturnsCreatedAtAction()
+    {
+        // Arrange
+        var platform = BuildPlatform();
+        var request = new MessageTemplateRequest { Template = "{{ title }} {{ url }}" };
+        var created = BuildTemplate(oid: "owner-oid-12345");
+
+        _socialMediaPlatformManagerMock
+            .Setup(m => m.GetByNameAsync("TestPlatform", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(platform);
+        _messageTemplateManagerMock
+            .Setup(m => m.CreateAsync(It.IsAny<MessageTemplate>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(created);
+
+        var sut = CreateSut(ownerOid: "owner-oid-12345");
+
+        // Act
+        var result = await sut.CreateAsync("TestPlatform", "RandomPost", request);
+
+        // Assert
+        result.Result.Should().BeOfType<CreatedAtActionResult>();
+        _messageTemplateManagerMock.Verify(
+            m => m.CreateAsync(It.IsAny<MessageTemplate>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenPlatformNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        _socialMediaPlatformManagerMock
+            .Setup(m => m.GetByNameAsync("UnknownPlatform", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((SocialMediaPlatform?)null);
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.CreateAsync("UnknownPlatform", "RandomPost", new MessageTemplateRequest { Template = "x" });
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundResult>();
     }
 
     // -------------------------------------------------------------------------

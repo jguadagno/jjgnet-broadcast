@@ -10,6 +10,11 @@ public static class MessageTemplates
         public const string Bluesky = "Bluesky";
     }
 
+    /// <summary>
+    /// The system sentinel OID used for default/system-owned templates (empty string).
+    /// </summary>
+    public const string SystemOwnerEntraOid = "";
+
     public static class MessageTypes
     {
         public const string RandomPost = "RandomPost";

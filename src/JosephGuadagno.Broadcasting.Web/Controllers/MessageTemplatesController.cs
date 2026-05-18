@@ -57,6 +57,17 @@ public class MessageTemplatesController : Controller
             ? allViewModels
             : allViewModels.Where(t => t.Platform == selectedPlatform).ToList();
 
+        // Compute which system defaults the user hasn't yet claimed
+        var userTemplateKeys = new HashSet<(string Platform, string MessageType)>(
+            allViewModels.Select(t => (t.Platform, t.MessageType)));
+        var defaultTemplates = await _messageTemplateService.GetAllDefaultsAsync();
+        var availableDefaults = (defaultTemplates ?? [])
+            .Select(d => _mapper.Map<MessageTemplateViewModel>(d))
+            .Where(d => !userTemplateKeys.Contains((d.Platform, d.MessageType)))
+            .OrderBy(d => d.Platform)
+            .ThenBy(d => d.MessageType)
+            .ToList();
+
         ViewBag.Page = page;
         ViewBag.PageSize = 100;
         ViewBag.TotalCount = filteredViewModels.Count;
@@ -68,6 +79,7 @@ public class MessageTemplatesController : Controller
         ViewBag.Filter = filter;
         ViewBag.Platforms = platforms;
         ViewBag.SelectedPlatform = selectedPlatform;
+        ViewBag.AvailableDefaults = availableDefaults;
 
         return View(filteredViewModels);
     }
@@ -89,7 +101,7 @@ public class MessageTemplatesController : Controller
         if (!User.IsInRole(RoleNames.SiteAdministrator))
         {
             var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
-            if (currentUserOid == null || template.CreatedByEntraOid == null || template.CreatedByEntraOid != currentUserOid)
+            if (currentUserOid == null || template.CreatedByEntraOid != currentUserOid)
             {
                 TempData["ErrorMessage"] = "You do not have permission to edit this message template.";
                 return RedirectToAction("Index");
@@ -123,6 +135,60 @@ public class MessageTemplatesController : Controller
         }
 
         TempData["SuccessMessage"] = "Message template saved successfully.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>
+    /// Shows the create form for a message template, pre-populated from the system default.
+    /// </summary>
+    /// <param name="platform">The platform name</param>
+    /// <param name="messageType">The message type</param>
+    [HttpGet]
+    public async Task<IActionResult> Create(string platform, string messageType)
+    {
+        var defaultTemplate = await _messageTemplateService.GetDefaultAsync(platform, messageType);
+        MessageTemplateViewModel viewModel;
+        if (defaultTemplate is not null)
+        {
+            viewModel = _mapper.Map<MessageTemplateViewModel>(defaultTemplate);
+        }
+        else
+        {
+            viewModel = new MessageTemplateViewModel
+            {
+                Platform = platform,
+                MessageType = messageType,
+                Template = string.Empty,
+                Description = string.Empty
+            };
+        }
+        return View(viewModel);
+    }
+
+    /// <summary>
+    /// Creates a new user-owned message template.
+    /// </summary>
+    /// <param name="model">The message template view model</param>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(MessageTemplateViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var template = _mapper.Map<Domain.Models.MessageTemplate>(model);
+        var saved = await _messageTemplateService.CreateAsync(model.Platform, template);
+        if (saved is null)
+        {
+            _logger.LogWarning("Failed to create MessageTemplate for Platform={Platform}, MessageType={MessageType}",
+                LogSanitizer.Sanitize(model.Platform), LogSanitizer.Sanitize(model.MessageType));
+            ModelState.AddModelError(string.Empty, "Failed to create the message template.");
+            return View(model);
+        }
+
+        TempData["SuccessMessage"] = "Message template created successfully.";
         return RedirectToAction(nameof(Index));
     }
 }
