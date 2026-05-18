@@ -320,3 +320,64 @@ Note: `AccessToken` was already present on the model (added in Phase 1 research)
 2. Update `MessageTemplateLookup.GetAsync` to call the new user-scoped overload (remove the TODO comment).
 3. Migrate all `Process*` Functions to use `IMessageTemplateLookup` instead of inline two-step lookup.
 
+---
+
+## Decision: Phase 4 Complete — Composition Stripped from Publisher Managers
+
+**Date:** 2026-05-18  
+**Author:** Neo  
+**Branch:** `issue-980-publisher-architecture-refactor`  
+**Commit:** `7176c08d`  
+**Status:** COMPLETE ✅
+
+### Summary
+
+Phase 4 of issue #980 is complete. All post-composition logic has been stripped from the four publisher managers. Each manager now has a single `PublishAsync(SocialMediaPublishRequest)` entry point that posts directly to the platform API.
+
+### Changes Made
+
+#### Interfaces
+
+- `IBlueskyManager`: removed `ComposeMessageAsync`
+- `ITwitterManager`: removed `SendTweetAsync` and `ComposeMessageAsync` (now a pure marker interface extending `ISocialMediaPublisher`)
+- `IFacebookManager`: removed `ComposeMessageAsync`
+- `ILinkedInManager`: removed `ComposeMessageAsync`
+
+#### Manager Implementations
+
+- **BlueskyManager**: removed 5 composition constructor params, removed `ComposeMessageAsync`/`GetMessageType`/`TryRenderTemplateAsync`, removed hashtag-appending loop in `PublishAsync` (now inline via `{{ tags }}`)
+- **TwitterManager**: complete rewrite — removed global `TwitterContext` constructor dep, new `TweetAsync` takes per-user credentials from `SocialMediaPublishRequest`, removed `SendTweetAsync`/`ComposeMessageAsync`/`GetMessageType`/`TryRenderTemplateAsync`
+- **FacebookManager**: removed 5 composition constructor params and 3 methods
+- **LinkedInManager**: removed 5 composition constructor params, 3 methods, and `ILogger` (no longer has any log calls)
+
+#### csproj Files
+
+Removed `Scriban` package reference from all 4 manager csproj files.
+
+#### Tests
+
+- All 4 unit test projects updated to match new constructors
+- Twitter unit tests rewritten with `TestableTwitterManager` overriding new `TweetAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, text)` signature
+- Twitter integration tests updated: `SendTweetAsync` → `PublishAsync` (all still `Skip = "Manually run only"`)
+
+#### Functions/Program.cs
+
+- `ConfigureTwitter` parameter `IConfiguration config` removed (no longer needed)
+- Removed: `InMemoryCredentialStore`, `IAuthorizer`, `TwitterContext` singleton registrations
+- Removed `TwitterHealthCheck` from health check registrations
+
+#### Deleted
+
+- `TwitterHealthCheck.cs` — validated global OAuth credentials that no longer exist
+
+### Key Decisions Recorded
+
+- Global `TwitterContext` DI is removed; credentials are always per-user
+- `request.Text` is the canonical composed output entering each manager
+- Hashtags are rendered inline by the template composer via `{{ tags }}`
+- `ILogger` removed from `LinkedInManager` (zero log call sites remain after the Scriban methods were deleted)
+
+### Test Results
+
+All tests pass. 0 failures. (SyndicationFeedReader network tests excluded per CI policy.)
+
