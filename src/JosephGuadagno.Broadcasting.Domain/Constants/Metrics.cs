@@ -27,9 +27,7 @@ public static class Metrics
     public const string LinkedInProcessedRandomPost = "LinkedInProcessedRandomPost";
     public const string LinkedInProcessedNewYouTubeData = "LinkedInProcessedNewYouTubeData";
     public const string LinkedInProcessedScheduledItemFired = "LinkedInProcessedScheduledItemFired";
-    public const string LinkedInPostImage = "LinkedInPostImage";
     public const string LinkedInPostLink = "LinkedInPostLink";
-    public const string LinkedInPostText = "LinkedInPostText";
     public const string LinkedInProcessedNewSpeakingEngagement = "LinkedInProcessedNewSpeakingEngagement";
 
     public const string TwitterProcessedNewSyndicationData = "TwitterProcessedNewSyndicationData";
