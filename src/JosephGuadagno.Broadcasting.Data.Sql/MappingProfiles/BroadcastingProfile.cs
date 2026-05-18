@@ -69,6 +69,5 @@ public class BroadcastingProfile: Profile
             .ForMember(dest => dest.HasApiKey, opt => opt.Ignore())
             .ReverseMap();
         CreateMap<Models.UserCollectorSpeakingEngagement, Domain.Models.UserCollectorSpeakingEngagement>().ReverseMap();
-        CreateMap<Models.UserCollectorScheduledItem, Domain.Models.UserCollectorScheduledItem>().ReverseMap();
     }
 }

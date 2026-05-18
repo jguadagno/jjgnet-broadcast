@@ -12,34 +12,16 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Controller for per-user collector settings.
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
-[Route("CollectorSettings")]
-[Route("Collectors")]
-public class CollectorSettingsController : Controller
+[Route("Collectors/")]
+public class CollectorSettingsController(
+	IUserCollectorFeedSourceService feedSourceService,
+	IUserCollectorYouTubeChannelService youTubeChannelService,
+	IUserCollectorSpeakingEngagementService speakingEngagementService,
+	IUserApprovalManager userApprovalManager,
+	ILogger<CollectorSettingsController> logger)
+	: Controller
 {
-    private readonly IUserCollectorFeedSourceService _feedSourceService;
-    private readonly IUserCollectorYouTubeChannelService _youTubeChannelService;
-    private readonly IUserCollectorSpeakingEngagementService _speakingEngagementService;
-    private readonly IUserCollectorScheduledItemService _scheduledItemService;
-    private readonly IUserApprovalManager _userApprovalManager;
-    private readonly ILogger<CollectorSettingsController> _logger;
-
-    public CollectorSettingsController(
-        IUserCollectorFeedSourceService feedSourceService,
-        IUserCollectorYouTubeChannelService youTubeChannelService,
-        IUserCollectorSpeakingEngagementService speakingEngagementService,
-        IUserCollectorScheduledItemService scheduledItemService,
-        IUserApprovalManager userApprovalManager,
-        ILogger<CollectorSettingsController> logger)
-    {
-        _feedSourceService = feedSourceService;
-        _youTubeChannelService = youTubeChannelService;
-        _speakingEngagementService = speakingEngagementService;
-        _scheduledItemService = scheduledItemService;
-        _userApprovalManager = userApprovalManager;
-        _logger = logger;
-    }
-
-    [HttpGet("")]
+	[HttpGet("")]
     [HttpGet("Index")]
     public async Task<IActionResult> Index(string? userOid = null)
     {
@@ -56,18 +38,16 @@ public class CollectorSettingsController : Controller
     private async Task<CollectorSettingsPageViewModel> BuildPageViewModelAsync(TargetCollectorSettingsContext context)
     {
         var feedSources = context.IsManagedBySiteAdmin
-            ? await _feedSourceService.GetByUserAsync(context.TargetUserOid)
-            : await _feedSourceService.GetCurrentUserAsync();
+            ? await feedSourceService.GetByUserAsync(context.TargetUserOid)
+            : await feedSourceService.GetCurrentUserAsync();
 
         var youTubeChannels = context.IsManagedBySiteAdmin
-            ? await _youTubeChannelService.GetByUserAsync(context.TargetUserOid)
-            : await _youTubeChannelService.GetCurrentUserAsync();
+            ? await youTubeChannelService.GetByUserAsync(context.TargetUserOid)
+            : await youTubeChannelService.GetCurrentUserAsync();
 
         var speakingEngagements = context.IsManagedBySiteAdmin
-            ? await _speakingEngagementService.GetByUserAsync(context.TargetUserOid)
-            : await _speakingEngagementService.GetCurrentUserAsync();
-
-        var scheduledItem = await _scheduledItemService.GetAsync(context.TargetUserOid);
+            ? await speakingEngagementService.GetByUserAsync(context.TargetUserOid)
+            : await speakingEngagementService.GetCurrentUserAsync();
 
         return new CollectorSettingsPageViewModel
         {
@@ -104,16 +84,6 @@ public class CollectorSettingsController : Controller
                 LastUpdatedOn = se.LastUpdatedOn,
                 IsManagedBySiteAdmin = context.IsManagedBySiteAdmin
             }).ToList(),
-            ScheduledItem = scheduledItem is not null
-                ? new UserCollectorScheduledItemViewModel
-                {
-                    DisplayName = scheduledItem.DisplayName,
-                    IsActive = scheduledItem.IsActive,
-                    CreatedOn = scheduledItem.CreatedOn,
-                    LastUpdatedOn = scheduledItem.LastUpdatedOn,
-                    IsManagedBySiteAdmin = context.IsManagedBySiteAdmin
-                }
-                : null
         };
     }
 
@@ -122,14 +92,14 @@ public class CollectorSettingsController : Controller
         var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
         if (string.IsNullOrWhiteSpace(currentUserOid))
         {
-            _logger.LogWarning("Unable to resolve collector settings because the current user's Entra object id claim is missing.");
+            logger.LogWarning("Unable to resolve collector settings because the current user's Entra object id claim is missing.");
             TempData["ErrorMessage"] = "We couldn't determine which account to load collector settings for.";
             return (null, RedirectToAction("Index", "Home"));
         }
 
         if (string.IsNullOrWhiteSpace(requestedUserOid) || string.Equals(requestedUserOid, currentUserOid, StringComparison.OrdinalIgnoreCase))
         {
-            var currentUser = await _userApprovalManager.GetUserAsync(currentUserOid);
+            var currentUser = await userApprovalManager.GetUserAsync(currentUserOid);
             return (
                 new TargetCollectorSettingsContext(
                     currentUserOid,
@@ -144,7 +114,7 @@ public class CollectorSettingsController : Controller
             return (null, RedirectToAction(nameof(Index)));
         }
 
-        var targetUser = await _userApprovalManager.GetUserAsync(requestedUserOid);
+        var targetUser = await userApprovalManager.GetUserAsync(requestedUserOid);
         if (targetUser is null)
         {
             return (null, NotFound());

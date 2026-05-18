@@ -1,6 +1,7 @@
 using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
 
@@ -40,7 +41,7 @@ public class YouTubeItemService(IDownstreamApi apiClient): IYouTubeItemService
     /// <returns>A <see cref="YouTubeItem"/></returns>
     public async Task<YouTubeItem?> GetAsync(int id)
     {
-        var source = await apiClient.GetForUserAsync<YouTubeItem>(ApiServiceName, options =>
+        var source = await apiClient.GetOptionalForUserAsync<YouTubeItem>(ApiServiceName, options =>
         {
             options.RelativePath = $"{BaseUrl}/{id}";
         });

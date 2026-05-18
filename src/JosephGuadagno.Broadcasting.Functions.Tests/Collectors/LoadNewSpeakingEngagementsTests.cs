@@ -71,16 +71,14 @@ public class LoadNewSpeakingEngagementsTests
     {
         // Arrange
         var item = CreateEngagement();
-        var existing = CreateEngagement();
-        existing.Id = 7;
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _engagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement> { item });
         _engagementManager
-            .Setup(m => m.GetByNameAndUrlAndYearAsync(item.Name, item.Url, item.StartDateTime.Year))
-            .ReturnsAsync(existing);
+            .Setup(m => m.IsEngagementUniqueToUser(item.Name, item.Url, item.StartDateTime.Year, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
 
         // Act
         var result = await _sut.RunAsync(null!);
@@ -104,8 +102,8 @@ public class LoadNewSpeakingEngagementsTests
         _engagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement> { item });
         _engagementManager
-            .Setup(m => m.GetByNameAndUrlAndYearAsync(item.Name, item.Url, item.StartDateTime.Year))
-            .ReturnsAsync((Engagement?)null);
+            .Setup(m => m.IsEngagementUniqueToUser(item.Name, item.Url, item.StartDateTime.Year, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         _engagementManager.Setup(m => m.SaveAsync(It.IsAny<Engagement>())).ReturnsAsync(OperationResult<Engagement>.Success(saved));
 
         // Act
@@ -142,20 +140,15 @@ public class LoadNewSpeakingEngagementsTests
         var newEngagement1 = CreateEngagement("Conf A", "https://a.com", 2024);
         var newEngagement2 = CreateEngagement("Conf B", "https://b.com", 2024);
         var duplicateEngagement = CreateEngagement("Conf C", "https://c.com", 2024);
-        var existingEngagement = CreateEngagement("Conf C", "https://c.com", 2024);
-        existingEngagement.Id = 99;
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _engagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement> { newEngagement1, duplicateEngagement, newEngagement2 });
         
-        _engagementManager.Setup(m => m.GetByNameAndUrlAndYearAsync("Conf A", "https://a.com", 2024))
-            .ReturnsAsync((Engagement?)null);
-        _engagementManager.Setup(m => m.GetByNameAndUrlAndYearAsync("Conf B", "https://b.com", 2024))
-            .ReturnsAsync((Engagement?)null);
-        _engagementManager.Setup(m => m.GetByNameAndUrlAndYearAsync("Conf C", "https://c.com", 2024))
-            .ReturnsAsync(existingEngagement);
+        _engagementManager.Setup(m => m.IsEngagementUniqueToUser("Conf A", "https://a.com", 2024, It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _engagementManager.Setup(m => m.IsEngagementUniqueToUser("Conf B", "https://b.com", 2024, It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _engagementManager.Setup(m => m.IsEngagementUniqueToUser("Conf C", "https://c.com", 2024, It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
         
         var saved1 = CreateEngagement("Conf A", "https://a.com", 2024);
         saved1.Id = 1;
@@ -194,21 +187,19 @@ public class LoadNewSpeakingEngagementsTests
     {
         // Arrange
         var item = CreateEngagement("CodeConf", "https://codeconf.com/2024", 2024);
-        var existingItem = CreateEngagement("CodeConf", "https://codeconf.com/2024", 2024);
-        existingItem.Id = 88;
 
         SetupFeedCheck();
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _engagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<Engagement> { item });
-        _engagementManager.Setup(m => m.GetByNameAndUrlAndYearAsync("CodeConf", "https://codeconf.com/2024", 2024))
-            .ReturnsAsync(existingItem);
+        _engagementManager.Setup(m => m.IsEngagementUniqueToUser("CodeConf", "https://codeconf.com/2024", 2024, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
 
         // Act
         var result = await _sut.RunAsync(null!);
 
         // Assert
-        _engagementManager.Verify(m => m.GetByNameAndUrlAndYearAsync("CodeConf", "https://codeconf.com/2024", 2024), Times.Once);
+        _engagementManager.Verify(m => m.IsEngagementUniqueToUser("CodeConf", "https://codeconf.com/2024", 2024, It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
         _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
     }
 

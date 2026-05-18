@@ -1,5 +1,6 @@
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 
 using Microsoft.Identity.Abstractions;
@@ -43,7 +44,7 @@ public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplate
     /// </summary>
     public async Task<MessageTemplate?> GetAsync(string platform, string messageType)
     {
-        var messageTemplate = await apiClient.GetForUserAsync<MessageTemplate>(ApiServiceName, options =>
+        var messageTemplate = await apiClient.GetOptionalForUserAsync<MessageTemplate>(ApiServiceName, options =>
         {
             options.RelativePath = $"{MessageTemplateBaseUrl}/{platform}/{messageType}";
         });

@@ -19,22 +19,22 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 [Produces("application/json")]
 public class SyndicationFeedItemsController : ControllerBase
 {
-    private readonly ISyndicationFeedItemManager _SyndicationFeedItemManager;
+    private readonly ISyndicationFeedItemManager _syndicationFeedItemManager;
     private readonly ILogger<SyndicationFeedItemsController> _logger;
     private readonly IMapper _mapper;
 
     /// <summary>
     /// Handles the interactions with Syndication Feed Sources
     /// </summary>
-    /// <param name="SyndicationFeedItemManager"></param>
+    /// <param name="syndicationFeedItemManager"></param>
     /// <param name="logger"></param>
     /// <param name="mapper"></param>
     public SyndicationFeedItemsController(
-        ISyndicationFeedItemManager SyndicationFeedItemManager,
+        ISyndicationFeedItemManager syndicationFeedItemManager,
         ILogger<SyndicationFeedItemsController> logger,
         IMapper mapper)
     {
-        _SyndicationFeedItemManager = SyndicationFeedItemManager;
+        _syndicationFeedItemManager = syndicationFeedItemManager;
         _logger = logger;
         _mapper = mapper;
     }
@@ -60,12 +60,12 @@ public class SyndicationFeedItemsController : ControllerBase
         PagedResult<SyndicationFeedItem> result;
         if (User.IsSiteAdministrator())
         {
-            result = await _SyndicationFeedItemManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
+            result = await _syndicationFeedItemManager.GetAllAsync(page, pageSize, sortBy, sortDescending, filter);
         }
         else
         {
             var ownerOid = User.GetOwnerOid();
-            result = await _SyndicationFeedItemManager.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
+            result = await _syndicationFeedItemManager.GetAllAsync(ownerOid, page, pageSize, sortBy, sortDescending, filter);
         }
 
         var items = _mapper.Map<List<SyndicationFeedItemResponse>>(result.Items);
@@ -98,7 +98,7 @@ public class SyndicationFeedItemsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<SyndicationFeedItemResponse>> GetSyndicationFeedItemAsync(int id)
     {
-        var source = await _SyndicationFeedItemManager.GetAsync(id);
+        var source = await _syndicationFeedItemManager.GetAsync(id);
         if (source is null)
             return NotFound();
 
@@ -136,7 +136,7 @@ public class SyndicationFeedItemsController : ControllerBase
         source.AddedOn = DateTimeOffset.UtcNow;
         source.LastUpdatedOn = DateTimeOffset.UtcNow;
 
-        var result = await _SyndicationFeedItemManager.SaveAsync(source);
+        var result = await _syndicationFeedItemManager.SaveAsync(source);
         if (result.IsSuccess && result.Value != null)
         {
             _logger.LogInformation("SyndicationFeedItem created with Id {SourceId}", result.Value.Id);
@@ -166,7 +166,7 @@ public class SyndicationFeedItemsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult> DeleteSyndicationFeedItemAsync(int id)
     {
-        var source = await _SyndicationFeedItemManager.GetAsync(id);
+        var source = await _syndicationFeedItemManager.GetAsync(id);
         if (source is null)
         {
             _logger.LogWarning("SyndicationFeedItem {SourceId} not found for deletion", id);
@@ -178,7 +178,7 @@ public class SyndicationFeedItemsController : ControllerBase
             return Forbid();
         }
 
-        var wasDeleted= await _SyndicationFeedItemManager.DeleteAsync(id);
+        var wasDeleted= await _syndicationFeedItemManager.DeleteAsync(id);
         if (wasDeleted.IsSuccess)
         {
             _logger.LogInformation("SyndicationFeedItem {SourceId} deleted successfully", id);

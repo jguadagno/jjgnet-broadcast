@@ -17,7 +17,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.YouTube;
 public class LoadAllVideos(
     IYouTubeReader youTubeReader,
     IOptions<Settings> settingsOptions,
-    IYouTubeItemManager YouTubeItemManager,
+    IYouTubeItemManager youTubeItemManager,
     IFeedCheckManager feedCheckManager,
     IUrlShortener urlShortener,
     ILogger<LoadAllVideos> logger)
@@ -68,9 +68,8 @@ public class LoadAllVideos(
             var savedCount = 0;
             foreach (var item in newItems)
             {
-                // Skip if item already exists
-                var existingItem = await YouTubeItemManager.GetByVideoIdAsync(item.VideoId);
-                if (existingItem != null)
+                // Skip if item already exists for this user
+                if (!await youTubeItemManager.IsVideoUniqueToUser(item.VideoId, ownerOid))
                 {
                     logger.LogDebug("Skipping duplicate YouTube video with VideoId: '{VideoId}'", item.VideoId);
                     continue;
@@ -82,7 +81,7 @@ public class LoadAllVideos(
                 // attempt to save the item
                 try
                 {
-                    var saveResult = await YouTubeItemManager.SaveAsync(item);
+                    var saveResult = await youTubeItemManager.SaveAsync(item);
 
                     if (!saveResult.IsSuccess || saveResult.Value is null)
                     {

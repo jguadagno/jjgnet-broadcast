@@ -14,18 +14,12 @@ namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
 
 public class SocialMediaPlatformsControllerTests
 {
-    private readonly Mock<ISocialMediaPlatformManager> _managerMock;
-    private readonly Mock<ILogger<SocialMediaPlatformsController>> _loggerMock;
+    private readonly Mock<ISocialMediaPlatformManager> _managerMock = new();
+    private readonly Mock<ILogger<SocialMediaPlatformsController>> _loggerMock = new();
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
     // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
-    private static readonly IMapper _mapper = ApiTestMapper.Instance;
-
-    public SocialMediaPlatformsControllerTests()
-    {
-        _managerMock = new Mock<ISocialMediaPlatformManager>();
-        _loggerMock = new Mock<ILogger<SocialMediaPlatformsController>>();
-    }
+    private static readonly IMapper Mapper = ApiTestMapper.Instance;
 
     // -------------------------------------------------------------------------
     // Helpers
@@ -36,7 +30,7 @@ public class SocialMediaPlatformsControllerTests
         var controller = new SocialMediaPlatformsController(
             _managerMock.Object,
             _loggerMock.Object,
-            _mapper)
+            Mapper)
         {
             ControllerContext = ApiControllerTestHelpers.CreateControllerContext(),
             ProblemDetailsFactory = new TestProblemDetailsFactory()

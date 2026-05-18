@@ -8,7 +8,8 @@
         form.addEventListener('submit', function () {
             if (btn.disabled) return;
             btn.dataset.originalHtml = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
+            var loadingText = btn.dataset.loadingText || 'Saving...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + loadingText;
             btn.disabled = true;
         });
 

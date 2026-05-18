@@ -21,11 +21,22 @@ public class UserPublisherTwitterSettingsDataStore(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
 
-        var entity = await broadcastingContext.UserPublisherTwitterSettings
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.CreatedByEntraOid == ownerOid, cancellationToken);
+        try
+        {
+            var entity = await broadcastingContext.UserPublisherTwitterSettings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.CreatedByEntraOid == ownerOid, cancellationToken);
 
-        return entity is null ? null : mapper.Map<UserPublisherTwitterSettings>(entity);
+            return entity is null ? null : mapper.Map<UserPublisherTwitterSettings>(entity);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to retrieve Twitter settings for owner {OwnerOid}",
+                LogSanitizer.Sanitize(ownerOid));
+            return null;
+        }
     }
 
     /// <inheritdoc />
@@ -34,11 +45,22 @@ public class UserPublisherTwitterSettingsDataStore(
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(id);
 
-        var entity = await broadcastingContext.UserPublisherTwitterSettings
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        try
+        {
+            var entity = await broadcastingContext.UserPublisherTwitterSettings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
-        return entity is null ? null : mapper.Map<UserPublisherTwitterSettings>(entity);
+            return entity is null ? null : mapper.Map<UserPublisherTwitterSettings>(entity);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to retrieve Twitter settings for ID {Id}",
+                id);
+            return null;
+        }
     }
 
     /// <inheritdoc />

@@ -34,7 +34,7 @@
             <option value="@p" selected="@(p == (string)ViewBag.SelectedPlatform)">@p</option>
         }
     </select>
-    <button type="submit" class="btn btn-outline-secondary">Filter</button>
+    <button type="submit" class="btn btn-outline-secondary" data-loading-text="Searching...">Filter</button>
     @if (!string.IsNullOrEmpty(ViewBag.Filter as string) || !string.IsNullOrEmpty(ViewBag.SelectedPlatform as string))
     {
         <a asp-action="Index" asp-controller="MessageTemplates" asp-route-sortBy="@ViewBag.SortBy" asp-route-sortDescending="@ViewBag.SortDescending" class="btn btn-outline-danger">Clear</a>
@@ -62,7 +62,7 @@
             </th>
             <th scope="col" class="col-3">Description</th>
             <th scope="col">Template</th>
-            <th scope="col" class="col-1">&nbsp;</th>
+            <th scope="col" class="col-1 text-end">&nbsp;</th>
         </tr>
         </thead>
         <tbody>
@@ -77,11 +77,11 @@
                 <td>
                     <span title="@template.Template" data-bs-toggle="tooltip" data-bs-placement="top">@truncated</span>
                 </td>
-                <td>
+                <td class="text-end">
                     <a asp-action="Edit" asp-controller="MessageTemplates"
                        asp-route-platform="@template.Platform"
                        asp-route-messageType="@template.MessageType"
-                       class="btn btn-outline-secondary btn-sm">
+                       class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-pencil"></i>
                     </a>
                 </td>

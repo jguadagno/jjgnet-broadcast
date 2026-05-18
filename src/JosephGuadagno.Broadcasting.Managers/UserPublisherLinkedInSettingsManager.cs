@@ -12,27 +12,17 @@ namespace JosephGuadagno.Broadcasting.Managers;
 /// <summary>
 /// Manager for per-user LinkedIn publisher settings
 /// </summary>
-public class UserPublisherLinkedInSettingsManager : IUserPublisherLinkedInSettingsManager
+public class UserPublisherLinkedInSettingsManager(
+	IUserPublisherLinkedInSettingsDataStore userPublisherLinkedInSettingsDataStore,
+	IKeyVault keyVault,
+	ILogger<UserPublisherLinkedInSettingsManager> logger)
+	: IUserPublisherLinkedInSettingsManager
 {
-    private readonly IUserPublisherLinkedInSettingsDataStore _userPublisherLinkedInSettingsDataStore;
-    private readonly IKeyVault _keyVault;
-    private readonly ILogger<UserPublisherLinkedInSettingsManager> _logger;
-
-    public UserPublisherLinkedInSettingsManager(
-        IUserPublisherLinkedInSettingsDataStore userPublisherLinkedInSettingsDataStore,
-        IKeyVault keyVault,
-        ILogger<UserPublisherLinkedInSettingsManager> logger)
-    {
-        _userPublisherLinkedInSettingsDataStore = userPublisherLinkedInSettingsDataStore;
-        _keyVault = keyVault;
-        _logger = logger;
-    }
-
-    /// <inheritdoc />
+	/// <inheritdoc />
     public Task<UserPublisherLinkedInSettings?> GetAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        return _userPublisherLinkedInSettingsDataStore.GetByUserAsync(ownerOid, cancellationToken);
+        return userPublisherLinkedInSettingsDataStore.GetByUserAsync(ownerOid, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -40,19 +30,19 @@ public class UserPublisherLinkedInSettingsManager : IUserPublisherLinkedInSettin
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentException.ThrowIfNullOrWhiteSpace(settings.CreatedByEntraOid);
-        return _userPublisherLinkedInSettingsDataStore.SaveAsync(settings, cancellationToken);
+        return userPublisherLinkedInSettingsDataStore.SaveAsync(settings, cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<bool> DeleteAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var existing = await _userPublisherLinkedInSettingsDataStore.GetByUserAsync(ownerOid, cancellationToken);
+        var existing = await userPublisherLinkedInSettingsDataStore.GetByUserAsync(ownerOid, cancellationToken);
         if (existing is null)
         {
             return false;
         }
-        return await _userPublisherLinkedInSettingsDataStore.DeleteAsync(existing.Id, ownerOid, cancellationToken);
+        return await userPublisherLinkedInSettingsDataStore.DeleteAsync(existing.Id, ownerOid, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -62,12 +52,12 @@ public class UserPublisherLinkedInSettingsManager : IUserPublisherLinkedInSettin
         var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.LinkedIn, KeyVaultSecretNames.SettingName.ClientSecret);
         try
         {
-            var secret = await _keyVault.GetSecretAsync(secretName);
+            var secret = await keyVault.GetSecretAsync(secretName);
             return secret?.Value;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex,
+            logger.LogError(ex,
                 "Failed to retrieve LinkedIn client secret from Key Vault for secret '{SecretName}', owner '{OwnerOid}'",
                 secretName,
                 LogSanitizer.Sanitize(ownerOid));
@@ -81,8 +71,8 @@ public class UserPublisherLinkedInSettingsManager : IUserPublisherLinkedInSettin
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(clientSecret);
         var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.LinkedIn, KeyVaultSecretNames.SettingName.ClientSecret);
-        await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, clientSecret, DateTime.UtcNow.AddYears(10));
-        _logger.LogInformation(
+        await keyVault.UpdateSecretValueAndPropertiesAsync(secretName, clientSecret, DateTime.UtcNow.AddYears(10));
+        logger.LogInformation(
             "Stored LinkedIn client secret in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
             secretName,
             LogSanitizer.Sanitize(ownerOid));
@@ -95,12 +85,12 @@ public class UserPublisherLinkedInSettingsManager : IUserPublisherLinkedInSettin
         var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.LinkedIn, KeyVaultSecretNames.SettingName.AccessToken);
         try
         {
-            var secret = await _keyVault.GetSecretAsync(secretName);
+            var secret = await keyVault.GetSecretAsync(secretName);
             return secret?.Value;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex,
+            logger.LogError(ex,
                 "Failed to retrieve LinkedIn access token from Key Vault for secret '{SecretName}', owner '{OwnerOid}'",
                 secretName,
                 LogSanitizer.Sanitize(ownerOid));
@@ -114,8 +104,8 @@ public class UserPublisherLinkedInSettingsManager : IUserPublisherLinkedInSettin
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
         var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.LinkedIn, KeyVaultSecretNames.SettingName.AccessToken);
-        await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, accessToken, DateTime.UtcNow.AddYears(10));
-        _logger.LogInformation(
+        await keyVault.UpdateSecretValueAndPropertiesAsync(secretName, accessToken, DateTime.UtcNow.AddYears(10));
+        logger.LogInformation(
             "Stored LinkedIn access token in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
             secretName,
             LogSanitizer.Sanitize(ownerOid));

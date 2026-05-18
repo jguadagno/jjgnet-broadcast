@@ -11,26 +11,19 @@ namespace JosephGuadagno.Broadcasting.Functions.HealthChecks;
 /// because Bitly is an optional/non-critical service — the app continues to publish content
 /// with unshortened URLs and should not trigger a load-balancer failover.
 /// </summary>
-internal sealed class BitlyHealthCheck : IHealthCheck
+internal sealed class BitlyHealthCheck(IBitlyConfiguration bitlyConfiguration) : IHealthCheck
 {
-    private readonly IBitlyConfiguration _bitlyConfiguration;
-
-    public BitlyHealthCheck(IBitlyConfiguration bitlyConfiguration)
-    {
-        _bitlyConfiguration = bitlyConfiguration;
-    }
-
-    public Task<HealthCheckResult> CheckHealthAsync(
+	public Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
         var missing = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(_bitlyConfiguration.Token))
-            missing.Add(nameof(_bitlyConfiguration.Token));
+        if (string.IsNullOrWhiteSpace(bitlyConfiguration.Token))
+            missing.Add(nameof(bitlyConfiguration.Token));
 
-        if (string.IsNullOrWhiteSpace(_bitlyConfiguration.ApiRootUri))
-            missing.Add(nameof(_bitlyConfiguration.ApiRootUri));
+        if (string.IsNullOrWhiteSpace(bitlyConfiguration.ApiRootUri))
+            missing.Add(nameof(bitlyConfiguration.ApiRootUri));
 
         if (missing.Count > 0)
         {

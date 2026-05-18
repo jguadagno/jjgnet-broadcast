@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
 public class ProcessNewYouTubeDataFired(
-    IYouTubeItemManager YouTubeItemManager,
+    IYouTubeItemManager youTubeItemManager,
     ILogger<ProcessNewYouTubeDataFired> logger)
 {
     [Function(ConfigurationFunctionNames.BlueskyProcessNewYouTubeDataFired)]
@@ -40,42 +40,42 @@ public class ProcessNewYouTubeDataFired(
                 logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
                 return null;
             }
-            var YouTubeItem = await YouTubeItemManager.GetAsync(newYouTubeItemEvent.Id);
+            var youTubeItem = await youTubeItemManager.GetAsync(newYouTubeItemEvent.Id);
 
             // Create the scheduled BlueSky for it
-            logger.LogDebug("Processing New YouTube Feed Data Fired for '{Id}' with title of '{Title}'", YouTubeItem.Id, YouTubeItem.Title);
+            logger.LogDebug("Processing New YouTube Feed Data Fired for '{Id}' with title of '{Title}'", youTubeItem.Id, youTubeItem.Title);
 
             // Handle the event - eventGridData to build the post
             // Need to create a PostBuilder to send this based on these docs
             // https://github.com/blowdart/idunno.Bluesky/blob/main/docs/posting.md#links-to-external-web-sites
-            var postText = YouTubeItem.ItemLastUpdatedOn > YouTubeItem.PublicationDate
+            var postText = youTubeItem.ItemLastUpdatedOn > youTubeItem.PublicationDate
                 ? "Updated Video Post: "
                 : "New Video Post: ";
             postText +=
-                $"({YouTubeItem.PublicationDate.Date.ToShortDateString()}): \"{YouTubeItem.Title}.\" RPs and feedback are always appreciated! ";
+                $"({youTubeItem.PublicationDate.Date.ToShortDateString()}): \"{youTubeItem.Title}.\" RPs and feedback are always appreciated! ";
 
             var blueskyPostMessage = new BlueskyPostMessage
             {
                 Text = postText,
-                Url = YouTubeItem.Url,
-                ShortenedUrl = YouTubeItem.ShortenedUrl
+                Url = youTubeItem.Url,
+                ShortenedUrl = youTubeItem.ShortenedUrl
             };
-            if (YouTubeItem.Tags.Count > 0)
+            if (youTubeItem.Tags.Count > 0)
             {
-                blueskyPostMessage.Hashtags = YouTubeItem.Tags.ToList();
+                blueskyPostMessage.Hashtags = youTubeItem.Tags.ToList();
             }
 
-            blueskyPostMessage.CreatedByEntraOid = YouTubeItem.CreatedByEntraOid;
+            blueskyPostMessage.CreatedByEntraOid = youTubeItem.CreatedByEntraOid;
             // Return
             var properties = new Dictionary<string, string>
             {
                 {"post", postText},
-                {"title", YouTubeItem.Title},
-                {"url", YouTubeItem.Url},
-                {"id", YouTubeItem.Id.ToString()}
+                {"title", youTubeItem.Title},
+                {"url", youTubeItem.Url},
+                {"id", youTubeItem.Id.ToString()}
             };
             logger.LogCustomEvent(Metrics.BlueskyProcessedNewYouTubeData, properties);
-            logger.LogDebug("Posted to Bluesky: {Title}", YouTubeItem.Title);
+            logger.LogDebug("Posted to Bluesky: {Title}", youTubeItem.Title);
             return blueskyPostMessage;
         }
         catch (Exception exception)

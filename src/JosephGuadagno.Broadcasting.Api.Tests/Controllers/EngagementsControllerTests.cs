@@ -17,20 +17,13 @@ namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
 
 public class EngagementsControllerTests
 {
-    private readonly Mock<IEngagementManager> _engagementManagerMock;
-    private readonly Mock<IEngagementSocialMediaPlatformDataStore> _engagementSocialMediaPlatformDataStoreMock;
-    private readonly Mock<ILogger<EngagementsController>> _loggerMock;
+    private readonly Mock<IEngagementManager> _engagementManagerMock = new();
+    private readonly Mock<IEngagementSocialMediaPlatformDataStore> _engagementSocialMediaPlatformDataStoreMock = new();
+    private readonly Mock<ILogger<EngagementsController>> _loggerMock = new();
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
     // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
-    private static readonly IMapper _mapper = ApiTestMapper.Instance;
-
-    public EngagementsControllerTests()
-    {
-        _engagementManagerMock = new Mock<IEngagementManager>();
-        _engagementSocialMediaPlatformDataStoreMock = new Mock<IEngagementSocialMediaPlatformDataStore>();
-        _loggerMock = new Mock<ILogger<EngagementsController>>();
-    }
+    private static readonly IMapper Mapper = ApiTestMapper.Instance;
 
     // -------------------------------------------------------------------------
     // Helpers
@@ -38,7 +31,7 @@ public class EngagementsControllerTests
 
     private EngagementsController CreateSut(string ownerOid = "owner-oid-12345", bool isSiteAdmin = false)
     {
-        var controller = new EngagementsController(_engagementManagerMock.Object, _engagementSocialMediaPlatformDataStoreMock.Object, _loggerMock.Object, _mapper)
+        var controller = new EngagementsController(_engagementManagerMock.Object, _engagementSocialMediaPlatformDataStoreMock.Object, _loggerMock.Object, Mapper)
         {
             ControllerContext = ApiControllerTestHelpers.CreateControllerContext(ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()

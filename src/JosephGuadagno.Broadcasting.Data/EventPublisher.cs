@@ -22,14 +22,14 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
     protected TimeSpan InitialRetryDelay { get; init; } = TimeSpan.FromSeconds(1);
 
     public async Task PublishSyndicationFeedEventsAsync(string subject,
-        IReadOnlyCollection<SyndicationFeedItem> SyndicationFeedItemDataItems)
+        IReadOnlyCollection<SyndicationFeedItem> syndicationFeedItemDataItems)
     {
         if (string.IsNullOrEmpty(subject))
         {
             throw new ArgumentNullException(nameof(subject), "The subject is required.");
         }
 
-        if (SyndicationFeedItemDataItems.Count == 0)
+        if (syndicationFeedItemDataItems.Count == 0)
         {
             return;
         }
@@ -43,7 +43,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
         var client = GetEventGridPublisherClient(topicSettings);
 
         var eventList = new List<EventGridEvent>();
-        foreach (var syndicationFeedDataItem in SyndicationFeedItemDataItems)
+        foreach (var syndicationFeedDataItem in syndicationFeedItemDataItems)
         {
             var data = new NewSyndicationFeedItemEvent
             {
@@ -56,14 +56,14 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
         await SendWithRetryAsync(client, eventList, topicSettings.Endpoint, Topics.NewSyndicationFeedItem);
     }
 
-    public async Task PublishYouTubeEventsAsync(string subject, IReadOnlyCollection<YouTubeItem> YouTubeItemDataItems)
+    public async Task PublishYouTubeEventsAsync(string subject, IReadOnlyCollection<YouTubeItem> youTubeItemDataItems)
     {
         if (string.IsNullOrEmpty(subject))
         {
             throw new ArgumentNullException(nameof(subject), "The subject is required.");
         }
 
-        if (YouTubeItemDataItems.Count == 0)
+        if (youTubeItemDataItems.Count == 0)
         {
             return;
         }
@@ -77,11 +77,11 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
         var client = GetEventGridPublisherClient(topicSettings);
 
         var eventList = new List<EventGridEvent>();
-        foreach (var YouTubeItemDataItem in YouTubeItemDataItems)
+        foreach (var youTubeItemDataItem in youTubeItemDataItems)
         {
             var data = new NewYouTubeItemEvent
             {
-                Id = YouTubeItemDataItem.Id
+                Id = youTubeItemDataItem.Id
             };
             eventList.Add(
                 new EventGridEvent(subject, Topics.NewYouTubeItem, "1.1", data));

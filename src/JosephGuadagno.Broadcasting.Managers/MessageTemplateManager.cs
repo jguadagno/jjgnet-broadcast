@@ -9,48 +9,40 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
-public class MessageTemplateManager : IMessageTemplateManager
+public class MessageTemplateManager(IMessageTemplateDataStore messageTemplateDataStore, IMemoryCache cache)
+	: IMessageTemplateManager
 {
-    private readonly IMessageTemplateDataStore _messageTemplateDataStore;
-    private readonly IMemoryCache _cache;
-
-    private const string CacheKeyAll = "MessageTemplate_All";
+	private const string CacheKeyAll = "MessageTemplate_All";
     private static string CacheKeyItem(int platformId, string messageType) => $"MessageTemplate_{platformId}_{messageType}";
 
     private static readonly MemoryCacheEntryOptions CacheOptions =
         new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
 
-    public MessageTemplateManager(IMessageTemplateDataStore messageTemplateDataStore, IMemoryCache cache)
-    {
-        _messageTemplateDataStore = messageTemplateDataStore;
-        _cache = cache;
-    }
-
     public async Task<MessageTemplate?> GetAsync(int socialMediaPlatformId, string messageType, CancellationToken cancellationToken = default)
     {
         var cacheKey = CacheKeyItem(socialMediaPlatformId, messageType);
-        if (_cache.TryGetValue(cacheKey, out MessageTemplate? cached) && cached is not null)
+        if (cache.TryGetValue(cacheKey, out MessageTemplate? cached) && cached is not null)
         {
             return cached;
         }
 
-        var result = await _messageTemplateDataStore.GetAsync(socialMediaPlatformId, messageType, cancellationToken);
+        var result = await messageTemplateDataStore.GetAsync(socialMediaPlatformId, messageType, cancellationToken);
         if (result is not null)
         {
-            _cache.Set(cacheKey, result, CacheOptions);
+            cache.Set(cacheKey, result, CacheOptions);
         }
         return result;
     }
 
     public async Task<List<MessageTemplate>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        if (_cache.TryGetValue(CacheKeyAll, out List<MessageTemplate>? cached) && cached is not null)
+        if (cache.TryGetValue(CacheKeyAll, out List<MessageTemplate>? cached) && cached is not null)
         {
             return cached;
         }
 
-        var result = await _messageTemplateDataStore.GetAllAsync(cancellationToken);
-        _cache.Set(CacheKeyAll, result, CacheOptions);
+        var result = await messageTemplateDataStore.GetAllAsync(cancellationToken);
+        cache.Set(CacheKeyAll, result, CacheOptions);
         return result;
     }
 
@@ -68,18 +60,18 @@ public class MessageTemplateManager : IMessageTemplateManager
 
     public async Task<MessageTemplate?> UpdateAsync(MessageTemplate messageTemplate, CancellationToken cancellationToken = default)
     {
-        var result = await _messageTemplateDataStore.UpdateAsync(messageTemplate, cancellationToken);
+        var result = await messageTemplateDataStore.UpdateAsync(messageTemplate, cancellationToken);
         if (result is not null)
         {
             InvalidateListCaches();
-            _cache.Remove(CacheKeyItem(messageTemplate.SocialMediaPlatformId, messageTemplate.MessageType));
+            cache.Remove(CacheKeyItem(messageTemplate.SocialMediaPlatformId, messageTemplate.MessageType));
         }
         return result;
     }
 
     private void InvalidateListCaches()
     {
-        _cache.Remove(CacheKeyAll);
+        cache.Remove(CacheKeyAll);
     }
 
     private static PagedResult<MessageTemplate> ApplyFilterSortPage(

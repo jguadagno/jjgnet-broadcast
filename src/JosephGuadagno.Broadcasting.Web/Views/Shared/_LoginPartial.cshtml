@@ -1,5 +1,4 @@
-﻿@inject JosephGuadagno.Broadcasting.Web.Interfaces.ISocialMediaPlatformService PlatformService
-@if (User.Identity is not null && User.Identity.IsAuthenticated)
+﻿@if (User.Identity is not null && User.Identity.IsAuthenticated)
 {
 		<ul class="navbar-nav">
 				<li class="nav-item dropdown">
@@ -11,7 +10,7 @@
 						<ul class="dropdown-menu">
 								@if (User.IsInRole(RoleNames.SiteAdministrator) || User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Contributor))
 								{
-										var platforms = await PlatformService.GetAllAsync(pageSize: 100);
+
 										<li>
 												<a class="dropdown-item" asp-area="" asp-controller="MessageTemplates"
 												   asp-action="Index">
@@ -22,6 +21,8 @@
 												<hr class="dropdown-divider">
 										</li>
 										<li><h6 class="dropdown-header">Collector Settings</h6></li>
+										<li><a class="dropdown-item" asp-controller="CollectorSettings" asp-action="Index">
+											<i class="bi bi-collection me-2"></i>All Collector Settings</a></li>
 										<li><a class="dropdown-item" asp-controller="CollectorFeedSources" asp-action="Index"><i
 																class="bi bi-rss me-2"></i>Feed Sources</a></li>
 										<li><a class="dropdown-item" asp-controller="CollectorSpeakingEngagements" asp-action="Index"><i
@@ -32,22 +33,17 @@
 												<hr class="dropdown-divider">
 										</li>
 										<li><h6 class="dropdown-header">Publisher Settings</h6></li>
-										<li>
-												<a class="dropdown-item" asp-controller="PublisherSettings"
-												   asp-action="Index">
-														<i class="bi bi-broadcast-pin me-2"></i>All Publisher Settings
-												</a>
-										</li>
-										@foreach (var platform in platforms.Items)
-										{
-												<li>
-														<a class="dropdown-item" asp-controller="PublisherSettings"
-														   asp-action="Edit" asp-route-id="@platform.Id">
-																<i class="bi @platform.Icon me-2"></i>@platform.Name Configuration
-														</a>
-												</li>
-										}
-										<li>
+                    <li><a class="dropdown-item" asp-controller="Publishers" asp-action="Index">
+                        <i class="bi bi-broadcast-pin me-2"></i>All Publisher Settings</a></li>
+                    <li><a class="dropdown-item" asp-controller="PublisherBlueskySettings" asp-action="Index">
+                        <i class="bi bi-bluesky me-2"></i>Bluesky</a></li>
+                    <li><a class="dropdown-item" asp-controller="PublisherFacebookSettings" asp-action="Index">
+	                    <i class="bi bi-facebook me-2"></i>Facebook</a></li>
+                    <li><a class="dropdown-item" asp-controller="PublisherLinkedInSettings" asp-action="Index">
+                        <i class="bi bi-linkedin me-2"></i>LinkedIn</a></li>
+                    <li><a class="dropdown-item" asp-controller="PublisherTwitterSettings" asp-action="Index">
+	                    <i class="bi bi-twitter-x me-2"></i>Twitter / X</a></li>
+                    <li>
 												<hr class="dropdown-divider">
 										</li>
 								}

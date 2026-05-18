@@ -14,33 +14,26 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Controller for managing per-user speaking engagement collector configurations.
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
-public class CollectorSpeakingEngagementsController : Controller
+[Route("Collectors/SpeakingEngagement/Settings")]
+public class CollectorSpeakingEngagementsController(
+	IUserCollectorSpeakingEngagementService service,
+	IMapper mapper,
+	ILogger<CollectorSpeakingEngagementsController> logger)
+	: Controller
 {
-    private readonly IUserCollectorSpeakingEngagementService _service;
-    private readonly IMapper _mapper;
-    private readonly ILogger<CollectorSpeakingEngagementsController> _logger;
-
-    public CollectorSpeakingEngagementsController(
-        IUserCollectorSpeakingEngagementService service,
-        IMapper mapper,
-        ILogger<CollectorSpeakingEngagementsController> logger)
-    {
-        _service = service;
-        _mapper = mapper;
-        _logger = logger;
-    }
-
-    /// <summary>
+	/// <summary>
     /// Lists the current user's speaking engagement configurations.
     /// </summary>
+    [HttpGet("")]
+    [HttpGet("Index")]
     public async Task<IActionResult> Index(
         int page = Pagination.DefaultPage,
         string sortBy = "displayName",
         bool sortDescending = false,
         string? filter = null)
     {
-        var items = await _service.GetCurrentUserAsync();
-        var viewModels = _mapper.Map<List<UserCollectorSpeakingEngagementViewModel>>(items);
+        var items = await service.GetCurrentUserAsync();
+        var viewModels = mapper.Map<List<UserCollectorSpeakingEngagementViewModel>>(items);
 
         ViewBag.Page = page;
         ViewBag.PageSize = Pagination.DefaultPageSize;
@@ -58,9 +51,10 @@ public class CollectorSpeakingEngagementsController : Controller
     /// <summary>
     /// Shows details for a speaking engagement configuration.
     /// </summary>
+    [HttpGet("Details/{id}")]
     public async Task<IActionResult> Details(int id)
     {
-        var engagement = await _service.GetByIdAsync(id);
+        var engagement = await service.GetByIdAsync(id);
         if (engagement == null) return NotFound();
 
         if (!User.IsInRole(RoleNames.SiteAdministrator))
@@ -73,13 +67,14 @@ public class CollectorSpeakingEngagementsController : Controller
             }
         }
 
-        var viewModel = _mapper.Map<UserCollectorSpeakingEngagementViewModel>(engagement);
+        var viewModel = mapper.Map<UserCollectorSpeakingEngagementViewModel>(engagement);
         return View(viewModel);
     }
 
     /// <summary>
     /// Displays the add speaking engagement form.
     /// </summary>
+    [HttpGet("Add")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public IActionResult Add()
     {
@@ -89,20 +84,20 @@ public class CollectorSpeakingEngagementsController : Controller
     /// <summary>
     /// Creates a new speaking engagement configuration for the current user.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Add")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Add(UserCollectorSpeakingEngagementViewModel viewModel)
     {
         if (!ModelState.IsValid) return View(viewModel);
 
-        var model = _mapper.Map<UserCollectorSpeakingEngagement>(viewModel);
+        var model = mapper.Map<UserCollectorSpeakingEngagement>(viewModel);
         model.CreatedByEntraOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId) ?? string.Empty;
 
-        var result = await _service.AddCurrentUserAsync(model);
+        var result = await service.AddCurrentUserAsync(model);
         if (result == null)
         {
-            _logger.LogWarning("Failed to add speaking engagement for user, URL: {FileUrl}",
+            logger.LogWarning("Failed to add speaking engagement for user, URL: {FileUrl}",
                 LogSanitizer.Sanitize(viewModel.SpeakingEngagementsFile));
             TempData["ErrorMessage"] = "Failed to add the speaking engagement.";
             return View(viewModel);
@@ -115,10 +110,11 @@ public class CollectorSpeakingEngagementsController : Controller
     /// <summary>
     /// Displays the edit speaking engagement form.
     /// </summary>
+    [HttpGet("Edit/{id}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(int id)
     {
-        var engagement = await _service.GetByIdAsync(id);
+        var engagement = await service.GetByIdAsync(id);
         if (engagement == null) return NotFound();
 
         if (!User.IsInRole(RoleNames.SiteAdministrator))
@@ -131,21 +127,21 @@ public class CollectorSpeakingEngagementsController : Controller
             }
         }
 
-        var viewModel = _mapper.Map<UserCollectorSpeakingEngagementViewModel>(engagement);
+        var viewModel = mapper.Map<UserCollectorSpeakingEngagementViewModel>(engagement);
         return View(viewModel);
     }
 
     /// <summary>
     /// Updates an existing speaking engagement configuration.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Edit")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(UserCollectorSpeakingEngagementViewModel viewModel)
     {
         if (!ModelState.IsValid) return View(viewModel);
 
-        var existing = await _service.GetByIdAsync(viewModel.Id);
+        var existing = await service.GetByIdAsync(viewModel.Id);
         if (existing == null) return NotFound();
 
         var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
@@ -157,22 +153,22 @@ public class CollectorSpeakingEngagementsController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var model = _mapper.Map<UserCollectorSpeakingEngagement>(viewModel);
+        var model = mapper.Map<UserCollectorSpeakingEngagement>(viewModel);
         model.CreatedByEntraOid = existing.CreatedByEntraOid;
 
         UserCollectorSpeakingEngagement? result;
         if (isSiteAdmin && existing.CreatedByEntraOid != currentUserOid)
         {
-            result = await _service.UpdateByUserAsync(existing.CreatedByEntraOid, model);
+            result = await service.UpdateByUserAsync(existing.CreatedByEntraOid, model);
         }
         else
         {
-            result = await _service.UpdateCurrentUserAsync(model);
+            result = await service.UpdateCurrentUserAsync(model);
         }
 
         if (result == null)
         {
-            _logger.LogWarning("Failed to update speaking engagement {Id}", viewModel.Id);
+            logger.LogWarning("Failed to update speaking engagement {Id}", viewModel.Id);
             ModelState.AddModelError(string.Empty, "Failed to update the speaking engagement.");
             return View(viewModel);
         }
@@ -184,11 +180,11 @@ public class CollectorSpeakingEngagementsController : Controller
     /// <summary>
     /// Shows the delete confirmation page.
     /// </summary>
-    [HttpGet]
+    [HttpGet("Delete/{id}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Delete(int id)
     {
-        var engagement = await _service.GetByIdAsync(id);
+        var engagement = await service.GetByIdAsync(id);
         if (engagement == null) return NotFound();
 
         if (!User.IsInRole(RoleNames.SiteAdministrator))
@@ -201,20 +197,20 @@ public class CollectorSpeakingEngagementsController : Controller
             }
         }
 
-        var viewModel = _mapper.Map<UserCollectorSpeakingEngagementViewModel>(engagement);
+        var viewModel = mapper.Map<UserCollectorSpeakingEngagementViewModel>(engagement);
         return View(viewModel);
     }
 
     /// <summary>
     /// Deletes a speaking engagement configuration after confirmation.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Delete")]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
-        var engagement = await _service.GetByIdAsync(id);
+        var engagement = await service.GetByIdAsync(id);
         if (engagement == null) return NotFound();
 
         var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
@@ -229,11 +225,11 @@ public class CollectorSpeakingEngagementsController : Controller
         bool result;
         if (isSiteAdmin && engagement.CreatedByEntraOid != currentUserOid)
         {
-            result = await _service.DeleteByUserAsync(engagement.CreatedByEntraOid, id);
+            result = await service.DeleteByUserAsync(engagement.CreatedByEntraOid, id);
         }
         else
         {
-            result = await _service.DeleteCurrentUserAsync(id);
+            result = await service.DeleteCurrentUserAsync(id);
         }
 
         if (result)
@@ -242,7 +238,7 @@ public class CollectorSpeakingEngagementsController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = _mapper.Map<UserCollectorSpeakingEngagementViewModel>(engagement);
+        var viewModel = mapper.Map<UserCollectorSpeakingEngagementViewModel>(engagement);
         ModelState.AddModelError(string.Empty, "Failed to delete the speaking engagement.");
         return View(viewModel);
     }

@@ -22,8 +22,8 @@ public class UserCollectorYouTubeChannelManagerTests
     }
 
     [Theory]
-    [InlineData("owner-1", "UCabc123", "collector-owner-1-youtube-channel-UCabc123-api-key")]
-    [InlineData("owner@with#special!", "UCabc123", "collector-owner-with-special--youtube-channel-UCabc123-api-key")]
+    [InlineData("owner-1", "UCabc123", "collector-owner-1-youtube-channel-c52b99988c271f2d-api-key")]
+    [InlineData("owner@with#special!", "UCabc123", "collector-owner-with-special--youtube-channel-c52b99988c271f2d-api-key")]
     public async Task StoreApiKeyToKeyVaultAsync_BuildsCorrectSecretName(
         string ownerOid, string channelId, string expectedSecretName)
     {

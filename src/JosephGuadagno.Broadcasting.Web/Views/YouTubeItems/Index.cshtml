@@ -24,27 +24,12 @@
     <input type="hidden" name="sortBy" value="@ViewBag.SortBy" />
     <input type="hidden" name="sortDescending" value="@ViewBag.SortDescending" />
     <input type="text" name="filter" class="form-control" placeholder="Filter by title or author..." value="@ViewBag.Filter" />
-    <button type="submit" class="btn btn-outline-secondary">Filter</button>
+    <button type="submit" class="btn btn-outline-secondary" data-loading-text="Searching...">Filter</button>
     @if (!string.IsNullOrEmpty(ViewBag.Filter as string))
     {
         <a asp-action="Index" asp-controller="YouTubeItems" asp-route-sortBy="@ViewBag.SortBy" asp-route-sortDescending="@ViewBag.SortDescending" class="btn btn-outline-danger">Clear</a>
     }
 </form>
-
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
 
 @if (Model.Count == 0)
 {
@@ -76,7 +61,7 @@ else
                     Added On @Html.Raw(SortIcon("addedon"))
                 </a>
             </th>
-            <th scope="col" class="col-2">&nbsp;</th>
+            <th scope="col" class="col-2 text-end">&nbsp;</th>
         </tr>
         </thead>
         <tbody>
@@ -101,7 +86,7 @@ else
                 <td><local-time value="@source.PublicationDate" /></td>
                 <td><local-time value="@source.AddedOn" /></td>
                 <td class="text-end">
-                    <a asp-action="Details" asp-route-id="@source.Id" class="btn btn-sm btn-outline-secondary" title="Details">
+                    <a asp-action="Details" asp-route-id="@source.Id" class="btn btn-sm btn-outline-primary" title="Details">
                         <i class="bi bi-eye"></i>
                     </a>
                     @if (User.IsInRole(RoleNames.Contributor) ||

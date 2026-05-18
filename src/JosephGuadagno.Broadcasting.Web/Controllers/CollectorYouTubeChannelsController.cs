@@ -14,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Controller for managing per-user YouTube channel collector configurations.
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
+[Route("Collectors/YouTube/Settings")]
 public class CollectorYouTubeChannelsController(
     IUserCollectorYouTubeChannelService service,
     IMapper mapper,
@@ -23,6 +24,8 @@ public class CollectorYouTubeChannelsController(
     /// <summary>
     /// Lists the current user's YouTube channel configurations.
     /// </summary>
+    [HttpGet("")]
+    [HttpGet("Index")]
     public async Task<IActionResult> Index(
         int page = Pagination.DefaultPage,
         string sortBy = "displayName",
@@ -48,6 +51,7 @@ public class CollectorYouTubeChannelsController(
     /// <summary>
     /// Shows details for a YouTube channel configuration.
     /// </summary>
+    [HttpGet("Details/{id}")]
     public async Task<IActionResult> Details(int id)
     {
         var channel = await service.GetByIdAsync(id);
@@ -70,6 +74,7 @@ public class CollectorYouTubeChannelsController(
     /// <summary>
     /// Displays the add YouTube channel form.
     /// </summary>
+    [HttpGet("Add")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public IActionResult Add()
     {
@@ -79,7 +84,7 @@ public class CollectorYouTubeChannelsController(
     /// <summary>
     /// Creates a new YouTube channel configuration for the current user.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Add")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Add(UserCollectorYouTubeChannelViewModel viewModel)
@@ -109,6 +114,7 @@ public class CollectorYouTubeChannelsController(
     /// <summary>
     /// Displays the edit YouTube channel form.
     /// </summary>
+    [HttpGet("Edit/{id}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(int id)
     {
@@ -132,7 +138,7 @@ public class CollectorYouTubeChannelsController(
     /// <summary>
     /// Updates an existing YouTube channel configuration.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Edit")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(UserCollectorYouTubeChannelViewModel viewModel)
@@ -182,7 +188,7 @@ public class CollectorYouTubeChannelsController(
     /// <summary>
     /// Shows the delete confirmation page.
     /// </summary>
-    [HttpGet]
+    [HttpGet("Delete/{id}")]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Delete(int id)
     {
@@ -206,7 +212,7 @@ public class CollectorYouTubeChannelsController(
     /// <summary>
     /// Deletes a YouTube channel configuration after confirmation.
     /// </summary>
-    [HttpPost]
+    [HttpPost("Delete")]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]

@@ -8,29 +8,22 @@ namespace JosephGuadagno.Broadcasting.Functions.HealthChecks;
 /// Validates that the required OAuth credentials and author identity are configured.
 /// A missing access token or author ID means all LinkedIn publishing operations will fail at runtime.
 /// </summary>
-internal sealed class LinkedInHealthCheck : IHealthCheck
+internal sealed class LinkedInHealthCheck(ILinkedInApplicationSettings settings) : IHealthCheck
 {
-    private readonly ILinkedInApplicationSettings _settings;
-
-    public LinkedInHealthCheck(ILinkedInApplicationSettings settings)
-    {
-        _settings = settings;
-    }
-
-    public Task<HealthCheckResult> CheckHealthAsync(
+	public Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
         var missing = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(_settings.ClientId))
-            missing.Add(nameof(_settings.ClientId));
+        if (string.IsNullOrWhiteSpace(settings.ClientId))
+            missing.Add(nameof(settings.ClientId));
 
-        if (string.IsNullOrWhiteSpace(_settings.AccessToken))
-            missing.Add(nameof(_settings.AccessToken));
+        if (string.IsNullOrWhiteSpace(settings.AccessToken))
+            missing.Add(nameof(settings.AccessToken));
 
-        if (string.IsNullOrWhiteSpace(_settings.AuthorId))
-            missing.Add(nameof(_settings.AuthorId));
+        if (string.IsNullOrWhiteSpace(settings.AuthorId))
+            missing.Add(nameof(settings.AuthorId));
 
         if (missing.Count > 0)
         {

@@ -6,14 +6,6 @@
 <div class="container">
     <h1 class="display-4 mb-4">Edit YouTube Channel</h1>
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
     <div class="card">
         <div class="card-body">
             <form asp-action="Edit" asp-controller="CollectorYouTubeChannels" method="post">

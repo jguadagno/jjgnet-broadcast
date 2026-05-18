@@ -10,35 +10,17 @@ using Scriban.Runtime;
 
 namespace JosephGuadagno.Broadcasting.Managers.Twitter;
 
-public class TwitterManager : ITwitterManager
+public class TwitterManager(
+	TwitterContext twitterContext,
+	ILogger<TwitterManager> logger,
+	ISocialMediaPlatformManager socialMediaPlatformManager,
+	IMessageTemplateDataStore messageTemplateDataStore,
+	ISyndicationFeedItemManager syndicationFeedItemManager,
+	IYouTubeItemManager youTubeItemManager,
+	IEngagementManager engagementManager)
+	: ITwitterManager
 {
-    private readonly TwitterContext _twitterContext;
-    private readonly ILogger<TwitterManager> _logger;
-    private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
-    private readonly IMessageTemplateDataStore _messageTemplateDataStore;
-    private readonly ISyndicationFeedItemManager _SyndicationFeedItemManager;
-    private readonly IYouTubeItemManager _YouTubeItemManager;
-    private readonly IEngagementManager _engagementManager;
-
-    public TwitterManager(
-        TwitterContext twitterContext,
-        ILogger<TwitterManager> logger,
-        ISocialMediaPlatformManager socialMediaPlatformManager,
-        IMessageTemplateDataStore messageTemplateDataStore,
-        ISyndicationFeedItemManager SyndicationFeedItemManager,
-        IYouTubeItemManager YouTubeItemManager,
-        IEngagementManager engagementManager)
-    {
-        _twitterContext = twitterContext;
-        _logger = logger;
-        _socialMediaPlatformManager = socialMediaPlatformManager;
-        _messageTemplateDataStore = messageTemplateDataStore;
-        _SyndicationFeedItemManager = SyndicationFeedItemManager;
-        _YouTubeItemManager = YouTubeItemManager;
-        _engagementManager = engagementManager;
-    }
-
-    public Task<string?> PublishAsync(SocialMediaPublishRequest request)
+	public Task<string?> PublishAsync(SocialMediaPublishRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Text);
@@ -52,11 +34,11 @@ public class TwitterManager : ITwitterManager
             var tweet = await TweetAsync(tweetText);
             if (tweet is null)
             {
-                _logger.LogError("Failed to send the tweet: '{TweetText}'.", tweetText);
+                logger.LogError("Failed to send the tweet: '{TweetText}'.", tweetText);
                 throw new TwitterPostException($"Failed to send tweet: '{tweetText}'.");
             }
 
-            _logger.LogDebug("Tweet sent successfully. Id: '{TweetId}'", tweet.ID);
+            logger.LogDebug("Tweet sent successfully. Id: '{TweetId}'", tweet.ID);
             return tweet.ID;
         }
         catch (TwitterPostException)
@@ -65,7 +47,7 @@ public class TwitterManager : ITwitterManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send the tweet: '{TweetText}'. Exception: '{ExceptionMessage}'", tweetText, ex.Message);
+            logger.LogError(ex, "Failed to send the tweet: '{TweetText}'. Exception: '{ExceptionMessage}'", tweetText, ex.Message);
             throw new TwitterPostException($"Failed to send tweet: '{tweetText}'.", ex);
         }
     }
@@ -76,7 +58,7 @@ public class TwitterManager : ITwitterManager
     {
         ArgumentNullException.ThrowIfNull(scheduledItem);
 
-        var twitterPlatform = await _socialMediaPlatformManager.GetByNameAsync(
+        var twitterPlatform = await socialMediaPlatformManager.GetByNameAsync(
             MessageTemplates.Platforms.Twitter, cancellationToken);
 
         if (twitterPlatform is null)
@@ -84,7 +66,7 @@ public class TwitterManager : ITwitterManager
             return scheduledItem.Message;
         }
 
-        var messageTemplate = await _messageTemplateDataStore.GetAsync(
+        var messageTemplate = await messageTemplateDataStore.GetAsync(
             twitterPlatform.Id,
             GetMessageType(scheduledItem.ItemType),
             cancellationToken);
@@ -100,7 +82,7 @@ public class TwitterManager : ITwitterManager
 
     protected virtual async Task<Tweet?> TweetAsync(string tweetText)
     {
-        return await _twitterContext.TweetAsync(tweetText);
+        return await twitterContext.TweetAsync(tweetText);
     }
 
     private static string GetMessageType(ScheduledItemType itemType) => itemType switch
@@ -127,7 +109,7 @@ public class TwitterManager : ITwitterManager
             switch (scheduledItem.ItemType)
             {
                 case ScheduledItemType.SyndicationFeedItems:
-                    var feed = await _SyndicationFeedItemManager.GetAsync(
+                    var feed = await syndicationFeedItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey, cancellationToken);
                     title = feed.Title;
                     url = feed.ShortenedUrl ?? feed.Url;
@@ -136,7 +118,7 @@ public class TwitterManager : ITwitterManager
                     break;
 
                 case ScheduledItemType.YouTubeItems:
-                    var video = await _YouTubeItemManager.GetAsync(
+                    var video = await youTubeItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey, cancellationToken);
                     title = video.Title;
                     url = video.ShortenedUrl ?? video.Url;
@@ -145,7 +127,7 @@ public class TwitterManager : ITwitterManager
                     break;
 
                 case ScheduledItemType.Engagements:
-                    var engagement = await _engagementManager.GetAsync(
+                    var engagement = await engagementManager.GetAsync(
                         scheduledItem.ItemPrimaryKey, cancellationToken);
                     title = engagement.Name;
                     url = engagement.Url;
@@ -154,7 +136,7 @@ public class TwitterManager : ITwitterManager
                     break;
 
                 case ScheduledItemType.Talks:
-                    var talk = await _engagementManager.GetTalkAsync(
+                    var talk = await engagementManager.GetTalkAsync(
                         scheduledItem.ItemPrimaryKey, cancellationToken);
                     title = talk.Name;
                     url = talk.UrlForTalk;
@@ -183,7 +165,7 @@ public class TwitterManager : ITwitterManager
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Scriban template rendering failed for Twitter scheduled item {Id}", scheduledItem.Id);
+            logger.LogWarning(ex, "Scriban template rendering failed for Twitter scheduled item {Id}", scheduledItem.Id);
             return null;
         }
     }

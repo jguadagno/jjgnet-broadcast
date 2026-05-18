@@ -4,14 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
-public partial class BroadcastingContext : DbContext
+public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> options) : DbContext(options)
 {
-
-    public BroadcastingContext(DbContextOptions<BroadcastingContext> options) : base(options)
-    {
-    }
-
-    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+	public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -51,7 +46,6 @@ public partial class BroadcastingContext : DbContext
     public DbSet<Models.UserCollectorFeedSource> UserCollectorFeedSources => Set<Models.UserCollectorFeedSource>();
     public DbSet<Models.UserCollectorYouTubeChannel> UserCollectorYouTubeChannels => Set<Models.UserCollectorYouTubeChannel>();
     public DbSet<Models.UserCollectorSpeakingEngagement> UserCollectorSpeakingEngagements => Set<Models.UserCollectorSpeakingEngagement>();
-    public DbSet<Models.UserCollectorScheduledItem> UserCollectorScheduledItems => Set<Models.UserCollectorScheduledItem>();
     public DbSet<Models.UserPublisherBlueskySettings> UserPublisherBlueskySettings => Set<Models.UserPublisherBlueskySettings>();
     public DbSet<Models.UserPublisherTwitterSettings> UserPublisherTwitterSettings => Set<Models.UserPublisherTwitterSettings>();
     public DbSet<Models.UserPublisherLinkedInSettings> UserPublisherLinkedInSettings => Set<Models.UserPublisherLinkedInSettings>();
@@ -510,7 +504,8 @@ public partial class BroadcastingContext : DbContext
 
             entity.Property(e => e.IsActive)
                 .IsRequired()
-                .HasDefaultValueSql("1");
+                .HasDefaultValueSql("1")
+                .HasSentinel(true);
         });
 
         modelBuilder.Entity<UserPublisherSetting>(entity =>
@@ -530,8 +525,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsEnabled)
-                .IsRequired()
-                .HasDefaultValueSql("0");
+                .IsRequired();
 
             entity.Property(e => e.Settings);
 
@@ -692,42 +686,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsActive)
-                .IsRequired()
-                .HasDefaultValue(true);
-
-            entity.Property(e => e.CreatedOn)
-                .IsRequired()
-                .HasColumnType("datetimeoffset")
-                .HasDefaultValueSql("sysdatetimeoffset()");
-
-            entity.Property(e => e.LastUpdatedOn)
-                .IsRequired()
-                .HasColumnType("datetimeoffset")
-                .HasDefaultValueSql("sysdatetimeoffset()");
-        });
-
-        modelBuilder.Entity<Models.UserCollectorScheduledItem>(entity =>
-        {
-            entity.HasKey(e => e.Id)
-                .HasName("PK_UserCollectorScheduledItems")
-                .IsClustered();
-
-            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserCollectorScheduledItems_Owner")
-                .IsUnique();
-
-            entity.HasIndex(e => e.CreatedByEntraOid, "IX_UserCollectorScheduledItems_Owner");
-
-            entity.Property(e => e.CreatedByEntraOid)
-                .HasMaxLength(36)
                 .IsRequired();
-
-            entity.Property(e => e.DisplayName)
-                .HasMaxLength(255)
-                .IsRequired();
-
-            entity.Property(e => e.IsActive)
-                .IsRequired()
-                .HasDefaultValue(true);
 
             entity.Property(e => e.CreatedOn)
                 .IsRequired()
@@ -774,8 +733,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsEnabled)
-                .IsRequired()
-                .HasDefaultValueSql("0");
+                .IsRequired();
 
             entity.Property(e => e.UserName)
                 .HasMaxLength(255);
@@ -805,8 +763,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsEnabled)
-                .IsRequired()
-                .HasDefaultValueSql("0");
+                .IsRequired();
 
             entity.Property(e => e.CreatedOn)
                 .IsRequired()
@@ -833,8 +790,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsEnabled)
-                .IsRequired()
-                .HasDefaultValueSql("0");
+                .IsRequired();
 
             entity.Property(e => e.AuthorId)
                 .HasMaxLength(255);
@@ -867,8 +823,7 @@ public partial class BroadcastingContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.IsEnabled)
-                .IsRequired()
-                .HasDefaultValueSql("0");
+                .IsRequired();
 
             entity.Property(e => e.PageId)
                 .HasMaxLength(255);

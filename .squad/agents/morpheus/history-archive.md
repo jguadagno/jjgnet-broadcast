@@ -1,150 +1,114 @@
-# Morpheus — History
+# Morpheus — History Archive
 
-## Core Context
+Archived data engineering context and completed migrations.
 
-- **Project:** A .NET broadcasting application using Azure Functions, ASP.NET Core API/MVC, SQL Server, and Azure infrastructure to collect and distribute social media content.
-- **Role:** Data Engineer
-- **Joined:** 2026-03-14T16:37:57.749Z
+---
+3. `SocialMediaPlatformDataStore` — Filter: `IsActive`; Sort: `name` (uses memory cache bypass)
+4. `SyndicationFeedSourceDataStore` — Sort: `title`, `url`, `author` (SourceTags loaded per-page)
+5. `UserCollectorFeedSourceDataStore` — Filter: `DisplayName`; Sort: `displayname`, `feedurl`
+6. `UserCollectorYouTubeChannelDataStore` — Filter: `DisplayName`; Sort: `displayname`, `channelid`
+7. `UserPublisherSettingDataStore` — Filter: `PlatformName`; Sort: `platformname` (MapToDomain + ProjectForResponse)
+8. `YouTubeSourceDataStore` — Sort: `title`, `url`, `author` (SourceTags loaded per-page)
 
-## Prior Work Archive (Sprints 7–10)
+**Manager implementations:**
+- `ScheduledItemManager`, `SocialMediaPlatformManager`, `SyndicationFeedSourceManager`, `UserCollectorFeedSourceManager`, `UserCollectorYouTubeChannelManager`, `UserPublisherSettingManager`, `YouTubeSourceManager` — all delegate to data stores
 
-- **PR #512 (Sprint 8):** DTO pattern merge conflict resolution — preserved both DTO layer AND pagination together. Pattern: when merging complementary refactors, keep ALL layers. Route params excluded from DTOs; `EngagementId` removed from `TalkRequest`.
-- **PR #514 (Sprint 8):** Pagination validation fixes — added `page ≥ 1`, `pageSize ≥ 1`, `pageSize ≤ 100` guards to all 8 paginated endpoints across 3 controllers.
-- **PR #517 (Sprint 9, Issue #324):** SQL Server 50MB size cap removed (`MAXSIZE = UNLIMITED`). Added `SaveChangesAsync` override to catch SQL error 1105 and throw `InvalidOperationException`. Migration: `2026-03-21-increase-database-size-limits.sql`.
-- **PR #529 (Sprint 10):** Added `ConferenceHashtag`, `ConferenceTwitterHandle` to Engagements; `BlueSkyHandle` to Engagements and Talks. Domain models nullable `string?`, EF `HasMaxLength(255)`. Pattern: every new Domain field requires simultaneous EF entity + ViewModel + DTO update to pass AutoMapper CI test.
-- **Base scripts rule established:** A migration is not complete until `table-create.sql` and `data-create.sql` are updated to the same schema state. Fresh environments provision from base scripts, not migrations.
+**Special handling patterns:**
+- **SyndicationFeedSourceDataStore** & **YouTubeSourceDataStore**: SourceTags loaded via discriminated direct queries AFTER paged result completes (not EF Include)
+- **UserPublisherSettingDataStore**: Uses `MapToDomain()` for JSON deserialization (not AutoMapper)
+- **SocialMediaPlatformManager**: Paged results bypass in-memory cache (filter/sort-specific results shouldn't use cache)
+- **UserPublisherSettingManager**: Applies `ProjectForResponse()` to each paged item to mask raw settings
+
+**Build status:** ✅ Clean; 0 errors; all interfaces fully implemented
+
+**Integration with Trinity:** Pre-staged work in working tree consumed directly by controllers; no wrapper needed
+
+---
+
+### 2026-05-28 — Issue #866 Sort Property Refactor
+
+- **Work:** Replaced hard-coded sort string literals with `nameof().ToLowerInvariant()` for compile-time safety
+  - Fixed 9 DataStore files: Engagement, MessageTemplate, ScheduledItem, SocialMediaPlatform, SyndicationFeedSource, YouTubeSource, UserCollectorFeedSource, UserCollectorYouTubeChannel, UserPublisherSetting
+  - Converted switch expressions to if/else chains using `nameof(EntityType.PropertyName).ToLowerInvariant()`
+  - Total of 18 paged `GetAllAsync` overloads updated (2 per DataStore: base + owner-filtered)
+  - All hard-coded strings like `"name"`, `"startdate"`, `"platformid"`, `"author"`, `"channelid"`, etc. now use `nameof()`
+  
+- **Pattern used:** `var sortByLower = sortBy?.ToLowerInvariant(); if (sortByLower == nameof(Model.Property).ToLowerInvariant()) { ... }`
+- **Rationale:** If property names change, the compiler will catch breaks instead of failing silently at runtime
+- **Outcome:** Clean build; 0 errors; commit 1378c3b
+- **Status:** ✅ COMPLETE
+
+---
+
+### 2026-05-27 — Issue #866 GetAll Consistency
+
+- **Work:** Standardized all `GetAllAsync` overloads with uniform paging, sorting, and filtering pushed to data layer
+  - Added sort/filter `GetAllAsync` overloads to 8 data store interfaces, 7 manager interfaces
+  - Implemented in 8 data stores: MessageTemplate, ScheduledItem, SocialMediaPlatform, SyndicationFeedSource, UserCollectorFeedSource, UserCollectorYouTubeChannel, UserPublisherSetting, YouTubeSource
+  - Implemented in 7 managers: ScheduledItem, SocialMediaPlatform, SyndicationFeedSource, UserCollectorFeedSource, UserCollectorYouTubeChannel, UserPublisherSetting, YouTubeSource
+  - Full detail in `.squad/decisions/inbox/morpheus-datalayer-getall.md`
+  
+- **Key learnings:**
+  - `SyndicationFeedSourceDataStore`/`YouTubeSourceDataStore`: SourceTags must be loaded per-page (not all-at-once) in paged overloads — loop over `dbItems` after paged query executes
+  - `UserPublisherSettingDataStore`: Uses custom `MapToDomain()` (not AutoMapper) — call after `.Include(SocialMediaPlatform)` and `ToListAsync()`
+  - `SocialMediaPlatformManager`: Paged/filtered results bypass in-memory cache since results are query-specific
+  - `UserPublisherSettingManager`: Apply `ProjectForResponse()` projection to each item in the paged result before returning
+  - `MessageTemplateDataStore`: No manager class — data store used directly by controller
+  - CS0121 ambiguity risk: When adding optional-param overloads alongside existing optional-CancellationToken overloads, callers using named `cancellationToken:` arg may see ambiguity — Tank already updated test Moq setups to use the 7-arg explicit pattern to avoid this
+
+- **Status:** ✅ COMPLETE
+
+---
+
+*Detailed work logs and learnings: See decisions.md for architectural decisions and issue-specific deep dives. Earlier work archived in git history.*
+
+---
 
 ## Learnings
 
-### 2026-04-01 — Issue Spec #574 (data layer)
-- **Issue #574** — Add paged overloads to `IScheduledItemDataStore`, `IEngagementDataStore`, `IMessageTemplateDataStore` and EF Core implementations. Introduce `PagedResult<T>` in `Domain.Models`. Do NOT remove existing parameterless overloads — Functions depends on them.
+### N+1 SourceTags pattern (Issue #855)
 
-### 2026-04-01 — Issue #574 Phase 1: Paged Data Store Overloads
-- Created `PagedResult<T>` in Domain.Models (`List<T> Items`, `int TotalCount`)
-- Added paged overloads to 5 domain interfaces; implemented in 3 Data.Sql classes
-- **IQueryable-fork pattern:** Build query → `CountAsync()` for TotalCount → OrderBy + Skip/Take + `ToListAsync` for Items
-- Sort orders: ScheduledItems by `SendOnDateTime`, Engagements by `StartDateTime`, MessageTemplates by `Platform` then `MessageType`, Talks by `Name`
-- Branch: `issue-574-paging-data-store` (Phase 1 complete; Phase 2 = Trinity)
+**Pattern found:** Both `SyndicationFeedSourceDataStore` and `YouTubeSourceDataStore` had a `foreach` loop in ALL `GetAllAsync` overloads (both non-paged and paged) that issued one `broadcastingContext.SourceTags...ToListAsync()` query per row — yielding N+1 DB roundtrips.
 
-### 2026-04-02 — Issue #602: RBAC Phase 1 Database Schema Migration
-- Migration: `scripts/database/migrations/2026-04-02-rbac-user-approval.sql`
-- Tables: `Roles`, `ApplicationUsers`, `UserRoles`, `UserApprovalLog`
-- Key decisions: Entra `oid` as NVARCHAR(36) user key; ApprovalStatus as NVARCHAR(20) string; DATETIME2 for timestamps
-- SQL conventions: `USE JJGNet; GO`, section headers, GO after each DDL, idempotent seed with `IF NOT EXISTS` guards
-- Branch: `squad/rbac-phase1`
+**Fix pattern — batched SourceTags load:**
+1. Collect page IDs: `var ids = dbItems.Select(x => x.Id).ToList();`
+2. Single batch query: `var allTags = await broadcastingContext.SourceTags.Where(st => ids.Contains(st.SourceId) && st.SourceType == SourceType).ToListAsync(ct);`
+3. Build dictionary: `var tagsBySourceId = allTags.GroupBy(t => t.SourceId).ToDictionary(g => g.Key, g => g.ToList());`
+4. Assign in-memory: `item.SourceTags = tagsBySourceId.TryGetValue(item.Id, out var tags) ? tags : new List<Models.SourceTag>();`
 
-### 2026-04-02 — Issue #602: Sync RBAC Tables to Base Schema Scripts
-- `table-create.sql` — appended 4 RBAC tables after MessageTemplates
-- `data-create.sql` — appended seed data for 3 default Roles (Administrator, Contributor, Viewer)
-- **Pattern:** Base scripts must always be updated alongside migrations.
+**AsNoTracking pattern:** Add `.AsNoTracking()` at the start of the `IQueryable<T>` chain (immediately after `broadcastingContext.DbSet`) in all read-only `GetAllAsync` overloads. Do NOT add to write operations.
 
-### 2026-04-03 — Issue #607: RBAC Phase 2 Ownership Columns
-- Added `CreatedByEntraOid NVARCHAR(36) NULL` to Engagements, Talks, ScheduledItems, MessageTemplates
-- Domain models: `public string? CreatedByEntraOid { get; set; }` (nullable)
-- EF entities: `public string? CreatedByEntraOid { get; set; }` (must match Domain nullability even in `#nullable disable`)
-- `BroadcastingContext.cs`: `.HasMaxLength(36)` (no `.IsRequired()`)
-- Branch: `squad/rbac-phase2` | Branch discipline: always confirm `git branch --show-current` before committing
+**SQL Server idempotency pattern for indexes:**
+```sql
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_...' AND object_id = OBJECT_ID('dbo.TableName'))
+    CREATE INDEX IX_... ON dbo.TableName (...);
+GO
+```
 
-### 2026-04-03 — Issue #607: RBAC Phase 2 Followup - CreatedByEntraOid Nullability Fix
-- Changed `public string CreatedByEntraOid` → `public string? CreatedByEntraOid` in all 4 Data.Sql entity models
-- **Pattern established:** When Domain models have nullable reference types, Data.Sql entity models must match, even in `#nullable disable` contexts.
-- Commit: `ebc5ba8`
+**Applied to:** SyndicationFeedSourceDataStore, YouTubeSourceDataStore (all GetAllAsync overloads), EngagementDataStore, ScheduledItemDataStore (paged overloads only). DB indexes added for Engagements, SyndicationFeedSources, YouTubeSources, ScheduledItems, SocialMediaPlatforms sort/filter columns.
 
-Established by Joseph Guadagno:
+### FeedChecks user separation (Issue #950)
 
-1. **PR Merge Authority**: Only Joseph may merge PRs
-2. **Mapping**: All object mapping must use AutoMapper profiles
-3. **Paging/Sorting/Filtering**: Must be at the data layer only
+**Pattern:** When a table must support both system-level (timer-triggered, no user) and user-scoped records, use empty string (`''`) as the sentinel EntraOId for system rows rather than NULL. This keeps the column `NOT NULL`, allows a clean composite unique constraint `(Name, EntraOId)`, and avoids nullable comparison edge cases in SQL Server unique indexes.
 
-### 2026-04-04 — PR #662 (Issue #323): Junction Table SourceType Discriminator Pattern
-- Fixed EF navigation property data bleed in `dbo.SourceTags` junction table shared between `SyndicationFeedSources` and `YouTubeSources`
-- **Problem:** Both entities used IDENTITY(1,1) PKs; EF's `Include(s => s.SourceTags)` returned tags for BOTH SourceId=1 rows (wrong SourceType)
-- **Solution:** Direct query pattern with SourceType filter: `broadcastingContext.SourceTags.Where(st => st.SourceId == id && st.SourceType == SourceType).ToListAsync()`
-- **Transaction safety:** Wrapped entity save + junction sync in `BeginTransactionAsync`/`CommitAsync` to prevent partial failures
-- **EF config:** Added warning comments to BroadcastingContext.OnModelCreating — nav properties kept for writes but NEVER use Include for reads
-- Applied to: SyndicationFeedSourceDataStore and YouTubeSourceDataStore (all Get/GetAll/Save/Delete methods)
-- Branch: `squad/323-tags-junction-table` | Commit: `1f59fb4`
+**Migration pattern:** Add column as `NULL` first → `UPDATE ... SET = ''` → `ALTER COLUMN ... NOT NULL` → `ADD CONSTRAINT DEFAULT`. This two-step approach allows backfilling existing rows safely before tightening nullability.
 
-### 2026-04-09 — PR #662 (Issue #323): Unique Index on SourceTags Junction Table
-- Added unique constraint `UX_SourceTags_SourceId_SourceType_Tag` to prevent duplicate tag rows during concurrent SyncSourceTagsAsync calls
-- Applied in migration script (2026-04-09-sourcetags-junction.sql) AND EF model (BroadcastingContext.cs) for consistency
-- Documented STRING_SPLIT compatibility: SQL Server 2016+ compatible without ordinal arg since tag ordering is irrelevant for seeding
-- **Pattern:** Junction table unique constraints protect delete+re-insert sync patterns from race conditions
-- Branch: `squad/323-tags-junction-table` | Commit: `8db7dea`
+**Constraint swap pattern:** Use `IF EXISTS` guard before dropping the old single-column unique constraint; use `IF NOT EXISTS` guard before adding the new composite unique constraint. Both guards are idempotent so the migration is safe to re-run.
 
-### 2026-04-09 — PR #662 Merge: Resolved merge conflicts with origin/main
+**Applied to:** `dbo.FeedChecks` — dropped `FeedChecks_Unique_Name`, added `UQ_FeedChecks_Name_EntraOId` on `(Name, EntraOId)`, added `DF_FeedChecks_EntraOId` default `('')`.
 
-- **Conflicts resolved:** 5 code/SQL files + 5 .squad/ files
-- **BroadcastingContext.cs:** Kept our warning comments + integrated main's `HasMany` nav property config. Added our `UX_SourceTags_SourceId_SourceType_Tag` unique index to the SourceTag entity config (main had the SourceTag config at bottom but without unique index).
-- **SyndicationFeedSourceDataStore.cs / YouTubeSourceDataStore.cs:** Kept our direct-query pattern (`Where(st => st.SourceId == id && st.SourceType == SourceType)`) and `BeginTransactionAsync` throughout all methods. Main's version used `Include()` which causes SourceType bleed.
-- **HashTagLists.cs:** Took main's version (intermediate `tagList` variable — functionally identical to our one-liner).
-- **2026-04-09-sourcetags-junction.sql:** Kept our version (includes unique index + STRING_SPLIT compat comment). Main had the same file without the unique index (earlier commit of the same migration).
-- **.squad/ files:** Used `git checkout --ours` for all 5 — Scribe handles these separately.
-- **Build:** 0 errors after resolution. | Commit: `fdc8114`
+### Schema-Sync Validation — UserCollectorYouTubeChannels (2026-05-12)
 
+**Skill created:** `.squad/skills/schema-sync-validation/SKILL.md` — reusable checklist for validating SQL DDL, EF entity, fluent config, domain model, mapper, and SaveAsync are all in sync for any table.
 
-### 2026-04-08 — Epic #667 Assigned: Social Media Platforms (DB Schema)
-- **Task:** Design and implement DB migration for dbo.SocialMediaPlatforms lookup table + dbo.EngagementSocialMediaPlatforms junction table
-- **Replacing:** Ad-hoc columns BlueSkyHandle, ConferenceHashtag, ConferenceTwitterHandle on dbo.Engagements and BlueSkyHandle on dbo.Talks
-- **Also in scope (pending Joseph):** ScheduledItems.Platform (nvarchar FK→int?) and MessageTemplates.Platform (composite PK — high-impact)
-- **Status:** 🔴 BLOCKED — awaiting Joseph's answers to 6 open architecture questions (see .squad/decisions.md → Epic #667 section)
-- **Triage source:** Neo (issue #667)
+**Key drift patterns found on UserCollectorYouTubeChannels:**
 
+1. **Data annotation / fluent length mismatch (non-breaking):** `CreatedByEntraOid` entity has `[MaxLength(100)]` but SQL is `nvarchar(36)` and fluent config has `.HasMaxLength(36)`. `ChannelId` entity has `[MaxLength(255)]` but SQL is `nvarchar(50)` and fluent config has `.HasMaxLength(50)`. Fluent wins at runtime, but annotations mislead reviewers.
 
-### 2026-04-08 — Epic #667 Architecture Decisions Resolved
-- **Status change:** 🟢 UNBLOCKED — Joseph answered all 6 open architecture questions
-- **Key decisions affecting Morpheus (DB):**
-  - dbo.SocialMediaPlatforms: Id, Name, Url, Icon, IsActive (bool soft delete)
-  - dbo.EngagementSocialMediaPlatforms: EngagementId FK + SocialMediaPlatformId FK + Handle; composite PK
-  - Talks inherit from parent Engagement (no separate junction table)
-  - ScheduledItems.Platform: DROP nvarchar → ADD SocialMediaPlatformId int FK (breaking change)
-  - MessageTemplates.Platform: migrate to SocialMediaPlatformId FK (careful — currently in composite PK)
-  - Seed: Twitter/X, BlueSky, LinkedIn, Facebook, Mastodon
-- **Next:** Morpheus first in pipeline — begin DB migration script
-=======
+2. **`IsRequired(false)` on NOT NULL column (breaking risk):** `PlaylistId` fluent config uses `.IsRequired(false)` but the SQL column is `NOT NULL`. EF Core will treat the property as optional, which can cause incorrect SQL generation. Should be `.IsRequired()`.
 
-### 2026-04-08 — Epic #667 Phase 1: Database Layer Complete
-- **Migration:** `scripts/database/migrations/2026-04-08-social-media-platforms.sql`
-  - Created SocialMediaPlatforms table (Id, Name UNIQUE, Url, Icon, IsActive)
-  - Created EngagementSocialMediaPlatforms junction table (composite PK on EngagementId + SocialMediaPlatformId)
-  - Migrated ScheduledItems.Platform (nvarchar) → SocialMediaPlatformId (int FK) with best-effort string mapping
-  - Migrated MessageTemplates.Platform (composite PK component) → SocialMediaPlatformId (int FK, new PK)
-  - Dropped old columns: Engagements (BlueSkyHandle, ConferenceHashtag, ConferenceTwitterHandle), Talks (BlueSkyHandle)
-  - Seeded 5 platforms: Twitter, BlueSky, LinkedIn, Facebook, Mastodon
-- **Base scripts updated:** `table-create.sql` and `data-seed.sql` reflect post-migration schema
-- **EF Core:**
-  - Created entity models: `SocialMediaPlatform.cs`, `EngagementSocialMediaPlatform.cs`
-  - Updated existing entities: Engagement, Talk, ScheduledItem, MessageTemplate (removed old social fields, added FK refs)
-  - Updated `BroadcastingContext.cs` with new DbSets, composite PK config, FK relationships, unique indexes
-- **Domain:**
-  - Created domain models: `SocialMediaPlatform.cs`, `EngagementSocialMediaPlatform.cs`
-  - Updated existing: Engagement, Talk, ScheduledItem, MessageTemplate (replaced string Platform with int SocialMediaPlatformId)
-- **Repository:**
-  - Created `ISocialMediaPlatformDataStore` interface (GetAsync, GetAllAsync, AddAsync, UpdateAsync, DeleteAsync)
-  - Implemented `SocialMediaPlatformDataStore` with soft delete logic (IsActive flag)
-  - Updated `IMessageTemplateDataStore` and `MessageTemplateDataStore` to use int SocialMediaPlatformId instead of string Platform
-- **AutoMapper:** Added mappings for SocialMediaPlatform ↔ EngagementSocialMediaPlatform (bidirectional ReverseMap)
-- **DI Registration:** Added `ISocialMediaPlatformDataStore` → `SocialMediaPlatformDataStore` to Api Program.cs
-- **Decision doc:** `.squad/decisions/inbox/morpheus-667-db-decisions.md` (migration strategy, PK migration approach, risks)
-- **Status:** ✅ Database layer complete. Breaking changes to MessageTemplate interface require updates in Functions and Web (out of scope for Morpheus — Trinity and Cypher to handle).
-- **Branch:** `issue-667-social-media-platforms`
+3. **Drop migration without corresponding add migration:** A `2026-05-12-youtube-channels-drop-apikeysecretname.sql` migration exists, but no add migration for `ApiKeySecretName` is present in the migrations folder. `ApiKeySecretName` was apparently added directly to a database without a formal migration. The drop migration uses `IF EXISTS` guard so it's idempotent, but the migrations chain is incomplete. `table-create.sql` baseline is already clean (no `ApiKeySecretName`).
 
-### 2026-04-08 — Epic #667: PR #683 Opened (Draft)
-- **PR:** https://github.com/jguadagno/jjgnet-broadcast/pull/683
-- **Status:** Draft PR (build broken with 14 expected compile errors from breaking changes)
-- **Breaking change:** `IMessageTemplateDataStore.GetAsync(string platform, ...)` → `GetAsync(int socialMediaPlatformId, ...)`
-- **Impact:** Functions (Twitter, Facebook, LinkedIn), Api, and Web require updates in Sprint 2 (Trinity) and Sprint 3 (Switch/Sparks)
-- **Closes:** #668, #669, #670, #671, #672, #673 (Sprint 1 child issues)
-- **Label:** squad:morpheus
-- **Pattern:** For large cross-cutting changes, use draft PRs to show DB foundation while acknowledging downstream compilation errors. Clearly document expected failures and remediation owners.
+**SaveAsync status:** Already correctly writes `PlaylistId` and `ResultSetPageSize`. Does NOT write `ApiKeySecretName` (already removed). Correctly writes `DisplayName`, `IsActive`, `LastUpdatedOn`. Correctly sets `CreatedOn` only on insert.
 
-### 2026-04-08 — Epic #667: PR #683 Review Fix (bi-bluesky icon)
-- **Review comment:** Reviewer flagged line 78 of migration script — `bi-cloud` should be `bi-bluesky` for BlueSky platform
-- **Files fixed:**
-  - `scripts/database/migrations/2026-04-08-social-media-platforms.sql` (line 78)
-  - `scripts/database/data-seed.sql` (line 78)
-- **Pattern:** Bootstrap icon class names for social platforms must match official icon library names. BlueSky uses `bi-bluesky`, not `bi-cloud`.
-- **Process:** Fixed in both migration script AND base seed data script (consistency rule).
-- **Commit:** `c864f74` — `fix(#667): Use correct Bootstrap icon bi-bluesky for BlueSky platform seed data`
-- **PR reply:** Posted via `gh api repos/.../pulls/683/comments/{comment_id}/replies` to confirm fix and close review thread
-
+**Migrations baseline check:** `table-create.sql` is the cumulative result of all migrations (PlaylistId and ResultSetPageSize present, ApiKeySecretName absent). The migrations sequence itself has the gap noted above but the baseline is authoritative for fresh environments.

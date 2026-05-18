@@ -11,7 +11,6 @@ namespace JosephGuadagno.Broadcasting.Functions.Publishers;
 
 public class ScheduledItems(
     IScheduledItemManager scheduledItemManager,
-    IUserCollectorScheduledItemManager userCollectorScheduledItemManager,
     IEventPublisher eventPublisher,
     IFeedCheckManager feedCheckManager,
     ILogger<ScheduledItems> logger)
@@ -23,59 +22,34 @@ public class ScheduledItems(
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.PublishersScheduledItems, startedAt);
 
-        var activeConfigs = await userCollectorScheduledItemManager.GetAllActiveAsync();
-        if (activeConfigs.Count == 0)
-        {
-            logger.LogDebug("No active scheduled item configurations found");
-            return;
-        }
-
         logger.LogDebug("Checking for scheduled items that have not been fired");
         var allScheduledItems = await scheduledItemManager.GetScheduledItemsToSendAsync();
 
         if (allScheduledItems.Count == 0)
         {
-            foreach (var cfg in activeConfigs)
-            {
-                var noop = await feedCheckManager.GetByNameAsync(
-                    ConfigurationFunctionNames.PublishersScheduledItems, cfg.CreatedByEntraOid
-                ) ?? new FeedCheck
-                {
-                    Name = ConfigurationFunctionNames.PublishersScheduledItems,
-                    LastCheckedFeed = startedAt,
-                    LastItemAddedOrUpdated = DateTimeOffset.MinValue,
-                    EntraOId = cfg.CreatedByEntraOid
-                };
-                noop.LastCheckedFeed = startedAt;
-                await feedCheckManager.SaveAsync(noop);
-            }
             logger.LogDebug("No new scheduled items found");
             return;
         }
 
-        foreach (var config in activeConfigs)
+        var itemsByOwner = allScheduledItems
+            .Where(item => !string.IsNullOrWhiteSpace(item.CreatedByEntraOid))
+            .GroupBy(item => item.CreatedByEntraOid!)
+            .ToList();
+
+        foreach (var ownerGroup in itemsByOwner)
         {
-            var userItems = allScheduledItems
-                .Where(item => item.CreatedByEntraOid == config.CreatedByEntraOid)
-                .ToList();
+            var ownerOid = ownerGroup.Key;
+            var userItems = ownerGroup.ToList();
 
             var feedCheck = await feedCheckManager.GetByNameAsync(
-                ConfigurationFunctionNames.PublishersScheduledItems, config.CreatedByEntraOid
+                ConfigurationFunctionNames.PublishersScheduledItems, ownerOid
             ) ?? new FeedCheck
             {
                 Name = ConfigurationFunctionNames.PublishersScheduledItems,
                 LastCheckedFeed = startedAt,
                 LastItemAddedOrUpdated = DateTimeOffset.MinValue,
-                EntraOId = config.CreatedByEntraOid
+                EntraOId = ownerOid
             };
-
-            if (userItems.Count == 0)
-            {
-                feedCheck.LastCheckedFeed = startedAt;
-                await feedCheckManager.SaveAsync(feedCheck);
-                logger.LogDebug("No new scheduled items for owner '{OwnerOid}'", config.CreatedByEntraOid);
-                continue;
-            }
 
             try
             {
@@ -85,7 +59,7 @@ public class ScheduledItems(
             catch (EventPublishException ex)
             {
                 logger.LogError(ex, "Failed to publish scheduled item events for owner '{OwnerOid}' ({Count} item(s))",
-                    config.CreatedByEntraOid, userItems.Count);
+                    ownerOid, userItems.Count);
                 foreach (var scheduledItem in userItems)
                 {
                     logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
@@ -113,7 +87,7 @@ public class ScheduledItems(
             await feedCheckManager.SaveAsync(feedCheck);
 
             logger.LogInformation("Published {Count} scheduled item(s) for owner '{OwnerOid}'",
-                userItems.Count, config.CreatedByEntraOid);
+                userItems.Count, ownerOid);
         }
 
         logger.LogDebug("Done publishing the events for scheduled items");

@@ -17,7 +17,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Collectors.SyndicationFeed;
 public class LoadAllPosts(
     ISyndicationFeedReader syndicationFeedReader,
     IOptions<Settings> settingsOptions,
-    ISyndicationFeedItemManager SyndicationFeedItemManager,
+    ISyndicationFeedItemManager syndicationFeedItemManager,
     IFeedCheckManager feedCheckManager,
     IUrlShortener urlShortener,
     ILogger<LoadAllPosts> logger)
@@ -68,9 +68,8 @@ public class LoadAllPosts(
             var savedCount = 0;
             foreach (var item in newItems)
             {
-                // Skip if item already exists
-                var existingItem = await SyndicationFeedItemManager.GetByFeedIdentifierAsync(item.FeedIdentifier);
-                if (existingItem != null)
+                // Skip if item already exists for this user
+                if (!await syndicationFeedItemManager.IsFeedItemUniqueToUser(item.FeedIdentifier, userOid))
                 {
                     logger.LogDebug("Skipping duplicate syndication feed item with FeedIdentifier: '{FeedIdentifier}', for user '{UserOid}'", item.FeedIdentifier, userOid);
                     continue;
@@ -81,7 +80,7 @@ public class LoadAllPosts(
 
                 try
                 {
-                    var saveResult = await SyndicationFeedItemManager.SaveAsync(item);
+                    var saveResult = await syndicationFeedItemManager.SaveAsync(item);
                     if (!saveResult.IsSuccess || saveResult.Value is null)
                     {
                         logger.LogError("Failed to save the blog post for user '{UserOId}' with the id of: '{Id}' Url:'{Url}'. Error: {Error}",

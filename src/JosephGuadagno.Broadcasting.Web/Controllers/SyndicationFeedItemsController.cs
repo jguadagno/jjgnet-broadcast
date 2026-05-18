@@ -15,17 +15,17 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
 public class SyndicationFeedItemsController : Controller
 {
-    private readonly ISyndicationFeedItemService _SyndicationFeedItemService;
+    private readonly ISyndicationFeedItemService _syndicationFeedItemService;
     private readonly IMapper _mapper;
 
     /// <summary>
     /// Constructor for the SyndicationFeedItemsController
     /// </summary>
-    /// <param name="SyndicationFeedItemService">The syndication feed source service</param>
+    /// <param name="syndicationFeedItemService">The syndication feed source service</param>
     /// <param name="mapper">The mapper service</param>
-    public SyndicationFeedItemsController(ISyndicationFeedItemService SyndicationFeedItemService, IMapper mapper)
+    public SyndicationFeedItemsController(ISyndicationFeedItemService syndicationFeedItemService, IMapper mapper)
     {
-        _SyndicationFeedItemService = SyndicationFeedItemService;
+        _syndicationFeedItemService = syndicationFeedItemService;
         _mapper = mapper;
     }
 
@@ -35,7 +35,7 @@ public class SyndicationFeedItemsController : Controller
     /// <returns>Returns a List&lt;<see cref="SyndicationFeedItemViewModel"/>&gt;.</returns>
     public async Task<IActionResult> Index(int page = Pagination.DefaultPage, string sortBy = "name", bool sortDescending = false, string? filter = null)
     {
-        var result = await _SyndicationFeedItemService.GetAllAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
+        var result = await _syndicationFeedItemService.GetAllAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
         var viewSources = _mapper.Map<List<SyndicationFeedItemViewModel>>(result.Items);
 
         ViewBag.Page = page;
@@ -58,7 +58,7 @@ public class SyndicationFeedItemsController : Controller
     /// <returns>A <see cref="SyndicationFeedItemViewModel"/></returns>
     public async Task<IActionResult> Details(int id)
     {
-        var source = await _SyndicationFeedItemService.GetAsync(id);
+        var source = await _syndicationFeedItemService.GetAsync(id);
         if (source == null)
         {
             return NotFound();
@@ -106,7 +106,7 @@ public class SyndicationFeedItemsController : Controller
         var sourceToAdd = _mapper.Map<SyndicationFeedItem>(itemViewModel);
         sourceToAdd.CreatedByEntraOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId) ?? string.Empty;
         
-        var savedSource = await _SyndicationFeedItemService.SaveAsync(sourceToAdd);
+        var savedSource = await _syndicationFeedItemService.SaveAsync(sourceToAdd);
         if (savedSource == null)
         {
             TempData["ErrorMessage"] = "Failed to add the syndication feed source.";
@@ -126,7 +126,7 @@ public class SyndicationFeedItemsController : Controller
     [Authorize(Policy = AuthorizationPolicyNames.RequireAdministrator)]
     public async Task<IActionResult> Delete(int id)
     {
-        var source = await _SyndicationFeedItemService.GetAsync(id);
+        var source = await _syndicationFeedItemService.GetAsync(id);
         if (source == null)
         {
             return NotFound();
@@ -157,7 +157,7 @@ public class SyndicationFeedItemsController : Controller
     [Authorize(Policy = AuthorizationPolicyNames.RequireAdministrator)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
-        var source = await _SyndicationFeedItemService.GetAsync(id);
+        var source = await _syndicationFeedItemService.GetAsync(id);
         if (source == null) return NotFound();
 
         if (!User.IsInRole(RoleNames.SiteAdministrator))
@@ -170,7 +170,7 @@ public class SyndicationFeedItemsController : Controller
             }
         }
 
-        var result = await _SyndicationFeedItemService.DeleteAsync(id);
+        var result = await _syndicationFeedItemService.DeleteAsync(id);
         if (result)
         {
             TempData["SuccessMessage"] = "Syndication feed source deleted successfully.";

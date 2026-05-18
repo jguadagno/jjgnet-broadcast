@@ -81,3 +81,59 @@ Established by Joseph Guadagno:
 - Root cause of addition: PR #646 review used single-backtick fences; GitHub rendered broken inline code (words truncated, multi-line collapsed)
 - Charter updated with enforcement rule (## How I Work)
 - Read .squad/skills/github-comment-formatting/SKILL.md before posting any PR review or issue comment containing code
+
+### 2026-05-16: YouTube Key Vault Secret Name Underscore Violation
+
+**Context:** Users saving a YouTube Channel collector caused Key Vault secret creation to fail with a naming violation. The secret name contained underscores because the `discriminator` parameter (the YouTube Channel ID, e.g. `UC_my_channel`) was inserted raw into the secret name without sanitization.
+
+**Root Cause:** `KeyVaultSecretNameBuilder.Build()` applied `SecretNameSanitizer` only to `ownerOid`. The `discriminator` parameter — a user-supplied YouTube Channel ID — was concatenated directly into the name string, bypassing all sanitization.
+
+**Fix:** Extracted a `SanitizeSegment()` private helper from the existing compiled regex (`[^a-zA-Z0-9\-]` → `"-"`) and applied it to **all** string components: `ownerOid`, `platform`, `settingName`, and `discriminator`. The `platform` and `settingName` parameters are currently always passed as `KeyVaultSecretNames` constants (already clean), but sanitizing them is a required defence-in-depth guard.
+
+**Tests Added:** `Build_WithSpecialCharsInDiscriminator_SanitizesToHyphens` (3 cases covering `_`, mixed `_` with digits, and `@#!` characters).
+
+**Security Rule to Remember:**
+- **Every component that feeds into a Key Vault secret name must pass through `SanitizeSegment()`** before concatenation — no exceptions, even for "constant" values.
+- YouTube Channel IDs are user-supplied and CAN contain underscores or other special characters; never trust them as pre-sanitized.
+
+**Commit:** `fix(keyvault): sanitize underscores in Key Vault secret names` (branch: issue-972-end-user-validation)
+
+### 2026-05-16: YouTube Channel ID Collision — Sanitization Is Insufficient, Must Hash
+
+**Context:** The previous fix (above) replaced `_` and other special chars with `-` in the discriminator segment. Joe identified that this creates a **silent collision**: YouTube Channel IDs use base64url encoding where both `-` and `_` are valid, meaningful characters. Two distinct channel IDs (`UCabc-def` and `UCabc_def`) would sanitize to the same name, causing one user's Key Vault secret to silently overwrite another's.
+
+**Root Cause:** Simple character-substitution sanitization is not collision-safe for base64url-encoded identifiers. It only ensures the output is Key-Vault-safe, not that distinct inputs produce distinct outputs.
+
+**Fix:** Replaced `SanitizeSegment(discriminator)` with `HashDiscriminator(discriminator)` in `KeyVaultSecretNameBuilder.Build()`. `HashDiscriminator()` computes the SHA-256 hash of the discriminator (UTF-8), takes the first 8 bytes, and returns 16 lowercase hex characters. Properties:
+- **Deterministic:** Same channel ID → always same hash → always same Key Vault name.
+- **Collision-resistant:** SHA-256 truncated to 64 bits — astronomically unlikely to collide for any realistic user-set size.
+- **No character restrictions:** Any Unicode input maps to a safe `[a-z0-9]` hex string.
+- **Key Vault compliant:** 16 hex chars fits easily within the 127-char name limit.
+
+`SanitizeSegment()` is retained for `ownerOid`, `platform`, and `settingName` — those are controlled values not subject to base64url collision risk.
+
+**Security Rule to Remember:**
+- **Sanitization alone is not safe for user-supplied discriminators that use base64url encoding.** When the identifier space includes both `-` and `_` as semantically distinct characters, you MUST hash to avoid silent collisions.
+- SHA-256 (first 8 bytes, hex) is the standard approach for turning arbitrary identifiers into short, safe, collision-resistant Key Vault name segments.
+
+**Tests Updated:**
+- Removed `Build_WithSpecialCharsInDiscriminator_SanitizesToHyphens` (wrong premise).
+- Added `Build_WithUnderscoreDiscriminator_ProducesConsistentHash` — proves `UCabc_def` ≠ `UCabc-def` in output.
+- Added `Build_WithDiscriminator_OutputContainsOnlyLowercaseHexInDiscriminatorSegment` — proves all output chars are `[a-z0-9-]`.
+- Updated `Build_WithDiscriminator_InsertsHashedDiscriminatorBetweenPlatformAndSettingName` with correct hash-based expected values.
+
+**Commit:** `fix(keyvault): use SHA-256 hash for discriminator in secret names to prevent base64url collisions` (branch: issue-972-end-user-validation)
+
+### 2026-05-16: Session Close — Decisions Archive Established
+
+**Context:** Scribe processed 3 inbox decision files from issue-972-end-user-validation and merged them into decisions.md. Orchestration logs created for Oracle and Sparks agents. All team updates recorded in cross-agent history.
+
+**Actions Taken:**
+1. Merged oracle-keyvault-secret-name-sanitization.md → decisions.md (Hash Discriminator decision)
+2. Merged sparks-filter-button-loading-text.md → decisions.md (Form loading text decision)
+3. Merged sparks-localhost-url-validation.md → decisions.md (Development URL validation decision)
+4. Deleted all 3 inbox files
+5. Created orchestration logs for Oracle and Sparks
+6. No history files required summarization (all < 15360 bytes)
+
+**Status:** All session artifacts committed to .squad/. Ready for next sprint.

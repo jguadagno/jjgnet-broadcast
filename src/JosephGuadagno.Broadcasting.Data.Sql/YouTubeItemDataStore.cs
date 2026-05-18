@@ -164,6 +164,13 @@ public class YouTubeItemDataStore(BroadcastingContext broadcastingContext, IMapp
         return dbYouTubeItem is null ? null : mapper.Map<Domain.Models.YouTubeItem>(dbYouTubeItem);
     }
 
+    public async Task<bool> IsVideoUniqueToUser(string videoId, string ownerOid, CancellationToken cancellationToken = default)
+    {
+        return !await broadcastingContext.YouTubeItems
+            .AsNoTracking()
+            .AnyAsync(y => y.VideoId == videoId && y.CreatedByEntraOid == ownerOid, cancellationToken);
+    }
+
     public async Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default)
     {
         var ownerOid = await broadcastingContext.YouTubeItems

@@ -8,26 +8,19 @@ namespace JosephGuadagno.Broadcasting.Functions.HealthChecks;
 /// Validates that the Bluesky account credentials are configured.
 /// Missing credentials mean all Bluesky posting operations will fail at runtime.
 /// </summary>
-internal sealed class BlueskyHealthCheck : IHealthCheck
+internal sealed class BlueskyHealthCheck(IBlueskySettings settings) : IHealthCheck
 {
-    private readonly IBlueskySettings _settings;
-
-    public BlueskyHealthCheck(IBlueskySettings settings)
-    {
-        _settings = settings;
-    }
-
-    public Task<HealthCheckResult> CheckHealthAsync(
+	public Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
         var missing = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(_settings.BlueskyUserName))
-            missing.Add(nameof(_settings.BlueskyUserName));
+        if (string.IsNullOrWhiteSpace(settings.BlueskyUserName))
+            missing.Add(nameof(settings.BlueskyUserName));
 
-        if (string.IsNullOrWhiteSpace(_settings.BlueskyPassword))
-            missing.Add(nameof(_settings.BlueskyPassword));
+        if (string.IsNullOrWhiteSpace(settings.BlueskyPassword))
+            missing.Add(nameof(settings.BlueskyPassword));
 
         if (missing.Count > 0)
         {

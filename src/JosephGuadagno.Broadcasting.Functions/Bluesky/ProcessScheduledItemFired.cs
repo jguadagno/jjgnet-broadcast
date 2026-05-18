@@ -16,8 +16,8 @@ namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 public class ProcessScheduledItemFired(
     IScheduledItemManager scheduledItemManager,
     IEngagementManager engagementManager,
-    ISyndicationFeedItemManager SyndicationFeedItemManager,
-    IYouTubeItemManager YouTubeItemManager,
+    ISyndicationFeedItemManager syndicationFeedItemManager,
+    IYouTubeItemManager youTubeItemManager,
     IBlueskyManager blueskyManager,
     ILogger<ProcessScheduledItemFired> logger)
 {
@@ -98,9 +98,9 @@ public class ProcessScheduledItemFired(
         return scheduledItem.ItemType switch
         {
             ScheduledItemType.SyndicationFeedItems =>
-                (await SyndicationFeedItemManager.GetAsync(scheduledItem.ItemPrimaryKey)).Url,
+                (await syndicationFeedItemManager.GetAsync(scheduledItem.ItemPrimaryKey)).Url,
             ScheduledItemType.YouTubeItems =>
-                (await YouTubeItemManager.GetAsync(scheduledItem.ItemPrimaryKey)).Url,
+                (await youTubeItemManager.GetAsync(scheduledItem.ItemPrimaryKey)).Url,
             ScheduledItemType.Engagements =>
                 (await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey)).Url,
             ScheduledItemType.Talks =>

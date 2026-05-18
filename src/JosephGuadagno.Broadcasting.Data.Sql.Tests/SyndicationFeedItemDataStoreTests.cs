@@ -1,4 +1,5 @@
 using AutoMapper;
+using FluentAssertions;
 using JosephGuadagno.Broadcasting.Data.Sql.Models;
 
 using Microsoft.EntityFrameworkCore;
@@ -345,6 +346,58 @@ public class SyndicationFeedItemDataStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task IsFeedItemUniqueToUser_ReturnsTrue_WhenItemDoesNotExistForUser()
+    {
+        // Arrange
+        SeedData();
+
+        // Act
+        var result = await _dataStore.IsFeedItemUniqueToUser("non-existent-feed", "user1");
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsFeedItemUniqueToUser_ReturnsFalse_WhenItemAlreadyExistsForUser()
+    {
+        // Arrange
+        SeedData();
+
+        // Act — "post1" exists for "user1"
+        var result = await _dataStore.IsFeedItemUniqueToUser("post1", "user1");
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task IsFeedItemUniqueToUser_ReturnsTrue_WhenSameItemExistsForDifferentUser()
+    {
+        // Arrange
+        SeedData();
+
+        // Act — "post1" exists for "user1" but not "user2"
+        var result = await _dataStore.IsFeedItemUniqueToUser("post1", "user2");
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsFeedItemUniqueToUser_ReturnsTrue_WhenDifferentItemExistsForSameUser()
+    {
+        // Arrange
+        SeedData();
+
+        // Act — "post2" exists for "user1", checking a non-existent feed for user1
+        var result = await _dataStore.IsFeedItemUniqueToUser("post2", "user2");
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task SaveAsync_ThrowsApplicationException_WhenSaveReturnsZero()
     {
         var options = new DbContextOptionsBuilder<BroadcastingContext>()
@@ -375,11 +428,10 @@ public class SyndicationFeedItemDataStoreTests : IDisposable
     }
 }
 
-internal sealed class FailingSaveBroadcastingContext : BroadcastingContext
+internal sealed class FailingSaveBroadcastingContext(DbContextOptions<BroadcastingContext> options)
+	: BroadcastingContext(options)
 {
-    public FailingSaveBroadcastingContext(DbContextOptions<BroadcastingContext> options) : base(options) { }
-
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+	public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(0);
     }

@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
 public class ProcessNewYouTubeDataFired(
-    IYouTubeItemManager YouTubeItemManager,
+    IYouTubeItemManager youTubeItemManager,
     ILogger<ProcessNewYouTubeDataFired> logger)
 {
 
@@ -52,34 +52,34 @@ public class ProcessNewYouTubeDataFired(
             logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
             return null;
         }
-        var YouTubeItem = await YouTubeItemManager.GetAsync(newYouTubeItemEvent.Id);
+        var youTubeItem = await youTubeItemManager.GetAsync(newYouTubeItemEvent.Id);
 
-        logger.LogDebug("Composing tweet for  for '{Id}' with title of '{Title}'", YouTubeItem.Id, YouTubeItem.Title);
+        logger.LogDebug("Composing tweet for  for '{Id}' with title of '{Title}'", youTubeItem.Id, youTubeItem.Title);
             
-        var status = ComposeTweet(YouTubeItem);
+        var status = ComposeTweet(youTubeItem);
 
         // Done
         var properties = new Dictionary<string, string>
         {
             {"post", status},
-            {"title", YouTubeItem.Title},
-            {"url", YouTubeItem.Url},
-            {"id", YouTubeItem.Id.ToString()}
+            {"title", youTubeItem.Title},
+            {"url", youTubeItem.Url},
+            {"id", youTubeItem.Id.ToString()}
         };
         logger.LogCustomEvent(Metrics.TwitterProcessedNewYouTubeData, properties);
-        logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", YouTubeItem.Id, YouTubeItem.Title);
-        return new TwitterTweetMessage { Text = status, CreatedByEntraOid = YouTubeItem.CreatedByEntraOid };
+        logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", youTubeItem.Id, youTubeItem.Title);
+        return new TwitterTweetMessage { Text = status, CreatedByEntraOid = youTubeItem.CreatedByEntraOid };
     }
         
-    private string ComposeTweet(YouTubeItem YouTubeItem)
+    private string ComposeTweet(YouTubeItem youTubeItem)
     {
         const int maxTweetLength = 240;
             
         // Build Tweet
-        var tweetStart = YouTubeItem.ItemLastUpdatedOn > YouTubeItem.PublicationDate ? "Updated Blog Post: " : "New Blog Post: ";
-        var url = YouTubeItem.ShortenedUrl ?? YouTubeItem.Url;
-        var postTitle = YouTubeItem.Title;
-        var hashTagList = HashTagLists.BuildHashTagList(YouTubeItem.Tags);
+        var tweetStart = youTubeItem.ItemLastUpdatedOn > youTubeItem.PublicationDate ? "Updated Blog Post: " : "New Blog Post: ";
+        var url = youTubeItem.ShortenedUrl ?? youTubeItem.Url;
+        var postTitle = youTubeItem.Title;
+        var hashTagList = HashTagLists.BuildHashTagList(youTubeItem.Tags);
         
         if (tweetStart.Length + url.Length + postTitle.Length + 3 + hashTagList.Length >= maxTweetLength)
         {

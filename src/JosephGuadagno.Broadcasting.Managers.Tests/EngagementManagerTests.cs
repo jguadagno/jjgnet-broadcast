@@ -636,4 +636,49 @@ public class EngagementManagerTests
         result.Should().NotBeNull();
         _repository.Verify(r => r.GetAllAsync(2, 20, "enddate", false, "code", default), Times.Once);
     }
+
+    [Fact]
+    public async Task IsEngagementUniqueToUser_ReturnsTrue_WhenEngagementDoesNotExistForUser()
+    {
+        // Arrange
+        _repository.Setup(r => r.IsEngagementUniqueToUser("Conf A", "https://a.com", 2024, "user-oid-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _engagementManager.IsEngagementUniqueToUser("Conf A", "https://a.com", 2024, "user-oid-1");
+
+        // Assert
+        result.Should().BeTrue();
+        _repository.Verify(r => r.IsEngagementUniqueToUser("Conf A", "https://a.com", 2024, "user-oid-1", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task IsEngagementUniqueToUser_ReturnsFalse_WhenEngagementAlreadyExistsForUser()
+    {
+        // Arrange
+        _repository.Setup(r => r.IsEngagementUniqueToUser("Conf A", "https://a.com", 2024, "user-oid-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _engagementManager.IsEngagementUniqueToUser("Conf A", "https://a.com", 2024, "user-oid-1");
+
+        // Assert
+        result.Should().BeFalse();
+        _repository.Verify(r => r.IsEngagementUniqueToUser("Conf A", "https://a.com", 2024, "user-oid-1", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task IsEngagementUniqueToUser_ReturnsTrue_WhenEngagementExistsForDifferentUser()
+    {
+        // Arrange
+        _repository.Setup(r => r.IsEngagementUniqueToUser("Conf A", "https://a.com", 2024, "user-oid-2", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _engagementManager.IsEngagementUniqueToUser("Conf A", "https://a.com", 2024, "user-oid-2");
+
+        // Assert
+        result.Should().BeTrue();
+        _repository.Verify(r => r.IsEngagementUniqueToUser("Conf A", "https://a.com", 2024, "user-oid-2", It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

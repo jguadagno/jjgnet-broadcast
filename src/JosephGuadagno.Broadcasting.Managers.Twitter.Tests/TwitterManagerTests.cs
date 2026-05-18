@@ -11,22 +11,12 @@ namespace JosephGuadagno.Broadcasting.Managers.Twitter.Tests;
 
 public class TwitterManagerTests
 {
-    private readonly Mock<ILogger<TwitterManager>> _mockLogger;
-    private readonly Mock<ISocialMediaPlatformManager> _mockSocialMediaPlatformManager;
-    private readonly Mock<IMessageTemplateDataStore> _mockMessageTemplateDataStore;
-    private readonly Mock<ISyndicationFeedItemManager> _mockSyndicationFeedItemManager;
-    private readonly Mock<IYouTubeItemManager> _mockYouTubeItemManager;
-    private readonly Mock<IEngagementManager> _mockEngagementManager;
-
-    public TwitterManagerTests()
-    {
-        _mockLogger = new Mock<ILogger<TwitterManager>>();
-        _mockSocialMediaPlatformManager = new Mock<ISocialMediaPlatformManager>();
-        _mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        _mockSyndicationFeedItemManager = new Mock<ISyndicationFeedItemManager>();
-        _mockYouTubeItemManager = new Mock<IYouTubeItemManager>();
-        _mockEngagementManager = new Mock<IEngagementManager>();
-    }
+    private readonly Mock<ILogger<TwitterManager>> _mockLogger = new();
+    private readonly Mock<ISocialMediaPlatformManager> _mockSocialMediaPlatformManager = new();
+    private readonly Mock<IMessageTemplateDataStore> _mockMessageTemplateDataStore = new();
+    private readonly Mock<ISyndicationFeedItemManager> _mockSyndicationFeedItemManager = new();
+    private readonly Mock<IYouTubeItemManager> _mockYouTubeItemManager = new();
+    private readonly Mock<IEngagementManager> _mockEngagementManager = new();
 
     private TestableTwitterManager CreateSut(Tweet? tweetResult, Exception? exception = null)
         => new(
@@ -192,8 +182,8 @@ public class TwitterManagerTests
         ILogger<TwitterManager> logger,
         ISocialMediaPlatformManager socialMediaPlatformManager,
         IMessageTemplateDataStore messageTemplateDataStore,
-        ISyndicationFeedItemManager SyndicationFeedItemManager,
-        IYouTubeItemManager YouTubeItemManager,
+        ISyndicationFeedItemManager syndicationFeedItemManager,
+        IYouTubeItemManager youTubeItemManager,
         IEngagementManager engagementManager,
         Tweet? tweetResult,
         Exception? exception = null)
@@ -202,8 +192,8 @@ public class TwitterManagerTests
             logger,
             socialMediaPlatformManager,
             messageTemplateDataStore,
-            SyndicationFeedItemManager,
-            YouTubeItemManager,
+            syndicationFeedItemManager,
+            youTubeItemManager,
             engagementManager)
     {
         protected override Task<Tweet?> TweetAsync(string tweetText)

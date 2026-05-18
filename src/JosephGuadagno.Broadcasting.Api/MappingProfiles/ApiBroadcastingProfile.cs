@@ -98,13 +98,5 @@ public class ApiBroadcastingProfile : Profile
             .ForMember(d => d.CreatedOn, o => o.Ignore())
             .ForMember(d => d.LastUpdatedOn, o => o.Ignore());
         CreateMap<UserCollectorSpeakingEngagement, UserCollectorSpeakingEngagementResponse>();
-
-        // User Collector Scheduled Item
-        CreateMap<UserCollectorScheduledItemRequest, UserCollectorScheduledItem>()
-            .ForMember(d => d.Id, o => o.Ignore())
-            .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
-            .ForMember(d => d.CreatedOn, o => o.Ignore())
-            .ForMember(d => d.LastUpdatedOn, o => o.Ignore());
-        CreateMap<UserCollectorScheduledItem, UserCollectorScheduledItemResponse>();
     }
 }

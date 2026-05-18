@@ -4,36 +4,29 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Managers.Facebook.IntegrationTests;
 
 [Trait("Category", "Integration")]
-public class FacebookRefreshTokenTest
+public class FacebookRefreshTokenTest(
+	IFacebookManager facebookManager,
+	IFacebookApplicationSettings facebookApplicationSettings,
+	ITestOutputHelper testOutputHelper,
+	ILogger<FacebookRefreshTokenTest> logger)
 {
-    private readonly IFacebookManager _facebookManager;
-    private readonly IFacebookApplicationSettings _facebookApplicationSettings;
-    private readonly ITestOutputHelper _testOutputHelper;    
-    private readonly ILogger<FacebookRefreshTokenTest> _logger;
-    
+	private readonly ILogger<FacebookRefreshTokenTest> _logger = logger;
 
-    public FacebookRefreshTokenTest(IFacebookManager facebookManager, IFacebookApplicationSettings facebookApplicationSettings, ITestOutputHelper testOutputHelper, ILogger<FacebookRefreshTokenTest> logger)
-    {
-        _facebookManager = facebookManager;
-        _facebookApplicationSettings = facebookApplicationSettings;
-        _testOutputHelper = testOutputHelper;
-        _logger = logger;
-    }
-    
+
     [Fact(Skip = "Manually run only")]
     public async Task RefreshToken_WithValidParameters_ShouldReturnTokenInfo()
     {
         // Arrange
-        var tokenToRefresh = _facebookApplicationSettings.LongLivedAccessToken;
+        var tokenToRefresh = facebookApplicationSettings.LongLivedAccessToken;
         if (string.IsNullOrEmpty(tokenToRefresh))
         {
-            _testOutputHelper.WriteLine("The LongLivedAccessToken is not set. Skipping test.");
+            testOutputHelper.WriteLine("The LongLivedAccessToken is not set. Skipping test.");
             Assert.Fail();
             return;
         }
         
         // Act
-        var tokenInfo = await _facebookManager.RefreshToken(tokenToRefresh);
+        var tokenInfo = await facebookManager.RefreshToken(tokenToRefresh);
 
         // Assert
         Assert.NotNull(tokenInfo);
@@ -51,7 +44,7 @@ public class FacebookRefreshTokenTest
         
         // Act
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _facebookManager.RefreshToken(tokenToRefresh));
+            facebookManager.RefreshToken(tokenToRefresh));
 
         // Assert
         Assert.StartsWith("Value cannot be null.", exception.Message);

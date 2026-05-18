@@ -14,52 +14,31 @@ using Scriban.Runtime;
 
 namespace JosephGuadagno.Broadcasting.Managers.Facebook;
 
-public class FacebookManager : IFacebookManager
+public class FacebookManager(
+	HttpClient httpClient,
+	IFacebookApplicationSettings facebookApplicationSettings,
+	ILogger<FacebookManager> logger,
+	ISocialMediaPlatformManager socialMediaPlatformManager,
+	IMessageTemplateDataStore messageTemplateDataStore,
+	ISyndicationFeedItemManager syndicationFeedItemManager,
+	IYouTubeItemManager youTubeItemManager,
+	IEngagementManager engagementManager)
+	: IFacebookManager
 {
-
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<FacebookManager> _logger;
-    private readonly IFacebookApplicationSettings _facebookApplicationSettings;
-    private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
-    private readonly IMessageTemplateDataStore _messageTemplateDataStore;
-    private readonly ISyndicationFeedItemManager _SyndicationFeedItemManager;
-    private readonly IYouTubeItemManager _YouTubeItemManager;
-    private readonly IEngagementManager _engagementManager;
-
-    public FacebookManager(
-        HttpClient httpClient,
-        IFacebookApplicationSettings facebookApplicationSettings,
-        ILogger<FacebookManager> logger,
-        ISocialMediaPlatformManager socialMediaPlatformManager,
-        IMessageTemplateDataStore messageTemplateDataStore,
-        ISyndicationFeedItemManager SyndicationFeedItemManager,
-        IYouTubeItemManager YouTubeItemManager,
-        IEngagementManager engagementManager)
-    {
-        _httpClient = httpClient;
-        _facebookApplicationSettings = facebookApplicationSettings;
-        _logger = logger;
-        _socialMediaPlatformManager = socialMediaPlatformManager;
-        _messageTemplateDataStore = messageTemplateDataStore;
-        _SyndicationFeedItemManager = SyndicationFeedItemManager;
-        _YouTubeItemManager = YouTubeItemManager;
-        _engagementManager = engagementManager;
-    }
-
-    public async Task<string> ComposeMessageAsync(
+	public async Task<string> ComposeMessageAsync(
         ScheduledItem scheduledItem,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(scheduledItem);
 
         var facebookPlatform =
-            await _socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Facebook, cancellationToken);
+            await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Facebook, cancellationToken);
         if (facebookPlatform is null)
         {
             return scheduledItem.Message;
         }
 
-        var messageTemplate = await _messageTemplateDataStore.GetAsync(
+        var messageTemplate = await messageTemplateDataStore.GetAsync(
             facebookPlatform.Id,
             GetMessageType(scheduledItem.ItemType),
             cancellationToken);
@@ -99,7 +78,7 @@ public class FacebookManager : IFacebookManager
     /// <summary>
     /// Returns the Graph API Root with the version
     /// </summary>
-    public string GraphApiRoot => _facebookApplicationSettings.GraphApiRootUrl + "/" + _facebookApplicationSettings.GraphApiVersion + "/";
+    public string GraphApiRoot => facebookApplicationSettings.GraphApiRootUrl + "/" + facebookApplicationSettings.GraphApiVersion + "/";
 
     /// <summary>
     /// Posts a message with a link to a Facebook Page
@@ -171,12 +150,12 @@ public class FacebookManager : IFacebookManager
         {
             var refreshTokenUrl = GraphApiRoot + "oauth/access_token?grant_type=fb_exchange_token&client_id={client_id}&client_secret={client_secret}&fb_exchange_token={fb_exchange_token}&set_token_expires_in_60_days=true";
 
-            var url = refreshTokenUrl.Replace("{client_id}", _facebookApplicationSettings.AppId)
-                .Replace("{client_secret}", _facebookApplicationSettings.AppSecret)
+            var url = refreshTokenUrl.Replace("{client_id}", facebookApplicationSettings.AppId)
+                .Replace("{client_secret}", facebookApplicationSettings.AppSecret)
                 .Replace("{fb_exchange_token}", tokenToRefresh);
 
-            _logger.LogTrace("Url: `{Url}`", RedactSensitiveQueryParams(url));
-            var response = await _httpClient.GetAsync(url);
+            logger.LogTrace("Url: `{Url}`", RedactSensitiveQueryParams(url));
+            var response = await httpClient.GetAsync(url);
             
             if (response.IsSuccessStatusCode)
             {
@@ -194,12 +173,12 @@ public class FacebookManager : IFacebookManager
                     return tokenInfo;
                 }
                 
-                _logger.LogError("Failed to refresh the token. Could not deserialize the response. Response length: {Length} bytes.", content?.Length ?? 0);
+                logger.LogError("Failed to refresh the token. Could not deserialize the response. Response length: {Length} bytes.", content?.Length ?? 0);
                 throw new FacebookPostException(
                     $"Failed to refresh the token. Could not deserialize the response. Response length: {content?.Length ?? 0} bytes.");
             }
             
-            _logger.LogError(
+            logger.LogError(
                 "Failed to refresh the token. Response status code was not successful. StatusCode: '{StatusCode}', ReasonPhrase: '{ReasonPhrase}'",
                 response.StatusCode, response.ReasonPhrase);
             throw new FacebookPostException(
@@ -208,7 +187,7 @@ public class FacebookManager : IFacebookManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed refresh the token. Exception: {ExceptionMessage}", ex.Message);
+            logger.LogError(ex, "Failed refresh the token. Exception: {ExceptionMessage}", ex.Message);
             throw;
         }
     }
@@ -228,7 +207,7 @@ public class FacebookManager : IFacebookManager
 
     private async Task<string> PostMessageInternalAsync(string message, string? link = null, string? picture = null)
     {
-        return await PostMessageInternalAsync(message, link, picture, _facebookApplicationSettings.PageId, _facebookApplicationSettings.PageAccessToken);
+        return await PostMessageInternalAsync(message, link, picture, facebookApplicationSettings.PageId, facebookApplicationSettings.PageAccessToken);
     }
 
     private async Task<string> PostMessageInternalAsync(string message, string? link, string? picture, string pageId, string pageAccessToken)
@@ -254,8 +233,8 @@ public class FacebookManager : IFacebookManager
 
             var url = urlBuilder.ToString();
 
-            _logger.LogTrace("Url: `{Url}`", RedactSensitiveQueryParams(url));
-            var response = await _httpClient.PostAsync(url, null);
+            logger.LogTrace("Url: `{Url}`", RedactSensitiveQueryParams(url));
+            var response = await httpClient.PostAsync(url, null);
 
             if (response.IsSuccessStatusCode)
             {
@@ -265,13 +244,13 @@ public class FacebookManager : IFacebookManager
                 {
                     if (!string.IsNullOrEmpty(postStatusResponse.Id))
                     {
-                        _logger.LogDebug("Successfully posted status. Id: '{Id}'", postStatusResponse.Id);
+                        logger.LogDebug("Successfully posted status. Id: '{Id}'", postStatusResponse.Id);
                         return postStatusResponse.Id;
                     }
 
                     if (postStatusResponse.Error is not null)
                     {
-                        _logger.LogError(
+                        logger.LogError(
                             "Failed to post status. Message: '{Message}', Type: '{ErrorType}', Code: '{Code}', Sub Code: '{SubCode}', TraceId: '{TraceId}",
                             postStatusResponse.Error.Message,
                             postStatusResponse.Error.Type,
@@ -281,15 +260,15 @@ public class FacebookManager : IFacebookManager
                         throw new FacebookPostException($"Failed to post status. Reason {postStatusResponse.Error.Message}");
                     }
 
-                    _logger.LogError("Failed to post status. Could not determine the reason. Response: {Response}", content);
+                    logger.LogError("Failed to post status. Could not determine the reason. Response: {Response}", content);
                     throw new FacebookPostException($"Failed to post status. Could not determine the reason. Response {content}");
                 }
 
-                _logger.LogError("Failed to post status. Could not deserialized the response. Response: {Response}", content);
+                logger.LogError("Failed to post status. Could not deserialized the response. Response: {Response}", content);
                 throw new FacebookPostException($"Failed to post status. Could not deserialized the response. Response {content}");
             }
 
-            _logger.LogError(
+            logger.LogError(
                 "Failed to post status. Response status code was not successful. StatusCode: '{StatusCode}', ReasonPhrase: '{ReasonPhrase}'",
                 response.StatusCode,
                 response.ReasonPhrase);
@@ -298,7 +277,7 @@ public class FacebookManager : IFacebookManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to post status. Exception: {ExceptionMessage}", ex.Message);
+            logger.LogError(ex, "Failed to post status. Exception: {ExceptionMessage}", ex.Message);
             throw;
         }
     }
@@ -330,7 +309,7 @@ public class FacebookManager : IFacebookManager
             switch (scheduledItem.ItemType)
             {
                 case ScheduledItemType.SyndicationFeedItems:
-                    var feed = await _SyndicationFeedItemManager.GetAsync(
+                    var feed = await syndicationFeedItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = feed.Title;
@@ -338,15 +317,15 @@ public class FacebookManager : IFacebookManager
                     tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.YouTubeItems:
-                    var YouTubeItem = await _YouTubeItemManager.GetAsync(
+                    var youTubeItem = await youTubeItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
-                    title = YouTubeItem.Title;
-                    url = YouTubeItem.ShortenedUrl ?? YouTubeItem.Url;
-                    tags = YouTubeItem.Tags?.Count > 0 ? string.Join(",", YouTubeItem.Tags) : string.Empty;
+                    title = youTubeItem.Title;
+                    url = youTubeItem.ShortenedUrl ?? youTubeItem.Url;
+                    tags = youTubeItem.Tags?.Count > 0 ? string.Join(",", youTubeItem.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.Engagements:
-                    var engagement = await _engagementManager.GetAsync(
+                    var engagement = await engagementManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = engagement.Name;
@@ -354,7 +333,7 @@ public class FacebookManager : IFacebookManager
                     description = engagement.Comments ?? string.Empty;
                     break;
                 case ScheduledItemType.Talks:
-                    var talk = await _engagementManager.GetTalkAsync(
+                    var talk = await engagementManager.GetTalkAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = talk.Name;
@@ -382,7 +361,7 @@ public class FacebookManager : IFacebookManager
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Scriban template rendering failed for Facebook scheduled item {Id}", scheduledItem.Id);
+            logger.LogWarning(ex, "Scriban template rendering failed for Facebook scheduled item {Id}", scheduledItem.Id);
             return null;
         }
     }

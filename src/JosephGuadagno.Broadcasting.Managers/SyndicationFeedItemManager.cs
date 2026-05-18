@@ -10,102 +10,99 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
-public class SyndicationFeedItemManager : ISyndicationFeedItemManager
+public class SyndicationFeedItemManager(ISyndicationFeedItemDataStore syndicationFeedItemDataStore, IMemoryCache cache)
+	: ISyndicationFeedItemManager
 {
-    private readonly ISyndicationFeedItemDataStore _SyndicationFeedItemDataStore;
-    private readonly IMemoryCache _cache;
-
-    private const string CacheKeyAll = "SyndicationFeedItems_All";
+	private const string CacheKeyAll = "SyndicationFeedItems_All";
     private static string CacheKeyByUser(string ownerEntraOid) => $"SyndicationFeedItems_User_{ownerEntraOid}";
 
     private static readonly MemoryCacheEntryOptions CacheOptions =
         new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
 
-    public SyndicationFeedItemManager(ISyndicationFeedItemDataStore SyndicationFeedItemDataStore, IMemoryCache cache)
-    {
-        _SyndicationFeedItemDataStore = SyndicationFeedItemDataStore;
-        _cache = cache;
-    }
-
     public async Task<SyndicationFeedItem> GetAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        return await _SyndicationFeedItemDataStore.GetAsync(primaryKey, cancellationToken);
+        return await syndicationFeedItemDataStore.GetAsync(primaryKey, cancellationToken);
     }
 
     public async Task<OperationResult<SyndicationFeedItem>> SaveAsync(SyndicationFeedItem entity, CancellationToken cancellationToken = default)
     {
-        var result = await _SyndicationFeedItemDataStore.SaveAsync(entity, cancellationToken);
+        var result = await syndicationFeedItemDataStore.SaveAsync(entity, cancellationToken);
         InvalidateUserCaches(entity.CreatedByEntraOid);
         return result;
     }
 
     public async Task<List<SyndicationFeedItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        if (_cache.TryGetValue(CacheKeyAll, out List<SyndicationFeedItem>? cached) && cached is not null)
+        if (cache.TryGetValue(CacheKeyAll, out List<SyndicationFeedItem>? cached) && cached is not null)
         {
             return cached;
         }
 
-        var result = await _SyndicationFeedItemDataStore.GetAllAsync(cancellationToken);
-        _cache.Set(CacheKeyAll, result, CacheOptions);
+        var result = await syndicationFeedItemDataStore.GetAllAsync(cancellationToken);
+        cache.Set(CacheKeyAll, result, CacheOptions);
         return result;
     }
 
     public async Task<List<SyndicationFeedItem>> GetAllAsync(string ownerEntraOid, CancellationToken cancellationToken = default)
     {
         var cacheKey = CacheKeyByUser(ownerEntraOid);
-        if (_cache.TryGetValue(cacheKey, out List<SyndicationFeedItem>? cached) && cached is not null)
+        if (cache.TryGetValue(cacheKey, out List<SyndicationFeedItem>? cached) && cached is not null)
         {
             return cached;
         }
 
-        var result = await _SyndicationFeedItemDataStore.GetAllAsync(ownerEntraOid, cancellationToken);
-        _cache.Set(cacheKey, result, CacheOptions);
+        var result = await syndicationFeedItemDataStore.GetAllAsync(ownerEntraOid, cancellationToken);
+        cache.Set(cacheKey, result, CacheOptions);
         return result;
     }
 
     public async Task<OperationResult<bool>> DeleteAsync(SyndicationFeedItem entity, CancellationToken cancellationToken = default)
     {
-        var result = await _SyndicationFeedItemDataStore.DeleteAsync(entity, cancellationToken);
+        var result = await syndicationFeedItemDataStore.DeleteAsync(entity, cancellationToken);
         InvalidateUserCaches(entity.CreatedByEntraOid);
         return result;
     }
 
     public async Task<OperationResult<bool>> DeleteAsync(int primaryKey, CancellationToken cancellationToken = default)
     {
-        var result = await _SyndicationFeedItemDataStore.DeleteAsync(primaryKey, cancellationToken);
-        _cache.Remove(CacheKeyAll);
+        var result = await syndicationFeedItemDataStore.DeleteAsync(primaryKey, cancellationToken);
+        cache.Remove(CacheKeyAll);
         return result;
     }
 
     public async Task<SyndicationFeedItem?> GetByFeedIdentifierAsync(string feedIdentifier, CancellationToken cancellationToken = default)
     {
-        return await _SyndicationFeedItemDataStore.GetByFeedIdentifierAsync(feedIdentifier, cancellationToken);
+        return await syndicationFeedItemDataStore.GetByFeedIdentifierAsync(feedIdentifier, cancellationToken);
+    }
+
+    public async Task<bool> IsFeedItemUniqueToUser(string feedIdentifier, string ownerOid, CancellationToken cancellationToken = default)
+    {
+        return await syndicationFeedItemDataStore.IsFeedItemUniqueToUser(feedIdentifier, ownerOid, cancellationToken);
     }
 
     public async Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default)
     {
-        return await _SyndicationFeedItemDataStore.GetCollectorOwnerOidAsync(cancellationToken);
+        return await syndicationFeedItemDataStore.GetCollectorOwnerOidAsync(cancellationToken);
     }
 
     public async Task<SyndicationFeedItem?> GetRandomSyndicationDataAsync(string ownerEntraOid, DateTimeOffset cutoffDate, List<string> excludedCategories, CancellationToken cancellationToken = default)
     {
-        return await _SyndicationFeedItemDataStore.GetRandomSyndicationDataAsync(ownerEntraOid, cutoffDate, excludedCategories, cancellationToken);
+        return await syndicationFeedItemDataStore.GetRandomSyndicationDataAsync(ownerEntraOid, cutoffDate, excludedCategories, cancellationToken);
     }
 
     public async Task<PagedResult<SyndicationFeedItem>> GetAllAsync(int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
-        return await _SyndicationFeedItemDataStore.GetAllAsync(page, pageSize, sortBy, sortDescending, filter, cancellationToken);
+        return await syndicationFeedItemDataStore.GetAllAsync(page, pageSize, sortBy, sortDescending, filter, cancellationToken);
     }
 
     public async Task<PagedResult<SyndicationFeedItem>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "title", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
-        return await _SyndicationFeedItemDataStore.GetAllAsync(ownerEntraOid, page, pageSize, sortBy, sortDescending, filter, cancellationToken);
+        return await syndicationFeedItemDataStore.GetAllAsync(ownerEntraOid, page, pageSize, sortBy, sortDescending, filter, cancellationToken);
     }
 
     private void InvalidateUserCaches(string ownerEntraOid)
     {
-        _cache.Remove(CacheKeyAll);
-        _cache.Remove(CacheKeyByUser(ownerEntraOid));
+        cache.Remove(CacheKeyAll);
+        cache.Remove(CacheKeyByUser(ownerEntraOid));
     }
 }

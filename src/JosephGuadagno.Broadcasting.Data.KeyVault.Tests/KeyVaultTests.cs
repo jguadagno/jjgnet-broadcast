@@ -91,6 +91,42 @@ public class KeyVaultTests
     #region UpdateSecretValueAndPropertiesAsync Tests
 
     [Fact]
+    public async Task UpdateSecretValueAndPropertiesAsync_WhenSecretDoesNotExist_ShouldCreateSecretWithoutDisablingOldVersion()
+    {
+        // Arrange — secret does not exist yet (initial setup)
+        const string secretName = "new-secret";
+        const string newValue = "first-value";
+        var expiresOn = DateTime.UtcNow.AddHours(1);
+        var newSecret = new KeyVaultSecret(secretName, newValue);
+        var setSecretResponse = CreateResponse(newSecret);
+        var updatePropertiesResponse = CreateResponse(newSecret.Properties);
+
+        _mockSecretClient
+            .Setup(c => c.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<SecretContentType?>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Azure.RequestFailedException(404, "Secret not found"));
+        _mockSecretClient
+            .Setup(c => c.SetSecretAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(setSecretResponse);
+        _mockSecretClient
+            .Setup(c => c.UpdateSecretPropertiesAsync(It.IsAny<SecretProperties>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(updatePropertiesResponse);
+
+        // Act — should not throw
+        await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, newValue, expiresOn);
+
+        // Assert — SetSecret called once, UpdateSecretProperties called once (for expiry only), GetSecret called once
+        _mockSecretClient.Verify(
+            c => c.GetSecretAsync(It.Is<string>(s => s == secretName), It.IsAny<string>(), It.IsAny<SecretContentType?>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+        _mockSecretClient.Verify(
+            c => c.SetSecretAsync(It.Is<string>(s => s == secretName), It.Is<string>(s => s == newValue), It.IsAny<CancellationToken>()),
+            Times.Once);
+        _mockSecretClient.Verify(
+            c => c.UpdateSecretPropertiesAsync(It.IsAny<SecretProperties>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task UpdateSecretValueAndPropertiesAsync_WhenGetSecretReturnsNull_ShouldThrowApplicationException()
     {
         // Arrange

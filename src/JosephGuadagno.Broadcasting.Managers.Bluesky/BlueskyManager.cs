@@ -16,40 +16,19 @@ using X.Web.MetaExtractor;
 
 namespace JosephGuadagno.Broadcasting.Managers.Bluesky;
 
-public class BlueskyManager : IBlueskyManager
+public class BlueskyManager(
+	HttpClient httpClient,
+	IBlueskySettings blueskySettings,
+	ILogger<BlueskyManager> logger,
+	ISocialMediaPlatformManager socialMediaPlatformManager,
+	IMessageTemplateDataStore messageTemplateDataStore,
+	ISyndicationFeedItemManager syndicationFeedItemManager,
+	IYouTubeItemManager youTubeItemManager,
+	IEngagementManager engagementManager)
+	: IBlueskyManager
 {
-    private readonly HttpClient _httpClient;
-    private readonly IBlueskySettings _blueskySettings;
-    private readonly ILogger<BlueskyManager> _logger;
-    private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
-    private readonly IMessageTemplateDataStore _messageTemplateDataStore;
-    private readonly ISyndicationFeedItemManager _SyndicationFeedItemManager;
-    private readonly IYouTubeItemManager _YouTubeItemManager;
-    private readonly IEngagementManager _engagementManager;
-
-    private BlueskyAgent? _agent;
+		private BlueskyAgent? _agent;
     private readonly SemaphoreSlim _loginLock = new(1, 1);
-
-    public BlueskyManager(
-        HttpClient httpClient,
-        IBlueskySettings blueskySettings,
-        ILogger<BlueskyManager> logger,
-        ISocialMediaPlatformManager socialMediaPlatformManager,
-        IMessageTemplateDataStore messageTemplateDataStore,
-        ISyndicationFeedItemManager SyndicationFeedItemManager,
-        IYouTubeItemManager YouTubeItemManager,
-        IEngagementManager engagementManager)
-    {
-        _httpClient = httpClient;
-        _blueskySettings = blueskySettings;
-        _logger = logger;
-        _socialMediaPlatformManager = socialMediaPlatformManager;
-        _messageTemplateDataStore = messageTemplateDataStore;
-        _SyndicationFeedItemManager = SyndicationFeedItemManager;
-        _YouTubeItemManager = YouTubeItemManager;
-        _engagementManager = engagementManager;
-    }
-
 
     private async Task<BlueskyAgent> EnsureAuthenticatedAsync()
     {
@@ -64,11 +43,11 @@ public class BlueskyManager : IBlueskyManager
                 return _agent;
 
             _agent ??= new BlueskyAgent();
-            var loginResult = await _agent.Login(_blueskySettings.BlueskyUserName!, _blueskySettings.BlueskyPassword!);
+            var loginResult = await _agent.Login(blueskySettings.BlueskyUserName!, blueskySettings.BlueskyPassword!);
             if (loginResult.Succeeded)
                 return _agent;
 
-            _logger.LogError("Login failed. Status Code: {LoginResultStatusCode}, Error Details {LoginResultAtErrorDetail}",
+            logger.LogError("Login failed. Status Code: {LoginResultStatusCode}, Error Details {LoginResultAtErrorDetail}",
                 loginResult.StatusCode, loginResult.AtErrorDetail?.Message);
             throw new BlueskyPostException(
                 "Bluesky login failed.",
@@ -155,7 +134,7 @@ public class BlueskyManager : IBlueskyManager
         }
 
         // Post Failed
-        _logger.LogError(
+        logger.LogError(
             "Bluesky Post failed! Status Code: {ResponseStatusCode}, Error Details {ResponseErrorDetail}",
             response.StatusCode, response.AtErrorDetail?.Message);
         throw new BlueskyPostException(
@@ -173,14 +152,14 @@ public class BlueskyManager : IBlueskyManager
         }
         catch (BlueskyPostException ex)
         {
-            _logger.LogError(ex, "Failed to delete Bluesky Post! Login failed. Cid: '{StrongReferenceCid}'", strongReference.Cid);
+            logger.LogError(ex, "Failed to delete Bluesky Post! Login failed. Cid: '{StrongReferenceCid}'", strongReference.Cid);
             return false;
         }
 
         var response = await agent.DeletePost(strongReference);
         if (response.Succeeded)
         {
-            _logger.LogDebug("Bluesky Post successfully deleted! Cid: \'{StrongReferenceCid}\'",
+            logger.LogDebug("Bluesky Post successfully deleted! Cid: \'{StrongReferenceCid}\'",
                 strongReference.Cid);
             return true;
         }
@@ -195,18 +174,18 @@ public class BlueskyManager : IBlueskyManager
                 response = await agent.DeletePost(strongReference);
                 if (response.Succeeded)
                 {
-                    _logger.LogDebug("Bluesky Post successfully deleted after re-auth! Cid: '{StrongReferenceCid}'", strongReference.Cid);
+                    logger.LogDebug("Bluesky Post successfully deleted after re-auth! Cid: '{StrongReferenceCid}'", strongReference.Cid);
                     return true;
                 }
             }
             catch (BlueskyPostException ex)
             {
-                _logger.LogError(ex, "Failed to delete Bluesky Post! Re-auth failed. Cid: '{StrongReferenceCid}'", strongReference.Cid);
+                logger.LogError(ex, "Failed to delete Bluesky Post! Re-auth failed. Cid: '{StrongReferenceCid}'", strongReference.Cid);
                 return false;
             }
         }
 
-        _logger.LogWarning(
+        logger.LogWarning(
             "Failed to delete Bluesky Post! Status Code: {ResponseStatusCode}, Message: \'{Message}\', Cid: {StrongReferenceCid}",
             response.StatusCode, response.AtErrorDetail?.Message, strongReference.Cid);
         return false;
@@ -251,9 +230,9 @@ public class BlueskyManager : IBlueskyManager
                 // Try to grab the image, then upload it as a blob.
                 try
                 {
-                    
 
-                    using HttpResponseMessage response = await _httpClient.GetAsync(thumbnailUri);
+
+                    using HttpResponseMessage response = await httpClient.GetAsync(thumbnailUri);
                     response.EnsureSuccessStatusCode();
 
                     var responseBody =
@@ -315,7 +294,7 @@ public class BlueskyManager : IBlueskyManager
             {
                 try
                 {
-                    using HttpResponseMessage response = await _httpClient.GetAsync(thumbnailImageUrl);
+                    using HttpResponseMessage response = await httpClient.GetAsync(thumbnailImageUrl);
                     response.EnsureSuccessStatusCode();
 
                     var responseBody = await response.Content.ReadAsByteArrayAsync();
@@ -345,13 +324,13 @@ public class BlueskyManager : IBlueskyManager
         ArgumentNullException.ThrowIfNull(scheduledItem);
 
         var blueskyPlatform =
-            await _socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Bluesky, cancellationToken);
+            await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Bluesky, cancellationToken);
         if (blueskyPlatform is null)
         {
             return scheduledItem.Message;
         }
 
-        var messageTemplate = await _messageTemplateDataStore.GetAsync(
+        var messageTemplate = await messageTemplateDataStore.GetAsync(
             blueskyPlatform.Id,
             GetMessageType(scheduledItem.ItemType),
             cancellationToken);
@@ -393,7 +372,7 @@ public class BlueskyManager : IBlueskyManager
             switch (scheduledItem.ItemType)
             {
                 case ScheduledItemType.SyndicationFeedItems:
-                    var feed = await _SyndicationFeedItemManager.GetAsync(
+                    var feed = await syndicationFeedItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = feed.Title;
@@ -401,15 +380,15 @@ public class BlueskyManager : IBlueskyManager
                     tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.YouTubeItems:
-                    var YouTubeItem = await _YouTubeItemManager.GetAsync(
+                    var youTubeItem = await youTubeItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
-                    title = YouTubeItem.Title;
-                    url = YouTubeItem.ShortenedUrl ?? YouTubeItem.Url;
-                    tags = YouTubeItem.Tags?.Count > 0 ? string.Join(",", YouTubeItem.Tags) : string.Empty;
+                    title = youTubeItem.Title;
+                    url = youTubeItem.ShortenedUrl ?? youTubeItem.Url;
+                    tags = youTubeItem.Tags?.Count > 0 ? string.Join(",", youTubeItem.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.Engagements:
-                    var engagement = await _engagementManager.GetAsync(
+                    var engagement = await engagementManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = engagement.Name;
@@ -417,7 +396,7 @@ public class BlueskyManager : IBlueskyManager
                     description = engagement.Comments ?? string.Empty;
                     break;
                 case ScheduledItemType.Talks:
-                    var talk = await _engagementManager.GetTalkAsync(
+                    var talk = await engagementManager.GetTalkAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = talk.Name;
@@ -438,7 +417,7 @@ public class BlueskyManager : IBlueskyManager
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Scriban template rendering failed for Bluesky scheduled item {Id}", scheduledItem.Id);
+            logger.LogWarning(ex, "Scriban template rendering failed for Bluesky scheduled item {Id}", scheduledItem.Id);
             return null;
         }
     }

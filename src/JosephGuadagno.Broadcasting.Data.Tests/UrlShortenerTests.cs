@@ -10,12 +10,7 @@ namespace JosephGuadagno.Broadcasting.Data.Tests;
 
 public class UrlShortenerTests
 {
-    private readonly Mock<ILogger<UrlShortener>> _loggerMock;
-
-    public UrlShortenerTests()
-    {
-        _loggerMock = new Mock<ILogger<UrlShortener>>();
-    }
+    private readonly Mock<ILogger<UrlShortener>> _loggerMock = new();
 
     private static Bitly CreateBitly(HttpMessageHandler handler)
     {
@@ -83,22 +78,13 @@ public class UrlShortenerTests
         Assert.Equal(originalUrl, result);
     }
 
-    private sealed class MockHttpMessageHandler : HttpMessageHandler
+    private sealed class MockHttpMessageHandler(HttpStatusCode statusCode, string responseContent) : HttpMessageHandler
     {
-        private readonly HttpStatusCode _statusCode;
-        private readonly string _responseContent;
-
-        public MockHttpMessageHandler(HttpStatusCode statusCode, string responseContent)
+	    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            _statusCode = statusCode;
-            _responseContent = responseContent;
-        }
-
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            var response = new HttpResponseMessage(_statusCode)
+            var response = new HttpResponseMessage(statusCode)
             {
-                Content = new StringContent(_responseContent, Encoding.UTF8, "application/json")
+                Content = new StringContent(responseContent, Encoding.UTF8, "application/json")
             };
             return Task.FromResult(response);
         }

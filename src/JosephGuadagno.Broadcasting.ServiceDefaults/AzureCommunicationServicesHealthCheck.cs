@@ -8,22 +8,15 @@ namespace JosephGuadagno.Broadcasting.ServiceDefaults;
 /// Validates that the connection string is well-formed and the SDK client can be instantiated.
 /// Returns Degraded (not Unhealthy) because email is a non-critical path.
 /// </summary>
-internal sealed class AzureCommunicationServicesHealthCheck : IHealthCheck
+internal sealed class AzureCommunicationServicesHealthCheck(string connectionString) : IHealthCheck
 {
-    private readonly string _connectionString;
-
-    public AzureCommunicationServicesHealthCheck(string connectionString)
-    {
-        _connectionString = connectionString;
-    }
-
-    public Task<HealthCheckResult> CheckHealthAsync(
+	public Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(_connectionString))
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
                 return Task.FromResult(
                     HealthCheckResult.Degraded("Azure Communication Services connection string is not configured."));
@@ -31,7 +24,7 @@ internal sealed class AzureCommunicationServicesHealthCheck : IHealthCheck
 
             // Validate the connection string is well-formed by attempting to instantiate the client.
             // This does NOT send any email — it only parses the connection string and creates the client object.
-            _ = new EmailClient(_connectionString);
+            _ = new EmailClient(connectionString);
 
             return Task.FromResult(HealthCheckResult.Healthy("Azure Communication Services connection string is valid."));
         }

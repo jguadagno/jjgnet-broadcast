@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
 public class ProcessNewSyndicationDataFired(
-    ISyndicationFeedItemManager SyndicationFeedItemManager,
+    ISyndicationFeedItemManager syndicationFeedItemManager,
     ILogger<ProcessNewSyndicationDataFired> logger)
 {
 
@@ -53,34 +53,34 @@ public class ProcessNewSyndicationDataFired(
             logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
             return null;
         }
-        var SyndicationFeedItem = await SyndicationFeedItemManager.GetAsync(syndicationFeedItemEvent.Id);
+        var syndicationFeedItem = await syndicationFeedItemManager.GetAsync(syndicationFeedItemEvent.Id);
 
-        logger.LogDebug("Composing tweet for  for '{Id}' with title of '{Title}'", SyndicationFeedItem.Id, SyndicationFeedItem.Title);
+        logger.LogDebug("Composing tweet for  for '{Id}' with title of '{Title}'", syndicationFeedItem.Id, syndicationFeedItem.Title);
             
-        var status = ComposeTweet(SyndicationFeedItem);
+        var status = ComposeTweet(syndicationFeedItem);
 
         // Done
         var properties = new Dictionary<string, string>
         {
             {"post", status},
-            {"title", SyndicationFeedItem.Title},
-            {"url", SyndicationFeedItem.Url},
-            {"id", SyndicationFeedItem.Id.ToString()}
+            {"title", syndicationFeedItem.Title},
+            {"url", syndicationFeedItem.Url},
+            {"id", syndicationFeedItem.Id.ToString()}
         };
         logger.LogCustomEvent(Metrics.FacebookProcessedNewSyndicationData, properties);
-        logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", SyndicationFeedItem.Id, SyndicationFeedItem.Title);
-        return new TwitterTweetMessage { Text = status, CreatedByEntraOid = SyndicationFeedItem.CreatedByEntraOid };
+        logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'", syndicationFeedItem.Id, syndicationFeedItem.Title);
+        return new TwitterTweetMessage { Text = status, CreatedByEntraOid = syndicationFeedItem.CreatedByEntraOid };
     }
         
-    private string ComposeTweet(SyndicationFeedItem SyndicationFeedItem)
+    private string ComposeTweet(SyndicationFeedItem syndicationFeedItem)
     {
         const int maxTweetLength = 240;
             
         // Build Tweet
-        var tweetStart = SyndicationFeedItem.ItemLastUpdatedOn > SyndicationFeedItem.PublicationDate ? "Updated Blog Post: " : "New Blog Post: ";
-        var url = SyndicationFeedItem.ShortenedUrl ?? SyndicationFeedItem.Url;
-        var postTitle = SyndicationFeedItem.Title;
-        var hashTagList = HashTagLists.BuildHashTagList(SyndicationFeedItem.Tags);
+        var tweetStart = syndicationFeedItem.ItemLastUpdatedOn > syndicationFeedItem.PublicationDate ? "Updated Blog Post: " : "New Blog Post: ";
+        var url = syndicationFeedItem.ShortenedUrl ?? syndicationFeedItem.Url;
+        var postTitle = syndicationFeedItem.Title;
+        var hashTagList = HashTagLists.BuildHashTagList(syndicationFeedItem.Tags);
         
         if (tweetStart.Length + url.Length + postTitle.Length + 3 + hashTagList.Length >= maxTweetLength)
         {

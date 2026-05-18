@@ -1,6 +1,7 @@
 using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
 
@@ -40,7 +41,7 @@ public class SyndicationFeedItemService(IDownstreamApi apiClient): ISyndicationF
     /// <returns>A <see cref="SyndicationFeedItem"/></returns>
     public async Task<SyndicationFeedItem?> GetAsync(int id)
     {
-        var source = await apiClient.GetForUserAsync<SyndicationFeedItem>(ApiServiceName, options =>
+        var source = await apiClient.GetOptionalForUserAsync<SyndicationFeedItem>(ApiServiceName, options =>
         {
             options.RelativePath = $"{BaseUrl}/{id}";
         });

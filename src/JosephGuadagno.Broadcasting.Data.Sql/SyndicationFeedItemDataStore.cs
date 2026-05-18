@@ -150,6 +150,12 @@ public class SyndicationFeedItemDataStore(BroadcastingContext broadcastingContex
         return dbSyndicationFeedItem is null ? null : mapper.Map<SyndicationFeedItem>(dbSyndicationFeedItem);
     }
 
+    public async Task<bool> IsFeedItemUniqueToUser(string feedIdentifier, string ownerOid, CancellationToken cancellationToken = default)
+    {
+        return !await broadcastingContext.SyndicationFeedItems.AsNoTracking()
+            .AnyAsync(s => s.FeedIdentifier == feedIdentifier && s.CreatedByEntraOid == ownerOid, cancellationToken);
+    }
+
     public async Task<string?> GetCollectorOwnerOidAsync(CancellationToken cancellationToken = default)
     {
         var ownerOid = await broadcastingContext.SyndicationFeedItems

@@ -4,20 +4,15 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Managers.Facebook.IntegrationTests;
 
 [Trait("Category", "Integration")]
-public class FacebookPostPageStatusTest
+public class FacebookPostPageStatusTest(
+	IFacebookManager facebookManager,
+	ITestOutputHelper testOutputHelper,
+	ILogger<FacebookPostPageStatusTest> logger)
 {
-    private readonly IFacebookManager _facebookManager;
-    private readonly ITestOutputHelper _testOutputHelper;    
-    private readonly ILogger<FacebookPostPageStatusTest> _logger;
-    
+	private readonly ITestOutputHelper _testOutputHelper = testOutputHelper;    
+    private readonly ILogger<FacebookPostPageStatusTest> _logger = logger;
 
-    public FacebookPostPageStatusTest(IFacebookManager facebookManager, ITestOutputHelper testOutputHelper, ILogger<FacebookPostPageStatusTest> logger)
-    {
-        _facebookManager = facebookManager;
-        _testOutputHelper = testOutputHelper;
-        _logger = logger;
-    }
-    
+
     [Fact(Skip = "Manually run only")]
     public async Task PostMessageAndLinkToPage_WithValidParameters_ShouldPostStatus()
     {
@@ -26,7 +21,7 @@ public class FacebookPostPageStatusTest
         var link = "https://josephguadagno.net";
         
         // Act
-        var pageId = await _facebookManager.PostMessageAndLinkToPage(message, link);
+        var pageId = await facebookManager.PostMessageAndLinkToPage(message, link);
 
         // Assert
         Assert.False(string.IsNullOrEmpty(pageId));
@@ -41,7 +36,7 @@ public class FacebookPostPageStatusTest
         var link = "https://josephguadagno.net/2020/09/06/dependency-injection-with-azure-functions/";
         
         // Act
-        var pageId = await _facebookManager.PostMessageAndLinkToPage(message, link);
+        var pageId = await facebookManager.PostMessageAndLinkToPage(message, link);
 
         // Assert
         Assert.False(string.IsNullOrEmpty(pageId));
@@ -57,7 +52,7 @@ public class FacebookPostPageStatusTest
         
         // Act
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _facebookManager.PostMessageAndLinkToPage(message, link));
+            facebookManager.PostMessageAndLinkToPage(message, link));
 
         // Assert
         Assert.StartsWith("Value cannot be null.", exception.Message);
@@ -72,7 +67,7 @@ public class FacebookPostPageStatusTest
         
         // Act
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _facebookManager.PostMessageAndLinkToPage(message, link));
+            facebookManager.PostMessageAndLinkToPage(message, link));
 
         // Assert
         Assert.StartsWith("Value cannot be null.", exception.Message);

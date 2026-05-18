@@ -20,8 +20,8 @@ public class SchedulesController : Controller
     private readonly IScheduledItemService _scheduledItemService;
     private readonly IScheduledItemValidationService _validationService;
     private readonly IEngagementService _engagementService;
-    private readonly ISyndicationFeedItemService _SyndicationFeedItemService;
-    private readonly IYouTubeItemService _YouTubeItemService;
+    private readonly ISyndicationFeedItemService _syndicationFeedItemService;
+    private readonly IYouTubeItemService _youTubeItemService;
     private readonly IMapper _mapper;
     private readonly ILogger<SchedulesController> _logger;
 
@@ -33,24 +33,24 @@ public class SchedulesController : Controller
     /// <param name="mapper">The mapper service</param>
     /// <param name="logger">The logger to use</param>
     /// <param name="engagementService">The engagement service</param>
-    /// <param name="SyndicationFeedItemService">The syndication feed source service</param>
-    /// <param name="YouTubeItemService">The YouTube source service</param>
+    /// <param name="syndicationFeedItemService">The syndication feed source service</param>
+    /// <param name="youTubeItemService">The YouTube source service</param>
     public SchedulesController(
         IScheduledItemService scheduledItemService,
         IScheduledItemValidationService validationService,
         IMapper mapper,
         ILogger<SchedulesController> logger,
         IEngagementService engagementService,
-        ISyndicationFeedItemService SyndicationFeedItemService,
-        IYouTubeItemService YouTubeItemService)
+        ISyndicationFeedItemService syndicationFeedItemService,
+        IYouTubeItemService youTubeItemService)
     {
         _scheduledItemService = scheduledItemService;
         _validationService = validationService;
         _mapper = mapper;
         _logger = logger;
         _engagementService = engagementService;
-        _SyndicationFeedItemService = SyndicationFeedItemService;
-        _YouTubeItemService = YouTubeItemService;
+        _syndicationFeedItemService = syndicationFeedItemService;
+        _youTubeItemService = youTubeItemService;
     }
 
     /// <summary>
@@ -59,14 +59,10 @@ public class SchedulesController : Controller
     /// <returns>A List&lt;<see cref="ScheduledItemViewModel"/>&gt;</returns>
     public async Task<IActionResult> Index(int page = Pagination.DefaultPage, string sortBy = "sendondatetime", bool sortDescending = true, string? filter = null)
     {
-        var itemsTask = _scheduledItemService.GetScheduledItemsAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
-        var orphanedTask = _scheduledItemService.GetOrphanedScheduledItemsAsync(1, 1);
-        await Task.WhenAll(itemsTask, orphanedTask);
-
-        var result = await itemsTask;
+        var result = await _scheduledItemService.GetScheduledItemsAsync(page, Pagination.DefaultPageSize, sortBy, sortDescending, filter);
         var scheduledItemViewModels = _mapper.Map<List<ScheduledItemViewModel>>(result.Items);
 
-        var orphanedResult = await orphanedTask;
+        var orphanedResult = await _scheduledItemService.GetOrphanedScheduledItemsAsync(1, 1);
         ViewBag.OrphanedCount = orphanedResult.TotalCount;
 
         ViewBag.Page = page;
@@ -419,7 +415,7 @@ public class SchedulesController : Controller
     [HttpGet]
     public async Task<IActionResult> SearchSyndicationFeedItems(string q = "")
     {
-        var all = await _SyndicationFeedItemService.GetAllAsync(pageSize: Pagination.MaxPageSize);
+        var all = await _syndicationFeedItemService.GetAllAsync(pageSize: Pagination.MaxPageSize);
         var filtered = all.Items.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(q))
             filtered = filtered.Where(s => s.Title.Contains(q, StringComparison.OrdinalIgnoreCase));
@@ -435,7 +431,7 @@ public class SchedulesController : Controller
     [HttpGet]
     public async Task<IActionResult> SearchYouTubeItems(string q = "")
     {
-        var all = await _YouTubeItemService.GetAllAsync(pageSize: Pagination.MaxPageSize);
+        var all = await _youTubeItemService.GetAllAsync(pageSize: Pagination.MaxPageSize);
         var filtered = all.Items.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(q))
             filtered = filtered.Where(s => s.Title.Contains(q, StringComparison.OrdinalIgnoreCase));

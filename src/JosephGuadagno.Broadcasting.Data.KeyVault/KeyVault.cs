@@ -1,21 +1,15 @@
-﻿using Azure.Security.KeyVault.Secrets;
+﻿using Azure;
+using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using Microsoft.Extensions.Logging;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace JosephGuadagno.Broadcasting.Data.KeyVault;
 
-public class KeyVault: IKeyVault
+public class KeyVault(SecretClient secretClient, ILogger<KeyVault> logger) : IKeyVault
 {
-    private readonly SecretClient _secretClient;
-    private readonly ILogger<KeyVault> _logger;
-    
-    public KeyVault(SecretClient secretClient, ILogger<KeyVault> logger)
-    {
-        _secretClient = secretClient;
-        _logger = logger;
-    }
-    
-    /// <summary>
+	/// <summary>
     /// Updates the secret value and expiration date
     /// </summary>
     /// <param name="secretName">The name of the secret to update</param>
@@ -27,36 +21,59 @@ public class KeyVault: IKeyVault
     /// </remarks>
     public async Task UpdateSecretValueAndPropertiesAsync(string secretName, string secretValue, DateTime expiresOn)
     {
-        var originalSecretResponse = await _secretClient.GetSecretAsync(secretName);
-        if (originalSecretResponse is null)
+        // Try to load and disable the existing secret version.
+        // On initial set up the secret does not exist yet — skip the disable step in that case.
+        try
         {
-            throw new ApplicationException($"Failed to get the secret '{secretName}' from the Key Vault");
+            var originalSecretResponse = await secretClient.GetSecretAsync(secretName);
+            if (originalSecretResponse is null)
+            {
+                throw new ApplicationException($"Failed to get the secret '{secretName}' from the Key Vault");
+            }
+            var originalSecret = originalSecretResponse.Value;
+
+            // Set the old secret to disabled
+            originalSecret.Properties.Enabled = false;
+            var disableResponse = await secretClient.UpdateSecretPropertiesAsync(originalSecret.Properties);
+            if (disableResponse is null)
+            {
+                throw new ApplicationException($"Failed to update the original version secret properties for '{secretName}'");
+            }
         }
-        var originalSecret = originalSecretResponse.Value;
-        
-        // Set the old secret to disabled
-        originalSecret.Properties.Enabled = false;
-        var updatePropertiesResponse = await _secretClient.UpdateSecretPropertiesAsync(originalSecret.Properties);
-        if (updatePropertiesResponse is null)
+        catch (RequestFailedException ex) when (ex.Status == 404)
         {
-            throw new ApplicationException($"Failed to update the original version secret properties for '{secretName}'");
+            // Secret does not exist yet (initial setup) — no old version to disable.
+            logger.LogInformation(
+                "Secret with fingerprint '{SecretNameFingerprint}' does not exist yet; skipping disable of previous version",
+                GetSecretNameFingerprint(secretName));
         }
-        
-        // Update secret value (create a new version)
-        var newSecretVersionResponse = await _secretClient.SetSecretAsync(secretName, secretValue);
+
+        // Create new secret (or first version on initial setup)
+        var newSecretVersionResponse = await secretClient.SetSecretAsync(secretName, secretValue);
         if (newSecretVersionResponse is null)
         {
             throw new ApplicationException($"Failed to update the secret value for '{secretName}'");
         }
         var newKeyVaultSecretVersion = newSecretVersionResponse.Value;
-        
+
         // Update the expiration date
         newKeyVaultSecretVersion.Properties.ExpiresOn = expiresOn;
-        updatePropertiesResponse = await _secretClient.UpdateSecretPropertiesAsync(newKeyVaultSecretVersion.Properties);
+        var updatePropertiesResponse = await secretClient.UpdateSecretPropertiesAsync(newKeyVaultSecretVersion.Properties);
         if (updatePropertiesResponse is null)
         {
             throw new ApplicationException($"Failed to update the new version secret properties for '{secretName}'");
         }
+    }
+
+    private static string GetSecretNameFingerprint(string secretName)
+    {
+        if (string.IsNullOrWhiteSpace(secretName))
+        {
+            return "empty";
+        }
+
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(secretName));
+        return Convert.ToHexString(hash, 0, 8).ToLowerInvariant();
     }
 
     /// <summary>
@@ -72,7 +89,7 @@ public class KeyVault: IKeyVault
         {
             throw new ArgumentException("Secret name cannot be null or empty", nameof(secretName));
         }
-        var secretResponse = await _secretClient.GetSecretAsync(secretName);
+        var secretResponse = await secretClient.GetSecretAsync(secretName);
         if (secretResponse is null)
         {
             throw new ApplicationException($"Failed to get the secret '{secretName}' from the Key Vault");

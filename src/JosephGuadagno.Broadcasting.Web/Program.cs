@@ -264,11 +264,14 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
     services.TryAddScoped<IScheduledItemValidationService, ScheduledItemValidationService>();
-    services.TryAddScoped<IUserPublisherSettingService, UserPublisherSettingService>();
+    services.TryAddScoped<IPublishersAggregateService, PublishersAggregateService>();
+    services.TryAddScoped<IUserPublisherBlueskySettingsService, UserPublisherBlueskySettingsService>();
+    services.TryAddScoped<IUserPublisherTwitterSettingsService, UserPublisherTwitterSettingsService>();
+    services.TryAddScoped<IUserPublisherLinkedInSettingsService, UserPublisherLinkedInSettingsService>();
+    services.TryAddScoped<IUserPublisherFacebookSettingsService, UserPublisherFacebookSettingsService>();
     services.TryAddScoped<IUserCollectorFeedSourceService, UserCollectorFeedSourceService>();
     services.TryAddScoped<IUserCollectorYouTubeChannelService, UserCollectorYouTubeChannelService>();
     services.TryAddScoped<IUserCollectorSpeakingEngagementService, UserCollectorSpeakingEngagementService>();
-    services.TryAddScoped<IUserCollectorScheduledItemService, UserCollectorScheduledItemService>();
     services.TryAddScoped<IMessageTemplateService, MessageTemplateService>();
     services.TryAddScoped<IYouTubeItemService, YouTubeItemService>();
     services.TryAddScoped<ISyndicationFeedItemService, SyndicationFeedItemService>();

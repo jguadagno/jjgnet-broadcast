@@ -51,13 +51,11 @@ public class YouTubeReaderFetchTests
         }
     }
 
-    private class TestHttpClientFactory : IHttpClientFactory
+    private class TestHttpClientFactory(HttpMessageHandler handler) : IHttpClientFactory
     {
-        private readonly HttpMessageHandler _handler;
-        public TestHttpClientFactory(HttpMessageHandler handler) => _handler = handler;
-        public ConfigurableHttpClient CreateHttpClient(CreateHttpClientArgs args)
+	    public ConfigurableHttpClient CreateHttpClient(CreateHttpClientArgs args)
         {
-            return new ConfigurableHttpClient(new ConfigurableMessageHandler(_handler));
+            return new ConfigurableHttpClient(new ConfigurableMessageHandler(handler));
         }
     }
 

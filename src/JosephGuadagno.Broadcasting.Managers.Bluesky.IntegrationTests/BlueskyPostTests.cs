@@ -8,19 +8,14 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Managers.Bluesky.IntegrationTests;
 
 [Trait("Category", "Integration")]
-public class BlueskyPostTests
+public class BlueskyPostTests(
+	IBlueskyManager blueskyManager,
+	ITestOutputHelper testOutputHelper,
+	ILogger<BlueskyPostTests> logger)
 {
-    private readonly IBlueskyManager _blueskyManager;
-    private readonly ITestOutputHelper _testOutputHelper;    
-    private readonly ILogger<BlueskyPostTests> _logger;
-    
-    public BlueskyPostTests(IBlueskyManager blueskyManager, ITestOutputHelper testOutputHelper, ILogger<BlueskyPostTests> logger)
-    {
-        _blueskyManager = blueskyManager;
-        _testOutputHelper = testOutputHelper;
-        _logger = logger;
-    }
-    
+	private readonly ITestOutputHelper _testOutputHelper = testOutputHelper;    
+    private readonly ILogger<BlueskyPostTests> _logger = logger;
+
     [Fact(Skip = "Manually run only")]
     public async Task SendBlueskyPostText_Success()
     {
@@ -28,14 +23,14 @@ public class BlueskyPostTests
         var message = "Test message - Testing in Production";
         
         // Act
-        var response = await _blueskyManager.PostText(message);
+        var response = await blueskyManager.PostText(message);
         
         // Assert
         Assert.NotNull(response);
         Assert.NotNull(response.Cid);
         
         // Clean up
-        await _blueskyManager.DeletePost(response.StrongReference);
+        await blueskyManager.DeletePost(response.StrongReference);
     }
     
     [Fact(Skip = "Manually run only")]
@@ -47,14 +42,14 @@ public class BlueskyPostTests
         message += "#JetBrains #Plugin #presenting #Rider";
         
         // Act
-        var response = await _blueskyManager.PostText(message);
+        var response = await blueskyManager.PostText(message);
         
         // Assert
         Assert.NotNull(response);
         Assert.NotNull(response.Cid);
         
         // Clean up
-        await _blueskyManager.DeletePost(response.StrongReference);
+        await blueskyManager.DeletePost(response.StrongReference);
     }
     
     [Fact(Skip = "Manually run only")]
@@ -79,14 +74,14 @@ public class BlueskyPostTests
         }
             
         // Act
-        var response = await _blueskyManager.Post(postBuilder);
+        var response = await blueskyManager.Post(postBuilder);
         
         // Assert
         Assert.NotNull(response);
         Assert.NotNull(response.Cid);
         
         // Clean up
-        await _blueskyManager.DeletePost(response.StrongReference);
+        await blueskyManager.DeletePost(response.StrongReference);
     }
     
     [Fact(Skip = "Manually run only")]
@@ -105,7 +100,7 @@ public class BlueskyPostTests
         postBuilder.Append(new Link(shortenedUrl, shortenedUrl));
         
         // Get the OpenGraph info to embed
-        var embeddedExternalRecord = await _blueskyManager.GetEmbeddedExternalRecord(url);
+        var embeddedExternalRecord = await blueskyManager.GetEmbeddedExternalRecord(url);
         if (embeddedExternalRecord != null)
         {
             postBuilder.EmbedRecord(embeddedExternalRecord);
@@ -118,14 +113,14 @@ public class BlueskyPostTests
         }
             
         // Act
-        var response = await _blueskyManager.Post(postBuilder);
+        var response = await blueskyManager.Post(postBuilder);
         
         // Assert
         Assert.NotNull(response);
         Assert.NotNull(response.Cid);
         
         // Clean up
-        await _blueskyManager.DeletePost(response.StrongReference);
+        await blueskyManager.DeletePost(response.StrongReference);
     }
     
     [Fact(Skip = "Manually run only")]
@@ -146,7 +141,7 @@ public class BlueskyPostTests
         postBuilder.Append(new Link(shortenedUrl, shortenedUrl));
         
         // Get the OpenGraph info to embed
-        var embeddedExternalRecord = await _blueskyManager.GetEmbeddedExternalRecord(url);
+        var embeddedExternalRecord = await blueskyManager.GetEmbeddedExternalRecord(url);
         if (embeddedExternalRecord != null)
         {
             postBuilder.EmbedRecord(embeddedExternalRecord);
@@ -159,13 +154,13 @@ public class BlueskyPostTests
         }
             
         // Act
-        var response = await _blueskyManager.Post(postBuilder);
+        var response = await blueskyManager.Post(postBuilder);
         
         // Assert
         Assert.NotNull(response);
         Assert.NotNull(response.Cid);
         
         // Clean up
-        await _blueskyManager.DeletePost(response.StrongReference);
+        await blueskyManager.DeletePost(response.StrongReference);
     }
 }

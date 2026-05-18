@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
 public class ProcessNewSyndicationDataFired(
-    ISyndicationFeedItemManager SyndicationFeedItemManager,
+    ISyndicationFeedItemManager syndicationFeedItemManager,
     ILogger<ProcessNewSyndicationDataFired> logger)
 {
     [Function(ConfigurationFunctionNames.BlueskyProcessNewSyndicationDataFired)]
@@ -40,42 +40,42 @@ public class ProcessNewSyndicationDataFired(
                 logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
                 return null;
             }
-            var SyndicationFeedItem = await SyndicationFeedItemManager.GetAsync(syndicationFeedItemEvent.Id);
+            var syndicationFeedItem = await syndicationFeedItemManager.GetAsync(syndicationFeedItemEvent.Id);
 
             // Create the scheduled BlueSky Posts for it
-            logger.LogDebug("Processing New Syndication Feed Data Fired for '{Id}' with title of '{Title}'", SyndicationFeedItem.Id, SyndicationFeedItem.Title);
+            logger.LogDebug("Processing New Syndication Feed Data Fired for '{Id}' with title of '{Title}'", syndicationFeedItem.Id, syndicationFeedItem.Title);
 
             // Handle the event - eventGridData to build the post
             // Need to create a PostBuilder to send this based on these docs
             // https://github.com/blowdart/idunno.Bluesky/blob/main/docs/posting.md#links-to-external-web-sites
-            var postText = SyndicationFeedItem.ItemLastUpdatedOn > SyndicationFeedItem.PublicationDate
+            var postText = syndicationFeedItem.ItemLastUpdatedOn > syndicationFeedItem.PublicationDate
                 ? "Updated Blog Post: "
                 : "New Blog Post: ";
             postText +=
-                $"({SyndicationFeedItem.PublicationDate.Date.ToShortDateString()}): \"{SyndicationFeedItem.Title}.\" RPs and feedback are always appreciated! ";
+                $"({syndicationFeedItem.PublicationDate.Date.ToShortDateString()}): \"{syndicationFeedItem.Title}.\" RPs and feedback are always appreciated! ";
 
             var blueskyPostMessage = new BlueskyPostMessage
             {
                 Text = postText,
-                Url = SyndicationFeedItem.Url,
-                ShortenedUrl = SyndicationFeedItem.ShortenedUrl
+                Url = syndicationFeedItem.Url,
+                ShortenedUrl = syndicationFeedItem.ShortenedUrl
             };
-            if (SyndicationFeedItem.Tags.Count > 0)
+            if (syndicationFeedItem.Tags.Count > 0)
             {
-                blueskyPostMessage.Hashtags = SyndicationFeedItem.Tags.ToList();
+                blueskyPostMessage.Hashtags = syndicationFeedItem.Tags.ToList();
             }
 
-            blueskyPostMessage.CreatedByEntraOid = SyndicationFeedItem.CreatedByEntraOid;
+            blueskyPostMessage.CreatedByEntraOid = syndicationFeedItem.CreatedByEntraOid;
             // Return
             var properties = new Dictionary<string, string>
             {
                 {"post", postText},
-                {"title", SyndicationFeedItem.Title},
-                {"url", SyndicationFeedItem.Url},
-                {"id", SyndicationFeedItem.Id.ToString()}
+                {"title", syndicationFeedItem.Title},
+                {"url", syndicationFeedItem.Url},
+                {"id", syndicationFeedItem.Id.ToString()}
             };
             logger.LogCustomEvent(Metrics.BlueskyProcessedNewSyndicationData, properties);
-            logger.LogDebug("Posted to Bluesky: {Title}", SyndicationFeedItem.Title);
+            logger.LogDebug("Posted to Bluesky: {Title}", syndicationFeedItem.Title);
             return blueskyPostMessage;
         }
         catch (Exception exception)

@@ -22,8 +22,8 @@ public class SchedulesController: ControllerBase
 {
     private readonly IScheduledItemManager _scheduledItemManager;
     private readonly IEngagementManager _engagementManager;
-    private readonly ISyndicationFeedItemManager _SyndicationFeedItemManager;
-    private readonly IYouTubeItemManager _YouTubeItemManager;
+    private readonly ISyndicationFeedItemManager _syndicationFeedItemManager;
+    private readonly IYouTubeItemManager _youTubeItemManager;
     private readonly ILogger<SchedulesController> _logger;
     private readonly IMapper _mapper;
 
@@ -32,22 +32,22 @@ public class SchedulesController: ControllerBase
     /// </summary>
     /// <param name="scheduledItemManager">The scheduled item manager</param>
     /// <param name="engagementManager">The engagement manager</param>
-    /// <param name="SyndicationFeedItemManager">The syndication feed source manager</param>
-    /// <param name="YouTubeItemManager">The YouTube source manager</param>
+    /// <param name="syndicationFeedItemManager">The syndication feed source manager</param>
+    /// <param name="youTubeItemManager">The YouTube source manager</param>
     /// <param name="logger">The logger to use</param>
     /// <param name="mapper">The AutoMapper instance</param>
     public SchedulesController(
         IScheduledItemManager scheduledItemManager,
         IEngagementManager engagementManager,
-        ISyndicationFeedItemManager SyndicationFeedItemManager,
-        IYouTubeItemManager YouTubeItemManager,
+        ISyndicationFeedItemManager syndicationFeedItemManager,
+        IYouTubeItemManager youTubeItemManager,
         ILogger<SchedulesController> logger,
         IMapper mapper)
     {
         _scheduledItemManager = scheduledItemManager;
         _engagementManager = engagementManager;
-        _SyndicationFeedItemManager = SyndicationFeedItemManager;
-        _YouTubeItemManager = YouTubeItemManager;
+        _syndicationFeedItemManager = syndicationFeedItemManager;
+        _youTubeItemManager = youTubeItemManager;
         _logger = logger;
         _mapper = mapper;
     }
@@ -500,7 +500,7 @@ public class SchedulesController: ControllerBase
 
     private async Task<ActionResult<SourceItemValidationResponse>> ValidateSyndicationFeedItemAsync(int id)
     {
-        var source = await _SyndicationFeedItemManager.GetAsync(id);
+        var source = await _syndicationFeedItemManager.GetAsync(id);
         if (source is null)
         {
             return Ok(new SourceItemValidationResponse { IsValid = false, ErrorMessage = "Item not found" });
@@ -516,7 +516,7 @@ public class SchedulesController: ControllerBase
 
     private async Task<ActionResult<SourceItemValidationResponse>> ValidateYouTubeItemAsync(int id)
     {
-        var source = await _YouTubeItemManager.GetAsync(id);
+        var source = await _youTubeItemManager.GetAsync(id);
         if (source is null)
         {
             return Ok(new SourceItemValidationResponse { IsValid = false, ErrorMessage = "Item not found" });
@@ -575,13 +575,13 @@ public class SchedulesController: ControllerBase
 
     private async Task<string?> ResolveSyndicationFeedItemNameAsync(int id)
     {
-        var source = await _SyndicationFeedItemManager.GetAsync(id);
+        var source = await _syndicationFeedItemManager.GetAsync(id);
         return source?.Title;
     }
 
     private async Task<string?> ResolveYouTubeItemNameAsync(int id)
     {
-        var source = await _YouTubeItemManager.GetAsync(id);
+        var source = await _youTubeItemManager.GetAsync(id);
         return source?.Title;
     }
 }

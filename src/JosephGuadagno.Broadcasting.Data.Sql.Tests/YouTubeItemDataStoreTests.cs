@@ -245,4 +245,64 @@ public class YouTubeItemDataStoreTests : IDisposable
         // Assert
         Assert.Null(result);
     }
+
+    [Fact]
+    public async Task IsVideoUniqueToUser_ReturnsTrue_WhenVideoDoesNotExistForUser()
+    {
+        // Arrange — no items seeded
+
+        // Act
+        var result = await _dataStore.IsVideoUniqueToUser("vid1", "owner-1");
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task IsVideoUniqueToUser_ReturnsFalse_WhenVideoAlreadyExistsForUser()
+    {
+        // Arrange
+        var item = CreateYouTubeItem("vid1", "https://youtube.com/watch?v=vid1");
+        item.CreatedByEntraOid = "owner-1";
+        _context.YouTubeItems.Add(item);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.IsVideoUniqueToUser("vid1", "owner-1");
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task IsVideoUniqueToUser_ReturnsTrue_WhenSameVideoExistsForDifferentUser()
+    {
+        // Arrange — vid1 belongs to owner-1, not owner-2
+        var item = CreateYouTubeItem("vid1", "https://youtube.com/watch?v=vid1");
+        item.CreatedByEntraOid = "owner-1";
+        _context.YouTubeItems.Add(item);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.IsVideoUniqueToUser("vid1", "owner-2");
+
+        // Assert — same videoId but different owner: unique for owner-2
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task IsVideoUniqueToUser_ReturnsTrue_WhenDifferentVideoExistsForSameUser()
+    {
+        // Arrange — owner-1 has vid2, checking for vid1
+        var item = CreateYouTubeItem("vid2", "https://youtube.com/watch?v=vid2");
+        item.CreatedByEntraOid = "owner-1";
+        _context.YouTubeItems.Add(item);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.IsVideoUniqueToUser("vid1", "owner-1");
+
+        // Assert
+        Assert.True(result);
+    }
 }

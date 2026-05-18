@@ -14,18 +14,12 @@ namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
 
 public class YouTubeItemsControllerTests
 {
-    private readonly Mock<IYouTubeItemManager> _managerMock;
-    private readonly Mock<ILogger<YouTubeItemsController>> _loggerMock;
+    private readonly Mock<IYouTubeItemManager> _managerMock = new();
+    private readonly Mock<ILogger<YouTubeItemsController>> _loggerMock = new();
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
     // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
-    private static readonly IMapper _mapper = ApiTestMapper.Instance;
-
-    public YouTubeItemsControllerTests()
-    {
-        _managerMock = new Mock<IYouTubeItemManager>();
-        _loggerMock = new Mock<ILogger<YouTubeItemsController>>();
-    }
+    private static readonly IMapper Mapper = ApiTestMapper.Instance;
 
     // -------------------------------------------------------------------------
     // Helpers
@@ -36,7 +30,7 @@ public class YouTubeItemsControllerTests
         var controller = new YouTubeItemsController(
             _managerMock.Object,
             _loggerMock.Object,
-            _mapper)
+            Mapper)
         {
             ControllerContext = ApiControllerTestHelpers.CreateControllerContext(ownerOid, isSiteAdmin),
             ProblemDetailsFactory = new TestProblemDetailsFactory()

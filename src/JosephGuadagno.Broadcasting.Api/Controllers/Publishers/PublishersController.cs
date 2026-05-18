@@ -42,19 +42,17 @@ public class PublishersController(
             return Forbid();
         }
 
-        var blueskyTask = blueskyManager.GetAsync(resolvedOwnerOid);
-        var twitterTask = twitterManager.GetAsync(resolvedOwnerOid);
-        var linkedInTask = linkedInManager.GetAsync(resolvedOwnerOid);
-        var facebookTask = facebookManager.GetAsync(resolvedOwnerOid);
-
-        await Task.WhenAll(blueskyTask, twitterTask, linkedInTask, facebookTask);
+        var bluesky = await blueskyManager.GetAsync(resolvedOwnerOid);
+        var twitter = await twitterManager.GetAsync(resolvedOwnerOid);
+        var linkedIn = await linkedInManager.GetAsync(resolvedOwnerOid);
+        var facebook = await facebookManager.GetAsync(resolvedOwnerOid);
 
         return Ok(new PublishersAggregateResponse
         {
-            Bluesky = blueskyTask.Result is null ? null : mapper.Map<BlueskySettingsResponse>(blueskyTask.Result),
-            Twitter = twitterTask.Result is null ? null : mapper.Map<TwitterSettingsResponse>(twitterTask.Result),
-            LinkedIn = linkedInTask.Result is null ? null : mapper.Map<LinkedInSettingsResponse>(linkedInTask.Result),
-            Facebook = facebookTask.Result is null ? null : mapper.Map<FacebookSettingsResponse>(facebookTask.Result)
+            Bluesky = bluesky is null ? null : mapper.Map<BlueskySettingsResponse>(bluesky),
+            Twitter = twitter is null ? null : mapper.Map<TwitterSettingsResponse>(twitter),
+            LinkedIn = linkedIn is null ? null : mapper.Map<LinkedInSettingsResponse>(linkedIn),
+            Facebook = facebook is null ? null : mapper.Map<FacebookSettingsResponse>(facebook)
         });
     }
 }

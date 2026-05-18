@@ -6,142 +6,183 @@ Trinity (Backend API Developer) implements core API functionality including CRUD
 
 ---
 
-### 2026-05-15 — PR #963 Log Injection Fix: UserPublisherSettingService
+### 2026-05-16 — Publisher Settings Refactor: 5 Self-Contained Controllers + Services + Views
 
-**Status:** ✅ COMPLETE — commit eda470e7 on `issue-959-publisher-settings-phase2`
-
-Fixed Neo's blocking `cs/log-forging` review finding: 3 `LogWarning` call sites in `UserPublisherSettingService.cs` were passing user-controlled values (`CreatedByEntraOid`, `SocialMediaPlatformName`, `platform`) directly to the logger without sanitization. Added `using JosephGuadagno.Broadcasting.Domain.Utilities;` and wrapped all user-controlled arguments with `LogSanitizer.Sanitize()`. Build clean (0 warnings, 0 errors). PR #963 unblocked.
-
-**Learnings:**
-- `LogSanitizer.Sanitize()` must be applied in the **service layer** just as strictly as in controllers.
-- When a new service file is created without the `JosephGuadagno.Broadcasting.Domain.Utilities` using directive, `LogSanitizer` will not be available — always check the using is present.
-- Private helper methods (e.g., `LogSaveFailure`) are equally subject to the log-injection rule — audit the full file, not just public methods.
-
----
-
-### 2026-05-15 — Issue #958 Phase 1: Per-Publisher SQL Tables, EF Models, Data Stores
-
-**Status:** ✅ COMPLETE — PR #962 on `issue-958-publisher-settings-phase1`; 28 new tests, all passing
+**Status:** ✅ COMPLETE — commit 95487e72; 1246 tests passed (0 errors, 0 warnings)
 
 **What was delivered:**
-- SQL migration: 4 idempotent tables (Bluesky, Twitter, LinkedIn, Facebook), `UNIQUE (CreatedByEntraOid)`, `IsEnabled BIT DEFAULT 0`
-- EF models, domain models, 4 `IUserPublisher*SettingsDataStore` interfaces
-- `GetByUserAsync` returns `Task<T?>` (nullable single — one-to-one per user)
-- `SaveAsync` upsert pattern; `LogSanitizer.Sanitize()` on all user-controlled log args
-- `UserPublisherSettingsMappingProfile` — 4 `ReverseMap()` pairs
-- DI: `AddSqlDataStores()`, `AddDataSqlMappingProfiles()`, `Api/Program.cs`, `Functions/Program.cs`
-- Tests: 28 xUnit tests (7 per platform) using in-memory EF
+- Refactored from monolithic `PublisherSettingsController` + `PublisherSettingsService` to **5 self-contained per-publisher implementations**:
+  - `BlueskyPublisherSettingsController` + `BlueskyPublisherSettingsService`
+  - `LinkedInPublisherSettingsController` + `LinkedInPublisherSettingsService`
+  - `FacebookPublisherSettingsController` + `FacebookPublisherSettingsService`
+  - `TwitterPublisherSettingsController` + `TwitterPublisherSettingsService`
+  - Shared API controllers refactored for each platform
+
+- Deleted old monolithic implementations
+- Each publisher owns its controller, service, DTOs, views
+- Established **self-contained architecture directive**: adding/removing a publisher does NOT require big refactors
+- Aligns with existing collector pattern (YouTube, FeedSource, SpeakingEngagement, ScheduledItem)
+
+**Test Results:** 1246 passed, 0 errors, 0 warnings
+
+---
+
+### 2026-05-15 — PR #963 Log Injection Fix & Issue #958 Phase 1
+
+**Status:** ✅ COMPLETE
+
+- PR #963: Fixed 3 `LogSanitizer` sites in `UserPublisherSettingService.cs` (eda470e7)
+- PR #962: Phase 1 delivered 4 per-publisher SQL tables + EF models + data stores (28 tests)
+
+---
+
+### 2026-05-14 — Issue #950: Neo Review Fixes
+
+**Status:** ✅ COMPLETE — commits 6a56416, 525dc2d; 157 Functions tests passing
+
+---
+
+## Learnings (Recent)
+
+Trinity focuses on vertical API→Manager→Data patterns. Self-contained controller + service + DTOs per publisher/collector minimizes shared code. Each platform is independent — adding/removing doesn't require big refactors.
+
+---
+
+### 2026-05-17 — 204-vs-404 Fix: Singleton User-Config GET Endpoints
+
+**Status:** ✅ COMPLETE — build succeeded, 0 errors, 0 warnings; all tests pass (2 pre-existing KeyVault failures unrelated to this work)
+
+**Decision:** Neo approved `neo-404-vs-204-optional-resources.md` — singleton GET endpoints (one row per user, identified by ownerOid only) must return `204 No Content` when no record exists. `404 Not Found` implies a bad ID, which is wrong for first-time-user flow.
+
+**What was delivered:**
+
+1. **5 API controllers changed** (singleton GET only; DELETE methods retain 404):
+   - `CollectorScheduledItemSettingsController`, `BlueskySettingsController`, `FacebookSettingsController`, `TwitterSettingsController`, `LinkedInSettingsController`
+   - `[ProducesResponseType(404)]` → `[ProducesResponseType(204)]`; `LogWarning` → `LogInformation`; `NotFound()` → `NoContent()`; XML doc updated
+
+2. **New extension** `src\JosephGuadagno.Broadcasting.Web\Extensions\DownstreamApiExtensions.cs`:
+   - `GetOptionalForUserAsync<T>` on `IDownstreamApi` — catches `HttpRequestException` where `StatusCode == NotFound`, returns null. Defense-in-depth wrapper usable by any Web service.
+
+3. **5 already-working Web services** converted from try/catch-404 to `GetOptionalForUserAsync<T>` (dead code removed since API now returns 204):
+   - `UserCollectorScheduledItemService`, `UserPublisherBlueskySettingsService`, `UserPublisherFacebookSettingsService`, `UserPublisherTwitterSettingsService`, `UserPublisherLinkedInSettingsService`
+
+4. **10 previously-unguarded single-item GET call sites** in 9 Web services switched from `GetForUserAsync<T>` to `GetOptionalForUserAsync<T>`:
+   - `EngagementService` (GetEngagementAsync + GetEngagementTalkAsync), `MessageTemplateService`, `ScheduledItemService`, `SocialMediaPlatformService`, `SyndicationFeedItemService`, `UserCollectorFeedSourceService`, `UserCollectorSpeakingEngagementService`, `UserCollectorYouTubeChannelService`, `YouTubeItemService`
+
+**Rule established:** ID-based GETs (int id in route) keep 404. Singleton-by-ownerOid GETs use 204. DELETE always returns 404 when missing.
+
+---
+
+### 2026-05-16 — KeyVault initial-setup bug in UpdateSecretValueAndPropertiesAsync
+
+**Bug:** `KeyVault.UpdateSecretValueAndPropertiesAsync` tried to load and disable the existing secret version before creating a new one. On initial setup (no secret exists yet), `SecretClient.GetSecretAsync` throws `RequestFailedException(404)` — it does NOT return null. The method had a null check but no 404 guard, so the exception propagated as-is and blocked the very first `SaveAsync` for any publisher (Bluesky, LinkedIn, Facebook, Twitter).
+
+**Root cause:** The Azure SDK `SecretClient` throws on 404 rather than returning null. The existing null check was unreachable for the "not found" case.
+
+**Fix pattern:** Wrap the "get + disable old version" block in `try/catch (RequestFailedException ex) when (ex.Status == 404)`. When the secret doesn't exist yet, log an informational message and skip the disable step, then fall through to `SetSecretAsync` to create the first version. The null-response `ApplicationException` guard is kept for genuine SDK failures on other status codes.
+
+**Affected file:** `src\JosephGuadagno.Broadcasting.Data.KeyVault\KeyVault.cs`
+**Test added:** `UpdateSecretValueAndPropertiesAsync_WhenSecretDoesNotExist_ShouldCreateSecretWithoutDisablingOldVersion`
+**Commit:** 1cbeac20
+
+---
+
+### 2026-05-16 — Publishers/Index: Data-Driven Platform Cards from ISocialMediaPlatformService
+
+**Status:** ✅ COMPLETE — commit 1857b497; build succeeded, 0 errors, 0 warnings
+
+**What was delivered:**
+- Added `PublisherPlatformCardViewModel` to `PublishersAggregateViewModel.cs`
+- Added `Platforms` property (`IReadOnlyList<PublisherPlatformCardViewModel>`) to `PublishersAggregateViewModel`
+- Updated `PublishersController` to inject `ISocialMediaPlatformService`, fetch platforms in parallel with aggregate settings, filter by `PlatformControllerMap`, and build `Platforms` list
+- Updated `Publishers/Index.cshtml` to iterate `Model.Platforms` instead of a hardcoded inline array
+- Mastodon (in DB, no controller) is silently skipped via the static `PlatformControllerMap` allowlist
 
 **Learnings:**
-- One-to-one data stores return `Task<T?>` from `GetByUserAsync`, not `Task<List<T>>`.
-- `UserPublisherSettingsMappingProfile` needs no ignored fields — unlike collector channels there are no transient properties. `ReverseMap()` alone is sufficient.
+- Static `IReadOnlyDictionary` in the controller is the right place for name→controller mapping; it's deterministic and doesn't belong in the DB
+- Start both tasks before awaiting either (`var t1 = Foo(); var t2 = Bar(); var r1 = await t1; var r2 = await t2;`) for simple parallel fan-out without `Task.WhenAll`
+- Platforms not in the controller map are silently skipped in LINQ `.Where()` — no exceptions, no view-layer branching needed
 
 ---
 
-### 2026-05-14 — Issue #950: Neo Review Fixes (issue-950-sanity-check)
+### 2026-05-16 — Publisher Settings Refactor: 5 Self-Contained Controllers + Services + Views
 
-**Status:** ✅ COMPLETE — commits 6a56416, 525dc2d; 157 Functions tests passing, build clean
+**Status:** ✅ COMPLETE — commit 95487e72; 1246 tests passed (0 errors, 0 warnings)
 
-- **B1:** Added `namespace JosephGuadagno.Broadcasting.Managers;` to both missing manager files
-- **B2:** Added `IYouTubeReader.GetAsync(ownerOid, sinceWhen, IYouTubeSettings)` per-user overload; wired `LoadNewVideos` to resolve KV API key per channel
-- **B3:** Registered `IUserCollectorSpeakingEngagementDataStore` + `IUserCollectorScheduledItemDataStore` in `AddSqlDataStores()`
-- **W1-W3:** Fixed API DI duplicates, added `UserCollectorScheduledItemRequest/Response` DTOs + AutoMapper mappings
-- XML Doc CS1573 fixes across all 8 affected API controllers (commit 525dc2d)
+**What was delivered:**
+- Refactored from monolithic `PublisherSettingsController` + `PublisherSettingsService` to **5 self-contained per-publisher implementations**:
+  - `BlueskyPublisherSettingsController` + `BlueskyPublisherSettingsService` + `BlueskyPublisherSettingsView`
+  - `LinkedInPublisherSettingsController` + `LinkedInPublisherSettingsService` + `LinkedInPublisherSettingsView`
+  - `FacebookPublisherSettingsController` + `FacebookPublisherSettingsService` + `FacebookPublisherSettingsView`
+  - `TwitterPublisherSettingsController` + `TwitterPublisherSettingsService` + `TwitterPublisherSettingsView`
+  - Shared API controllers refactored for each platform
+
+- Deleted old monolithic `PublisherSettingsController.cs` and `PublisherSettingsService.cs`
+- Each publisher owns its controller, service, DTOs, and Razor views
+- Established **self-contained architecture directive**: adding/removing a publisher does NOT require big refactors
+
+**Architecture alignment:**
+- Mirrors the existing collector pattern (YouTube, FeedSource, SpeakingEngagement, ScheduledItem)
+- No shared settings logic — each platform is isolated
+- Shared dependency injection via `AddSqlDataStores()` and `AddDataSqlMappingProfiles()`
+- `KeyVaultSecretNameBuilder` for unified KV secret naming across all publishers
+
+**Test Results:**
+- 1246 tests passed
+- 0 errors, 0 warnings
+- All CI gates green
+
+**Learnings:**
+- Self-contained design reduces cognitive load across 4+ publishers — each is independent
+- API controllers, Web controllers, and Function publishers all follow the same per-publisher pattern
+- Shared utility (KV naming) at Domain layer, but service implementations isolated
 
 ---
 
-### 2026-05-08 — Issue #933/937/936/899: Core Features
+### 2026-05-17 — Publishers/Index Root Cause Analysis: `UserPublisherFacebookSettings` DbCommand Failure
 
-**Status:** ✅ ALL COMPLETE
+**Status:** ✅ COMPLETE — build succeeded (0 warnings, 0 errors), 404 tests passed
 
-- **#933 PR #939** (242 tests): 4 `ProcessNewSpeakingEngagementFired` Azure Functions (Bluesky/Facebook/LinkedIn/Twitter). LinkedIn uses per-user OAuth via `IUserOAuthTokenManager`; others use shared credentials.
-- **#937 commit 5cf213d**: Fixed `SentScheduledItemAsync` cache invalidation — fetch-before-mutate to capture `CreatedByEntraOid` before calling `InvalidateUserCaches()`.
-- **#936 PR #940** (253 tests): `IMessageTemplateManager` + `MessageTemplateManager` with `IMemoryCache`. Two cache keys: `MessageTemplate_All` and `MessageTemplate_{platformId}_{messageType}`. `ApplyFilterSortPage` static helper for in-memory filter/sort/pagination. `InvalidateListCaches()` on `UpdateAsync`.
-- **#899 PR #924** (11 tests): `ITwitterManager.ComposeMessageAsync`. `IServiceScopeFactory?` constructor overload. `ProcessScheduledItemFired` simplified from ~100 lines to single await.
+**Root cause (two-part):**
+
+1. **Missing tables in `table-create.sql`** — The Aspire AppHost only runs `database-create.sql` + `table-create.sql` + `data-seed.sql` for fresh environments. The 4 per-publisher settings tables (`UserPublisherFacebookSettings`, `UserPublisherBlueskySettings`, `UserPublisherLinkedInSettings`, `UserPublisherTwitterSettings`) were added by the `2026-05-15-publisher-settings-per-publisher-tables.sql` migration but were never backfilled into `table-create.sql`. Any fresh Aspire environment therefore started with no tables → EF threw `Invalid object name 'UserPublisherFacebookSettings'`. Fixed in commit `7b88ea23`.
+
+2. **No defensive fallback in data stores** — Without a try/catch, the `SqlException` propagated through the manager to `PublishersController.GetAllAsync`, which uses `Task.WhenAll` for all 4 platforms. One failure caused the entire aggregate to fail and the page to error. Fixed in commit `3ef227a2`: try/catch added to all 4 operations (`GetByUserAsync`, `GetByIdAsync`, `SaveAsync`, `DeleteAsync`) across all 4 data stores.
+
+**Schema analysis:**
+- EF entity model: 12 properties (including `CreatedOn`, `LastUpdatedOn`) ✓
+- Domain model: 12 properties ✓
+- Migration SQL: 12 columns ✓
+- `table-create.sql` (post-fix): 12 columns ✓
+- `BroadcastingContext` Fluent API: all 12 mapped, `CreatedOn`/`LastUpdatedOn` with `HasDefaultValueSql("(getutcdate())")` ✓
+- **No schema mismatch existed** between EF model and DB.
+
+**Anomaly note — missing `CreatedOn` in the error query:**
+The failing SQL shown in the task description omits `[u].[CreatedOn]` (11 columns instead of 12). The current code generates 12-column SELECT. This indicates the error was captured against an older compiled binary. The actual SQL Server error would have been "Invalid object name 'UserPublisherFacebookSettings'" — EF logs the attempted SQL, not the SQL Server error text.
+
+**No migration script needed** — the tables were already created by the migration; `table-create.sql` is only for fresh environments. Adding them idempotently (with `IF NOT EXISTS`) to `table-create.sql` was the correct fix.
+
+**Pattern reinforced:** Whenever adding tables via a migration, also backfill `scripts/database/table-create.sql` with an `IF NOT EXISTS` guard so Aspire fresh-environment bootstrapping stays in sync.
 
 ---
 
-## Learnings
+### 2026-05-16 — Concurrent DbContext Fix: Task.WhenAll → Sequential Awaits
 
-### Collector Web Layer — Issue #960 Phase 2 (2026-05-16)
+**Status:** ✅ COMPLETE — commit 20fc6b79; 247 tests passed (0 errors, 0 failures)
 
-1. When adding route aliases to an MVC controller that uses conventional routing, switch to attribute routing with both `[Route("OldName")]` and `[Route("NewName")]` at class level. The `Index` action needs `[HttpGet("")]` and `[HttpGet("Index")]` to cover both bare path and explicit action URL.
-2. Single-row-per-user Web controllers: no `id` parameter needed — actions are parameterless (or take optional `ownerOid` for admin). The API handles the upsert internally.
-3. `UserCollectorScheduledItemService.SaveAsync` passes `item.CreatedByEntraOid` as `?ownerOid=` query param so the API can enforce ownership/admin checks.
-4. `WebMappingProfile` ViewModel→Domain maps for single-row models need `Id`, `CreatedByEntraOid`, `CreatedOn`, and `LastUpdatedOn` all ignored — the controller sets them explicitly before calling `SaveAsync`.
-5. Nullable ViewModel (`UserCollectorScheduledItemViewModel?`) is the right Index view model for single-row-per-user — renders "not configured" state without a separate sentinel value.
+**Root cause:**
+`PublishersController.GetAllAsync`, `CollectorsController.GetAllAsync`, and `SchedulesController.Index` all used `Task.WhenAll` to fan out calls to managers that share a single scoped `BroadcastingContext`. EF Core's `DbContext` is not thread-safe for concurrent operations — simultaneous queries on the same context caused the SQL connection to enter a closed/corrupt state:
+> "BeginExecuteReader requires an open and available Connection. The connection's current state is closed."
 
+**Fix:** Replaced all three `Task.WhenAll` fan-outs with sequential `await` calls. The DbContext is scoped per HTTP request, so each await completes before the next begins — no concurrent access.
 
+**Files changed:**
+- `src\JosephGuadagno.Broadcasting.Api\Controllers\Publishers\PublishersController.cs`
+- `src\JosephGuadagno.Broadcasting.Api\Controllers\Collectors\CollectorsController.cs`
+- `src\JosephGuadagno.Broadcasting.Web\Controllers\SchedulesController.cs`
 
-1. When marking old controllers `[Obsolete]`, test files that instantiate them directly will generate CS0618 build warnings. Suppress with `#pragma warning disable CS0618` at file top with a comment explaining the intent (testing backward compat during migration).
-2. `IUserCollectorScheduledItemManager.GetByUserAsync` returns `Task<List<T>>` (not `Task<T?>`). For single-row-per-user patterns, call `GetByUserAsync` and take `.FirstOrDefault()` — do NOT assume a `GetSingleByUserAsync` method exists.
-3. Upsert pattern for single-row controllers: call `GetByUserAsync`, if found set `config.Id = existing.Id` before calling `SaveAsync`; if not found pass `Id = 0` and `SaveAsync` creates it.
-4. New `Collectors/` subfolder in `Controllers/` mirrors the existing `Publishers/` subfolder pattern. Use explicit `[Route("Collectors/YouTube/Settings")]` — not `[Route("[controller]")]` — to keep the human-readable segment independent of the class name.
+**Learning:** Never use `Task.WhenAll` (or fire-and-forget task creation before the first await) when the underlying managers share a single scoped `DbContext`. The pattern `var t1 = Foo(); var t2 = Bar(); await Task.WhenAll(t1, t2)` looks like a safe optimization but is a correctness bug with EF Core scoped contexts. Use sequential awaits instead.
 
+### GetForUserAsync<T> — 404 handling pattern (2026-05-17)
 
-
-1. `KeyVaultSecretOwnerType` enum uses `.ToString().ToLowerInvariant()` to produce "publisher"/"collector" — no switch, no lookup table needed.
-2. `const string` fields from a static class ARE compile-time constants and can be used directly in xUnit `[InlineData]` attribute arguments.
-3. Enum values (e.g., `KeyVaultSecretOwnerType.Publisher`) are also valid `[InlineData]` arguments.
-4. New types go in `JosephGuadagno.Broadcasting.Domain.Utilities` namespace as sibling files alongside `KeyVaultSecretNameBuilder` and `LogSanitizer`.
-
-### Security
-
-1. `LogSanitizer.Sanitize()` applies in the **service layer** too — not just controllers. Private helper methods that log are equally subject.
-2. Any class that logs user-controlled data must have `using JosephGuadagno.Broadcasting.Domain.Utilities;`.
-3. `[IgnoreAntiforgeryToken]` sweep (2026-05-15): all 10 API controllers already compliant. Class-level is the established pattern — do not add per-method attributes.
-4. CSRF sweep (2026-05-12): all Web `[HttpPost]` methods had `[ValidateAntiForgeryToken]`, all API controllers had `[IgnoreAntiforgeryToken]`. Read actual files before applying mechanical security fixes.
-
-### Interface/Mock Patterns
-
-1. When an interface signature changes, update all Moq mocks immediately — the build won't catch mock signature mismatches.
-2. `GetApiKeyAsync` requires a mock in tests using `IUserCollectorYouTubeChannelManager`; Moq returns `null` by default.
-
-### DTO Patterns
-
-1. Split `XxxRequest` into `CreateXxxRequest` + `UpdateXxxRequest` when required-ness differs between Create and Update.
-2. For Update: validate `!existing.HasApiKey && string.IsNullOrWhiteSpace(request.ApiKey)` in the controller after the fetch — not in ModelState.
-3. AutoMapper: add `.ForMember(d => d.HasApiKey, o => o.Ignore())` for server-computed flags.
-4. Razor: round-trip `bool HasApiKey` via `<input type="hidden" asp-for="HasApiKey" />` — without it, Edit POST always receives `false`.
-5. `asp-for` tag helpers cannot have C# ternary expressions — use full `@if/else` blocks for conditional attributes.
-
-### Domain Model / Mapping
-
-1. When a domain model has transient-only properties (e.g., `ApiKey`), keep on domain model with EF mapping ignoring it. `WebMappingProfile` must ignore `ApiKey` in Domain→ViewModel.
-2. `BroadcastingProfile` and `UserCollectorMappingProfile` both register the same EF↔Domain YouTube map — update both when the domain model changes.
-3. One-to-one data stores use `Task<T?>` from `GetByUserAsync` (not `Task<List<T>>`).
-
-### SQL/EF
-
-1. `SyndicationFeedSource→FeedItem` rename (135 files): use `git mv` for renames FIRST, then content-replace. Order `-replace` chains longest-specific first.
-2. SQL table renames need both `sp_rename` migration script AND updated `table-create.sql`/`data-seed.sql`.
-3. CS1573 fires when XML docs have SOME `<param>` tags but missing others. Fix by adding all missing tags.
-4. Always run `dotnet build .\src\` (full solution) — reveals more warnings than building a single project.
-
-### Architecture
-
-1. `AddSqlDataStores()` is the Web project's only SQL registration path. New data stores must be registered there.
-2. Git branch confusion guard: ALWAYS run `git branch --show-current` before any `git add`/`git commit`.
-3. `BuildPageViewModelAsync` is the single source of truth. Inline `.Select(x => new ViewModel { ... }).ToList()` is the established projection pattern — don't introduce AutoMapper there.
-4. Per-user OAuth isolation is LinkedIn-only. Other platforms use shared credentials.
-5. `IServiceScopeFactory` singleton pattern: singleton managers resolve scoped services inside async methods via `CreateScope()`. .NET DI auto-selects the longest constructor — no `Program.cs` changes needed.
-6. Interface location quirks: `ITwitterManager` is in Domain layer (not Managers.Twitter); `ILinkedInManager` is physically in the `Models/` folder.
-
-### XML Documentation
-
-1. For `DateTimeOffset` properties, note that the value includes a UTC offset.
-2. Never use "Gets or sets" as a property summary — describe the business meaning.
-3. Use `<remarks>This field is required.</remarks>` not "required" in `<summary>`.
-4. Class summaries that reflect an old type name (before renames) are stale — fix them.
-
-### CollectorSettings Refactor
-
-1. When removing inline POST actions from a settings controller, also remove now-dead `using` directives.
-2. For settings-style pages: prefer redirect links to dedicated CRUD pages; reserve modals for lightweight confirmations.
-3. `CollectorSettingsController` is now a **read-only page controller** — all mutations flow through dedicated controllers.
-
-### GitHub Output Safety (Sprint 28)
-
-1. NEVER use `gh pr create --body "..."` inline — PowerShell mangles backslashes. ALWAYS write body to file first.
-2. Before all GitHub output, scan for `\word\` patterns and replace with backticks.
-
+Any Web service that calls `IDownstreamApi.GetForUserAsync<T>` for a **single nullable object** (not a collection) MUST wrap the call in `catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)` and return `null`. The API legitimately returns 404 for first-time users who have no configuration yet; without the catch the exception propagates and crashes the page. The controller already handles `null` gracefully. Log the 404 as `LogInformation` (not `LogWarning`) — it is expected, not an error. Always sanitize the OID via `LogSanitizer.Sanitize(ownerOid)`.

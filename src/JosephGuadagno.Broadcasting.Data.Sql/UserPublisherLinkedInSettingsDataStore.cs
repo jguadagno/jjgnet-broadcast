@@ -21,11 +21,22 @@ public class UserPublisherLinkedInSettingsDataStore(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
 
-        var entity = await broadcastingContext.UserPublisherLinkedInSettings
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.CreatedByEntraOid == ownerOid, cancellationToken);
+        try
+        {
+            var entity = await broadcastingContext.UserPublisherLinkedInSettings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.CreatedByEntraOid == ownerOid, cancellationToken);
 
-        return entity is null ? null : mapper.Map<UserPublisherLinkedInSettings>(entity);
+            return entity is null ? null : mapper.Map<UserPublisherLinkedInSettings>(entity);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to retrieve LinkedIn settings for owner {OwnerOid}",
+                LogSanitizer.Sanitize(ownerOid));
+            return null;
+        }
     }
 
     /// <inheritdoc />
@@ -34,11 +45,22 @@ public class UserPublisherLinkedInSettingsDataStore(
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(id);
 
-        var entity = await broadcastingContext.UserPublisherLinkedInSettings
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        try
+        {
+            var entity = await broadcastingContext.UserPublisherLinkedInSettings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
-        return entity is null ? null : mapper.Map<UserPublisherLinkedInSettings>(entity);
+            return entity is null ? null : mapper.Map<UserPublisherLinkedInSettings>(entity);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to retrieve LinkedIn settings for ID {Id}",
+                id);
+            return null;
+        }
     }
 
     /// <inheritdoc />

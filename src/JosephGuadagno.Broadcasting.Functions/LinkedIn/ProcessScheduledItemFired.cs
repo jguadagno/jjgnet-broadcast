@@ -17,8 +17,8 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 public class ProcessScheduledItemFired(
     IScheduledItemManager scheduledItemManager,
     IEngagementManager engagementManager,
-    ISyndicationFeedItemManager SyndicationFeedItemManager,
-    IYouTubeItemManager YouTubeItemManager,
+    ISyndicationFeedItemManager syndicationFeedItemManager,
+    IYouTubeItemManager youTubeItemManager,
     IUserOAuthTokenManager userOAuthTokenManager,
     ILinkedInManager linkedInManager,
     ILogger<ProcessScheduledItemFired> logger)
@@ -160,9 +160,9 @@ public class ProcessScheduledItemFired(
         logger.LogDebug("Getting the text for syndication source for '{PrimaryKey}'", primaryKey);
         try
         {
-            var SyndicationFeedItem = await SyndicationFeedItemManager.GetAsync(primaryKey);
-            post.Title = SyndicationFeedItem.Title;
-            post.LinkUrl = SyndicationFeedItem.ShortenedUrl ?? SyndicationFeedItem.Url;
+            var syndicationFeedItem = await syndicationFeedItemManager.GetAsync(primaryKey);
+            post.Title = syndicationFeedItem.Title;
+            post.LinkUrl = syndicationFeedItem.ShortenedUrl ?? syndicationFeedItem.Url;
         }
         catch (Exception e)
         {
@@ -178,9 +178,9 @@ public class ProcessScheduledItemFired(
         logger.LogDebug("Getting the text for YouTube source for '{PrimaryKey}'", primaryKey);
         try
         {
-            var YouTubeItem = await YouTubeItemManager.GetAsync(primaryKey);
-            post.Title = YouTubeItem.Title;
-            post.LinkUrl = YouTubeItem.ShortenedUrl ?? YouTubeItem.Url;
+            var youTubeItem = await youTubeItemManager.GetAsync(primaryKey);
+            post.Title = youTubeItem.Title;
+            post.LinkUrl = youTubeItem.ShortenedUrl ?? youTubeItem.Url;
         }
         catch (Exception e)
         {

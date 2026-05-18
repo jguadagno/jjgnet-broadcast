@@ -1853,3 +1853,1092 @@ The task spec said `GetOwnerOid` returns `null` when no OID claim is present. Th
 
 `src/JosephGuadagno.Broadcasting.Api.Tests/ClaimsPrincipalExtensionsTests.cs`
 
+
+---
+
+
+### 2026-05-17T09:48:53-07:00: User directive — Table styling standard
+
+**By:** Joseph Guadagno (via Copilot)
+**What:** All Index/list tables in the Web app must use `<table class="table table-striped table-hover table-bordered">` with a plain unstyled `<thead>` (no `table-dark`). Do NOT use `thead class="table-dark"` on any table. The canonical reference is `Views/CollectorFeedSources/Index.cshtml`.
+
+Table pattern:
+- `<table class="table table-striped table-hover table-bordered">`
+- `<thead>` — no extra classes
+- Sort header links: `class="text-decoration-none text-body"`
+- Status badges: `<span class="badge bg-success">` / `<span class="badge bg-secondary">`
+- Action buttons column: `class="text-end"` with `btn btn-sm btn-outline-secondary` (view), `btn btn-sm btn-warning` (edit), `btn btn-sm btn-danger` (delete)
+
+**Why:** User request — consistency across all list views. `table-dark` on thead is explicitly unwanted.
+
+
+---
+
+
+### 2026-05-17: Design directive — New API endpoint standards
+
+**By:** Joseph Guadagno (via Copilot)
+**Status:** Active — applies to all future API work
+
+---
+
+## Two required practices for every new API endpoint
+
+### 1. XML documentation comments on all controller actions
+
+Every public action method in an API controller **must** have XML doc comments covering:
+
+- `<summary>` — what the endpoint does
+- `<param>` — for each parameter
+- `<returns>` — describes each possible HTTP response code and when it occurs
+
+**Example pattern:**
+
+```csharp
+/// <summary>Gets the scheduled item configuration for the specified owner.</summary>
+/// <param name="ownerOid">The OID of the owner whose config to retrieve.</param>
+/// <returns>
+/// 200 OK — the configuration was found and is returned in the response body.
+/// 204 No Content — the owner has not yet configured a scheduled item; absence is normal.
+/// 401 Unauthorized — the caller is not authenticated.
+/// 403 Forbidden — the caller does not have permission to access this owner's config.
+/// </returns>
+[HttpGet]
+[ProducesResponseType(typeof(UserCollectorScheduledItemResponse), StatusCodes.Status200OK)]
+[ProducesResponseType(StatusCodes.Status204NoContent)]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
+public async Task<IActionResult> GetAsync([FromQuery] string? ownerOid = null) { ... }
+```
+
+The `[ProducesResponseType]` attributes and the XML `<returns>` block must agree.
+
+---
+
+### 2. Use 204 No Content (not 404) for singleton user-config GET endpoints
+
+When a GET endpoint retrieves an **optional singleton per user** (one row per user, where absence is
+a normal first-run state), return `204 No Content` when no record exists — **not** `404 Not Found`.
+
+See `neo-404-vs-204-optional-resources.md` for the full rationale and scope definition.
+
+In short:
+
+| Scenario | HTTP code |
+|---|---|
+| Singleton config: user hasn't set it up yet | **204 No Content** |
+| ID-based lookup: caller provided a nonexistent ID | **404 Not Found** |
+| DELETE/PUT on a resource that doesn't exist | **404 Not Found** |
+| Collection GET: no items yet | **200 OK** (empty page) |
+
+`IDownstreamApi.GetForUserAsync<T>()` returns `null` (not an exception) on 204, so the Web
+service needs no try/catch — the callers handle null naturally.
+
+---
+
+## Applies to
+
+All contributors creating new controller actions in `JosephGuadagno.Broadcasting.Api`.
+Both rules must be satisfied before a PR is considered complete.
+
+
+---
+
+
+# Decision: 204 No Content for Optional Singleton User-Config GET Endpoints
+
+**Date:** 2026-05-17
+**Author:** Neo (Lead)
+**Requested by:** Joseph Guadagno
+**Status:** Proposed
+
+---
+
+## Context
+
+A recurring bug pattern: the API returns HTTP 404 when a user hasn't yet configured an optional
+singleton resource (one per user — e.g., `UserCollectorScheduledItem`, `UserPublisherBlueskySettings`).
+`IDownstreamApi.GetForUserAsync<T>()` (Microsoft.Identity.Abstractions) **throws** `HttpRequestException`
+on any non-2xx response. This means every Web service that fetches an optional user singleton must
+defensively catch `HttpRequestException(404)` and return null — a guard that is easy to forget.
+
+The bug has materialized at least twice in this codebase. All five currently-affected singleton
+services happen to have the guard today, but this is fragile and will recur.
+
+### Resources in scope (singleton per user, absence is normal)
+
+| API Controller GET | Web Service | Has 404 guard today? |
+|---|---|---|
+| `CollectorScheduledItemSettingsController.GetAsync` | `UserCollectorScheduledItemService.GetAsync` | ✅ |
+| `BlueskySettingsController.GetAsync` | `UserPublisherBlueskySettingsService.GetCurrentUserAsync` | ✅ |
+| `TwitterSettingsController.GetAsync` | `UserPublisherTwitterSettingsService.GetCurrentUserAsync` | ✅ |
+| `FacebookSettingsController.GetAsync` | `UserPublisherFacebookSettingsService.GetCurrentUserAsync` | ✅ |
+| `LinkedInSettingsController.GetAsync` | `UserPublisherLinkedInSettingsService.GetCurrentUserAsync` | ✅ |
+
+### Resources NOT in scope (collections — already return 200 + empty page, no issue)
+
+- `CollectorFeedSourceSettingsController.GetAllAsync`
+- `CollectorSpeakingEngagementSettingsController.GetAllAsync`
+- `CollectorYouTubeSettingsController.GetAllAsync`
+
+---
+
+## Options Considered
+
+### Option A — Keep 404, fix every Web service
+
+Every `GetAsync` in the Web service layer catches `HttpRequestException(404)` and returns null.
+Status quo, but enforce it via code review.
+
+**Tradeoffs:**
+
+- ✅ No API contract change
+- ✅ 404 is already tested and documented
+- ❌ Fragile — easy to omit in the next new service; this is exactly how the bug has appeared twice
+- ❌ The API says "error" when the correct semantic is "no content yet"
+- ❌ Adds boilerplate to every future singleton service
+
+**Verdict:** Treats the symptom, not the cause. Rejected as primary fix.
+
+---
+
+### Option B — Return 204 No Content for "not yet configured" singletons
+
+When a singleton user-config GET finds no row for the authenticated user, return `204 No Content`
+instead of `404 Not Found`.
+
+RFC 9110 §15.3.5: "The server has successfully fulfilled the request and there is no additional
+content to send." This is correct — the request was valid (authenticated, authorized, correct route),
+the user just hasn't configured this yet.
+
+`IDownstreamApi.GetForUserAsync<T>()` returns `default(T)` (null for reference types) on any 2xx
+response with no body, including 204. No exception thrown. Web services naturally receive null.
+
+**Tradeoffs:**
+
+- ✅ Semantically correct: 204 = "valid request, nothing here yet"
+- ✅ `IDownstreamApi` returns null naturally — no try/catch needed anywhere
+- ✅ Fixes the root cause; future singletons are safe by default
+- ✅ Does not affect DELETE (which correctly returns 404 when the item to delete doesn't exist)
+- ✅ Does not affect ID-based GETs (e.g., `GET /FeedSource/Settings/{id}`), which correctly return 404
+- ⚠️ GET returning 204 is uncommon — but it is valid HTTP and matches the semantics precisely
+- ⚠️ Requires updating 5 API controllers and 5 Web services (remove the now-unnecessary try/catch)
+- ⚠️ API doc/OpenAPI annotations must be updated
+
+**Verdict:** Recommended as the primary fix.
+
+---
+
+### Option C — Return 200 with null/empty body
+
+Return `200 OK` with a null body when no config exists.
+
+**Tradeoffs:**
+
+- ❌ 200 semantically means "here is the resource" — a null body is misleading
+- ❌ JSON deserialization of a null body is awkward and inconsistent
+- ❌ Violates REST conventions
+
+**Verdict:** Rejected outright.
+
+---
+
+### Option D — Web-layer wrapper `GetOptionalForUserAsync<T>`
+
+Add a static extension method on `IDownstreamApi` that catches `HttpRequestException(404)` and
+returns null. Individual services call the wrapper instead of the raw API.
+
+```csharp
+public static class DownstreamApiExtensions
+{
+    public static async Task<T?> GetOptionalForUserAsync<T>(
+        this IDownstreamApi api,
+        string serviceName,
+        Action<DownstreamApiOptions> options)
+        where T : class
+    {
+        try
+        {
+            return await api.GetForUserAsync<T>(serviceName, options);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+}
+```
+
+**Tradeoffs:**
+
+- ✅ No API change
+- ✅ Centralizes the boilerplate into one place
+- ❌ Fixes the Web layer only; the API contract still misrepresents absence as error
+- ❌ Future developers calling `GetForUserAsync` directly (instead of the wrapper) still hit the bug
+- ❌ Does not help if this API is ever called from another service (Functions, CLI, etc.)
+
+**Verdict:** Good as a secondary safety net, not sufficient as the primary fix.
+
+---
+
+## Recommendation: Option B (primary) + Option D (defense-in-depth)
+
+### Primary: Change singleton user-config GET endpoints to return 204
+
+Change the API GET actions for all singleton user-config resources to return `204 No Content`
+when no record exists for the resolved owner.
+
+**Example — before (`CollectorScheduledItemSettingsController.GetAsync`):**
+
+```csharp
+var config = configs.FirstOrDefault();
+if (config is null)
+{
+    logger.LogWarning("Scheduled item config not found for owner {OwnerOid}", LogSanitizer.Sanitize(resolvedOwnerOid));
+    return NotFound();
+}
+return Ok(mapper.Map<UserCollectorScheduledItemResponse>(config));
+```
+
+**After:**
+
+```csharp
+var config = configs.FirstOrDefault();
+if (config is null)
+{
+    logger.LogInformation("No scheduled item config for owner {OwnerOid} — returning 204", LogSanitizer.Sanitize(resolvedOwnerOid));
+    return NoContent();
+}
+return Ok(mapper.Map<UserCollectorScheduledItemResponse>(config));
+```
+
+Update `[ProducesResponseType]` from `Status404NotFound` to `Status204NoContent` on each GET action.
+
+**Web service side — after (no try/catch needed):**
+
+```csharp
+public async Task<UserCollectorScheduledItem?> GetAsync(string ownerOid)
+{
+    return await apiClient.GetForUserAsync<UserCollectorScheduledItem>(ApiServiceName, options =>
+    {
+        options.RelativePath = $"{BaseUrl}?ownerOid={Uri.EscapeDataString(ownerOid)}";
+    });
+    // IDownstreamApi returns null on 204 — no exception handling needed
+}
+```
+
+### Secondary: Add `GetOptionalForUserAsync<T>` extension as defense-in-depth
+
+Add the wrapper from Option D to `JosephGuadagno.Broadcasting.Web` or a shared utility class.
+Future developers who call the raw API method still get safe behavior. Log a warning inside the
+wrapper when a 404 is caught, so unintended usage surfaces.
+
+---
+
+## The Distinction That Matters
+
+| Scenario | HTTP Response | Rationale |
+|---|---|---|
+| Singleton config: user hasn't set it up yet | **204 No Content** | Valid request, no content yet — normal first-run state |
+| Singleton config: DELETE when doesn't exist | **404 Not Found** | Deleting something that isn't there is an error |
+| ID-based lookup: `GET /FeedSource/Settings/{id}` | **404 Not Found** | Specific item doesn't exist — caller provided a bad ID |
+| Collection: `GET /FeedSource/Settings` (no items) | **200 OK** (empty page) | No change — collections already handle this correctly |
+
+---
+
+## Directive Going Forward
+
+> **All singleton user-configuration GET endpoints (one row per user, where absence is normal
+> first-run state) MUST return `204 No Content` when no record exists, NOT `404 Not Found`.**
+> Reserve `404` for: (a) routes that don't exist, (b) ID-based lookups where the caller provided
+> a nonexistent ID, (c) mutating operations (DELETE/PUT) where the target genuinely doesn't exist.
+
+This directive applies to all future Collector and Publisher settings controllers that follow
+the singleton-per-user pattern.
+
+---
+
+## Files Affected When Implementing
+
+**API controllers (change `NotFound()` → `NoContent()` and update `[ProducesResponseType]`):**
+
+- `src/JosephGuadagno.Broadcasting.Api/Controllers/Collectors/CollectorScheduledItemSettingsController.cs`
+- `src/JosephGuadagno.Broadcasting.Api/Controllers/Publishers/BlueskySettingsController.cs`
+- `src/JosephGuadagno.Broadcasting.Api/Controllers/Publishers/TwitterSettingsController.cs`
+- `src/JosephGuadagno.Broadcasting.Api/Controllers/Publishers/FacebookSettingsController.cs`
+- `src/JosephGuadagno.Broadcasting.Api/Controllers/Publishers/LinkedInSettingsController.cs`
+
+**Web services (remove `catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)`):**
+
+- `src/JosephGuadagno.Broadcasting.Web/Services/UserCollectorScheduledItemService.cs`
+- `src/JosephGuadagno.Broadcasting.Web/Services/UserPublisherBlueskySettingsService.cs`
+- `src/JosephGuadagno.Broadcasting.Web/Services/UserPublisherTwitterSettingsService.cs`
+- `src/JosephGuadagno.Broadcasting.Web/Services/UserPublisherFacebookSettingsService.cs`
+- `src/JosephGuadagno.Broadcasting.Web/Services/UserPublisherLinkedInSettingsService.cs`
+
+**New (defense-in-depth wrapper):**
+
+- `src/JosephGuadagno.Broadcasting.Web/Extensions/DownstreamApiExtensions.cs`
+
+---
+
+## Risk
+
+Low. This is an internal API consumed only by the Web project and Functions project. There are
+no external consumers. The change reduces exception-path code, not adds it. The DELETE endpoints
+for these same controllers correctly continue to return 404 — only GET changes.
+
+
+---
+
+
+# Publisher Architecture Proposal
+
+**Author:** Neo (Lead)  
+**Date:** 2026-05-18  
+**Requested by:** Joseph Guadagno  
+**Status:** PROPOSAL — Awaiting review  
+**Type:** Architecture Analysis + Proposed Refactor
+
+---
+
+## 1 — Current State (Facts)
+
+### Publisher Manager constructors — all four carry composition dependencies they should not own
+
+| Manager | Project | Composition deps injected |
+|---|---|---|
+| `BlueskyManager` | `Managers.Bluesky` | `ISocialMediaPlatformManager`, `IMessageTemplateDataStore`, `ISyndicationFeedItemManager`, `IYouTubeItemManager`, `IEngagementManager` |
+| `FacebookManager` | `Managers.Facebook` | Same five |
+| `LinkedInManager` | `Managers.LinkedIn` | Same five |
+| `TwitterManager` | `Managers.Twitter` | Same five |
+
+Each manager also carries its rightful platform-specific dependencies: `HttpClient` (Bluesky/Facebook/LinkedIn), `IBlueskySettings`/`IFacebookApplicationSettings`/`ILinkedInApplicationSettings`, `TwitterContext`, and `ILogger<T>`.
+
+### What managers do today
+
+**Composition (should move out):**  
+All four expose `ComposeMessageAsync(ScheduledItem scheduledItem)` with near-identical bodies:
+1. Call `ISocialMediaPlatformManager.GetByNameAsync("Platform")` → get platform ID
+2. Call `IMessageTemplateDataStore.GetAsync(platformId, messageType)` → get Scriban template
+3. Switch on `ScheduledItemType` → fetch the full entity from the injected manager
+4. Render Scriban template with `{title, url, description, tags, image_url}`
+5. Fallback to `scheduledItem.Message` if no template
+
+This logic is **copy-pasted verbatim** across all four managers (only the platform name constant differs). The `TryRenderTemplateAsync()` private method is also fully duplicated in all four.
+
+**Publishing (should stay):**  
+All four expose `PublishAsync(SocialMediaPublishRequest request)` which calls the platform API. This is the correct single responsibility.
+
+### Azure Functions — current composition responsibility
+
+The 4 × N functions in `Twitter/`, `Facebook/`, `LinkedIn/`, `Bluesky/` split into two categories:
+
+**`Process*` functions** (EventGrid → Queue) — these build the queue message:
+- `Bluesky/ProcessScheduledItemFired.cs`: delegates composition to `blueskyManager.ComposeMessageAsync()` ✅
+- `Facebook/ProcessScheduledItemFired.cs`: delegates composition to `facebookManager.ComposeMessageAsync()` ✅
+- `LinkedIn/ProcessScheduledItemFired.cs`: delegates composition to `linkedInManager.ComposeMessageAsync()` but also does entity lookup inline to populate `LinkUrl`/`Title` ⚠️ (double data fetch)
+- `Twitter/ProcessScheduledItemFired.cs`: delegates composition to `twitterManager.ComposeMessageAsync()` ✅
+- `Bluesky/ProcessNewSyndicationDataFired.cs`: hardcoded text template inline ❌
+- `Bluesky/ProcessNewRandomPost.cs`: hardcoded text template inline ❌
+- `Facebook/ProcessNewSyndicationDataFired.cs`: hardcoded text template + `ComposeStatus()` private method ❌
+- `Facebook/ProcessNewRandomPost.cs`: hardcoded text template inline ❌
+- `Twitter/ProcessNewSyndicationDataFired.cs`: hardcoded text template + `ComposeTweet()` private method ❌
+- `LinkedIn/ProcessNewSyndicationDataFired.cs`: hardcoded text template + `ComposeStatus()` private method ❌
+
+**`Send*` functions** (Queue → Platform API) — these post the content:
+- `Bluesky/SendPost.cs`: fetches per-user credentials from `IUserPublisherBlueskySettingsManager`, then **reimplements** the entire PostBuilder logic (links, embeds, hashtags) that already exists in `BlueskyManager.PublishAsync()` — bypasses the manager's publish method entirely ❌
+- `Twitter/SendTweet.cs`: fetches per-user credentials from `IUserPublisherTwitterSettingsManager`, builds its own `TwitterContext`, calls `twitterContext.TweetAsync()` directly — **bypasses `TwitterManager` entirely** ❌
+- `Facebook/PostPageStatus.cs`: fetches per-user credentials from `IUserPublisherFacebookSettingsManager`, calls `facebookManager.PostMessageAndLinkToPage(text, link, pageId, pageAccessToken)` — uses the correct per-user overload but does not go through `PublishAsync()` ⚠️
+- `LinkedIn/PostLink.cs`: calls `linkedInManager.PostShareTextAndLink()` / `PostShareTextAndImage()` directly — does not go through `PublishAsync()` ⚠️
+
+### Platform-specific queue message DTOs
+
+Four separate types for structurally identical data:
+
+| Type | Lives in |
+|---|---|
+| `BlueskyPostMessage` | `Managers.Bluesky.Models` |
+| `TwitterTweetMessage` | `Domain.Models.Messages` |
+| `FacebookPostStatus` | `Domain.Models.Messages` |
+| `LinkedInPostLink` | `LinkedIn.Managers.Models` (note: referenced by `Functions` project directly) |
+
+All four carry: `Text/StatusText`, `Url/LinkUrl`, `ImageUrl`, `CreatedByEntraOid`, plus platform-specific extras.
+
+### Multi-user gap
+
+- `MessageTemplate.CreatedByEntraOid` field **exists** in the domain model.
+- `IMessageTemplateDataStore.GetAllAsync(string ownerEntraOid, ...)` **exists**.
+- But `ComposeMessageAsync()` in all four managers calls `messageTemplateDataStore.GetAsync(platformId, messageType)` — no owner scoping. All users share the same template regardless of who authored the content.
+
+---
+
+## 2 — Inconsistencies Found
+
+| # | Where | Inconsistency |
+|---|---|---|
+| I-1 | All 4 managers | `TryRenderTemplateAsync()` is copy-pasted verbatim. Platform name constant is the only difference. |
+| I-2 | `Bluesky/SendPost.cs` | Reimplements PostBuilder (links, embeds, hashtags) instead of calling `blueskyManager.PublishAsync()`. |
+| I-3 | `Twitter/SendTweet.cs` | Builds its own `TwitterContext` from per-user credentials and bypasses `TwitterManager` entirely for posting. The `TwitterContext` injected into `TwitterManager` is the shared/global one — cannot be used for per-user posting. |
+| I-4 | `LinkedIn/ProcessScheduledItemFired.cs` | Calls `linkedInManager.ComposeMessageAsync()` for text AND does entity lookup inline (GetPostForEngagement, GetPostForTalk, etc.) — manager already does entity lookup internally. Double fetch. |
+| I-5 | `Process*` functions | `ScheduledItemFired` path delegates to manager; `NewSyndicationDataFired`/`NewRandomPost` paths use hardcoded inline templates. No Scriban, no user-specific templates. |
+| I-6 | `LinkedIn/PostLink.cs`, `Facebook/PostPageStatus.cs` | Call platform-specific methods directly instead of `PublishAsync(SocialMediaPublishRequest)`. |
+| I-7 | `MessageTemplate.CreatedByEntraOid` | Field exists, user-scoped `GetAllAsync()` overload exists, but composition in managers ignores owner — all users get same template. |
+| I-8 | Queue DTOs | Four structurally identical types; maintenance burden multiplied by platform count. |
+
+---
+
+## 3 — Proposed Architecture
+
+### Guiding Principles
+
+1. **Publisher Managers own exactly one thing**: call the platform API given a fully-composed `SocialMediaPublishRequest`.
+2. **Composition lives in one place**: a new shared `IPostComposer` utility receives raw content fields + a template string and returns rendered text. No entity fetching.
+3. **Azure Functions own orchestration**: determine which user, which template, which credentials; fetch entities once; hand off to composer and then to publisher.
+4. **`SocialMediaPublishRequest` is the universal contract** between Function and Publisher Manager.
+
+---
+
+### 3.1 — `SocialMediaPublishRequest` (enhanced)
+
+Lives: `JosephGuadagno.Broadcasting.Domain.Models` (current location is correct)
+
+Add one property:
+
+```csharp
+/// <summary>
+/// The Entra Object ID of the user who owns the content.
+/// Used by the Send function to resolve per-user credentials before calling PublishAsync.
+/// </summary>
+public string? OwnerEntraOid { get; set; }
+```
+
+The request already has `AccessToken` and `AuthorId`. The flow is:
+- `Process*` function sets `OwnerEntraOid` when writing to the queue.
+- `Send*` function reads `OwnerEntraOid`, resolves credentials, sets `AccessToken` / `AuthorId`, then calls `manager.PublishAsync(request)`.
+
+This makes `SocialMediaPublishRequest` serve dual purpose: it is the composition context (with raw content fields the template uses) and the final publish contract.
+
+**No other changes to `SocialMediaPublishRequest` are needed at this stage.** The existing fields already cover composition context (Title, Description, Hashtags, ImageUrl, LinkUrl, ShortenedUrl) and publish contract (Text, AccessToken, AuthorId).
+
+---
+
+### 3.2 — `IPostComposer` / `PostComposer` (new — Composition Utility)
+
+**Lives:** `JosephGuadagno.Broadcasting.Domain.Interfaces` (interface) and `JosephGuadagno.Broadcasting.Managers` (implementation)
+
+**Why Managers project, not a new project?** The existing shared `Managers` project (which holds `EngagementManager`, `SyndicationFeedItemManager`, etc.) is the right home. Adding a new assembly just for this utility is over-engineering.
+
+#### Interface
+
+```csharp
+// JosephGuadagno.Broadcasting.Domain.Interfaces.IPostComposer
+public interface IPostComposer
+{
+    /// <summary>
+    /// Renders a Scriban template string using the content fields from the request.
+    /// Returns the rendered string on success. Returns null if the template is empty
+    /// or rendering fails, allowing callers to fall back to a raw message.
+    /// </summary>
+    Task<string?> ComposeAsync(
+        SocialMediaPublishRequest request,
+        string templateContent,
+        CancellationToken cancellationToken = default);
+}
+```
+
+**Inputs available from `SocialMediaPublishRequest`** for template variables:
+- `request.Title` → `{{ title }}`
+- `request.LinkUrl` or `request.ShortenedUrl` → `{{ url }}`
+- `request.Description` → `{{ description }}`
+- `request.Hashtags` → `{{ tags }}` (joined)
+- `request.ImageUrl` → `{{ image_url }}`
+
+This is purely a Scriban rendering step — **no DB calls, no HTTP calls**. The Function has already fetched the entity before reaching this step.
+
+#### Implementation
+
+```csharp
+// JosephGuadagno.Broadcasting.Managers.PostComposer
+public class PostComposer(ILogger<PostComposer> logger) : IPostComposer
+{
+    public async Task<string?> ComposeAsync(
+        SocialMediaPublishRequest request,
+        string templateContent,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(templateContent))
+            return null;
+
+        try
+        {
+            var url = request.ShortenedUrl ?? request.LinkUrl ?? string.Empty;
+            var tags = request.Hashtags is { Count: > 0 }
+                ? string.Join(",", request.Hashtags)
+                : string.Empty;
+
+            var template = Template.Parse(templateContent);
+            var scriptObject = new ScriptObject();
+            scriptObject.Import(new
+            {
+                title = request.Title ?? string.Empty,
+                url,
+                description = request.Description ?? string.Empty,
+                tags,
+                image_url = request.ImageUrl ?? string.Empty
+            });
+            var context = new TemplateContext();
+            context.PushGlobal(scriptObject);
+            var rendered = await template.RenderAsync(context);
+            return string.IsNullOrWhiteSpace(rendered) ? null : rendered.Trim();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Scriban template rendering failed");
+            return null;
+        }
+    }
+}
+```
+
+This replaces the four identical `TryRenderTemplateAsync()` private methods currently duplicated across all four publisher managers.
+
+---
+
+### 3.3 — Publisher Managers (cleaned up)
+
+#### What they lose
+
+- All five composition dependencies removed from constructor: `ISocialMediaPlatformManager`, `IMessageTemplateDataStore`, `ISyndicationFeedItemManager`, `IYouTubeItemManager`, `IEngagementManager`
+- `ComposeMessageAsync()` method removed from all four
+- `TryRenderTemplateAsync()` private method removed from all four
+- `GetMessageType()` private static method removed from all four
+
+#### What they keep / gain
+
+They keep only what they need for API communication:
+
+**`BlueskyManager` constructor (after):**
+```csharp
+BlueskyManager(
+    HttpClient httpClient,
+    IBlueskySettings blueskySettings,
+    ILogger<BlueskyManager> logger)
+```
+
+**`FacebookManager` constructor (after):**
+```csharp
+FacebookManager(
+    HttpClient httpClient,
+    IFacebookApplicationSettings facebookApplicationSettings,
+    ILogger<FacebookManager> logger)
+```
+
+**`LinkedInManager` constructor (after):**
+```csharp
+LinkedInManager(
+    HttpClient httpClient,
+    ILogger<LinkedInManager> logger)
+```
+(LinkedIn auth is per-request via `AccessToken` in `SocialMediaPublishRequest`; no shared credential settings needed.)
+
+**`TwitterManager` constructor (after):**  
+The current `TwitterManager` receives a `TwitterContext` at DI time — a global shared context. But `Twitter.SendTweet.cs` builds its own per-user `TwitterContext`. These are irreconcilable. The new design must have `TwitterManager` build its own context from credentials supplied in the request.
+
+```csharp
+TwitterManager(ILogger<TwitterManager> logger)
+```
+
+`PublishAsync(SocialMediaPublishRequest request)` would then:
+```csharp
+// Inside TwitterManager.PublishAsync:
+var credentialStore = new InMemoryCredentialStore
+{
+    ConsumerKey    = request.ConsumerKey!,    // new field on SocialMediaPublishRequest
+    ConsumerSecret = request.ConsumerSecret!,
+    OAuthToken     = request.AccessToken!,
+    OAuthTokenSecret = request.AccessTokenSecret!, // new field
+};
+var authorizer = new SingleUserAuthorizer { CredentialStore = credentialStore };
+var ctx = new TwitterContext(authorizer);
+return await ctx.TweetAsync(request.Text);
+```
+
+**`SocialMediaPublishRequest` needs two additional fields for Twitter:**
+
+```csharp
+/// <summary>OAuth consumer key (Twitter only).</summary>
+public string? ConsumerKey { get; set; }
+
+/// <summary>OAuth consumer secret (Twitter only).</summary>
+public string? ConsumerSecret { get; set; }
+
+/// <summary>OAuth access token secret (Twitter only).</summary>
+public string? AccessTokenSecret { get; set; }
+```
+
+This is precedented: LinkedIn already uses `AccessToken` + `AuthorId` in the request. Twitter's four-legged OAuth needs four credential fields.
+
+#### `IBlueskyManager` / `IFacebookManager` / `ILinkedInManager` / `ITwitterManager` interfaces
+
+All four interfaces drop `ComposeMessageAsync()`. They all implement `ISocialMediaPublisher` via their manager interface.
+
+---
+
+### 3.4 — Template Lookup (moved to Functions)
+
+Currently `ComposeMessageAsync()` in each manager does a two-step lookup:
+1. `ISocialMediaPlatformManager.GetByNameAsync("Bluesky")` → get integer platform ID
+2. `IMessageTemplateDataStore.GetAsync(platformId, messageType)` → get template
+
+In the new design, the **`Process*` Function** owns this lookup. A shared helper (or injected service) can abstract the two steps:
+
+```csharp
+// New interface in Domain.Interfaces:
+public interface IMessageTemplateLookup
+{
+    Task<MessageTemplate?> GetAsync(
+        string platformName,
+        string messageType,
+        string? ownerEntraOid = null,  // user-scoped first, fall back to global
+        CancellationToken cancellationToken = default);
+}
+```
+
+The implementation would:
+1. Try `messageTemplateDataStore.GetAsync(ownerEntraOid, platformId, messageType)` — user-scoped
+2. Fall back to `messageTemplateDataStore.GetAsync(platformId, messageType)` — global
+
+This unblocks multi-user template customization **without changing all the Function code** — the Functions just inject `IMessageTemplateLookup` instead of `IMessageTemplateDataStore` + `ISocialMediaPlatformManager`.
+
+---
+
+### 3.5 — Azure Function Responsibility (new design)
+
+#### `Process*` Functions — new contract
+
+Each `Process*` function (one per platform × event type) is responsible for:
+
+1. **Deserialize** the event payload
+2. **Load the source entity** once (SyndicationFeedItem, YouTubeItem, Engagement, Talk)
+3. **Look up the message template** via `IMessageTemplateLookup.GetAsync(platform, messageType, ownerEntraOid)`
+4. **Build a `SocialMediaPublishRequest`** with raw content fields (Title, LinkUrl, ShortenedUrl, Description, Hashtags, ImageUrl, OwnerEntraOid — no credentials yet)
+5. **Compose text** via `postComposer.ComposeAsync(request, template.Template)` → set `request.Text`
+6. **Enqueue** the `SocialMediaPublishRequest` (replaces platform-specific DTOs — see §3.6)
+
+```csharp
+// Example: Bluesky/ProcessNewSyndicationDataFired.cs (after)
+public class ProcessNewSyndicationDataFired(
+    ISyndicationFeedItemManager syndicationFeedItemManager,
+    IMessageTemplateLookup messageLookup,
+    IPostComposer postComposer,
+    ILogger<ProcessNewSyndicationDataFired> logger)
+{
+    [Function(...)]
+    [QueueOutput(Queues.BlueskyPostToSend)]
+    public async Task<SocialMediaPublishRequest?> RunAsync(...)
+    {
+        var item = await syndicationFeedItemManager.GetAsync(event.Id);
+        var template = await messageLookup.GetAsync(
+            MessageTemplates.Platforms.Bluesky,
+            MessageTemplates.MessageTypes.NewSyndicationFeedItem,
+            item.CreatedByEntraOid);
+
+        var request = new SocialMediaPublishRequest
+        {
+            Title       = item.Title,
+            LinkUrl     = item.Url,
+            ShortenedUrl = item.ShortenedUrl,
+            Hashtags    = item.Tags,
+            OwnerEntraOid = item.CreatedByEntraOid
+        };
+        request.Text = await postComposer.ComposeAsync(request, template?.Template ?? string.Empty)
+                       ?? FallbackText(item);  // platform-specific fallback
+
+        return request;
+    }
+}
+```
+
+Injections per `Process*` function: entity manager + `IMessageTemplateLookup` + `IPostComposer` + logger. **No platform manager. No publisher manager. No credential manager.** Clean.
+
+#### `Send*` Functions — new contract
+
+Each `Send*` function (one per platform) is responsible for:
+
+1. **Receive `SocialMediaPublishRequest`** from queue
+2. **Validate `OwnerEntraOid`** (bail if missing/disabled)
+3. **Resolve per-user credentials** using the platform-specific settings manager
+4. **Set credentials** on the request (`AccessToken`, `AuthorId`, `ConsumerKey`, etc.)
+5. **Call `manager.PublishAsync(request)`** — one line
+6. **Log success metric**
+
+```csharp
+// Example: Twitter/SendTweet.cs (after)
+public class SendTweet(
+    IUserPublisherTwitterSettingsManager twitterSettingsManager,
+    ITwitterManager twitterManager,
+    ILogger<SendTweet> logger)
+{
+    [Function(ConfigurationFunctionNames.TwitterSendTweet)]
+    public async Task Run(
+        [QueueTrigger(Queues.TwitterTweetsToSend)] SocialMediaPublishRequest request)
+    {
+        var ownerOid = request.OwnerEntraOid;
+        // ... null/enabled checks as today ...
+
+        request.AccessToken       = await twitterSettingsManager.GetAccessTokenAsync(ownerOid);
+        request.AccessTokenSecret = await twitterSettingsManager.GetAccessTokenSecretAsync(ownerOid);
+        request.ConsumerKey       = await twitterSettingsManager.GetConsumerKeyAsync(ownerOid);
+        request.ConsumerSecret    = await twitterSettingsManager.GetConsumerSecretAsync(ownerOid);
+
+        // ... null checks on credentials ...
+
+        await twitterManager.PublishAsync(request);
+    }
+}
+```
+
+The `Send*` function is now ~50 lines of credential plumbing + one `PublishAsync` call. The platform-specific complexity lives inside the manager where it belongs.
+
+---
+
+### 3.6 — Queue DTO Unification (optional but recommended)
+
+Replace `BlueskyPostMessage`, `TwitterTweetMessage`, `FacebookPostStatus`, `LinkedInPostLink` with `SocialMediaPublishRequest` as the queue message type.
+
+**Benefits:** One DTO to maintain. Functions become symmetric (every `Process*` outputs `SocialMediaPublishRequest`, every `Send*` accepts `SocialMediaPublishRequest`).
+
+**Risk:** Azure Storage Queue messages are serialized JSON. Changing the type is a soft breaking change — existing in-flight messages with old schemas will deserialize with null fields. A brief deployment window or queue drain is needed per platform.
+
+**Note:** `LinkedInPostLink` currently lives in `Managers.LinkedIn.Models` but is referenced by the `Functions` project — a layering violation. Unifying to `SocialMediaPublishRequest` (which lives in `Domain.Models`) also fixes this.
+
+---
+
+### 3.7 — Multi-User Support
+
+With `OwnerEntraOid` flowing through `SocialMediaPublishRequest`:
+
+1. **Template lookup** uses `ownerEntraOid` for user-scoped templates (§3.4). User A and User B can have different Bluesky templates for `NewSyndicationFeedItem`.
+2. **Credential lookup** in `Send*` functions already uses `ownerEntraOid` (this works today — the pattern is correct, just needs to go through `PublishAsync`).
+3. **Content ownership** flows from source entity → `SocialMediaPublishRequest.OwnerEntraOid` → credential lookup. No assumptions about a single global user.
+
+The system today **only works correctly for Joe** (the single content owner). This design makes user identity a first-class concept throughout the pipeline.
+
+---
+
+## 4 — Migration Path
+
+The proposal is a significant refactor but can be done in safe, incremental phases.
+
+### Phase 1 — Extract `PostComposer` (low risk, immediate value)
+
+**What:** Create `IPostComposer` in Domain + `PostComposer` in the shared `Managers` project. Wire it into DI.  
+**What doesn't change yet:** The four publisher managers still have `ComposeMessageAsync()`. The Functions are untouched.  
+**Value:** The duplicated `TryRenderTemplateAsync()` code is no longer the reference implementation. This gives us the utility before we start moving callers.  
+**Risk:** Low. Additive only.
+
+### Phase 2 — Extract `IMessageTemplateLookup` (low risk)
+
+**What:** Create `IMessageTemplateLookup` in Domain, implement in Managers. Inject into all `Process*` functions that currently call `manager.ComposeMessageAsync()` (the 4 ScheduledItemFired functions).  
+**What doesn't change yet:** Manager `ComposeMessageAsync()` still exists (it is also called by Functions, so this is additive).  
+**Value:** Functions now own template lookup. User-scoped template fallback becomes possible.  
+**Risk:** Low. Additive.
+
+### Phase 3 — Migrate `Process*` Functions to use `IMessageTemplateLookup` + `IPostComposer`
+
+**What:** For each `Process*` function across all 4 platforms (4 ScheduledItemFired + 4 NewSyndication + 4 NewRandomPost + 4 NewSpeakingEngagement + 4 NewYouTubeData = ~20 functions):
+- Remove the manager dependency
+- Add `IMessageTemplateLookup` + `IPostComposer`
+- Load entity, look up template, build `SocialMediaPublishRequest`, call `ComposeAsync`  
+
+**What doesn't change yet:** Publisher managers still have their composition deps (unused by Functions now). `Send*` functions are untouched.  
+**Value:** All composition is now unified and consistent. The 6 functions that were using hardcoded inline templates now use Scriban too.  
+**Risk:** Medium. Verify Scriban template output matches the hardcoded text for existing events (write tests before migration).
+
+### Phase 4 — Strip composition from Publisher Managers
+
+**What:** Remove `ComposeMessageAsync()`, `TryRenderTemplateAsync()`, `GetMessageType()` from all four managers. Remove the five composition dependency injections from all four constructors.  
+**What doesn't change yet:** `Send*` functions still use platform-specific methods.  
+**Value:** Publisher managers finally have single responsibility.  
+**Risk:** Low (Functions no longer call `ComposeMessageAsync()` after Phase 3).
+
+### Phase 5 — Unify `Send*` Functions to use `PublishAsync(SocialMediaPublishRequest)`
+
+**What:** Migrate `Twitter.SendTweet`, `Bluesky.SendPost`, `Facebook.PostPageStatus`, `LinkedIn.PostLink` to:
+1. Accept `SocialMediaPublishRequest` from queue
+2. Resolve credentials
+3. Call `manager.PublishAsync(request)`  
+
+This requires the Twitter `TwitterContext` refactor (§3.3) — `TwitterManager.PublishAsync()` builds its own context from credentials in the request.  
+**Value:** All posting goes through the standard interface. `SendTweet.cs` finally uses `TwitterManager`.  
+**Risk:** Medium. Twitter requires a `TwitterContext` construction change. Test carefully.
+
+### Phase 6 — Unify queue DTOs (optional, Sprint 33+)
+
+**What:** Replace `BlueskyPostMessage`, `TwitterTweetMessage`, `FacebookPostStatus`, `LinkedInPostLink` queue types with `SocialMediaPublishRequest`.  
+**Requires:** Coordinate deployment to drain queues (or accept that in-flight old-schema messages will silently fail). One platform at a time.  
+**Value:** One queue DTO. Fixes the `LinkedInPostLink` layering violation (Functions referencing Managers.LinkedIn.Models).  
+**Risk:** Medium-high on deployment; low on code once done.
+
+---
+
+## 5 — Open Questions for Joe
+
+These are decisions the architecture cannot make alone — they need your input.
+
+### Q1: Twitter credential model
+
+The current `TwitterContext` DI registration is global/shared. The per-user flow works today because `SendTweet.cs` bypasses the manager. The proposed fix is for `TwitterManager.PublishAsync()` to accept all four OAuth credentials via `SocialMediaPublishRequest` and build its own `TwitterContext` each call.
+
+**Tradeoff:** This removes any use of a shared Twitter credential for system-level posts. Is there a scenario where a shared/system Twitter account should post (not per-user)? If yes, the design needs a fallback.
+
+### Q2: Queue DTO migration timing
+
+Phase 6 (queue DTO unification) is optional but cleaning. It requires a deployment window to drain queues per platform.
+
+**Tradeoff:** Do you want to do this now as part of the refactor (all at once), or defer it to a future sprint when you have a scheduled maintenance window?
+
+### Q3: User-scoped templates for non-scheduled events
+
+Today, `ProcessNewSyndicationDataFired`, `ProcessNewRandomPost`, etc. use hardcoded inline text. The proposal migrates them to Scriban via `IMessageTemplateLookup`. But that requires the `MessageTemplate` table to have rows for `NewSyndicationFeedItem` / `RandomPost` types per platform (they may already exist from seeded data).
+
+**Question:** Should user-scoped templates (`MessageTemplate.CreatedByEntraOid`) be enabled for these event types in the lookup? Or should non-ScheduledItem events remain global-only templates?
+
+### Q4: `IMessageTemplateLookup` user-scoped fallback precedence
+
+The proposed `IMessageTemplateLookup.GetAsync()` tries user-scoped first, then falls back to global. This means users CAN override templates but are not forced to.
+
+**Confirm:** Is this the correct behavior? Or should users be required to have a template set (no global fallback)?
+
+### Q5: `Hashtags` on `SocialMediaPublishRequest`
+
+Currently `Hashtags` is `IReadOnlyCollection<string>?`. For `PostComposer` to work cleanly, the tags need to be populated on the request before `ComposeAsync` is called. The `Process*` functions would populate them from the source entity.
+
+**Note:** Some platforms render hashtags in the text via template (e.g., `{{ tags }}`), while Bluesky renders them as `HashTag` objects appended after the text body. The Bluesky publisher manager's `PublishAsync()` already handles this from the `Hashtags` property on the request. No change needed here — just confirming the current design is intentional.
+
+---
+
+## 6 — Summary of Component Responsibility (after)
+
+| Component | Owns |
+|---|---|
+| `SocialMediaPublishRequest` | Universal contract: raw content context + rendered text + user identity + credentials |
+| `IPostComposer` / `PostComposer` | Scriban template rendering. Pure function: in = request + template string; out = rendered text string |
+| `IMessageTemplateLookup` | Two-step platform lookup with user-scoped fallback. Replaces the two-call pattern in `ComposeMessageAsync()` |
+| `Process*` Functions | Event deserialization → entity fetch → template lookup → composition → queue write |
+| `Send*` Functions | Queue read → credential lookup → credential injection → `manager.PublishAsync(request)` |
+| `BlueskyManager` | Bluesky API: auth, PostBuilder, link cards, image upload. Accepts `SocialMediaPublishRequest` |
+| `FacebookManager` | Facebook Graph API: post with/without image. Accepts `SocialMediaPublishRequest` |
+| `LinkedInManager` | LinkedIn UGC API: text/link/image share. Accepts `SocialMediaPublishRequest` |
+| `TwitterManager` | Twitter/X API: build `TwitterContext` from request credentials, call `TweetAsync`. Accepts `SocialMediaPublishRequest` |
+
+---
+
+*End of proposal. Pending Joe's review and answers to §5 Open Questions before implementation begins.*
+
+
+---
+
+
+# Decision: Index Table Button & Column Alignment Consistency
+
+**Date:** 2026-05-17
+**Author:** Sparks (Frontend Developer)
+**Requested by:** Joseph Guadagno
+**Status:** Implemented
+
+## Context
+
+A UI inconsistency audit identified two recurring problems across the web application's
+Index (list) pages:
+
+1. **Button class inconsistency** — action/view/edit buttons used `btn-outline-secondary`
+   in some files and `btn-outline-primary` in others.
+2. **Column alignment inconsistency** — the action column `<th>` header was missing
+   `text-end` in most files, while the `<td>` data cells were inconsistent.
+
+Canonical reference: `Views/CollectorFeedSources/Index.cshtml`
+
+## Decision
+
+- All edit/view/action buttons in Index table rows **must** use `btn btn-sm btn-outline-primary`.
+- All action/button column headers (`<th>`) **must** include `class="text-end"`.
+- All action/button column data cells (`<td>`) **must** include `class="text-end"`.
+- Destructive buttons (Delete → `btn-danger`, Toggle → `btn-outline-warning/success`)
+  retain their semantic styling and are **not** changed.
+- Filter search form buttons (`btn-outline-secondary`) and back-navigation links are **not** changed.
+
+## Files Modified
+
+| File | Changes |
+|------|---------|
+| `Views/CollectorFeedSources/Index.cshtml` | Added `text-end` to action `<th>`; changed Details button `btn-outline-secondary` → `btn-outline-primary` |
+| `Views/CollectorSettings/Index.cshtml` | Added `text-end` to 3× action `<th>`; added `class="text-end"` to 3× action `<td>` |
+| `Views/CollectorSpeakingEngagements/Index.cshtml` | Added `text-end` to action `<th>`; changed Details button `btn-outline-secondary` → `btn-outline-primary` |
+| `Views/CollectorYouTubeChannels/Index.cshtml` | Added `text-end` to action `<th>`; changed Details button `btn-outline-secondary` → `btn-outline-primary` |
+| `Views/Engagements/Index.cshtml` | Added `text-end` to action `<th>`; changed Details + Edit buttons `btn-outline-secondary` → `btn-outline-primary` |
+| `Views/MessageTemplates/Index.cshtml` | Added `text-end` to action `<th>`; added `class="text-end"` to action `<td>`; changed Edit button `btn-outline-secondary` → `btn-outline-primary` |
+| `Views/Schedules/Index.cshtml` | Added `text-end` to action `<th>`; added `class="text-end"` to action `<td>`; changed Details + Edit buttons `btn-outline-secondary` → `btn-outline-primary` |
+| `Views/SocialMediaPlatforms/Index.cshtml` | Changed Edit button `btn-outline-secondary` → `btn-outline-primary` (column alignment was already correct) |
+| `Views/SyndicationFeedItems/Index.cshtml` | Added `text-end` to action `<th>`; changed Details button `btn-outline-secondary` → `btn-outline-primary` |
+| `Views/YouTubeItems/Index.cshtml` | Added `text-end` to action `<th>`; changed Details button `btn-outline-secondary` → `btn-outline-primary` |
+
+## Files Not Modified
+
+- `Views/Home/Index.cshtml` — no table
+- `Views/LinkedIn/Index.cshtml` — no table
+- `Views/Publishers/Index.cshtml` — card layout, no table
+- `Views/PublisherBlueskySettings/Index.cshtml` — card layout, no table
+- `Views/PublisherFacebookSettings/Index.cshtml` — card layout, no table
+- `Views/PublisherLinkedInSettings/Index.cshtml` — card layout, no table
+- `Views/PublisherTwitterSettings/Index.cshtml` — card layout, no table
+
+## Canonical Pattern (confirmed)
+
+```html
+<!-- Table header action column -->
+<th scope="col" class="col-2 text-end">&nbsp;</th>
+
+<!-- Table data action column -->
+<td class="text-end">
+    <a asp-action="Details" ... class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-eye"></i>
+    </a>
+    <a asp-action="Edit" ... class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-pencil"></i>
+    </a>
+    <a asp-action="Delete" ... class="btn btn-sm btn-danger">
+        <i class="bi bi-trash"></i>
+    </a>
+</td>
+```
+
+## Verification
+
+`dotnet build .\src\ --no-restore --configuration Release` → Build succeeded, 0 errors, 0 warnings.
+
+
+---
+
+
+# Trinity Implementation Report: 204-vs-404 Singleton Resource Fix
+
+**Date:** 2026-05-17
+**Agent:** Trinity (Backend API Developer)
+**Decision implemented:** `neo-404-vs-204-optional-resources.md`
+**Branch:** issue-972-end-user-validation
+
+---
+
+## What Was Done
+
+### 1. API Layer — 5 Singleton GET Endpoints Changed to 204
+
+Controllers where a user fetches their own settings (no explicit int id; looked up by ownerOid):
+
+| Controller | Method | Before | After |
+|---|---|---|---|
+| `CollectorScheduledItemSettingsController` | GET | 404 Not Found | 204 No Content |
+| `BlueskySettingsController` | GET | 404 Not Found | 204 No Content |
+| `FacebookSettingsController` | GET | 404 Not Found | 204 No Content |
+| `TwitterSettingsController` | GET | 404 Not Found | 204 No Content |
+| `LinkedInSettingsController` | GET | 404 Not Found | 204 No Content |
+
+Each change: `[ProducesResponseType(404)]` → `[ProducesResponseType(204)]`, `LogWarning` → `LogInformation`, `return NotFound()` → `return NoContent()`, XML doc updated. DELETE methods in all 5 controllers were left unchanged (missing resource on DELETE IS an error → 404 is correct there).
+
+### 2. Web Layer — New Extension Method
+
+**File:** `src/JosephGuadagno.Broadcasting.Web/Extensions/DownstreamApiExtensions.cs`
+
+`GetOptionalForUserAsync<T>` on `IDownstreamApi` — catches `HttpRequestException` where `StatusCode == HttpStatusCode.NotFound`, returns null instead of throwing. This is defense-in-depth: even if an API ever returns 404 for an optional resource, the Web layer won't crash.
+
+### 3. Web Services — 5 Already-Working Services Cleaned Up
+
+These had try/catch-404 blocks (dead code now that the API returns 204). Converted to `GetOptionalForUserAsync<T>`:
+
+- `UserCollectorScheduledItemService`
+- `UserPublisherBlueskySettingsService`
+- `UserPublisherFacebookSettingsService`
+- `UserPublisherTwitterSettingsService`
+- `UserPublisherLinkedInSettingsService`
+
+### 4. Web Services — 10 Call Sites Protected
+
+These were silently crashing with an unhandled `HttpRequestException` whenever the API returned 404 for a not-yet-configured resource. Switched `GetForUserAsync<T>` → `GetOptionalForUserAsync<T>`:
+
+| Service | Method |
+|---|---|
+| `EngagementService` | `GetEngagementAsync` |
+| `EngagementService` | `GetEngagementTalkAsync` |
+| `MessageTemplateService` | `GetAsync` |
+| `ScheduledItemService` | `GetScheduledItemAsync` |
+| `SocialMediaPlatformService` | `GetByIdAsync` |
+| `SyndicationFeedItemService` | `GetAsync` |
+| `UserCollectorFeedSourceService` | `GetByIdAsync` |
+| `UserCollectorSpeakingEngagementService` | `GetByIdAsync` |
+| `UserCollectorYouTubeChannelService` | `GetByIdAsync` |
+| `YouTubeItemService` | `GetAsync` |
+
+---
+
+## Build and Test Results
+
+- **Build:** 0 errors, 0 warnings
+- **Tests:** All pass. 2 pre-existing failures in `UserCollectorYouTubeChannelManagerTests.StoreApiKeyToKeyVaultAsync_BuildsCorrectSecretName` confirmed present on baseline branch before this work — unrelated to 204/404 changes.
+
+---
+
+## Rule Established
+
+- **Singleton-by-ownerOid GET** → `204 No Content` when not found (normal first-time-user flow)
+- **ID-based GET** → `404 Not Found` when not found (stale/invalid ID is an error)
+- **DELETE (all)** → `404 Not Found` when not found (attempting to delete something missing is an error)
+
+
+---
+
+
+# Decision: GetForUserAsync<T> Must Catch 404 for Single-Object Endpoints
+
+**Date:** 2026-05-17T09:48:53.314-07:00
+**Author:** Trinity (Backend Dev)
+**Issue:** #976 / PR #977
+
+## Context
+
+`UserCollectorScheduledItemService.GetAsync` called `IDownstreamApi.GetForUserAsync<T>` with no error handling. The API correctly returns HTTP 404 when a user has no scheduled item configuration (first-time user). `GetForUserAsync<T>` throws `HttpRequestException` on all non-2xx responses — including 404. This propagated unhandled to the controller, crashing `Collectors/Settings/Index`.
+
+## Decision
+
+**All Web service methods that call `GetForUserAsync<T>` for a single nullable domain object MUST wrap the call in:**
+
+```csharp
+catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+{
+    logger.LogInformation(
+        "No <entity> config found for owner {OwnerOid}",
+        LogSanitizer.Sanitize(ownerOid));
+    return null;
+}
+```
+
+**Rationale:**
+- 404 is a valid, expected response for first-time users — it is not an error condition.
+- The controller layer is designed to handle `null` gracefully; the service should surface that intent.
+- `LogInformation` (not `LogWarning`) is appropriate because this is expected, not anomalous.
+- The OID must always be sanitized via `LogSanitizer.Sanitize()`.
+
+**This does NOT apply to list endpoints** — those return an empty collection on 404 and do not throw.
+
+**Established pattern reference:** `UserPublisherBlueskySettingsService.GetCurrentUserAsync` (and the other per-publisher services) already use this pattern.
+
+## Scope
+
+Any existing `GetForUserAsync<T>` call returning a single nullable object that lacks this catch should be treated as a latent bug. Services reviewed and confirmed compliant as of this date:
+- `UserPublisherBlueskySettingsService` ✅
+- `UserPublisherLinkedInSettingsService` ✅ (verify)
+- `UserPublisherFacebookSettingsService` ✅ (verify)
+- `UserPublisherTwitterSettingsService` ✅ (verify)
+- `UserCollectorScheduledItemService` ✅ (fixed in PR #977)
+

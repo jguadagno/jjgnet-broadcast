@@ -88,7 +88,7 @@ public class ProcessScheduledItemFiredTests
     private static Functions.Facebook.ProcessScheduledItemFired BuildSut(
         Mock<IScheduledItemManager> scheduledItemManager,
         Mock<ISyndicationFeedItemManager> feedSourceManager,
-        Mock<IYouTubeItemManager> YouTubeItemManager,
+        Mock<IYouTubeItemManager> youTubeItemManager,
         Mock<IEngagementManager> engagementManager,
         Mock<IFacebookManager> facebookManager)
     {
@@ -96,7 +96,7 @@ public class ProcessScheduledItemFiredTests
             scheduledItemManager.Object,
             engagementManager.Object,
             feedSourceManager.Object,
-            YouTubeItemManager.Object,
+            youTubeItemManager.Object,
             facebookManager.Object,
             NullLogger<Functions.Facebook.ProcessScheduledItemFired>.Instance);
     }
@@ -243,13 +243,13 @@ public class ProcessScheduledItemFiredTests
     {
         // Arrange
         var scheduledItem = BuildScheduledItem(itemType: ScheduledItemType.YouTubeItems);
-        var YouTubeItem = BuildYouTubeItem();
+        var youTubeItem = BuildYouTubeItem();
 
         var mockScheduledItemManager = new Mock<IScheduledItemManager>();
         mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
 
         var mockYouTubeItemManager = new Mock<IYouTubeItemManager>();
-        mockYouTubeItemManager.Setup(m => m.GetAsync(42)).ReturnsAsync(YouTubeItem);
+        mockYouTubeItemManager.Setup(m => m.GetAsync(42)).ReturnsAsync(youTubeItem);
 
         var sut = BuildSut(mockScheduledItemManager, new Mock<ISyndicationFeedItemManager>(),
             mockYouTubeItemManager, new Mock<IEngagementManager>(), BuildFacebookManager("video text"));

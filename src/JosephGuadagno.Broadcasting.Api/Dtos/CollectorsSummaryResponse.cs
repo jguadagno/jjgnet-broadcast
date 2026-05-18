@@ -19,9 +19,4 @@ public class CollectorsSummaryResponse
     /// The number of speaking engagement collector configurations for the resolved owner.
     /// </summary>
     public int SpeakingEngagementCount { get; set; }
-
-    /// <summary>
-    /// Indicates whether a scheduled item collector configuration has been set up for the resolved owner.
-    /// </summary>
-    public bool ScheduledItemConfigured { get; set; }
 }
