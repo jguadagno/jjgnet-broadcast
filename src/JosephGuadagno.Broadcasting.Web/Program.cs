@@ -279,12 +279,6 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IYouTubeItemService, YouTubeItemService>();
     services.TryAddScoped<ISyndicationFeedItemService, SyndicationFeedItemService>();
 
-    // PostComposer — shared Scriban template renderer (Phase 1 of publisher architecture refactor)
-    services.TryAddScoped<IPostComposer, PostComposer>();
-
-    // MessageTemplateLookup — user-scoped template resolver (Phase 2 of publisher architecture refactor)
-    services.TryAddScoped<IMessageTemplateLookup, MessageTemplateLookup>();
-
     // RBAC Phase 1
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
 
