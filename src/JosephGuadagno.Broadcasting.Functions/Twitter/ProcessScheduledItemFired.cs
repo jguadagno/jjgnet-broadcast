@@ -2,9 +2,12 @@ using System.Text.Json;
 using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
+using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -12,14 +15,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
 public class ProcessScheduledItemFired(
     IScheduledItemManager scheduledItemManager,
-    ITwitterManager twitterManager,
+    IEngagementManager engagementManager,
+    ISyndicationFeedItemManager syndicationFeedItemManager,
+    IYouTubeItemManager youTubeItemManager,
+    IMessageTemplateLookup messageLookup,
+    IPostComposer postComposer,
     ILogger<ProcessScheduledItemFired> logger)
 {
-    // Debug Locally: https://docs.microsoft.com/en-us/azure/azure-functions/functions-debug-event-grid-trigger-local
-    // Sample Code: https://github.com/Azure-Samples/event-grid-dotnet-publish-consume-events
-    // When debugging locally start ngrok
-    // Create a new EventGrid endpoint in Azure similar to
-    // `https://9ccb49e057a0.ngrok.io/runtime/webhooks/EventGrid?functionName=twitter_process_scheduled_item_fired`
     [Function(ConfigurationFunctionNames.TwitterProcessScheduledItemFired)]
     [QueueOutput(Queues.TwitterTweetsToSend)]
     public async Task<TwitterTweetMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
@@ -48,18 +50,48 @@ public class ProcessScheduledItemFired(
             logger.LogDebug("Processing the event '{Id}' for '{TableName}', '{PartitionKey}'",
                 eventGridEvent.Id, scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
-            var tweetText = await twitterManager.ComposeMessageAsync(scheduledItem);
+            var ownerEntraOid = scheduledItem.CreatedByEntraOid ?? string.Empty;
+            if (string.IsNullOrEmpty(ownerEntraOid))
+            {
+                logger.LogWarning("No owner OID on scheduled item {Id} — skipping Twitter post",
+                    scheduledItem.Id);
+                return null;
+            }
+
+            var request = await BuildRequestForScheduledItemAsync(scheduledItem, ownerEntraOid);
+            if (request is null)
+                return null;
+
+            var template = await messageLookup.GetAsync(
+                MessageTemplates.Platforms.Twitter,
+                MessageTemplates.MessageTypes.ScheduledItem,
+                ownerEntraOid);
+            if (template is null)
+                return null;
+
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
+            {
+                logger.LogWarning("Compose returned empty for scheduled item {Id}", scheduledItem.Id);
+                return null;
+            }
 
             var properties = new Dictionary<string, string>
             {
                 { "tableName", scheduledItem.ItemTableName },
                 { "primaryKey", scheduledItem.ItemPrimaryKey.ToString() },
-                { "text", tweetText }
+                { "text", composedText }
             };
             logger.LogCustomEvent(Metrics.TwitterProcessScheduledItemFired, properties);
             logger.LogDebug("Generated the tweet for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
-            return new TwitterTweetMessage { Text = tweetText, ImageUrl = scheduledItem.ImageUrl, CreatedByEntraOid = scheduledItem.CreatedByEntraOid };
+
+            return new TwitterTweetMessage
+            {
+                Text = composedText,
+                ImageUrl = scheduledItem.ImageUrl,
+                CreatedByEntraOid = ownerEntraOid
+            };
         }
         catch (Exception e)
         {
@@ -71,6 +103,62 @@ public class ProcessScheduledItemFired(
             var endedAt = DateTimeOffset.UtcNow;
             logger.LogDebug("{FunctionName} ended at: {EndedAt:f}",
                 ConfigurationFunctionNames.TwitterProcessScheduledItemFired, endedAt);
+        }
+    }
+
+    private async Task<SocialMediaPublishRequest?> BuildRequestForScheduledItemAsync(
+        ScheduledItem scheduledItem, string ownerEntraOid)
+    {
+        switch (scheduledItem.ItemType)
+        {
+            case ScheduledItemType.SyndicationFeedItems:
+                var feedItem = await syndicationFeedItemManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = feedItem.Title,
+                    LinkUrl = feedItem.Url,
+                    ShortenedUrl = feedItem.ShortenedUrl,
+                    Hashtags = feedItem.Tags.Count > 0 ? feedItem.Tags.ToList() : null,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            case ScheduledItemType.YouTubeItems:
+                var ytItem = await youTubeItemManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = ytItem.Title,
+                    LinkUrl = ytItem.Url,
+                    ShortenedUrl = ytItem.ShortenedUrl,
+                    Hashtags = ytItem.Tags.Count > 0 ? ytItem.Tags.ToList() : null,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            case ScheduledItemType.Engagements:
+                var engagement = await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = engagement.Name,
+                    LinkUrl = engagement.Url,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            case ScheduledItemType.Talks:
+                var talk = await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = talk.Name,
+                    LinkUrl = talk.UrlForConferenceTalk,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            default:
+                logger.LogError("The item type '{ItemType}' is not supported",
+                    LogSanitizer.Sanitize(scheduledItem.ItemType.ToString()));
+                return null;
         }
     }
 }

@@ -1,9 +1,7 @@
 using System.Text.Json;
 using Azure.Messaging.EventGrid;
-
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
-using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
@@ -16,7 +14,8 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
 public class ProcessNewSpeakingEngagementFired(
     IEngagementManager engagementManager,
-    ITwitterManager twitterManager,
+    IMessageTemplateLookup messageLookup,
+    IPostComposer postComposer,
     ILogger<ProcessNewSpeakingEngagementFired> logger)
 {
     [Function(ConfigurationFunctionNames.TwitterProcessNewSpeakingEngagementFired)]
@@ -53,26 +52,38 @@ public class ProcessNewSpeakingEngagementFired(
             logger.LogDebug("Processing new speaking engagement '{Id}' with name '{Name}'",
                 engagement.Id, LogSanitizer.Sanitize(engagement.Name));
 
-            var scheduledItem = new ScheduledItem
+            var ownerEntraOid = engagement.CreatedByEntraOid;
+            if (string.IsNullOrEmpty(ownerEntraOid))
             {
-                ItemType = ScheduledItemType.Engagements,
-                ItemPrimaryKey = engagement.Id,
-                Message = $"New Speaking Engagement: {engagement.Name} {engagement.Url}",
-                SendOnDateTime = DateTimeOffset.UtcNow,
-                CreatedByEntraOid = engagement.CreatedByEntraOid
+                logger.LogWarning("No owner OID on engagement {Id} — skipping Twitter post", engagement.Id);
+                return null;
+            }
+
+            var request = new SocialMediaPublishRequest
+            {
+                Text = "",
+                Title = engagement.Name,
+                LinkUrl = engagement.Url,
+                OwnerEntraOid = ownerEntraOid
             };
 
-            var tweetText = await twitterManager.ComposeMessageAsync(scheduledItem);
+            var template = await messageLookup.GetAsync(
+                MessageTemplates.Platforms.Twitter,
+                MessageTemplates.MessageTypes.NewSpeakingEngagement,
+                ownerEntraOid);
+            if (template is null)
+                return null;
 
-            if (string.IsNullOrWhiteSpace(tweetText))
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
             {
                 logger.LogWarning("Composed message was empty for engagement {EngagementId}. Skipping.", engagement.Id);
                 return null;
             }
 
-            var properties= new Dictionary<string, string>
+            var properties = new Dictionary<string, string>
             {
-                { "post", tweetText },
+                { "post", composedText },
                 { "name", engagement.Name },
                 { "url", engagement.Url },
                 { "id", engagement.Id.ToString() }
@@ -80,7 +91,7 @@ public class ProcessNewSpeakingEngagementFired(
             logger.LogCustomEvent(Metrics.TwitterProcessedNewSpeakingEngagement, properties);
             logger.LogDebug("Generated the tweet for speaking engagement {Id}", engagement.Id);
 
-            return new TwitterTweetMessage { Text = tweetText, CreatedByEntraOid = engagement.CreatedByEntraOid };
+            return new TwitterTweetMessage { Text = composedText, CreatedByEntraOid = ownerEntraOid };
         }
         catch (Exception e)
         {

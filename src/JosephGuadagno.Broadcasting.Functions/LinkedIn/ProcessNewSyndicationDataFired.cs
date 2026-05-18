@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Azure.Messaging.EventGrid;
-
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -8,7 +7,6 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
-using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -17,6 +15,8 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 public class ProcessNewSyndicationDataFired(
     ISyndicationFeedItemManager syndicationFeedItemManager,
     IUserOAuthTokenManager userOAuthTokenManager,
+    IMessageTemplateLookup messageLookup,
+    IPostComposer postComposer,
     ILogger<ProcessNewSyndicationDataFired> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInProcessNewSyndicationDataFired)]
@@ -42,53 +42,69 @@ public class ProcessNewSyndicationDataFired(
         }
         var syndicationFeedItem = await syndicationFeedItemManager.GetAsync(syndicationFeedItemEvent.Id);
 
-        logger.LogDebug("Processing New Syndication Feed Data Fired for '{Id}' with title of '{Title}'", syndicationFeedItem.Id, syndicationFeedItem.Title);
+        logger.LogDebug("Processing New Syndication Feed Data Fired for '{Id}' with title of '{Title}'",
+            syndicationFeedItem.Id, syndicationFeedItem.Title);
 
-        // Resolve per-user OAuth token — no silent fallback to shared token
-        var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
-            syndicationFeedItem.CreatedByEntraOid,
-            SocialMediaPlatformIds.LinkedIn);
-
-        if (token is null)
+        var ownerEntraOid = syndicationFeedItem.CreatedByEntraOid;
+        if (string.IsNullOrEmpty(ownerEntraOid))
         {
-            logger.LogWarning(
-                "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping syndication item {ItemId}",
-                LogSanitizer.Sanitize(syndicationFeedItem.CreatedByEntraOid),
+            logger.LogWarning("No owner OID for syndication item {Id} — skipping LinkedIn post",
                 syndicationFeedItem.Id);
             return null;
         }
 
-        var status = ComposeStatus(syndicationFeedItem, token.AccessToken);
+        var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
+            ownerEntraOid, SocialMediaPlatformIds.LinkedIn);
+        if (token is null)
+        {
+            logger.LogWarning(
+                "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping syndication item {ItemId}",
+                LogSanitizer.Sanitize(ownerEntraOid), syndicationFeedItem.Id);
+            return null;
+        }
+
+        var request = new SocialMediaPublishRequest
+        {
+            Text = "",
+            Title = syndicationFeedItem.Title,
+            LinkUrl = syndicationFeedItem.Url,
+            ShortenedUrl = syndicationFeedItem.ShortenedUrl,
+            Hashtags = syndicationFeedItem.Tags.Count > 0 ? syndicationFeedItem.Tags.ToList() : null,
+            OwnerEntraOid = ownerEntraOid
+        };
+
+        var template = await messageLookup.GetAsync(
+            MessageTemplates.Platforms.LinkedIn,
+            MessageTemplates.MessageTypes.NewSyndicationFeedItem,
+            ownerEntraOid);
+        if (template is null)
+            return null;
+
+        var composedText = await postComposer.ComposeAsync(request, template.Template);
+        if (string.IsNullOrWhiteSpace(composedText))
+        {
+            logger.LogWarning("Compose returned empty for syndication item {Id}", syndicationFeedItem.Id);
+            return null;
+        }
 
         var properties = new Dictionary<string, string>
         {
-            {"post", status.Text},
+            {"post", composedText},
             {"title", syndicationFeedItem.Title},
             {"url", syndicationFeedItem.Url},
             {"id", syndicationFeedItem.Id.ToString()}
         };
         logger.LogCustomEvent(Metrics.LinkedInProcessedNewSyndicationData, properties);
-        logger.LogDebug("Done composing LinkedIn status for '{Id}' with title of '{Title}'", syndicationFeedItem.Id, syndicationFeedItem.Title);
-        return status;
-    }
+        logger.LogDebug("Done composing LinkedIn status for '{Id}' with title of '{Title}'",
+            syndicationFeedItem.Id, syndicationFeedItem.Title);
 
-    private LinkedInPostLink ComposeStatus(SyndicationFeedItem syndicationFeedItem, string accessToken)
-    {
-        logger.LogDebug("Composing LinkedIn post for Id: '{Id}', Title:'{Title}'", syndicationFeedItem.Id, syndicationFeedItem.Title);
-        var statusText = syndicationFeedItem.LastUpdatedOn > syndicationFeedItem.PublicationDate
-                ? "Updated Blog Post: "
-                : "New Blog Post: ";
-
-        var post = new LinkedInPostLink
+        return new LinkedInPostLink
         {
-            Text = $"{statusText} {syndicationFeedItem.Title} {HashTagLists.BuildHashTagList(syndicationFeedItem.Tags)}",
+            Text = composedText,
             Title = syndicationFeedItem.Title,
             LinkUrl = syndicationFeedItem.Url,
-            AccessToken = accessToken
+            Description = "",
+            AccessToken = token.AccessToken
         };
-
-        logger.LogDebug("Composed LinkedIn status for '{Id}' with title of '{Title}'", syndicationFeedItem.Id, syndicationFeedItem.Title);
-
-        return post;
     }
 }

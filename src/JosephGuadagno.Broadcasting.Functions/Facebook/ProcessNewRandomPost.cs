@@ -1,10 +1,9 @@
 using System.Text.Json;
-
 using Azure.Messaging.EventGrid;
-
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using Microsoft.Azure.Functions.Worker;
@@ -12,7 +11,11 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
-public class ProcessNewRandomPost(ISyndicationFeedItemManager syndicationFeedItemManager, ILogger<ProcessNewRandomPost> logger)
+public class ProcessNewRandomPost(
+    ISyndicationFeedItemManager syndicationFeedItemManager,
+    IMessageTemplateLookup messageLookup,
+    IPostComposer postComposer,
+    ILogger<ProcessNewRandomPost> logger)
 {
     [Function(ConfigurationFunctionNames.FacebookProcessRandomPostFired)]
     [QueueOutput(Queues.FacebookPostStatusToPage)]
@@ -22,7 +25,6 @@ public class ProcessNewRandomPost(ISyndicationFeedItemManager syndicationFeedIte
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.FacebookProcessRandomPostFired, startedAt);
 
-        // Check to make sure the eventGridEvent.Data is not null
         if (eventGridEvent.Data is null)
         {
             logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
@@ -40,34 +42,53 @@ public class ProcessNewRandomPost(ISyndicationFeedItemManager syndicationFeedIte
             }
             var syndicationFeedItem = await syndicationFeedItemManager.GetAsync(source.Id);
 
-            // Handle the event - compose the Facebook post status
-            const int maxFacebookStatusText = 2000;
-            var statusText = "ICYMI: Blog Post: ";
-            var postTitle = syndicationFeedItem.Title;
-            var hashTagList = HashTagLists.BuildHashTagList(syndicationFeedItem.Tags);
-
-            if (statusText.Length + postTitle.Length + 3 + hashTagList.Length >= maxFacebookStatusText)
+            var ownerEntraOid = syndicationFeedItem.CreatedByEntraOid;
+            if (string.IsNullOrEmpty(ownerEntraOid))
             {
-                var newLength = maxFacebookStatusText - statusText.Length - hashTagList.Length - 1;
-                postTitle = postTitle.Substring(0, newLength - 4) + "...";
+                logger.LogWarning("No owner OID for syndication item {Id} — skipping Facebook random post",
+                    syndicationFeedItem.Id);
+                return null;
             }
 
-            var facebookPostStatus = new FacebookPostStatus
+            var request = new SocialMediaPublishRequest
             {
-                StatusText = $"{statusText} {postTitle} {hashTagList}",
-                LinkUri = syndicationFeedItem.Url
+                Text = "",
+                Title = syndicationFeedItem.Title,
+                LinkUrl = syndicationFeedItem.Url,
+                ShortenedUrl = syndicationFeedItem.ShortenedUrl,
+                Hashtags = syndicationFeedItem.Tags.Count > 0 ? syndicationFeedItem.Tags.ToList() : null,
+                OwnerEntraOid = ownerEntraOid
             };
 
-            // Return
+            var template = await messageLookup.GetAsync(
+                MessageTemplates.Platforms.Facebook,
+                MessageTemplates.MessageTypes.RandomPost,
+                ownerEntraOid);
+            if (template is null)
+                return null;
+
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
+            {
+                logger.LogWarning("Compose returned empty for random post item {Id}", syndicationFeedItem.Id);
+                return null;
+            }
+
             var properties = new Dictionary<string, string>
             {
                 {"title", syndicationFeedItem.Title},
                 {"url", syndicationFeedItem.Url},
-                {"post", facebookPostStatus.StatusText}
+                {"post", composedText}
             };
             logger.LogCustomEvent(Metrics.FacebookProcessedRandomPost, properties);
             logger.LogDebug("Picked a random post {Title}", syndicationFeedItem.Title);
-            return facebookPostStatus;
+
+            return new FacebookPostStatus
+            {
+                StatusText = composedText,
+                LinkUri = syndicationFeedItem.Url,
+                CreatedByEntraOid = ownerEntraOid
+            };
         }
         catch (Exception e)
         {

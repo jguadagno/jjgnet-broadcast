@@ -211,6 +211,42 @@ Fix: wrap all three sites with `LogSanitizer.Sanitize()` — the `using` directi
 
 ## Learnings
 
+### 2026-05-18 — Phase 2 complete: IMessageTemplateLookup extracted, SocialMediaPublishRequest extended
+
+**Branch:** `issue-980-publisher-architecture-refactor` — commit `e63c4012`
+
+**Files changed:**
+- **Created:** `Domain/Interfaces/IMessageTemplateLookup.cs`
+- **Created:** `Managers/MessageTemplateLookup.cs`
+- **Modified:** `Api/Program.cs`, `Functions/Program.cs`, `Web/Program.cs` — added `services.TryAddScoped<IMessageTemplateLookup, MessageTemplateLookup>();`
+- **Modified:** `Domain/Models/SocialMediaPublishRequest.cs` — added `OwnerEntraOid`, `ConsumerKey`, `ConsumerSecret`, `AccessTokenSecret`
+
+**`IMessageTemplateDataStore` — no user-scoped single-item overload:**
+- Only `GetAsync(int socialMediaPlatformId, string messageType, CancellationToken)` exists (no `ownerEntraOid` parameter)
+- `MessageTemplateLookup.GetAsync` calls this non-scoped version and includes a TODO comment noting the method needs updating when the user-scoped overload is added
+- Full user-scoping activates in Phase 3
+
+**`MessageTemplate` model properties confirmed:**
+- `SocialMediaPlatformId` → `int`
+- `MessageType` → `string`
+- `Template` → `string` (the Scriban template content)
+- `Description` → `string?`
+- `Platform` → `string` (populated from join — not persisted)
+- `CreatedByEntraOid` → `string?`
+
+**`SocialMediaPublishRequest` additions (all were missing, all added):**
+- `OwnerEntraOid` → `string?`
+- `ConsumerKey` → `string?` (Twitter OAuth consumer key)
+- `ConsumerSecret` → `string?` (Twitter OAuth consumer secret)
+- `AccessTokenSecret` → `string?` (Twitter OAuth access token secret)
+- Note: `AccessToken` was already present on the model
+
+**`Managers` project implicit usings:** NOT enabled — requires explicit `using System.Threading;` and `using System.Threading.Tasks;` in any new file using `CancellationToken` or `Task<>`.
+
+**Build/test result:** 0 errors, 0 warnings; all non-integration tests passed (exit code 0)
+
+---
+
 ### 2026-05-18 — Phase 1 complete: IPostComposer/PostComposer extracted, dead classes deleted
 
 **Branch:** `issue-980-publisher-architecture-refactor` — commit `dbfa2589`

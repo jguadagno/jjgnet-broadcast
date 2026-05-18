@@ -8,7 +8,6 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
-using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -20,13 +19,13 @@ public class ProcessScheduledItemFired(
     ISyndicationFeedItemManager syndicationFeedItemManager,
     IYouTubeItemManager youTubeItemManager,
     IUserOAuthTokenManager userOAuthTokenManager,
-    ILinkedInManager linkedInManager,
+    IMessageTemplateLookup messageLookup,
+    IPostComposer postComposer,
     ILogger<ProcessScheduledItemFired> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInProcessScheduledItemFired)]
     [QueueOutput(Queues.LinkedInPostLink)]
-    public async Task<LinkedInPostLink?> RunAsync(
-        [EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<LinkedInPostLink?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.Now;
         logger.LogDebug("Started {FunctionName} at {StartedOn:f}",
@@ -52,58 +51,63 @@ public class ProcessScheduledItemFired(
             logger.LogDebug("Processing the event '{Id}' for '{TableName}', '{PartitionKey}'",
                 eventGridEvent.Id, scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
-            // Resolve per-user OAuth token — no silent fallback to shared token
-            var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
-                scheduledItem.CreatedByEntraOid ?? string.Empty,
-                SocialMediaPlatformIds.LinkedIn);
-
-            if (token is null)
+            var ownerEntraOid = scheduledItem.CreatedByEntraOid ?? string.Empty;
+            if (string.IsNullOrEmpty(ownerEntraOid))
             {
-                logger.LogWarning(
-                    "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping item {ItemId}",
-                    LogSanitizer.Sanitize(scheduledItem.CreatedByEntraOid ?? string.Empty),
+                logger.LogWarning("No owner OID on scheduled item {Id} — skipping LinkedIn post",
                     scheduledItem.Id);
                 return null;
             }
 
-            // Determine what type the post is for
-            LinkedInPostLink linkedInPost;
-
-            switch (scheduledItem.ItemType)
+            var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
+                ownerEntraOid, SocialMediaPlatformIds.LinkedIn);
+            if (token is null)
             {
-                case ScheduledItemType.Engagements:
-                    linkedInPost = await GetPostForEngagement(scheduledItem.ItemPrimaryKey);
-                    break;
-                case ScheduledItemType.Talks:
-                    linkedInPost = await GetPostForTalk(scheduledItem.ItemPrimaryKey);
-                    break;
-                case ScheduledItemType.SyndicationFeedItems:
-                    linkedInPost = await GetPostForSyndicationSource(scheduledItem.ItemPrimaryKey);
-                    break;
-                case ScheduledItemType.YouTubeItems:
-                    linkedInPost = await GetPostForYouTubeItem(scheduledItem.ItemPrimaryKey);
-                    break;
-                default:
-                    logger.LogError("The table name '{TableName}' is not supported", scheduledItem.ItemTableName);
-                    return null;
+                logger.LogWarning(
+                    "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping item {ItemId}",
+                    LogSanitizer.Sanitize(ownerEntraOid), scheduledItem.Id);
+                return null;
             }
 
-            linkedInPost.Text = await linkedInManager.ComposeMessageAsync(scheduledItem);
-            linkedInPost.AccessToken = token.AccessToken;
-            linkedInPost.ImageUrl = scheduledItem.ImageUrl;
+            var request = await BuildRequestForScheduledItemAsync(scheduledItem, ownerEntraOid);
+            if (request is null)
+                return null;
+
+            var template = await messageLookup.GetAsync(
+                MessageTemplates.Platforms.LinkedIn,
+                MessageTemplates.MessageTypes.ScheduledItem,
+                ownerEntraOid);
+            if (template is null)
+                return null;
+
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
+            {
+                logger.LogWarning("Compose returned empty for scheduled item {Id}", scheduledItem.Id);
+                return null;
+            }
 
             var properties = new Dictionary<string, string>
             {
                 { "tableName", scheduledItem.ItemTableName },
                 { "id", scheduledItem.ItemPrimaryKey.ToString() },
-                { "text", linkedInPost.Text },
-                { "url", linkedInPost.LinkUrl },
-                { "title", linkedInPost.Title }
+                { "text", composedText },
+                { "url", request.LinkUrl ?? "" },
+                { "title", request.Title ?? "" }
             };
             logger.LogCustomEvent(Metrics.LinkedInProcessedScheduledItemFired, properties);
             logger.LogDebug("Generated the LinkedIn post text for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
-            return linkedInPost;
+
+            return new LinkedInPostLink
+            {
+                Text = composedText,
+                Title = request.Title ?? "",
+                LinkUrl = request.LinkUrl!,
+                Description = request.Description ?? "",
+                AccessToken = token.AccessToken,
+                ImageUrl = scheduledItem.ImageUrl
+            };
         }
         catch (Exception e)
         {
@@ -118,76 +122,59 @@ public class ProcessScheduledItemFired(
         }
     }
 
-    private async Task<LinkedInPostLink> GetPostForEngagement(int primaryKey)
+    private async Task<SocialMediaPublishRequest?> BuildRequestForScheduledItemAsync(
+        ScheduledItem scheduledItem, string ownerEntraOid)
     {
-        var post = new LinkedInPostLink();
-        logger.LogDebug("Getting the text for engagement for '{PrimaryKey}'", primaryKey);
-        try
+        switch (scheduledItem.ItemType)
         {
-            var engagement = await engagementManager.GetAsync(primaryKey);
-            post.Title = engagement.Name;
-            post.LinkUrl = engagement.Url;
+            case ScheduledItemType.SyndicationFeedItems:
+                var feedItem = await syndicationFeedItemManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = feedItem.Title,
+                    LinkUrl = feedItem.Url,
+                    ShortenedUrl = feedItem.ShortenedUrl,
+                    Hashtags = feedItem.Tags.Count > 0 ? feedItem.Tags.ToList() : null,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            case ScheduledItemType.YouTubeItems:
+                var ytItem = await youTubeItemManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = ytItem.Title,
+                    LinkUrl = ytItem.Url,
+                    ShortenedUrl = ytItem.ShortenedUrl,
+                    Hashtags = ytItem.Tags.Count > 0 ? ytItem.Tags.ToList() : null,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            case ScheduledItemType.Engagements:
+                var engagement = await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = engagement.Name,
+                    LinkUrl = engagement.Url,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            case ScheduledItemType.Talks:
+                var talk = await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = talk.Name,
+                    LinkUrl = talk.UrlForConferenceTalk,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            default:
+                logger.LogError("The table name '{TableName}' is not supported",
+                    LogSanitizer.Sanitize(scheduledItem.ItemTableName));
+                return null;
         }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to get the text for engagement for '{PrimaryKey}'", primaryKey);
-            throw;
-        }
-        return post;
     }
-
-    private async Task<LinkedInPostLink> GetPostForTalk(int primaryKey)
-    {
-        var post = new LinkedInPostLink();
-        logger.LogDebug("Getting the text for Talk for '{PrimaryKey}'", primaryKey);
-        try
-        {
-            var engagement = await engagementManager.GetTalkAsync(primaryKey);
-            post.Title = engagement.Name;
-            post.LinkUrl = engagement.UrlForConferenceTalk;
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to get the text for talk for '{PrimaryKey}'", primaryKey);
-            throw;
-        }
-        return post;
-    }
-
-    private async Task<LinkedInPostLink> GetPostForSyndicationSource(int primaryKey)
-    {
-        var post = new LinkedInPostLink();
-        logger.LogDebug("Getting the text for syndication source for '{PrimaryKey}'", primaryKey);
-        try
-        {
-            var syndicationFeedItem = await syndicationFeedItemManager.GetAsync(primaryKey);
-            post.Title = syndicationFeedItem.Title;
-            post.LinkUrl = syndicationFeedItem.ShortenedUrl ?? syndicationFeedItem.Url;
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to get the text for engagement for '{PrimaryKey}'", primaryKey);
-            throw;
-        }
-        return post;
-    }
-
-    private async Task<LinkedInPostLink> GetPostForYouTubeItem(int primaryKey)
-    {
-        var post = new LinkedInPostLink();
-        logger.LogDebug("Getting the text for YouTube source for '{PrimaryKey}'", primaryKey);
-        try
-        {
-            var youTubeItem = await youTubeItemManager.GetAsync(primaryKey);
-            post.Title = youTubeItem.Title;
-            post.LinkUrl = youTubeItem.ShortenedUrl ?? youTubeItem.Url;
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to get the text for engagement for '{PrimaryKey}'", primaryKey);
-            throw;
-        }
-        return post;
-    }
-
 }

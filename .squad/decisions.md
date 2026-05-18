@@ -260,3 +260,63 @@ src/JosephGuadagno.Broadcasting.Domain/Models/Messages/LinkedInPostText.cs      
 src/JosephGuadagno.Broadcasting.Domain/Models/Messages/LinkedInPostImage.cs     ← Phase 6
 ```
 
+---
+
+## Decision: Phase 2 Complete — IMessageTemplateLookup + SocialMediaPublishRequest Extended
+
+**Date:** 2026-05-18  
+**Author:** Neo  
+**Branch:** `issue-980-publisher-architecture-refactor`  
+**Commit:** `e63c4012`  
+**Status:** COMPLETE ✅
+
+### Summary
+
+Phase 2 of the publisher architecture refactor (#980) is complete. All work is additive — no existing callers were modified.
+
+### What Was Done
+
+#### New Files
+
+- `src/JosephGuadagno.Broadcasting.Domain/Interfaces/IMessageTemplateLookup.cs`  
+  Interface with `GetAsync(platformName, messageType, ownerEntraOid, cancellationToken)` — required return (null means bail, no global fallback).
+
+- `src/JosephGuadagno.Broadcasting.Managers/MessageTemplateLookup.cs`  
+  Implementation: calls `ISocialMediaPlatformManager.GetByNameAsync(platformName)` to resolve the platform ID, then calls `IMessageTemplateDataStore.GetAsync(platformId, messageType)`. Logs a warning if either lookup returns null. Returns null in both failure cases so callers can bail.
+
+#### Modified Files
+
+- `Api/Program.cs`, `Functions/Program.cs`, `Web/Program.cs` — registered `IMessageTemplateLookup`/`MessageTemplateLookup` with `TryAddScoped`.
+- `Domain/Models/SocialMediaPublishRequest.cs` — added four missing properties (see below).
+
+### Key Finding: IMessageTemplateDataStore Has No User-Scoped Single-Item Overload
+
+`IMessageTemplateDataStore.GetAsync` only exists in one single-item form:
+
+```csharp
+Task<MessageTemplate?> GetAsync(int socialMediaPlatformId, string messageType, CancellationToken cancellationToken = default);
+```
+
+There is no `GetAsync(int platformId, string messageType, string ownerEntraOid)` overload.
+
+**Decision:** `MessageTemplateLookup` calls the non-scoped version for now, with a `// TODO(#980 Phase 3)` comment. Full user-scoping activates in Phase 3 when `Process*` Functions migrate to use `IMessageTemplateLookup`. At that point `IMessageTemplateDataStore` should be extended with the user-scoped single-item overload.
+
+### SocialMediaPublishRequest Properties Added
+
+All four were absent and were added:
+
+| Property | Type | Purpose |
+|---|---|---|
+| `OwnerEntraOid` | `string?` | Entra OID of content owner; used by Send functions for per-user credential lookup |
+| `ConsumerKey` | `string?` | Twitter OAuth consumer key |
+| `ConsumerSecret` | `string?` | Twitter OAuth consumer secret |
+| `AccessTokenSecret` | `string?` | Twitter OAuth access token secret |
+
+Note: `AccessToken` was already present on the model (added in Phase 1 research).
+
+### TODOs for Phase 3
+
+1. Add `GetAsync(int platformId, string messageType, string ownerEntraOid, CancellationToken)` overload to `IMessageTemplateDataStore` and its SQL implementation.
+2. Update `MessageTemplateLookup.GetAsync` to call the new user-scoped overload (remove the TODO comment).
+3. Migrate all `Process*` Functions to use `IMessageTemplateLookup` instead of inline two-step lookup.
+

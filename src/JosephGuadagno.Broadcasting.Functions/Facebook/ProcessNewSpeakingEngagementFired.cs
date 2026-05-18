@@ -1,15 +1,12 @@
 using System.Text.Json;
 using Azure.Messaging.EventGrid;
-
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
-using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
-using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -17,7 +14,8 @@ namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
 public class ProcessNewSpeakingEngagementFired(
     IEngagementManager engagementManager,
-    IFacebookManager facebookManager,
+    IMessageTemplateLookup messageLookup,
+    IPostComposer postComposer,
     ILogger<ProcessNewSpeakingEngagementFired> logger)
 {
     [Function(ConfigurationFunctionNames.FacebookProcessNewSpeakingEngagementFired)]
@@ -54,26 +52,38 @@ public class ProcessNewSpeakingEngagementFired(
             logger.LogDebug("Processing new speaking engagement '{Id}' with name '{Name}'",
                 engagement.Id, LogSanitizer.Sanitize(engagement.Name));
 
-            var scheduledItem = new ScheduledItem
+            var ownerEntraOid = engagement.CreatedByEntraOid;
+            if (string.IsNullOrEmpty(ownerEntraOid))
             {
-                ItemType = ScheduledItemType.Engagements,
-                ItemPrimaryKey = engagement.Id,
-                Message = $"New Speaking Engagement: {engagement.Name} {engagement.Url}",
-                SendOnDateTime = DateTimeOffset.UtcNow,
-                CreatedByEntraOid = engagement.CreatedByEntraOid
+                logger.LogWarning("No owner OID on engagement {Id} — skipping Facebook post", engagement.Id);
+                return null;
+            }
+
+            var request = new SocialMediaPublishRequest
+            {
+                Text = "",
+                Title = engagement.Name,
+                LinkUrl = engagement.Url,
+                OwnerEntraOid = ownerEntraOid
             };
 
-            var statusText = await facebookManager.ComposeMessageAsync(scheduledItem);
+            var template = await messageLookup.GetAsync(
+                MessageTemplates.Platforms.Facebook,
+                MessageTemplates.MessageTypes.NewSpeakingEngagement,
+                ownerEntraOid);
+            if (template is null)
+                return null;
 
-            if (string.IsNullOrWhiteSpace(statusText))
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
             {
                 logger.LogWarning("Composed message was empty for engagement {EngagementId}. Skipping.", engagement.Id);
                 return null;
             }
 
-            var properties= new Dictionary<string, string>
+            var properties = new Dictionary<string, string>
             {
-                { "post", statusText },
+                { "post", composedText },
                 { "name", engagement.Name },
                 { "url", engagement.Url },
                 { "id", engagement.Id.ToString() }
@@ -83,9 +93,9 @@ public class ProcessNewSpeakingEngagementFired(
 
             return new FacebookPostStatus
             {
-                StatusText = statusText,
+                StatusText = composedText,
                 LinkUri = engagement.Url,
-                CreatedByEntraOid = engagement.CreatedByEntraOid
+                CreatedByEntraOid = ownerEntraOid
             };
         }
         catch (Exception e)

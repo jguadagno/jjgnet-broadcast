@@ -35,10 +35,7 @@ public class MessageTemplateLookup(
             return null;
         }
 
-        // TODO(#980 Phase 3): Update to GetAsync(platform.Id, messageType, ownerEntraOid) once
-        // IMessageTemplateDataStore gains a user-scoped single-item overload. For now the non-scoped
-        // call is acceptable — user-scoping activates fully when Process* Functions migrate in Phase 3.
-        var template = await messageTemplateDataStore.GetAsync(platform.Id, messageType, cancellationToken);
+        var template = await messageTemplateDataStore.GetAsync(platform.Id, messageType, ownerEntraOid, cancellationToken);
         if (template is null)
         {
             logger.LogWarning(

@@ -1,10 +1,9 @@
 using System.Text.Json;
-
 using Azure.Messaging.EventGrid;
-
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.Azure.Functions.Worker;
@@ -12,7 +11,11 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
-public class ProcessNewRandomPost(ISyndicationFeedItemManager syndicationFeedItemManager, ILogger<ProcessNewRandomPost> logger)
+public class ProcessNewRandomPost(
+    ISyndicationFeedItemManager syndicationFeedItemManager,
+    IMessageTemplateLookup messageLookup,
+    IPostComposer postComposer,
+    ILogger<ProcessNewRandomPost> logger)
 {
     [Function(ConfigurationFunctionNames.BlueskyProcessRandomPostFired)]
     [QueueOutput(Queues.BlueskyPostToSend)]
@@ -21,8 +24,7 @@ public class ProcessNewRandomPost(ISyndicationFeedItemManager syndicationFeedIte
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.BlueskyProcessRandomPostFired, startedAt);
-        
-        // Check to make sure the eventGridEvent.Data is not null
+
         if (eventGridEvent.Data is null)
         {
             logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
@@ -40,33 +42,55 @@ public class ProcessNewRandomPost(ISyndicationFeedItemManager syndicationFeedIte
             }
             var sourceData = await syndicationFeedItemManager.GetAsync(source.Id);
 
-            // Handle the event - eventGridData to build the post
-            // Need to create a PostBuilder to send this based on these docs
-            // https://github.com/blowdart/idunno.Bluesky/blob/main/docs/posting.md#links-to-external-web-sites
-            var postText =
-                $"ICYMI: ({sourceData.PublicationDate.Date.ToShortDateString()}): \"{sourceData.Title}.\" RPs and feedback are always appreciated! ";
-
-            var blueskyPostMessage = new BlueskyPostMessage
+            var ownerEntraOid = sourceData.CreatedByEntraOid;
+            if (string.IsNullOrEmpty(ownerEntraOid))
             {
-                Text = postText,
-                Url = sourceData.Url,
-                ShortenedUrl = sourceData.ShortenedUrl
-            };
-            if (sourceData.Tags.Count > 0)
-            {
-                blueskyPostMessage.Hashtags = sourceData.Tags.ToList();
+                logger.LogWarning("No owner OID for syndication item {Id} — skipping Bluesky random post",
+                    sourceData.Id);
+                return null;
             }
 
-            // Return
+            var request = new SocialMediaPublishRequest
+            {
+                Text = "",
+                Title = sourceData.Title,
+                LinkUrl = sourceData.Url,
+                ShortenedUrl = sourceData.ShortenedUrl,
+                Hashtags = sourceData.Tags.Count > 0 ? sourceData.Tags.ToList() : null,
+                OwnerEntraOid = ownerEntraOid
+            };
+
+            var template = await messageLookup.GetAsync(
+                MessageTemplates.Platforms.Bluesky,
+                MessageTemplates.MessageTypes.RandomPost,
+                ownerEntraOid);
+            if (template is null)
+                return null;
+
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
+            {
+                logger.LogWarning("Compose returned empty for random post item {Id}", sourceData.Id);
+                return null;
+            }
+
             var properties = new Dictionary<string, string>
             {
                 {"title", sourceData.Title},
                 {"url", sourceData.Url},
-                {"post", postText}
+                {"post", composedText}
             };
             logger.LogCustomEvent(Metrics.BlueskyProcessedRandomPost, properties);
             logger.LogDebug("Picked a random post {Title}", sourceData.Title);
-            return blueskyPostMessage;
+
+            return new BlueskyPostMessage
+            {
+                Text = composedText,
+                Url = sourceData.Url,
+                ShortenedUrl = sourceData.ShortenedUrl,
+                Hashtags = sourceData.Tags.Count > 0 ? sourceData.Tags.ToList() : null,
+                CreatedByEntraOid = ownerEntraOid
+            };
         }
         catch (Exception e)
         {
