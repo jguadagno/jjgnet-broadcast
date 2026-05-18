@@ -1,5 +1,4 @@
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Models;
 using idunno.AtProto.Repo;
 using idunno.Bluesky;
 using idunno.Bluesky.Embed;
@@ -20,5 +19,4 @@ public interface IBlueskyManager
     /// the og:image from the page.
     /// </summary>
     Task<EmbeddedExternal?> GetEmbeddedExternalRecordWithThumbnail(string externalUrl, string thumbnailImageUrl);
-    Task<string> ComposeMessageAsync(ScheduledItem scheduledItem, CancellationToken cancellationToken = default);
 }

@@ -3,26 +3,15 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using JosephGuadagno.Broadcasting.Domain.Constants;
-using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
-using Microsoft.Extensions.Logging;
-using Scriban;
-using Scriban.Runtime;
 
 namespace JosephGuadagno.Broadcasting.Managers.LinkedIn;
 
 public class LinkedInManager(
-	HttpClient httpClient,
-	ILogger<LinkedInManager> logger,
-	ISocialMediaPlatformManager socialMediaPlatformManager,
-	IMessageTemplateDataStore messageTemplateDataStore,
-	ISyndicationFeedItemManager syndicationFeedItemManager,
-	IYouTubeItemManager youTubeItemManager,
-	IEngagementManager engagementManager)
+	HttpClient httpClient)
 	: ILinkedInManager
 {
 
@@ -92,37 +81,6 @@ public class LinkedInManager(
         }
 
         return await PostShareText(request.AccessToken!, request.AuthorId!, request.Text);
-    }
-
-    public async Task<string> ComposeMessageAsync(
-        ScheduledItem scheduledItem,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(scheduledItem);
-
-        var linkedInPlatform =
-            await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.LinkedIn, cancellationToken);
-        if (linkedInPlatform is null)
-        {
-            return scheduledItem.Message;
-        }
-
-        var messageTemplate = await messageTemplateDataStore.GetAsync(
-            linkedInPlatform.Id,
-            GetMessageType(scheduledItem.ItemType),
-            cancellationToken);
-
-        if (string.IsNullOrWhiteSpace(messageTemplate?.Template))
-        {
-            return scheduledItem.Message;
-        }
-
-        var renderedMessage = await TryRenderTemplateAsync(
-            scheduledItem,
-            messageTemplate.Template,
-            cancellationToken);
-
-        return renderedMessage ?? scheduledItem.Message;
     }
 
     /// <summary>
@@ -545,87 +503,6 @@ public class LinkedInManager(
         }
 
         return true;
-    }
-
-    private static string GetMessageType(ScheduledItemType itemType) => itemType switch
-    {
-        ScheduledItemType.Engagements => MessageTemplates.MessageTypes.NewSpeakingEngagement,
-        ScheduledItemType.Talks => MessageTemplates.MessageTypes.ScheduledItem,
-        ScheduledItemType.SyndicationFeedItems => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
-        ScheduledItemType.YouTubeItems => MessageTemplates.MessageTypes.NewYouTubeItem,
-        _ => MessageTemplates.MessageTypes.RandomPost
-    };
-
-    private async Task<string?> TryRenderTemplateAsync(
-        ScheduledItem scheduledItem,
-        string templateContent,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            string title = string.Empty;
-            string url = string.Empty;
-            string description = string.Empty;
-            string tags = string.Empty;
-
-            switch (scheduledItem.ItemType)
-            {
-                case ScheduledItemType.SyndicationFeedItems:
-                    var feed = await syndicationFeedItemManager.GetAsync(
-                        scheduledItem.ItemPrimaryKey,
-                        cancellationToken);
-                    title = feed.Title;
-                    url = feed.ShortenedUrl ?? feed.Url;
-                    tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : string.Empty;
-                    break;
-                case ScheduledItemType.YouTubeItems:
-                    var youTubeItem = await youTubeItemManager.GetAsync(
-                        scheduledItem.ItemPrimaryKey,
-                        cancellationToken);
-                    title = youTubeItem.Title;
-                    url = youTubeItem.ShortenedUrl ?? youTubeItem.Url;
-                    tags = youTubeItem.Tags?.Count > 0 ? string.Join(",", youTubeItem.Tags) : string.Empty;
-                    break;
-                case ScheduledItemType.Engagements:
-                    var engagement = await engagementManager.GetAsync(
-                        scheduledItem.ItemPrimaryKey,
-                        cancellationToken);
-                    title = engagement.Name;
-                    url = engagement.Url;
-                    description = engagement.Comments ?? string.Empty;
-                    break;
-                case ScheduledItemType.Talks:
-                    var talk = await engagementManager.GetTalkAsync(
-                        scheduledItem.ItemPrimaryKey,
-                        cancellationToken);
-                    title = talk.Name;
-                    url = talk.UrlForTalk ?? string.Empty;
-                    description = talk.Comments ?? string.Empty;
-                    break;
-                default:
-                    return null;
-            }
-
-            var template = Template.Parse(templateContent);
-            var scriptObject = new ScriptObject();
-            scriptObject.Import(new
-            {
-                title,
-                url,
-                description,
-                tags,
-                image_url = scheduledItem.ImageUrl
-            });
-            var context = new TemplateContext();
-            context.PushGlobal(scriptObject);
-            var rendered = await template.RenderAsync(context);
-            return string.IsNullOrWhiteSpace(rendered) ? null : rendered.Trim();
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Scriban template rendering failed for LinkedIn scheduled item {Id}", scheduledItem.Id);
-            return null;
-        }
     }
 
     private string BuildLinkedInResponseErrorMessage(ShareResponse shareResponse)
