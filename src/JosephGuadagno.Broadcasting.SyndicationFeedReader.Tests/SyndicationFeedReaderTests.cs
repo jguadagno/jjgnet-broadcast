@@ -5,19 +5,15 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests;
 
-public class SyndicationFeedReaderTests
+public class SyndicationFeedReaderTests(
+	ISyndicationFeedReader syndicationFeedReader,
+	IRandomPostSettings randomPostSettings,
+	ITestOutputHelper testOutputHelper)
 {
-    private readonly ISyndicationFeedReader _syndicationFeedReader;
-    private readonly IRandomPostSettings _randomPostSettings;
-    private readonly ITestOutputHelper _testOutputHelper;
-        
-    public SyndicationFeedReaderTests(ISyndicationFeedReader syndicationFeedReader, IRandomPostSettings randomPostSettings, ITestOutputHelper testOutputHelper)
-    {
-        _syndicationFeedReader = syndicationFeedReader;
-        _randomPostSettings = randomPostSettings;
-        _testOutputHelper = testOutputHelper;
-    }
-    
+    private readonly ISyndicationFeedReader _syndicationFeedReader = syndicationFeedReader;
+    private readonly IRandomPostSettings _randomPostSettings = randomPostSettings;
+    private readonly ITestOutputHelper _testOutputHelper = testOutputHelper;
+
     // ### Constructor Tests ###
     // Constructor(ISyndicationFeedReaderSettings syndicationFeedReaderSettings)
     

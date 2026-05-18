@@ -12,27 +12,17 @@ namespace JosephGuadagno.Broadcasting.Managers;
 /// <summary>
 /// Manager for per-user Bluesky publisher settings
 /// </summary>
-public class UserPublisherBlueskySettingsManager : IUserPublisherBlueskySettingsManager
+public class UserPublisherBlueskySettingsManager(
+	IUserPublisherBlueskySettingsDataStore userPublisherBlueskySettingsDataStore,
+	IKeyVault keyVault,
+	ILogger<UserPublisherBlueskySettingsManager> logger)
+	: IUserPublisherBlueskySettingsManager
 {
-    private readonly IUserPublisherBlueskySettingsDataStore _userPublisherBlueskySettingsDataStore;
-    private readonly IKeyVault _keyVault;
-    private readonly ILogger<UserPublisherBlueskySettingsManager> _logger;
-
-    public UserPublisherBlueskySettingsManager(
-        IUserPublisherBlueskySettingsDataStore userPublisherBlueskySettingsDataStore,
-        IKeyVault keyVault,
-        ILogger<UserPublisherBlueskySettingsManager> logger)
-    {
-        _userPublisherBlueskySettingsDataStore = userPublisherBlueskySettingsDataStore;
-        _keyVault = keyVault;
-        _logger = logger;
-    }
-
-    /// <inheritdoc />
+	/// <inheritdoc />
     public Task<UserPublisherBlueskySettings?> GetAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        return _userPublisherBlueskySettingsDataStore.GetByUserAsync(ownerOid, cancellationToken);
+        return userPublisherBlueskySettingsDataStore.GetByUserAsync(ownerOid, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -40,19 +30,19 @@ public class UserPublisherBlueskySettingsManager : IUserPublisherBlueskySettings
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentException.ThrowIfNullOrWhiteSpace(settings.CreatedByEntraOid);
-        return _userPublisherBlueskySettingsDataStore.SaveAsync(settings, cancellationToken);
+        return userPublisherBlueskySettingsDataStore.SaveAsync(settings, cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<bool> DeleteAsync(string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        var existing = await _userPublisherBlueskySettingsDataStore.GetByUserAsync(ownerOid, cancellationToken);
+        var existing = await userPublisherBlueskySettingsDataStore.GetByUserAsync(ownerOid, cancellationToken);
         if (existing is null)
         {
             return false;
         }
-        return await _userPublisherBlueskySettingsDataStore.DeleteAsync(existing.Id, ownerOid, cancellationToken);
+        return await userPublisherBlueskySettingsDataStore.DeleteAsync(existing.Id, ownerOid, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -62,12 +52,12 @@ public class UserPublisherBlueskySettingsManager : IUserPublisherBlueskySettings
         var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Bluesky, KeyVaultSecretNames.SettingName.AppPassword);
         try
         {
-            var secret = await _keyVault.GetSecretAsync(secretName);
+            var secret = await keyVault.GetSecretAsync(secretName);
             return secret?.Value;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex,
+            logger.LogError(ex,
                 "Failed to retrieve Bluesky app password from Key Vault for secret '{SecretName}', owner '{OwnerOid}'",
                 secretName,
                 LogSanitizer.Sanitize(ownerOid));
@@ -81,8 +71,8 @@ public class UserPublisherBlueskySettingsManager : IUserPublisherBlueskySettings
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
         ArgumentException.ThrowIfNullOrWhiteSpace(appPassword);
         var secretName = KeyVaultSecretNameBuilder.Build(KeyVaultSecretOwnerType.Publisher, ownerOid, KeyVaultSecretNames.Platform.Bluesky, KeyVaultSecretNames.SettingName.AppPassword);
-        await _keyVault.UpdateSecretValueAndPropertiesAsync(secretName, appPassword, DateTime.UtcNow.AddYears(10));
-        _logger.LogInformation(
+        await keyVault.UpdateSecretValueAndPropertiesAsync(secretName, appPassword, DateTime.UtcNow.AddYears(10));
+        logger.LogInformation(
             "Stored Bluesky app password in Key Vault as secret '{SecretName}' for owner '{OwnerOid}'",
             secretName,
             LogSanitizer.Sanitize(ownerOid));

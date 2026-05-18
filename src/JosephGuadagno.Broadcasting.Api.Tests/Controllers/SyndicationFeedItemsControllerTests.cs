@@ -14,18 +14,12 @@ namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
 
 public class SyndicationFeedItemsControllerTests
 {
-    private readonly Mock<ISyndicationFeedItemManager> _managerMock;
-    private readonly Mock<ILogger<SyndicationFeedItemsController>> _loggerMock;
+    private readonly Mock<ISyndicationFeedItemManager> _managerMock = new();
+    private readonly Mock<ILogger<SyndicationFeedItemsController>> _loggerMock = new();
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
     // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
     private static readonly IMapper Mapper = ApiTestMapper.Instance;
-
-    public SyndicationFeedItemsControllerTests()
-    {
-        _managerMock = new Mock<ISyndicationFeedItemManager>();
-        _loggerMock = new Mock<ILogger<SyndicationFeedItemsController>>();
-    }
 
     // -------------------------------------------------------------------------
     // Helpers

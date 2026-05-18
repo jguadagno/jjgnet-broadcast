@@ -128,6 +128,51 @@ Fix: wrap all three sites with `LogSanitizer.Sanitize()` — the `using` directi
 
 ---
 
+---
+
+## 2026-05-18 — Publisher Architecture Analysis
+
+**Status:** ✅ COMPLETE — Proposal written to `.squad/decisions/inbox/neo-publisher-architecture-proposal.md`
+
+**Scope:** Full analysis of Bluesky/Facebook/LinkedIn/Twitter publisher managers and their Azure Functions.
+
+**Key findings:**
+
+1. **All four publisher managers carry five composition dependencies they should not own**: `ISocialMediaPlatformManager`, `IMessageTemplateDataStore`, `ISyndicationFeedItemManager`, `IYouTubeItemManager`, `IEngagementManager`. Their `ComposeMessageAsync()` + `TryRenderTemplateAsync()` logic is copy-pasted verbatim across all four.
+
+2. **Composition is inconsistent across function types**: ScheduledItemFired functions delegate to manager; NewSyndication/RandomPost functions compose inline with hardcoded text. No Scriban in the non-scheduled path.
+
+3. **`Twitter/SendTweet.cs` bypasses `TwitterManager` entirely** — builds its own `TwitterContext` from per-user credentials and calls `twitterContext.TweetAsync()` directly. The `TwitterContext` injected into `TwitterManager` is a global shared context — irreconcilable with per-user posting.
+
+4. **`Bluesky/SendPost.cs` reimplements PostBuilder logic** that already exists in `BlueskyManager.PublishAsync()`.
+
+5. **`MessageTemplate.CreatedByEntraOid` field is unused** in template lookup — all users share the same template; user-scoped templates are architecturally impossible today.
+
+6. **Four redundant queue DTOs** (`BlueskyPostMessage`, `TwitterTweetMessage`, `FacebookPostStatus`, `LinkedInPostLink`) for structurally identical data. `LinkedInPostLink` in `Managers.LinkedIn.Models` referenced by Functions project — layering violation.
+
+**Proposed solution (6 phases):**
+- Phase 1: Extract `IPostComposer`/`PostComposer` (centralizes Scriban rendering)
+- Phase 2: Extract `IMessageTemplateLookup` (user-scoped template resolution)
+- Phase 3: Migrate all `Process*` Functions to use new utilities
+- Phase 4: Strip composition from all four publisher managers
+- Phase 5: Unify `Send*` Functions to use `manager.PublishAsync(SocialMediaPublishRequest)`
+- Phase 6 (optional): Unify queue DTOs to `SocialMediaPublishRequest`
+
+**Key files examined:**
+- `src/JosephGuadagno.Broadcasting.Managers.Bluesky/BlueskyManager.cs`
+- `src/JosephGuadagno.Broadcasting.Managers.Facebook/FacebookManager.cs`
+- `src/JosephGuadagno.Broadcasting.Managers.LinkedIn/LinkedInManager.cs`
+- `src/JosephGuadagno.Broadcasting.Managers.Twitter/TwitterManager.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/Bluesky/{SendPost,ProcessScheduledItemFired,ProcessNewSyndicationDataFired,ProcessNewRandomPost}.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/Twitter/{SendTweet,ProcessScheduledItemFired,ProcessNewSyndicationDataFired}.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/Facebook/{PostPageStatus,ProcessScheduledItemFired,ProcessNewSyndicationDataFired,ProcessNewRandomPost}.cs`
+- `src/JosephGuadagno.Broadcasting.Functions/LinkedIn/{PostLink,ProcessScheduledItemFired,ProcessNewSyndicationDataFired}.cs`
+- `src/JosephGuadagno.Broadcasting.Domain/Models/SocialMediaPublishRequest.cs`
+- `src/JosephGuadagno.Broadcasting.Domain/Models/MessageTemplate.cs`
+- `src/JosephGuadagno.Broadcasting.Domain/Interfaces/ISocialMediaPublisher.cs`
+
+---
+
 ## Learnings
 
 ### 2026-05-15 — PR #963 Formal Review: Publisher Settings Phase 2

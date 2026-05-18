@@ -15,7 +15,15 @@ using Scriban.Runtime;
 
 namespace JosephGuadagno.Broadcasting.Managers.LinkedIn;
 
-public class LinkedInManager : ILinkedInManager
+public class LinkedInManager(
+	HttpClient httpClient,
+	ILogger<LinkedInManager> logger,
+	ISocialMediaPlatformManager socialMediaPlatformManager,
+	IMessageTemplateDataStore messageTemplateDataStore,
+	ISyndicationFeedItemManager syndicationFeedItemManager,
+	IYouTubeItemManager youTubeItemManager,
+	IEngagementManager engagementManager)
+	: ILinkedInManager
 {
 
     private const string LinkedInPostUrl = "https://api.linkedin.com/v2/ugcPosts";
@@ -23,32 +31,6 @@ public class LinkedInManager : ILinkedInManager
     private const string LinkedInAssetUrl = "https://api.linkedin.com/v2/assets?action=registerUpload";
     
     private const string LinkedInAuthorUrn = "urn:li:person:{0}";
-
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<LinkedInManager> _logger;
-    private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
-    private readonly IMessageTemplateDataStore _messageTemplateDataStore;
-    private readonly ISyndicationFeedItemManager _syndicationFeedItemManager;
-    private readonly IYouTubeItemManager _youTubeItemManager;
-    private readonly IEngagementManager _engagementManager;
-
-    public LinkedInManager(
-        HttpClient httpClient,
-        ILogger<LinkedInManager> logger,
-        ISocialMediaPlatformManager socialMediaPlatformManager,
-        IMessageTemplateDataStore messageTemplateDataStore,
-        ISyndicationFeedItemManager syndicationFeedItemManager,
-        IYouTubeItemManager youTubeItemManager,
-        IEngagementManager engagementManager)
-    {
-        _httpClient = httpClient;
-        _logger = logger;
-        _socialMediaPlatformManager = socialMediaPlatformManager;
-        _messageTemplateDataStore = messageTemplateDataStore;
-        _syndicationFeedItemManager = syndicationFeedItemManager;
-        _youTubeItemManager = youTubeItemManager;
-        _engagementManager = engagementManager;
-    }
 
     public async Task<string?> PublishAsync(SocialMediaPublishRequest request)
     {
@@ -70,7 +52,7 @@ public class LinkedInManager : ILinkedInManager
 
         if (!string.IsNullOrEmpty(request.ImageUrl))
         {
-            var imageResponse = await _httpClient.GetAsync(request.ImageUrl);
+            var imageResponse = await httpClient.GetAsync(request.ImageUrl);
             if (imageResponse.StatusCode == HttpStatusCode.OK)
             {
                 var imageBytes = await imageResponse.Content.ReadAsByteArrayAsync();
@@ -119,13 +101,13 @@ public class LinkedInManager : ILinkedInManager
         ArgumentNullException.ThrowIfNull(scheduledItem);
 
         var linkedInPlatform =
-            await _socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.LinkedIn, cancellationToken);
+            await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.LinkedIn, cancellationToken);
         if (linkedInPlatform is null)
         {
             return scheduledItem.Message;
         }
 
-        var messageTemplate = await _messageTemplateDataStore.GetAsync(
+        var messageTemplate = await messageTemplateDataStore.GetAsync(
             linkedInPlatform.Id,
             GetMessageType(scheduledItem.ItemType),
             cancellationToken);
@@ -386,7 +368,7 @@ public class LinkedInManager : ILinkedInManager
             new KeyValuePair<string, string>("client_secret", clientSecret)
         });
 
-        var response = await _httpClient.PostAsync(accessTokenUrl, formContent);
+        var response = await httpClient.PostAsync(accessTokenUrl, formContent);
         var content = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -415,14 +397,14 @@ public class LinkedInManager : ILinkedInManager
     
     private async Task<T> ExecuteGetAsync<T>(string url, string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        if (_httpClient.DefaultRequestHeaders.Authorization is not null)
+        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        if (httpClient.DefaultRequestHeaders.Authorization is not null)
         {
-            _httpClient.DefaultRequestHeaders.Authorization = null;
+            httpClient.DefaultRequestHeaders.Authorization = null;
         }
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var response = await _httpClient.GetAsync(url);
+        var response = await httpClient.GetAsync(url);
         if (response.StatusCode != HttpStatusCode.OK)
             throw new LinkedInPostException(
                 $"Invalid status code in the HttpResponseMessage: {response.StatusCode}.");
@@ -466,7 +448,7 @@ public class LinkedInManager : ILinkedInManager
         var jsonContent = new StringContent(jsonRequest, null, "application/json");
         requestMessage.Content = jsonContent;
         
-        var response = await _httpClient.SendAsync(requestMessage);
+        var response = await httpClient.SendAsync(requestMessage);
         
         var content = await response.Content.ReadAsStringAsync();
         var options = new JsonSerializerOptions
@@ -517,7 +499,7 @@ public class LinkedInManager : ILinkedInManager
         var jsonContent = new StringContent(jsonRequest, null, "application/json");
         requestMessage.Content = jsonContent;
         
-        var response = await _httpClient.SendAsync(requestMessage);
+        var response = await httpClient.SendAsync(requestMessage);
         
         var content = await response.Content.ReadAsStringAsync();
         var options = new JsonSerializerOptions
@@ -554,7 +536,7 @@ public class LinkedInManager : ILinkedInManager
         
         requestMessage.Content = new ByteArrayContent(image);
         
-        var response = await _httpClient.SendAsync(requestMessage);
+        var response = await httpClient.SendAsync(requestMessage);
         
         if (response.StatusCode != HttpStatusCode.Created)
         {
@@ -589,7 +571,7 @@ public class LinkedInManager : ILinkedInManager
             switch (scheduledItem.ItemType)
             {
                 case ScheduledItemType.SyndicationFeedItems:
-                    var feed = await _syndicationFeedItemManager.GetAsync(
+                    var feed = await syndicationFeedItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = feed.Title;
@@ -597,7 +579,7 @@ public class LinkedInManager : ILinkedInManager
                     tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.YouTubeItems:
-                    var youTubeItem = await _youTubeItemManager.GetAsync(
+                    var youTubeItem = await youTubeItemManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = youTubeItem.Title;
@@ -605,7 +587,7 @@ public class LinkedInManager : ILinkedInManager
                     tags = youTubeItem.Tags?.Count > 0 ? string.Join(",", youTubeItem.Tags) : string.Empty;
                     break;
                 case ScheduledItemType.Engagements:
-                    var engagement = await _engagementManager.GetAsync(
+                    var engagement = await engagementManager.GetAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = engagement.Name;
@@ -613,7 +595,7 @@ public class LinkedInManager : ILinkedInManager
                     description = engagement.Comments ?? string.Empty;
                     break;
                 case ScheduledItemType.Talks:
-                    var talk = await _engagementManager.GetTalkAsync(
+                    var talk = await engagementManager.GetTalkAsync(
                         scheduledItem.ItemPrimaryKey,
                         cancellationToken);
                     title = talk.Name;
@@ -641,7 +623,7 @@ public class LinkedInManager : ILinkedInManager
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Scriban template rendering failed for LinkedIn scheduled item {Id}", scheduledItem.Id);
+            logger.LogWarning(ex, "Scriban template rendering failed for LinkedIn scheduled item {Id}", scheduledItem.Id);
             return null;
         }
     }

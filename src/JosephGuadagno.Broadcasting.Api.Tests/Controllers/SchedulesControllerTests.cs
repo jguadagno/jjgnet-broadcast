@@ -17,24 +17,15 @@ namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
 
 public class SchedulesControllerTests
 {
-    private readonly Mock<IScheduledItemManager> _scheduledItemManagerMock;
-    private readonly Mock<IEngagementManager> _engagementManagerMock;
-    private readonly Mock<ISyndicationFeedItemManager> _syndicationFeedItemManagerMock;
-    private readonly Mock<IYouTubeItemManager> _youTubeItemManagerMock;
-    private readonly Mock<ILogger<SchedulesController>> _loggerMock;
+    private readonly Mock<IScheduledItemManager> _scheduledItemManagerMock = new();
+    private readonly Mock<IEngagementManager> _engagementManagerMock = new();
+    private readonly Mock<ISyndicationFeedItemManager> _syndicationFeedItemManagerMock = new();
+    private readonly Mock<IYouTubeItemManager> _youTubeItemManagerMock = new();
+    private readonly Mock<ILogger<SchedulesController>> _loggerMock = new();
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
     // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
     private static readonly IMapper Mapper = ApiTestMapper.Instance;
-
-    public SchedulesControllerTests()
-    {
-        _scheduledItemManagerMock = new Mock<IScheduledItemManager>();
-        _engagementManagerMock = new Mock<IEngagementManager>();
-        _syndicationFeedItemManagerMock = new Mock<ISyndicationFeedItemManager>();
-        _youTubeItemManagerMock = new Mock<IYouTubeItemManager>();
-        _loggerMock = new Mock<ILogger<SchedulesController>>();
-    }
 
     // -------------------------------------------------------------------------
     // Helpers

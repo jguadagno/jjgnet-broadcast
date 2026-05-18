@@ -8,22 +8,15 @@ namespace JosephGuadagno.Broadcasting.Web.HealthChecks;
 /// Health check for Azure Key Vault.
 /// Probes connectivity by listing secret properties (does not fetch secret values).
 /// </summary>
-internal sealed class AzureKeyVaultHealthCheck : IHealthCheck
+internal sealed class AzureKeyVaultHealthCheck(SecretClient secretClient) : IHealthCheck
 {
-    private readonly SecretClient _secretClient;
-
-    public AzureKeyVaultHealthCheck(SecretClient secretClient)
-    {
-        _secretClient = secretClient;
-    }
-
-    public async Task<HealthCheckResult> CheckHealthAsync(
+	public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var secret = await _secretClient.GetSecretAsync("AzureKeyVaultSecretsHealthCheck", null, cancellationToken);
+            var secret = await secretClient.GetSecretAsync("AzureKeyVaultSecretsHealthCheck", null, cancellationToken);
             return secret is null
                 ? HealthCheckResult.Unhealthy("Azure Key Vault health check failed: Secret not found.")
                 : HealthCheckResult.Healthy("Azure Key Vault is reachable.");

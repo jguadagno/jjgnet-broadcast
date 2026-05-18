@@ -12,16 +12,9 @@ namespace JosephGuadagno.Broadcasting.Web.Tests;
 
 public class RejectSessionCookieWhenAccountNotInCacheEventsTests
 {
-    private readonly RejectSessionCookieWhenAccountNotInCacheEvents _sut;
-    private Mock<ITokenAcquisition> _mockTokenAcquisition;
-    private Mock<IAuthenticationService> _mockAuthService;
-
-    public RejectSessionCookieWhenAccountNotInCacheEventsTests()
-    {
-        _sut = new RejectSessionCookieWhenAccountNotInCacheEvents();
-        _mockTokenAcquisition = new Mock<ITokenAcquisition>();
-        _mockAuthService = new Mock<IAuthenticationService>();
-    }
+    private readonly RejectSessionCookieWhenAccountNotInCacheEvents _sut = new();
+    private Mock<ITokenAcquisition> _mockTokenAcquisition = new();
+    private Mock<IAuthenticationService> _mockAuthService = new();
 
     private CookieValidatePrincipalContext CreateContext(ClaimsPrincipal? principal = null)
     {

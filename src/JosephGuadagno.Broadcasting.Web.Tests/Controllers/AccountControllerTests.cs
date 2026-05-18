@@ -9,12 +9,7 @@ namespace JosephGuadagno.Broadcasting.Web.Tests.Controllers;
 
 public class AccountControllerTests
 {
-    private readonly AccountController _sut;
-
-    public AccountControllerTests()
-    {
-        _sut = new AccountController();
-    }
+    private readonly AccountController _sut = new();
 
     [Fact]
     public void PendingApproval_ReturnsView()

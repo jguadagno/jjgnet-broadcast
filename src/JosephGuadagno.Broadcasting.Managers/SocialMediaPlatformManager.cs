@@ -9,34 +9,26 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
-public class SocialMediaPlatformManager : ISocialMediaPlatformManager
+public class SocialMediaPlatformManager(ISocialMediaPlatformDataStore dataStore, IMemoryCache cache)
+	: ISocialMediaPlatformManager
 {
-    private readonly ISocialMediaPlatformDataStore _dataStore;
-    private readonly IMemoryCache _cache;
-
-    private const string CacheKeyAllActive = "SocialMediaPlatforms_All";
+	private const string CacheKeyAllActive = "SocialMediaPlatforms_All";
     private const string CacheKeyAllIncludingInactive = "SocialMediaPlatforms_AllIncludingInactive";
     private static string CacheKeyById(int id) => $"SocialMediaPlatform_{id}";
 
     private static readonly MemoryCacheEntryOptions CacheOptions =
         new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
 
-    public SocialMediaPlatformManager(ISocialMediaPlatformDataStore dataStore, IMemoryCache cache)
-    {
-        _dataStore = dataStore;
-        _cache = cache;
-    }
-
     public async Task<List<SocialMediaPlatform>> GetAllAsync(bool includeInactive = false, CancellationToken cancellationToken = default)
     {
         var cacheKey = includeInactive ? CacheKeyAllIncludingInactive : CacheKeyAllActive;
-        if (_cache.TryGetValue(cacheKey, out List<SocialMediaPlatform>? cached) && cached is not null)
+        if (cache.TryGetValue(cacheKey, out List<SocialMediaPlatform>? cached) && cached is not null)
         {
             return cached;
         }
 
-        var result = await _dataStore.GetAllAsync(includeInactive: includeInactive, cancellationToken);
-        _cache.Set(cacheKey, result, CacheOptions);
+        var result = await dataStore.GetAllAsync(includeInactive: includeInactive, cancellationToken);
+        cache.Set(cacheKey, result, CacheOptions);
         return result;
     }
 
@@ -48,44 +40,44 @@ public class SocialMediaPlatformManager : ISocialMediaPlatformManager
     public async Task<SocialMediaPlatform?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var cacheKey = CacheKeyById(id);
-        if (_cache.TryGetValue(cacheKey, out SocialMediaPlatform? cached))
+        if (cache.TryGetValue(cacheKey, out SocialMediaPlatform? cached))
         {
             return cached;
         }
 
-        var result = await _dataStore.GetAsync(id, cancellationToken);
+        var result = await dataStore.GetAsync(id, cancellationToken);
         if (result is not null)
         {
-            _cache.Set(cacheKey, result, CacheOptions);
+            cache.Set(cacheKey, result, CacheOptions);
         }
         return result;
     }
 
     public async Task<SocialMediaPlatform?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
     {
-        return await _dataStore.GetByNameAsync(name, cancellationToken);
+        return await dataStore.GetByNameAsync(name, cancellationToken);
     }
 
     public async Task<SocialMediaPlatform?> AddAsync(SocialMediaPlatform platform, CancellationToken cancellationToken = default)
     {
-        var result = await _dataStore.AddAsync(platform, cancellationToken);
+        var result = await dataStore.AddAsync(platform, cancellationToken);
         InvalidateListCaches();
         return result;
     }
 
     public async Task<SocialMediaPlatform?> UpdateAsync(SocialMediaPlatform platform, CancellationToken cancellationToken = default)
     {
-        var result = await _dataStore.UpdateAsync(platform, cancellationToken);
+        var result = await dataStore.UpdateAsync(platform, cancellationToken);
         InvalidateListCaches();
-        _cache.Remove(CacheKeyById(platform.Id));
+        cache.Remove(CacheKeyById(platform.Id));
         return result;
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var result = await _dataStore.DeleteAsync(id, cancellationToken);
+        var result = await dataStore.DeleteAsync(id, cancellationToken);
         InvalidateListCaches();
-        _cache.Remove(CacheKeyById(id));
+        cache.Remove(CacheKeyById(id));
         return result;
     }
 
@@ -117,8 +109,8 @@ public class SocialMediaPlatformManager : ISocialMediaPlatformManager
 
     private void InvalidateListCaches()
     {
-        _cache.Remove(CacheKeyAllActive);
-        _cache.Remove(CacheKeyAllIncludingInactive);
+        cache.Remove(CacheKeyAllActive);
+        cache.Remove(CacheKeyAllIncludingInactive);
     }
 }
 

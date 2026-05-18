@@ -6,25 +6,16 @@ using LinqToTwitter;
 namespace JosephGuadagno.Broadcasting.Managers.Twitter.IntegrationTests;
 
 [Trait("Category", "Integration")]
-public class TwitterManagerTests
+public class TwitterManagerTests(ITwitterManager twitterManager, TwitterContext twitterContext)
 {
-    private readonly ITwitterManager _twitterManager;
-    private readonly TwitterContext _twitterContext;
-
-    public TwitterManagerTests(ITwitterManager twitterManager, TwitterContext twitterContext)
-    {
-        _twitterManager = twitterManager;
-        _twitterContext = twitterContext;
-    }
-
-    [Fact(Skip = "Manually run only")]
+	[Fact(Skip = "Manually run only")]
     public async Task SendTweetAsync_WithValidTweetText_ReturnsTweetId()
     {
         // Arrange
         var tweetText = $"Integration test tweet [{DateTime.UtcNow:o}]";
 
         // Act
-        var tweetId = await _twitterManager.SendTweetAsync(tweetText);
+        var tweetId = await twitterManager.SendTweetAsync(tweetText);
 
         // Assert
         tweetId.Should().NotBeNullOrEmpty();
@@ -32,7 +23,7 @@ public class TwitterManagerTests
         // Cleanup
         if (!string.IsNullOrEmpty(tweetId))
         {
-            await _twitterContext.DeleteTweetAsync(tweetId);
+            await twitterContext.DeleteTweetAsync(tweetId);
         }
     }
 
@@ -43,7 +34,7 @@ public class TwitterManagerTests
         var tweetText = string.Empty;
 
         // Act
-        var act = async () => await _twitterManager.SendTweetAsync(tweetText);
+        var act = async () => await twitterManager.SendTweetAsync(tweetText);
 
         // Assert
         await act.Should().ThrowAsync<TwitterPostException>();
@@ -56,7 +47,7 @@ public class TwitterManagerTests
         var tweetText = new string('a', 280);
 
         // Act
-        var tweetId = await _twitterManager.SendTweetAsync(tweetText);
+        var tweetId = await twitterManager.SendTweetAsync(tweetText);
 
         // Assert
         tweetId.Should().NotBeNullOrEmpty();
@@ -64,7 +55,7 @@ public class TwitterManagerTests
         // Cleanup
         if (!string.IsNullOrEmpty(tweetId))
         {
-            await _twitterContext.DeleteTweetAsync(tweetId);
+            await twitterContext.DeleteTweetAsync(tweetId);
         }
     }
 
@@ -75,7 +66,7 @@ public class TwitterManagerTests
         var tweetText = new string('a', 281);
 
         // Act
-        var act = async () => await _twitterManager.SendTweetAsync(tweetText);
+        var act = async () => await twitterManager.SendTweetAsync(tweetText);
 
         // Assert
         await act.Should().ThrowAsync<TwitterPostException>();

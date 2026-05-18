@@ -17,20 +17,13 @@ namespace JosephGuadagno.Broadcasting.Api.Tests.Controllers;
 
 public class MessageTemplatesControllerTests
 {
-    private readonly Mock<IMessageTemplateManager> _messageTemplateManagerMock;
-    private readonly Mock<ISocialMediaPlatformManager> _socialMediaPlatformManagerMock;
-    private readonly Mock<ILogger<MessageTemplatesController>> _loggerMock;
+    private readonly Mock<IMessageTemplateManager> _messageTemplateManagerMock = new();
+    private readonly Mock<ISocialMediaPlatformManager> _socialMediaPlatformManagerMock = new();
+    private readonly Mock<ILogger<MessageTemplatesController>> _loggerMock = new();
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
     // when xUnit runs test classes in parallel.  See ApiTestMapper for details.
     private static readonly IMapper Mapper = ApiTestMapper.Instance;
-
-    public MessageTemplatesControllerTests()
-    {
-        _messageTemplateManagerMock = new Mock<IMessageTemplateManager>();
-        _socialMediaPlatformManagerMock = new Mock<ISocialMediaPlatformManager>();
-        _loggerMock = new Mock<ILogger<MessageTemplatesController>>();
-    }
 
     // -------------------------------------------------------------------------
     // Helpers

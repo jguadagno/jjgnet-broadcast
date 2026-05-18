@@ -4,14 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
-public partial class BroadcastingContext : DbContext
+public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> options) : DbContext(options)
 {
-
-    public BroadcastingContext(DbContextOptions<BroadcastingContext> options) : base(options)
-    {
-    }
-
-    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+	public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         try
         {

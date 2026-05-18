@@ -15,23 +15,13 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
 [Route("Collectors/FeedSource/Settings")]
-public class CollectorFeedSourcesController : Controller
+public class CollectorFeedSourcesController(
+	IUserCollectorFeedSourceService service,
+	IMapper mapper,
+	ILogger<CollectorFeedSourcesController> logger)
+	: Controller
 {
-    private readonly IUserCollectorFeedSourceService _service;
-    private readonly IMapper _mapper;
-    private readonly ILogger<CollectorFeedSourcesController> _logger;
-
-    public CollectorFeedSourcesController(
-        IUserCollectorFeedSourceService service,
-        IMapper mapper,
-        ILogger<CollectorFeedSourcesController> logger)
-    {
-        _service = service;
-        _mapper = mapper;
-        _logger = logger;
-    }
-
-    /// <summary>
+	/// <summary>
     /// Lists the current user's feed sources.
     /// </summary>
     [HttpGet("")]
@@ -42,8 +32,8 @@ public class CollectorFeedSourcesController : Controller
         bool sortDescending = false,
         string? filter = null)
     {
-        var items = await _service.GetCurrentUserAsync();
-        var viewModels = _mapper.Map<List<UserCollectorFeedSourceViewModel>>(items);
+        var items = await service.GetCurrentUserAsync();
+        var viewModels = mapper.Map<List<UserCollectorFeedSourceViewModel>>(items);
 
         ViewBag.Page = page;
         ViewBag.PageSize = Pagination.DefaultPageSize;
@@ -64,7 +54,7 @@ public class CollectorFeedSourcesController : Controller
     [HttpGet("Details/{id}")]
     public async Task<IActionResult> Details(int id)
     {
-        var source = await _service.GetByIdAsync(id);
+        var source = await service.GetByIdAsync(id);
         if (source == null) return NotFound();
 
         if (!User.IsInRole(RoleNames.SiteAdministrator))
@@ -77,7 +67,7 @@ public class CollectorFeedSourcesController : Controller
             }
         }
 
-        var viewModel = _mapper.Map<UserCollectorFeedSourceViewModel>(source);
+        var viewModel = mapper.Map<UserCollectorFeedSourceViewModel>(source);
         return View(viewModel);
     }
 
@@ -101,13 +91,13 @@ public class CollectorFeedSourcesController : Controller
     {
         if (!ModelState.IsValid) return View(viewModel);
 
-        var model = _mapper.Map<UserCollectorFeedSource>(viewModel);
+        var model = mapper.Map<UserCollectorFeedSource>(viewModel);
         model.CreatedByEntraOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId) ?? string.Empty;
 
-        var result = await _service.AddCurrentUserAsync(model);
+        var result = await service.AddCurrentUserAsync(model);
         if (result == null)
         {
-            _logger.LogWarning("Failed to add feed source for user, URL: {FeedUrl}",
+            logger.LogWarning("Failed to add feed source for user, URL: {FeedUrl}",
                 LogSanitizer.Sanitize(viewModel.FeedUrl));
             TempData["ErrorMessage"] = "Failed to add the feed source.";
             return View(viewModel);
@@ -124,7 +114,7 @@ public class CollectorFeedSourcesController : Controller
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Edit(int id)
     {
-        var source = await _service.GetByIdAsync(id);
+        var source = await service.GetByIdAsync(id);
         if (source == null) return NotFound();
 
         if (!User.IsInRole(RoleNames.SiteAdministrator))
@@ -137,7 +127,7 @@ public class CollectorFeedSourcesController : Controller
             }
         }
 
-        var viewModel = _mapper.Map<UserCollectorFeedSourceViewModel>(source);
+        var viewModel = mapper.Map<UserCollectorFeedSourceViewModel>(source);
         return View(viewModel);
     }
 
@@ -151,7 +141,7 @@ public class CollectorFeedSourcesController : Controller
     {
         if (!ModelState.IsValid) return View(viewModel);
 
-        var existing = await _service.GetByIdAsync(viewModel.Id);
+        var existing = await service.GetByIdAsync(viewModel.Id);
         if (existing == null) return NotFound();
 
         var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
@@ -163,22 +153,22 @@ public class CollectorFeedSourcesController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var model = _mapper.Map<UserCollectorFeedSource>(viewModel);
+        var model = mapper.Map<UserCollectorFeedSource>(viewModel);
         model.CreatedByEntraOid = existing.CreatedByEntraOid;
 
         UserCollectorFeedSource? result;
         if (isSiteAdmin && existing.CreatedByEntraOid != currentUserOid)
         {
-            result = await _service.UpdateByUserAsync(existing.CreatedByEntraOid, model);
+            result = await service.UpdateByUserAsync(existing.CreatedByEntraOid, model);
         }
         else
         {
-            result = await _service.UpdateCurrentUserAsync(model);
+            result = await service.UpdateCurrentUserAsync(model);
         }
 
         if (result == null)
         {
-            _logger.LogWarning("Failed to update feed source {Id}", viewModel.Id);
+            logger.LogWarning("Failed to update feed source {Id}", viewModel.Id);
             ModelState.AddModelError(string.Empty, "Failed to update the feed source.");
             return View(viewModel);
         }
@@ -194,7 +184,7 @@ public class CollectorFeedSourcesController : Controller
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> Delete(int id)
     {
-        var source = await _service.GetByIdAsync(id);
+        var source = await service.GetByIdAsync(id);
         if (source == null) return NotFound();
 
         if (!User.IsInRole(RoleNames.SiteAdministrator))
@@ -207,7 +197,7 @@ public class CollectorFeedSourcesController : Controller
             }
         }
 
-        var viewModel = _mapper.Map<UserCollectorFeedSourceViewModel>(source);
+        var viewModel = mapper.Map<UserCollectorFeedSourceViewModel>(source);
         return View(viewModel);
     }
 
@@ -220,7 +210,7 @@ public class CollectorFeedSourcesController : Controller
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
-        var source = await _service.GetByIdAsync(id);
+        var source = await service.GetByIdAsync(id);
         if (source == null) return NotFound();
 
         var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
@@ -235,11 +225,11 @@ public class CollectorFeedSourcesController : Controller
         bool result;
         if (isSiteAdmin && source.CreatedByEntraOid != currentUserOid)
         {
-            result = await _service.DeleteByUserAsync(source.CreatedByEntraOid, id);
+            result = await service.DeleteByUserAsync(source.CreatedByEntraOid, id);
         }
         else
         {
-            result = await _service.DeleteCurrentUserAsync(id);
+            result = await service.DeleteCurrentUserAsync(id);
         }
 
         if (result)
@@ -248,7 +238,7 @@ public class CollectorFeedSourcesController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = _mapper.Map<UserCollectorFeedSourceViewModel>(source);
+        var viewModel = mapper.Map<UserCollectorFeedSourceViewModel>(source);
         ModelState.AddModelError(string.Empty, "Failed to delete the feed source.");
         return View(viewModel);
     }

@@ -428,11 +428,10 @@ public class SyndicationFeedItemDataStoreTests : IDisposable
     }
 }
 
-internal sealed class FailingSaveBroadcastingContext : BroadcastingContext
+internal sealed class FailingSaveBroadcastingContext(DbContextOptions<BroadcastingContext> options)
+	: BroadcastingContext(options)
 {
-    public FailingSaveBroadcastingContext(DbContextOptions<BroadcastingContext> options) : base(options) { }
-
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+	public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(0);
     }

@@ -4,25 +4,13 @@ namespace JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 
 public class FacebookApplicationSettings: IFacebookApplicationSettings
 {
-    public FacebookApplicationSettings()
-    {
-        PageId = string.Empty;
-        PageAccessToken = string.Empty;
-        AppId = string.Empty;
-        AppSecret = string.Empty;
-        ClientToken = string.Empty;
-        ShortLivedAccessToken = string.Empty;
-        LongLivedAccessToken = string.Empty;
-        GraphApiRootUrl = "https://graph.facebook.com";
-        GraphApiVersion = "v20.0";
-    }
-    public string PageId { get; set; }
-    public string PageAccessToken { get; set; }
-    public string AppId { get; set; }
-    public string AppSecret { get; set; }
-    public string ClientToken { get; set; }
-    public string ShortLivedAccessToken { get; set; }
-    public string LongLivedAccessToken { get; set; }
-    public string GraphApiRootUrl { get; set; }
-    public string GraphApiVersion { get; set; }
+	public string PageId { get; set; } = string.Empty;
+    public string PageAccessToken { get; set; } = string.Empty;
+    public string AppId { get; set; } = string.Empty;
+    public string AppSecret { get; set; } = string.Empty;
+    public string ClientToken { get; set; } = string.Empty;
+    public string ShortLivedAccessToken { get; set; } = string.Empty;
+    public string LongLivedAccessToken { get; set; } = string.Empty;
+    public string GraphApiRootUrl { get; set; } = "https://graph.facebook.com";
+    public string GraphApiVersion { get; set; } = "v20.0";
 }

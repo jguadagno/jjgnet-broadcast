@@ -7,29 +7,23 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
-public class EmailTemplateManager : IEmailTemplateManager
+public class EmailTemplateManager(IEmailTemplateDataStore dataStore, ILogger<EmailTemplateManager> logger)
+	: IEmailTemplateManager
 {
-    private readonly IEmailTemplateDataStore _dataStore;
-    private readonly ILogger<EmailTemplateManager> _logger;
-
-    public EmailTemplateManager(IEmailTemplateDataStore dataStore, ILogger<EmailTemplateManager> logger)
-    {
-        _dataStore = dataStore;
-        _logger = logger;
-    }
+	private readonly ILogger<EmailTemplateManager> _logger = logger;
 
     public async Task<EmailTemplate?> GetTemplateAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await _dataStore.GetByIdAsync(id, cancellationToken);
+        return await dataStore.GetByIdAsync(id, cancellationToken);
     }
 
     public async Task<EmailTemplate?> GetTemplateAsync(string name, CancellationToken cancellationToken = default)
     {
-        return await _dataStore.GetByNameAsync(name, cancellationToken);
+        return await dataStore.GetByNameAsync(name, cancellationToken);
     }
 
     public async Task<List<EmailTemplate>> GetAllTemplatesAsync(CancellationToken cancellationToken = default)
     {
-        return await _dataStore.GetAllAsync(cancellationToken);
+        return await dataStore.GetAllAsync(cancellationToken);
     }
 }
