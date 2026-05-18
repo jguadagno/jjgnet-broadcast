@@ -182,6 +182,7 @@ public class MessageTemplatesController : ControllerBase
     /// <response code="404">If the platform was not found</response>
     /// <response code="401">If the current user was unauthorized to access this endpoint</response>
     [HttpPost("{platform}/{messageType}")]
+    [IgnoreAntiforgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(MessageTemplateResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
