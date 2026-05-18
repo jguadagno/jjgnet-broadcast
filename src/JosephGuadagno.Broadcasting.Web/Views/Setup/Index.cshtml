@@ -186,13 +186,23 @@ else
                     {
                         <text>Complete Step 2 first to know which platforms need templates.</text>
                     }
-                    else if (Model.MissingTemplatePlatforms.Count > 0)
+                    else if (!Model.HasCollector)
                     {
-                        <text>Missing templates for:</text>
-                        foreach (var platform in Model.MissingTemplatePlatforms)
+                        <text>Complete Step 1 first to know which content types need templates.</text>
+                    }
+                    else if (Model.MissingTemplatePairs.Count > 0)
+                    {
+                        <text>Missing templates for the following platform / content-type combinations:</text>
+                        <ul class="mt-2 mb-0">
+                        @foreach (var pair in Model.MissingTemplatePairs)
                         {
-                            <span class="badge text-bg-warning ms-1">@platform</span>
+                            <li>
+                                <span class="badge text-bg-secondary me-1">@pair.Platform</span>
+                                <span class="text-muted">×</span>
+                                <span class="badge text-bg-warning ms-1">@pair.MessageType</span>
+                            </li>
                         }
+                        </ul>
                     }
                 </p>
                 @if (Model.HasMessageTemplates)

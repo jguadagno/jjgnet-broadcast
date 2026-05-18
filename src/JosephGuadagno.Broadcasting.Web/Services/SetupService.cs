@@ -62,6 +62,12 @@ public class SetupService(
             || youTubeChannels.Count > 0
             || speakingEngagements.Count > 0;
 
+        // Map each collector type the user has to its message type constant
+        var collectorTypes = new List<string>();
+        if (feedSources.Count > 0) collectorTypes.Add(MessageTemplates.MessageTypes.NewSyndicationFeedItem);
+        if (youTubeChannels.Count > 0) collectorTypes.Add(MessageTemplates.MessageTypes.NewYouTubeItem);
+        if (speakingEngagements.Count > 0) collectorTypes.Add(MessageTemplates.MessageTypes.NewSpeakingEngagement);
+
         // Publishers — enabled flag indicates the platform is ready to use
         var bluesky = await blueskySettingsService.GetCurrentUserAsync();
         var twitter = await twitterSettingsService.GetCurrentUserAsync();
@@ -76,23 +82,41 @@ public class SetupService(
 
         var hasPublisher = configuredPublishers.Count > 0;
 
-        // Templates — for each configured publisher platform, at least one template must exist
+        // Templates — intersection-based: every (publisher × collectorType) pair needs a template
         var templateResult = await messageTemplateService.GetAllAsync(pageSize: Pagination.MaxPageSize);
-        var templatePlatforms = templateResult?.Items
-            .Select(t => t.Platform)
-            .Where(p => !string.IsNullOrEmpty(p))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
+        var existingTemplates = templateResult?.Items
+            .Where(t => !string.IsNullOrEmpty(t.Platform) && !string.IsNullOrEmpty(t.MessageType))
+            .Select(t => (
+                Platform: t.Platform.Trim(),
+                MessageType: t.MessageType.Trim()))
+            .ToHashSet() ?? [];
 
-        var missingTemplatePlatforms = configuredPublishers
-            .Where(p => !templatePlatforms.Contains(p))
+        var missingTemplatePairs = new List<MissingTemplateKey>();
+        foreach (var publisher in configuredPublishers)
+        {
+            foreach (var messageType in collectorTypes)
+            {
+                if (!existingTemplates.Contains((publisher, messageType)))
+                {
+                    missingTemplatePairs.Add(new MissingTemplateKey(publisher, messageType));
+                }
+            }
+        }
+
+        // Derive the distinct platforms for display convenience
+        var missingTemplatePlatforms = missingTemplatePairs
+            .Select(p => p.Platform)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        // Templates are complete when: no publishers configured, or all configured publishers have templates
-        var hasMessageTemplates = configuredPublishers.Count == 0 || missingTemplatePlatforms.Count == 0;
+        // Complete when there are no publishers, no collectors, or all required pairs exist
+        var hasMessageTemplates = configuredPublishers.Count == 0
+            || collectorTypes.Count == 0
+            || missingTemplatePairs.Count == 0;
 
         logger.LogDebug(
-            "Setup status built: HasCollector={HasCollector}, HasPublisher={HasPublisher}, HasMessageTemplates={HasMessageTemplates}",
-            hasCollector, hasPublisher, hasMessageTemplates);
+            "Setup status built: HasCollector={HasCollector}, HasPublisher={HasPublisher}, HasMessageTemplates={HasMessageTemplates}, MissingPairs={MissingPairCount}",
+            hasCollector, hasPublisher, hasMessageTemplates, missingTemplatePairs.Count);
 
         return new SetupStatus
         {
@@ -100,6 +124,8 @@ public class SetupService(
             HasPublisher = hasPublisher,
             HasMessageTemplates = hasMessageTemplates,
             ConfiguredPublisherPlatforms = configuredPublishers,
+            ConfiguredCollectorTypes = collectorTypes,
+            MissingTemplatePairs = missingTemplatePairs,
             MissingTemplatePlatforms = missingTemplatePlatforms
         };
     }
