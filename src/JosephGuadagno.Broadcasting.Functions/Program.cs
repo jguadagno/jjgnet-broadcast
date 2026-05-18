@@ -237,6 +237,9 @@ void ConfigureFunction(IServiceCollection services)
     // PostComposer — shared Scriban template renderer (Phase 1 of publisher architecture refactor)
     services.TryAddScoped<IPostComposer, PostComposer>();
 
+    // MessageTemplateLookup — user-scoped template resolver (Phase 2 of publisher architecture refactor)
+    services.TryAddScoped<IMessageTemplateLookup, MessageTemplateLookup>();
+
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();

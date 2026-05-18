@@ -211,6 +211,35 @@ Fix: wrap all three sites with `LogSanitizer.Sanitize()` — the `using` directi
 
 ## Learnings
 
+### 2026-05-18 — Phase 1 complete: IPostComposer/PostComposer extracted, dead classes deleted
+
+**Branch:** `issue-980-publisher-architecture-refactor` — commit `dbfa2589`
+
+**Files changed:**
+- **Deleted (dead code):** `Domain/Models/BlueskyPublisherSettings.cs`, `FacebookPublisherSettings.cs`, `LinkedInPublisherSettings.cs`, `TwitterPublisherSettings.cs` — confirmed zero references before deletion
+- **Created:** `Domain/Interfaces/IPostComposer.cs`
+- **Created:** `Managers/PostComposer.cs` (Scriban 7.2.0)
+- **Modified:** `Managers/JosephGuadagno.Broadcasting.Managers.csproj` — added `<PackageReference Include="Scriban" Version="7.2.0" />`
+- **Modified:** `Api/Program.cs`, `Functions/Program.cs`, `Web/Program.cs` — added `services.TryAddScoped<IPostComposer, PostComposer>();`
+
+**Actual `SocialMediaPublishRequest` properties confirmed:**
+- `Title` → `string?`
+- `Description` → `string?`
+- `LinkUrl` → `string?`
+- `ShortenedUrl` → `string?`
+- `ImageUrl` → `string?`
+- `Hashtags` → `IReadOnlyCollection<string>?` (not `List<string>` — `Count` property works for the `is { Count: > 0 }` null+empty check)
+- No `ConsumerKey`/`ConsumerSecret`/`AccessTokenSecret` on this model — those are Twitter-specific and will be addressed in Phase 5
+
+**DI registration pattern discovered:**
+- No central `AddManagers()` extension method exists in the shared Managers project
+- Each consumer (API, Web, Functions) registers inline with `services.TryAddScoped<Interface, Implementation>()`
+- Followed the same pattern for `IPostComposer`/`PostComposer` in all three consumers
+
+**Build/test result:** 0 errors, 0 warnings; all 422 non-integration tests passed
+
+---
+
 ### 2026-05-18 — Publisher model placement and duplicate settings investigation
 
 **Duplicate `*PublisherSettings` (plural) vs. `*PublisherSetting` (singular) — key finding:**
