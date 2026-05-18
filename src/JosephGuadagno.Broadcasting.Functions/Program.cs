@@ -234,6 +234,9 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IEmailTemplateDataStore, EmailTemplateDataStore>();
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
 
+    // PostComposer — shared Scriban template renderer (Phase 1 of publisher architecture refactor)
+    services.TryAddScoped<IPostComposer, PostComposer>();
+
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();

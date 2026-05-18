@@ -173,7 +173,61 @@ Fix: wrap all three sites with `LogSanitizer.Sanitize()` — the `using` directi
 
 ---
 
+---
+
+## 2026-05-18 — Publisher Architecture: Finalized Decisions + Issue #980
+
+**Status:** ✅ COMPLETE
+
+**Issue created:** #980 — "Refactor social media publisher architecture — extract PostComposer, MessageTemplateLookup, unify queue DTOs"
+
+**Decision record written:** `.squad/decisions/inbox/neo-publisher-arch-decisions.md`
+
+**Proposal updated:** `.squad/decisions/inbox/neo-publisher-architecture-proposal.md` — Status changed to APPROVED — Pending Implementation
+
+### Finalized architectural decisions
+
+1. **Always per-user credentials** — No shared/system accounts on any platform. `TwitterManager.PublishAsync()` builds `TwitterContext` from per-user credentials in `SocialMediaPublishRequest` (`ConsumerKey`, `ConsumerSecret`, `AccessToken`, `AccessTokenSecret`). Global `TwitterContext` DI removed.
+
+2. **Queue DTO unification is in-scope (Phase 6)** — Queues are currently empty. `SocialMediaPublishRequest` replaces all 4 platform-specific DTOs as part of this refactor. No deployment window needed. Fixes `LinkedInPostLink` layering violation.
+
+3. **All event types require user-scoped templates** — `NewSyndicationDataFired`, `NewRandomPost`, `NewSpeakingEngagementFired`, `NewYouTubeDataFired`, `ScheduledItemFired`. No hardcoded strings anywhere. Managed via issues #978 (required templates) and #979 (default templates on setup).
+
+4. **Templates are REQUIRED — no global fallback** — `IMessageTemplateLookup.GetAsync(platformName, messageType, ownerEntraOid)` returns `null` if the user has no template. `Process*` functions bail (return `null`, skip enqueue) on null template. No optional fallback parameter.
+
+5. **Hashtags inline via template** — `PostComposer` provides `{{ tags }}` as space-separated `#`-prefixed text. Template author decides placement. Bluesky parses AT Protocol `HashTag` facets from `request.Text` (text scanning), not from a separate `Hashtags` list.
+
+6. **RandomPost requires its own template type per user** — specific to each user's workflow; must be part of user setup flow. Tracked in #978 and #979.
+
+### Key design constraints for Trinity (implementation)
+
+- Phase 1 and Phase 2 are additive — safe to start immediately
+- Phase 3 requires issues #978 and #979 to be complete first (users must have templates)
+- `IMessageTemplateLookup` interface: `ownerEntraOid` is required (not optional), no global fallback
+- `PostComposer.ComposeAsync`: tags = `string.Join(" ", hashtags.Select(t => t.StartsWith("#") ? t : $"#{t}"))`
+- `BlueskyManager.PublishAsync`: parse AT Protocol facets from `request.Text` — not from `request.Hashtags`
+
+---
+
 ## Learnings
+
+### 2026-05-18 — Publisher model placement and duplicate settings investigation
+
+**Duplicate `*PublisherSettings` (plural) vs. `*PublisherSetting` (singular) — key finding:**
+
+There are TWO distinct class families in `JosephGuadagno.Broadcasting.Domain.Models` that look similar:
+
+1. **Singular (`*PublisherSetting`)** — **KEEP.** Legitimate domain value objects. Hold `Has*` booleans only (no credentials). Used as typed components of `UserPublisherSetting` (the API response aggregate) and `UserPublisherSettingUpdate`. Files: `BlueskyPublisherSetting.cs`, `TwitterPublisherSetting.cs`, `FacebookPublisherSetting.cs`, `LinkedInPublisherSetting.cs`.
+
+2. **Plural (`*PublisherSettings`)** — **DELETE.** Dead code. Credential-holder config models superseded by the per-user settings refactor. Zero references anywhere in the solution. Duplicate functionality already exists in manager-project models (`BlueskySettings`, `FacebookApplicationSettings`, `LinkedInApplicationSettings`). Files: `BlueskyPublisherSettings.cs`, `FacebookPublisherSettings.cs`, `LinkedInPublisherSettings.cs`, `TwitterPublisherSettings.cs`.
+
+**Queue DTOs in Domain.Models.Messages — NOT dead code, but Phase 6 target:**
+
+`TwitterTweetMessage`, `FacebookPostStatus`, `LinkedInPostLink`, `LinkedInPostText`, `LinkedInPostImage` are actively used (Functions project references them). They are platform-specific and inconsistently placed (Bluesky's equivalent, `BlueskyPostMessage`, lives in `Managers.Bluesky.Models`). However, Phase 6 of #980 will delete all five (unification into `SocialMediaPublishRequest`). Do not move them — wait for Phase 6 deletion.
+
+**Issue ordering clarification:** Issue #980 dependencies on #978/#979 are merge-time-only. Phases 1–5 require no templates. The blocker note at the top of #980 now makes this explicit.
+
+---
 
 ### 2026-05-15 — PR #963 Formal Review: Publisher Settings Phase 2
 
