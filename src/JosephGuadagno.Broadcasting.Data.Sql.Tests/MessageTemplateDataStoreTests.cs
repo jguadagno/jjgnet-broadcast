@@ -55,7 +55,7 @@ public class MessageTemplateDataStoreTests : IDisposable
         string messageType,
         string template = "{{ title }} - {{ url }}",
         string? description = null,
-        string? ownerOid = null) => new()
+        string ownerOid = "") => new()
     {
         SocialMediaPlatformId = platformId,
         MessageType = messageType,
@@ -244,5 +244,145 @@ public class MessageTemplateDataStoreTests : IDisposable
         Assert.Equal(3, result.TotalCount);
         Assert.Equal(2, result.Items.Count);
         Assert.All(result.Items, template => Assert.Equal("owner-1", template.CreatedByEntraOid));
+    }
+
+    // -------------------------------------------------------------------------
+    // GetAsync (3-arg)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetAsync_WithOwnerOid_ReturnsMatchingTemplate()
+    {
+        // Arrange
+        var twitterId = await GetOrCreatePlatformIdAsync("Twitter");
+        _context.MessageTemplates.AddRange(
+            CreateMessageTemplate(twitterId, "RandomPost", "system template", ownerOid: ""),
+            CreateMessageTemplate(twitterId, "RandomPost", "user template", ownerOid: "user-oid-1"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetAsync(twitterId, "RandomPost", "user-oid-1");
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("user template", result.Template);
+        Assert.Equal("user-oid-1", result.CreatedByEntraOid);
+    }
+
+    [Fact]
+    public async Task GetAsync_WithOwnerOid_WhenNotFound_ReturnsNull()
+    {
+        // Arrange
+        var twitterId = await GetOrCreatePlatformIdAsync("Twitter");
+        _context.MessageTemplates.Add(CreateMessageTemplate(twitterId, "RandomPost", ownerOid: ""));
+        await _context.SaveChangesAsync();
+
+        // Act — looking for user-owned, but only system default exists
+        var result = await _dataStore.GetAsync(twitterId, "RandomPost", "user-oid-1");
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    // -------------------------------------------------------------------------
+    // GetAllDefaultsAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetAllDefaultsAsync_ReturnsOnlySystemDefaults()
+    {
+        // Arrange
+        var twitterId = await GetOrCreatePlatformIdAsync("Twitter");
+        var facebookId = await GetOrCreatePlatformIdAsync("Facebook");
+        _context.MessageTemplates.AddRange(
+            CreateMessageTemplate(twitterId, "RandomPost", ownerOid: ""),
+            CreateMessageTemplate(facebookId, "NewPost", ownerOid: ""),
+            CreateMessageTemplate(twitterId, "RandomPost", ownerOid: "user-oid-1"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetAllDefaultsAsync();
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.All(result, t => Assert.Equal("", t.CreatedByEntraOid));
+    }
+
+    [Fact]
+    public async Task GetAllDefaultsAsync_WhenNoneExist_ReturnsEmptyList()
+    {
+        // Arrange — only user-owned templates
+        var twitterId = await GetOrCreatePlatformIdAsync("Twitter");
+        _context.MessageTemplates.Add(CreateMessageTemplate(twitterId, "RandomPost", ownerOid: "user-oid-1"));
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _dataStore.GetAllDefaultsAsync();
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    // -------------------------------------------------------------------------
+    // CreateAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task CreateAsync_PersistsNewTemplate()
+    {
+        // Arrange
+        var twitterId = await GetOrCreatePlatformIdAsync("Twitter");
+        var domainTemplate = new Domain.Models.MessageTemplate
+        {
+            SocialMediaPlatformId = twitterId,
+            MessageType = "RandomPost",
+            Template = "New {{ title }} {{ url }}",
+            CreatedByEntraOid = "user-oid-1"
+        };
+
+        // Act
+        var result = await _dataStore.CreateAsync(domainTemplate);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("New {{ title }} {{ url }}", result.Template);
+        Assert.Equal("user-oid-1", result.CreatedByEntraOid);
+        var stored = await _dataStore.GetAsync(twitterId, "RandomPost", "user-oid-1");
+        Assert.NotNull(stored);
+        Assert.Equal("New {{ title }} {{ url }}", stored.Template);
+    }
+
+    // -------------------------------------------------------------------------
+    // UpdateAsync with triplet key
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task UpdateAsync_UpdatesOnlyMatchingOwnerTemplate()
+    {
+        // Arrange
+        var twitterId = await GetOrCreatePlatformIdAsync("Twitter");
+        _context.MessageTemplates.AddRange(
+            CreateMessageTemplate(twitterId, "RandomPost", "system tpl", ownerOid: ""),
+            CreateMessageTemplate(twitterId, "RandomPost", "user tpl", ownerOid: "user-oid-1"));
+        await _context.SaveChangesAsync();
+
+        var update = new Domain.Models.MessageTemplate
+        {
+            SocialMediaPlatformId = twitterId,
+            MessageType = "RandomPost",
+            Template = "updated user tpl",
+            CreatedByEntraOid = "user-oid-1"
+        };
+
+        // Act
+        var result = await _dataStore.UpdateAsync(update);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("updated user tpl", result.Template);
+        // System default must remain unchanged
+        var systemDefault = await _dataStore.GetAsync(twitterId, "RandomPost", "");
+        Assert.NotNull(systemDefault);
+        Assert.Equal("system tpl", systemDefault.Template);
     }
 }

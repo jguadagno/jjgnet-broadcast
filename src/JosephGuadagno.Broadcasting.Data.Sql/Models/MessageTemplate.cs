@@ -15,7 +15,8 @@ public partial class MessageTemplate
 
     public string? Description { get; set; }
 
-    public string? CreatedByEntraOid { get; set; }
+    /// <summary>The Entra OID of the owner. Empty string is the system-default sentinel.</summary>
+    public string CreatedByEntraOid { get; set; } = string.Empty;
 
     public virtual SocialMediaPlatform? SocialMediaPlatform { get; set; }
 }

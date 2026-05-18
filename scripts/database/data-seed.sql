@@ -454,99 +454,108 @@ INSERT INTO JJGNet.dbo.YouTubeItems (VideoId, Author, Title, ShortenedUrl, Tags,
 -- Seed default MessageTemplates
 -- 4 platforms x 5 message types = 20 templates
 -- IF NOT EXISTS guards make this idempotent.
+-- CreatedByEntraOid = N'' is the system-default sentinel.
 -- Scriban variables available in all templates:
 --   {{ title }}       - item title / engagement name / talk name
 --   {{ url }}         - shortened URL (if available) or full URL
 --   {{ description }} - comments/description (empty for feed/YouTube items)
 --   {{ tags }}        - comma-separated tag string (feed/YouTube only; empty for engagements/talks)
---   {{ image_url }}   - ScheduledItem.ImageUrl (nullable; not currently forwarded to queue payloads)
 -- =============================================
 
 DECLARE @SocialMediaPlatformId int;
 
 -- ----- Twitter (max ~280 chars) -----
 SET @SocialMediaPlatformId = (SELECT Id FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Twitter');
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'RandomPost', N'{{ title }} - {{ url }}', N'Default Twitter template for random/scheduled posts', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'NewSyndicationFeedItem', N'Blog Post: {{ title }} {{ url }}', N'Twitter template for new blog post announcements', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'NewYouTubeItem', N'New video: {{ title }} {{ url }}', N'Twitter template for new YouTube video announcements', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'NewSpeakingEngagement', N'I''m speaking at {{ title }}! {{ url }}', N'Twitter template for new speaking engagement announcements', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'ScheduledItem', N'{{ title }} {{ url }}', N'Twitter template for generic scheduled item broadcasts', @SeededOwnerEntraOid);
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'RandomPost' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'RandomPost', N'{{ title }} - {{ url }}', N'Default Twitter template for random/scheduled posts', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'NewSyndicationFeedItem' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'NewSyndicationFeedItem', N'Blog Post: {{ title }} {{ url }}' + CHAR(10) + N'{{ tags }}', N'Twitter template for new blog post announcements', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'NewYouTubeItem' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'NewYouTubeItem', N'New video: {{ title }} {{ url }}' + CHAR(10) + N'{{ tags }}', N'Twitter template for new YouTube video announcements', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'NewSpeakingEngagement' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'NewSpeakingEngagement', N'I''m speaking at {{ title }}! {{ url }}', N'Twitter template for new speaking engagement announcements', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'ScheduledItem' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'ScheduledItem', N'{{ title }} {{ url }}', N'Twitter template for generic scheduled item broadcasts', N'');
 
 -- ----- Facebook (max ~2000 chars) -----
 SET @SocialMediaPlatformId = (SELECT Id FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Facebook');
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'RandomPost',
-    N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
-    N'Default Facebook template for random/scheduled posts', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'NewSyndicationFeedItem',
-    N'ICYMI: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
-    N'Facebook template for new blog post announcements', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)    VALUES (@SocialMediaPlatformId, N'NewYouTubeItem',
-    N'New video: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Watch now: {{ url }}',
-    N'Facebook template for new YouTube video announcements', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'NewSpeakingEngagement',
-    N'I''m speaking at {{ title }}!' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
-    N'Facebook template for new speaking engagement announcements', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'ScheduledItem',
-    N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
-    N'Facebook template for generic scheduled item broadcasts', @SeededOwnerEntraOid);
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'RandomPost' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'RandomPost',
+        N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
+        N'Default Facebook template for random/scheduled posts', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'NewSyndicationFeedItem' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'NewSyndicationFeedItem',
+        N'ICYMI: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Tags: {{ tags }}' + CHAR(10) + N'{{ url }}',
+        N'Facebook template for new blog post announcements', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'NewYouTubeItem' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'NewYouTubeItem',
+        N'New video: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Tags: {{ tags }}' + CHAR(10) + N'Watch now: {{ url }}',
+        N'Facebook template for new YouTube video announcements', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'NewSpeakingEngagement' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'NewSpeakingEngagement',
+        N'I''m speaking at {{ title }}!' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
+        N'Facebook template for new speaking engagement announcements', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'ScheduledItem' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'ScheduledItem',
+        N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
+        N'Facebook template for generic scheduled item broadcasts', N'');
 
 -- ----- LinkedIn (professional tone) -----
 SET @SocialMediaPlatformId = (SELECT Id FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'LinkedIn');
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'RandomPost',
-    N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
-    N'Default LinkedIn template for random/scheduled posts', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'NewSyndicationFeedItem',
-    N'New blog post: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Read more: {{ url }}',
-    N'LinkedIn template for new blog post announcements', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'NewYouTubeItem',
-    N'New video: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Watch: {{ url }}',
-    N'LinkedIn template for new YouTube video announcements', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'NewSpeakingEngagement',
-    N'I am excited to announce I will be speaking at {{ title }}.' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Learn more: {{ url }}',
-    N'LinkedIn template for new speaking engagement announcements', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'ScheduledItem',
-    N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
-    N'LinkedIn template for generic scheduled item broadcasts', @SeededOwnerEntraOid);
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'RandomPost' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'RandomPost',
+        N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
+        N'Default LinkedIn template for random/scheduled posts', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'NewSyndicationFeedItem' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'NewSyndicationFeedItem',
+        N'New blog post: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Tags: {{ tags }}' + CHAR(10) + N'Read more: {{ url }}',
+        N'LinkedIn template for new blog post announcements', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'NewYouTubeItem' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'NewYouTubeItem',
+        N'New video: {{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Tags: {{ tags }}' + CHAR(10) + N'Watch: {{ url }}',
+        N'LinkedIn template for new YouTube video announcements', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'NewSpeakingEngagement' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'NewSpeakingEngagement',
+        N'I am excited to announce I will be speaking at {{ title }}.' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'Learn more: {{ url }}',
+        N'LinkedIn template for new speaking engagement announcements', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'ScheduledItem' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'ScheduledItem',
+        N'{{ title }}' + CHAR(10) + CHAR(10) + N'{{ description }}' + CHAR(10) + CHAR(10) + N'{{ url }}',
+        N'LinkedIn template for generic scheduled item broadcasts', N'');
 
 -- ----- Bluesky (casual tone, max ~300 chars) -----
 SET @SocialMediaPlatformId = (SELECT Id FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'BlueSky');
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'RandomPost', N'{{ title }} - {{ url }}', N'Default Bluesky template for random/scheduled posts', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'NewSyndicationFeedItem', N'Blog Post: {{ title }} {{ url }}', N'Bluesky template for new blog post announcements', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'NewYouTubeItem', N'New video: {{ title }} {{ url }}', N'Bluesky template for new YouTube video announcements', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'NewSpeakingEngagement', N'Speaking at {{ title }}! {{ url }}', N'Bluesky template for new speaking engagement announcements', @SeededOwnerEntraOid);
-
-INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
-VALUES (@SocialMediaPlatformId, N'ScheduledItem', N'{{ title }} {{ url }}', N'Bluesky template for generic scheduled item broadcasts', @SeededOwnerEntraOid);
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'RandomPost' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'RandomPost', N'✨ {{ title }} - {{ url }}', N'Default Bluesky template for random/scheduled posts', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'NewSyndicationFeedItem' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'NewSyndicationFeedItem',
+        N'📝 New blog post: {{ title }}' + CHAR(10) + N'{{ tags }}' + CHAR(10) + N'{{ url }}',
+        N'Bluesky template for new blog post announcements', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'NewYouTubeItem' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'NewYouTubeItem',
+        N'🎬 New video: {{ title }}' + CHAR(10) + N'{{ tags }}' + CHAR(10) + N'{{ url }}',
+        N'Bluesky template for new YouTube video announcements', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'NewSpeakingEngagement' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'NewSpeakingEngagement', N'🎤 Speaking at {{ title }}! {{ url }}', N'Bluesky template for new speaking engagement announcements', N'');
+IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'ScheduledItem' AND CreatedByEntraOid = N'')
+    INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
+    VALUES (@SocialMediaPlatformId, N'ScheduledItem', N'{{ title }} {{ url }}', N'Bluesky template for generic scheduled item broadcasts', N'');

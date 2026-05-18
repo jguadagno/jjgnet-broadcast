@@ -35,7 +35,8 @@ public class MessageTemplate
     public string Platform { get; set; } = string.Empty;
 
     /// <summary>
-    /// The Entra Object ID of the user who created this message template
+    /// The Entra Object ID of the user who created this message template.
+    /// Empty string is the system sentinel for default/system-owned templates.
     /// </summary>
-    public string? CreatedByEntraOid { get; set; }
+    public string CreatedByEntraOid { get; set; } = string.Empty;
 }

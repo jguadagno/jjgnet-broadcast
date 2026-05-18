@@ -52,6 +52,41 @@ public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplate
     }
 
     /// <summary>
+    /// Gets the system default template for a platform and message type
+    /// </summary>
+    public async Task<MessageTemplate?> GetDefaultAsync(string platform, string messageType)
+    {
+        return await apiClient.GetOptionalForUserAsync<MessageTemplate>(ApiServiceName, options =>
+        {
+            options.RelativePath = $"{MessageTemplateBaseUrl}/defaults/{platform}/{messageType}";
+        });
+    }
+
+    /// <summary>
+    /// Gets all system default message templates
+    /// </summary>
+    public async Task<List<MessageTemplate>?> GetAllDefaultsAsync()
+    {
+        var result = await apiClient.GetOptionalForUserAsync<List<MessageTemplate>>(ApiServiceName, options =>
+        {
+            options.RelativePath = $"{MessageTemplateBaseUrl}/defaults";
+        });
+        return result;
+    }
+
+    /// <summary>
+    /// Creates a new user-owned message template
+    /// </summary>
+    public async Task<MessageTemplate?> CreateAsync(string platform, MessageTemplate messageTemplate)
+    {
+        return await apiClient.PostForUserAsync<MessageTemplate, MessageTemplate>(ApiServiceName, messageTemplate, options =>
+        {
+            options.RelativePath = $"{MessageTemplateBaseUrl}/{platform}/{messageTemplate.MessageType}";
+        });
+    }
+
+
+    /// <summary>
     /// Updates a message template
     /// </summary>
     public async Task<MessageTemplate?> UpdateAsync(string platform, MessageTemplate messageTemplate)
