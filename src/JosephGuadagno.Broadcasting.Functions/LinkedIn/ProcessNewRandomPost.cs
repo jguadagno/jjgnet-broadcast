@@ -5,8 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
-using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -14,14 +12,13 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
 public class ProcessNewRandomPost(
     ISyndicationFeedItemManager syndicationFeedItemManager,
-    IUserOAuthTokenManager userOAuthTokenManager,
     IMessageTemplateLookup messageLookup,
     IPostComposer postComposer,
     ILogger<ProcessNewRandomPost> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInProcessRandomPostFired)]
     [QueueOutput(Queues.LinkedInPostLink)]
-    public async Task<LinkedInPostLink?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -49,16 +46,6 @@ public class ProcessNewRandomPost(
             {
                 logger.LogWarning("No owner OID for syndication item {Id} — skipping LinkedIn random post",
                     syndicationFeedItem.Id);
-                return null;
-            }
-
-            var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
-                ownerEntraOid, SocialMediaPlatformIds.LinkedIn);
-            if (token is null)
-            {
-                logger.LogWarning(
-                    "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping random post {ItemId}",
-                    LogSanitizer.Sanitize(ownerEntraOid), syndicationFeedItem.Id);
                 return null;
             }
 
@@ -95,14 +82,8 @@ public class ProcessNewRandomPost(
             logger.LogCustomEvent(Metrics.LinkedInProcessedRandomPost, properties);
             logger.LogDebug("Picked a random post {Title}", syndicationFeedItem.Title);
 
-            return new LinkedInPostLink
-            {
-                Text = composedText,
-                Title = syndicationFeedItem.Title,
-                LinkUrl = syndicationFeedItem.Url,
-                Description = "",
-                AccessToken = token.AccessToken
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

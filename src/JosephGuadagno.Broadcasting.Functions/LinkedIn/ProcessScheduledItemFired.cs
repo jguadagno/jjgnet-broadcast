@@ -6,7 +6,6 @@ using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -18,14 +17,13 @@ public class ProcessScheduledItemFired(
     IEngagementManager engagementManager,
     ISyndicationFeedItemManager syndicationFeedItemManager,
     IYouTubeItemManager youTubeItemManager,
-    IUserOAuthTokenManager userOAuthTokenManager,
     IMessageTemplateLookup messageLookup,
     IPostComposer postComposer,
     ILogger<ProcessScheduledItemFired> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInProcessScheduledItemFired)]
     [QueueOutput(Queues.LinkedInPostLink)]
-    public async Task<LinkedInPostLink?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.Now;
         logger.LogDebug("Started {FunctionName} at {StartedOn:f}",
@@ -59,16 +57,6 @@ public class ProcessScheduledItemFired(
                 return null;
             }
 
-            var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
-                ownerEntraOid, SocialMediaPlatformIds.LinkedIn);
-            if (token is null)
-            {
-                logger.LogWarning(
-                    "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping item {ItemId}",
-                    LogSanitizer.Sanitize(ownerEntraOid), scheduledItem.Id);
-                return null;
-            }
-
             var request = await BuildRequestForScheduledItemAsync(scheduledItem, ownerEntraOid);
             if (request is null)
                 return null;
@@ -99,15 +87,8 @@ public class ProcessScheduledItemFired(
             logger.LogDebug("Generated the LinkedIn post text for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
-            return new LinkedInPostLink
-            {
-                Text = composedText,
-                Title = request.Title ?? "",
-                LinkUrl = request.LinkUrl!,
-                Description = request.Description ?? "",
-                AccessToken = token.AccessToken,
-                ImageUrl = scheduledItem.ImageUrl
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

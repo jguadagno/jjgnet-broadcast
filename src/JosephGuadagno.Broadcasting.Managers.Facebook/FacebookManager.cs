@@ -20,19 +20,21 @@ public class FacebookManager(
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Text);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.AuthorId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.AccessToken);
 
         if (!string.IsNullOrEmpty(request.ImageUrl))
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(request.LinkUrl);
-            return await PostMessageLinkAndPictureToPage(request.Text, request.LinkUrl!, request.ImageUrl);
+            return await PostMessageLinkAndPictureToPage(request.Text, request.LinkUrl!, request.ImageUrl, request.AuthorId, request.AccessToken);
         }
 
         if (!string.IsNullOrEmpty(request.LinkUrl))
         {
-            return await PostMessageAndLinkToPage(request.Text, request.LinkUrl);
+            return await PostMessageAndLinkToPage(request.Text, request.LinkUrl, request.AuthorId, request.AccessToken);
         }
 
-        return await PostMessageToPage(request.Text);
+        return await PostMessageInternalAsync(request.Text, null, null, request.AuthorId, request.AccessToken);
     }
 
     /// <summary>

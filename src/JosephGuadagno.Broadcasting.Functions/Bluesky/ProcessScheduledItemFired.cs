@@ -7,7 +7,6 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
-using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -24,7 +23,7 @@ public class ProcessScheduledItemFired(
 {
     [Function(ConfigurationFunctionNames.BlueskyProcessScheduledItemFired)]
     [QueueOutput(Queues.BlueskyPostToSend)]
-    public async Task<BlueskyPostMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.Now;
         logger.LogDebug("{FunctionName} started at: {StartedOn:f}",
@@ -85,15 +84,8 @@ public class ProcessScheduledItemFired(
             logger.LogDebug("Generated the BlueSky post text for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
-            return new BlueskyPostMessage
-            {
-                Text = composedText,
-                Url = request.LinkUrl,
-                ShortenedUrl = request.ShortenedUrl,
-                Hashtags = request.Hashtags?.ToList(),
-                ImageUrl = request.ImageUrl,
-                CreatedByEntraOid = ownerEntraOid
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

@@ -6,7 +6,6 @@ using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -24,7 +23,7 @@ public class ProcessScheduledItemFired(
 {
     [Function(ConfigurationFunctionNames.TwitterProcessScheduledItemFired)]
     [QueueOutput(Queues.TwitterTweetsToSend)]
-    public async Task<TwitterTweetMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -86,12 +85,8 @@ public class ProcessScheduledItemFired(
             logger.LogDebug("Generated the tweet for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
-            return new TwitterTweetMessage
-            {
-                Text = composedText,
-                ImageUrl = scheduledItem.ImageUrl,
-                CreatedByEntraOid = ownerEntraOid
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -20,7 +19,7 @@ public class ProcessNewSpeakingEngagementFired(
 {
     [Function(ConfigurationFunctionNames.FacebookProcessNewSpeakingEngagementFired)]
     [QueueOutput(Queues.FacebookPostStatusToPage)]
-    public async Task<FacebookPostStatus?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedOn:f}",
@@ -91,12 +90,8 @@ public class ProcessNewSpeakingEngagementFired(
             logger.LogCustomEvent(Metrics.FacebookProcessedNewSpeakingEngagement, properties);
             logger.LogDebug("Generated the Facebook post for speaking engagement {Id}", engagement.Id);
 
-            return new FacebookPostStatus
-            {
-                StatusText = composedText,
-                LinkUri = engagement.Url,
-                CreatedByEntraOid = ownerEntraOid
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

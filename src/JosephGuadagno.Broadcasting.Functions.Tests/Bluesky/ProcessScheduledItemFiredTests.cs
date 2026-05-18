@@ -192,7 +192,7 @@ public class ProcessScheduledItemFiredTests
             BuildTemplateLookup(), BuildPostComposer("Test Blog Post Title"));
         var result = await sut.RunAsync(BuildEventGridEvent(1));
         Assert.NotNull(result);
-        Assert.Equal("https://example.com/post", result!.Url);
+        Assert.Equal("https://example.com/post", result!.LinkUrl);
     }
 
     [Fact]
@@ -208,7 +208,7 @@ public class ProcessScheduledItemFiredTests
             BuildTemplateLookup(), BuildPostComposer("My YouTube Video"));
         var result = await sut.RunAsync(BuildEventGridEvent(1));
         Assert.NotNull(result);
-        Assert.Equal("https://youtube.com/watch?v=abc", result!.Url);
+        Assert.Equal("https://youtube.com/watch?v=abc", result!.LinkUrl);
     }
 
     [Fact]
@@ -224,7 +224,7 @@ public class ProcessScheduledItemFiredTests
             BuildTemplateLookup(), BuildPostComposer("Speaking at Tech Conference 2026"));
         var result = await sut.RunAsync(BuildEventGridEvent(1));
         Assert.NotNull(result);
-        Assert.Equal("https://conf.example.com", result!.Url);
+        Assert.Equal("https://conf.example.com", result!.LinkUrl);
     }
 
     [Fact]
@@ -240,7 +240,7 @@ public class ProcessScheduledItemFiredTests
             BuildTemplateLookup(), BuildPostComposer("My Talk Title at Tech Conference 2026"));
         var result = await sut.RunAsync(BuildEventGridEvent(1));
         Assert.NotNull(result);
-        Assert.Equal("https://conf.example.com/talk", result!.Url);
+        Assert.Equal("https://conf.example.com/talk", result!.LinkUrl);
     }
 
     [Fact]

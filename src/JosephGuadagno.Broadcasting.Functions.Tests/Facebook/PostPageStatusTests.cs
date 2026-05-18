@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -21,16 +20,16 @@ public class PostPageStatusTests
         _facebookSettingsManager.Object,
         NullLogger<Functions.Facebook.PostPageStatus>.Instance);
 
-    private static FacebookPostStatus BuildFacebookPostStatus(
-        string statusText = "Test status",
-        string linkUri = "https://example.com",
+    private static SocialMediaPublishRequest BuildPublishRequest(
+        string text = "Test status",
+        string? linkUrl = "https://example.com",
         string? imageUrl = null,
-        string? createdByEntraOid = "test-oid") => new()
+        string? ownerEntraOid = "test-oid") => new()
     {
-        StatusText = statusText,
-        LinkUri = linkUri,
+        Text = text,
+        LinkUrl = linkUrl,
         ImageUrl = imageUrl,
-        CreatedByEntraOid = createdByEntraOid
+        OwnerEntraOid = ownerEntraOid
     };
 
     private void SetupValidCredentials(string oid = "test-oid")
@@ -49,22 +48,22 @@ public class PostPageStatusTests
             .ReturnsAsync("token-abc");
     }
 
-    // Missing CreatedByEntraOid → skip, no exception
+    // Missing OwnerEntraOid → skip, no exception
 
     [Fact]
     public async Task Run_WhenCreatedByEntraOidIsNull_SkipsPostingWithoutException()
     {
-        var postStatus = BuildFacebookPostStatus(createdByEntraOid: null);
+        var request = BuildPublishRequest(ownerEntraOid: null);
         var sut = BuildSut();
 
-        var exception = await Record.ExceptionAsync(() => sut.Run(postStatus));
+        var exception = await Record.ExceptionAsync(() => sut.Run(request));
 
         Assert.Null(exception);
         _facebookSettingsManager.Verify(
             m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
         _facebookManager.Verify(
-            m => m.PostMessageAndLinkToPage(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
@@ -73,62 +72,56 @@ public class PostPageStatusTests
     [Fact]
     public async Task Run_WhenSettingsNotFound_SkipsPostingWithoutException()
     {
-        var postStatus = BuildFacebookPostStatus();
+        var request = BuildPublishRequest();
         _facebookSettingsManager
             .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
             .ReturnsAsync((UserPublisherFacebookSettings?)null);
         var sut = BuildSut();
 
-        var exception = await Record.ExceptionAsync(() => sut.Run(postStatus));
+        var exception = await Record.ExceptionAsync(() => sut.Run(request));
 
         Assert.Null(exception);
         _facebookManager.Verify(
-            m => m.PostMessageAndLinkToPage(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
-    // Successful post without image
+    // Successful post → PublishAsync is called
 
     [Fact]
-    public async Task Run_WithValidStatusWithoutImage_CallsPostMessageAndLink()
+    public async Task Run_WithValidStatus_CallsPublishAsync()
     {
-        var postStatus = BuildFacebookPostStatus();
+        var request = BuildPublishRequest();
         SetupValidCredentials();
         _facebookManager
-            .Setup(m => m.PostMessageAndLinkToPage(postStatus.StatusText, postStatus.LinkUri, "page-123", "token-abc"))
+            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ReturnsAsync("post-id-123");
         var sut = BuildSut();
 
-        await sut.Run(postStatus);
+        await sut.Run(request);
 
         _facebookManager.Verify(
-            m => m.PostMessageAndLinkToPage(postStatus.StatusText, postStatus.LinkUri, "page-123", "token-abc"),
+            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Once);
-        _facebookManager.Verify(
-            m => m.PostMessageLinkAndPictureToPage(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
-            Times.Never);
     }
 
-    // Successful post with image
+    // Successful post with image → PublishAsync is called
 
     [Fact]
-    public async Task Run_WithValidStatusWithImage_CallsPostMessageLinkAndPicture()
+    public async Task Run_WithValidStatusWithImage_CallsPublishAsync()
     {
-        var postStatus = BuildFacebookPostStatus(imageUrl: "https://example.com/image.jpg");
+        var request = BuildPublishRequest(imageUrl: "https://example.com/image.jpg");
         SetupValidCredentials();
         _facebookManager
-            .Setup(m => m.PostMessageLinkAndPictureToPage(postStatus.StatusText, postStatus.LinkUri, postStatus.ImageUrl!, "page-123", "token-abc"))
+            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ReturnsAsync("post-id-456");
         var sut = BuildSut();
 
-        await sut.Run(postStatus);
+        await sut.Run(request);
 
         _facebookManager.Verify(
-            m => m.PostMessageLinkAndPictureToPage(postStatus.StatusText, postStatus.LinkUri, postStatus.ImageUrl!, "page-123", "token-abc"),
+            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Once);
-        _facebookManager.Verify(
-            m => m.PostMessageAndLinkToPage(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
-            Times.Never);
     }
 
     // FacebookPostException is rethrown
@@ -136,15 +129,14 @@ public class PostPageStatusTests
     [Fact]
     public async Task Run_WhenFacebookPostExceptionThrown_RethrowsException()
     {
-        var postStatus = BuildFacebookPostStatus();
+        var request = BuildPublishRequest();
         SetupValidCredentials();
-        var facebookException = new FacebookPostException("API Error", 400, "Invalid token");
         _facebookManager
-            .Setup(m => m.PostMessageAndLinkToPage(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ThrowsAsync(facebookException);
+            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .ThrowsAsync(new FacebookPostException("API Error", 400, "Invalid token"));
         var sut = BuildSut();
 
-        await Assert.ThrowsAsync<FacebookPostException>(() => sut.Run(postStatus));
+        await Assert.ThrowsAsync<FacebookPostException>(() => sut.Run(request));
     }
 
     // Generic exception is rethrown
@@ -152,13 +144,13 @@ public class PostPageStatusTests
     [Fact]
     public async Task Run_WhenGenericExceptionThrown_RethrowsException()
     {
-        var postStatus = BuildFacebookPostStatus();
+        var request = BuildPublishRequest();
         SetupValidCredentials();
         _facebookManager
-            .Setup(m => m.PostMessageAndLinkToPage(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ThrowsAsync(new Exception("Network failure"));
         var sut = BuildSut();
 
-        await Assert.ThrowsAsync<Exception>(() => sut.Run(postStatus));
+        await Assert.ThrowsAsync<Exception>(() => sut.Run(request));
     }
 }

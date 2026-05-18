@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -19,7 +18,7 @@ public class ProcessNewRandomPost(
 {
     [Function(ConfigurationFunctionNames.TwitterProcessRandomPostFired)]
     [QueueOutput(Queues.TwitterTweetsToSend)]
-    public async Task<TwitterTweetMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -83,7 +82,8 @@ public class ProcessNewRandomPost(
             logger.LogCustomEvent(Metrics.TwitterProcessedRandomPost, properties);
             logger.LogDebug("Picked a random post {Title}", syndicationFeedItem.Title);
 
-            return new TwitterTweetMessage { Text = composedText, CreatedByEntraOid = ownerEntraOid };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

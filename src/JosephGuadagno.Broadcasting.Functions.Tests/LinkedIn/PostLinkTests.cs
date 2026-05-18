@@ -1,215 +1,188 @@
 using System;
-using System.Net;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
+using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using Moq.Protected;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests.LinkedIn;
 
 public class PostLinkTests
 {
     private readonly Mock<ILinkedInManager> _linkedInManager = new();
-    private readonly Mock<HttpMessageHandler> _httpMessageHandler = new();
-    private HttpClient _httpClient = null!;
+    private readonly Mock<IUserOAuthTokenManager> _userOAuthTokenManager = new();
+    private readonly Mock<IUserPublisherLinkedInSettingsManager> _linkedInSettingsManager = new();
 
-    private Functions.LinkedIn.PostLink BuildSut()
-    {
-        _httpClient = new HttpClient(_httpMessageHandler.Object);
-        return new Functions.LinkedIn.PostLink(
-            _linkedInManager.Object,
-            _httpClient,
-            NullLogger<Functions.LinkedIn.PostLink>.Instance);
-    }
+    private Functions.LinkedIn.PostLink BuildSut() => new(
+        _linkedInManager.Object,
+        _userOAuthTokenManager.Object,
+        _linkedInSettingsManager.Object,
+        NullLogger<Functions.LinkedIn.PostLink>.Instance);
 
-    private static LinkedInPostLink BuildLinkedInPostLink(
-        string accessToken = "test-access-token",
-        string authorId = "urn:li:person:test123",
+    private static SocialMediaPublishRequest BuildPublishRequest(
         string text = "Check this out",
-        string linkUrl = "https://example.com/article",
-        string title = "Article Title",
-        string description = "Article description",
-        string? imageUrl = null) => new()
+        string? linkUrl = "https://example.com/article",
+        string? title = "Article Title",
+        string? imageUrl = null,
+        string? ownerEntraOid = "test-oid") => new()
     {
-        AccessToken = accessToken,
-        AuthorId = authorId,
         Text = text,
         LinkUrl = linkUrl,
         Title = title,
-        Description = description,
-        ImageUrl = imageUrl
+        ImageUrl = imageUrl,
+        OwnerEntraOid = ownerEntraOid
     };
 
-    // Successful link post without image
-
-    [Fact]
-    public async Task Run_WithValidLinkWithoutImage_CallsPostShareTextAndLink()
+    private void SetupValidCredentials(string oid = "test-oid")
     {
-        // Arrange
-        var postLink = BuildLinkedInPostLink();
-        _linkedInManager
-            .Setup(m => m.PostShareTextAndLink(
-                postLink.AccessToken, postLink.AuthorId, postLink.Text,
-                postLink.LinkUrl, postLink.Title, postLink.Description))
-            .ReturnsAsync("share-id-link-123");
-
-        var sut = BuildSut();
-
-        // Act
-        await sut.Run(postLink);
-
-        // Assert
-        _linkedInManager.Verify(
-            m => m.PostShareTextAndLink(
-                postLink.AccessToken, postLink.AuthorId, postLink.Text,
-                postLink.LinkUrl, postLink.Title, postLink.Description),
-            Times.Once);
-        _linkedInManager.Verify(
-            m => m.PostShareTextAndImage(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>()),
-            Times.Never);
-    }
-
-    // Successful link post with image (HTTP 200)
-
-    [Fact]
-    public async Task Run_WithValidLinkWithImage_WhenImageDownloadSucceeds_CallsPostShareTextAndImage()
-    {
-        // Arrange
-        var postLink = BuildLinkedInPostLink(imageUrl: "https://example.com/image.png");
-        var imageBytes = new byte[] { 0x89, 0x50, 0x4E, 0x47 }; // fake PNG header
-
-        _httpMessageHandler.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString() == postLink.ImageUrl),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage
+        _linkedInSettingsManager
+            .Setup(m => m.GetAsync(oid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserPublisherLinkedInSettings
             {
-                StatusCode = HttpStatusCode.OK,
-                Content = new ByteArrayContent(imageBytes)
+                CreatedByEntraOid = oid,
+                IsEnabled = true,
+                AuthorId = "urn:li:person:test123"
             });
-
-        _linkedInManager
-            .Setup(m => m.PostShareTextAndImage(
-                postLink.AccessToken, postLink.AuthorId, postLink.Text,
-                It.IsAny<byte[]>(), postLink.Title, postLink.Description))
-            .ReturnsAsync("share-id-image-456");
-
-        var sut = BuildSut();
-
-        // Act
-        await sut.Run(postLink);
-
-        // Assert
-        _linkedInManager.Verify(
-            m => m.PostShareTextAndImage(
-                postLink.AccessToken, postLink.AuthorId, postLink.Text,
-                It.Is<byte[]>(b => b.Length == imageBytes.Length), postLink.Title, postLink.Description),
-            Times.Once);
-        _linkedInManager.Verify(
-            m => m.PostShareTextAndLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
-            Times.Never);
+        _userOAuthTokenManager
+            .Setup(m => m.GetByUserAndPlatformAsync(oid, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserOAuthToken
+            {
+                CreatedByEntraOid = oid,
+                AccessToken = "test-access-token"
+            });
     }
 
-    // Image download fails (HTTP 404) - fallback to link post
+    // Missing OwnerEntraOid → skip, no exception
 
     [Fact]
-    public async Task Run_WithValidLinkWithImage_WhenImageDownloadFails_FallsBackToLinkPost()
+    public async Task Run_WhenOwnerEntraOidIsNull_SkipsPostingWithoutException()
     {
-        // Arrange
-        var postLink = BuildLinkedInPostLink(imageUrl: "https://example.com/missing.png");
-
-        _httpMessageHandler.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString() == postLink.ImageUrl),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.NotFound
-            });
-
-        _linkedInManager
-            .Setup(m => m.PostShareTextAndLink(
-                postLink.AccessToken, postLink.AuthorId, postLink.Text,
-                postLink.LinkUrl, postLink.Title, postLink.Description))
-            .ReturnsAsync("share-id-fallback-789");
-
+        var request = BuildPublishRequest(ownerEntraOid: null);
         var sut = BuildSut();
 
-        // Act
-        await sut.Run(postLink);
+        var exception = await Record.ExceptionAsync(() => sut.Run(request));
 
-        // Assert - should fallback to link post when image download fails
+        Assert.Null(exception);
+        _linkedInSettingsManager.Verify(
+            m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
         _linkedInManager.Verify(
-            m => m.PostShareTextAndLink(
-                postLink.AccessToken, postLink.AuthorId, postLink.Text,
-                postLink.LinkUrl, postLink.Title, postLink.Description),
-            Times.Once);
-        _linkedInManager.Verify(
-            m => m.PostShareTextAndImage(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>()),
+            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
-    // Manager returns null (post failed)
+    // Settings not found → skip, no exception
+
+    [Fact]
+    public async Task Run_WhenSettingsNotFound_SkipsPostingWithoutException()
+    {
+        var request = BuildPublishRequest();
+        _linkedInSettingsManager
+            .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserPublisherLinkedInSettings?)null);
+        var sut = BuildSut();
+
+        var exception = await Record.ExceptionAsync(() => sut.Run(request));
+
+        Assert.Null(exception);
+        _linkedInManager.Verify(
+            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            Times.Never);
+    }
+
+    // OAuth token not found → skip, no exception
+
+    [Fact]
+    public async Task Run_WhenOAuthTokenNotFound_SkipsPostingWithoutException()
+    {
+        var request = BuildPublishRequest();
+        _linkedInSettingsManager
+            .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserPublisherLinkedInSettings
+            {
+                CreatedByEntraOid = "test-oid",
+                IsEnabled = true,
+                AuthorId = "urn:li:person:test123"
+            });
+        _userOAuthTokenManager
+            .Setup(m => m.GetByUserAndPlatformAsync("test-oid", It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserOAuthToken?)null);
+        var sut = BuildSut();
+
+        var exception = await Record.ExceptionAsync(() => sut.Run(request));
+
+        Assert.Null(exception);
+        _linkedInManager.Verify(
+            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            Times.Never);
+    }
+
+    // Credentials valid → PublishAsync is called
+
+    [Fact]
+    public async Task Run_WhenCredentialsAreValid_CallsPublishAsync()
+    {
+        var request = BuildPublishRequest();
+        SetupValidCredentials();
+        _linkedInManager
+            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .ReturnsAsync("share-id-123");
+        var sut = BuildSut();
+
+        await sut.Run(request);
+
+        _linkedInManager.Verify(
+            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            Times.Once);
+    }
+
+    // Manager returns null (post failed) → no exception
 
     [Fact]
     public async Task Run_WhenManagerReturnsNull_DoesNotThrow()
     {
-        // Arrange - manager returns null (post failed but no exception)
-        var postLink = BuildLinkedInPostLink();
+        var request = BuildPublishRequest();
+        SetupValidCredentials();
         _linkedInManager
-            .Setup(m => m.PostShareTextAndLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync((string)null!);
-
+            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .ReturnsAsync((string?)null);
         var sut = BuildSut();
 
-        // Act & Assert - should not throw
-        var exception = await Record.ExceptionAsync(() => sut.Run(postLink));
+        var exception = await Record.ExceptionAsync(() => sut.Run(request));
+
         Assert.Null(exception);
     }
 
-    // LinkedInPostException handling
+    // LinkedInPostException is rethrown
 
     [Fact]
     public async Task Run_WhenLinkedInPostExceptionThrown_RethrowsException()
     {
-        // Arrange
-        var postLink = BuildLinkedInPostLink();
-        var linkedInException = new LinkedInPostException("API Error", 403, "Forbidden");
+        var request = BuildPublishRequest();
+        SetupValidCredentials();
         _linkedInManager
-            .Setup(m => m.PostShareTextAndLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ThrowsAsync(linkedInException);
-
+            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .ThrowsAsync(new LinkedInPostException("API Error", 403, "Forbidden"));
         var sut = BuildSut();
 
-        // Act & Assert - should rethrow LinkedInPostException
-        await Assert.ThrowsAsync<LinkedInPostException>(() => sut.Run(postLink));
+        await Assert.ThrowsAsync<LinkedInPostException>(() => sut.Run(request));
     }
 
-    // Generic exception handling
+    // Generic exception is rethrown
 
     [Fact]
     public async Task Run_WhenGenericExceptionThrown_RethrowsException()
     {
-        // Arrange
-        var postLink = BuildLinkedInPostLink();
+        var request = BuildPublishRequest();
+        SetupValidCredentials();
         _linkedInManager
-            .Setup(m => m.PostShareTextAndLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ThrowsAsync(new Exception("Service unavailable"));
-
         var sut = BuildSut();
 
-        // Act & Assert - should rethrow generic Exception
-        await Assert.ThrowsAsync<Exception>(() => sut.Run(postLink));
+        await Assert.ThrowsAsync<Exception>(() => sut.Run(request));
     }
 }

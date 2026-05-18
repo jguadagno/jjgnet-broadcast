@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -19,7 +18,7 @@ public class ProcessNewYouTubeDataFired(
 {
     [Function(ConfigurationFunctionNames.FacebookProcessNewYouTubeDataFired)]
     [QueueOutput(Queues.FacebookPostStatusToPage)]
-    public async Task<FacebookPostStatus?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -85,11 +84,7 @@ public class ProcessNewYouTubeDataFired(
         logger.LogDebug("Done composing Facebook status for '{Id}' with title of '{Title}'",
             youTubeItem.Id, youTubeItem.Title);
 
-        return new FacebookPostStatus
-        {
-            StatusText = composedText,
-            LinkUri = youTubeItem.Url,
-            CreatedByEntraOid = ownerEntraOid
-        };
+        request.Text = composedText;
+        return request;
     }
 }

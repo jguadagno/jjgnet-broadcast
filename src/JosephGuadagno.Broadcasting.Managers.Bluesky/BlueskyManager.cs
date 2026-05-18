@@ -60,6 +60,20 @@ public class BlueskyManager(
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Text);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.AuthorId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.AccessToken);
+
+        var agent = new BlueskyAgent();
+        var loginResult = await agent.Login(request.AuthorId, request.AccessToken);
+        if (!loginResult.Succeeded)
+        {
+            logger.LogError("Failed to log in to Bluesky for owner '{AuthorId}'. StatusCode: {StatusCode}",
+                request.AuthorId, loginResult.StatusCode);
+            throw new BlueskyPostException(
+                "Bluesky login failed.",
+                (int?)loginResult.StatusCode,
+                loginResult.AtErrorDetail?.Message);
+        }
 
         var postBuilder = new PostBuilder(request.Text);
 
@@ -73,8 +87,8 @@ public class BlueskyManager(
             postBuilder.Append(new Link(request.ShortenedUrl, request.ShortenedUrl));
 
             var embeddedExternalRecord = !string.IsNullOrEmpty(request.ImageUrl)
-                ? await GetEmbeddedExternalRecordWithThumbnail(request.LinkUrl, request.ImageUrl)
-                : await GetEmbeddedExternalRecord(request.LinkUrl);
+                ? await GetEmbeddedExternalRecordWithThumbnailAsync(agent, request.LinkUrl, request.ImageUrl)
+                : await GetEmbeddedExternalRecordAsync(agent, request.LinkUrl);
 
             if (embeddedExternalRecord is not null)
             {
@@ -84,15 +98,35 @@ public class BlueskyManager(
         else if (!string.IsNullOrEmpty(request.ImageUrl) && !string.IsNullOrEmpty(request.LinkUrl))
         {
             var embeddedExternalRecord =
-                await GetEmbeddedExternalRecordWithThumbnail(request.LinkUrl, request.ImageUrl);
+                await GetEmbeddedExternalRecordWithThumbnailAsync(agent, request.LinkUrl, request.ImageUrl);
             if (embeddedExternalRecord is not null)
             {
                 postBuilder.EmbedRecord(embeddedExternalRecord);
             }
         }
 
-        var response = await Post(postBuilder);
-        return response?.Cid.ToString();
+        if (request.Hashtags is not null && request.Hashtags.Count > 0)
+        {
+            foreach (var hashtag in request.Hashtags)
+            {
+                postBuilder.Append(" ");
+                postBuilder.Append(new HashTag(hashtag));
+            }
+        }
+
+        var response = await agent.Post(postBuilder);
+        if (response.Succeeded && response.Result is not null)
+        {
+            return response.Result.Cid.ToString();
+        }
+
+        logger.LogError(
+            "Bluesky Post failed! Status Code: {ResponseStatusCode}, Error Details {ResponseErrorDetail}",
+            response.StatusCode, response.AtErrorDetail?.Message);
+        throw new BlueskyPostException(
+            "Bluesky post failed.",
+            (int?)response.StatusCode,
+            response.AtErrorDetail?.Message);
     }
 
     public async Task<CreateRecordResult?> Post(PostBuilder postBuilder)
@@ -259,6 +293,97 @@ public class BlueskyManager(
         {
             return null;
         }
+
+        Uri page = new(externalUrl);
+        Extractor metadataExtractor = new();
+        var pageMetadata = await metadataExtractor.Extract(page, CancellationToken.None);
+
+        string title = pageMetadata.Title;
+        string? pageUri = pageMetadata.Source?.Url.ToString();
+        string description = pageMetadata.Description;
+
+        if (!string.IsNullOrEmpty(pageUri) && !string.IsNullOrEmpty(title))
+        {
+            Blob? thumbnailBlob = null;
+
+            if (!string.IsNullOrEmpty(thumbnailImageUrl))
+            {
+                try
+                {
+                    using HttpResponseMessage response = await httpClient.GetAsync(thumbnailImageUrl);
+                    response.EnsureSuccessStatusCode();
+
+                    var responseBody = await response.Content.ReadAsByteArrayAsync();
+                    if (response.Content.Headers.ContentType?.MediaType is not null)
+                    {
+                        AtProtoHttpResult<Blob> uploadResult = await
+                            agent.UploadBlob(responseBody, response.Content.Headers.ContentType.MediaType);
+                        if (uploadResult.Succeeded)
+                            thumbnailBlob = uploadResult.Result;
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                } // Ignore any exceptions from trying to get the thumbnail.
+            }
+
+            return new EmbeddedExternal(pageUri, title, description, thumbnailBlob);
+        }
+
+        return null;
+    }
+
+    private async Task<EmbeddedExternal?> GetEmbeddedExternalRecordAsync(BlueskyAgent agent, string? externalUrl)
+    {
+        if (string.IsNullOrEmpty(externalUrl))
+            return null;
+
+        Uri page = new(externalUrl);
+        Extractor metadataExtractor = new();
+        var pageMetadata = await metadataExtractor.Extract(page, CancellationToken.None);
+
+        string title = pageMetadata.Title;
+        string? pageUri = pageMetadata.Source?.Url.ToString();
+        string description = pageMetadata.Description;
+
+        if (!string.IsNullOrEmpty(pageUri) && !string.IsNullOrEmpty(title))
+        {
+            Blob? thumbnailBlob = null;
+
+            string? thumbnailUri = pageMetadata.Metadata.Where(o => o.Key == "og:image").Select(o => o.Value)
+                .FirstOrDefault();
+            if (!string.IsNullOrEmpty(thumbnailUri))
+            {
+                try
+                {
+                    using HttpResponseMessage response = await httpClient.GetAsync(thumbnailUri);
+                    response.EnsureSuccessStatusCode();
+
+                    var responseBody = await response.Content.ReadAsByteArrayAsync();
+                    if (response.Content.Headers.ContentType is not null &&
+                        response.Content.Headers.ContentType.MediaType is not null)
+                    {
+                        AtProtoHttpResult<Blob> uploadResult = await
+                            agent.UploadBlob(responseBody, response.Content.Headers.ContentType.MediaType);
+                        if (uploadResult.Succeeded)
+                            thumbnailBlob = uploadResult.Result;
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                } // Ignore any exceptions from trying to get the thumbnail and upload the image.
+
+                return new EmbeddedExternal(pageUri, title, description, thumbnailBlob);
+            }
+        }
+
+        return null;
+    }
+
+    private async Task<EmbeddedExternal?> GetEmbeddedExternalRecordWithThumbnailAsync(BlueskyAgent agent, string externalUrl, string thumbnailImageUrl)
+    {
+        if (string.IsNullOrEmpty(externalUrl))
+            return null;
 
         Uri page = new(externalUrl);
         Extractor metadataExtractor = new();

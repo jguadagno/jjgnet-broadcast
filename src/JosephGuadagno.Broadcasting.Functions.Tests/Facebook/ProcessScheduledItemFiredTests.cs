@@ -142,8 +142,8 @@ public class ProcessScheduledItemFiredTests
 
         // StatusText comes from ComposeAsync; LinkUri comes from feed URL
         Assert.NotNull(result);
-        Assert.Equal("Test Blog Post Title - https://example.com/post", result.StatusText);
-        Assert.Equal("https://example.com/post", result.LinkUri);
+        Assert.Equal("Test Blog Post Title - https://example.com/post", result.Text);
+        Assert.Equal("https://example.com/post", result.LinkUrl);
     }
 
     [Fact]
@@ -213,8 +213,8 @@ public class ProcessScheduledItemFiredTests
 
         // LinkUri is the engagement URL
         Assert.NotNull(result);
-        Assert.Equal("https://conf.example.com", result.LinkUri);
-        Assert.Equal("engagement text", result.StatusText);
+        Assert.Equal("https://conf.example.com", result.LinkUrl);
+        Assert.Equal("engagement text", result.Text);
     }
 
     [Fact]
@@ -237,8 +237,8 @@ public class ProcessScheduledItemFiredTests
 
         // LinkUri is UrlForConferenceTalk
         Assert.NotNull(result);
-        Assert.Equal("https://conf.example.com/talks/dotnet", result.LinkUri);
-        Assert.Equal("talk text", result.StatusText);
+        Assert.Equal("https://conf.example.com/talks/dotnet", result.LinkUrl);
+        Assert.Equal("talk text", result.Text);
     }
 
     [Fact]
@@ -260,8 +260,8 @@ public class ProcessScheduledItemFiredTests
         var result = await sut.RunAsync(BuildEventGridEvent(1));
 
         Assert.NotNull(result);
-        Assert.Equal("https://youtube.com/watch?v=abc123def", result.LinkUri);
-        Assert.Equal("video text", result.StatusText);
+        Assert.Equal("https://youtube.com/watch?v=abc123def", result.LinkUrl);
+        Assert.Equal("video text", result.Text);
     }
 
     [Fact]

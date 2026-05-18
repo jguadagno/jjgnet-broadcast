@@ -1,13 +1,10 @@
-using idunno.Bluesky;
-using idunno.Bluesky.RichText;
-
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
-using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -18,15 +15,15 @@ public class SendPost(IBlueskyManager blueskyManager, IUserPublisherBlueskySetti
     [Function(ConfigurationFunctionNames.BlueskyPostMessage)]
     public async Task Run(
         [QueueTrigger(Queues.BlueskyPostToSend)]
-        BlueskyPostMessage blueskyPostMessage)
+        SocialMediaPublishRequest request)
     {
-        if (string.IsNullOrEmpty(blueskyPostMessage.CreatedByEntraOid))
+        if (string.IsNullOrEmpty(request.OwnerEntraOid))
         {
-            logger.LogWarning("Bluesky post message missing CreatedByEntraOid. Skipping.");
+            logger.LogWarning("Bluesky post message missing OwnerEntraOid. Skipping.");
             return;
         }
 
-        var ownerOid = blueskyPostMessage.CreatedByEntraOid;
+        var ownerOid = request.OwnerEntraOid;
         var settings = await blueskySettingsManager.GetAsync(ownerOid);
         if (settings is null || !settings.IsEnabled || string.IsNullOrEmpty(settings.UserName))
         {
@@ -43,68 +40,22 @@ public class SendPost(IBlueskyManager blueskyManager, IUserPublisherBlueskySetti
             return;
         }
 
+        request.AuthorId = settings.UserName;
+        request.AccessToken = appPassword;
+
         try
         {
-            logger.LogDebug("Bluesky Post Received '{Text}'", blueskyPostMessage.Text);
-            var postBuilder = new PostBuilder(blueskyPostMessage.Text);
-            
-            if (!string.IsNullOrWhiteSpace(blueskyPostMessage.ShortenedUrl) && !string.IsNullOrWhiteSpace(blueskyPostMessage.Url))
+            logger.LogDebug("Bluesky Post Received '{Text}'", request.Text);
+            var cid = await blueskyManager.PublishAsync(request);
+            if (cid is not null)
             {
-                if (!blueskyPostMessage.Text.EndsWith(' '))
-                {
-                    postBuilder.Append(" ");
-                }
-                postBuilder.Append(new Link(blueskyPostMessage.ShortenedUrl, blueskyPostMessage.ShortenedUrl));
-                
-                var embeddedExternalRecord = !string.IsNullOrEmpty(blueskyPostMessage.ImageUrl)
-                    ? await blueskyManager.GetEmbeddedExternalRecordWithThumbnail(blueskyPostMessage.Url, blueskyPostMessage.ImageUrl)
-                    : await blueskyManager.GetEmbeddedExternalRecord(blueskyPostMessage.Url);
-                if (embeddedExternalRecord != null)
-                {
-                    postBuilder.EmbedRecord(embeddedExternalRecord);
-                }
-            }
-            else if (!string.IsNullOrEmpty(blueskyPostMessage.ImageUrl) && !string.IsNullOrEmpty(blueskyPostMessage.Url))
-            {
-                var embeddedExternalRecord = await blueskyManager.GetEmbeddedExternalRecordWithThumbnail(
-                    blueskyPostMessage.Url, blueskyPostMessage.ImageUrl);
-                if (embeddedExternalRecord != null)
-                {
-                    postBuilder.EmbedRecord(embeddedExternalRecord);
-                }
-            }
-
-            if (blueskyPostMessage.Hashtags is not null && blueskyPostMessage.Hashtags.Count > 0)
-            {
-                foreach (var hashtag in blueskyPostMessage.Hashtags)
-                {
-                    postBuilder.Append(" ");
-                    postBuilder.Append(new HashTag(hashtag));
-                }
-            }
-
-            var agent = new BlueskyAgent();
-            var loginResult = await agent.Login(settings.UserName, appPassword);
-            if (!loginResult.Succeeded)
-            {
-                logger.LogError("Failed to log in to Bluesky for owner '{OwnerOid}'. StatusCode: {StatusCode}",
-                    LogSanitizer.Sanitize(blueskyPostMessage.CreatedByEntraOid), loginResult.StatusCode);
-                return;
-            }
-
-            var response = await agent.Post(postBuilder);
-            if (response.Succeeded && response.Result is not null)
-            {
-                logger.LogDebug("Posting to bluesky: {Text}", postBuilder.Text);
                 var properties = new Dictionary<string, string>
                 {
-                    {"message", postBuilder.Text ?? string.Empty},
-                    {"cid", response.Result.Cid.ToString()}
+                    {"message", request.Text},
+                    {"cid", cid}
                 };
                 logger.LogCustomEvent(Metrics.BlueskyPostSent, properties);
-                return;
             }
-            logger.LogError("Failed to post to Bluesky. StatusCode: {StatusCode}", response.StatusCode);
         }
         catch (BlueskyPostException ex)
         {

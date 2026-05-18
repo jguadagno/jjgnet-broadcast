@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -14,14 +13,13 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
 public class ProcessNewSpeakingEngagementFired(
     IEngagementManager engagementManager,
-    IUserOAuthTokenManager userOAuthTokenManager,
     IMessageTemplateLookup messageLookup,
     IPostComposer postComposer,
     ILogger<ProcessNewSpeakingEngagementFired> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInProcessNewSpeakingEngagementFired)]
     [QueueOutput(Queues.LinkedInPostLink)]
-    public async Task<LinkedInPostLink?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedOn:f}",
@@ -60,16 +58,6 @@ public class ProcessNewSpeakingEngagementFired(
                 return null;
             }
 
-            var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
-                ownerEntraOid, SocialMediaPlatformIds.LinkedIn);
-            if (token is null)
-            {
-                logger.LogWarning(
-                    "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping engagement {Id}",
-                    LogSanitizer.Sanitize(ownerEntraOid), engagement.Id);
-                return null;
-            }
-
             var request = new SocialMediaPublishRequest
             {
                 Text = "",
@@ -102,14 +90,8 @@ public class ProcessNewSpeakingEngagementFired(
             logger.LogCustomEvent(Metrics.LinkedInProcessedNewSpeakingEngagement, properties);
             logger.LogDebug("Generated the LinkedIn post for speaking engagement {Id}", engagement.Id);
 
-            return new LinkedInPostLink
-            {
-                Text = composedText,
-                Title = engagement.Name,
-                LinkUrl = engagement.Url,
-                Description = "",
-                AccessToken = token.AccessToken
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

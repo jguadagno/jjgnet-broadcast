@@ -228,7 +228,9 @@ public class FacebookManagerUnitTests
         {
             Text = "Test Message",
             LinkUrl = "https://example.com",
-            ImageUrl = "https://example.com/image.png"
+            ImageUrl = "https://example.com/image.png",
+            AuthorId = "test-page-id",
+            AccessToken = "test-access-token"
         });
 
         // Assert
@@ -248,7 +250,9 @@ public class FacebookManagerUnitTests
         // Act
         var result = await sut.PublishAsync(new SocialMediaPublishRequest
         {
-            Text = "Test Message"
+            Text = "Test Message",
+            AuthorId = "test-page-id",
+            AccessToken = "test-access-token"
         });
 
         // Assert

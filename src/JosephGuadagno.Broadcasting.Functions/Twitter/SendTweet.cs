@@ -1,30 +1,28 @@
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Managers.Twitter.Exceptions;
-using LinqToTwitter;
-using LinqToTwitter.OAuth;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
-public class SendTweet(IUserPublisherTwitterSettingsManager twitterSettingsManager, ILogger<SendTweet> logger)
+public class SendTweet(ITwitterManager twitterManager, IUserPublisherTwitterSettingsManager twitterSettingsManager, ILogger<SendTweet> logger)
 {
 
     [Function(ConfigurationFunctionNames.TwitterSendTweet)]
     public async Task Run(
-        [QueueTrigger(Queues.TwitterTweetsToSend)] TwitterTweetMessage tweetMessage)
+        [QueueTrigger(Queues.TwitterTweetsToSend)] SocialMediaPublishRequest request)
     {
-        if (string.IsNullOrEmpty(tweetMessage.CreatedByEntraOid))
+        if (string.IsNullOrEmpty(request.OwnerEntraOid))
         {
-            logger.LogWarning("Tweet message missing CreatedByEntraOid. Skipping.");
+            logger.LogWarning("Tweet message missing OwnerEntraOid. Skipping.");
             return;
         }
 
-        var ownerOid = tweetMessage.CreatedByEntraOid;
+        var ownerOid = request.OwnerEntraOid;
         var consumerKey = await twitterSettingsManager.GetConsumerKeyAsync(ownerOid);
         var consumerSecret = await twitterSettingsManager.GetConsumerSecretAsync(ownerOid);
         var accessToken = await twitterSettingsManager.GetAccessTokenAsync(ownerOid);
@@ -38,36 +36,31 @@ public class SendTweet(IUserPublisherTwitterSettingsManager twitterSettingsManag
             return;
         }
 
+        request.ConsumerKey = consumerKey;
+        request.ConsumerSecret = consumerSecret;
+        request.AccessToken = accessToken;
+        request.AccessTokenSecret = accessTokenSecret;
+
         try
         {
-            if (!string.IsNullOrEmpty(tweetMessage.ImageUrl))
+            if (!string.IsNullOrEmpty(request.ImageUrl))
                 logger.LogWarning(
                     "ImageUrl '{ImageUrl}' was present in the tweet message but Twitter media API image upload is not yet implemented. The tweet will be posted without an image attachment.",
-                    tweetMessage.ImageUrl);
+                    request.ImageUrl);
 
-            var credentialStore = new InMemoryCredentialStore
+            var tweetId = await twitterManager.PublishAsync(request);
+            if (tweetId is null)
             {
-                ConsumerKey = consumerKey,
-                ConsumerSecret = consumerSecret,
-                OAuthToken = accessToken,
-                OAuthTokenSecret = accessTokenSecret,
-            };
-            var authorizer = new SingleUserAuthorizer { CredentialStore = credentialStore };
-            var twitterContext = new TwitterContext(authorizer);
-
-            var tweet = await twitterContext.TweetAsync(tweetMessage.Text);
-            if (tweet is null)
-            {
-                logger.LogError("Failed to send the tweet: '{TweetText}'. ", tweetMessage.Text);
+                logger.LogError("Failed to send the tweet: '{TweetText}'. ", request.Text);
             }
             else
             {
-                logger.LogDebug("Posting to Twitter: {TweetText}", tweetMessage.Text);
+                logger.LogDebug("Posting to Twitter: {TweetText}", request.Text);
 
                 var properties = new Dictionary<string, string>
                 {
-                    {"message", tweetMessage.Text},
-                    {"id", tweet.ID ?? string.Empty}
+                    {"message", request.Text},
+                    {"id", tweetId}
                 };
                 logger.LogCustomEvent(Metrics.TwitterPostSent, properties);
             }
@@ -75,12 +68,12 @@ public class SendTweet(IUserPublisherTwitterSettingsManager twitterSettingsManag
         catch (TwitterPostException ex)
         {
             logger.LogError(ex, "Twitter API error sending tweet: '{TweetText}'. Code: {ApiErrorCode}, Message: {ApiErrorMessage}",
-                tweetMessage.Text, ex.ApiErrorCode, ex.ApiErrorMessage);
+                request.Text, ex.ApiErrorCode, ex.ApiErrorMessage);
             throw;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to send the tweet: '{TweetText}'. Exception: '{ExceptionMessage}'", tweetMessage.Text, ex.Message);
+            logger.LogError(ex, "Failed to send the tweet: '{TweetText}'. Exception: '{ExceptionMessage}'", request.Text, ex.Message);
             throw;
         }
     }

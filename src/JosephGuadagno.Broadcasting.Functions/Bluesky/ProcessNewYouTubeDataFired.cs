@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -19,7 +18,7 @@ public class ProcessNewYouTubeDataFired(
 {
     [Function(ConfigurationFunctionNames.BlueskyProcessNewYouTubeDataFired)]
     [QueueOutput(Queues.BlueskyPostToSend)]
-    public async Task<BlueskyPostMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         try
         {
@@ -86,14 +85,8 @@ public class ProcessNewYouTubeDataFired(
             logger.LogCustomEvent(Metrics.BlueskyProcessedNewYouTubeData, properties);
             logger.LogDebug("Posted to Bluesky: {Title}", youTubeItem.Title);
 
-            return new BlueskyPostMessage
-            {
-                Text = composedText,
-                Url = youTubeItem.Url,
-                ShortenedUrl = youTubeItem.ShortenedUrl,
-                Hashtags = youTubeItem.Tags.Count > 0 ? youTubeItem.Tags.ToList() : null,
-                CreatedByEntraOid = ownerEntraOid
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception exception)
         {

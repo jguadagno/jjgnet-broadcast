@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -20,7 +19,7 @@ public class ProcessNewSpeakingEngagementFired(
 {
     [Function(ConfigurationFunctionNames.TwitterProcessNewSpeakingEngagementFired)]
     [QueueOutput(Queues.TwitterTweetsToSend)]
-    public async Task<TwitterTweetMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedOn:f}",
@@ -91,7 +90,8 @@ public class ProcessNewSpeakingEngagementFired(
             logger.LogCustomEvent(Metrics.TwitterProcessedNewSpeakingEngagement, properties);
             logger.LogDebug("Generated the tweet for speaking engagement {Id}", engagement.Id);
 
-            return new TwitterTweetMessage { Text = composedText, CreatedByEntraOid = ownerEntraOid };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

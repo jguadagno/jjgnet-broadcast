@@ -5,8 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
-using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -14,14 +12,13 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
 public class ProcessNewYouTubeDataFired(
     IYouTubeItemManager youTubeItemManager,
-    IUserOAuthTokenManager userOAuthTokenManager,
     IMessageTemplateLookup messageLookup,
     IPostComposer postComposer,
     ILogger<ProcessNewYouTubeDataFired> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInProcessNewYouTubeDataFired)]
     [QueueOutput(Queues.LinkedInPostLink)]
-    public async Task<LinkedInPostLink?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -49,16 +46,6 @@ public class ProcessNewYouTubeDataFired(
         if (string.IsNullOrEmpty(ownerEntraOid))
         {
             logger.LogWarning("No owner OID for YouTube item {Id} — skipping LinkedIn post", youTubeItem.Id);
-            return null;
-        }
-
-        var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
-            ownerEntraOid, SocialMediaPlatformIds.LinkedIn);
-        if (token is null)
-        {
-            logger.LogWarning(
-                "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping YouTube item {ItemId}",
-                LogSanitizer.Sanitize(ownerEntraOid), youTubeItem.Id);
             return null;
         }
 
@@ -97,13 +84,7 @@ public class ProcessNewYouTubeDataFired(
         logger.LogDebug("Done composing LinkedIn status for '{Id}' with title of '{Title}'",
             youTubeItem.Id, youTubeItem.Title);
 
-        return new LinkedInPostLink
-        {
-            Text = composedText,
-            Title = youTubeItem.Title,
-            LinkUrl = youTubeItem.Url,
-            Description = "",
-            AccessToken = token.AccessToken
-        };
+        request.Text = composedText;
+        return request;
     }
 }

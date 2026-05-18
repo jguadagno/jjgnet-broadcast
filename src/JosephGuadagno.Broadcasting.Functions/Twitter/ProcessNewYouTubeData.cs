@@ -6,8 +6,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Models.Messages;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Logging;
+using Microsoft.Azure.Functions.Worker;using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
@@ -19,7 +18,7 @@ public class ProcessNewYouTubeDataFired(
 {
     [Function(ConfigurationFunctionNames.TwitterProcessNewYouTubeDataFired)]
     [QueueOutput(Queues.TwitterTweetsToSend)]
-    public async Task<TwitterTweetMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -84,6 +83,7 @@ public class ProcessNewYouTubeDataFired(
         logger.LogDebug("Done composing Twitter tweet for '{Id}' with title of '{Title}'",
             youTubeItem.Id, youTubeItem.Title);
 
-        return new TwitterTweetMessage { Text = composedText, CreatedByEntraOid = ownerEntraOid };
+        request.Text = composedText;
+        return request;
     }
 }

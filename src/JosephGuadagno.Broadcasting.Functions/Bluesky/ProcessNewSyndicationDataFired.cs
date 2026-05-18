@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -19,7 +18,7 @@ public class ProcessNewSyndicationDataFired(
 {
     [Function(ConfigurationFunctionNames.BlueskyProcessNewSyndicationDataFired)]
     [QueueOutput(Queues.BlueskyPostToSend)]
-    public async Task<BlueskyPostMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         try
         {
@@ -87,14 +86,8 @@ public class ProcessNewSyndicationDataFired(
             logger.LogCustomEvent(Metrics.BlueskyProcessedNewSyndicationData, properties);
             logger.LogDebug("Posted to Bluesky: {Title}", syndicationFeedItem.Title);
 
-            return new BlueskyPostMessage
-            {
-                Text = composedText,
-                Url = syndicationFeedItem.Url,
-                ShortenedUrl = syndicationFeedItem.ShortenedUrl,
-                Hashtags = syndicationFeedItem.Tags.Count > 0 ? syndicationFeedItem.Tags.ToList() : null,
-                CreatedByEntraOid = ownerEntraOid
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception exception)
         {

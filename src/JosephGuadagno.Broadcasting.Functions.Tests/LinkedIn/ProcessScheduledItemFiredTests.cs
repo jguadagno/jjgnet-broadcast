@@ -3,7 +3,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Messaging.EventGrid;
-using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -86,21 +85,6 @@ public class ProcessScheduledItemFiredTests
         CreatedByEntraOid = "test-oid"
     };
 
-    private static Mock<IUserOAuthTokenManager> BuildUserOAuthTokenManager(string accessToken = "test-access-token")
-    {
-        var mock = new Mock<IUserOAuthTokenManager>();
-        mock.Setup(m => m.GetByUserAndPlatformAsync(
-                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new UserOAuthToken
-            {
-                CreatedByEntraOid = "test-oid",
-                SocialMediaPlatformId = SocialMediaPlatformIds.LinkedIn,
-                AccessToken = accessToken,
-                AccessTokenExpiresAt = DateTimeOffset.UtcNow.AddHours(1)
-            });
-        return mock;
-    }
-
     private static Mock<IMessageTemplateLookup> BuildTemplateLookup(string template = "template")
     {
         var mock = new Mock<IMessageTemplateLookup>();
@@ -119,13 +103,12 @@ public class ProcessScheduledItemFiredTests
         return mock;
     }
 
-    // Constructor order: (IScheduledItemManager, IEngagementManager, ISyndicationFeedItemManager, IYouTubeItemManager, IUserOAuthTokenManager, IMessageTemplateLookup, IPostComposer, ILogger)
+    // Constructor order: (IScheduledItemManager, IEngagementManager, ISyndicationFeedItemManager, IYouTubeItemManager, IMessageTemplateLookup, IPostComposer, ILogger)
     private static Functions.LinkedIn.ProcessScheduledItemFired BuildSut(
         Mock<IScheduledItemManager> scheduledItemManager,
         Mock<IEngagementManager> engagementManager,
         Mock<ISyndicationFeedItemManager> feedSourceManager,
         Mock<IYouTubeItemManager> youTubeItemManager,
-        Mock<IUserOAuthTokenManager> userOAuthTokenManager,
         Mock<IMessageTemplateLookup> messageLookup,
         Mock<IPostComposer> postComposer)
     {
@@ -134,7 +117,6 @@ public class ProcessScheduledItemFiredTests
             engagementManager.Object,
             feedSourceManager.Object,
             youTubeItemManager.Object,
-            userOAuthTokenManager.Object,
             messageLookup.Object,
             postComposer.Object,
             NullLogger<Functions.LinkedIn.ProcessScheduledItemFired>.Instance);
@@ -157,7 +139,6 @@ public class ProcessScheduledItemFiredTests
             new Mock<IEngagementManager>(),
             mockFeedSourceManager,
             new Mock<IYouTubeItemManager>(),
-            BuildUserOAuthTokenManager(),
             BuildTemplateLookup(),
             BuildPostComposer("Rendered from composer"));
 
@@ -165,42 +146,9 @@ public class ProcessScheduledItemFiredTests
 
         Assert.NotNull(result);
         Assert.Equal("Rendered from composer", result!.Text);
-        Assert.Equal("test-access-token", result.AccessToken);
         Assert.Equal(feedSource.Url, result.LinkUrl);
         Assert.Equal(feedSource.Title, result.Title);
         Assert.Equal(scheduledItem.ImageUrl, result.ImageUrl);
-    }
-
-    [Fact]
-    public async Task RunAsync_WhenNoOAuthTokenFound_ReturnsNull()
-    {
-        var scheduledItem = BuildScheduledItem();
-
-        var mockScheduledItemManager = new Mock<IScheduledItemManager>();
-        mockScheduledItemManager.Setup(m => m.GetAsync(1)).ReturnsAsync(scheduledItem);
-
-        var mockTokenManager = new Mock<IUserOAuthTokenManager>();
-        mockTokenManager.Setup(m => m.GetByUserAndPlatformAsync(
-                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((UserOAuthToken?)null);
-
-        var mockComposer = BuildPostComposer();
-
-        var sut = BuildSut(
-            mockScheduledItemManager,
-            new Mock<IEngagementManager>(),
-            new Mock<ISyndicationFeedItemManager>(),
-            new Mock<IYouTubeItemManager>(),
-            mockTokenManager,
-            BuildTemplateLookup(),
-            mockComposer);
-
-        var result = await sut.RunAsync(BuildEventGridEvent(1));
-
-        Assert.Null(result);
-        mockComposer.Verify(
-            m => m.ComposeAsync(It.IsAny<SocialMediaPublishRequest>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Never);
     }
 
     [Fact]
@@ -220,7 +168,6 @@ public class ProcessScheduledItemFiredTests
             mockEngagementManager,
             new Mock<ISyndicationFeedItemManager>(),
             new Mock<IYouTubeItemManager>(),
-            BuildUserOAuthTokenManager(),
             BuildTemplateLookup(),
             BuildPostComposer("Engagement message"));
 
@@ -249,7 +196,6 @@ public class ProcessScheduledItemFiredTests
             mockEngagementManager,
             new Mock<ISyndicationFeedItemManager>(),
             new Mock<IYouTubeItemManager>(),
-            BuildUserOAuthTokenManager(),
             BuildTemplateLookup(),
             BuildPostComposer("Talk message"));
 
@@ -278,7 +224,6 @@ public class ProcessScheduledItemFiredTests
             new Mock<IEngagementManager>(),
             new Mock<ISyndicationFeedItemManager>(),
             mockYouTubeItemManager,
-            BuildUserOAuthTokenManager(),
             BuildTemplateLookup(),
             BuildPostComposer("YouTube message"));
 

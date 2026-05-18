@@ -5,7 +5,6 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -19,7 +18,7 @@ public class ProcessNewRandomPost(
 {
     [Function(ConfigurationFunctionNames.BlueskyProcessRandomPostFired)]
     [QueueOutput(Queues.BlueskyPostToSend)]
-    public async Task<BlueskyPostMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -83,14 +82,8 @@ public class ProcessNewRandomPost(
             logger.LogCustomEvent(Metrics.BlueskyProcessedRandomPost, properties);
             logger.LogDebug("Picked a random post {Title}", sourceData.Title);
 
-            return new BlueskyPostMessage
-            {
-                Text = composedText,
-                Url = sourceData.Url,
-                ShortenedUrl = sourceData.ShortenedUrl,
-                Hashtags = sourceData.Tags.Count > 0 ? sourceData.Tags.ToList() : null,
-                CreatedByEntraOid = ownerEntraOid
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

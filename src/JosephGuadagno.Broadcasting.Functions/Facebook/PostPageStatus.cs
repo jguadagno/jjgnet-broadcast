@@ -1,6 +1,7 @@
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
@@ -14,19 +15,19 @@ public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherFace
     [Function(ConfigurationFunctionNames.FacebookPostPageStatus)]
     public async Task Run(
         [QueueTrigger(Queues.FacebookPostStatusToPage)]
-        Domain.Models.Messages.FacebookPostStatus facebookPostStatus)
+        SocialMediaPublishRequest request)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.FacebookPostPageStatus, startedAt);
 
-        if (string.IsNullOrEmpty(facebookPostStatus.CreatedByEntraOid))
+        if (string.IsNullOrEmpty(request.OwnerEntraOid))
         {
-            logger.LogWarning("Facebook post status missing CreatedByEntraOid. Skipping.");
+            logger.LogWarning("Facebook post status missing OwnerEntraOid. Skipping.");
             return;
         }
 
-        var ownerOid = facebookPostStatus.CreatedByEntraOid;
+        var ownerOid = request.OwnerEntraOid;
         var settings = await facebookSettingsManager.GetAsync(ownerOid);
         if (settings is null || !settings.IsEnabled)
         {
@@ -52,22 +53,18 @@ public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherFace
             return;
         }
 
+        request.AccessToken = pageAccessToken;
+        request.AuthorId = settings.PageId;
+
         try
         {
-            string? postId;
-            if (!string.IsNullOrEmpty(facebookPostStatus.ImageUrl))
-                postId = await facebookManager.PostMessageLinkAndPictureToPage(
-                    facebookPostStatus.StatusText, facebookPostStatus.LinkUri, facebookPostStatus.ImageUrl, settings.PageId, pageAccessToken);
-            else
-                postId = await facebookManager.PostMessageAndLinkToPage(
-                    facebookPostStatus.StatusText, facebookPostStatus.LinkUri, settings.PageId, pageAccessToken);
-
+            var postId = await facebookManager.PublishAsync(request);
             if (!string.IsNullOrEmpty(postId))
             {
                 var properties = new Dictionary<string, string>
                 {
-                    {"statusText", facebookPostStatus.StatusText}, 
-                    {"url", facebookPostStatus.LinkUri},
+                    {"statusText", request.Text}, 
+                    {"url", request.LinkUrl ?? string.Empty},
                 };
                 logger.LogCustomEvent(Metrics.FacebookPostPageStatus, properties);
             }

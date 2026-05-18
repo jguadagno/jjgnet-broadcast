@@ -6,7 +6,6 @@ using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -24,7 +23,7 @@ public class ProcessScheduledItemFired(
 {
     [Function(ConfigurationFunctionNames.FacebookProcessScheduledItemFired)]
     [QueueOutput(Queues.FacebookPostStatusToPage)]
-    public async Task<FacebookPostStatus?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.Now;
         logger.LogDebug("Started {FunctionName} at {StartedOn:f}",
@@ -86,13 +85,8 @@ public class ProcessScheduledItemFired(
             logger.LogDebug("Generated the Facebook status for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
-            return new FacebookPostStatus
-            {
-                StatusText = composedText,
-                LinkUri = request.LinkUrl!,
-                ImageUrl = scheduledItem.ImageUrl,
-                CreatedByEntraOid = ownerEntraOid
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {
