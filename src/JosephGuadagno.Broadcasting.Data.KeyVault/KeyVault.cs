@@ -2,6 +2,8 @@
 using Azure.Security.KeyVault.Secrets;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using Microsoft.Extensions.Logging;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace JosephGuadagno.Broadcasting.Data.KeyVault;
 
@@ -41,7 +43,9 @@ public class KeyVault(SecretClient secretClient, ILogger<KeyVault> logger) : IKe
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
             // Secret does not exist yet (initial setup) — no old version to disable.
-            logger.LogInformation("Secret '{SecretName}' does not exist yet; skipping disable of previous version", secretName);
+            logger.LogInformation(
+                "Secret with fingerprint '{SecretNameFingerprint}' does not exist yet; skipping disable of previous version",
+                GetSecretNameFingerprint(secretName));
         }
 
         // Create new secret (or first version on initial setup)
@@ -59,6 +63,17 @@ public class KeyVault(SecretClient secretClient, ILogger<KeyVault> logger) : IKe
         {
             throw new ApplicationException($"Failed to update the new version secret properties for '{secretName}'");
         }
+    }
+
+    private static string GetSecretNameFingerprint(string secretName)
+    {
+        if (string.IsNullOrWhiteSpace(secretName))
+        {
+            return "empty";
+        }
+
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(secretName));
+        return Convert.ToHexString(hash, 0, 8).ToLowerInvariant();
     }
 
     /// <summary>
