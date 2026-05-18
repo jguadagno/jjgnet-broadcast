@@ -209,99 +209,35 @@ Fix: wrap all three sites with `LogSanitizer.Sanitize()` — the `using` directi
 
 ---
 
-## Learnings
+## Implementation Milestones
 
-### 2026-05-18 — Phase 2 complete: IMessageTemplateLookup extracted, SocialMediaPublishRequest extended
+### Phase 1 — IPostComposer extracted (commit dbfa2589)
+- Deleted 4 dead `*PublisherSettings` (plural) classes; kept singular `*PublisherSetting` value objects
+- Created `IPostComposer` interface + `PostComposer` (Scriban 7.2.0) in Managers
+- Registered in API, Functions, Web Program.cs
+- Build/tests: ✅ 422 tests pass
 
-**Branch:** `issue-980-publisher-architecture-refactor` — commit `e63c4012`
+### Phase 2 — IMessageTemplateLookup extracted (commit e63c4012)
+- Created `IMessageTemplateLookup` interface + `MessageTemplateLookup` in Managers
+- Extended `SocialMediaPublishRequest` with `OwnerEntraOid`, `ConsumerKey`, `ConsumerSecret`, `AccessTokenSecret`
+- TODO left in lookup pending Phase 3 (user-scoped `IMessageTemplateDataStore` overload)
+- Build/tests: ✅ all tests pass
 
-**Files changed:**
-- **Created:** `Domain/Interfaces/IMessageTemplateLookup.cs`
-- **Created:** `Managers/MessageTemplateLookup.cs`
-- **Modified:** `Api/Program.cs`, `Functions/Program.cs`, `Web/Program.cs` — added `services.TryAddScoped<IMessageTemplateLookup, MessageTemplateLookup>();`
-- **Modified:** `Domain/Models/SocialMediaPublishRequest.cs` — added `OwnerEntraOid`, `ConsumerKey`, `ConsumerSecret`, `AccessTokenSecret`
+### Phase 3 — All Process* Functions migrated (commit 47e8ecec)
+- Added user-scoped `GetAsync(int platformId, string messageType, string ownerEntraOid, CancellationToken)` to `IMessageTemplateDataStore`
+- Implemented in `MessageTemplateDataStore`
+- Removed TODO from `MessageTemplateLookup`
+- Migrated all 20 `Process*` Functions (Bluesky, Twitter, Facebook, LinkedIn) to use `IMessageTemplateLookup` + `IPostComposer`
+- Updated 4 `ProcessScheduledItemFiredTests`
+- Build/tests: ✅ 155 tests pass
 
-**`IMessageTemplateDataStore` — no user-scoped single-item overload:**
-- Only `GetAsync(int socialMediaPlatformId, string messageType, CancellationToken)` exists (no `ownerEntraOid` parameter)
-- `MessageTemplateLookup.GetAsync` calls this non-scoped version and includes a TODO comment noting the method needs updating when the user-scoped overload is added
-- Full user-scoping activates in Phase 3
-
-**`MessageTemplate` model properties confirmed:**
-- `SocialMediaPlatformId` → `int`
-- `MessageType` → `string`
-- `Template` → `string` (the Scriban template content)
-- `Description` → `string?`
-- `Platform` → `string` (populated from join — not persisted)
-- `CreatedByEntraOid` → `string?`
-
-**`SocialMediaPublishRequest` additions (all were missing, all added):**
-- `OwnerEntraOid` → `string?`
-- `ConsumerKey` → `string?` (Twitter OAuth consumer key)
-- `ConsumerSecret` → `string?` (Twitter OAuth consumer secret)
-- `AccessTokenSecret` → `string?` (Twitter OAuth access token secret)
-- Note: `AccessToken` was already present on the model
-
-**`Managers` project implicit usings:** NOT enabled — requires explicit `using System.Threading;` and `using System.Threading.Tasks;` in any new file using `CancellationToken` or `Task<>`.
-
-**Build/test result:** 0 errors, 0 warnings; all non-integration tests passed (exit code 0)
-
----
-
-### 2026-05-18 — Phase 1 complete: IPostComposer/PostComposer extracted, dead classes deleted
-
-**Branch:** `issue-980-publisher-architecture-refactor` — commit `dbfa2589`
-
-**Files changed:**
-- **Deleted (dead code):** `Domain/Models/BlueskyPublisherSettings.cs`, `FacebookPublisherSettings.cs`, `LinkedInPublisherSettings.cs`, `TwitterPublisherSettings.cs` — confirmed zero references before deletion
-- **Created:** `Domain/Interfaces/IPostComposer.cs`
-- **Created:** `Managers/PostComposer.cs` (Scriban 7.2.0)
-- **Modified:** `Managers/JosephGuadagno.Broadcasting.Managers.csproj` — added `<PackageReference Include="Scriban" Version="7.2.0" />`
-- **Modified:** `Api/Program.cs`, `Functions/Program.cs`, `Web/Program.cs` — added `services.TryAddScoped<IPostComposer, PostComposer>();`
-
-**Actual `SocialMediaPublishRequest` properties confirmed:**
-- `Title` → `string?`
-- `Description` → `string?`
-- `LinkUrl` → `string?`
-- `ShortenedUrl` → `string?`
-- `ImageUrl` → `string?`
-- `Hashtags` → `IReadOnlyCollection<string>?` (not `List<string>` — `Count` property works for the `is { Count: > 0 }` null+empty check)
-- No `ConsumerKey`/`ConsumerSecret`/`AccessTokenSecret` on this model — those are Twitter-specific and will be addressed in Phase 5
-
-**DI registration pattern discovered:**
-- No central `AddManagers()` extension method exists in the shared Managers project
-- Each consumer (API, Web, Functions) registers inline with `services.TryAddScoped<Interface, Implementation>()`
-- Followed the same pattern for `IPostComposer`/`PostComposer` in all three consumers
-
-**Build/test result:** 0 errors, 0 warnings; all 422 non-integration tests passed
-
----
-
-### 2026-05-18 — Publisher model placement and duplicate settings investigation
-
-**Duplicate `*PublisherSettings` (plural) vs. `*PublisherSetting` (singular) — key finding:**
-
-There are TWO distinct class families in `JosephGuadagno.Broadcasting.Domain.Models` that look similar:
-
-1. **Singular (`*PublisherSetting`)** — **KEEP.** Legitimate domain value objects. Hold `Has*` booleans only (no credentials). Used as typed components of `UserPublisherSetting` (the API response aggregate) and `UserPublisherSettingUpdate`. Files: `BlueskyPublisherSetting.cs`, `TwitterPublisherSetting.cs`, `FacebookPublisherSetting.cs`, `LinkedInPublisherSetting.cs`.
-
-2. **Plural (`*PublisherSettings`)** — **DELETE.** Dead code. Credential-holder config models superseded by the per-user settings refactor. Zero references anywhere in the solution. Duplicate functionality already exists in manager-project models (`BlueskySettings`, `FacebookApplicationSettings`, `LinkedInApplicationSettings`). Files: `BlueskyPublisherSettings.cs`, `FacebookPublisherSettings.cs`, `LinkedInPublisherSettings.cs`, `TwitterPublisherSettings.cs`.
-
-**Queue DTOs in Domain.Models.Messages — NOT dead code, but Phase 6 target:**
-
-`TwitterTweetMessage`, `FacebookPostStatus`, `LinkedInPostLink`, `LinkedInPostText`, `LinkedInPostImage` are actively used (Functions project references them). They are platform-specific and inconsistently placed (Bluesky's equivalent, `BlueskyPostMessage`, lives in `Managers.Bluesky.Models`). However, Phase 6 of #980 will delete all five (unification into `SocialMediaPublishRequest`). Do not move them — wait for Phase 6 deletion.
-
-**Issue ordering clarification:** Issue #980 dependencies on #978/#979 are merge-time-only. Phases 1–5 require no templates. The blocker note at the top of #980 now makes this explicit.
-
----
-
-### 2026-05-18 — Phase 3 complete: All Process* Functions migrated to IMessageTemplateLookup + IPostComposer
-
-**Branch:** `issue-980-publisher-architecture-refactor` — commit `47e8ecec`
-
-**Files changed (total: 28 files):**
-- **Modified:** `Domain/Interfaces/IMessageTemplateDataStore.cs` — new user-scoped overload `GetAsync(int, string, string ownerEntraOid, CancellationToken)`
-- **Modified:** `Data.Sql/MessageTemplateDataStore.cs` — implemented new user-scoped overload
-- **Modified:** `Managers/MessageTemplateLookup.cs` — removed TODO; now calls user-scoped `GetAsync(platform.Id, messageType, ownerEntraOid, ...)`
+### Design Notes
+- `SocialMediaPublishRequest` properties: `Title`, `Description`, `LinkUrl`, `ShortenedUrl`, `ImageUrl`, `Hashtags` (IReadOnlyCollection)
+- `MessageTemplate` properties: `SocialMediaPlatformId` (int), `MessageType` (string), `Template` (string, Scriban content), `Description?`, `Platform` (join), `CreatedByEntraOid?`
+- Managers project: NO implicit usings — explicit `using System.Threading*` required
+- DI pattern: each consumer (API, Functions, Web) registers `TryAddScoped<I, T>()` inline
+- Singular vs. Plural: keep `BlueskyPublisherSetting` (value object, component of response); delete `BlueskyPublisherSettings` (dead credential holder)
+- Queue DTOs (`TwitterTweetMessage`, `FacebookPostStatus`, `LinkedInPostLink`): active but Phase 6 target for unification
 - **Rewritten (20 files):** All `Process*` functions across Bluesky, Twitter, Facebook, LinkedIn — removed `I[Platform]Manager`, added `IMessageTemplateLookup messageLookup` and `IPostComposer postComposer`
 - **Updated (4 test files):** All `ProcessScheduledItemFiredTests.cs` — replaced platform manager mocks with `IMessageTemplateLookup` + `IPostComposer` mocks
 
