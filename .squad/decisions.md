@@ -1,18 +1,14 @@
 # Team Decisions
 
 Compiled record of team decisions, architecture choices, and resolutions.
-
 ---
-
 ## # Phase 6 Complete — #980 Publisher Architecture Refactor
 
 **Date:** 2026-05-15  
 **Author:** Neo  
 **Branch:** `issue-980-publisher-architecture-refactor`  
 **Status:** COMPLETE
-
 ---
-
 ## Phase 6: Delete Obsolete Platform Queue DTOs
 
 ### Files Deleted
@@ -63,9 +59,7 @@ References like `Queues.LinkedInPostLink`, `Queues.FacebookPostStatusToPage`, `C
 - **Build:** 0 errors, 0 warnings
 - **Tests:** 1,222 passed, 0 failed (41 skipped — integration tests requiring live services)
 - **Commit:** `af705129` — `refactor(#980): Phase 6 — delete obsolete platform queue DTOs`
-
 ---
-
 ## Overall #980 Refactor Summary
 
 ### What the Codebase Looked Like Before
@@ -117,8 +111,6 @@ EventGrid event
 
 Branch `issue-980-publisher-architecture-refactor` is **ready for review**.  
 Pending PRs #978 and #979 should merge first if they affect shared infrastructure.
-
-
 ---
 ## Decision: Azure Functions Stable Port via .WithHttpEndpoint() in AppHost
 
@@ -175,10 +167,8 @@ The .WithHttpEndpoint(port: 7071, isProxied: false) configuration:
 ### Verification
 
 dotnet build .\src\ --no-restore --configuration Release — Build succeeded, 0 errors.
-Functions resource now consistently binds to http://localhost:7071 across all local Aspire runs.
-
----
-
+Functions resource now consistently binds to http://localhost:7071 across all local Aspire runs.
+---
 ## Decision: Phase 1 Complete — IPostComposer/PostComposer + Dead Code Removal
 
 **Date:** 2026-05-18  
@@ -241,10 +231,8 @@ One observation: the proposal mentioned `ConsumerKey`/`ConsumerSecret`/`AccessTo
 
 ### Next Phase
 
-**Phase 2:** Extract `IMessageTemplateLookup` — user-scoped template resolution with `GetAsync(platformName, messageType, ownerEntraOid)`.
-
----
-
+**Phase 2:** Extract `IMessageTemplateLookup` — user-scoped template resolution with `GetAsync(platformName, messageType, ownerEntraOid)`.
+---
 ## Decision: Publisher Architecture — Finalized Decisions
 
 **Author:** Neo (Lead)  
@@ -275,10 +263,8 @@ One observation: the proposal mentioned `ConsumerKey`/`ConsumerSecret`/`AccessTo
 
 **Dependencies before implementation:**
 - Issue #978 must define and enforce required templates per publisher
-- Issue #979 must seed default templates on user setup (including RandomPost type)
-
----
-
+- Issue #979 must seed default templates on user setup (including RandomPost type)
+---
 ## Decision: Publisher Architecture — Model Placement and Settings Cleanup
 
 **By:** Joseph Guadagno (via Copilot)  
@@ -374,10 +360,8 @@ src/JosephGuadagno.Broadcasting.Domain/Models/Messages/FacebookPostStatus.cs    
 src/JosephGuadagno.Broadcasting.Domain/Models/Messages/LinkedInPostLink.cs      ← Phase 6
 src/JosephGuadagno.Broadcasting.Domain/Models/Messages/LinkedInPostText.cs      ← Phase 6
 src/JosephGuadagno.Broadcasting.Domain/Models/Messages/LinkedInPostImage.cs     ← Phase 6
-```
-
----
-
+```
+---
 ## Decision: Phase 2 Complete — IMessageTemplateLookup + SocialMediaPublishRequest Extended
 
 **Date:** 2026-05-18  
@@ -434,10 +418,8 @@ Note: `AccessToken` was already present on the model (added in Phase 1 research)
 
 1. Add `GetAsync(int platformId, string messageType, string ownerEntraOid, CancellationToken)` overload to `IMessageTemplateDataStore` and its SQL implementation.
 2. Update `MessageTemplateLookup.GetAsync` to call the new user-scoped overload (remove the TODO comment).
-3. Migrate all `Process*` Functions to use `IMessageTemplateLookup` instead of inline two-step lookup.
-
----
-
+3. Migrate all `Process*` Functions to use `IMessageTemplateLookup` instead of inline two-step lookup.
+---
 ## Decision: Phase 4 Complete — Composition Stripped from Publisher Managers
 
 **Date:** 2026-05-18  
@@ -495,10 +477,8 @@ Removed `Scriban` package reference from all 4 manager csproj files.
 
 ### Test Results
 
-All tests pass. 0 failures. (SyndicationFeedReader network tests excluded per CI policy.)
-
----
-
+All tests pass. 0 failures. (SyndicationFeedReader network tests excluded per CI policy.)
+---
 ## Decision: Phase 5 Complete — Send* Functions Dequeue SocialMediaPublishRequest
 
 **Date**: 2026-05-18  
@@ -587,7 +567,452 @@ LinkedIn Process* functions also had `IUserOAuthTokenManager` removed from const
   - `FacebookPostStatus.cs`
   - `LinkedInPostLink.cs`
 - These DTOs are no longer enqueued or dequeued by any function but may still be
-  referenced in test helpers or legacy code — verify before deleting.
-
+  referenced in test helpers or legacy code — verify before deleting.
+---
+### 2026-05-19T13:33:25: User directive
+**By:** Joe (via Copilot)
+**What:** All dates displayed in the web application must be shown in the local user's time. Use the `local-time` tag helper for every date/datetime value rendered in Razor views — no exceptions.
+**Why:** User request — captured for team memory
+---
+### 2026-05-18T16:51:26-07:00: User directive — Composers project
+**By:** Joseph Guadagno (via Copilot)
+**What:** Extract composition logic (`PostComposer` and future composers) into a dedicated class library `JosephGuadagno.Broadcasting.Composers`. This project will house all message/content composition concerns — social post composition today, email composition in the future. The pattern for email composition should mirror the pattern used for social post composition.
+**Why:** User request — `PostComposer` is a utility with no database dependencies, making it a natural fit for a standalone composable library. Separating it from `JosephGuadagno.Broadcasting.Managers` clarifies the layering: Managers = business logic + data orchestration; Composers = pure content transformation. The Web project can reference `Composers` directly (no DI boundary violation) since it contains no data access or Manager-level concerns.
+**Implications:**
+- New project: `src/JosephGuadagno.Broadcasting.Composers/JosephGuadagno.Broadcasting.Composers.csproj`
+- `PostComposer` moves from `JosephGuadagno.Broadcasting.Managers` to `JosephGuadagno.Broadcasting.Composers`
+- `IPostComposer` interface moves from `JosephGuadagno.Broadcasting.Domain.Interfaces` to either `JosephGuadagno.Broadcasting.Domain.Interfaces` (unchanged) or the new Composers project
+- All consumers (Functions, API, Web) reference the new project
+- Web project's DI registration of `IPostComposer` is valid once it comes from Composers (not Managers)
+- Future: `EmailComposer` follows the same pattern in the same project
+---
+### 2026-05-18T17:32:19-07:00: User directive — No hard-coded platform icons
+**By:** Joseph Guadagno (via Copilot)
+**What:** Never hard-code social media platform icons (Bootstrap icon class strings) in Razor views or C# code. Always source them from the `SocialMediaPlatforms` database table via the appropriate service.
+**Why:** User request — platform icons are stored in the DB and that is the authoritative source. Hard-coding creates drift if icons are changed in the DB.
+**Implication:** `SetupStatus` model needs a `PlatformSummary` record (Name + Icon) populated by `SetupService` via `ISocialMediaPlatformService`. Views bind to `Model.ConfiguredPublisherSummaries` rather than doing an inline dictionary lookup.
+---
+### 2026-05-18T18:31: User directive — user-facing pages are always user-scoped
 
+**By:** Joseph Guadagno (via Copilot)
 
+**What:**
+All user-facing pages (MessageTemplates, SocialMediaPlatforms, Publishers, Collectors, etc.) must
+only show data belonging to the currently authenticated user. Admin access to data across all users
+belongs exclusively in the dedicated Admin section (issue #975), not in user-facing controllers or
+service methods.
+
+**Implication for the API:**
+Any API controller action that currently branches on `User.IsSiteAdministrator()` to return
+all-users data on a user-facing endpoint must be refactored. The user-facing endpoint always
+returns the requesting user's data. Admin endpoints are separate routes under the Admin section.
+
+**Why:** User request — captured for team memory
+---
+### 2026-05-18T16:46:48-07:00: User directive
+**By:** Joseph Guadagno (via Copilot)
+**What:** The Web project (`JosephGuadagno.Broadcasting.Web`) must NEVER inject or register Manager classes directly. All business logic access must go through `IXxxService` HTTP-client wrapper interfaces defined in `JosephGuadagno.Broadcasting.Web.Interfaces`. This is a hard architectural boundary — not a style preference. Any PR that registers a Manager in Web's `Program.cs` or injects a Manager interface into a Web controller/service must be rejected.
+**Why:** User request — the rule existed but was not captured as a formal directive. Neo's agent missed it in a prior session, allowing `IMessageTemplateLookup` and `IPostComposer` to be incorrectly registered in the Web DI container. Captured so all agents carry this constraint going forward.
+---
+### 2026-05-19T10:59:48: User directive
+**By:** Joseph Guadagno (via Copilot)
+**What:** Do NOT suppress MSAL/IdentityModel debug log output in DEBUG builds. The verbose logging is intentionally kept visible locally so that issues like L1 cache misses remain detectable. The three MinimumLevel.Override calls added for Microsoft.Identity, Microsoft.IdentityModel, and MSAL in LoggingExtensions.cs should be reverted.
+**Why:** User preference — "if we had the MSAL excluded, we might not have found the issue"
+---
+# Neo — Issue #978 Complete: Post-Approval User Onboarding Setup Flow
+
+**Date**: 2026-05-18
+**Branch**: `issue-978-user-onboarding-flow`
+**PR**: https://github.com/jguadagno/jjgnet-broadcast/pull/982
+
+## What was built
+
+A post-approval user onboarding checklist that guides newly approved users through the three areas required to start broadcasting: Collectors, Publishers, and Message Templates.
+
+### Components
+
+| File | Purpose |
+|------|---------|
+| `Models/SetupStatus.cs` | Model with per-area booleans and `IsComplete` computed property |
+| `Interfaces/ISetupService.cs` | Single-method interface: `GetSetupStatusAsync(bool forceRefresh)` |
+| `Services/SetupService.cs` | Queries 8 existing Web services; caches result per-user (5 min IMemoryCache) |
+| `Controllers/SetupController.cs` | `/Setup` route, `RequireContributor` policy, always bypasses cache |
+| `ViewComponents/SetupStatusViewComponent.cs` | Nav badge component; reads cached status |
+| `Views/Setup/Index.cshtml` | 3-card checklist with per-step status and direct links to settings pages |
+| `Views/Shared/Components/SetupStatus/Default.cshtml` | Nav gear+warning badge; renders only when `!IsComplete` |
+
+Modified: `Program.cs` (service registration), `Views/Shared/_Layout.cshtml` (nav component invoke).
+
+## Design decisions
+
+### Checklist over wizard
+Issue #978 describes a checklist-style page with setup status cards. A multi-step wizard was considered but rejected because the three areas are independent — users may configure them in any order and come back at different times. The checklist links to existing settings pages, keeping code and maintenance surface minimal.
+
+### IMemoryCache with 5-minute TTL
+Each setup area makes API calls (collectors: 3 calls, publishers: 4 calls, templates: 1 call = 8 total). Rechecking all 8 on every page render (including the nav badge) would degrade performance. A 5-minute per-user cache in `IMemoryCache` (already a singleton in the app) balances freshness against overhead.
+
+`SetupController.Index` always calls `forceRefresh: true` so the checklist page always reflects the current state after a user saves settings in another tab.
+
+### No auto-redirect post-approval
+UserApprovalMiddleware gates authenticated routes. Once a user is approved, they land on the app. The nav badge signals incomplete setup but does not force redirect — users may explore before finishing. Forcing a redirect would be disruptive and was not requested in the issue.
+
+### Templates completion logic
+`HasMessageTemplates = configuredPublishers.Count == 0 || missingTemplatePlatforms.Count == 0`
+
+If no publishers are enabled, message templates are not yet actionable; the Templates step shows "Complete" until at least one publisher is configured. This avoids a confusing "incomplete" state when a brand new user has touched nothing yet.
+
+### `IHttpContextAccessor` registration
+`AddHttpContextAccessor()` was not previously registered explicitly in `Program.cs`. It is required by `SetupService` to resolve the current user's OID for the cache key. Added at the top of the service registration block.
+
+## Test results
+
+- Build: 0 errors, 0 new warnings
+- Tests: 1246 passed, 5 pre-existing failures (`MessageTemplateDataStoreTests` EF Core entity-tracking, present on `main` before this branch), 41 skipped
+---
+# ADR: Intersection-Based Template Completeness Check (#978)
+
+**Date:** 2026-05-18
+**Author:** Neo (Lead)
+**Branch:** issue-978-user-onboarding-flow
+**Status:** Implemented
+
+## Context
+
+The original `SetupService.BuildSetupStatusAsync()` checked template completeness by asking:
+*"Does every configured publisher platform have at least one template (of any message type)?"*
+
+This was too coarse. A user with a Twitter publisher and only a `RandomPost` template would be
+marked complete, even though they had no `NewSyndicationFeedItem` template for their RSS feed
+collector. Conversely, a user with only a SyndicationFeed collector was incorrectly required to
+have YouTube and SpeakingEngagement templates for publishers they'd enabled, even if they had
+zero YouTube/engagement collectors.
+
+## Decision
+
+Replace the per-platform check with an **intersection-based check**:
+
+> For each *(publisher × collector-type)* combination the user actually has configured,
+> a message template with that exact `(Platform, MessageType)` pair must exist.
+
+### Required-pair construction
+
+1. Determine which collector types the user has configured:
+   - `SyndicationFeedSource` → `MessageTypes.NewSyndicationFeedItem`
+   - `YouTubeChannel` → `MessageTypes.NewYouTubeItem`
+   - `SpeakingEngagement` → `MessageTypes.NewSpeakingEngagement`
+
+2. Determine which publishers are enabled (Bluesky, Twitter, LinkedIn, Facebook).
+
+3. Cross-product: `requiredPairs = configuredPublishers × collectorTypes`
+
+4. Fetch all user templates via `IMessageTemplateService.GetAllAsync(MaxPageSize)`.
+
+5. `missingTemplatePairs = requiredPairs ∖ existingTemplates`
+
+6. `HasMessageTemplates = publishers.Empty || collectors.Empty || missingPairs.Empty`
+
+### Example
+
+| Collectors | Publishers | Required templates |
+|---|---|---|
+| SyndicationFeed | Twitter, Bluesky | Twitter×NewSyndicationFeedItem, Bluesky×NewSyndicationFeedItem |
+| SyndicationFeed + YouTube | Twitter | Twitter×NewSyndicationFeedItem, Twitter×NewYouTubeItem |
+| (none) | Twitter | complete (vacuously) |
+| SyndicationFeed | (none) | complete (vacuously) |
+
+## Files Changed
+
+| File | Change |
+|---|---|
+| `Models/MissingTemplateKey.cs` | New `record MissingTemplateKey(string Platform, string MessageType)` |
+| `Models/SetupStatus.cs` | Added `ConfiguredCollectorTypes`, `MissingTemplatePairs`; updated `HasMessageTemplates` doc |
+| `Services/SetupService.cs` | Rewrote template check to intersection logic |
+| `Views/Setup/Index.cshtml` | Shows missing pairs as `Platform × MessageType` list items |
+
+## Alternatives Rejected
+
+**Per-platform check (previous):** Too coarse — passes when a publisher has a `RandomPost`
+template but no collector-specific template. Fails when a user lacks collector types that
+aren't relevant to their setup.
+
+**Individual API calls per pair:** Would replace the single `GetAllAsync` call with N×M API
+calls. Rejected — violates sequential-await convention and would cause overhead for users
+with many publishers/collectors.
+
+## Verification
+
+- `dotnet build .\src\ --no-restore --configuration Release` → Build succeeded, 0 errors
+- `dotnet test .\src\ --no-build --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"` → All tests passed
+---
+# Decision: Default Message Templates (Issue #979)
+
+**Date:** 2026-05-18  
+**Branch:** issue-979-default-message-templates  
+**PR:** #984  
+**Production migration:** Issue #983
+
+## Decision
+
+Add system-level default Scriban templates (empty-string `CreatedByEntraOid` = sentinel) that users can adopt with one click. No template is silently forced on existing users.
+
+## Key choices
+
+| Choice | Rationale |
+|--------|-----------|
+| Empty string `''` as system sentinel (not NULL, not a UUID) | NULL requires nullable FK logic; a special UUID would need constant management. Empty string is simple, safe, and self-describing. |
+| PK becomes triplet `(SocialMediaPlatformId, MessageType, CreatedByEntraOid)` | Allows both a system default and a per-user override to coexist for the same platform+type pair. |
+| `GetAsync(2-arg)` delegates to `GetAsync(3-arg, SystemOwnerEntraOid)` | Zero-change backward compatibility for Functions/publishers that always want the system default. |
+| Remove Forbid on non-owner GET/UPDATE | With the 3-arg lookup, the user can only ever retrieve or mutate their own row; a missing row returns 404, not 403. Simpler and correct. |
+| "Available Defaults" computed in Web controller (not API) | Minimises API round-trips; the gap between user templates and system defaults is a presentation concern. |
+| `data-seed.sql` uses IF NOT EXISTS guards | Idempotent: AppHost replays creation script for fresh environments without duplicate-key errors. |
+
+## What was NOT done
+
+- `IMessageTemplateLookup` composite interface (mentioned in issue for PostComposer) — deferred, out of scope.
+- Automatic migration of existing user rows — old rows keep their existing (possibly NULL) `CreatedByEntraOid`; production migration (#983) handles backfill.
+---
+# Decision: MsalDistributedTokenCacheAdapterOptions.AbsoluteExpirationRelativeToNow Affects L2 (SQL) Cache
+
+**Date:** 2026-05-19  
+**Author:** Neo  
+**Status:** PENDING APPROVAL — no code changes made yet  
+**Related commit:** `3af53e7f`
+---
+## Context
+
+When configuring `MsalDistributedTokenCacheAdapterOptions`, setting `AbsoluteExpirationRelativeToNow` does **not** only affect the L1 (in-memory) cache. It is also passed verbatim to `IDistributedCache.SetAsync()` as `DistributedCacheEntryOptions.AbsoluteExpirationRelativeToNow`, setting the L2/SQL `TokenCache` entry expiration.
+
+This was discovered by reading the Microsoft.Identity.Web source (`MsalDistributedTokenCacheAdapter.WriteCacheBytesAsync`):
+
+```csharp
+DistributedCacheEntryOptions distributedCacheEntryOptions = new DistributedCacheEntryOptions
+{
+    AbsoluteExpiration = cacheExpiry,
+    AbsoluteExpirationRelativeToNow = _distributedCacheOptions.AbsoluteExpirationRelativeToNow, // applied to L2
+    SlidingExpiration = _distributedCacheOptions.SlidingExpiration,
+};
+await _distributedCache.SetAsync(cacheKey, bytes, distributedCacheEntryOptions, ...);
+```
+
+## The Bug
+
+Commit `3af53e7f` set `AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)` intending to fix L1 TTL derivation. Side effect: SQL `TokenCache` entries now expire 15 minutes after the last write, overriding `DefaultSlidingExpiration = TimeSpan.FromDays(14)`. Users must re-login after any 15-minute idle period or app restart.
+
+## Decision
+
+**Do not set `AbsoluteExpirationRelativeToNow` to a short value** (e.g., minutes) in `MsalDistributedTokenCacheAdapterOptions` without understanding its L2 side-effect. L2 lifetime is controlled by `AddDistributedSqlServerCache(options => options.DefaultSlidingExpiration = ...)`.
+
+If a short L1 TTL is needed independently of L2, the `L1ExpirationTimeRatio` property on `MsalDistributedTokenCacheAdapterOptions` provides this — but it is `internal` in the current library version (4.9.0) and not publicly settable.
+
+## Recommended Configuration
+
+```csharp
+builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
+{
+    options.DisableL1Cache = false;
+    // Do NOT set AbsoluteExpirationRelativeToNow here — it overrides L2/SQL lifetime.
+    // L2 lifetime is governed by AddDistributedSqlServerCache DefaultSlidingExpiration (14 days).
+});
+```
+
+## Skill Update Needed
+
+The `msal-cache-handling` skill SKILL.md documents `AbsoluteExpirationRelativeToNow` as controlling "L1 TTL" and recommends `TimeSpan.FromMinutes(15)`. This is **incorrect for L2**: the same value propagates to SQL. The skill should be updated to warn about this behaviour and omit the property (or note the L2 risk).
+---
+# Decision: CollectorIcons static constants class for Web project
+
+**Date:** 2026-05-18  
+**Author:** Switch (Frontend Engineer)  
+**Requested by:** Joe
+
+## Context
+
+Collector type icons (RSS, YouTube, Speaking Engagement, and the overall Collectors section) were hard-coded as Bootstrap icon class strings scattered across multiple Razor views. Joe directed that these values be centralised so they stay consistent and are easy to update from one place.
+
+## Decision
+
+A `CollectorIcons` static constants class was created at:
+
+```
+src/JosephGuadagno.Broadcasting.Web/Constants/CollectorIcons.cs
+```
+
+### Structure
+
+| Member | Value |
+|--------|-------|
+| `CollectorIcons.Collection` | `bi-collection` |
+| `CollectorIcons.FeedSource.Icon` | `bi-rss` |
+| `CollectorIcons.FeedSource.Label` | `RSS / Atom Feed` |
+| `CollectorIcons.FeedSource.MessageType` | `NewSyndicationFeedItem` |
+| `CollectorIcons.YouTubeChannel.Icon` | `bi-youtube` |
+| `CollectorIcons.YouTubeChannel.Label` | `YouTube Channel` |
+| `CollectorIcons.YouTubeChannel.MessageType` | `NewYouTubeItem` |
+| `CollectorIcons.SpeakingEngagement.Icon` | `bi-mic-fill` |
+| `CollectorIcons.SpeakingEngagement.Label` | `Speaking Engagement` |
+| `CollectorIcons.SpeakingEngagement.MessageType` | `NewSpeakingEngagement` |
+| `CollectorIcons.ByMessageType` | `IReadOnlyDictionary<string, (Icon, Label)>` for Razor view lookups |
+
+## Convention
+
+- **Never hard-code `bi-rss`, `bi-youtube`, or `bi-mic-fill`** in Web Razor views. Always reference `CollectorIcons.*`.
+- The `ByMessageType` dictionary is the canonical source for views that map a string message type to a display badge (e.g., Setup/Index).
+- The namespace `JosephGuadagno.Broadcasting.Web.Constants` is registered in `_ViewImports.cshtml` for all regular views. For `_Layout.cshtml` (which does not inherit ViewImports), the `@using` directive is added at the top of the file.
+
+## Files Updated
+
+- `src/JosephGuadagno.Broadcasting.Web/Constants/CollectorIcons.cs` *(created)*
+- `src/JosephGuadagno.Broadcasting.Web/Views/_ViewImports.cshtml`
+- `src/JosephGuadagno.Broadcasting.Web/Views/Setup/Index.cshtml`
+- `src/JosephGuadagno.Broadcasting.Web/Views/CollectorSettings/Index.cshtml`
+- `src/JosephGuadagno.Broadcasting.Web/Views/CollectorFeedSources/Index.cshtml`
+- `src/JosephGuadagno.Broadcasting.Web/Views/CollectorYouTubeChannels/Index.cshtml`
+- `src/JosephGuadagno.Broadcasting.Web/Views/Shared/_Layout.cshtml`
+- `src/JosephGuadagno.Broadcasting.Web/Views/Shared/_LoginPartial.cshtml`
+- `src/JosephGuadagno.Broadcasting.Web/Views/SyndicationFeedItems/Index.cshtml`
+- `src/JosephGuadagno.Broadcasting.Web/Views/YouTubeItems/Index.cshtml`
+---
+# Decision: local-time tag helper is mandatory for all date displays
+
+**Date:** 2026-05-19  
+**Agent:** Switch  
+**Requested by:** Joe  
+
+## Directive applied
+
+All raw `.ToString()` date formatting in Razor views has been replaced with the `<local-time>` tag helper across the entire Web application. This directive is now recorded and enforced going forward.
+
+## Views updated (commit 536db628)
+
+| View | Fields fixed |
+|------|-------------|
+| `CollectorFeedSources/Details.cshtml` | `CreatedOn`, `LastUpdatedOn` |
+| `CollectorFeedSources/Delete.cshtml` | `CreatedOn` |
+| `CollectorFeedSources/Index.cshtml` | `item.CreatedOn` |
+| `CollectorYouTubeChannels/Details.cshtml` | `CreatedOn`, `LastUpdatedOn` |
+| `CollectorYouTubeChannels/Delete.cshtml` | `CreatedOn` |
+| `CollectorYouTubeChannels/Index.cshtml` | `item.CreatedOn` |
+| `CollectorSpeakingEngagements/Details.cshtml` | `CreatedOn`, `LastUpdatedOn` |
+| `CollectorSpeakingEngagements/Delete.cshtml` | `CreatedOn` |
+| `CollectorSpeakingEngagements/Index.cshtml` | `item.CreatedOn` |
+| `SyndicationFeedItems/Details.cshtml` | `PublicationDate`, `AddedOn`, `LastUpdatedOn` |
+| `SyndicationFeedItems/Delete.cshtml` | `PublicationDate` |
+| `YouTubeItems/Details.cshtml` | `PublicationDate`, `AddedOn`, `LastUpdatedOn` |
+| `YouTubeItems/Delete.cshtml` | `PublicationDate` |
+
+## Views verified as already compliant (no changes needed)
+
+- `SiteAdmin/Users.cshtml`
+- `Schedules/Index.cshtml`, `Orphaned.cshtml`, `Unsent.cshtml`, `Upcoming.cshtml`
+- `Engagements/Index.cshtml`, `Edit.cshtml`
+- `YouTubeItems/Index.cshtml`
+- `SyndicationFeedItems/Index.cshtml`
+
+## Rule going forward
+
+No new Razor view may use `.ToString("F")`, `.ToString("g")`, `.ToString("f")`, or any other date format string for display. Always use:
+
+```razor
+<local-time value="@Model.SomeDate" />
+```
+
+Use `date-only="true"` only for pure calendar-date fields with no time component.
+---
+# Decision: Scope MSAL L1 Cache Pin to Release Builds Only
+
+**Date:** 2026-05-19  
+**Author:** Trinity  
+**Status:** Accepted (Joe confirmed)
+
+## Context
+
+`MsalDistributedTokenCacheAdapterOptions.AbsoluteExpirationRelativeToNow` was added to `Web/Program.cs` to prevent the L1 (in-memory) token cache from evicting near-expiry tokens and triggering ~1.75s SQL reads on every request. However, this option applies to **both** the L1 and L2 (SQL distributed) cache layers. Setting it to 15 minutes unconditionally overrides the SQL store's 14-day sliding expiration, causing forced re-login after 15 minutes of inactivity or on every app restart.
+
+## Decision
+
+Wrap `options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);` in `#if !DEBUG` / `#endif`:
+
+```csharp
+builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
+{
+    options.DisableL1Cache = false;
+#if !DEBUG
+    options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+#endif
+});
+```
+
+## Consequences
+
+- **DEBUG (local dev):** `AbsoluteExpirationRelativeToNow` is not set → SQL cache retains 14-day sliding expiry → no forced re-login during development.
+- **Release (production):** `AbsoluteExpirationRelativeToNow = 15 min` remains → L1 cache pin prevents per-request SQL reads → production performance preserved.
+
+## Rule
+
+`MsalDistributedTokenCacheAdapterOptions` settings affect **both** cache layers. Any TTL-limiting option must be evaluated against the L2 (SQL/distributed) cache impact, not just L1.
+---
+# Decision: Sequential Awaits in OnboardingManager.ComputeIsOnboardedAsync
+
+**Date:** 2026-05-19  
+**Author:** Trinity  
+**Branch:** `issue-980-publisher-architecture-refactor`  
+**Commit:** cd55423b
+---
+## Decision
+
+`OnboardingManager.ComputeIsOnboardedAsync` was changed from `Task.WhenAll` parallel fan-out to sequential `await` calls.
+
+## Rationale
+
+All 8 data store calls share the same scoped `BroadcastingContext`. EF Core's `DbContext` is not thread-safe. The `Task.WhenAll` fan-out caused concurrent reads on the same connection, throwing:
+
+> `System.InvalidOperationException: BeginExecuteReader requires an open and available Connection. The connection's current state is closed.`
+
+This fired on any mutation that called `RecalculateAsync` (e.g., deleting a FeedSource).
+
+**Rule reinforced:** Never use `Task.WhenAll` when the underlying data stores share a single scoped `DbContext`. Use sequential `await` calls instead.
+---
+## IsActive Filtering in Collector Data Stores
+
+`GetByUserAsync` in the three collector data stores was missing the `IsActive` filter:
+
+- `UserCollectorFeedSourceDataStore.GetByUserAsync` — added `&& c.IsActive`
+- `UserCollectorYouTubeChannelDataStore.GetByUserAsync` — added `&& c.IsActive`
+- `UserCollectorSpeakingEngagementDataStore.GetByUserAsync` — added `&& c.IsActive`
+
+Inactive collectors (where `IsActive = false`) now correctly do NOT count toward a user's onboarded status.
+---
+## Publisher IsEnabled Handling
+
+Publisher data stores (`Bluesky`, `Twitter`, `LinkedIn`, `Facebook`) use `IsEnabled` (not `IsActive`) to indicate whether a platform is configured and active. `OnboardingManager` already checks `?.IsEnabled == true` for all four publishers — no change was needed.
+---
+### 2026-05-18: Web DI Layer Fix — Manager Classes Removed
+
+**By:** Trinity  
+**Branch:** `issue-980-publisher-architecture-refactor`  
+**Commit:** abc9737b  
+
+#### Decision
+
+The Web project (`JosephGuadagno.Broadcasting.Web`) must **never** register or inject Manager
+classes from `JosephGuadagno.Broadcasting.Managers` directly in its DI container, except for
+managers that have no Service API wrapper equivalent (e.g., `IUserApprovalManager`,
+`IEmailTemplateManager`).
+
+`PostComposer` and `MessageTemplateLookup` were removed from `Web/Program.cs` because:
+
+1. Neither is consumed by any Web controller, service, or middleware.
+2. Both require `ISocialMediaPlatformManager` in their constructor chain — a deep backend
+   dependency that must not leak into the Web layer.
+3. The Web project must reach message-template and composition logic via
+   `IMessageTemplateService` (HTTP client wrapper), not through direct Manager instantiation.
+
+#### Ownership of PostComposer and MessageTemplateLookup
+
+These classes belong in the **API** and **Functions** projects only, where direct Manager
+injection is permitted and appropriate.
+
+#### Hard Rule
+
+Any PR that registers a `JosephGuadagno.Broadcasting.Managers.*` concrete class in
+`Web/Program.cs` for a type that has a Service API wrapper must be rejected at review.
