@@ -6,11 +6,17 @@ using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
-public class MessageTemplateManager(IMessageTemplateDataStore messageTemplateDataStore, IMemoryCache cache)
+public class MessageTemplateManager(
+    IMessageTemplateDataStore messageTemplateDataStore,
+    IMemoryCache cache,
+    ISocialMediaPlatformManager socialMediaPlatformManager,
+    ILogger<MessageTemplateManager> logger)
 	: IMessageTemplateManager
 {
 	private const string CacheKeyAll = "MessageTemplate_All";
@@ -40,6 +46,21 @@ public class MessageTemplateManager(IMessageTemplateDataStore messageTemplateDat
             cache.Set(cacheKey, result, CacheOptions);
         }
         return result;
+    }
+
+    /// <inheritdoc />
+    public async Task<MessageTemplate?> GetAsync(string platformName, string messageType, string ownerEntraOid, CancellationToken cancellationToken = default)
+    {
+        var platform = await socialMediaPlatformManager.GetByNameAsync(platformName, cancellationToken);
+        if (platform is null)
+        {
+            logger.LogWarning(
+                "MessageTemplateManager: platform '{PlatformName}' not found — skipping template lookup.",
+                LogSanitizer.Sanitize(platformName));
+            return null;
+        }
+
+        return await GetAsync(platform.Id, messageType, ownerEntraOid, cancellationToken);
     }
 
     public async Task<List<MessageTemplate>> GetAllDefaultsAsync(CancellationToken cancellationToken = default)

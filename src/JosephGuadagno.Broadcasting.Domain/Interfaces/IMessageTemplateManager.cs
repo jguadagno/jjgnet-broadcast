@@ -8,6 +8,8 @@ public interface IMessageTemplateManager
     Task<MessageTemplate?> GetAsync(int socialMediaPlatformId, string messageType, CancellationToken cancellationToken = default);
     /// <summary>Gets a template by triplet key (platform, messageType, ownerEntraOid).</summary>
     Task<MessageTemplate?> GetAsync(int socialMediaPlatformId, string messageType, string ownerEntraOid, CancellationToken cancellationToken = default);
+    /// <summary>Gets a template by platform name, message type, and owner — resolves name to ID internally.</summary>
+    Task<MessageTemplate?> GetAsync(string platformName, string messageType, string ownerEntraOid, CancellationToken cancellationToken = default);
     Task<List<MessageTemplate>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<MessageTemplate?> UpdateAsync(MessageTemplate messageTemplate, CancellationToken cancellationToken = default);
     Task<MessageTemplate?> CreateAsync(MessageTemplate messageTemplate, CancellationToken cancellationToken = default);
