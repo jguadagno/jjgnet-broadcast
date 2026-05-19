@@ -60,12 +60,12 @@ public class UserCollectorYouTubeChannelManagerTests
         {
             new() { CreatedByEntraOid = ownerOid, ChannelId = "UCabc123" }
         };
-        _dataStore.Setup(d => d.GetByUserAsync(ownerOid, It.IsAny<CancellationToken>()))
+        _dataStore.Setup(d => d.GetByUserAsync(ownerOid, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
 
         var result = await _sut.GetByUserAsync(ownerOid);
 
         result.Should().BeEquivalentTo(expected);
-        _dataStore.Verify(d => d.GetByUserAsync(ownerOid, It.IsAny<CancellationToken>()), Times.Once);
+        _dataStore.Verify(d => d.GetByUserAsync(ownerOid, It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

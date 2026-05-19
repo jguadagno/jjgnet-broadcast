@@ -8,12 +8,13 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 public interface IUserCollectorSpeakingEngagementDataStore
 {
     /// <summary>
-    /// Retrieves all speaking engagement configurations for a specific user
+    /// Retrieves speaking engagement configurations for a specific user
     /// </summary>
     /// <param name="ownerOid">The Entra Object ID of the user</param>
+    /// <param name="activeOnly">When true, only returns active configurations; otherwise returns all</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of speaking engagement configurations for the user</returns>
-    Task<List<UserCollectorSpeakingEngagement>> GetByUserAsync(string ownerOid, CancellationToken cancellationToken = default);
+    Task<List<UserCollectorSpeakingEngagement>> GetByUserAsync(string ownerOid, bool activeOnly = false, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves a speaking engagement configuration by its ID

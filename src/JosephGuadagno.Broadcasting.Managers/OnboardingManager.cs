@@ -77,9 +77,9 @@ public class OnboardingManager(
         // Sequential awaits: all data stores share the same scoped BroadcastingContext.
         // EF Core's DbContext is not thread-safe — Task.WhenAll causes concurrent reads on the
         // same connection, which throws "BeginExecuteReader requires an open and available Connection."
-        var feedSources = await feedSourceDataStore.GetByUserAsync(entraOid, cancellationToken);
-        var youTubeChannels = await youTubeChannelDataStore.GetByUserAsync(entraOid, cancellationToken);
-        var speakingEngagements = await speakingEngagementDataStore.GetByUserAsync(entraOid, cancellationToken);
+        var feedSources = await feedSourceDataStore.GetByUserAsync(entraOid, activeOnly: true, cancellationToken);
+        var youTubeChannels = await youTubeChannelDataStore.GetByUserAsync(entraOid, activeOnly: true, cancellationToken);
+        var speakingEngagements = await speakingEngagementDataStore.GetByUserAsync(entraOid, activeOnly: true, cancellationToken);
 
         var hasCollector = feedSources.Count > 0
             || youTubeChannels.Count > 0

@@ -8,12 +8,13 @@ namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
 public interface IUserCollectorYouTubeChannelDataStore
 {
     /// <summary>
-    /// Retrieves all YouTube channel configurations for a specific user
+    /// Retrieves YouTube channel configurations for a specific user
     /// </summary>
     /// <param name="ownerOid">The Entra Object ID of the user</param>
+    /// <param name="activeOnly">When true, only returns active configurations; otherwise returns all</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of YouTube channel configurations for the user</returns>
-    Task<List<UserCollectorYouTubeChannel>> GetByUserAsync(string ownerOid, CancellationToken cancellationToken = default);
+    Task<List<UserCollectorYouTubeChannel>> GetByUserAsync(string ownerOid, bool activeOnly = false, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Retrieves a YouTube channel configuration by its ID

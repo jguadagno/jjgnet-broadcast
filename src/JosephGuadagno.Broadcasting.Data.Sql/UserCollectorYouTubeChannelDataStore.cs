@@ -17,13 +17,20 @@ public class UserCollectorYouTubeChannelDataStore(
 {
     /// <inheritdoc />
     public async Task<List<UserCollectorYouTubeChannel>> GetByUserAsync(
-        string ownerOid, CancellationToken cancellationToken = default)
+        string ownerOid, bool activeOnly = false, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
 
-        var entities = await broadcastingContext.UserCollectorYouTubeChannels
+        var query = broadcastingContext.UserCollectorYouTubeChannels
             .AsNoTracking()
-            .Where(c => c.CreatedByEntraOid == ownerOid && c.IsActive)
+            .Where(c => c.CreatedByEntraOid == ownerOid);
+
+        if (activeOnly)
+        {
+            query = query.Where(c => c.IsActive);
+        }
+
+        var entities = await query
             .OrderBy(c => c.DisplayName)
             .ToListAsync(cancellationToken);
 
