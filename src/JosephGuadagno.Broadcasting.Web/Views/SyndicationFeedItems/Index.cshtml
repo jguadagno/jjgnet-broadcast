@@ -15,7 +15,7 @@
 }
 
 <div class="d-flex justify-content-between mb-3">
-    <h1><i class="bi bi-rss me-2"></i>Syndication Feed Items</h1>
+    <h1><i class="bi @CollectorIcons.FeedSource.Icon me-2"></i>Syndication Feed Items</h1>
 </div>
 <p class="lead">
     A list of all of the syndication items that the system has retrieved
@@ -103,6 +103,6 @@ else
      User.IsInRole(RoleNames.SiteAdministrator))
 {
     <a asp-action="Add" asp-controller="SyndicationFeedItems" class="btn btn-primary">
-        <i class="bi bi-rss me-2"></i>Add New Syndication Feed Source
+        <i class="bi @CollectorIcons.FeedSource.Icon me-2"></i>Add New Syndication Feed Source
     </a>
 }

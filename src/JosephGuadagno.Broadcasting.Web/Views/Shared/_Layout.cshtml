@@ -1,3 +1,4 @@
+@using JosephGuadagno.Broadcasting.Web.Constants
 @inject Microsoft.Extensions.Options.IOptions<Settings> SettingsOptions;
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
@@ -85,12 +86,12 @@
                                 </li>
                                 <li>
                                     <a class="dropdown-item" asp-area="" asp-controller="SyndicationFeedItems" asp-action="Index">
-                                        <i class="bi bi-rss me-2"></i>Syndication Feed Items
+                                        <i class="bi @CollectorIcons.FeedSource.Icon me-2"></i>Syndication Feed Items
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item" asp-area="" asp-controller="YouTubeItems" asp-action="Index">
-                                        <i class="bi bi-youtube me-2"></i>YouTube Items
+                                        <i class="bi @CollectorIcons.YouTubeChannel.Icon me-2"></i>YouTube Items
                                     </a>
                                 </li>
                             </ul>
