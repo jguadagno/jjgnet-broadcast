@@ -2,6 +2,20 @@
 
 @{
     ViewData["Title"] = "Account Setup";
+
+    var collectorDisplayMap = new Dictionary<string, (string Icon, string Label)>
+    {
+        ["NewSyndicationFeedItem"] = ("bi-rss", "RSS / Atom Feed"),
+        ["NewYouTubeItem"]         = ("bi-youtube", "YouTube Channel"),
+        ["NewSpeakingEngagement"]  = ("bi-mic-fill", "Speaking Engagement"),
+    };
+    var publisherDisplayMap = new Dictionary<string, (string Icon, string Label)>
+    {
+        ["Twitter"]  = ("bi-twitter-x", "Twitter"),
+        ["Bluesky"]  = ("bi-bluesky",   "Bluesky"),
+        ["LinkedIn"] = ("bi-linkedin",  "LinkedIn"),
+        ["Facebook"] = ("bi-facebook",  "Facebook"),
+    };
 }
 
 <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
@@ -76,6 +90,19 @@ else
                     Collectors gather content to broadcast — RSS / Atom / JSON feeds, YouTube channels,
                     or speaking engagements. Add at least one source to get started.
                 </p>
+                @if (Model.ConfiguredCollectorTypes.Count > 0)
+                {
+                    <p class="mb-2">
+                        <strong>Configured:</strong>
+                        @foreach (var collectorType in Model.ConfiguredCollectorTypes)
+                        {
+                            var display = collectorDisplayMap.GetValueOrDefault(collectorType, (Icon: "bi-collection", Label: collectorType));
+                            <span class="badge text-bg-success ms-1">
+                                <i class="bi @display.Icon me-1"></i>@display.Label
+                            </span>
+                        }
+                    </p>
+                }
                 @if (Model.HasCollector)
                 {
                     <a asp-controller="CollectorSettings" asp-action="Index" class="btn btn-outline-success">
@@ -131,7 +158,10 @@ else
                         <strong>Enabled:</strong>
                         @foreach (var platform in Model.ConfiguredPublisherPlatforms)
                         {
-                            <span class="badge text-bg-success ms-1">@platform</span>
+                            var display = publisherDisplayMap.GetValueOrDefault(platform, (Icon: "bi-broadcast", Label: platform));
+                            <span class="badge text-bg-success ms-1">
+                                <i class="bi @display.Icon me-1"></i>@display.Label
+                            </span>
                         }
                     </p>
                 }
