@@ -37,13 +37,13 @@
                 }
                 
                 <dt class="col-sm-3">Publication Date</dt>
-                <dd class="col-sm-9">@Model.PublicationDate.ToString("F")</dd>
+                <dd class="col-sm-9"><local-time value="@Model.PublicationDate" /></dd>
                 
                 <dt class="col-sm-3">Added On</dt>
-                <dd class="col-sm-9">@Model.AddedOn.ToString("F")</dd>
+                <dd class="col-sm-9"><local-time value="@Model.AddedOn" /></dd>
                 
                 <dt class="col-sm-3">Last Updated</dt>
-                <dd class="col-sm-9">@Model.LastUpdatedOn.ToString("F")</dd>
+                <dd class="col-sm-9"><local-time value="@Model.LastUpdatedOn" /></dd>
             </dl>
         </div>
     </div>

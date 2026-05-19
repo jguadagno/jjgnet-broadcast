@@ -92,7 +92,7 @@ else
                         <span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Inactive</span>
                     }
                 </td>
-                <td>@item.CreatedOn.ToString("g")</td>
+                <td><local-time value="@item.CreatedOn" /></td>
                 <td class="text-end">
                     <a asp-action="Details" asp-controller="CollectorFeedSources" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-eye"></i>
