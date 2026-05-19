@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.5.11619.145 insiders
+VisualStudioVersion = 18.5.11619.145
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.Domain", "JosephGuadagno.Broadcasting.Domain\JosephGuadagno.Broadcasting.Domain.csproj", "{5B756462-15B1-43FB-BFB0-26B945FFD454}"
 EndProject
@@ -192,6 +192,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Squad", "Squad", "{00FC7229
 		..\.github\agents\squad.agent.md = ..\.github\agents\squad.agent.md
 		..\.squad\ceremonies.md = ..\.squad\ceremonies.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JosephGuadagno.Broadcasting.Composers", "JosephGuadagno.Broadcasting.Composers\JosephGuadagno.Broadcasting.Composers.csproj", "{49B869C5-C665-4213-ACDA-8F8228821349}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -707,6 +709,18 @@ Global
 		{C0290E8A-0B94-4B4F-BFA8-10ABE38467BE}.Release|x64.Build.0 = Release|Any CPU
 		{C0290E8A-0B94-4B4F-BFA8-10ABE38467BE}.Release|x86.ActiveCfg = Release|Any CPU
 		{C0290E8A-0B94-4B4F-BFA8-10ABE38467BE}.Release|x86.Build.0 = Release|Any CPU
+		{49B869C5-C665-4213-ACDA-8F8228821349}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49B869C5-C665-4213-ACDA-8F8228821349}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49B869C5-C665-4213-ACDA-8F8228821349}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{49B869C5-C665-4213-ACDA-8F8228821349}.Debug|x64.Build.0 = Debug|Any CPU
+		{49B869C5-C665-4213-ACDA-8F8228821349}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{49B869C5-C665-4213-ACDA-8F8228821349}.Debug|x86.Build.0 = Debug|Any CPU
+		{49B869C5-C665-4213-ACDA-8F8228821349}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49B869C5-C665-4213-ACDA-8F8228821349}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49B869C5-C665-4213-ACDA-8F8228821349}.Release|x64.ActiveCfg = Release|Any CPU
+		{49B869C5-C665-4213-ACDA-8F8228821349}.Release|x64.Build.0 = Release|Any CPU
+		{49B869C5-C665-4213-ACDA-8F8228821349}.Release|x86.ActiveCfg = Release|Any CPU
+		{49B869C5-C665-4213-ACDA-8F8228821349}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

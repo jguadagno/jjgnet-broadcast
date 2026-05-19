@@ -75,6 +75,7 @@
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj" />
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.Serilog\JosephGuadagno.Broadcasting.Serilog.csproj" />
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.ServiceDefaults\JosephGuadagno.Broadcasting.ServiceDefaults.csproj" />
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Composers\JosephGuadagno.Broadcasting.Composers.csproj" />
     </ItemGroup>
     <ItemGroup>
         <None Remove=".gitignore" />

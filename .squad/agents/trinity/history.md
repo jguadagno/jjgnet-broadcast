@@ -42,9 +42,24 @@ Trinity (Backend API Developer) implements core API functionality including CRUD
 
 ---
 
+### 2026-05-18 — Fix Web DI: Remove PostComposer + MessageTemplateLookup Registrations
+
+**Status:** ✅ COMPLETE — commit abc9737b; build succeeded, all tests passed (0 errors)
+
+**What was delivered:**
+- Removed `services.TryAddScoped<IPostComposer, PostComposer>();` and its comment from `Web/Program.cs`
+- Removed `services.TryAddScoped<IMessageTemplateLookup, MessageTemplateLookup>();` and its comment from `Web/Program.cs`
+- Both classes depend on `ISocialMediaPlatformManager` which is a backend-only concern; their presence in Web DI caused an `InvalidOperationException` at startup
+- `using JosephGuadagno.Broadcasting.Managers;` retained — still needed by `UserApprovalManager`, `EmailTemplateManager`, `UserOAuthTokenManager`
+- Decision filed: `.squad/decisions/inbox/trinity-web-di-layer-fix.md`
+
+---
+
 ## Learnings (Recent)
 
 Trinity focuses on vertical API→Manager→Data patterns. Self-contained controller + service + DTOs per publisher/collector minimizes shared code. Each platform is independent — adding/removing doesn't require big refactors.
+
+**Web DI boundary is hard:** The Web project must only register Service API wrappers (`IXxxService`), not Manager classes. If a Manager has no corresponding `IXxxService`, that is a design signal to create one — not to bypass the layer. Direct Manager injection into Web is only acceptable for cross-cutting concerns (`IUserApprovalManager`, `IEmailTemplateManager`) that have no HTTP API surface.
 
 ---
 

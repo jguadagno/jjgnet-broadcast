@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Composers;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Constants;
@@ -281,6 +282,9 @@ void ConfigureApplication(IServiceCollection services)
 
     // RBAC Phase 1
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
+
+    // PostComposer — pure Scriban renderer (from Composers project, no DB/network dependency)
+    services.TryAddScoped<IPostComposer, PostComposer>();
 
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();

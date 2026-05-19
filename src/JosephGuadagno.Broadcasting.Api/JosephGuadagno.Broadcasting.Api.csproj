@@ -68,6 +68,7 @@
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.Serilog\JosephGuadagno.Broadcasting.Serilog.csproj" />
     <ProjectReference Include="..\JosephGuadagno.Broadcasting.ServiceDefaults\JosephGuadagno.Broadcasting.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\JosephGuadagno.Broadcasting.Composers\JosephGuadagno.Broadcasting.Composers.csproj" />
   </ItemGroup>
   <ItemGroup>
     <_ContentIncludedByDefault Remove="wwwroot\imgs\favicon\apple-touch-icon-114x114.png" />

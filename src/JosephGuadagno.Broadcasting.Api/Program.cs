@@ -4,6 +4,7 @@ using JosephGuadagno.Broadcasting.Api.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using JosephGuadagno.Broadcasting.Api.Models;
 using Microsoft.AspNetCore.RateLimiting;
+using JosephGuadagno.Broadcasting.Composers;
 using JosephGuadagno.Broadcasting.Data.Sql;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;

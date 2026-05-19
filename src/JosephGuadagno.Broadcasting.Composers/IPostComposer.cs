@@ -1,7 +1,7 @@
-namespace JosephGuadagno.Broadcasting.Domain.Interfaces;
+namespace JosephGuadagno.Broadcasting.Composers;
 
 /// <summary>
-/// Renders a Scriban message template using content fields from a <see cref="Models.SocialMediaPublishRequest"/>.
+/// Renders a Scriban message template using content fields from a <see cref="JosephGuadagno.Broadcasting.Domain.Models.SocialMediaPublishRequest"/>.
 /// </summary>
 public interface IPostComposer
 {
@@ -16,7 +16,7 @@ public interface IPostComposer
     /// The rendered string if rendering succeeds and the result is non-empty; otherwise <c>null</c>.
     /// </returns>
     Task<string?> ComposeAsync(
-        Models.SocialMediaPublishRequest request,
+        Domain.Models.SocialMediaPublishRequest request,
         string templateContent,
         CancellationToken cancellationToken = default);
 }

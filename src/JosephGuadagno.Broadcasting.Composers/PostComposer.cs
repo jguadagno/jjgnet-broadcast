@@ -2,13 +2,12 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.Extensions.Logging;
 using Scriban;
 using Scriban.Runtime;
 
-namespace JosephGuadagno.Broadcasting.Managers;
+namespace JosephGuadagno.Broadcasting.Composers;
 
 /// <summary>
 /// Renders Scriban message templates using content fields from a <see cref="SocialMediaPublishRequest"/>.
