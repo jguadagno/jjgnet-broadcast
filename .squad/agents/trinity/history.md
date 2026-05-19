@@ -55,6 +55,25 @@ Trinity (Backend API Developer) implements core API functionality including CRUD
 
 ---
 
+### 2026-05-19 — Fix: Task.WhenAll → Sequential Awaits in OnboardingManager
+
+**Status:** ✅ COMPLETE — commit cd55423b; all tests passed (0 failures, 0 warnings)
+
+**Root cause:**
+`OnboardingManager.ComputeIsOnboardedAsync` fanned out 8 data store calls with `Task.WhenAll`. All 8 data stores share the same scoped `BroadcastingContext`. EF Core's DbContext is not thread-safe — concurrent reads threw:
+> "BeginExecuteReader requires an open and available Connection. The connection's current state is closed."
+
+**Fix:**
+Replaced `Task.WhenAll` with sequential `await` calls for all 8 data store operations. Removed misleading comment claiming "no shared DbContext scope". Added explanatory comment clarifying WHY sequential awaits are required.
+
+**IsActive filter added:**
+All three collector data stores (`UserCollectorFeedSourceDataStore`, `UserCollectorYouTubeChannelDataStore`, `UserCollectorSpeakingEngagementDataStore`) were missing `IsActive` filter in `GetByUserAsync`. Added `&& c.IsActive` to each query so only active collectors count toward onboarding.
+
+**Publisher note:**
+Publisher data stores use `IsEnabled` (not `IsActive`). `OnboardingManager` already checks `?.IsEnabled == true` — no change needed.
+
+---
+
 ## Learnings (Recent)
 
 Trinity focuses on vertical API→Manager→Data patterns. Self-contained controller + service + DTOs per publisher/collector minimizes shared code. Each platform is independent — adding/removing doesn't require big refactors.
