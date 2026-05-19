@@ -207,7 +207,7 @@ public class CollectorFeedSourcesController(
     /// <summary>
     /// Deletes a feed source after confirmation.
     /// </summary>
-    [HttpPost("Delete")]
+    [HttpPost("Delete/{id}")]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]

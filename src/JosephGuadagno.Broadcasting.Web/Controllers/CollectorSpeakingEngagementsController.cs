@@ -207,7 +207,7 @@ public class CollectorSpeakingEngagementsController(
     /// <summary>
     /// Deletes a speaking engagement configuration after confirmation.
     /// </summary>
-    [HttpPost("Delete")]
+    [HttpPost("Delete/{id}")]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]

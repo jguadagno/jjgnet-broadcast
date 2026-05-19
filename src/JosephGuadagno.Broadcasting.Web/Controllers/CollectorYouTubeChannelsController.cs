@@ -215,7 +215,7 @@ public class CollectorYouTubeChannelsController(
     /// <summary>
     /// Deletes a YouTube channel configuration after confirmation.
     /// </summary>
-    [HttpPost("Delete")]
+    [HttpPost("Delete/{id}")]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
