@@ -17,20 +17,19 @@
             <input type="hidden" asp-for="Platform" />
             <input type="hidden" asp-for="MessageType" />
             <input type="hidden" asp-for="CreatedByEntraOid" />
+            <input type="hidden" asp-for="Description" />
 
             <div class="mb-3">
-                <label class="form-label">Platform</label>
-                <input type="text" class="form-control" value="@Model.Platform" readonly />
+                <label class="form-label fw-semibold">Platform</label>
+                <p class="form-control-plaintext">@Model.Platform</p>
             </div>
             <div class="mb-3">
-                <label class="form-label">Message Type</label>
-                <input type="text" class="form-control" value="@Model.MessageType" readonly />
+                <label class="form-label fw-semibold">Message Type</label>
+                <p class="form-control-plaintext">@Model.MessageType</p>
             </div>
             <div class="mb-3">
-                <label asp-for="Description" class="form-label">Description</label>
-                <input asp-for="Description" type="text" class="form-control"
-                       placeholder="Optional description of this template" autocomplete="off" aria-describedby="val-Description" />
-                <span id="val-Description" asp-validation-for="Description" class="text-danger"></span>
+                <label class="form-label fw-semibold">Description</label>
+                <p class="form-control-plaintext text-muted">@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</p>
             </div>
             <div class="mb-3">
                 <label asp-for="Template" class="form-label">Template</label>
