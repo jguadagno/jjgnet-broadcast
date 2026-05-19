@@ -23,7 +23,7 @@ public class UserCollectorFeedSourceDataStore(
 
         var entities = await broadcastingContext.UserCollectorFeedSources
             .AsNoTracking()
-            .Where(c => c.CreatedByEntraOid == ownerOid)
+            .Where(c => c.CreatedByEntraOid == ownerOid && c.IsActive)
             .OrderBy(c => c.DisplayName)
             .ToListAsync(cancellationToken);
 

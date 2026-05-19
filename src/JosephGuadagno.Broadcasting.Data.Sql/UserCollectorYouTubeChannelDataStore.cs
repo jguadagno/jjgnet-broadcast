@@ -23,7 +23,7 @@ public class UserCollectorYouTubeChannelDataStore(
 
         var entities = await broadcastingContext.UserCollectorYouTubeChannels
             .AsNoTracking()
-            .Where(c => c.CreatedByEntraOid == ownerOid)
+            .Where(c => c.CreatedByEntraOid == ownerOid && c.IsActive)
             .OrderBy(c => c.DisplayName)
             .ToListAsync(cancellationToken);
 

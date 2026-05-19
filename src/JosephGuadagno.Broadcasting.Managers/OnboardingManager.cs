@@ -74,25 +74,12 @@ public class OnboardingManager(
 
     private async Task<bool> ComputeIsOnboardedAsync(string entraOid, CancellationToken cancellationToken)
     {
-        // Parallel fan-out: all queries are independent HTTP/DB calls with no shared DbContext scope.
-        var feedSourcesTask = feedSourceDataStore.GetByUserAsync(entraOid, cancellationToken);
-        var youTubeChannelsTask = youTubeChannelDataStore.GetByUserAsync(entraOid, cancellationToken);
-        var speakingEngagementsTask = speakingEngagementDataStore.GetByUserAsync(entraOid, cancellationToken);
-        var blueskyTask = blueskyDataStore.GetByUserAsync(entraOid, cancellationToken);
-        var twitterTask = twitterDataStore.GetByUserAsync(entraOid, cancellationToken);
-        var linkedInTask = linkedInDataStore.GetByUserAsync(entraOid, cancellationToken);
-        var facebookTask = facebookDataStore.GetByUserAsync(entraOid, cancellationToken);
-        var templatesTask = messageTemplateDataStore.GetAllAsync(entraOid, cancellationToken);
-
-        await Task.WhenAll(
-            feedSourcesTask, youTubeChannelsTask, speakingEngagementsTask,
-            blueskyTask, twitterTask, linkedInTask, facebookTask,
-            templatesTask);
-
-        // Collectors
-        var feedSources = await feedSourcesTask;
-        var youTubeChannels = await youTubeChannelsTask;
-        var speakingEngagements = await speakingEngagementsTask;
+        // Sequential awaits: all data stores share the same scoped BroadcastingContext.
+        // EF Core's DbContext is not thread-safe — Task.WhenAll causes concurrent reads on the
+        // same connection, which throws "BeginExecuteReader requires an open and available Connection."
+        var feedSources = await feedSourceDataStore.GetByUserAsync(entraOid, cancellationToken);
+        var youTubeChannels = await youTubeChannelDataStore.GetByUserAsync(entraOid, cancellationToken);
+        var speakingEngagements = await speakingEngagementDataStore.GetByUserAsync(entraOid, cancellationToken);
 
         var hasCollector = feedSources.Count > 0
             || youTubeChannels.Count > 0
@@ -104,10 +91,10 @@ public class OnboardingManager(
         if (speakingEngagements.Count > 0) collectorTypes.Add(MessageTemplates.MessageTypes.NewSpeakingEngagement);
 
         // Publishers — only enabled ones count
-        var bluesky = await blueskyTask;
-        var twitter = await twitterTask;
-        var linkedIn = await linkedInTask;
-        var facebook = await facebookTask;
+        var bluesky = await blueskyDataStore.GetByUserAsync(entraOid, cancellationToken);
+        var twitter = await twitterDataStore.GetByUserAsync(entraOid, cancellationToken);
+        var linkedIn = await linkedInDataStore.GetByUserAsync(entraOid, cancellationToken);
+        var facebook = await facebookDataStore.GetByUserAsync(entraOid, cancellationToken);
 
         var configuredPublishers = new List<string>();
         if (bluesky?.IsEnabled == true) configuredPublishers.Add(MessageTemplates.Platforms.Bluesky);
@@ -118,9 +105,10 @@ public class OnboardingManager(
         var hasPublisher = configuredPublishers.Count > 0;
 
         // Message templates — vacuously complete when there are no publishers or no collectors
+        var templates = await messageTemplateDataStore.GetAllAsync(entraOid, cancellationToken);
         var hasMessageTemplates = configuredPublishers.Count == 0
             || collectorTypes.Count == 0
-            || await HasAllRequiredTemplatesAsync(await templatesTask, configuredPublishers, collectorTypes);
+            || await HasAllRequiredTemplatesAsync(templates, configuredPublishers, collectorTypes);
 
         return hasCollector && hasPublisher && hasMessageTemplates;
     }

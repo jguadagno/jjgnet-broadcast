@@ -23,7 +23,7 @@ public class UserCollectorSpeakingEngagementDataStore(
 
         var entities = await broadcastingContext.UserCollectorSpeakingEngagements
             .AsNoTracking()
-            .Where(c => c.CreatedByEntraOid == ownerOid)
+            .Where(c => c.CreatedByEntraOid == ownerOid && c.IsActive)
             .OrderBy(c => c.DisplayName)
             .ToListAsync(cancellationToken);
 
