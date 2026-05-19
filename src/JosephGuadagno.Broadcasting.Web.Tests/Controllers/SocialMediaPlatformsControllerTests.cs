@@ -41,13 +41,13 @@ public class SocialMediaPlatformsControllerTests
         var platforms = new List<SocialMediaPlatform>
         {
             new SocialMediaPlatform { Id = 1, Name = "Twitter", IsActive = true },
-            new SocialMediaPlatform { Id = 2, Name = "BlueSky", IsActive = false }
+            new SocialMediaPlatform { Id = 2, Name = "Bluesky", IsActive = false }
         };
         var pagedResult = new PagedResult<SocialMediaPlatform> { Items = platforms, TotalCount = 2 };
         var viewModels = new List<SocialMediaPlatformViewModel>
         {
             new SocialMediaPlatformViewModel { Id = 1, Name = "Twitter", IsActive = true },
-            new SocialMediaPlatformViewModel { Id = 2, Name = "BlueSky", IsActive = false }
+            new SocialMediaPlatformViewModel { Id = 2, Name = "Bluesky", IsActive = false }
         };
         _platformService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<bool>())).ReturnsAsync(pagedResult);
         _mapper.Setup(m => m.Map<List<SocialMediaPlatformViewModel>>(platforms)).Returns(viewModels);

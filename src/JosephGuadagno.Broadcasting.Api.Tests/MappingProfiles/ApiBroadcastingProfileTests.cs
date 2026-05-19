@@ -11,7 +11,7 @@ public class ApiBroadcastingProfileTests
 {
     private static readonly string[] RemovedEngagementFields =
     [
-        nameof(EngagementContract.BlueSkyHandle),
+        nameof(EngagementContract.BlueskyHandle),
         nameof(EngagementContract.ConferenceHashtag),
         nameof(EngagementContract.ConferenceTwitterHandle)
     ];
@@ -79,7 +79,7 @@ public class ApiBroadcastingProfileTests
 
     private sealed class EngagementContract
     {
-        public string? BlueSkyHandle { get; init; }
+        public string? BlueskyHandle { get; init; }
         public string? ConferenceHashtag { get; init; }
         public string? ConferenceTwitterHandle { get; init; }
     }

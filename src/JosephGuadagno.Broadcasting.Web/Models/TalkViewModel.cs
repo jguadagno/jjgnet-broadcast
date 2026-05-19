@@ -7,49 +7,49 @@ namespace JosephGuadagno.Broadcasting.Web.Models;
 /// </summary>
 public class TalkViewModel
 {
-        
+
     /// <summary>
     /// The identifier for the talk
     /// </summary>
     public int Id { get; set; }
-        
+
     /// <summary>
     /// The name of the talk
     /// </summary>
     [Required]
     public string Name { get; set; } = null!;
-        
+
     /// <summary>
     /// A Url for the talk on the conference website
     /// </summary>
     [Required]
     [Url]
     public string UrlForConferenceTalk { get; set; } = null!;
-        
+
     /// <summary>
     /// The Url for the talk on the talk deliverers website
     /// </summary>
     [Required]
     [Url]
     public string UrlForTalk { get; set; } = null!;
-        
+
     /// <summary>
     /// The start date and time of the talk
     /// </summary>
     [Required]
     public DateTimeOffset StartDateTime { get; set; }
-        
+
     /// <summary>
     /// The end date and time of the talk
     /// </summary>
     [Required]
     public DateTimeOffset EndDateTime { get; set; }
-    
+
     /// <summary>
     /// The room/channel/url for the talk
     /// </summary>
     public string? TalkLocation { get; set; }
-        
+
     /// <summary>
     /// Comments for the talk
     /// </summary>
@@ -63,6 +63,6 @@ public class TalkViewModel
     /// <summary>
     /// The Bluesky handle associated with this talk
     /// </summary>
-    public string? BlueSkyHandle { get; set; }
+    public string? BlueskyHandle { get; set; }
 
 }

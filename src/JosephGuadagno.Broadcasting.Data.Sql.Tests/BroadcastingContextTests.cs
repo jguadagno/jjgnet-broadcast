@@ -220,7 +220,7 @@ public class BroadcastingContextTests : IDisposable
         // Arrange
         var platform = new SocialMediaPlatform
         {
-            Name = "BlueSky",
+            Name = "Bluesky",
             Url = "https://bsky.app",
             Icon = "bi-bluesky",
             IsActive = true
@@ -248,7 +248,7 @@ public class BroadcastingContextTests : IDisposable
             .FirstOrDefaultAsync(item => item.Id == setting.Id);
         Assert.NotNull(retrieved);
         Assert.Equal("owner-oid", retrieved.CreatedByEntraOid);
-        Assert.Equal("BlueSky", retrieved.SocialMediaPlatform.Name);
+        Assert.Equal("Bluesky", retrieved.SocialMediaPlatform.Name);
         Assert.True(retrieved.IsEnabled);
     }
 }

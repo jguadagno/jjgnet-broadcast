@@ -37,7 +37,7 @@ public class WebMappingProfile: Profile
             .ForMember(destination => destination.PlatformIcon,
                 options => options.MapFrom(source => source.SocialMediaPlatform != null ? source.SocialMediaPlatform.Icon : null));
         CreateMap<Domain.Models.Talk, Models.TalkViewModel>()
-            .ForMember(destination => destination.BlueSkyHandle, options => options.Ignore());
+            .ForMember(destination => destination.BlueskyHandle, options => options.Ignore());
         CreateMap<Domain.Models.ScheduledItem, Models.ScheduledItemViewModel>()
             .ForMember(
                 destination => destination.ItemTableName,
@@ -47,10 +47,10 @@ public class WebMappingProfile: Profile
                 options => options.MapFrom(source => source.ItemType))
             .ForMember(destination => destination.Platform, options => options.Ignore());
         CreateMap<Domain.Models.MessageTemplate, Models.MessageTemplateViewModel>();
-        
+
         // RBAC Phase 1 mappings
         CreateMap<Domain.Models.ApplicationUser, Models.ApplicationUserViewModel>();
-        
+
         // RBAC Phase 2 mappings
         CreateMap<Domain.Models.Role, Models.RoleViewModel>();
 
@@ -62,7 +62,7 @@ public class WebMappingProfile: Profile
         CreateMap<Domain.Models.YouTubeItem, Models.YouTubeItemViewModel>()
             .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => string.Join(", ", src.Tags)));
         CreateMap<Models.YouTubeItemViewModel, Domain.Models.YouTubeItem>()
-            .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => 
+            .ForMember(dest => dest.Tags, opt => opt.MapFrom(src =>
                 string.IsNullOrWhiteSpace(src.Tags) ? new List<string>() : src.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList()))
             .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore())
             .ForMember(dest => dest.ItemLastUpdatedOn, opt => opt.Ignore());
@@ -71,7 +71,7 @@ public class WebMappingProfile: Profile
         CreateMap<Domain.Models.SyndicationFeedItem, Models.SyndicationFeedItemViewModel>()
             .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => string.Join(", ", src.Tags)));
         CreateMap<Models.SyndicationFeedItemViewModel, Domain.Models.SyndicationFeedItem>()
-            .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => 
+            .ForMember(dest => dest.Tags, opt => opt.MapFrom(src =>
                 string.IsNullOrWhiteSpace(src.Tags) ? new List<string>() : src.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList()))
             .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore())
             .ForMember(dest => dest.ItemLastUpdatedOn, opt => opt.Ignore());

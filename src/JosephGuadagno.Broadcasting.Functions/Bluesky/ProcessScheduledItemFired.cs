@@ -82,7 +82,7 @@ public class ProcessScheduledItemFired(
                 { "text", composedText }
             };
             logger.LogCustomEvent(Metrics.BlueskyProcessedScheduledItemFired, properties);
-            logger.LogDebug("Generated the BlueSky post text for {TableName}, {PrimaryKey}",
+            logger.LogDebug("Generated the Bluesky post text for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
             request.Text = composedText;
