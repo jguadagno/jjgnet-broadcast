@@ -4,6 +4,15 @@
 
 Switch (Web/Frontend Developer) implements the ASP.NET MVC Web layer with Razor views, controllers, and Web-layer services. Primary focus: RBAC Phase 1/2 UI (user approval, role management), add-platform flows, form handling, and authorization enforcement. Key work includes EngagementService (maps API DTOs to Domain models), Web-layer ViewModels (prevents Domain model references in Web project), CSRF protection (@Html.AntiForgeryToken on all POST forms), double-submit prevention (button disable via site.js), and self-demotion guards. Established pattern: create Web-specific ViewModels using AutoMapper, consume API responses through explicit contract types, validate on server-side before calling managers, and enforce authorization at controller level with [RequireAdministrator]/[RequireContributor] attributes. Works closely with Trinity (API contracts), Tank (Web integration tests), and Sparks (UI refinements). Notable: Switch maintains separation of concerns by never allowing Web layer to reference Domain models directly, always mapping through ViewModels. Key decision: Web services act as adapters between controllers and API, handling both request payload construction and response DTO-to-ViewModel mapping. Pattern: double-check authorization boundaries when adding new forms—verify both GET (show form) and POST (submit form) enforce appropriate roles.
 
+## Learnings
+
+### `<local-time>` Tag Helper — Directive (2026-05-19)
+- All dates displayed in the Web application MUST use `<local-time value="@Model.SomeDate" />` — never raw `.ToString("F")`, `.ToString("g")`, `.ToString("f")`, or any other format string.
+- Tag helper lives at `src\JosephGuadagno.Broadcasting.Web\TagHelpers\LocalTimeTagHelper.cs`.
+- API: `<local-time value="@Model.SomeDate" />` for full datetime; `<local-time value="@Model.SomeDate" date-only="true" />` only for pure calendar-date fields with no time component.
+- `value` accepts `DateTimeOffset?`. All standard fields (`CreatedOn`, `LastUpdatedOn`, `PublicationDate`, `AddedOn`) are full datetime — do NOT add `date-only`.
+- This is a hard project-wide directive from Joe; any PR adding raw `.ToString()` date renders in Razor views must be rejected.
+
 ## Core Context
 
 - **Project:** A .NET broadcasting application using Azure Functions, ASP.NET Core API/MVC, SQL Server, and Azure infrastructure to collect and distribute social media content.

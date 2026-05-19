@@ -26,4 +26,16 @@ public class MessageTemplateResponse
     /// An optional human-readable description of the template's purpose or expected usage context.
     /// </summary>
     public string? Description { get; set; }
+
+    /// <summary>
+    /// The Entra Object ID of the user who owns this template.
+    /// Empty string indicates a system default template.
+    /// </summary>
+    public string CreatedByEntraOid { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The display name of the user who owns this template.
+    /// Null for system default templates or when the user record is not found.
+    /// </summary>
+    public string? OwnerDisplayName { get; set; }
 }

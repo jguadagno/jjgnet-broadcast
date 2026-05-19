@@ -92,10 +92,15 @@ public class MessageTemplatesController : Controller
     /// </summary>
     /// <param name="platform">The platform name</param>
     /// <param name="messageType">The message type</param>
+    /// <param name="ownerId">Optional owner OID; admins may supply this to edit a specific user's template</param>
     [HttpGet]
-    public async Task<IActionResult> Edit(string platform, string messageType)
+    public async Task<IActionResult> Edit(string platform, string messageType, string? ownerId = null)
     {
-        var template = await _messageTemplateService.GetAsync(platform, messageType);
+        var lookupOid = User.IsInRole(RoleNames.SiteAdministrator) && !string.IsNullOrEmpty(ownerId)
+            ? ownerId
+            : null;
+
+        var template = await _messageTemplateService.GetAsync(platform, messageType, lookupOid);
         if (template is null)
         {
             return NotFound();
@@ -128,7 +133,10 @@ public class MessageTemplatesController : Controller
         }
 
         var template = _mapper.Map<Domain.Models.MessageTemplate>(model);
-        var saved = await _messageTemplateService.UpdateAsync(model.Platform, template);
+        var ownerIdForUpdate = User.IsInRole(RoleNames.SiteAdministrator)
+            ? model.CreatedByEntraOid
+            : null;
+        var saved = await _messageTemplateService.UpdateAsync(model.Platform, template, ownerIdForUpdate);
         if (saved is null)
         {
             _logger.LogWarning("Failed to save MessageTemplate for Platform={Platform}, MessageType={MessageType}",

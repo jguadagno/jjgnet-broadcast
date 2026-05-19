@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Message Templates";
     var platforms = Model.GroupBy(t => t.Platform).OrderBy(g => g.Key).ToList();
+    var isAdmin = User.IsInRole(JosephGuadagno.Broadcasting.Domain.Constants.RoleNames.SiteAdministrator);
 
     string NextSortDirection(string col)
     {
@@ -62,6 +63,10 @@
             </th>
             <th scope="col" class="col-3">Description</th>
             <th scope="col">Template</th>
+            @if (isAdmin)
+            {
+                <th scope="col" class="col-2">Owner</th>
+            }
             <th scope="col" class="col-1 text-end">&nbsp;</th>
         </tr>
         </thead>
@@ -71,16 +76,24 @@
             var truncated = template.Template.Length > 80
                 ? template.Template.Substring(0, 80) + "…"
                 : template.Template;
+            var ownerLabel = string.IsNullOrEmpty(template.CreatedByEntraOid)
+                ? "Default"
+                : (template.OwnerDisplayName ?? template.CreatedByEntraOid);
             <tr>
                 <td>@template.MessageType</td>
                 <td>@template.Description</td>
                 <td>
                     <span title="@template.Template" data-bs-toggle="tooltip" data-bs-placement="top">@truncated</span>
                 </td>
+                @if (isAdmin)
+                {
+                    <td>@ownerLabel</td>
+                }
                 <td class="text-end">
                     <a asp-action="Edit" asp-controller="MessageTemplates"
                        asp-route-platform="@template.Platform"
                        asp-route-messageType="@template.MessageType"
+                       asp-route-ownerId="@template.CreatedByEntraOid"
                        class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-pencil"></i>
                     </a>

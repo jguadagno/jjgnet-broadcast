@@ -110,7 +110,7 @@ public class MessageTemplatesControllerTests
         var sut = CreateSut(ownerOid: "non-owner-oid-99999");
 
         // Act
-        var result = await sut.UpdateAsync("TestPlatform", "RandomPost", request);
+        var result = await sut.UpdateAsync("TestPlatform", "RandomPost", null, request);
 
         // Assert
         result.Result.Should().BeOfType<NotFoundResult>();

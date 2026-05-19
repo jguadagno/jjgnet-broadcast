@@ -8,7 +8,7 @@ public interface IMessageTemplateService
     Task<PagedResult<MessageTemplate>?> GetAllAsync(int? page = Pagination.DefaultPage, int? pageSize = Pagination.DefaultPageSize, string sortBy = "messagetype", bool sortDescending = false, string? filter = null);
     Task<MessageTemplate?> GetDefaultAsync(string platform, string messageType);
     Task<List<MessageTemplate>?> GetAllDefaultsAsync();
-    Task<MessageTemplate?> GetAsync(string platform, string messageType);
+    Task<MessageTemplate?> GetAsync(string platform, string messageType, string? ownerId = null);
     Task<MessageTemplate?> CreateAsync(string platform, MessageTemplate messageTemplate);
-    Task<MessageTemplate?> UpdateAsync(string platform, MessageTemplate messageTemplate);
+    Task<MessageTemplate?> UpdateAsync(string platform, MessageTemplate messageTemplate, string? ownerId = null);
 }

@@ -30,4 +30,16 @@ public class MessageTemplateViewModel
     /// Human-readable description of what the template is for.
     /// </summary>
     public string? Description { get; set; }
+
+    /// <summary>
+    /// The Entra Object ID of the user who owns this template.
+    /// Carried as a hidden field so admins can route edits to the correct user's record.
+    /// </summary>
+    public string CreatedByEntraOid { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The display name of the user who owns this template.
+    /// "Default" for system templates. Populated on the Index page only.
+    /// </summary>
+    public string? OwnerDisplayName { get; set; }
 }

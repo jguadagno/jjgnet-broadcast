@@ -21,6 +21,7 @@ public class BroadcastingProfile: Profile
         CreateMap<Models.MessageTemplate, Domain.Models.MessageTemplate>()
             .ForMember(dest => dest.Platform,
                 opt => opt.MapFrom(src => src.SocialMediaPlatform != null ? src.SocialMediaPlatform.Name : string.Empty))
+            .ForMember(dest => dest.OwnerDisplayName, opt => opt.Ignore())
             .ReverseMap()
             .ForMember(dest => dest.SocialMediaPlatform, opt => opt.Ignore());
         CreateMap<Models.TokenRefresh, Domain.Models.TokenRefresh>().ReverseMap();

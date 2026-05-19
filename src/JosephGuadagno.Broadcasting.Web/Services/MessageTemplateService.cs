@@ -42,11 +42,14 @@ public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplate
     /// <summary>
     /// Gets a message template by platform and message type
     /// </summary>
-    public async Task<MessageTemplate?> GetAsync(string platform, string messageType)
+    public async Task<MessageTemplate?> GetAsync(string platform, string messageType, string? ownerId = null)
     {
         var messageTemplate = await apiClient.GetOptionalForUserAsync<MessageTemplate>(ApiServiceName, options =>
         {
-            options.RelativePath = $"{MessageTemplateBaseUrl}/{platform}/{messageType}";
+            var url = $"{MessageTemplateBaseUrl}/{platform}/{messageType}";
+            if (!string.IsNullOrEmpty(ownerId))
+                url += $"?ownerId={Uri.EscapeDataString(ownerId)}";
+            options.RelativePath = url;
         });
         return messageTemplate;
     }
@@ -89,11 +92,14 @@ public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplate
     /// <summary>
     /// Updates a message template
     /// </summary>
-    public async Task<MessageTemplate?> UpdateAsync(string platform, MessageTemplate messageTemplate)
+    public async Task<MessageTemplate?> UpdateAsync(string platform, MessageTemplate messageTemplate, string? ownerId = null)
     {
         var savedMessageTemplate = await apiClient.PutForUserAsync<MessageTemplate, MessageTemplate>(ApiServiceName, messageTemplate, options =>
         {
-            options.RelativePath = $"{MessageTemplateBaseUrl}/{platform}/{messageTemplate.MessageType}";
+            var url = $"{MessageTemplateBaseUrl}/{platform}/{messageTemplate.MessageType}";
+            if (!string.IsNullOrEmpty(ownerId))
+                url += $"?ownerId={Uri.EscapeDataString(ownerId)}";
+            options.RelativePath = url;
         });
 
         return savedMessageTemplate;

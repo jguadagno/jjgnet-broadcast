@@ -77,3 +77,52 @@
 
 ---
 
+## MSAL Session Persistence Regression — 2026-05-19
+
+**Trigger**: Joseph reported having to log in every time the Web app restarts after commit `3af53e7f` (fix(auth): suppress MSAL/IdentityModel debug noise and pin L1 cache TTL).
+
+### Root Cause (confirmed from library source)
+
+`MsalDistributedTokenCacheAdapterOptions` inherits from `DistributedCacheEntryOptions`. The `AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)` set in commit `3af53e7f` is passed **directly** to `IDistributedCache.SetAsync()` inside `MsalDistributedTokenCacheAdapter.WriteCacheBytesAsync()` as `DistributedCacheEntryOptions.AbsoluteExpirationRelativeToNow`. This overrides the `DefaultSlidingExpiration = TimeSpan.FromDays(14)` on `AddDistributedSqlServerCache`. SQL `TokenCache` entries now expire **15 minutes after the last write** instead of 14 days. After any 15+ minute idle period (including development restarts), MSAL finds no account in the SQL cache, `ValidatePrincipal` calls `context.RejectPrincipal()`, and the user is forced to log in.
+
+Source confirmed: `AzureAD/microsoft-identity-web` → `MsalDistributedTokenCacheAdapter.WriteCacheBytesAsync()`:
+```csharp
+DistributedCacheEntryOptions distributedCacheEntryOptions = new DistributedCacheEntryOptions
+{
+    AbsoluteExpiration = cacheExpiry,
+    AbsoluteExpirationRelativeToNow = _distributedCacheOptions.AbsoluteExpirationRelativeToNow, // ← 15 min passed to SQL
+    SlidingExpiration = _distributedCacheOptions.SlidingExpiration,
+};
+```
+
+### Exact Code Location
+
+`Program.cs`, lines 115–119:
+```csharp
+builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
+{
+    options.DisableL1Cache = false;
+    options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15); // ← CULPRIT
+});
+```
+
+### Recommended Fix (pending Joseph approval)
+
+Remove `AbsoluteExpirationRelativeToNow` from `MsalDistributedTokenCacheAdapterOptions`. The SQL cache's `DefaultSlidingExpiration = TimeSpan.FromDays(14)` is restored. The L1 (memory) cache reverts to using the token's `SuggestedCacheExpiry` (pre-change behavior).
+
+```csharp
+builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
+{
+    options.DisableL1Cache = false;
+    // AbsoluteExpirationRelativeToNow intentionally omitted:
+    // setting it also sets the L2/SQL expiry (15 min forced re-login regression).
+    // L2 lifetime is controlled by AddDistributedSqlServerCache DefaultSlidingExpiration (14 days).
+});
+```
+
+**Trade-off**: The minor performance issue (~1.75s SQL read on first request when access token is near-expiry) may return. Pre-existing, preferable to forced re-login every restart.
+
+**Status**: Diagnosis delivered to Joseph. No code changes made. Awaiting approval.
+
+---
+
