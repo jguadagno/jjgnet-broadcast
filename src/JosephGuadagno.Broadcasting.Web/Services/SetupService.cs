@@ -20,6 +20,7 @@ public class SetupService(
     IUserPublisherLinkedInSettingsService linkedInSettingsService,
     IUserPublisherFacebookSettingsService facebookSettingsService,
     IMessageTemplateService messageTemplateService,
+    ISocialMediaPlatformService socialMediaPlatformService,
     IMemoryCache cache,
     IHttpContextAccessor httpContextAccessor,
     ILogger<SetupService> logger) : ISetupService
@@ -82,7 +83,17 @@ public class SetupService(
 
         var hasPublisher = configuredPublishers.Count > 0;
 
-        // Templates — intersection-based: every (publisher × collectorType) pair needs a template
+        // Build platform icon lookup from the DB so the view never hard-codes icon classes
+        var platformIcons = (await socialMediaPlatformService.GetAllAsync(pageSize: 100))
+            ?.Items
+            .ToDictionary(p => p.Name, p => p.Icon ?? "bi-broadcast", StringComparer.OrdinalIgnoreCase)
+            ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        var publisherSummaries = configuredPublishers
+            .Select(name => new PlatformSummary(name, platformIcons.GetValueOrDefault(name, "bi-broadcast")))
+            .ToList();
+
+        // Templates— intersection-based: every (publisher × collectorType) pair needs a template
         var templateResult = await messageTemplateService.GetAllAsync(pageSize: Pagination.MaxPageSize);
         var existingTemplates = templateResult?.Items
             .Where(t => !string.IsNullOrEmpty(t.Platform) && !string.IsNullOrEmpty(t.MessageType))
@@ -124,6 +135,7 @@ public class SetupService(
             HasPublisher = hasPublisher,
             HasMessageTemplates = hasMessageTemplates,
             ConfiguredPublisherPlatforms = configuredPublishers,
+            ConfiguredPublisherSummaries = publisherSummaries,
             ConfiguredCollectorTypes = collectorTypes,
             MissingTemplatePairs = missingTemplatePairs,
             MissingTemplatePlatforms = missingTemplatePlatforms

@@ -48,3 +48,10 @@ Switch (Web/Frontend Developer) implements the ASP.NET MVC Web layer with Razor 
 - **Team:** Coordinated with Tank (regression tests) and Trinity (backend validation)
 - **Status:** Ready for merge. Complements Tank's regression coverage and Trinity's backend 409 handling.
 
+## Learnings
+
+### 2026-05-18 — CollectorIcons constants class
+
+- When replacing hard-coded icon strings in views, do a repo-wide search first — instances were found in `_LoginPartial.cshtml`, `SyndicationFeedItems/Index.cshtml`, and `YouTubeItems/Index.cshtml` beyond the originally scoped files.
+- `_Layout.cshtml` does not inherit from `_ViewImports.cshtml` automatically; a `@using` directive must be added at the top of the file when referencing non-default namespaces.
+- The `ByMessageType` dictionary pattern on the constants class is the right approach for Razor views that need to map a string key to (Icon, Label) — keeps the fallback logic out of the view.

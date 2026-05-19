@@ -1,5 +1,8 @@
 namespace JosephGuadagno.Broadcasting.Web.Models;
 
+/// <summary>Represents a configured publisher platform with its display icon.</summary>
+public record PlatformSummary(string Name, string Icon);
+
 /// <summary>
 /// Represents the current onboarding setup completion status for the authenticated user.
 /// </summary>
@@ -20,6 +23,9 @@ public class SetupStatus
 
     /// <summary>Gets the list of publisher platform names that the user has enabled.</summary>
     public IReadOnlyList<string> ConfiguredPublisherPlatforms { get; set; } = [];
+
+    /// <summary>Gets the configured publisher platforms with their icons sourced from the database.</summary>
+    public IReadOnlyList<PlatformSummary> ConfiguredPublisherSummaries { get; set; } = [];
 
     /// <summary>Gets the message type constants for each collector type the user has configured.</summary>
     public IReadOnlyList<string> ConfiguredCollectorTypes { get; set; } = [];
