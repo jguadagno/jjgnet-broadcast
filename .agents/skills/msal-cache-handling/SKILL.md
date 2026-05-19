@@ -13,6 +13,10 @@ description: 'Handle MSAL distributed token cache collisions and stale entries i
 
 Robust pattern for handling MSAL token cache collisions and stale entries in ASP.NET Core applications using SQL-backed distributed token caches. Prevents "Token already exists in cache" errors on app recycles.
 
+> ⚠️ **Project-specific constraint**: In `RejectSessionCookieWhenAccountNotInCacheEvents.ValidatePrincipal`, call `context.RejectPrincipal()` only — do **NOT** call `context.HttpContext.SignOutAsync()`. Calling `SignOutAsync()` inside the cookie validation event creates an authentication redirect loop in this project. The sample code below shows `SignOutAsync()` as it is a general pattern, but it must be omitted here.
+
+> 📢 **Project logging directive**: Do **NOT** add `MinimumLevel.Override` suppressions for `Microsoft.Identity`, `Microsoft.IdentityModel`, or `MSAL` namespaces in DEBUG builds. Verbose MSAL debug output is intentionally kept visible locally — it enables detection of cache miss issues and other auth problems. Production (`#else`) suppression via `MinimumLevel.Override("Microsoft", ...)` is correct and must remain.
+
 ## When to Use
 
 - ASP.NET Core Web apps using Microsoft.Identity.Web authentication
@@ -107,6 +111,21 @@ builder.Services.AddDistributedSqlServerCache(options =>
 });
 ```
 
+#### MSAL L1 Cache Adapter Options (REQUIRED — prevents per-request SQL reads)
+```csharp
+// Configure AFTER .AddDistributedTokenCaches()
+// Without pinning AbsoluteExpirationRelativeToNow, near-expiry tokens evict from L1
+// almost immediately, causing a ~1.75s SQL distributed-cache read on every request.
+builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
+{
+    options.DisableL1Cache = false;
+    options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+});
+```
+Required using: `Microsoft.Identity.Web.TokenCacheProviders.Distributed`
+
+> Note: `AbsoluteExpirationRelativeToNow` (inherited from `DistributedCacheEntryOptions`) is the property that pins the L1 TTL. The adapter reads this in its constructor to set `_memoryCacheExpirationTime` for all L1 `MemoryCacheEntryOptions`.
+
 #### MSAL Authentication with Distributed Cache
 ```csharp
 builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
@@ -122,8 +141,8 @@ builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
 - **Defensive:** Case-insensitive string matching handles variations in error messages
 
 ### Recovery Strategy
-- **RejectPrincipal():** Marks the authentication cookie as invalid
-- **SignOutAsync():** Clears the session cookie to prevent redirect loops
+- **RejectPrincipal():** Marks the authentication cookie as invalid; user is redirected to sign in
+- **SignOutAsync():** In general patterns this clears the session cookie — however, in this project calling `SignOutAsync()` inside `ValidatePrincipal` creates a redirect loop; call `RejectPrincipal()` only
 - **Automatic re-auth:** User is redirected to sign in, which creates fresh cache entry
 
 ### Logging Strategy
@@ -153,12 +172,13 @@ CREATE INDEX Index_ExpiresAtTime ON TokenCache (ExpiresAtTime)
 
 ## Common Pitfalls
 
-1. **Missing `SignOutAsync()`:** Without this, stale cookies can cause redirect loops
-2. **Missing using directive:** `SignOutAsync()` requires `Microsoft.AspNetCore.Authentication`
-3. **Logger retrieval:** Must use `GetService<ILogger<T>>()` at request time, not constructor DI in cookie events
-4. **Only catching `user_null`:** Cache collisions have different error codes/messages — must check multiple patterns
-5. **No cache expiration:** Without cleanup, cache grows indefinitely and collision probability increases
-6. **Caching in memory only:** Loses tokens on app recycle, forces all users to re-authenticate
+1. **Calling `SignOutAsync()` in `ValidatePrincipal`:** In this project, this creates an auth redirect loop — call `context.RejectPrincipal()` only
+2. **Missing `L1ExpirationTimeSpan`:** Without this, near-expiry tokens cause L1 cache eviction immediately after write, forcing a ~1.75s SQL read on every request
+3. **Missing using directive:** `MsalDistributedTokenCacheAdapterOptions` requires `using Microsoft.Identity.Web.TokenCacheProviders.Distributed`
+4. **Logger retrieval:** Must use `GetService<ILogger<T>>()` at request time, not constructor DI in cookie events
+5. **Only catching `user_null`:** Cache collisions have different error codes/messages — must check multiple patterns
+6. **No cache expiration:** Without cleanup, cache grows indefinitely and collision probability increases
+7. **Caching in memory only:** Loses tokens on app recycle, forces all users to re-authenticate
 
 ## Testing Checklist
 
