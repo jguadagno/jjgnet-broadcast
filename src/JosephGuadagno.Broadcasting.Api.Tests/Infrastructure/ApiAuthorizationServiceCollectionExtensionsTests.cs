@@ -166,6 +166,7 @@ public class ApiAuthorizationServiceCollectionExtensionsTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddMemoryCache();
         services.AddScoped(_ => (userApprovalManager ?? CreateDefaultUserApprovalManager()).Object);
         services.AddBroadcastingApiAuthorization();
 

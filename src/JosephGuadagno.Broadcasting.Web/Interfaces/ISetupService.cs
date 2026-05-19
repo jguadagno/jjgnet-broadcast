@@ -16,4 +16,11 @@ public interface ISetupService
     /// the updated state immediately.
     /// </param>
     Task<SetupStatus> GetSetupStatusAsync(bool forceRefresh = false);
+
+    /// <summary>
+    /// Invalidates all setup-related cache entries for the current user.
+    /// Call this after any mutation to collectors, publishers, or message templates so the
+    /// next page render reflects the updated state without waiting for the 5-minute TTL to expire.
+    /// </summary>
+    Task InvalidateAsync();
 }

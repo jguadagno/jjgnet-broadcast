@@ -263,6 +263,7 @@ void ConfigureRepositories(IServiceCollection services)
     services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();
     services.TryAddScoped<IEmailTemplateDataStore, EmailTemplateDataStore>();
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
+    services.TryAddScoped<IOnboardingManager, OnboardingManager>();
 
     // PostComposer — shared Scriban template renderer (Phase 1 of publisher architecture refactor)
     services.TryAddScoped<IPostComposer, PostComposer>();

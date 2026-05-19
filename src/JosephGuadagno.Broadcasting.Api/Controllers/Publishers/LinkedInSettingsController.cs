@@ -19,6 +19,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Publishers;
 [Produces("application/json")]
 public class LinkedInSettingsController(
     IUserPublisherLinkedInSettingsManager manager,
+    IOnboardingManager onboardingManager,
     ILogger<LinkedInSettingsController> logger,
     IMapper mapper) : ControllerBase
 {
@@ -105,6 +106,7 @@ public class LinkedInSettingsController(
             return BadRequest("Unable to save LinkedIn publisher settings");
         }
 
+        await onboardingManager.RecalculateAsync(resolvedOwnerOid);
         return Ok(mapper.Map<LinkedInSettingsResponse>(saved));
     }
 
@@ -132,6 +134,7 @@ public class LinkedInSettingsController(
             return NotFound();
         }
 
+        await onboardingManager.RecalculateAsync(resolvedOwnerOid);
         return NoContent();
     }
 }

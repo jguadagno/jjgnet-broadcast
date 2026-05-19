@@ -358,6 +358,10 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
             entity.Property(e => e.ApprovalNotes)
                 .HasMaxLength(500);
 
+            entity.Property(e => e.IsOnboarded)
+                .IsRequired()
+                .HasDefaultValue(false);
+
             entity.Property(e => e.CreatedAt)
                 .IsRequired()
                 .HasColumnType("datetimeoffset")

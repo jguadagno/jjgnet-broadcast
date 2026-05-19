@@ -14,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 [Route("Publishers/LinkedIn/Settings")]
 public class PublisherLinkedInSettingsController(
     IUserPublisherLinkedInSettingsService service,
+    ISetupService setupService,
     ILogger<PublisherLinkedInSettingsController> logger) : Controller
 {
     [HttpGet("")]
@@ -63,6 +64,7 @@ public class PublisherLinkedInSettingsController(
         }
 
         TempData["SuccessMessage"] = "LinkedIn settings saved.";
+        await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Index));
     }
 

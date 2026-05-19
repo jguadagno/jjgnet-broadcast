@@ -17,6 +17,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 [Route("Collectors/FeedSource/Settings")]
 public class CollectorFeedSourcesController(
 	IUserCollectorFeedSourceService service,
+	ISetupService setupService,
 	IMapper mapper,
 	ILogger<CollectorFeedSourcesController> logger)
 	: Controller
@@ -104,6 +105,7 @@ public class CollectorFeedSourcesController(
         }
 
         TempData["SuccessMessage"] = $"Feed source '{LogSanitizer.Sanitize(viewModel.DisplayName)}' added successfully.";
+        await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Details), new { id = result.Id });
     }
 
@@ -174,6 +176,7 @@ public class CollectorFeedSourcesController(
         }
 
         TempData["SuccessMessage"] = $"Feed source '{LogSanitizer.Sanitize(viewModel.DisplayName)}' updated successfully.";
+        await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Details), new { id = result.Id });
     }
 
@@ -235,6 +238,7 @@ public class CollectorFeedSourcesController(
         if (result)
         {
             TempData["SuccessMessage"] = "Feed source deleted successfully.";
+            await setupService.InvalidateAsync();
             return RedirectToAction(nameof(Index));
         }
 

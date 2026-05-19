@@ -22,6 +22,7 @@ public class MessageTemplatesController : ControllerBase
 {
     private readonly IMessageTemplateManager _messageTemplateManager;
     private readonly ISocialMediaPlatformManager _socialMediaPlatformManager;
+    private readonly IOnboardingManager _onboardingManager;
     private readonly ILogger<MessageTemplatesController> _logger;
     private readonly IMapper _mapper;
 
@@ -30,14 +31,17 @@ public class MessageTemplatesController : ControllerBase
     /// </summary>
     /// <param name="messageTemplateManager">The message template manager</param>
     /// <param name="socialMediaPlatformManager">The social media platform manager</param>
+    /// <param name="onboardingManager">The onboarding manager</param>
     /// <param name="logger">The logger</param>
     /// <param name="mapper">The AutoMapper instance</param>
     public MessageTemplatesController(IMessageTemplateManager messageTemplateManager,
         ISocialMediaPlatformManager socialMediaPlatformManager,
+        IOnboardingManager onboardingManager,
         ILogger<MessageTemplatesController> logger, IMapper mapper)
     {
         _messageTemplateManager = messageTemplateManager;
         _socialMediaPlatformManager = socialMediaPlatformManager;
+        _onboardingManager = onboardingManager;
         _logger = logger;
         _mapper = mapper;
     }
@@ -218,6 +222,7 @@ public class MessageTemplatesController : ControllerBase
 
         _logger.LogInformation("MessageTemplate created for Platform={Platform}, MessageType={MessageType}",
             LogSanitizer.Sanitize(platform), LogSanitizer.Sanitize(messageType));
+        await _onboardingManager.RecalculateAsync(messageTemplate.CreatedByEntraOid);
         return CreatedAtAction(nameof(GetAsync), new { platform, messageType },
             _mapper.Map<MessageTemplateResponse>(created));
     }

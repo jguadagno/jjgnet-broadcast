@@ -17,6 +17,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 [Route("Collectors/SpeakingEngagement/Settings")]
 public class CollectorSpeakingEngagementsController(
 	IUserCollectorSpeakingEngagementService service,
+	ISetupService setupService,
 	IMapper mapper,
 	ILogger<CollectorSpeakingEngagementsController> logger)
 	: Controller
@@ -104,6 +105,7 @@ public class CollectorSpeakingEngagementsController(
         }
 
         TempData["SuccessMessage"] = $"Speaking engagement '{LogSanitizer.Sanitize(viewModel.DisplayName)}' added successfully.";
+        await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Details), new { id = result.Id });
     }
 
@@ -174,6 +176,7 @@ public class CollectorSpeakingEngagementsController(
         }
 
         TempData["SuccessMessage"] = $"Speaking engagement '{LogSanitizer.Sanitize(viewModel.DisplayName)}' updated successfully.";
+        await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Details), new { id = result.Id });
     }
 
@@ -235,6 +238,7 @@ public class CollectorSpeakingEngagementsController(
         if (result)
         {
             TempData["SuccessMessage"] = "Speaking engagement deleted successfully.";
+            await setupService.InvalidateAsync();
             return RedirectToAction(nameof(Index));
         }
 

@@ -14,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 [Route("Publishers/Twitter/Settings")]
 public class PublisherTwitterSettingsController(
     IUserPublisherTwitterSettingsService service,
+    ISetupService setupService,
     ILogger<PublisherTwitterSettingsController> logger) : Controller
 {
     [HttpGet("")]
@@ -69,6 +70,7 @@ public class PublisherTwitterSettingsController(
         }
 
         TempData["SuccessMessage"] = "Twitter/X settings saved.";
+        await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Index));
     }
 

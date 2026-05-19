@@ -18,6 +18,7 @@ public class MessageTemplatesController : Controller
 {
     private readonly IMessageTemplateService _messageTemplateService;
     private readonly ISocialMediaPlatformService _socialMediaPlatformService;
+    private readonly ISetupService _setupService;
     private readonly IMapper _mapper;
     private readonly ILogger<MessageTemplatesController> _logger;
 
@@ -26,14 +27,16 @@ public class MessageTemplatesController : Controller
     /// </summary>
     /// <param name="messageTemplateService">The message template service</param>
     /// <param name="socialMediaPlatformService">The social media platform service</param>
+    /// <param name="setupService">The setup service</param>
     /// <param name="mapper">The mapper service</param>
     /// <param name="logger">The logger</param>
     public MessageTemplatesController(IMessageTemplateService messageTemplateService,
-        ISocialMediaPlatformService socialMediaPlatformService, IMapper mapper,
+        ISocialMediaPlatformService socialMediaPlatformService, ISetupService setupService, IMapper mapper,
         ILogger<MessageTemplatesController> logger)
     {
         _messageTemplateService = messageTemplateService;
         _socialMediaPlatformService = socialMediaPlatformService;
+        _setupService = setupService;
         _mapper = mapper;
         _logger = logger;
     }
@@ -189,6 +192,7 @@ public class MessageTemplatesController : Controller
         }
 
         TempData["SuccessMessage"] = "Message template created successfully.";
+        await _setupService.InvalidateAsync();
         return RedirectToAction(nameof(Index));
     }
 }

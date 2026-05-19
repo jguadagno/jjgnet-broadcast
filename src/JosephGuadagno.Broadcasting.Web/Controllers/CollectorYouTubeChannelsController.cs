@@ -17,6 +17,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 [Route("Collectors/YouTube/Settings")]
 public class CollectorYouTubeChannelsController(
     IUserCollectorYouTubeChannelService service,
+    ISetupService setupService,
     IMapper mapper,
     ILogger<CollectorYouTubeChannelsController> logger)
     : Controller
@@ -108,6 +109,7 @@ public class CollectorYouTubeChannelsController(
         }
 
         TempData["SuccessMessage"] = $"YouTube channel '{LogSanitizer.Sanitize(viewModel.DisplayName)}' added successfully.";
+        await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Details), new { id = result.Id });
     }
 
@@ -182,6 +184,7 @@ public class CollectorYouTubeChannelsController(
         }
 
         TempData["SuccessMessage"] = $"YouTube channel '{LogSanitizer.Sanitize(viewModel.DisplayName)}' updated successfully.";
+        await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Details), new { id = result.Id });
     }
 
@@ -243,6 +246,7 @@ public class CollectorYouTubeChannelsController(
         if (result)
         {
             TempData["SuccessMessage"] = "YouTube channel deleted successfully.";
+            await setupService.InvalidateAsync();
             return RedirectToAction(nameof(Index));
         }
 

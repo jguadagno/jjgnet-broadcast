@@ -19,6 +19,7 @@ public class MessageTemplatesControllerTests
 {
     private readonly Mock<IMessageTemplateManager> _messageTemplateManagerMock = new();
     private readonly Mock<ISocialMediaPlatformManager> _socialMediaPlatformManagerMock = new();
+    private readonly Mock<IOnboardingManager> _onboardingManagerMock = new();
     private readonly Mock<ILogger<MessageTemplatesController>> _loggerMock = new();
 
     // Use the assembly-wide shared mapper to avoid AutoMapper profile-registry races
@@ -34,6 +35,7 @@ public class MessageTemplatesControllerTests
         var controller = new MessageTemplatesController(
             _messageTemplateManagerMock.Object,
             _socialMediaPlatformManagerMock.Object,
+            _onboardingManagerMock.Object,
             _loggerMock.Object,
             Mapper)
         {

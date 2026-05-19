@@ -19,6 +19,8 @@ public partial class ApplicationUser
 
     public string ApprovalNotes { get; set; }
 
+    public bool IsOnboarded { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset UpdatedAt { get; set; }

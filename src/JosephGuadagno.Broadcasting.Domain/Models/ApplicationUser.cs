@@ -53,6 +53,14 @@ public class ApplicationUser
     public DateTimeOffset UpdatedAt { get; set; }
 
     /// <summary>
+    /// Indicates whether the user has completed all three onboarding areas:
+    /// collector, publisher, and message templates.
+    /// Maintained by <c>OnboardingManager.RecalculateAsync()</c> on every
+    /// collector/publisher/template mutation.
+    /// </summary>
+    public bool IsOnboarded { get; set; }
+
+    /// <summary>
     /// The roles assigned to this user
     /// </summary>
     public List<Role>? Roles { get; set; }

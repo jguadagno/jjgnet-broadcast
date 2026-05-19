@@ -19,6 +19,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Publishers;
 [Produces("application/json")]
 public class BlueskySettingsController(
     IUserPublisherBlueskySettingsManager manager,
+    IOnboardingManager onboardingManager,
     ILogger<BlueskySettingsController> logger,
     IMapper mapper) : ControllerBase
 {
@@ -103,6 +104,7 @@ public class BlueskySettingsController(
             return BadRequest("Unable to save Bluesky publisher settings");
         }
 
+        await onboardingManager.RecalculateAsync(resolvedOwnerOid);
         return Ok(mapper.Map<BlueskySettingsResponse>(saved));
     }
 
@@ -135,6 +137,7 @@ public class BlueskySettingsController(
             return NotFound();
         }
 
+        await onboardingManager.RecalculateAsync(resolvedOwnerOid);
         return NoContent();
     }
 }
