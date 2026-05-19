@@ -111,9 +111,9 @@
         <input asp-for="MessageSentOn" type="datetime-local" class="form-control" autocomplete="off" aria-describedby="val-MessageSentOn" />
         <span id="val-MessageSentOn" asp-validation-for="MessageSentOn" class="text-danger"></span>
     </div>
-    <div class="form-switch mb-3">
-        <label asp-for="MessageSent" class="form-label">Was Sent</label>
-        <input asp-for="MessageSent" type="checkbox" class="form-check-input" aria-describedby="val-MessageSent" />
+    <div class="form-check form-switch mb-3">
+        <input asp-for="MessageSent" type="checkbox" class="form-check-input" role="switch" aria-describedby="val-MessageSent" />
+        <label asp-for="MessageSent" class="form-check-label">Was Sent</label>
         <span id="val-MessageSent" asp-validation-for="MessageSent" class="text-danger"></span>
     </div>
     <br />
