@@ -18,7 +18,7 @@ public class ProcessScheduledItemFired(
     IEngagementManager engagementManager,
     ISyndicationFeedItemManager syndicationFeedItemManager,
     IYouTubeItemManager youTubeItemManager,
-    IMessageTemplateLookup messageLookup,
+    IMessageTemplateManager messageTemplateManager,
     IPostComposer postComposer,
     ILogger<ProcessScheduledItemFired> logger)
 {
@@ -61,7 +61,7 @@ public class ProcessScheduledItemFired(
             if (request is null)
                 return null;
 
-            var template = await messageLookup.GetAsync(
+            var template = await messageTemplateManager.GetAsync(
                 MessageTemplates.Platforms.Facebook,
                 MessageTemplates.MessageTypes.ScheduledItem,
                 ownerEntraOid);

@@ -86,9 +86,9 @@ public class ProcessScheduledItemFiredTests
         CreatedByEntraOid = "test-oid"
     };
 
-    private static Mock<IMessageTemplateLookup> BuildTemplateLookup(string template = "template")
+    private static Mock<IMessageTemplateManager> BuildTemplateMock(string template = "template")
     {
-        var mock = new Mock<IMessageTemplateLookup>();
+        var mock = new Mock<IMessageTemplateManager>();
         mock.Setup(m => m.GetAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MessageTemplate { Template = template });
@@ -104,13 +104,13 @@ public class ProcessScheduledItemFiredTests
         return mock;
     }
 
-    // Constructor order: (IScheduledItemManager, IEngagementManager, ISyndicationFeedItemManager, IYouTubeItemManager, IMessageTemplateLookup, IPostComposer, ILogger)
+    // Constructor order: (IScheduledItemManager, IEngagementManager, ISyndicationFeedItemManager, IYouTubeItemManager, IMessageTemplateManager, IPostComposer, ILogger)
     private static Functions.LinkedIn.ProcessScheduledItemFired BuildSut(
         Mock<IScheduledItemManager> scheduledItemManager,
         Mock<IEngagementManager> engagementManager,
         Mock<ISyndicationFeedItemManager> feedSourceManager,
         Mock<IYouTubeItemManager> youTubeItemManager,
-        Mock<IMessageTemplateLookup> messageLookup,
+        Mock<IMessageTemplateManager> messageTemplateManager,
         Mock<IPostComposer> postComposer)
     {
         return new Functions.LinkedIn.ProcessScheduledItemFired(
@@ -118,7 +118,7 @@ public class ProcessScheduledItemFiredTests
             engagementManager.Object,
             feedSourceManager.Object,
             youTubeItemManager.Object,
-            messageLookup.Object,
+            messageTemplateManager.Object,
             postComposer.Object,
             NullLogger<Functions.LinkedIn.ProcessScheduledItemFired>.Instance);
     }
@@ -140,7 +140,7 @@ public class ProcessScheduledItemFiredTests
             new Mock<IEngagementManager>(),
             mockFeedSourceManager,
             new Mock<IYouTubeItemManager>(),
-            BuildTemplateLookup(),
+            BuildTemplateMock(),
             BuildPostComposer("Rendered from composer"));
 
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -169,7 +169,7 @@ public class ProcessScheduledItemFiredTests
             mockEngagementManager,
             new Mock<ISyndicationFeedItemManager>(),
             new Mock<IYouTubeItemManager>(),
-            BuildTemplateLookup(),
+            BuildTemplateMock(),
             BuildPostComposer("Engagement message"));
 
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -197,7 +197,7 @@ public class ProcessScheduledItemFiredTests
             mockEngagementManager,
             new Mock<ISyndicationFeedItemManager>(),
             new Mock<IYouTubeItemManager>(),
-            BuildTemplateLookup(),
+            BuildTemplateMock(),
             BuildPostComposer("Talk message"));
 
         var result = await sut.RunAsync(BuildEventGridEvent(1));
@@ -225,7 +225,7 @@ public class ProcessScheduledItemFiredTests
             new Mock<IEngagementManager>(),
             new Mock<ISyndicationFeedItemManager>(),
             mockYouTubeItemManager,
-            BuildTemplateLookup(),
+            BuildTemplateMock(),
             BuildPostComposer("YouTube message"));
 
         var result = await sut.RunAsync(BuildEventGridEvent(1));

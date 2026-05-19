@@ -13,7 +13,7 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
 public class ProcessNewSyndicationDataFired(
     ISyndicationFeedItemManager syndicationFeedItemManager,
-    IMessageTemplateLookup messageLookup,
+    IMessageTemplateManager messageTemplateManager,
     IPostComposer postComposer,
     ILogger<ProcessNewSyndicationDataFired> logger)
 {
@@ -61,7 +61,7 @@ public class ProcessNewSyndicationDataFired(
             OwnerEntraOid = ownerEntraOid
         };
 
-        var template = await messageLookup.GetAsync(
+        var template = await messageTemplateManager.GetAsync(
             MessageTemplates.Platforms.LinkedIn,
             MessageTemplates.MessageTypes.NewSyndicationFeedItem,
             ownerEntraOid);

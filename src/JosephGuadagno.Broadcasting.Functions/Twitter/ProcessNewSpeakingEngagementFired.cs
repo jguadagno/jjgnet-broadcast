@@ -14,7 +14,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
 public class ProcessNewSpeakingEngagementFired(
     IEngagementManager engagementManager,
-    IMessageTemplateLookup messageLookup,
+    IMessageTemplateManager messageTemplateManager,
     IPostComposer postComposer,
     ILogger<ProcessNewSpeakingEngagementFired> logger)
 {
@@ -67,7 +67,7 @@ public class ProcessNewSpeakingEngagementFired(
                 OwnerEntraOid = ownerEntraOid
             };
 
-            var template = await messageLookup.GetAsync(
+            var template = await messageTemplateManager.GetAsync(
                 MessageTemplates.Platforms.Twitter,
                 MessageTemplates.MessageTypes.NewSpeakingEngagement,
                 ownerEntraOid);

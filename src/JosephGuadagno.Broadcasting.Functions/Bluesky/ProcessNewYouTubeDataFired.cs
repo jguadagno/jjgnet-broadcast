@@ -13,7 +13,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
 public class ProcessNewYouTubeDataFired(
     IYouTubeItemManager youTubeItemManager,
-    IMessageTemplateLookup messageLookup,
+    IMessageTemplateManager messageTemplateManager,
     IPostComposer postComposer,
     ILogger<ProcessNewYouTubeDataFired> logger)
 {
@@ -62,7 +62,7 @@ public class ProcessNewYouTubeDataFired(
                 OwnerEntraOid = ownerEntraOid
             };
 
-            var template = await messageLookup.GetAsync(
+            var template = await messageTemplateManager.GetAsync(
                 MessageTemplates.Platforms.Bluesky,
                 MessageTemplates.MessageTypes.NewYouTubeItem,
                 ownerEntraOid);

@@ -13,7 +13,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
 public class ProcessNewRandomPost(
     ISyndicationFeedItemManager syndicationFeedItemManager,
-    IMessageTemplateLookup messageLookup,
+    IMessageTemplateManager messageTemplateManager,
     IPostComposer postComposer,
     ILogger<ProcessNewRandomPost> logger)
 {
@@ -60,7 +60,7 @@ public class ProcessNewRandomPost(
                 OwnerEntraOid = ownerEntraOid
             };
 
-            var template = await messageLookup.GetAsync(
+            var template = await messageTemplateManager.GetAsync(
                 MessageTemplates.Platforms.Twitter,
                 MessageTemplates.MessageTypes.RandomPost,
                 ownerEntraOid);

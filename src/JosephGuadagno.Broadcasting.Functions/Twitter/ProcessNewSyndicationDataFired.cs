@@ -13,7 +13,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
 public class ProcessNewSyndicationDataFired(
     ISyndicationFeedItemManager syndicationFeedItemManager,
-    IMessageTemplateLookup messageLookup,
+    IMessageTemplateManager messageTemplateManager,
     IPostComposer postComposer,
     ILogger<ProcessNewSyndicationDataFired> logger)
 {
@@ -61,7 +61,7 @@ public class ProcessNewSyndicationDataFired(
             OwnerEntraOid = ownerEntraOid
         };
 
-        var template = await messageLookup.GetAsync(
+        var template = await messageTemplateManager.GetAsync(
             MessageTemplates.Platforms.Twitter,
             MessageTemplates.MessageTypes.NewSyndicationFeedItem,
             ownerEntraOid);

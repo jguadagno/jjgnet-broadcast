@@ -14,7 +14,7 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
 public class ProcessNewSpeakingEngagementFired(
     IEngagementManager engagementManager,
-    IMessageTemplateLookup messageLookup,
+    IMessageTemplateManager messageTemplateManager,
     IPostComposer postComposer,
     ILogger<ProcessNewSpeakingEngagementFired> logger)
 {
@@ -67,7 +67,7 @@ public class ProcessNewSpeakingEngagementFired(
                 OwnerEntraOid = ownerEntraOid
             };
 
-            var template = await messageLookup.GetAsync(
+            var template = await messageTemplateManager.GetAsync(
                 MessageTemplates.Platforms.LinkedIn,
                 MessageTemplates.MessageTypes.NewSpeakingEngagement,
                 ownerEntraOid);

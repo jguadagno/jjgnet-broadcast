@@ -13,7 +13,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
 public class ProcessNewSyndicationDataFired(
     ISyndicationFeedItemManager syndicationFeedItemManager,
-    IMessageTemplateLookup messageLookup,
+    IMessageTemplateManager messageTemplateManager,
     IPostComposer postComposer,
     ILogger<ProcessNewSyndicationDataFired> logger)
 {
@@ -63,7 +63,7 @@ public class ProcessNewSyndicationDataFired(
                 OwnerEntraOid = ownerEntraOid
             };
 
-            var template = await messageLookup.GetAsync(
+            var template = await messageTemplateManager.GetAsync(
                 MessageTemplates.Platforms.Bluesky,
                 MessageTemplates.MessageTypes.NewSyndicationFeedItem,
                 ownerEntraOid);
