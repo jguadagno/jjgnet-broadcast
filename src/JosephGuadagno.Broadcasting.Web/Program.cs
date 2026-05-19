@@ -23,6 +23,7 @@ using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.TokenCacheProviders.Distributed;
 using Microsoft.Identity.Web.UI;
 
 using OpenTelemetry.Logs;
@@ -111,6 +112,11 @@ var allScopes = builder.Configuration.GetSection("DownstreamApis")
 builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
     .EnableTokenAcquisitionToCallDownstreamApi(allScopes)
     .AddDistributedTokenCaches();
+builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
+{
+    options.DisableL1Cache = false;
+    options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+});
 builder.Services.AddDownstreamApis(builder.Configuration.GetSection("DownstreamApis"));
 
 // Add OIDC event handlers for graceful error handling

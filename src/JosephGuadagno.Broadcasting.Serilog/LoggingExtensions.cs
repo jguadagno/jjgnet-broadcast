@@ -16,6 +16,9 @@ public static class LoggingExtensions
         return loggerConfiguration
 #if DEBUG
             .MinimumLevel.Debug()
+            .MinimumLevel.Override("Microsoft.Identity", LogEventLevel.Warning)
+            .MinimumLevel.Override("Microsoft.IdentityModel", LogEventLevel.Warning)
+            .MinimumLevel.Override("MSAL", LogEventLevel.Warning)
 #else
             .MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
