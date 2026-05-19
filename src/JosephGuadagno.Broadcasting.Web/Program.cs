@@ -115,7 +115,9 @@ builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
 builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
 {
     options.DisableL1Cache = false;
+#if !DEBUG
     options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+#endif
 });
 builder.Services.AddDownstreamApis(builder.Configuration.GetSection("DownstreamApis"));
 
