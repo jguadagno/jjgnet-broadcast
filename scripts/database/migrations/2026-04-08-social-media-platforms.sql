@@ -6,7 +6,7 @@
 -- Summary:
 -- Creates dbo.SocialMediaPlatforms lookup table and 
 -- dbo.EngagementSocialMediaPlatforms junction table to replace ad-hoc social 
--- media fields (BlueSkyHandle, ConferenceHashtag, ConferenceTwitterHandle).
+-- media fields (BlueskyHandle, ConferenceHashtag, ConferenceTwitterHandle).
 --
 -- Also migrates ScheduledItems.Platform (nvarchar) to SocialMediaPlatformId (int FK)
 -- and MessageTemplates.Platform (part of composite PK) to SocialMediaPlatformId.
@@ -73,9 +73,9 @@ INSERT INTO dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
 VALUES ('Twitter', 'https://twitter.com', 'bi-twitter-x', 1)
 go
 
--- BlueSky
+-- Bluesky
 INSERT INTO dbo.SocialMediaPlatforms (Name, Url, Icon, IsActive)
-VALUES ('BlueSky', 'https://bsky.app', 'bi-bluesky', 1)
+VALUES ('Bluesky', 'https://bsky.app', 'bi-bluesky', 1)
 go
 
 -- LinkedIn
@@ -117,9 +117,9 @@ UPDATE dbo.ScheduledItems
 SET SocialMediaPlatformId = (
     SELECT TOP 1 Id 
     FROM dbo.SocialMediaPlatforms 
-    WHERE Name = 'BlueSky'
+    WHERE Name = 'Bluesky'
 )
-WHERE Platform IN ('BlueSky', 'Bluesky', 'bluesky', 'bsky')
+WHERE Platform IN ('Bluesky', 'Bluesky', 'bluesky', 'bsky')
 go
 
 UPDATE dbo.ScheduledItems
@@ -184,9 +184,9 @@ UPDATE dbo.MessageTemplates
 SET SocialMediaPlatformId = (
     SELECT TOP 1 Id 
     FROM dbo.SocialMediaPlatforms 
-    WHERE Name = 'BlueSky'
+    WHERE Name = 'Bluesky'
 )
-WHERE Platform IN ('BlueSky', 'Bluesky', 'bluesky')
+WHERE Platform IN ('Bluesky', 'Bluesky', 'bluesky')
 go
 
 UPDATE dbo.MessageTemplates
@@ -249,16 +249,16 @@ ALTER TABLE dbo.Engagements
 go
 
 ALTER TABLE dbo.Engagements
-    DROP COLUMN BlueSkyHandle
+    DROP COLUMN BlueskyHandle
 go
 
 -- ============================================================================
--- PART 7: Remove old BlueSkyHandle from Talks
+-- PART 7: Remove old BlueskyHandle from Talks
 -- ============================================================================
 
 -- Talks inherit social media from parent Engagement via junction table
 ALTER TABLE dbo.Talks
-    DROP COLUMN BlueSkyHandle
+    DROP COLUMN BlueskyHandle
 go
 
 -- ============================================================================

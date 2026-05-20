@@ -19,17 +19,23 @@
             <input type="hidden" asp-for="CreatedByEntraOid" />
             <input type="hidden" asp-for="Description" />
 
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Platform</label>
-                <p class="form-control-plaintext">@Model.Platform</p>
+            <div class="mb-2 row">
+	            <label class="col-sm-2 col-form-label fw-semibold">Platform</label>
+	            <div class="col-sm-10">
+		            <p class="form-control-plaintext">@Model.Platform</p>
+	            </div>
             </div>
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Message Type</label>
-                <p class="form-control-plaintext">@Model.MessageType</p>
+            <div class="mb-2 row">
+	            <label class="col-sm-2 col-form-label fw-semibold">Message Type</label>
+	            <div class="col-sm-10">
+		            <p class="form-control-plaintext">@Model.MessageType</p>
+	            </div>
             </div>
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Description</label>
-                <p class="form-control-plaintext text-muted">@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</p>
+            <div class="mb-2 row">
+	            <label class="col-sm-2 col-form-label fw-semibold">Description</label>
+	            <div class="col-sm-10">
+		            <p class="form-control-plaintext text-muted">@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</p>
+	            </div>
             </div>
             <div class="mb-3">
                 <label asp-for="Template" class="form-label">Template</label>

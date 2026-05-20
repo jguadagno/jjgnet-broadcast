@@ -13,7 +13,7 @@
     <div class="card mb-4">
         <div class="card-header bg-warning text-dark">
             <h3 class="mb-0">
-                <i class="bi bi-hourglass-split me-2"></i>Pending Users 
+                <i class="bi bi-hourglass-split me-2"></i>Pending Users
                 <span class="badge bg-dark">@Model.PendingUsers.Count</span>
             </h3>
         </div>
@@ -46,14 +46,14 @@
                                                     <i class="bi bi-check-circle me-1"></i>Approve
                                                 </button>
                                             </form>
-                                            <button type="button" class="btn btn-sm btn-danger" 
-                                                    data-bs-toggle="collapse" 
-                                                    data-bs-target="#reject-@user.Id" 
+                                            <button type="button" class="btn btn-sm btn-danger"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#reject-@user.Id"
                                                     title="Reject User">
                                                 <i class="bi bi-x-circle me-1"></i>Reject
                                             </button>
                                         </div>
-                                        
+
                                         <!-- Rejection notes form (collapsible) -->
                                         <div class="collapse mt-2" id="reject-@user.Id">
                                             <div class="card card-body">
@@ -62,9 +62,9 @@
                                                     <input type="hidden" name="userId" value="@user.Id" />
                                                     <div class="mb-2">
                                                         <label class="form-label fw-bold">Rejection Notes (Required)</label>
-                                                        <textarea name="rejectionNotes" 
-                                                                  class="form-control" 
-                                                                  rows="3" 
+                                                        <textarea name="rejectionNotes"
+                                                                  class="form-control"
+                                                                  rows="3"
                                                                   placeholder="Please provide a reason for rejecting this user..."
                                                                   required></textarea>
                                                     </div>
@@ -72,9 +72,9 @@
                                                         <button type="submit" class="btn btn-sm btn-danger">
                                                             <i class="bi bi-send me-1"></i>Submit Rejection
                                                         </button>
-                                                        <button type="button" 
-                                                                class="btn btn-sm btn-secondary" 
-                                                                data-bs-toggle="collapse" 
+                                                        <button type="button"
+                                                                class="btn btn-sm btn-secondary"
+                                                                data-bs-toggle="collapse"
                                                                 data-bs-target="#reject-@user.Id">
                                                             Cancel
                                                         </button>
@@ -102,7 +102,7 @@
     <div class="card mb-4">
         <div class="card-header bg-success text-white">
             <h3 class="mb-0">
-                <i class="bi bi-check-circle me-2"></i>Approved Users 
+                <i class="bi bi-check-circle me-2"></i>Approved Users
                 <span class="badge bg-dark">@Model.ApprovedUsers.Count</span>
             </h3>
         </div>
@@ -128,16 +128,21 @@
                                     <td><local-time value="@user.CreatedAt" /></td>
                                      <td>
                                          <div class="btn-group" role="group">
-                                             <a asp-action="ManageRoles" asp-route-userId="@user.Id" 
-                                                class="btn btn-sm btn-primary" 
+                                             <a asp-action="ManageRoles" asp-route-userId="@user.Id"
+                                                class="btn btn-sm btn-primary"
                                                 title="Manage user roles">
                                                  <i class="bi bi-person-badge me-1"></i>Manage Roles
                                              </a>
-                                             <a asp-controller="PublisherSettings" asp-action="Index" asp-route-userOid="@user.EntraObjectId"
+                                             <a asp-controller="Publishers" asp-action="Index" asp-route-userOid="@user.EntraObjectId"
                                                 class="btn btn-sm btn-outline-secondary"
                                                 title="Manage publisher settings">
-                                                 <i class="bi bi-broadcast-pin me-1"></i>Publisher Settings
+	                                             <i class="bi bi-broadcast-pin me-1"></i>Publisher Settings
                                              </a>
+			                                         <a asp-controller="CollectorSettings" asp-action="Index" asp-route-userOid="@user.EntraObjectId"
+			                                         class="btn btn-sm btn-outline-secondary"
+			                                         title="Manage collector settings">
+			                                         <i class="bi @CollectorIcons.Collection me-1"></i>Collector Settings
+			                                         </a>
                                          </div>
                                      </td>
                                  </tr>
@@ -159,7 +164,7 @@
     <div class="card mb-4">
         <div class="card-header bg-danger text-white">
             <h3 class="mb-0">
-                <i class="bi bi-x-circle me-2"></i>Rejected Users 
+                <i class="bi bi-x-circle me-2"></i>Rejected Users
                 <span class="badge bg-dark">@Model.RejectedUsers.Count</span>
             </h3>
         </div>
