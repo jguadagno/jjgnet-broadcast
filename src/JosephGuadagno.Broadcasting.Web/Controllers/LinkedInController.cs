@@ -49,7 +49,7 @@ public class LinkedInController : Controller
     /// </summary>
     public async Task<IActionResult> Index()
     {
-        var ownerOid = User.FindFirstValue("oid");
+	    var ownerOid = User.GetOwnerOid();
         if (string.IsNullOrWhiteSpace(ownerOid))
         {
             _logger.LogWarning("User OID claim is missing on LinkedIn Index");
@@ -162,7 +162,7 @@ public class LinkedInController : Controller
             return BadRequest();
         }
 
-        var ownerOid = User.FindFirstValue("oid")
+        var ownerOid = User.GetOwnerOid()
             ?? throw new InvalidOperationException("User OID claim is missing");
 
         var platform = await _socialMediaPlatformService.GetByNameAsync("LinkedIn", cancellationToken)
