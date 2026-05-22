@@ -54,7 +54,7 @@ public class MessageTemplateManager(
         if (platform is null)
         {
             logger.LogWarning(
-                "MessageTemplateManager: platform '{PlatformName}' not found — skipping template lookup.",
+                "MessageTemplateManager: platform '{PlatformName}' not found — skipping template lookup",
                 LogSanitizer.Sanitize(platformName));
             return null;
         }

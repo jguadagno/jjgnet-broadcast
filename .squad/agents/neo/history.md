@@ -126,3 +126,37 @@ builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
 
 ---
 
+## OAuth Token Architecture Review — 2026-05-21
+
+**Requested by**: Joseph Guadagno  
+**Output**: `.squad/decisions/inbox/neo-oauth-token-architecture.md`
+
+### Learnings
+
+**Three token storage mechanisms discovered (two of them inconsistent):**
+
+1. `UserOAuthTokens` table (`scripts/database/table-create.sql` line 483) — per-user, per-platform SQL table with `AccessToken`, `RefreshToken`, expiry columns, `LastNotifiedAt`. Used by LinkedIn `PostLink.cs` and `NotifyExpiringTokens.cs`. Platform-agnostic by design (FK to `SocialMediaPlatforms`).
+
+2. Settings Manager KV path (`publisher-{ownerOid}-{platform}-{settingName}`) via `KeyVaultSecretNameBuilder` — used for app credentials (AppSecret, ClientSecret). For LinkedIn, also has dead `GetAccessTokenAsync`/`StoreAccessTokenAsync`/`HasAccessToken` that were never wired into the publisher pipeline.
+
+3. Global KV path (`jjg-net-facebook-{token-name}-access-token`) — used ONLY by `Facebook/RefreshTokens.cs` via `IFacebookApplicationSettings`. This is a non-user-scoped approach that is disconnected from `PostPageStatus.cs`, which reads per-user KV tokens instead.
+
+**Key file paths:**
+- `src/Functions/Facebook/RefreshTokens.cs` — uses `IFacebookApplicationSettings` (global) + `ITokenRefreshManager`; does NOT use `IUserPublisherFacebookSettingsManager`
+- `src/Functions/Facebook/PostPageStatus.cs` — uses `IUserPublisherFacebookSettingsManager` (per-user KV); does NOT use `IUserOAuthTokenManager`
+- `src/Functions/LinkedIn/PostLink.cs` — uses `IUserOAuthTokenManager` (SQL table) for token; uses `IUserPublisherLinkedInSettingsManager` for `AuthorId` only
+- `src/Functions/LinkedIn/NotifyExpiringTokens.cs` — queries `UserOAuthTokens` expiry window
+- `src/Managers/UserPublisherLinkedInSettingsManager.cs` — has dead `GetAccessTokenAsync`/`StoreAccessTokenAsync` (KV path never called by pipeline)
+- `src/Managers/UserPublisherFacebookSettingsManager.cs` — has `GetPageAccessTokenAsync`, `GetLongLivedAccessTokenAsync`, etc. (KV per-user); these are what PostPageStatus uses
+- `src/Domain/Interfaces/IUserOAuthTokenDataStore.cs` — needs `GetExpiringByPlatformAsync()` added
+- `src/Domain/Constants/SocialMediaPlatformIds.cs` — LinkedIn = 3, Facebook = 4
+
+**Architectural decision made:**
+- `UserOAuthTokens` is the authoritative store for per-user OAuth access tokens with expiry (both LinkedIn and Facebook should use it)
+- Settings Manager (KV + SQL flags) is for app credentials only (AppSecret, ClientSecret, AppId, PageId)
+- Facebook `RefreshTokens.cs` needs full rewrite to iterate per-user via `UserOAuthTokens`
+- LinkedIn `HasAccessToken` KV path is dead code — should be removed
+- `TokenRefreshes` table becomes obsolete once Facebook migrates; defer deletion to cleanup pass
+
+---
+

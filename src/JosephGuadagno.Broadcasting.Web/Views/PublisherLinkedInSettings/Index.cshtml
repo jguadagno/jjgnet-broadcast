@@ -41,8 +41,6 @@
                 <dd class="col-sm-8">@(Model.ClientId ?? "—")</dd>
                 <dt class="col-sm-4">Client secret</dt>
                 <dd class="col-sm-8">@(Model.HasClientSecret ? Model.MaskedValue : "Not set")</dd>
-                <dt class="col-sm-4">Access token</dt>
-                <dd class="col-sm-8">@(Model.HasAccessToken ? Model.MaskedValue : "Not set")</dd>
             </dl>
         }
     </div>

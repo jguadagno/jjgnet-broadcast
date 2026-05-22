@@ -18,7 +18,7 @@ public class SendTweet(ITwitterManager twitterManager, IUserPublisherTwitterSett
     {
         if (string.IsNullOrEmpty(request.OwnerEntraOid))
         {
-            logger.LogWarning("Tweet message missing OwnerEntraOid. Skipping.");
+            logger.LogWarning("Tweet message missing OwnerEntraOid. Skipping");
             return;
         }
 
@@ -31,7 +31,7 @@ public class SendTweet(ITwitterManager twitterManager, IUserPublisherTwitterSett
         if (string.IsNullOrEmpty(consumerKey) || string.IsNullOrEmpty(consumerSecret)
             || string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(accessTokenSecret))
         {
-            logger.LogWarning("Twitter credentials not found for owner '{OwnerOid}'. Skipping.",
+            logger.LogWarning("Twitter credentials not found for owner '{OwnerOid}'. Skipping",
                 LogSanitizer.Sanitize(ownerOid));
             return;
         }
@@ -45,7 +45,7 @@ public class SendTweet(ITwitterManager twitterManager, IUserPublisherTwitterSett
         {
             if (!string.IsNullOrEmpty(request.ImageUrl))
                 logger.LogWarning(
-                    "ImageUrl '{ImageUrl}' was present in the tweet message but Twitter media API image upload is not yet implemented. The tweet will be posted without an image attachment.",
+                    "ImageUrl '{ImageUrl}' was present in the tweet message but Twitter media API image upload is not yet implemented. The tweet will be posted without an image attachment",
                     request.ImageUrl);
 
             var tweetId = await twitterManager.PublishAsync(request);

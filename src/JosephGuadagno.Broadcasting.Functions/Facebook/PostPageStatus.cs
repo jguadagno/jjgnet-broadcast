@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
-public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherFacebookSettingsManager facebookSettingsManager, ILogger<PostPageStatus> logger)
+public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherFacebookSettingsManager facebookSettingsManager, IUserOAuthTokenManager userOAuthTokenManager, ILogger<PostPageStatus> logger)
 {
     [Function(ConfigurationFunctionNames.FacebookPostPageStatus)]
     public async Task Run(
@@ -23,7 +23,7 @@ public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherFace
 
         if (string.IsNullOrEmpty(request.OwnerEntraOid))
         {
-            logger.LogWarning("Facebook post status missing OwnerEntraOid. Skipping.");
+            logger.LogWarning("Facebook post status missing OwnerEntraOid. Skipping");
             return;
         }
 
@@ -31,29 +31,27 @@ public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherFace
         var settings = await facebookSettingsManager.GetAsync(ownerOid);
         if (settings is null || !settings.IsEnabled)
         {
-            logger.LogWarning("Facebook settings not found or not enabled for owner '{OwnerOid}'. Skipping.",
+            logger.LogWarning("Facebook settings not found or not enabled for owner '{OwnerOid}'. Skipping",
                 LogSanitizer.Sanitize(ownerOid));
             return;
         }
 
-        var pageAccessToken = await facebookSettingsManager.GetPageAccessTokenAsync(ownerOid)
-            ?? await facebookSettingsManager.GetLongLivedAccessTokenAsync(ownerOid);
-
-        if (string.IsNullOrEmpty(pageAccessToken))
+        var oauthToken = await userOAuthTokenManager.GetByUserAndPlatformAsync(ownerOid, SocialMediaPlatformIds.Facebook);
+        if (oauthToken is null)
         {
-            logger.LogWarning("Facebook credentials (PageAccessToken) not found for owner '{OwnerOid}'. Skipping.",
+            logger.LogWarning("No OAuth token found for owner '{OwnerOid}' on Facebook. Skipping",
                 LogSanitizer.Sanitize(ownerOid));
             return;
         }
 
         if (string.IsNullOrEmpty(settings.PageId))
         {
-            logger.LogWarning("Facebook PageId not found for owner '{OwnerOid}'. Skipping.",
+            logger.LogWarning("Facebook PageId not found for owner '{OwnerOid}'. Skipping",
                 LogSanitizer.Sanitize(ownerOid));
             return;
         }
 
-        request.AccessToken = pageAccessToken;
+        request.AccessToken = oauthToken.AccessToken;
         request.AuthorId = settings.PageId;
 
         try

@@ -210,7 +210,6 @@ public sealed class LinkedInPublisherSettingsViewModel : PublisherPlatformSettin
     public string? AccessTokenUrl { get; set; }
 
     public bool HasClientSecret { get; set; }
-    public bool HasAccessToken { get; set; }
 
     [DataType(DataType.Password)]
     [Display(Name = "Client secret")]
@@ -244,9 +243,9 @@ public sealed class LinkedInPublisherSettingsViewModel : PublisherPlatformSettin
             yield return new ValidationResult("Client secret is required when enabling LinkedIn publishing or changing credentials.", [nameof(ClientSecret)]);
         }
 
-        if ((ChangeCredentials || !HasAccessToken) && string.IsNullOrWhiteSpace(AccessToken))
+        if (ChangeCredentials && string.IsNullOrWhiteSpace(AccessToken))
         {
-            yield return new ValidationResult("Access token is required when enabling LinkedIn publishing or changing credentials.", [nameof(AccessToken)]);
+            yield return new ValidationResult("Access token is required when changing credentials.", [nameof(AccessToken)]);
         }
     }
 }

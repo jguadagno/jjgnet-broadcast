@@ -54,7 +54,6 @@ public class UserPublisherLinkedInSettingsDataStoreTests : IDisposable
             ClientId = clientId,
             IsEnabled = isEnabled,
             HasClientSecret = false,
-            HasAccessToken = false,
             CreatedOn = DateTimeOffset.UtcNow,
             LastUpdatedOn = DateTimeOffset.UtcNow
         });
@@ -132,8 +131,7 @@ public class UserPublisherLinkedInSettingsDataStoreTests : IDisposable
             IsEnabled = true,
             AuthorId = "urn:li:person:newperson",
             ClientId = "new-client-id",
-            HasClientSecret = true,
-            HasAccessToken = true
+            HasClientSecret = true
         };
 
         // Act
@@ -160,8 +158,7 @@ public class UserPublisherLinkedInSettingsDataStoreTests : IDisposable
             IsEnabled = true,
             AuthorId = "urn:li:person:updated",
             ClientId = "updated-client",
-            HasClientSecret = true,
-            HasAccessToken = true
+            HasClientSecret = true
         };
 
         // Act

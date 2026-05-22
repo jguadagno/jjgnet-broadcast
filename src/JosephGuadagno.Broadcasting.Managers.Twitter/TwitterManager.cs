@@ -25,7 +25,7 @@ public class TwitterManager(ILogger<TwitterManager> logger) : ITwitterManager
 
             if (tweet is null)
             {
-                logger.LogError("Failed to send the tweet: '{TweetText}'.", request.Text);
+                logger.LogError("Failed to send the tweet: '{TweetText}'", request.Text);
                 throw new TwitterPostException($"Failed to send tweet: '{request.Text}'.");
             }
 

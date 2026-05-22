@@ -7,6 +7,7 @@ using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Models.LinkedIn;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -86,22 +87,30 @@ public class LinkedInController : Controller
     /// <summary>
     /// Starts the LinkedIn OAuth2 authorization code flow
     /// </summary>
-    public async Task<IActionResult> RefreshToken()
+    public IActionResult RefreshToken()
     {
         // Build the URL to redirect the user to
         var state = Guid.NewGuid().ToString();
         HttpContext.Session.SetString(State, state);
 
-        var callbackUrl = Url.Action("Callback", "LinkedIn", null, Request.Scheme) ?? string.Empty;
-        if (string.IsNullOrEmpty(callbackUrl))
+        var callbackUrl = Url.Action("Callback", "LinkedIn", null, Request.Scheme);
+        if (callbackUrl == null)
         {
             _logger.LogError("Callback URL is missing");
-            return ViewBag["Message"] = "Callback URL is missing.";
+            return BadRequest("Callback URL is missing.");
         }
 
-        var url = $"{_linkedInSettings.AuthorizationUrl}?response_type=code&client_id={_linkedInSettings.ClientId}&redirect_uri={callbackUrl}&state={state}&scope={_linkedInSettings.Scopes}";
+        var queryParams = new Dictionary<string, string?>
+        {
+            { "response_type", "code" },
+            { "client_id", _linkedInSettings.ClientId },
+            { "redirect_uri", callbackUrl },
+            { "state", state },
+            { "scope", _linkedInSettings.Scopes }
+        };
 
-        return await Task.FromResult(Redirect(url));
+        var url = QueryHelpers.AddQueryString(_linkedInSettings.AuthorizationUrl, queryParams);
+        return Redirect(url);
     }
 
     /// <summary>
@@ -134,9 +143,8 @@ public class LinkedInController : Controller
         }
 
         // Exchange the code for an access token
-        var headers = new Dictionary<string, string>
+        var formContent = new Dictionary<string, string>
         {
-            {"Content-Type", "application/x-www-form-urlencoded"},
             {"grant_type", "authorization_code"},
             {"code", code},
             {"redirect_uri", callbackUrl},
@@ -144,7 +152,7 @@ public class LinkedInController : Controller
             {"client_secret", _linkedInSettings.ClientSecret}
         };
 
-        var response = await _httpClient.PostAsync(_linkedInSettings.AccessTokenUrl, new FormUrlEncodedContent(headers), cancellationToken);
+        var response = await _httpClient.PostAsync(_linkedInSettings.AccessTokenUrl, new FormUrlEncodedContent(formContent), cancellationToken);
 
         var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(await response.Content.ReadAsStringAsync(cancellationToken));
 
@@ -183,4 +191,3 @@ public class LinkedInController : Controller
         return RedirectToAction("Index");
     }
 }
-

@@ -66,7 +66,7 @@ public class LoadNewSpeakingEngagements(
 
                 var newItems = await speakerEngagementsReader.GetAll(config.SpeakingEngagementsFile, feedCheck.LastItemAddedOrUpdated);
 
-                if (newItems == null || newItems.Count == 0)
+                if (newItems.Count == 0)
                 {
                     feedCheck.LastCheckedFeed = startedAt;
                     await feedCheckManager.SaveAsync(feedCheck);
@@ -91,7 +91,7 @@ public class LoadNewSpeakingEngagements(
                     try
                     {
                         var saveResult = await SavePipeline.ExecuteAsync(
-                            async ct => await engagementManager.SaveAsync(item));
+                            async ct => await engagementManager.SaveAsync(item, ct));
                         if (!saveResult.IsSuccess || saveResult.Value is null)
                         {
                             logger.LogError("Failed to save the engagement with the id of: '{Id}' Url:'{Url}'. Error: {Error}",

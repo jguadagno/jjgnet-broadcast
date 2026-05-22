@@ -194,7 +194,7 @@ public class LinkedInControllerTests
     }
 
     [Fact]
-    public async Task RefreshToken_WhenCallbackUrlIsValid_ShouldRedirectToLinkedInAuthUrl()
+    public void RefreshToken_WhenCallbackUrlIsValid_ShouldRedirectToLinkedInAuthUrl()
     {
         // Arrange
         var controller = CreateController();
@@ -211,7 +211,7 @@ public class LinkedInControllerTests
         controller.Url = mockUrlHelper.Object;
 
         // Act
-        var result = await controller.RefreshToken();
+        var result = controller.RefreshToken();
 
         // Assert
         var redirectResult = Assert.IsType<RedirectResult>(result);

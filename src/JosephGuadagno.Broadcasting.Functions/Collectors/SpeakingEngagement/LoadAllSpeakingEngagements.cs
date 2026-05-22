@@ -64,7 +64,7 @@ public class LoadAllSpeakingEngagements(
 
                 var newItems = await speakerEngagementsReader.GetAll(config.SpeakingEngagementsFile, dateToCheckFrom);
 
-                if (newItems == null || newItems.Count == 0)
+                if (newItems.Count == 0)
                 {
                     logger.LogDebug("No speaking engagements found in '{FileUrl}'", config.SpeakingEngagementsFile);
                     continue;

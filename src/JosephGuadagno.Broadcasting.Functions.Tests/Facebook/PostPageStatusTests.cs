@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
@@ -14,10 +15,12 @@ public class PostPageStatusTests
 {
     private readonly Mock<IFacebookManager> _facebookManager = new();
     private readonly Mock<IUserPublisherFacebookSettingsManager> _facebookSettingsManager = new();
+    private readonly Mock<IUserOAuthTokenManager> _userOAuthTokenManager = new();
 
     private Functions.Facebook.PostPageStatus BuildSut() => new(
         _facebookManager.Object,
         _facebookSettingsManager.Object,
+        _userOAuthTokenManager.Object,
         NullLogger<Functions.Facebook.PostPageStatus>.Instance);
 
     private static SocialMediaPublishRequest BuildPublishRequest(
@@ -43,9 +46,14 @@ public class PostPageStatusTests
                 PageId = "page-123",
                 HasPageAccessToken = true
             });
-        _facebookSettingsManager
-            .Setup(m => m.GetPageAccessTokenAsync(oid, It.IsAny<CancellationToken>()))
-            .ReturnsAsync("token-abc");
+        _userOAuthTokenManager
+            .Setup(m => m.GetByUserAndPlatformAsync(oid, SocialMediaPlatformIds.Facebook, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserOAuthToken
+            {
+                CreatedByEntraOid = oid,
+                SocialMediaPlatformId = SocialMediaPlatformIds.Facebook,
+                AccessToken = "token-abc"
+            });
     }
 
     // Missing OwnerEntraOid → skip, no exception
@@ -76,6 +84,33 @@ public class PostPageStatusTests
         _facebookSettingsManager
             .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
             .ReturnsAsync((UserPublisherFacebookSettings?)null);
+        var sut = BuildSut();
+
+        var exception = await Record.ExceptionAsync(() => sut.Run(request));
+
+        Assert.Null(exception);
+        _facebookManager.Verify(
+            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            Times.Never);
+    }
+
+    // OAuth token not found → skip, no exception
+
+    [Fact]
+    public async Task Run_WhenOAuthTokenNotFound_SkipsPostingWithoutException()
+    {
+        var request = BuildPublishRequest();
+        _facebookSettingsManager
+            .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserPublisherFacebookSettings
+            {
+                CreatedByEntraOid = "test-oid",
+                IsEnabled = true,
+                PageId = "page-123"
+            });
+        _userOAuthTokenManager
+            .Setup(m => m.GetByUserAndPlatformAsync("test-oid", SocialMediaPlatformIds.Facebook, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserOAuthToken?)null);
         var sut = BuildSut();
 
         var exception = await Record.ExceptionAsync(() => sut.Run(request));

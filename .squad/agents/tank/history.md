@@ -23,7 +23,24 @@ Tank (QA Engineer) builds comprehensive test coverage across unit, integration, 
 - **Fix 2:** `SaveLinkedIn_WhenValid_ShouldPersistAndRedirect` → redirect assertion changed from `Index` to `Edit`, added `id` route value check (`3`), kept `userOid` check.
 - **Commit:** `c44ad92` on branch `issue-950-sanity-check`
 
+## Recent Session: Full Test Verification Pass — `issue-980-publisher-architecture-refactor` (2026-05-21)
+
+- **Work:** Full build + test verification pass on the branch
+- **Result:** ⚠️ 2 failures found — both caused by uncommitted working-tree changes on the branch
+- **Build:** ✅ 0 errors, 0 warnings
+- **Tests:** 1275 total: 2 failed, 1232 passed, 41 skipped
+- **Failures:**
+  1. `LoadAllSpeakingEngagementsTests.RunAsync_HandlesNullEngagementsList_Gracefully` — NullReferenceException because `null ||` was removed from `if (newItems == null || newItems.Count == 0)` in uncommitted `LoadAllSpeakingEngagements.cs`
+  2. `LoadNewPostsTests.RunAsync_HandlesNullFeedList_Gracefully` — Same root cause in uncommitted `LoadNewPosts.cs`
+- **Root Cause:** Branch's uncommitted work removed the null guards that were introduced in commit `4b765f88` alongside the tests. `git show HEAD` still has the correct code; `git diff HEAD` reveals the working-tree regression.
+- **Report filed:** `.squad/decisions/inbox/tank-test-failures.md`
+
+---
+
 ## Learnings
+
+### Null guard regression pattern (2026-05-21)
+When production code has `if (x == null || x.Count == 0)` and tests assert graceful null handling (`OkObjectResult`), removing the `null ||` part converts a safe no-op into a NullReferenceException caught by the outer `catch`, which returns `BadRequestObjectResult`. Always check `git diff HEAD` before running tests — failing null-handling tests with `OkObjectResult` expected but `BadRequestObjectResult` actual is the telltale signature of this pattern.
 
 ### Post-save redirect target in PublisherSettingsController
 `SavePlatformAsync` always redirects to `Edit` (not `Index`) after both success and invalid model state. Tests for Save* actions must assert `View("Edit", ...)` on validation failure and `RedirectToAction("Edit", ...)` on success, with route values `{ id = platformId }` (non-admin) or `{ id = platformId, userOid = targetOid }` (site-admin).

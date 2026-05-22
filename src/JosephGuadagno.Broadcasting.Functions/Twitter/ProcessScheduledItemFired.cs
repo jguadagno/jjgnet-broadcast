@@ -67,7 +67,10 @@ public class ProcessScheduledItemFired(
                 MessageTemplates.MessageTypes.ScheduledItem,
                 ownerEntraOid);
             if (template is null)
-                return null;
+            {
+	            logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.Twitter, MessageTemplates.MessageTypes.ScheduledItem, ownerEntraOid);
+	            return null;
+            }
 
             var composedText = await postComposer.ComposeAsync(request, template.Template);
             if (string.IsNullOrWhiteSpace(composedText))

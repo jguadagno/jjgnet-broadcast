@@ -45,7 +45,7 @@ public class ProcessNewSpeakingEngagementFired(
             var engagement = await engagementManager.GetAsync(newSpeakingEngagementEvent.Id);
             if (engagement is null)
             {
-                logger.LogWarning("Engagement {EngagementId} not found. Skipping.", newSpeakingEngagementEvent.Id);
+                logger.LogWarning("Engagement {EngagementId} not found. Skipping", newSpeakingEngagementEvent.Id);
                 return null;
             }
 
@@ -72,12 +72,15 @@ public class ProcessNewSpeakingEngagementFired(
                 MessageTemplates.MessageTypes.NewSpeakingEngagement,
                 ownerEntraOid);
             if (template is null)
-                return null;
+            {
+	            logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSpeakingEngagement, ownerEntraOid);
+	            return null;
+            }
 
             var composedText = await postComposer.ComposeAsync(request, template.Template);
             if (string.IsNullOrWhiteSpace(composedText))
             {
-                logger.LogWarning("Composed message was empty for engagement {EngagementId}. Skipping.", engagement.Id);
+                logger.LogWarning("Composed message was empty for engagement {EngagementId}. Skipping", engagement.Id);
                 return null;
             }
 

@@ -50,7 +50,6 @@ public class PublisherLinkedInSettingsController(
             AuthorId = model.AuthorId,
             ClientId = model.ClientId,
             HasClientSecret = model.HasClientSecret,
-            HasAccessToken = model.HasAccessToken,
             CreatedByEntraOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId) ?? string.Empty
         };
 
@@ -76,7 +75,6 @@ public class PublisherLinkedInSettingsController(
             AuthorId = settings?.AuthorId,
             ClientId = settings?.ClientId,
             HasClientSecret = settings?.HasClientSecret ?? false,
-            HasAccessToken = settings?.HasAccessToken ?? false,
             PlatformName = "LinkedIn",
             PlatformIcon = "bi-linkedin"
         };

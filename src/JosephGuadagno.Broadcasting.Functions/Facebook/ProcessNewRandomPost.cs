@@ -65,7 +65,10 @@ public class ProcessNewRandomPost(
                 MessageTemplates.MessageTypes.RandomPost,
                 ownerEntraOid);
             if (template is null)
-                return null;
+            {
+	            logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.Facebook, MessageTemplates.MessageTypes.RandomPost, ownerEntraOid);
+	            return null;
+            }
 
             var composedText = await postComposer.ComposeAsync(request, template.Template);
             if (string.IsNullOrWhiteSpace(composedText))

@@ -19,14 +19,14 @@ public class PostLink(ILinkedInManager linkedInManager, IUserOAuthTokenManager u
     {
         if (string.IsNullOrEmpty(request.OwnerEntraOid))
         {
-            logger.LogWarning("LinkedIn post missing OwnerEntraOid. Skipping.");
+            logger.LogWarning("LinkedIn post missing OwnerEntraOid. Skipping");
             return;
         }
 
         var settings = await linkedInSettingsManager.GetAsync(request.OwnerEntraOid);
         if (settings is null || !settings.IsEnabled)
         {
-            logger.LogWarning("LinkedIn settings not found or not enabled for owner '{OwnerOid}'. Skipping.",
+            logger.LogWarning("LinkedIn settings not found or not enabled for owner '{OwnerOid}'. Skipping",
                 LogSanitizer.Sanitize(request.OwnerEntraOid));
             return;
         }
@@ -35,7 +35,7 @@ public class PostLink(ILinkedInManager linkedInManager, IUserOAuthTokenManager u
             request.OwnerEntraOid, SocialMediaPlatformIds.LinkedIn);
         if (oauthToken is null)
         {
-            logger.LogWarning("No OAuth token found for owner '{OwnerOid}' on LinkedIn. Skipping.",
+            logger.LogWarning("No OAuth token found for owner '{OwnerOid}' on LinkedIn. Skipping",
                 LogSanitizer.Sanitize(request.OwnerEntraOid));
             return;
         }

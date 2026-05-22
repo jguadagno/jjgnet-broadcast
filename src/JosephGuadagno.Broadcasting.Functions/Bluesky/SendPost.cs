@@ -19,7 +19,7 @@ public class SendPost(IBlueskyManager blueskyManager, IUserPublisherBlueskySetti
     {
         if (string.IsNullOrEmpty(request.OwnerEntraOid))
         {
-            logger.LogWarning("Bluesky post message missing OwnerEntraOid. Skipping.");
+            logger.LogWarning("Bluesky post message missing OwnerEntraOid. Skipping");
             return;
         }
 
@@ -27,7 +27,7 @@ public class SendPost(IBlueskyManager blueskyManager, IUserPublisherBlueskySetti
         var settings = await blueskySettingsManager.GetAsync(ownerOid);
         if (settings is null || !settings.IsEnabled || string.IsNullOrEmpty(settings.UserName))
         {
-            logger.LogWarning("Bluesky settings not found or not enabled for owner '{OwnerOid}'. Skipping.",
+            logger.LogWarning("Bluesky settings not found or not enabled for owner '{OwnerOid}'. Skipping",
                 LogSanitizer.Sanitize(ownerOid));
             return;
         }
@@ -35,7 +35,7 @@ public class SendPost(IBlueskyManager blueskyManager, IUserPublisherBlueskySetti
         var appPassword = await blueskySettingsManager.GetAppPasswordAsync(ownerOid);
         if (string.IsNullOrEmpty(appPassword))
         {
-            logger.LogWarning("Bluesky app password not found for owner '{OwnerOid}'. Skipping.",
+            logger.LogWarning("Bluesky app password not found for owner '{OwnerOid}'. Skipping",
                 LogSanitizer.Sanitize(ownerOid));
             return;
         }

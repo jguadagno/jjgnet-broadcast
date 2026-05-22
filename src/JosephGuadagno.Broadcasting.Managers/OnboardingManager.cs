@@ -49,7 +49,7 @@ public class OnboardingManager(
             if (!updated)
             {
                 logger.LogWarning(
-                    "UpdateIsOnboardedAsync returned false for Entra OID {EntraOid}. User may not exist yet.",
+                    "UpdateIsOnboardedAsync returned false for Entra OID {EntraOid}. User may not exist yet",
                     entraOid);
                 return;
             }

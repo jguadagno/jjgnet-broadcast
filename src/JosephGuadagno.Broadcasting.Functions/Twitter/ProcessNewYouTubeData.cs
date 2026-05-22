@@ -6,7 +6,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Composers;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
+
 using Microsoft.Azure.Functions.Worker;using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
@@ -64,7 +64,10 @@ public class ProcessNewYouTubeDataFired(
             MessageTemplates.MessageTypes.NewYouTubeItem,
             ownerEntraOid);
         if (template is null)
-            return null;
+        {
+	        logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.Twitter, MessageTemplates.MessageTypes.NewYouTubeItem, ownerEntraOid);
+	        return null;
+        }
 
         var composedText = await postComposer.ComposeAsync(request, template.Template);
         if (string.IsNullOrWhiteSpace(composedText))

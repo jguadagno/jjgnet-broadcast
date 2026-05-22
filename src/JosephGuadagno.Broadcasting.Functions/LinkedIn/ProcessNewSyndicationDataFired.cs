@@ -66,7 +66,10 @@ public class ProcessNewSyndicationDataFired(
             MessageTemplates.MessageTypes.NewSyndicationFeedItem,
             ownerEntraOid);
         if (template is null)
-            return null;
+        {
+	        logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSyndicationFeedItem, ownerEntraOid);
+	        return null;
+        }
 
         var composedText = await postComposer.ComposeAsync(request, template.Template);
         if (string.IsNullOrWhiteSpace(composedText))

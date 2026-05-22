@@ -96,7 +96,6 @@ public class LinkedInSettingsController(
         if (!string.IsNullOrWhiteSpace(request.AccessToken))
         {
             await manager.StoreAccessTokenAsync(resolvedOwnerOid, request.AccessToken);
-            settings.HasAccessToken = true;
         }
 
         var saved = await manager.SaveAsync(settings);

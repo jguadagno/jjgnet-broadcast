@@ -2,7 +2,6 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 
@@ -72,7 +71,7 @@ public class LoadNewPosts(
 
                 var newItems = await syndicationFeedReader.GetAsync(config.FeedUrl, config.CreatedByEntraOid, feedCheck.LastItemAddedOrUpdated);
 
-                if (newItems == null || newItems.Count == 0)
+                if (newItems.Count == 0)
                 {
                     feedCheck.LastCheckedFeed = startedAt;
                     await feedCheckManager.SaveAsync(feedCheck);
@@ -97,7 +96,7 @@ public class LoadNewPosts(
                     try
                     {
                         var saveResult = await SavePipeline.ExecuteAsync(
-                            async ct => await syndicationFeedItemManager.SaveAsync(item));
+                            async ct => await syndicationFeedItemManager.SaveAsync(item, ct));
 
                         if (!saveResult.IsSuccess || saveResult.Value is null)
                         {
@@ -120,7 +119,6 @@ public class LoadNewPosts(
                         logger.LogError(e,
                             "Failed to save the blog post with the id of: '{Id}' Url:'{Url}'. Exception: {ExceptionMessage}",
                             item.Id, item.Url, e);
-                        continue;
                     }
                 }
 
