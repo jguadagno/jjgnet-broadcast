@@ -1209,3 +1209,30 @@ injection is permitted and appropriate.
 
 Any PR that registers a `JosephGuadagno.Broadcasting.Managers.*` concrete class in
 `Web/Program.cs` for a type that has a Service API wrapper must be rejected at review.
+
+---
+# Facebook OAuth Token Architecture Fix
+
+**Date:** 2026-05-21  
+**Author:** Trinity  
+**Status:** IMPLEMENTED — awaiting PR
+
+## Decision
+
+Facebook `PostPageStatus.cs` now reads per-user access tokens from `UserOAuthTokens` via `IUserOAuthTokenManager` (same as LinkedIn `PostLink.cs`), instead of Key Vault via `IUserPublisherFacebookSettingsManager`.
+
+Facebook `RefreshTokens.cs` now refreshes per-user tokens in `UserOAuthTokens` instead of global app-level KV secrets. The global KV approach was writing tokens that were never read by `PostPageStatus`.
+
+## Rationale
+
+`UserOAuthTokens` is the authoritative store for per-user OAuth access tokens (as decided in the architecture review). The old KV-based path and the global `RefreshTokens` were completely disconnected — refreshed tokens were never consumed. This fix closes that loop.
+
+## Scope Not Included (deferred)
+
+- **LinkedIn `HasAccessToken` dead code** — `UserPublisherLinkedInSettings.HasAccessToken` and KV-backed token methods are still dead code. Removing them requires cascading changes across API controllers, DTOs, Data.Sql, Web controllers, ViewModels, and tests. Left for a separate cleanup issue.
+- **`TokenRefreshes` table** — now unused by Facebook after this change. Cleanup deferred.
+- **Facebook expiry notifications** — Joseph explicitly excluded section 3.4 (expiry notifications). `RefreshTokens` handles token renewal; no `NotifyExpiringTokens` function needed for Facebook.
+
+## Production Prerequisite
+
+**GitHub issue #988** must be completed before deploying: seed existing per-user Facebook tokens from Key Vault into `UserOAuthTokens` with `SocialMediaPlatformId = 4`.
