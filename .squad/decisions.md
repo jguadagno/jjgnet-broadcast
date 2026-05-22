@@ -2,6 +2,183 @@
 
 Compiled record of team decisions, architecture choices, and resolutions.
 ---
+## OAuth Token Architecture — LinkedIn & Facebook
+
+**Date:** 2026-05-21  
+**Author:** Neo  
+**Status:** PROPOSAL — awaiting Joseph approval  
+**Requested by:** Joseph Guadagno
+
+---
+
+### 1. Current State Summary
+
+#### 1.1 LinkedIn
+
+| Layer | What exists |
+|-------|-------------|
+| SQL | `UserOAuthTokens` table (`CreatedByEntraOid`, `SocialMediaPlatformId = 3`, `AccessToken`, `RefreshToken`, expiry timestamps, `LastNotifiedAt`) |
+| SQL | `UserPublisherLinkedInSettings` table: `IsEnabled`, `AuthorId`, `ClientId`, `HasClientSecret`, **`HasAccessToken`** (boolean flag) |
+| KV | `publisher-{ownerOid}-linkedin-access-token` — written by `UserPublisherLinkedInSettingsManager.StoreAccessTokenAsync()` |
+| KV | `publisher-{ownerOid}-linkedin-client-secret` |
+| Manager | `IUserOAuthTokenManager` / `UserOAuthTokenManager` — full CRUD + expiry window queries |
+| Manager | `IUserPublisherLinkedInSettingsManager` — settings + `GetAccessTokenAsync()` / `StoreAccessTokenAsync()` (KV-backed) |
+| Function | `PostLink.cs` — uses `IUserOAuthTokenManager.GetByUserAndPlatformAsync()` for the access token |
+| Function | `NotifyExpiringTokens.cs` — queries `UserOAuthTokens` expiry window; sends 7-day and 1-day emails |
+
+**Key observation**: `UserPublisherLinkedInSettings.HasAccessToken` and the KV path in `IUserPublisherLinkedInSettingsManager` are **dead code** — `PostLink.cs` fetches the token from `UserOAuthTokens`, not from KV. These two mechanisms were likely built at different times (KV approach first, SQL table added later by issue #777) and were never reconciled.
+
+#### 1.2 Facebook
+
+| Layer | What exists |
+|-------|-------------|
+| SQL | `UserPublisherFacebookSettings` table: `IsEnabled`, `PageId`, `AppId`, plus boolean flags `HasPageAccessToken`, `HasAppSecret`, `HasClientToken`, `HasShortLivedAccessToken`, `HasLongLivedAccessToken` |
+| KV (per-user) | `publisher-{ownerOid}-facebook-page-access-token`, `-long-lived-access-token`, `-short-lived-access-token` |
+| KV (per-user) | `publisher-{ownerOid}-facebook-app-secret`, `-client-token` |
+| KV (global) | `jjg-net-facebook-{long-lived|page}-access-token` — written by `Facebook/RefreshTokens.cs` |
+| Manager | `IUserPublisherFacebookSettingsManager` — settings + all token get/store methods (KV-backed, per-user) |
+| Function | `PostPageStatus.cs` — correctly uses `IUserPublisherFacebookSettingsManager.GetPageAccessTokenAsync()` (per-user KV) |
+| Function | `RefreshTokens.cs` — uses `IFacebookApplicationSettings` (global app config), refreshes global tokens, saves to global KV key via `IKeyVault` directly |
+| DB | `TokenRefreshes` table — used only by `Facebook/RefreshTokens.cs` to track last-refresh timestamps |
+
+**Key observation**: `PostPageStatus` and `RefreshTokens` are **working against different token stores**. `PostPageStatus` reads per-user KV secrets. `RefreshTokens` refreshes global KV secrets. The tokens that `RefreshTokens` refreshes are **never read by PostPageStatus**. The Facebook token refresh is functionally disconnected from the publisher pipeline.
+
+#### 1.3 Collector/Publisher Settings Pattern (the reference model)
+
+- Each user's platform settings live in a dedicated SQL table (`UserPublisher{Platform}Settings`) keyed by `CreatedByEntraOid`.
+- The SQL row holds metadata and boolean `Has*` flags. Actual secrets live in KV under `{ownerType}-{ownerOid}-{platform}-{settingName}`.
+- A manager class (`UserPublisher{Platform}SettingsManager`) wraps both SQL datastore and KV. Functions resolve credentials at dequeue time: `OwnerEntraOid` → manager → credentials.
+- This is working correctly for Twitter, Bluesky, and Facebook (at the PostPageStatus level).
+
+---
+
+### 2. Gap Analysis
+
+| Problem | Root Cause | Impact |
+|---------|-----------|--------|
+| LinkedIn has two parallel token stores (SQL `UserOAuthTokens` + KV via `HasAccessToken`) | Both were built without reconciliation; the KV path was never wired into the publisher pipeline | Dead code in `IUserPublisherLinkedInSettingsManager`; false signal (`HasAccessToken = true` in DB but ignored at publish time) |
+| Facebook `RefreshTokens` uses global app-level config, not per-user settings | Was built before per-user pattern existed; never updated when `UserPublisherFacebookSettings` was introduced | Tokens refreshed by the Function are NEVER used by `PostPageStatus`; the actual per-user tokens in KV never get refreshed |
+| Facebook has no expiry tracking with user notification | `UserOAuthTokens` only populated for LinkedIn; no `NotifyExpiringTokens` for Facebook | If Facebook token expires and auto-refresh fails, the user has no warning |
+| `TokenRefreshes` table is a global log with no user scoping | Built for the old global refresh approach | Redundant once Facebook migrates to per-user `UserOAuthTokens` |
+
+---
+
+### 3. Recommendation
+
+#### 3.1 Core Principle
+
+**`UserOAuthTokens` is the authoritative store for per-user OAuth access tokens with expiry.** App-level credentials (AppSecret, ClientSecret, AppId, PageId) belong in KV via the Settings Manager pattern.
+
+The two patterns serve distinct roles:
+- `UserOAuthTokens` — tokens obtained via an OAuth flow or refreshed automatically; all have expiry dates that the system must track.
+- Settings Manager (KV + SQL flags) — app credentials that don't expire like OAuth tokens (secrets, IDs, keys).
+
+#### 3.2 LinkedIn — Clean Up the Dual Track
+
+**Keep** `UserOAuthTokens` as the canonical OAuth token store. It is correct and already wired into `PostLink.cs` and `NotifyExpiringTokens.cs`.
+
+**Remove** the dead KV-backed token path from the LinkedIn settings manager:
+
+| Change | File(s) |
+|--------|---------|
+| Remove `HasAccessToken`, `GetAccessTokenAsync`, `StoreAccessTokenAsync` | `IUserPublisherLinkedInSettingsManager.cs` |
+| Remove corresponding implementation | `UserPublisherLinkedInSettingsManager.cs` |
+| Remove `HasAccessToken` property | `Domain/Models/UserPublisherLinkedInSettings.cs` |
+| Remove `HasAccessToken` property + EF mapping | `Data.Sql/Models/UserPublisherLinkedInSettings.cs` + `MappingProfiles/` |
+| SQL migration: drop `HasAccessToken` column | `scripts/database/migrations/` (new script) |
+| Update tests | `Managers.Tests/UserPublisherLinkedInSettingsManagerTests.cs`, `Data.Sql.Tests/UserPublisherLinkedInSettingsDataStoreTests.cs` |
+
+`PostLink.cs`, `NotifyExpiringTokens.cs`, `UserOAuthTokenManager.cs`, and all `UserOAuthToken` datastore and domain classes remain unchanged.
+
+#### 3.3 Facebook — Migrate to Per-User UserOAuthTokens
+
+**Phase A — Wire `PostPageStatus` to `UserOAuthTokens`**
+
+`PostPageStatus.cs` currently calls `facebookSettingsManager.GetPageAccessTokenAsync()`. Change it to call `IUserOAuthTokenManager.GetByUserAndPlatformAsync(ownerOid, SocialMediaPlatformIds.Facebook)` — exactly matching how `PostLink.cs` resolves LinkedIn tokens. The `AuthorId` (`PageId`) remains in the settings manager.
+
+**Phase B — Rewrite `RefreshTokens.cs` to per-user**
+
+The function must stop using `IFacebookApplicationSettings` for token values and instead:
+
+1. Query `IUserOAuthTokenManager` (or the underlying data store) for all Facebook rows where the access token will expire within N days (or query all enabled Facebook users via their settings).
+2. For each user, retrieve their app credentials (`AppId`, `AppSecret`) via `IUserPublisherFacebookSettingsManager.GetAppSecretAsync()`.
+3. Call `facebookManager.RefreshToken(currentToken)` with the per-user token value from `UserOAuthTokens`.
+4. Write the new token back via `IUserOAuthTokenManager.StoreOAuthCallbackTokenAsync()`.
+
+**Phase C — Clean up Facebook settings model**
+
+Remove the token-specific boolean flags from `UserPublisherFacebookSettings` — those tokens now live in `UserOAuthTokens`:
+
+| Remove | Keep |
+|--------|------|
+| `HasPageAccessToken`, `HasShortLivedAccessToken`, `HasLongLivedAccessToken` | `HasAppSecret`, `HasClientToken` |
+| `GetPageAccessTokenAsync`, `StorePageAccessTokenAsync` | `GetAppSecretAsync`, `StoreAppSecretAsync` |
+| `GetShortLivedAccessTokenAsync`, `StoreShortLivedAccessTokenAsync` | `GetClientTokenAsync`, `StoreClientTokenAsync` |
+| `GetLongLivedAccessTokenAsync`, `StoreLongLivedAccessTokenAsync` | (keep all metadata: `PageId`, `AppId`, `IsEnabled`) |
+
+Add `IUserOAuthTokenManager` parameter to the `PostPageStatus` constructor; remove `IFacebookApplicationSettings` from `RefreshTokens` constructor.
+
+**Phase D — Add `IUserOAuthTokenDataStore.GetExpiringByPlatformAsync()`**
+
+The `RefreshTokens` function needs to enumerate all users for a given platform. Extend `IUserOAuthTokenDataStore` with:
+
+```csharp
+Task<List<UserOAuthToken>> GetExpiringByPlatformAsync(
+    int platformId, DateTimeOffset threshold, CancellationToken cancellationToken = default);
+```
+
+This method mirrors `GetExpiringAsync` but scopes by `SocialMediaPlatformId`.
+
+**Phase E — Retire `TokenRefreshes` table (deferred)**
+
+The `TokenRefreshes` table and `ITokenRefreshManager` serve only the old global-refresh pattern. Once Facebook is migrated, no function writes to `TokenRefreshes`. Mark it for deletion in a future cleanup pass — do not delete it in the same PR as the migration to avoid risk.
+
+#### 3.4 Optional Enhancement — Facebook Expiry Notifications
+
+Since `UserOAuthTokens` now tracks Facebook token expiry, a `NotifyExpiringTokens` function for Facebook (modelled exactly on the LinkedIn one) can be added later. This is a future enhancement, not part of the immediate fix.
+
+---
+
+### 4. Migration Considerations
+
+- **LinkedIn SQL migration**: The `HasAccessToken` column should be dropped via a new idempotent migration script in `scripts/database/migrations/`. Add `IF EXISTS (SELECT 1 FROM sys.columns WHERE ...)` guard.
+- **Facebook SQL migration**: Same approach for `HasPageAccessToken`, `HasShortLivedAccessToken`, `HasLongLivedAccessToken` columns.
+- **Data migration**: Existing Facebook per-user tokens currently in KV (`publisher-{ownerOid}-facebook-page-access-token`, etc.) must be migrated into `UserOAuthTokens` rows. This requires a one-time script or admin utility to: read each enabled Facebook user's `PageAccessToken` from KV, parse the expiry, and insert into `UserOAuthTokens`. **This is a manual production step — a GitHub issue with `squad:Joe` label must accompany the PR.**
+- **LinkedIn KV secret cleanup**: Per-user LinkedIn access tokens stored in KV under `publisher-{ownerOid}-linkedin-access-token` were never used by the pipeline. They can be deleted from KV as part of cleanup (also manual, tracked via issue).
+- **Global KV secret `jjg-net-facebook-*-access-token`**: Once per-user tokens are in `UserOAuthTokens`, the global KV secret is no longer needed. Remove via manual cleanup (tracked via issue).
+
+---
+
+### 5. Implementation Order
+
+1. **LinkedIn cleanup** (lower risk, no functional change) — PR 1
+2. **Facebook Phase A** — wire `PostPageStatus` to `UserOAuthTokens` — PR 2
+3. **Facebook Phase B+C** — rewrite `RefreshTokens`, clean settings manager — PR 3 (depends on data migration issue)
+4. **Facebook Phase D** — extend `IUserOAuthTokenDataStore.GetExpiringByPlatformAsync()` — included in PR 3
+5. **`TokenRefreshes` retirement** — future cleanup PR
+
+---
+
+### 6. Files of Interest
+
+| File | Role |
+|------|------|
+| `scripts/database/table-create.sql` (lines 404–460) | LinkedIn and Facebook settings tables |
+| `scripts/database/table-create.sql` (lines 480–509) | `UserOAuthTokens` table |
+| `src/Domain/Models/UserPublisherLinkedInSettings.cs` | `HasAccessToken` to remove |
+| `src/Domain/Models/UserPublisherFacebookSettings.cs` | Token flags to remove |
+| `src/Domain/Interfaces/IUserPublisherLinkedInSettingsManager.cs` | Methods to remove |
+| `src/Domain/Interfaces/IUserPublisherFacebookSettingsManager.cs` | Methods to remove |
+| `src/Domain/Interfaces/IUserOAuthTokenDataStore.cs` | Add `GetExpiringByPlatformAsync` |
+| `src/Managers/UserPublisherLinkedInSettingsManager.cs` | Implementation to prune |
+| `src/Managers/UserPublisherFacebookSettingsManager.cs` | Implementation to prune |
+| `src/Managers/UserOAuthTokenManager.cs` | Stays as-is |
+| `src/Functions/Facebook/PostPageStatus.cs` | Switch token source to `IUserOAuthTokenManager` |
+| `src/Functions/Facebook/RefreshTokens.cs` | Full rewrite to per-user |
+| `src/Functions/LinkedIn/PostLink.cs` | No change |
+| `src/Functions/LinkedIn/NotifyExpiringTokens.cs` | No change |
+
+---
 ## # Phase 6 Complete — #980 Publisher Architecture Refactor
 
 **Date:** 2026-05-15  
