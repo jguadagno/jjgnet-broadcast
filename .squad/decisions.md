@@ -2,6 +2,22 @@
 
 Compiled record of team decisions, architecture choices, and resolutions.
 ---
+## Facebook Token Expiry Notifications — Not Required
+
+**Date:** 2026-05-21  
+**Author:** Joseph Guadagno (via Copilot)  
+**Status:** DECISION  
+
+### Decision
+Facebook token expiry notifications (section 3.4 of neo-oauth-token-architecture recommendation) are **NOT needed**. The `RefreshTokens` Azure Function handles Facebook token renewal automatically — there is no need for user-facing expiry notifications for Facebook tokens.
+
+### Rationale
+- User request — captured for team memory
+- LinkedIn requires user-intervention notifications because LinkedIn tokens cannot be refreshed automatically
+- Facebook tokens CAN be refreshed automatically, so no notification is needed
+- This decision removes scope from the neo-oauth-token-architecture work
+
+---
 ## OAuth Token Architecture — LinkedIn & Facebook
 
 **Date:** 2026-05-21  
