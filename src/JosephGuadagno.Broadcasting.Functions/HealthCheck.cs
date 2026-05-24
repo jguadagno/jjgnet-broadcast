@@ -91,7 +91,7 @@ public class HealthCheck(
     private async Task<(string Name, bool Healthy, string? Message)> CheckQueueStorageAsync(
         CancellationToken cancellationToken)
     {
-        const string name = "queue-storage";
+        const string name = "queue-storage-queue-check";
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(5));
 
@@ -119,7 +119,7 @@ public class HealthCheck(
     private async Task<(string Name, bool Healthy, string? Message)> CheckTableStorageAsync(
         CancellationToken cancellationToken)
     {
-        const string name = "table-storage";
+        const string name = "table-storage-table-check";
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(5));
 

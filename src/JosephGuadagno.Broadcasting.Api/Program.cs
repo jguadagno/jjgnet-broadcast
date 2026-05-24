@@ -10,8 +10,6 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Serilog;
-using JosephGuadagno.AzureHelpers.Storage;
-using JosephGuadagno.AzureHelpers.Storage.Interfaces;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Domain;
@@ -63,11 +61,12 @@ builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration)
 builder.Services.AddBroadcastingApiAuthorization();
 
 // Configure the telemetry and logging
-var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
+var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, $"logs{Path.DirectorySeparatorChar}logs.txt");
 ConfigureTelemetryAndLogging(builder.Services, fullyQualifiedLogFile, "Api");
 
 // Register DI services
 builder.AddAzureQueueServiceClient("QueueAccount");
+builder.AddAzureTableServiceClient("TableAccount");
 
 // Add in AutoMapper
 builder.Services.AddAutoMapper(config =>
@@ -86,11 +85,11 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddControllers(options =>
 {
-    // API uses Bearer token auth ΓÇö antiforgery tokens are not applicable
+    // API uses Bearer token auth - antiforgery tokens are not applicable
     options.Filters.Add(new IgnoreAntiforgeryTokenAttribute());
 });
 
-// Rate limiting ΓÇö 100 requests per minute (fixed window), applied globally
+// Rate limiting - 100 requests per minute (fixed window), applied globally
 builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter(RateLimitingPolicies.FixedWindow, limiterOptions =>
@@ -246,7 +245,7 @@ void ConfigureRepositories(IServiceCollection services)
     services.TryAddScoped<IUserCollectorYouTubeChannelManager, UserCollectorYouTubeChannelManager>();
     services.TryAddScoped<IUserCollectorSpeakingEngagementDataStore, UserCollectorSpeakingEngagementDataStore>();
     services.TryAddScoped<IUserCollectorSpeakingEngagementManager, UserCollectorSpeakingEngagementManager>();
-    
+
     services.TryAddScoped<IEngagementSocialMediaPlatformDataStore, EngagementSocialMediaPlatformDataStore>();
 
     // SyndicationFeedItem

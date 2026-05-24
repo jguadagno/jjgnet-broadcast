@@ -95,10 +95,6 @@ public class Startup
         }
         services.TryAddSingleton<IEventPublisherSettings>(eventPublisherSettings);
 
-        // Configure the logger
-        // Removed since logging is not required for tests and won't work on CI servers
-        // ConfigureTelemetryAndLogging(services, settings.LoggingStorageAccount, loggerFile,"Functions");
-
         // Add in AutoMapper
         var autoMapperSettings = new AutoMapperSettings();
         config.Bind("AutoMapper", autoMapperSettings);

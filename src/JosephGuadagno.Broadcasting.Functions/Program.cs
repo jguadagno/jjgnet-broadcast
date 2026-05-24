@@ -115,10 +115,9 @@ builder.Services.AddAutoMapper(mapperConfig =>
     mapperConfig.LicenseKey = autoMapperSettings.LicenseKey;
     mapperConfig.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
 }, typeof(Program));
-    
+
 // Configure all the services
 builder.AddAzureQueueServiceClient("QueueAccount");
-builder.AddAzureBlobServiceClient("BlobAccount");
 builder.AddAzureTableServiceClient("TableAccount");
 
 ConfigureKeyVault(builder.Services);

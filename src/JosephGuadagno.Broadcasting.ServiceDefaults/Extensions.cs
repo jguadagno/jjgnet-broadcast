@@ -1,6 +1,8 @@
 using Azure.Data.Tables;
 using Azure.Storage.Queues;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
+using Azure.Storage.Blobs;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -117,24 +119,34 @@ public static class Extensions
         }
 
         // Conditionally add Azure Storage health check (queue storage)
-        var storageConn = builder.Configuration["ConnectionStrings:QueueStorage"];
-        if (!string.IsNullOrWhiteSpace(storageConn))
+        var queueStorageConn = builder.Configuration["ConnectionStrings:QueueAccount"];
+        if (!string.IsNullOrWhiteSpace(queueStorageConn))
         {
             hcBuilder.AddAzureQueueStorage(
-                clientFactory: _ => new QueueServiceClient(storageConn),
-                name: "azurestorage",
+                clientFactory: _ => new QueueServiceClient(queueStorageConn),
+                name: "queue-storage",
                 failureStatus: HealthStatus.Unhealthy,
                 tags: ["storage", "ready"]);
         }
 
         // Conditionally add Azure Table Storage health check (Serilog logging sink)
-        var tableStorageConn = builder.Configuration["Settings:LoggingStorageAccount"];
+        var tableStorageConn = builder.Configuration["ConnectionStrings:TableAccount"];
         if (!string.IsNullOrWhiteSpace(tableStorageConn))
         {
             hcBuilder.AddAzureTable(
                 clientFactory: _ => new TableServiceClient(tableStorageConn),
                 name: "table-storage",
                 tags: ["ready"]);
+        }
+
+        // Conditionally add Azure Blob Storage health check (Serilog logging sink)
+        var blobStorageConn = builder.Configuration["ConnectionStrings:BlobAccount"];
+        if (!string.IsNullOrWhiteSpace(blobStorageConn))
+        {
+	        hcBuilder.AddAzureBlobStorage(
+		        clientFactory: _ => new BlobServiceClient(blobStorageConn),
+		        name: "blob-storage",
+		        tags: ["ready"]);
         }
 
         // Conditionally add Azure Communication Services health check
