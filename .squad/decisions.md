@@ -2,6 +2,12 @@
 
 Compiled record of team decisions, architecture choices, and resolutions.
 ---
+# Team Decisions
+
+Compiled record of team decisions, architecture choices, and resolutions.
+---
+
+---
 ## Facebook Token Expiry Notifications — Not Required
 
 **Date:** 2026-05-21  
@@ -16,6 +22,8 @@ Facebook token expiry notifications (section 3.4 of neo-oauth-token-architecture
 - LinkedIn requires user-intervention notifications because LinkedIn tokens cannot be refreshed automatically
 - Facebook tokens CAN be refreshed automatically, so no notification is needed
 - This decision removes scope from the neo-oauth-token-architecture work
+
+---
 
 ---
 ## OAuth Token Architecture — LinkedIn & Facebook
@@ -195,227 +203,7 @@ Since `UserOAuthTokens` now tracks Facebook token expiry, a `NotifyExpiringToken
 | `src/Functions/LinkedIn/NotifyExpiringTokens.cs` | No change |
 
 ---
-## # Phase 6 Complete — #980 Publisher Architecture Refactor
 
-**Date:** 2026-05-15  
-**Author:** Neo  
-**Branch:** `issue-980-publisher-architecture-refactor`  
-**Status:** COMPLETE
----
-## Phase 6: Delete Obsolete Platform Queue DTOs
-
-### Files Deleted
-
-**Domain model DTOs (zero type references in production code):**
-
-| File | Reason |
-|------|--------|
-| `Domain/Models/Messages/FacebookPostStatus.cs` | Replaced by `SocialMediaPublishRequest`; no callers |
-| `Domain/Models/Messages/LinkedInPostLink.cs` | Replaced by `SocialMediaPublishRequest`; no callers |
-| `Domain/Models/Messages/TwitterTweetMessage.cs` | Replaced by `SocialMediaPublishRequest`; no callers |
-| `Domain/Models/Messages/LinkedInPostImage.cs` | Replaced by `SocialMediaPublishRequest`; no callers |
-| `Domain/Models/Messages/LinkedInPostText.cs` | Replaced by `SocialMediaPublishRequest`; no callers |
-
-**Orphaned LinkedIn functions (queues no longer fed by any Process* function):**
-
-| File | Reason |
-|------|--------|
-| `Functions/LinkedIn/PostImage.cs` | Listened on `linkedin-post-image`; no Process* function enqueued to it; functionality fully covered by `PostLink.cs` + `LinkedInManager.PublishAsync()` which handles `ImageUrl` |
-| `Functions/LinkedIn/PostText.cs` | Listened on `linkedin-post-text`; no Process* function enqueued to it; functionality covered by `PostLink.cs` |
-| `Functions.Tests/LinkedIn/PostImageTests.cs` | Tests for deleted function |
-| `Functions.Tests/LinkedIn/PostTextTests.cs` | Tests for deleted function |
-
-**Domain/Models/Messages/ now contains only `Email.cs` (as intended).**
-
-### Constants Cleaned Up
-
-Removed from `Domain/Constants/Queues.cs`:
-- `LinkedInPostText = "linkedin-post-text"`
-- `LinkedInPostImage = "linkedin-post-image"`
-
-Removed from `Domain/Constants/ConfigurationFunctionNames.cs`:
-- `LinkedInPostText`
-- `LinkedInPostImage`
-
-Removed from `Domain/Constants/Metrics.cs`:
-- `LinkedInPostText`
-- `LinkedInPostImage`
-
-All remaining constants (`LinkedInPostLink`, `FacebookPostStatusToPage`, etc.) are still active — they name the queue channels used by the new `SocialMediaPublishRequest` pipeline.
-
-### Remaining References (All Valid)
-
-References like `Queues.LinkedInPostLink`, `Queues.FacebookPostStatusToPage`, `ConfigurationFunctionNames.LinkedInPostLink`, and `Metrics.LinkedInPostLink` remain — they are **queue channel names**, not DTO type references. The queue names did not change; only the message payload type changed (from old DTOs to `SocialMediaPublishRequest`).
-
-### Build and Test Results
-
-- **Build:** 0 errors, 0 warnings
-- **Tests:** 1,222 passed, 0 failed (41 skipped — integration tests requiring live services)
-- **Commit:** `af705129` — `refactor(#980): Phase 6 — delete obsolete platform queue DTOs`
----
-## Overall #980 Refactor Summary
-
-### What the Codebase Looked Like Before
-
-Each social media platform had:
-- **A platform-specific queue DTO** (`FacebookPostStatus`, `TwitterTweetMessage`, `LinkedInPostLink`, `LinkedInPostImage`, `LinkedInPostText`) used as the queue message payload
-- **Hard-coded credentials** embedded in the DTO (access tokens, author IDs passed through the queue)
-- **Process* functions** that composed the full message text inline using hard-coded templates
-- **Send* functions** that dequeued the platform-specific DTO and called platform-specific manager methods directly
-- **Manager methods** that took platform-specific parameters (text, accessToken, authorId, etc.)
-
-### What the Codebase Looks Like Now
-
-**One unified queue message type:** `SocialMediaPublishRequest` is the queue payload across ALL 4 platforms.
-
-**Pipeline:**
-```
-EventGrid event
-  → Process* Function (composes message text via IPostComposer + per-user IMessageTemplateLookup)
-  → enqueues SocialMediaPublishRequest{Text, Title, LinkUrl, Hashtags, OwnerEntraOid, ...}
-    to platform queue
-  → Send* Function dequeues SocialMediaPublishRequest
-  → resolves per-user credentials via Settings Manager (KeyVault-backed)
-  → hydrates request.AccessToken, request.AuthorId
-  → calls manager.PublishAsync(request)
-  → platform manager dispatches internally based on request fields
-```
-
-**Key architectural improvements:**
-1. **No credentials in the queue** — `OwnerEntraOid` travels instead; credentials resolved at send time from per-user settings
-2. **No hard-coded templates** — `IMessageTemplateLookup` fetches per-user, per-platform templates from the database
-3. **Single `ISocialMediaPublisher` interface** — all platform managers implement `PublishAsync(SocialMediaPublishRequest)`
-4. **`PostComposer`** handles Handlebars template composition centrally
-5. **Per-user Twitter auth** — Twitter credentials (consumerKey, consumerSecret, accessToken, accessTokenSecret) all per-user from `IUserPublisherTwitterSettingsManager`
-6. **LinkedIn image/text/link dispatch unified** — `LinkedInManager.PublishAsync()` inspects `request.ImageBytes`/`request.ImageUrl`/`request.LinkUrl` to pick the right LinkedIn API call
-
-### Phase Summary
-
-| Phase | Change |
-|-------|--------|
-| 1 | Deleted dead plural `*PublisherSettings`; created `IPostComposer`, `PostComposer`, `IMessageTemplateLookup` |
-| 2 | Extended `SocialMediaPublishRequest`; created `MessageTemplateLookup`; DI registrations |
-| 3 | User-scoped `GetAsync` on `IMessageTemplateDataStore`; migrated all 20 Process* Functions |
-| 4 | Stripped composition from all 4 publisher managers; Twitter per-user auth |
-| 5 | Send* Functions dequeue `SocialMediaPublishRequest`; all managers use `PublishAsync(request)` |
-| 6 | Deleted all obsolete platform-specific queue DTOs; removed dead functions and constants |
-
-### Branch State
-
-Branch `issue-980-publisher-architecture-refactor` is **ready for review**.  
-Pending PRs #978 and #979 should merge first if they affect shared infrastructure.
----
-## Decision: Azure Functions Stable Port via .WithHttpEndpoint() in AppHost
-
-
-
-**Date:** 2026-05-16  
-
-**Author:** Cypher (DevOps Engineer)  
-
-**Requested by:** Joseph Guadagno  
-
-**Status:** Implemented
-
-
-
-### Context
-
-
-
-The Azure Functions project (JosephGuadagno.Broadcasting.Functions) had unstable port assignment
-
-in local Aspire environments. Aspire assigned a random proxy port to the Functions resource on every
-
-run, making it impossible to predict the local endpoint without inspecting the Aspire dashboard.
-
-
-
-**Initial Approach Attempted:** Add Properties/launchSettings.json with a fixed pplicationUrl.
-
-**Outcome:** Failed. launchSettings.json does NOT work for Azure Functions isolated worker model
-
-in Aspire. The launch settings are ignored by the Functions host.
-
-
-
-### Decision (Final)
-
-
-
-**Delete** src/JosephGuadagno.Broadcasting.Functions/Properties/launchSettings.json
-
-and any Properties/ directory if empty.
-
-
-
-**Add** .WithHttpEndpoint(port: 7071, isProxied: false) to the Functions resource in AppHost.cs.
-
-
-
-Port 7071 is the Azure Functions conventional default and does not conflict with any other
-
-project in the solution:
-
-
-
-| Project    | HTTP port | HTTPS port |
-
-|------------|-----------|------------|
-
-| API        | 5272      | 7272       |
-
-| Web        | 5224      | 7224       |
-
-| AppHost    | 15061     | 17282      |
-
-| **Functions** | **7071** | *(none)*  |
-
-
-
-### Rationale
-
-
-
-launchSettings.json is a Visual Studio-specific launch configuration and is ignored by the
-
-Azure Functions isolated worker model when running under Aspire orchestration. The correct
-
-pattern for Aspire is to use the resource builder API in AppHost.cs.
-
-
-
-The .WithHttpEndpoint(port: 7071, isProxied: false) configuration:
-
-- Sets the Functions resource to bind directly to port 7071 (not through Aspire's reverse proxy)
-
-- isProxied: false is the correct pattern for Azure Functions — the Functions host manages
-
-  its own HTTP binding, bypassing Aspire's proxy layer
-
-- Ensures stable port across all local runs
-
-
-
-### Files Changed
-
-
-
-- **Deleted:** src/JosephGuadagno.Broadcasting.Functions/Properties/launchSettings.json
-
-- **Modified:** src/JosephGuadagno.Broadcasting.AppHost/AppHost.cs
-
-  - Added .WithHttpEndpoint(port: 7071, isProxied: false) to Functions resource registration
-
-
-
-### Verification
-
-
-
-dotnet build .\src\ --no-restore --configuration Release — Build succeeded, 0 errors.
-
-Functions resource now consistently binds to http://localhost:7071 across all local Aspire runs.
 ---
 ## Decision: Phase 1 Complete — IPostComposer/PostComposer + Dead Code Removal
 
@@ -543,6 +331,8 @@ One observation: the proposal mentioned `ConsumerKey`/`ConsumerSecret`/`AccessTo
 
 **Phase 2:** Extract `IMessageTemplateLookup` — user-scoped template resolution with `GetAsync(platformName, messageType, ownerEntraOid)`.
 ---
+
+---
 ## Decision: Publisher Architecture — Finalized Decisions
 
 
@@ -604,6 +394,8 @@ One observation: the proposal mentioned `ConsumerKey`/`ConsumerSecret`/`AccessTo
 - Issue #978 must define and enforce required templates per publisher
 
 - Issue #979 must seed default templates on user setup (including RandomPost type)
+---
+
 ---
 ## Decision: Publisher Architecture — Model Placement and Settings Cleanup
 
@@ -797,6 +589,8 @@ src/JosephGuadagno.Broadcasting.Domain/Models/Messages/LinkedInPostImage.cs     
 
 ```
 ---
+
+---
 ## Decision: Phase 2 Complete — IMessageTemplateLookup + SocialMediaPublishRequest Extended
 
 
@@ -910,6 +704,8 @@ Note: `AccessToken` was already present on the model (added in Phase 1 research)
 2. Update `MessageTemplateLookup.GetAsync` to call the new user-scoped overload (remove the TODO comment).
 
 3. Migrate all `Process*` Functions to use `IMessageTemplateLookup` instead of inline two-step lookup.
+---
+
 ---
 ## Decision: Phase 4 Complete — Composition Stripped from Publisher Managers
 
@@ -1026,6 +822,8 @@ Removed `Scriban` package reference from all 4 manager csproj files.
 
 
 All tests pass. 0 failures. (SyndicationFeedReader network tests excluded per CI policy.)
+---
+
 ---
 ## Decision: Phase 5 Complete — Send* Functions Dequeue SocialMediaPublishRequest
 
@@ -1261,6 +1059,8 @@ returns the requesting user's data. Admin endpoints are separate routes under th
 **Branch**: `issue-978-user-onboarding-flow`
 **PR**: https://github.com/jguadagno/jjgnet-broadcast/pull/982
 
+
+---
 ## What was built
 
 A post-approval user onboarding checklist that guides newly approved users through the three areas required to start broadcasting: Collectors, Publishers, and Message Templates.
@@ -1279,6 +1079,8 @@ A post-approval user onboarding checklist that guides newly approved users throu
 
 Modified: `Program.cs` (service registration), `Views/Shared/_Layout.cshtml` (nav component invoke).
 
+
+---
 ## Design decisions
 
 ### Checklist over wizard
@@ -1300,6 +1102,8 @@ If no publishers are enabled, message templates are not yet actionable; the Temp
 ### `IHttpContextAccessor` registration
 `AddHttpContextAccessor()` was not previously registered explicitly in `Program.cs`. It is required by `SetupService` to resolve the current user's OID for the cache key. Added at the top of the service registration block.
 
+
+---
 ## Test results
 
 - Build: 0 errors, 0 new warnings
@@ -1312,6 +1116,8 @@ If no publishers are enabled, message templates are not yet actionable; the Temp
 **Branch:** issue-978-user-onboarding-flow
 **Status:** Implemented
 
+
+---
 ## Context
 
 The original `SetupService.BuildSetupStatusAsync()` checked template completeness by asking:
@@ -1323,6 +1129,8 @@ collector. Conversely, a user with only a SyndicationFeed collector was incorrec
 have YouTube and SpeakingEngagement templates for publishers they'd enabled, even if they had
 zero YouTube/engagement collectors.
 
+
+---
 ## Decision
 
 Replace the per-platform check with an **intersection-based check**:
@@ -1356,6 +1164,8 @@ Replace the per-platform check with an **intersection-based check**:
 | (none) | Twitter | complete (vacuously) |
 | SyndicationFeed | (none) | complete (vacuously) |
 
+
+---
 ## Files Changed
 
 | File | Change |
@@ -1365,6 +1175,8 @@ Replace the per-platform check with an **intersection-based check**:
 | `Services/SetupService.cs` | Rewrote template check to intersection logic |
 | `Views/Setup/Index.cshtml` | Shows missing pairs as `Platform × MessageType` list items |
 
+
+---
 ## Alternatives Rejected
 
 **Per-platform check (previous):** Too coarse — passes when a publisher has a `RandomPost`
@@ -1375,6 +1187,8 @@ aren't relevant to their setup.
 calls. Rejected — violates sequential-await convention and would cause overhead for users
 with many publishers/collectors.
 
+
+---
 ## Verification
 
 - `dotnet build .\src\ --no-restore --configuration Release` → Build succeeded, 0 errors
@@ -1387,10 +1201,14 @@ with many publishers/collectors.
 **PR:** #984  
 **Production migration:** Issue #983
 
+
+---
 ## Decision
 
 Add system-level default Scriban templates (empty-string `CreatedByEntraOid` = sentinel) that users can adopt with one click. No template is silently forced on existing users.
 
+
+---
 ## Key choices
 
 | Choice | Rationale |
@@ -1402,6 +1220,8 @@ Add system-level default Scriban templates (empty-string `CreatedByEntraOid` = s
 | "Available Defaults" computed in Web controller (not API) | Minimises API round-trips; the gap between user templates and system defaults is a presentation concern. |
 | `data-seed.sql` uses IF NOT EXISTS guards | Idempotent: AppHost replays creation script for fresh environments without duplicate-key errors. |
 
+
+---
 ## What was NOT done
 
 - `IMessageTemplateLookup` composite interface (mentioned in issue for PostComposer) — deferred, out of scope.
@@ -1413,6 +1233,8 @@ Add system-level default Scriban templates (empty-string `CreatedByEntraOid` = s
 **Author:** Neo  
 **Status:** PENDING APPROVAL — no code changes made yet  
 **Related commit:** `3af53e7f`
+---
+
 ---
 ## Context
 
@@ -1430,16 +1252,22 @@ DistributedCacheEntryOptions distributedCacheEntryOptions = new DistributedCache
 await _distributedCache.SetAsync(cacheKey, bytes, distributedCacheEntryOptions, ...);
 ```
 
+
+---
 ## The Bug
 
 Commit `3af53e7f` set `AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)` intending to fix L1 TTL derivation. Side effect: SQL `TokenCache` entries now expire 15 minutes after the last write, overriding `DefaultSlidingExpiration = TimeSpan.FromDays(14)`. Users must re-login after any 15-minute idle period or app restart.
 
+
+---
 ## Decision
 
 **Do not set `AbsoluteExpirationRelativeToNow` to a short value** (e.g., minutes) in `MsalDistributedTokenCacheAdapterOptions` without understanding its L2 side-effect. L2 lifetime is controlled by `AddDistributedSqlServerCache(options => options.DefaultSlidingExpiration = ...)`.
 
 If a short L1 TTL is needed independently of L2, the `L1ExpirationTimeRatio` property on `MsalDistributedTokenCacheAdapterOptions` provides this — but it is `internal` in the current library version (4.9.0) and not publicly settable.
 
+
+---
 ## Recommended Configuration
 
 ```csharp
@@ -1451,6 +1279,8 @@ builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
 });
 ```
 
+
+---
 ## Skill Update Needed
 
 The `msal-cache-handling` skill SKILL.md documents `AbsoluteExpirationRelativeToNow` as controlling "L1 TTL" and recommends `TimeSpan.FromMinutes(15)`. This is **incorrect for L2**: the same value propagates to SQL. The skill should be updated to warn about this behaviour and omit the property (or note the L2 risk).
@@ -1461,10 +1291,14 @@ The `msal-cache-handling` skill SKILL.md documents `AbsoluteExpirationRelativeTo
 **Author:** Switch (Frontend Engineer)  
 **Requested by:** Joe
 
+
+---
 ## Context
 
 Collector type icons (RSS, YouTube, Speaking Engagement, and the overall Collectors section) were hard-coded as Bootstrap icon class strings scattered across multiple Razor views. Joe directed that these values be centralised so they stay consistent and are easy to update from one place.
 
+
+---
 ## Decision
 
 A `CollectorIcons` static constants class was created at:
@@ -1489,12 +1323,16 @@ src/JosephGuadagno.Broadcasting.Web/Constants/CollectorIcons.cs
 | `CollectorIcons.SpeakingEngagement.MessageType` | `NewSpeakingEngagement` |
 | `CollectorIcons.ByMessageType` | `IReadOnlyDictionary<string, (Icon, Label)>` for Razor view lookups |
 
+
+---
 ## Convention
 
 - **Never hard-code `bi-rss`, `bi-youtube`, or `bi-mic-fill`** in Web Razor views. Always reference `CollectorIcons.*`.
 - The `ByMessageType` dictionary is the canonical source for views that map a string message type to a display badge (e.g., Setup/Index).
 - The namespace `JosephGuadagno.Broadcasting.Web.Constants` is registered in `_ViewImports.cshtml` for all regular views. For `_Layout.cshtml` (which does not inherit ViewImports), the `@using` directive is added at the top of the file.
 
+
+---
 ## Files Updated
 
 - `src/JosephGuadagno.Broadcasting.Web/Constants/CollectorIcons.cs` *(created)*
@@ -1514,10 +1352,14 @@ src/JosephGuadagno.Broadcasting.Web/Constants/CollectorIcons.cs
 **Agent:** Switch  
 **Requested by:** Joe  
 
+
+---
 ## Directive applied
 
 All raw `.ToString()` date formatting in Razor views has been replaced with the `<local-time>` tag helper across the entire Web application. This directive is now recorded and enforced going forward.
 
+
+---
 ## Views updated (commit 536db628)
 
 | View | Fields fixed |
@@ -1536,6 +1378,8 @@ All raw `.ToString()` date formatting in Razor views has been replaced with the 
 | `YouTubeItems/Details.cshtml` | `PublicationDate`, `AddedOn`, `LastUpdatedOn` |
 | `YouTubeItems/Delete.cshtml` | `PublicationDate` |
 
+
+---
 ## Views verified as already compliant (no changes needed)
 
 - `SiteAdmin/Users.cshtml`
@@ -1544,6 +1388,8 @@ All raw `.ToString()` date formatting in Razor views has been replaced with the 
 - `YouTubeItems/Index.cshtml`
 - `SyndicationFeedItems/Index.cshtml`
 
+
+---
 ## Rule going forward
 
 No new Razor view may use `.ToString("F")`, `.ToString("g")`, `.ToString("f")`, or any other date format string for display. Always use:
@@ -1560,10 +1406,14 @@ Use `date-only="true"` only for pure calendar-date fields with no time component
 **Author:** Trinity  
 **Status:** Accepted (Joe confirmed)
 
+
+---
 ## Context
 
 `MsalDistributedTokenCacheAdapterOptions.AbsoluteExpirationRelativeToNow` was added to `Web/Program.cs` to prevent the L1 (in-memory) token cache from evicting near-expiry tokens and triggering ~1.75s SQL reads on every request. However, this option applies to **both** the L1 and L2 (SQL distributed) cache layers. Setting it to 15 minutes unconditionally overrides the SQL store's 14-day sliding expiration, causing forced re-login after 15 minutes of inactivity or on every app restart.
 
+
+---
 ## Decision
 
 Wrap `options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);` in `#if !DEBUG` / `#endif`:
@@ -1578,11 +1428,15 @@ builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
 });
 ```
 
+
+---
 ## Consequences
 
 - **DEBUG (local dev):** `AbsoluteExpirationRelativeToNow` is not set → SQL cache retains 14-day sliding expiry → no forced re-login during development.
 - **Release (production):** `AbsoluteExpirationRelativeToNow = 15 min` remains → L1 cache pin prevents per-request SQL reads → production performance preserved.
 
+
+---
 ## Rule
 
 `MsalDistributedTokenCacheAdapterOptions` settings affect **both** cache layers. Any TTL-limiting option must be evaluated against the L2 (SQL/distributed) cache impact, not just L1.
@@ -1594,10 +1448,14 @@ builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
 **Branch:** `issue-980-publisher-architecture-refactor`  
 **Commit:** cd55423b
 ---
+
+---
 ## Decision
 
 `OnboardingManager.ComputeIsOnboardedAsync` was changed from `Task.WhenAll` parallel fan-out to sequential `await` calls.
 
+
+---
 ## Rationale
 
 All 8 data store calls share the same scoped `BroadcastingContext`. EF Core's `DbContext` is not thread-safe. The `Task.WhenAll` fan-out caused concurrent reads on the same connection, throwing:
@@ -1608,6 +1466,8 @@ This fired on any mutation that called `RecalculateAsync` (e.g., deleting a Feed
 
 **Rule reinforced:** Never use `Task.WhenAll` when the underlying data stores share a single scoped `DbContext`. Use sequential `await` calls instead.
 ---
+
+---
 ## IsActive Filtering in Collector Data Stores
 
 `GetByUserAsync` in the three collector data stores was missing the `IsActive` filter:
@@ -1617,6 +1477,8 @@ This fired on any mutation that called `RecalculateAsync` (e.g., deleting a Feed
 - `UserCollectorSpeakingEngagementDataStore.GetByUserAsync` — added `&& c.IsActive`
 
 Inactive collectors (where `IsActive = false`) now correctly do NOT count toward a user's onboarded status.
+---
+
 ---
 ## Publisher IsEnabled Handling
 
@@ -1660,22 +1522,30 @@ Any PR that registers a `JosephGuadagno.Broadcasting.Managers.*` concrete class 
 **Author:** Trinity  
 **Status:** IMPLEMENTED — awaiting PR
 
+
+---
 ## Decision
 
 Facebook `PostPageStatus.cs` now reads per-user access tokens from `UserOAuthTokens` via `IUserOAuthTokenManager` (same as LinkedIn `PostLink.cs`), instead of Key Vault via `IUserPublisherFacebookSettingsManager`.
 
 Facebook `RefreshTokens.cs` now refreshes per-user tokens in `UserOAuthTokens` instead of global app-level KV secrets. The global KV approach was writing tokens that were never read by `PostPageStatus`.
 
+
+---
 ## Rationale
 
 `UserOAuthTokens` is the authoritative store for per-user OAuth access tokens (as decided in the architecture review). The old KV-based path and the global `RefreshTokens` were completely disconnected — refreshed tokens were never consumed. This fix closes that loop.
 
+
+---
 ## Scope Not Included (deferred)
 
 - **LinkedIn `HasAccessToken` dead code** — `UserPublisherLinkedInSettings.HasAccessToken` and KV-backed token methods are still dead code. Removing them requires cascading changes across API controllers, DTOs, Data.Sql, Web controllers, ViewModels, and tests. Left for a separate cleanup issue.
 - **`TokenRefreshes` table** — now unused by Facebook after this change. Cleanup deferred.
 - **Facebook expiry notifications** — Joseph explicitly excluded section 3.4 (expiry notifications). `RefreshTokens` handles token renewal; no `NotifyExpiringTokens` function needed for Facebook.
 
+
+---
 ## Production Prerequisite
 
 **GitHub issue #988** must be completed before deploying: seed existing per-user Facebook tokens from Key Vault into `UserOAuthTokens` with `SocialMediaPlatformId = 4`.
@@ -1689,6 +1559,8 @@ Facebook `RefreshTokens.cs` now refreshes per-user tokens in `UserOAuthTokens` i
 
 ---
 
+
+---
 ## Summary
 
 Full test run: **1275 total, 2 failed, 1232 passed, 41 skipped**  
@@ -1698,6 +1570,8 @@ Both failures are **directly caused by uncommitted changes on this branch** — 
 
 ---
 
+
+---
 ## Failing Tests
 
 ### 1. `LoadAllSpeakingEngagementsTests.RunAsync_HandlesNullEngagementsList_Gracefully`
@@ -1728,6 +1602,8 @@ Same NullReferenceException → catch → `BadRequestObjectResult`.
 
 ---
 
+
+---
 ## Why These Are Branch-Introduced
 
 - `git show HEAD` still has `if (newItems == null || newItems.Count == 0)` in both files.
@@ -1737,6 +1613,8 @@ Same NullReferenceException → catch → `BadRequestObjectResult`.
 
 ---
 
+
+---
 ## Fix Required
 
 Two one-line restores needed in the **uncommitted** working tree files:
@@ -1762,12 +1640,16 @@ Only the `null ||` removal is the defect.
 
 ---
 
+
+---
 ## Skipped Tests (41 — Expected)
 
 The 41 skipped tests appear to be expected skips (not SyndicationFeedReader network tests — those were excluded by the `--filter` flag).
 
 ---
 
+
+---
 ## Action Required
 
 **Owner of this branch:** Restore the `null ||` guards in both collector files before committing the branch's changes.
@@ -1779,12 +1661,16 @@ The 41 skipped tests appear to be expected skips (not SyndicationFeedReader netw
 **Author:** Trinity (Backend Dev)  
 **Status:** ✅ COMPLETE
 
+
+---
 ## Summary
 
 Fixed the speaking engagement save path so EF Core updates a tracked
 `Engagement` aggregate instead of remapping the request into a fresh SQL entity
 and forcing only the root state.
 
+
+---
 ## Root Cause
 
 `SpeakingEngagementsReader` builds `Domain.Models.Engagement` objects with
@@ -1799,6 +1685,8 @@ That left child `Talk` entities detached, so
   `of valid values.`
 - `Parameter 'Unexpected entry.EntityState: Detached'`
 
+
+---
 ## Change
 
 **Files:**
@@ -1831,6 +1719,8 @@ That left child `Talk` entities detached, so
   failure:
   - `JosephGuadagno.Broadcasting.Web.Tests.Controllers.LinkedInControllerTests.Index_WhenOidClaimMissing_ShouldReturnViewWithHasTokenFalse`
 
+
+---
 ## Impact
 
 Speaking engagement saves can now persist engagements that include imported
@@ -1844,10 +1734,14 @@ update matching talks instead of blindly inserting duplicates.
 **Author:** Trinity (Backend Dev)  
 **Status:** ✅ COMPLETE
 
+
+---
 ## Summary
 
 Fixed a pre-existing compiler error in `LinkedInControllerTests.cs` where the test called `await controller.RefreshToken()`, but the production `LinkedInController.RefreshToken()` method returns synchronous `IActionResult`.
 
+
+---
 ## Change
 
 **File:** `src/JosephGuadagno.Broadcasting.Web.Tests/Controllers/LinkedInControllerTests.cs`
@@ -1857,16 +1751,22 @@ Fixed a pre-existing compiler error in `LinkedInControllerTests.cs` where the te
 
 **No production code was modified.**
 
+
+---
 ## Root Cause
 
 A prior change to `LinkedInController.RefreshToken()` simplified its return type from `async Task<IActionResult>` to synchronous `IActionResult` (the method only builds a URL string and calls `Redirect()` — no async work needed). The test was not updated at that time, leaving a CS1061 compiler error.
 
+
+---
 ## Impact
 
 - Build: 0 errors (was 1 error)
 - `LinkedInControllerTests`: 12/12 pass
 - No other test regressions introduced
 
+
+---
 ## Pre-existing Failures (out of scope)
 
 Two Functions tests remain failing and are unrelated:
@@ -1875,3 +1775,241 @@ Two Functions tests remain failing and are unrelated:
 
 These fail with `Assert.IsType() Failure` and predate this fix.
 
+
+---
+
+# Decision: Refactor EngagementDataStore to Use AutoMapper
+
+**Date:** 2026-05-25  
+**Author:** Neo (Lead)  
+**Status:** RECOMMENDATION — Pending Joe approval
+
+---
+
+
+---
+## Context
+
+Trinity fixed a real EF Core bug ("Unexpected entry.EntityState: Detached") by replacing `mapper.Map(source, destination)` with manual property helpers `ApplyEngagementValues` and `ApplyTalkValues` in `EngagementDataStore.SaveAsync`. The root cause was `BroadcastingProfile.cs` using `.ReverseMap()` on the `Engagement` mapping without ignoring the `Talks` navigation property, causing AutoMapper to replace the EF-tracked `ICollection<Talk>` with new untracked objects.
+
+Joe has flagged this as inconsistent with the project-wide AutoMapper directive. This document assesses the blast radius and makes a recommendation.
+
+---
+
+
+---
+## Manual Mapping Completeness Audit
+
+### `ApplyEngagementValues` vs `Domain.Models.Engagement`
+
+| Domain property | Mapped? | Notes |
+|---|---|---|
+| `Name` | ✅ | Direct copy |
+| `Url` | ✅ | Direct copy |
+| `StartDateTime` | ✅ | Direct copy |
+| `EndDateTime` | ✅ | Direct copy |
+| `TimeZoneId` | ✅ | Direct copy |
+| `Comments` | ✅ | Direct copy |
+| `CreatedByEntraOid` | ✅ | Direct copy |
+| `CreatedOn` | ✅ | Custom logic: preserve source value if non-default; else UtcNow for new entities |
+| `LastUpdatedOn` | ✅ | Custom logic: preserve source value if non-default; else UtcNow always |
+| `Id` | ⬛ | Intentionally omitted — EF PK, never overwritten |
+| `Talks` | ⬛ | Intentionally omitted — handled by `SyncTalks` |
+| `SocialMediaPlatforms` | ⬛ | Intentionally omitted — managed by `EngagementSocialMediaPlatformDataStore` |
+
+**Verdict: `ApplyEngagementValues` is complete. No missing fields.**
+
+### `ApplyTalkValues` vs `Domain.Models.Talk`
+
+| Domain property | Mapped? | Notes |
+|---|---|---|
+| `Name` | ✅ | Direct copy |
+| `UrlForConferenceTalk` | ✅ | Direct copy |
+| `UrlForTalk` | ✅ | Direct copy |
+| `StartDateTime` | ✅ | Direct copy |
+| `EndDateTime` | ✅ | Direct copy |
+| `TalkLocation` | ✅ | Direct copy |
+| `Comments` | ✅ | Direct copy |
+| `CreatedByEntraOid` | ✅ | With fallback to `ownerEntraOid` from parent engagement |
+| `EngagementId` | ✅ | Conditional: only applied when `source.EngagementId > 0` |
+| `Id` | ⬛ | Intentionally omitted — EF PK |
+
+**Verdict: `ApplyTalkValues` is complete. No missing fields.**
+
+---
+
+
+---
+## Blast Radius Analysis
+
+### Current `BroadcastingProfile` Engagement mapping
+
+```csharp
+// Creates BOTH directions; reverse auto-generates domain→data with Talks included
+CreateMap<Models.Engagement, Domain.Models.Engagement>().ReverseMap();
+```
+
+The `ReverseMap()` direction (Domain→Data) is used in exactly one additional call site:
+
+- **`AddTalkToEngagementAsync` (line 198):** `mapper.Map<Models.Engagement>(engagement)` — creates a **new** entity from scratch when `engagement.Id == 0`. No tracked instance, so no detachment issue. The `Talks` collection is populated manually via the `talk` parameter argument, not from `engagement.Talks`, so ignoring Talks in the mapping is safe here.
+
+No other call sites create a domain→data `Engagement` mapping. `SyncTalks` already uses `mapper.Map<Models.Talk>(talk)` correctly for new Talk objects (the explicit `Domain.Models.Talk → Models.Talk` map with `Engagement` nav prop ignored is already in the profile).
+
+---
+
+
+---
+## Recommendation: REFACTOR to AutoMapper (Low Risk)
+
+### Why
+
+1. **The fix is surgical.** The only change to `BroadcastingProfile` is splitting one `ReverseMap()` line into explicit bidirectional maps, adding `Ignore()` for `Talks` and `SocialMediaPlatforms` on the domain→data direction. This is the same pattern already used for `Talk` (which ignores the `Engagement` nav prop) and `MessageTemplate`/`SyndicationFeedItem`.
+
+2. **Blast radius is minimal.** Only one extra call site uses the generated reverse map (`AddTalkToEngagementAsync`), and ignoring `Talks` there is safe.
+
+3. **The manual mapping is complete today** — but manual property lists drift. If someone adds a field to `Domain.Models.Engagement` and forgets to update `ApplyEngagementValues`, the bug is silent. AutoMapper would catch it at startup via profile validation.
+
+4. **The timestamp logic must stay explicit.** `CreatedOn` and `LastUpdatedOn` have conditional defaults that cannot be cleanly expressed in an AutoMapper `ForMember` without introducing `DateTimeOffset.UtcNow` into the profile (non-deterministic in tests). Keep these two lines as explicit assignments after `mapper.Map(engagement, dbEngagement)`.
+
+### What to change
+
+#### 1. `BroadcastingProfile.cs`
+
+```csharp
+// BEFORE
+CreateMap<Models.Engagement, Domain.Models.Engagement>().ReverseMap();
+
+// AFTER
+CreateMap<Models.Engagement, Domain.Models.Engagement>();
+CreateMap<Domain.Models.Engagement, Models.Engagement>()
+    .ForMember(d => d.Talks, opt => opt.Ignore())
+    .ForMember(d => d.SocialMediaPlatforms, opt => opt.Ignore());
+```
+
+#### 2. `EngagementDataStore.SaveAsync`
+
+Replace both `ApplyEngagementValues(engagement, dbEngagement, isNew: X)` calls with:
+
+```csharp
+mapper.Map(engagement, dbEngagement);
+
+// Preserve CreatedOn logic (cannot go in profile — depends on isNew flag)
+dbEngagement.CreatedOn = engagement.CreatedOn != default
+    ? engagement.CreatedOn
+    : isNew && dbEngagement.CreatedOn == default
+        ? DateTimeOffset.UtcNow
+        : dbEngagement.CreatedOn;
+
+// Always stamp LastUpdatedOn
+dbEngagement.LastUpdatedOn = engagement.LastUpdatedOn != default
+    ? engagement.LastUpdatedOn
+    : DateTimeOffset.UtcNow;
+```
+
+Then delete `ApplyEngagementValues`. Keep `SyncTalks` and `ApplyTalkValues` unchanged — they handle collection sync logic that belongs in the data store, not in a mapping profile.
+
+### What NOT to change
+
+- `SyncTalks` — collection diff logic; not a mapping concern.
+- `ApplyTalkValues` — non-trivial `ownerEntraOid` fallback; already contained and tested.
+- `Domain.Models.Talk → Models.Talk` map — already correct with `Engagement` ignored.
+
+---
+
+
+---
+## Risk Assessment
+
+| Risk | Likelihood | Mitigation |
+|---|---|---|
+| Detachment error re-introduced | Low | `Talks` and `SocialMediaPlatforms` explicitly ignored in domain→data map |
+| `AddTalkToEngagementAsync` regression | Low | Talks not mapped from engagement in that path (added via `talk` param) |
+| Timestamp logic broken | Low | Kept as explicit code, not in profile |
+| New Engagement field silently not saved | Lower than status quo | AutoMapper profile validation catches unmapped members at startup |
+
+Existing `EngagementDataStoreTests` (44/44) provide regression coverage. Run them after the change.
+
+---
+
+
+---
+## Summary
+
+**Do the refactor.** It is a 3-line profile change + timestamp extraction. The manual mapping is currently correct but is an ongoing maintenance liability. The AutoMapper approach with explicit `Ignore()` directives is the correct, established pattern in this codebase (see `Talk`, `MessageTemplate`, `SyndicationFeedItem`). The timestamp business logic should remain explicit rather than embedded in a profile.
+
+
+---
+
+# Decision: EngagementDataStore AutoMapper Refactor — Landed
+
+**Date:** 2026-05-25  
+**Author:** Trinity (Backend Dev)  
+**Status:** COMPLETE
+
+---
+
+
+---
+## What Changed
+
+### `BroadcastingProfile.cs`
+
+Replaced the unsafe `ReverseMap()` on the `Engagement` mapping with two explicit
+bidirectional declarations:
+
+```csharp
+// BEFORE
+CreateMap<Models.Engagement, Domain.Models.Engagement>().ReverseMap();
+
+// AFTER
+CreateMap<Models.Engagement, Domain.Models.Engagement>();
+CreateMap<Domain.Models.Engagement, Models.Engagement>()
+    .ForMember(dest => dest.Talks, opt => opt.Ignore())
+    .ForMember(dest => dest.SocialMediaPlatforms, opt => opt.Ignore());
+```
+
+This prevents AutoMapper from replacing EF-tracked navigation collections when
+mapping domain→data, which was the root cause of the original "Detached" error.
+
+### `EngagementDataStore.cs`
+
+In `SaveAsync`, both the insert path (`engagement.Id == 0`) and the update path
+now use `mapper.Map(engagement, dbEngagement)` with explicit timestamp handling
+instead of the manual `ApplyEngagementValues` helper:
+
+```csharp
+mapper.Map(engagement, dbEngagement);
+if (dbEngagement.CreatedOn == default)
+    dbEngagement.CreatedOn = DateTimeOffset.UtcNow;
+dbEngagement.LastUpdatedOn = DateTimeOffset.UtcNow;
+```
+
+The `ApplyEngagementValues` private method was removed entirely.
+
+`SyncTalks` and `ApplyTalkValues` were not modified — they manage tracked
+collection merging and non-trivial fallback logic that belongs in the data store,
+not in a mapping profile.
+
+---
+
+
+---
+## Verification
+
+- Build: **0 errors, 1 pre-existing warning (CS8600, not introduced by this change)**
+- Tests: **141 passed, 0 failed** (4 Twitter integration tests skipped as expected)
+- Filter applied: `FullyQualifiedName!~SyndicationFeedReader`
+
+---
+
+
+---
+## References
+
+- Neo's blast radius analysis: `.squad/decisions/inbox/neo-engagement-automapper-blast-radius.md`
+- Requested by: Joe
+
+
+
+
+> Entries before 2026-05-18 archived to decisions-archive.md

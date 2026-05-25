@@ -88,36 +88,4 @@ Established by Joseph Guadagno:
 
 ## Learnings
 
-### 2026-04-16: OTel Logging — Single Provider Rule
-- `AddServiceDefaults()` (via `ServiceDefaults/Extensions.cs`) already registers the OTel logging provider — never call `loggingBuilder.AddOpenTelemetry()` again in `Program.cs`
-- Never add `.WriteTo.OpenTelemetry()` to Serilog config — it creates a third export path and duplicates log volume
-- Symptom: 2-3x duplicate log entries in Azure Monitor / OTLP pipelines
-- Fix: removed `loggingBuilder.AddOpenTelemetry(...)` block from `Api/Program.cs`, removed `.WriteTo.OpenTelemetry()` from `Broadcasting.Serilog/LoggingExtensions.cs`, removed now-unused `Serilog.Sinks.OpenTelemetry` package and `using OpenTelemetry.Logs` directive
-- Decision filed: `.squad/decisions/inbox/cypher-otel-logging.md`
-
-### 2026-04-17: GitHub OAuth Token Limitations on Workflow Files
-- GitHub requires `workflow` scope on OAuth tokens to push changes to `.github/workflows/` files
-- Standard repo token from GH Copilot CLI doesn't include `workflow` scope — push is rejected with "refusing to allow an OAuth App to create or update workflow"
-- Workaround: Commit is local (in staging) but cannot be pushed via standard token. Requires either (a) personal token with workflow scope, (b) GitHub App with workflow permissions, or (c) Joseph's manual push
-- File change is ready to commit; workflow verification shows correct YAML structure with push trigger removed and explanatory comment added
-- Decision filed: `.squad/decisions/inbox/cypher-functions-deploy-disabled.md`
-
-
-### 2026-05-16: Azure Functions Stable Port in Aspire — .WithHttpEndpoint() Pattern
-
-**Context:** Azure Functions resource in local Aspire environments was assigned random proxy port on every run, preventing stable endpoint prediction.
-
-**Initial Approach (FAILED):** Added Properties/launchSettings.json with fixed pplicationUrl hoping Aspire would read it. This does NOT work for Azure Functions isolated worker model — the launch settings are ignored by the Functions host when orchestrated by Aspire.
-
-**Correct Pattern:** Use .WithHttpEndpoint(port: N, isProxied: false) in AppHost.cs on the Functions resource builder.
-
-**Key Detail:** isProxied: false is crucial. It tells Aspire that the Functions host will bind directly to the port, bypassing Aspire's reverse proxy layer. This is the correct pattern for Azure Functions, which manages its own HTTP binding. Without isProxied: false, the proxy still assigns a random internal port and breaks stability.
-
-**Files Changed:** 
-- Deleted: src/JosephGuadagno.Broadcasting.Functions/Properties/launchSettings.json
-- Modified: src/JosephGuadagno.Broadcasting.AppHost/AppHost.cs — added .WithHttpEndpoint(port: 7071, isProxied: false)
-
-**Result:** Functions resource now consistently available at http://localhost:7071 across all local runs.
-
-**Reference:** Decision filed in .squad/decisions.md
-
+> Earlier learnings archived to history-archive.md on 2026-05-25
