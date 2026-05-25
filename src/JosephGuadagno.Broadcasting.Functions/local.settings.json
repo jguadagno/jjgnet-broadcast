@@ -18,7 +18,7 @@
     "AzureWebJobs.CollectorsFeedLoadNewPosts.Disabled": true,
     "AzureWebJobs.CollectorsFeedLoadAllPosts.Disabled": false,
     "AzureWebJobs.CollectorsSpeakingEngagementsLoadNew.Disabled": true,
-    "AzureWebJobs.CollectorsSpeakingEngagementsLoadAll.Disabled": true,
+    "AzureWebJobs.CollectorsSpeakingEngagementsLoadAll.Disabled": false,
     "AzureWebJobs.CollectorsYouTubeLoadNewVideos.Disabled": true,
     "AzureWebJobs.CollectorsYouTubeLoadAllVideos.Disabled": false,
     "AzureWebJobs.PublishersRandomPosts.Disabled": true,
