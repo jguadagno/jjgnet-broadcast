@@ -160,3 +160,23 @@ builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
 
 ---
 
+### Learnings — 2026-05-25: AutoMapper Blast Radius — EngagementDataStore
+
+**Task:** Assess whether Trinity's manual mapping (`ApplyEngagementValues`/`ApplyTalkValues`) should be replaced with a corrected AutoMapper profile.
+
+**Findings:**
+
+1. **Both manual helpers are complete.** Every scalar field on `Domain.Models.Engagement` and `Domain.Models.Talk` is covered. `Talks`, `SocialMediaPlatforms`, and PKs are intentionally excluded.
+
+2. **Root cause of the original bug:** `BroadcastingProfile.cs` line `CreateMap<Models.Engagement, Domain.Models.Engagement>().ReverseMap()` generates a domain→data map that copies the `Talks` collection from the domain object — replacing the EF-tracked `ICollection<Talk>` with untracked AutoMapper-created objects, causing the "Detached" error.
+
+3. **The fix pattern is already established in this codebase.** `Domain.Models.Talk → Models.Talk` already has `.ForMember(d => d.Engagement, opt => opt.Ignore())`. `MessageTemplate` and `SyndicationFeedItem` do the same for their nav props. The Engagement mapping simply needs the same treatment.
+
+4. **Blast radius is minimal.** Only one extra call site uses the generated reverse map (`AddTalkToEngagementAsync`, new-entity path). Ignoring `Talks` and `SocialMediaPlatforms` in that path is safe.
+
+5. **Timestamp logic must stay in data store code.** `CreatedOn` and `LastUpdatedOn` have conditional defaults (UtcNow fallback, isNew gate) that cannot be deterministically expressed in a mapping profile. Keep as explicit post-map assignments.
+
+**Recommendation filed:** `.squad/decisions/inbox/neo-engagement-automapper-blast-radius.md` — REFACTOR (low risk, 3-line profile change + delete `ApplyEngagementValues`).
+
+---
+

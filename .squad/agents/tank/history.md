@@ -128,6 +128,16 @@ _managerMock.Verify(m => m.SaveAsync(It.IsAny<ScheduledItem>()), Times.Never);
 
 When a controller method signature changes to add an `ownerOid` parameter, Moq will silently skip mismatched `.Setup()` calls rather than throwing. This causes the mock to return null and tests to behave incorrectly. Always verify the exact parameter types match the controller dispatch path.
 
+### Filtered full-suite baseline (2026-05-25)
+
+The repo-wide CI-aligned test pass remains clean after the recent
+LinkedInController test fix.
+
+`dotnet test .\src\ --no-build --configuration Release --filter
+"FullyQualifiedName!~SyndicationFeedReader"`
+
+That command completed with 1274 total tests, 1233 passed, 0 failed,
+and 41 skipped. When it regresses, compare against that baseline before
+assuming the expected skips indicate a new failure.
+
 ---
-
-

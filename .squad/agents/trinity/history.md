@@ -28,6 +28,9 @@ Older history entries have been archived. See history-archive.md for complete se
 
 ## Learnings
 
+**2026-05-25 — AutoMapper `ReverseMap()` is unsafe for EF navigation collections:**
+`CreateMap<A, B>().ReverseMap()` generates the B→A direction without any `Ignore()` directives, so navigation collection properties are included in the reverse map. When used with `mapper.Map(source, destination)` on a tracked EF entity, AutoMapper replaces the tracked `ICollection<T>` with new untracked objects, causing "Unexpected entry.EntityState: Detached" errors on `SaveChanges`. The fix is to split into two explicit `CreateMap` declarations and add `.ForMember(dest => dest.NavProp, opt => opt.Ignore())` on the domain→data direction — the same pattern already used for `Talk`, `MessageTemplate`, and `SyndicationFeedItem`. Timestamp fields with conditional default logic must remain explicit assignments after `mapper.Map(source, destination)` rather than being expressed in the profile, since putting `DateTimeOffset.UtcNow` in a profile makes tests non-deterministic.
+
 **Null guards and test consistency must travel together:** When removing dead code (e.g., `HasAccessToken`), be precise about what is changed. The `newItems == null ||` guard in collector loops is not related to the removed feature — stripping it causes `NullReferenceException` when the reader returns `null`, which the outer `catch` converts to `BadRequestObjectResult`, breaking tests that expect `OkObjectResult`. Always verify each modified line is actually related to the removal before committing.
 
 **When a controller method goes sync, update the test too:** If `async Task<IActionResult>` is simplified to `IActionResult`, any test that `await`s the result will fail to compile with CS1061 (`IActionResult` has no `GetAwaiter`). Change the test method to `void` (or drop the `async`/`await` pair) to match. The assertion chain doesn't change.
@@ -35,6 +38,15 @@ Older history entries have been archived. See history-archive.md for complete se
 **`HasAccessToken` was a DB column, not just a C# flag:** When removing a bool flag that was persisted to SQL, EF Core's "ignore unmapped columns" behavior means the app still works after removing the C# property — but the column is orphaned. Always note the pending SQL cleanup in the decisions inbox so it can be tracked as a separate migration.
 
 **Twitter `HasAccessToken` is still active:** `UserPublisherTwitterSettings` has both `HasAccessToken` and `HasAccessTokenSecret` — these are live, Twitter still uses the Key Vault token pattern. Do NOT remove them when cleaning up LinkedIn.
+
+**2026-05-25T10:47:45.368-07:00 — Engagement saves must update a tracked aggregate:**
+`SpeakingEngagementsReader` populates `Engagement.Talks`, so remapping a domain
+engagement to a fresh EF `Models.Engagement` and only forcing the root
+`EntityState` leaves child `Talk` rows detached. Fix
+`EngagementDataStore.SaveAsync` by loading/creating the tracked engagement,
+copying scalar fields onto that tracked entity, and then upserting talks onto
+the tracked aggregate (matching existing talks by ID or stable talk fields when
+imported talks have no IDs).
 
 ---
 
