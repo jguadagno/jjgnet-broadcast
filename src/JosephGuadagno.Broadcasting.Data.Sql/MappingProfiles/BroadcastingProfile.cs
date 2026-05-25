@@ -8,7 +8,10 @@ public class BroadcastingProfile: Profile
     public BroadcastingProfile()
     {
         // Sql models to Domain
-        CreateMap<Models.Engagement, Domain.Models.Engagement>().ReverseMap();
+        CreateMap<Models.Engagement, Domain.Models.Engagement>();
+        CreateMap<Domain.Models.Engagement, Models.Engagement>()
+            .ForMember(dest => dest.Talks, opt => opt.Ignore())
+            .ForMember(dest => dest.SocialMediaPlatforms, opt => opt.Ignore());
         CreateMap<Models.Talk, Domain.Models.Talk>();
         CreateMap<Models.ScheduledItem, Domain.Models.ScheduledItem>()
             .ForMember(

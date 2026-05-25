@@ -4,6 +4,7 @@ using JosephGuadagno.Broadcasting.Data.Sql.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System.Linq;
 using Xunit;
 
 namespace JosephGuadagno.Broadcasting.Data.Sql.Tests;
@@ -214,6 +215,89 @@ public class EngagementDataStoreTests : IDisposable
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
         Assert.Equal("Updated Name", result.Value!.Name);
+    }
+
+    [Fact]
+    public async Task SaveAsync_NewEngagementWithTalks_SavesEngagementAndTalks()
+    {
+        // Arrange
+        var domainEngagement = new Domain.Models.Engagement
+        {
+            Name = "Talks Conference",
+            Url = "https://talks-conf.example.com",
+            StartDateTime = new DateTimeOffset(2025, 9, 1, 9, 0, 0, TimeSpan.Zero),
+            EndDateTime = new DateTimeOffset(2025, 9, 3, 17, 0, 0, TimeSpan.Zero),
+            TimeZoneId = "UTC",
+            Talks =
+            [
+                new Domain.Models.Talk
+                {
+                    Name = "Fresh Talk",
+                    UrlForConferenceTalk = "https://conf.example.com/talks/fresh-talk",
+                    UrlForTalk = "https://example.com/talks/fresh-talk",
+                    StartDateTime = new DateTimeOffset(2025, 9, 1, 10, 0, 0, TimeSpan.Zero),
+                    EndDateTime = new DateTimeOffset(2025, 9, 1, 11, 0, 0, TimeSpan.Zero)
+                }
+            ]
+        };
+
+        // Act
+        var result = await _dataStore.SaveAsync(domainEngagement);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Single(_context.Engagements.ToList());
+        Assert.Single(_context.Talks.ToList());
+        result.Value!.Talks.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task SaveAsync_ExistingEngagementWithMatchingTalk_UpdatesWithoutDuplicatingTalk()
+    {
+        // Arrange
+        var engagement = CreateEngagement(name: "Original Name");
+        _context.Engagements.Add(engagement);
+        await _context.SaveChangesAsync();
+
+        var existingTalk = CreateTalk(engagement.Id, "Original Talk");
+        existingTalk.Comments = "Original comments";
+        _context.Talks.Add(existingTalk);
+        await _context.SaveChangesAsync();
+        _context.Entry(engagement).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+        _context.Entry(existingTalk).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+
+        var domainEngagement = new Domain.Models.Engagement
+        {
+            Id = engagement.Id,
+            Name = "Updated Name",
+            Url = engagement.Url!,
+            StartDateTime = engagement.StartDateTime,
+            EndDateTime = engagement.EndDateTime,
+            TimeZoneId = engagement.TimeZoneId,
+            Talks =
+            [
+                new Domain.Models.Talk
+                {
+                    Name = existingTalk.Name,
+                    UrlForConferenceTalk = existingTalk.UrlForConferenceTalk!,
+                    UrlForTalk = existingTalk.UrlForTalk!,
+                    StartDateTime = existingTalk.StartDateTime,
+                    EndDateTime = existingTalk.EndDateTime,
+                    Comments = "Updated comments"
+                }
+            ]
+        };
+
+        // Act
+        var result = await _dataStore.SaveAsync(domainEngagement);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal("Updated Name", result.Value!.Name);
+        _context.Talks.Should().ContainSingle();
+        _context.Talks.Single().Comments.Should().Be("Updated comments");
     }
 
     [Fact]
