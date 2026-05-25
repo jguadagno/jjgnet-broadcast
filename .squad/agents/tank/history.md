@@ -1,8 +1,6 @@
-# Tank - History
+# History
 
-## Summary
-
-Tank (QA Engineer) builds comprehensive test coverage across unit, integration, security, and regression test categories using xUnit, FluentAssertions, and Moq. Primary focus: ensuring backend API contracts work correctly, authorization/RBAC logic is enforced, ownership isolation prevents data leaks, and authentication flows are secure. Key test patterns include: mocking external services (HttpClientFactory via Moq), testing async operations with Task.Delay and verification, ownership isolation regression tests (verify User A cannot access User B's resources), and RBAC authorization tests (verify Viewers cannot POST, Admins can manage users). Tank works closely with Trinity (API endpoint contracts), Switch (Web-layer integration tests), and Neo (security test patterns). Established pattern: write tests before implementation (TDD), test both happy path and error cases, use descriptive test names like `GetEngagements_WhenUserIsContributor_ShouldReturnOwnEngagementsOnly`, mock external dependencies, and verify authorization boundaries. Notable: Tank maintains ownership isolation test suite to prevent regressions as new features are added. Key decision: ownership tests go in integration test class alongside endpoint tests, not as separate security-only test file.
+> Learnings before 2026-04-25 archived to history-archive.md (2026-05-25)
 
 ## Recent Session: Issue #969 — Collector Controllers in ControllerAuthorizationPolicyTests (2026-05-15)
 
@@ -141,3 +139,4 @@ and 41 skipped. When it regresses, compare against that baseline before
 assuming the expected skips indicate a new failure.
 
 ---
+

@@ -441,3 +441,19 @@ Wrapped `options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);` in
 
 Any Web service that calls `IDownstreamApi.GetForUserAsync<T>` for a **single nullable object** (not a collection) MUST wrap the call in `catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)` and return `null`. The API legitimately returns 404 for first-time users who have no configuration yet; without the catch the exception propagates and crashes the page. The controller already handles `null` gracefully. Log the 404 as `LogInformation` (not `LogWarning`) — it is expected, not an error. Always sanitize the OID via `LogSanitizer.Sanitize(ownerOid)`.
 
+
+## Summary (archived 2026-05-19)
+
+Older history entries have been archived. See history-archive.md for complete session logs.
+
+---
+
+### 2026-05-21 — HasAccessToken Dead Code Removal (LinkedIn)
+
+**Status:** ✅ COMPLETE — 271 data layer tests pass; pre-existing `LinkedInControllerTests.cs` build error unrelated
+
+**What changed:**
+- Removed `HasAccessToken` from `Domain.Models.UserPublisherLinkedInSettings`, `Domain.Models.LinkedInPublisherSetting`, `Data.Sql.Models.UserPublisherLinkedInSettings`, `Data.Sql/UserPublisherLinkedInSettingsDataStore` (mapping assignment), `Api/Dtos/LinkedInSettingsDtos` (response DTO), `Api/Controllers/Publishers/LinkedInSettingsController` (`settings.HasAccessToken = true`), `Web/Models/PublisherPlatformSettingsViewModels` (property + validation), `Web/Controllers/PublisherLinkedInSettingsController` (mapping), `Data.Sql.Tests/UserPublisherLinkedInSettingsDataStoreTests` (fixtures), `Views/PublisherLinkedInSettings/Index.cshtml` and `Edit.cshtml`.
+- Updated the LinkedIn ViewModel validation: the `HasAccessToken`-gated rule `(ChangeCredentials || !HasAccessToken)` was simplified to `ChangeCredentials` only, since there's no longer a stored-token indicator.
+- DB column `HasAccessToken` exists in `UserPublisherLinkedInSettings` table — EF ignores unmapped columns, so no immediate breakage. SQL migration tracked in `.squad/decisions/trinity-hasaccesstoken-removal.md`.
+

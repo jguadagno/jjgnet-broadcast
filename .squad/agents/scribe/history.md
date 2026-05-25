@@ -1,10 +1,6 @@
-# Scribe — History
+# History
 
-## Core Context
-
-- **Project:** A .NET broadcasting application using Azure Functions, ASP.NET Core API/MVC, SQL Server, and Azure infrastructure to collect and distribute social media content.
-- **Role:** Session Logger
-- **Joined:** 2026-03-14T16:37:57.750Z
+> Learnings before 2026-04-25 archived to history-archive.md (2026-05-25)
 
 ### Session: Sprint 29 Closeout → Sprint 30 Activation (2026-05-01)
 
@@ -148,4 +144,5 @@
   
 - **Outcome:** PR #771 comment now uses \path\`, \identifier\`, and #PR notation per team directive
 - **Status:** ✅ COMPLETE
+
 
