@@ -121,36 +121,6 @@
           }
         ]
       }
-    },
-    {
-      "name": "scheduled-item-fired",
-      "port": 60105,
-      "disabled": false,
-      "key": "TheLocal+DevelopmentKey=",
-      "subscribers": {
-        "http": [
-          {
-            "name": "BlueskyProcessScheduledItemFired",
-            "endpoint": "http://localhost:7071/runtime/webhooks/EventGrid?functionName=BlueskyProcessScheduledItemFired",
-            "disableValidation": true
-          },
-          {
-            "name": "FacebookProcessScheduledItemFired",
-            "endpoint": "http://localhost:7071/runtime/webhooks/EventGrid?functionName=FacebookProcessScheduledItemFired",
-            "disableValidation": true
-          },
-          {
-            "name": "LinkedInProcessScheduledItemFired",
-            "endpoint": "http://localhost:7071/runtime/webhooks/EventGrid?functionName=LinkedInProcessScheduledItemFired",
-            "disableValidation": true
-          },
-          {
-            "name": "TwitterProcessScheduledItemFired",
-            "endpoint": "http://localhost:7071/runtime/webhooks/EventGrid?functionName=TwitterProcessScheduledItemFired",
-            "disableValidation": true
-          }
-        ]
-      }
     }
   ],
   "Serilog": {

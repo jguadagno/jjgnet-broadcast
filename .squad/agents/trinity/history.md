@@ -36,3 +36,5 @@
 - **EF DbContext not thread-safe:** Never use `Task.WhenAll` when managers share a single scoped DbContext. Use sequential awaits instead.
 - **For archived learnings:** See history-summary.md
 
+- **2026-05-26T10:48:34.944-07:00 — Scheduled item routing belongs in a dedicated publisher service:** Keep `Publishers\ScheduledItems.cs` focused on timer orchestration, sent-flag updates, and `FeedCheck` persistence, and move per-user mapping lookup, source-item shaping, template resolution, and queue dispatch into a dedicated service that mirrors `CollectorEventPublisher`. That preserves sequential `DbContext`-safe processing, makes the routing logic unit-testable, and lets the Event Grid bridge functions be deleted cleanly.
+

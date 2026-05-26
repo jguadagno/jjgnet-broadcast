@@ -1,8 +1,9 @@
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
-using JosephGuadagno.Broadcasting.Domain.Exceptions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
+using JosephGuadagno.Broadcasting.Functions.Services;
 
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -11,12 +12,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Publishers;
 
 public class ScheduledItems(
     IScheduledItemManager scheduledItemManager,
-    IEventPublisher eventPublisher,
+    IScheduledItemEventPublisher scheduledItemEventPublisher,
     IFeedCheckManager feedCheckManager,
     ILogger<ScheduledItems> logger)
 {
     [Function(ConfigurationFunctionNames.PublishersScheduledItems)]
-    public async Task RunAsync([TimerTrigger("%publishers_scheduled_items_cron_settings%")] TimerInfo myTimer, ILogger log)
+    public async Task RunAsync([TimerTrigger("%publishers_scheduled_items_cron_settings%")]
+        TimerInfo myTimer)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -40,6 +42,7 @@ public class ScheduledItems(
         {
             var ownerOid = ownerGroup.Key;
             var userItems = ownerGroup.ToList();
+            var publishedCount = 0;
 
             var feedCheck = await feedCheckManager.GetByNameAsync(
                 ConfigurationFunctionNames.PublishersScheduledItems, ownerOid
@@ -51,33 +54,31 @@ public class ScheduledItems(
                 EntraOId = ownerOid
             };
 
-            try
-            {
-                await eventPublisher.PublishScheduledItemFiredEventsAsync(
-                    ConfigurationFunctionNames.PublishersScheduledItems, userItems);
-            }
-            catch (EventPublishException ex)
-            {
-                logger.LogError(ex, "Failed to publish scheduled item events for owner '{OwnerOid}' ({Count} item(s))",
-                    ownerOid, userItems.Count);
-                foreach (var scheduledItem in userItems)
-                {
-                    logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
-                }
-                throw;
-            }
-
             foreach (var scheduledItem in userItems)
             {
+                try
+                {
+                    await scheduledItemEventPublisher.PublishAsync(scheduledItem);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex,
+                        "Failed to dispatch scheduled item {ScheduledItemId} for owner '{OwnerOid}'",
+                        scheduledItem.Id,
+                        LogSanitizer.Sanitize(ownerOid));
+                    continue;
+                }
+
                 var wasSent = await scheduledItemManager.SentScheduledItemAsync(scheduledItem.Id);
                 if (wasSent)
                 {
+                    publishedCount++;
                     logger.LogCustomEvent(Metrics.ScheduledItemFired, scheduledItem.ToDictionary());
                 }
                 else
                 {
                     logger.LogWarning(
-                        "Failed to update the sent flag for scheduled items with the id of '{ScheduledItemId}'",
+                        "Failed to update the sent flag for scheduled item '{ScheduledItemId}'",
                         scheduledItem.Id);
                 }
             }
@@ -86,8 +87,8 @@ public class ScheduledItems(
             feedCheck.LastUpdatedOn = DateTimeOffset.UtcNow;
             await feedCheckManager.SaveAsync(feedCheck);
 
-            logger.LogInformation("Published {Count} scheduled item(s) for owner '{OwnerOid}'",
-                userItems.Count, ownerOid);
+            logger.LogInformation("Published {PublishedCount} of {ScheduledItemCount} scheduled item(s) for owner '{OwnerOid}'",
+                publishedCount, userItems.Count, LogSanitizer.Sanitize(ownerOid));
         }
 
         logger.LogDebug("Done publishing the events for scheduled items");

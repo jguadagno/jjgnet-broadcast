@@ -175,8 +175,6 @@ void ConfigureFunction(IServiceCollection services)
     services.AddHttpClient();
     services.AddMemoryCache();
 
-    services.TryAddSingleton<IEventPublisher, EventPublisher>();
-
     builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer");
     builder.EnrichSqlServerDbContext<BroadcastingContext>(
         configureSettings: sqlServerSettings =>
@@ -243,6 +241,9 @@ void ConfigureFunction(IServiceCollection services)
 
     // CollectorEventPublisher — replaces Event Grid dispatch for collector functions with per-user queue routing
     services.AddScoped<ICollectorEventPublisher, CollectorEventPublisher>();
+
+    // ScheduledItemEventPublisher — replaces Event Grid dispatch for scheduled items with per-user queue routing
+    services.AddScoped<IScheduledItemEventPublisher, ScheduledItemEventPublisher>();
 
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();

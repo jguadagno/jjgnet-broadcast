@@ -15,9 +15,11 @@ using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Data.Sql;
+using JosephGuadagno.Broadcasting.Composers;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
+using JosephGuadagno.Broadcasting.Functions.Services;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Managers.Bluesky;
@@ -40,6 +42,7 @@ using LinqToTwitter;
 using LinqToTwitter.OAuth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
+using Azure.Storage.Queues;
 
 using OpenTelemetry.Logs;
 
@@ -167,8 +170,7 @@ public class Startup
     private void ConfigureFunction(IServiceCollection services)
     {
         services.AddHttpClient();
-
-        services.TryAddSingleton<IEventPublisher, EventPublisher>();
+        services.TryAddSingleton(_ => new QueueServiceClient("UseDevelopmentStorage=true"));
 
         services.AddDbContext<BroadcastingContext>(options => options.UseSqlServer("name=ConnectionStrings:JJGNetDatabaseSqlServer"));
 
@@ -189,6 +191,12 @@ public class Startup
 
         services.AddSingleton<ITokenRefreshDataStore, TokenRefreshDataStore>();
         services.AddSingleton<ITokenRefreshManager, TokenRefreshManager>();
+
+        services.TryAddScoped<IMessageTemplateDataStore, MessageTemplateDataStore>();
+        services.TryAddScoped<IUserEventPublisherMappingDataStore, UserEventPublisherMappingDataStore>();
+        services.TryAddScoped<IMessageTemplateManager, MessageTemplateManager>();
+        services.TryAddScoped<IPostComposer, PostComposer>();
+        services.AddScoped<IScheduledItemEventPublisher, ScheduledItemEventPublisher>();
 
         services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader.SpeakingEngagementsReader>();
     }
