@@ -87,6 +87,7 @@ public class UserEventPublisherMappingController(
     /// <response code="400">The request payload was invalid or the event publisher mapping could not be saved.</response>
     /// <response code="401">The caller is not authenticated.</response>
     [HttpPost]
+    [IgnoreAntiforgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(UserEventPublisherMappingResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -130,6 +131,7 @@ public class UserEventPublisherMappingController(
     /// <response code="403">The caller is not allowed to update this event publisher mapping.</response>
     /// <response code="404">No event publisher mapping exists with the specified identifier.</response>
     [HttpPut("{id:int}")]
+    [IgnoreAntiforgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserEventPublisherMappingResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

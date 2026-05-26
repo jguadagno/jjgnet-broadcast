@@ -87,6 +87,7 @@ public class UserRandomPostSettingsController(
     /// <response code="400">The request payload was invalid or the random post settings record could not be saved.</response>
     /// <response code="401">The caller is not authenticated.</response>
     [HttpPost]
+    [IgnoreAntiforgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(UserRandomPostSettingsResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -130,6 +131,7 @@ public class UserRandomPostSettingsController(
     /// <response code="403">The caller is not allowed to update this random post settings record.</response>
     /// <response code="404">No random post settings record exists with the specified identifier.</response>
     [HttpPut("{id:int}")]
+    [IgnoreAntiforgeryToken]
     [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserRandomPostSettingsResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
