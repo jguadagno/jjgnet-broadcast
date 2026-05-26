@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
@@ -50,7 +51,7 @@ public class OnboardingManager(
             {
                 logger.LogWarning(
                     "UpdateIsOnboardedAsync returned false for Entra OID {EntraOid}. User may not exist yet",
-                    entraOid);
+                    LogSanitizer.Sanitize(entraOid));
                 return;
             }
 
@@ -59,7 +60,7 @@ public class OnboardingManager(
 
             logger.LogInformation(
                 "Onboarding status recalculated for Entra OID {EntraOid}: IsOnboarded={IsOnboarded}",
-                entraOid,
+                LogSanitizer.Sanitize(entraOid),
                 isOnboarded);
         }
         catch (Exception ex)
@@ -68,7 +69,7 @@ public class OnboardingManager(
             logger.LogError(
                 ex,
                 "Failed to recalculate onboarding status for Entra OID {EntraOid}",
-                entraOid);
+                LogSanitizer.Sanitize(entraOid));
         }
     }
 
