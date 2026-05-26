@@ -71,6 +71,12 @@ public class ScheduledItemEventPublisher(
         {
             case ScheduledItemType.SyndicationFeedItems:
                 var feedItem = await syndicationFeedItemManager.GetAsync(scheduledItem.ItemPrimaryKey, cancellationToken);
+                if (feedItem is null)
+                {
+                    logger.LogWarning("Syndication feed item {ItemId} not found for scheduled item {ScheduledItemId}",
+                        scheduledItem.ItemPrimaryKey, scheduledItem.Id);
+                    return null;
+                }
                 return new SocialMediaPublishRequest
                 {
                     Text = string.Empty,
@@ -84,6 +90,12 @@ public class ScheduledItemEventPublisher(
 
             case ScheduledItemType.YouTubeItems:
                 var youTubeItem = await youTubeItemManager.GetAsync(scheduledItem.ItemPrimaryKey, cancellationToken);
+                if (youTubeItem is null)
+                {
+                    logger.LogWarning("YouTube item {ItemId} not found for scheduled item {ScheduledItemId}",
+                        scheduledItem.ItemPrimaryKey, scheduledItem.Id);
+                    return null;
+                }
                 return new SocialMediaPublishRequest
                 {
                     Text = string.Empty,
@@ -97,6 +109,12 @@ public class ScheduledItemEventPublisher(
 
             case ScheduledItemType.Engagements:
                 var engagement = await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey, cancellationToken);
+                if (engagement is null)
+                {
+                    logger.LogWarning("Engagement {ItemId} not found for scheduled item {ScheduledItemId}",
+                        scheduledItem.ItemPrimaryKey, scheduledItem.Id);
+                    return null;
+                }
                 return new SocialMediaPublishRequest
                 {
                     Text = string.Empty,
@@ -108,6 +126,12 @@ public class ScheduledItemEventPublisher(
 
             case ScheduledItemType.Talks:
                 var talk = await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey, cancellationToken);
+                if (talk is null)
+                {
+                    logger.LogWarning("Talk {ItemId} not found for scheduled item {ScheduledItemId}",
+                        scheduledItem.ItemPrimaryKey, scheduledItem.Id);
+                    return null;
+                }
                 return new SocialMediaPublishRequest
                 {
                     Text = string.Empty,

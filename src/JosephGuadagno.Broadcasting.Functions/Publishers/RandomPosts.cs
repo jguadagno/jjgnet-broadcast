@@ -75,7 +75,7 @@ public class RandomPosts(
                 {
                     logger.LogWarning(ex,
                         "Invalid cron expression '{Cron}' for owner '{OwnerOid}' — skipping",
-                        settings.CronExpression, LogSanitizer.Sanitize(ownerOid));
+                        LogSanitizer.Sanitize(settings.CronExpression), LogSanitizer.Sanitize(ownerOid));
                     continue;
                 }
 
