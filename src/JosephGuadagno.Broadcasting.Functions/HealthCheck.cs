@@ -14,7 +14,7 @@ namespace JosephGuadagno.Broadcasting.Functions;
 /// Route: GET /api/health
 /// Returns HTTP 200 with JSON body on success, HTTP 503 on any connectivity or configuration failure.
 /// Infrastructure checks (queue/table storage) run inline.
-/// External-dependency readiness checks (Bitly, Twitter, Facebook, LinkedIn, Bluesky, EventGrid)
+/// External-dependency readiness checks (Bitly, Twitter, Facebook, LinkedIn, Bluesky)
 /// are delegated to registered <see cref="IHealthCheck"/> implementations via <see cref="HealthCheckService"/>.
 /// </summary>
 public class HealthCheck(
@@ -41,7 +41,7 @@ public class HealthCheck(
         checks.Add(await CheckTableStorageAsync(cancellationToken));
 
         // Run all registered IHealthCheck implementations tagged "ready"
-        // (Bitly, Twitter, Facebook, LinkedIn, Bluesky, EventGrid)
+        // (Bitly, Twitter, Facebook, LinkedIn, Bluesky)
         var healthReport = await healthCheckService.CheckHealthAsync(
             r => r.Tags.Contains("ready"), cancellationToken);
 

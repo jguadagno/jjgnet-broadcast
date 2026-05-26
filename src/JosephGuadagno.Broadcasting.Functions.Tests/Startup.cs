@@ -79,24 +79,9 @@ public class Startup
         config.Bind("Settings", settings);
         services.TryAddSingleton<ISettings>(settings);
 
-        var randomPostSettings = new RandomPostSettings { ExcludedCategories = [] };
-        config.Bind("RandomPost", randomPostSettings);
-        services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
-
         var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings { SpeakingEngagementsFile = null! };
         config.Bind("SpeakingEngagementsReader", speakerEngagementsSettings);
         services.TryAddSingleton<ISpeakingEngagementsReaderSettings>(speakerEngagementsSettings);
-
-        var eventPublisherSettings = new EventPublisherSettings { TopicEndpointSettings = [] };
-        var endpoints = config.GetSection("EventGridTopics:TopicEndpointSettings").Get<List<TopicEndpointSettings>>();
-        if (endpoints != null)
-        {
-            foreach (var endpoint in endpoints)
-            {
-                eventPublisherSettings.TopicEndpointSettings.Add(endpoint);
-            }
-        }
-        services.TryAddSingleton<IEventPublisherSettings>(eventPublisherSettings);
 
         // Add in AutoMapper
         var autoMapperSettings = new AutoMapperSettings();

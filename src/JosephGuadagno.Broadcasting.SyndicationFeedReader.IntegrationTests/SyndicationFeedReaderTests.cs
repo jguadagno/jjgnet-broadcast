@@ -1,4 +1,3 @@
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
 using Microsoft.Extensions.Logging;
@@ -8,10 +7,11 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.IntegrationTests;
 [Trait("Category", "Integration")]
 public class SyndicationFeedReaderTests(
 	ISyndicationFeedReader syndicationFeedReader,
-	IRandomPostSettings randomPostSettings,
 	ITestOutputHelper testOutputHelper)
 {
     private const string OwnerEntraOid = "integration-owner-entra-oid";
+    private static readonly DateTimeOffset RandomPostCutoffDate = new(2019, 1, 1, 12, 0, 0, TimeSpan.FromHours(-7));
+    private static readonly List<string> ExcludedCategories = ["books", "book reviews", "news", "arizona technology news", "technology news", "archive"];
     private readonly ITestOutputHelper _testOutputHelper = testOutputHelper;
 
     // ### GetSinceDate Tests ###
@@ -21,7 +21,7 @@ public class SyndicationFeedReaderTests(
     public void GetSinceDate_WithValidParameters_ShouldReturnPosts()
     {
         // Arrange
-        var sinceWhen = randomPostSettings.CutoffDate;
+        var sinceWhen = RandomPostCutoffDate;
         
         // Act
         var posts = syndicationFeedReader.GetSinceDate(OwnerEntraOid, sinceWhen);
@@ -73,7 +73,7 @@ public class SyndicationFeedReaderTests(
         // Arrange
         
         // Act
-        var randomPost = syndicationFeedReader.GetSyndicationItems(OwnerEntraOid, randomPostSettings.CutoffDate, randomPostSettings.ExcludedCategories);
+        var randomPost = syndicationFeedReader.GetSyndicationItems(OwnerEntraOid, RandomPostCutoffDate, ExcludedCategories);
 
         // Assert
         Assert.NotNull(randomPost);
@@ -86,7 +86,7 @@ public class SyndicationFeedReaderTests(
         // Arrange
         
         // Act
-        var randomPost = syndicationFeedReader.GetSyndicationItems(OwnerEntraOid, randomPostSettings.CutoffDate, []);
+        var randomPost = syndicationFeedReader.GetSyndicationItems(OwnerEntraOid, RandomPostCutoffDate, []);
 
         // Assert
         Assert.NotNull(randomPost);
@@ -115,7 +115,7 @@ public class SyndicationFeedReaderTests(
         // Arrange
         
         // Act
-        var randomItem = syndicationFeedReader.GetRandomSyndicationItem(OwnerEntraOid, randomPostSettings.CutoffDate, randomPostSettings.ExcludedCategories);
+        var randomItem = syndicationFeedReader.GetRandomSyndicationItem(OwnerEntraOid, RandomPostCutoffDate, ExcludedCategories);
 
         // Assert
         Assert.NotNull(randomItem);
@@ -128,7 +128,7 @@ public class SyndicationFeedReaderTests(
         // Arrange
         
         // Act
-        var randomItem = syndicationFeedReader.GetRandomSyndicationItem(OwnerEntraOid, randomPostSettings.CutoffDate, []);
+        var randomItem = syndicationFeedReader.GetRandomSyndicationItem(OwnerEntraOid, RandomPostCutoffDate, []);
 
         // Assert
         Assert.NotNull(randomItem);
@@ -153,7 +153,7 @@ public class SyndicationFeedReaderTests(
         // Arrange
         
         // Act
-        var randomItem = syndicationFeedReader.GetRandomSyndicationItem(OwnerEntraOid, randomPostSettings.CutoffDate, null);
+        var randomItem = syndicationFeedReader.GetRandomSyndicationItem(OwnerEntraOid, RandomPostCutoffDate, null);
 
         // Assert
         Assert.NotNull(randomItem);
