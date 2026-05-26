@@ -50,6 +50,8 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
     public DbSet<Models.UserPublisherTwitterSettings> UserPublisherTwitterSettings => Set<Models.UserPublisherTwitterSettings>();
     public DbSet<Models.UserPublisherLinkedInSettings> UserPublisherLinkedInSettings => Set<Models.UserPublisherLinkedInSettings>();
     public DbSet<Models.UserPublisherFacebookSettings> UserPublisherFacebookSettings => Set<Models.UserPublisherFacebookSettings>();
+    public DbSet<Models.UserRandomPostSettings> UserRandomPostSettings => Set<Models.UserRandomPostSettings>();
+    public DbSet<Models.UserEventPublisherMapping> UserEventPublisherMappings => Set<Models.UserEventPublisherMapping>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -846,6 +848,97 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
                 .IsRequired()
                 .HasColumnType("datetimeoffset")
                 .HasDefaultValueSql("(getutcdate())");
+        });
+
+        modelBuilder.Entity<Models.UserRandomPostSettings>(entity =>
+        {
+            entity.HasKey(e => e.Id)
+                .HasName("PK_UserRandomPostSettings")
+                .IsClustered();
+
+            entity.HasIndex(e => new { e.CreatedByEntraOid, e.SocialMediaPlatformId, e.CronExpression }, "UQ_UserRandomPostSettings_Owner_Platform_Cron")
+                .IsUnique();
+
+            entity.HasIndex(e => new { e.IsActive, e.CreatedByEntraOid }, "IX_UserRandomPostSettings_Active");
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.SocialMediaPlatformId)
+                .IsRequired();
+
+            entity.Property(e => e.CronExpression)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.CutoffDate)
+                .HasColumnType("datetimeoffset");
+
+            entity.Property(e => e.ExcludedCategories);
+
+            entity.Property(e => e.IsActive)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.HasOne(e => e.SocialMediaPlatform)
+                .WithMany()
+                .HasForeignKey(e => e.SocialMediaPlatformId)
+                .HasConstraintName("FK_UserRandomPostSettings_SocialMediaPlatforms");
+        });
+
+        modelBuilder.Entity<Models.UserEventPublisherMapping>(entity =>
+        {
+            entity.ToTable(table => table.HasCheckConstraint(
+                "CK_UserEventPublisherMapping_EventType",
+                "[EventType] IN ('NewSyndicationFeedItem', 'NewYouTubeItem', 'NewSpeakingEngagement', 'RandomPost', 'ScheduledItem')"));
+
+            entity.HasKey(e => e.Id)
+                .HasName("PK_UserEventPublisherMapping")
+                .IsClustered();
+
+            entity.HasIndex(e => new { e.CreatedByEntraOid, e.EventType, e.SocialMediaPlatformId }, "UQ_UserEventPublisherMapping_Owner_Event_Platform")
+                .IsUnique();
+
+            entity.HasIndex(e => new { e.IsActive, e.CreatedByEntraOid }, "IX_UserEventPublisherMapping_Active");
+
+            entity.Property(e => e.CreatedByEntraOid)
+                .HasMaxLength(36)
+                .IsRequired();
+
+            entity.Property(e => e.EventType)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.SocialMediaPlatformId)
+                .IsRequired();
+
+            entity.Property(e => e.IsActive)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.Property(e => e.LastUpdatedOn)
+                .IsRequired()
+                .HasColumnType("datetimeoffset")
+                .HasDefaultValueSql("(getutcdate())");
+
+            entity.HasOne(e => e.SocialMediaPlatform)
+                .WithMany()
+                .HasForeignKey(e => e.SocialMediaPlatformId)
+                .HasConstraintName("FK_UserEventPublisherMapping_SocialMediaPlatforms");
         });
 
         OnModelCreatingPartial(modelBuilder);
