@@ -20,6 +20,8 @@ public class ApiBroadcastingProfile : Profile
         CreateMap<UserPublisherTwitterSettings, TwitterSettingsResponse>();
         CreateMap<UserPublisherLinkedInSettings, LinkedInSettingsResponse>();
         CreateMap<UserPublisherFacebookSettings, FacebookSettingsResponse>();
+        CreateMap<UserRandomPostSettings, UserRandomPostSettingsResponse>();
+        CreateMap<UserEventPublisherMapping, UserEventPublisherMappingResponse>();
 
         // Request DTOs → Domain
         CreateMap<YouTubeItemRequest, YouTubeItem>()
@@ -98,5 +100,32 @@ public class ApiBroadcastingProfile : Profile
             .ForMember(d => d.CreatedOn, o => o.Ignore())
             .ForMember(d => d.LastUpdatedOn, o => o.Ignore());
         CreateMap<UserCollectorSpeakingEngagement, UserCollectorSpeakingEngagementResponse>();
+
+        // User Random Post Settings
+        CreateMap<CreateUserRandomPostSettingsRequest, UserRandomPostSettings>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
+            .ForMember(d => d.CreatedOn, o => o.Ignore())
+            .ForMember(d => d.LastUpdatedOn, o => o.Ignore())
+            .ForMember(d => d.ExcludedCategories, o => o.MapFrom(s => s.ExcludedCategories ?? new List<string>()));
+        CreateMap<UpdateUserRandomPostSettingsRequest, UserRandomPostSettings>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
+            .ForMember(d => d.CreatedOn, o => o.Ignore())
+            .ForMember(d => d.LastUpdatedOn, o => o.Ignore())
+            .ForAllMembers(o => o.Condition((_, _, sourceMember) => sourceMember is not null));
+
+        // User Event Publisher Mapping
+        CreateMap<CreateUserEventPublisherMappingRequest, UserEventPublisherMapping>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
+            .ForMember(d => d.CreatedOn, o => o.Ignore())
+            .ForMember(d => d.LastUpdatedOn, o => o.Ignore());
+        CreateMap<UpdateUserEventPublisherMappingRequest, UserEventPublisherMapping>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
+            .ForMember(d => d.CreatedOn, o => o.Ignore())
+            .ForMember(d => d.LastUpdatedOn, o => o.Ignore())
+            .ForAllMembers(o => o.Condition((_, _, sourceMember) => sourceMember is not null));
     }
 }

@@ -72,5 +72,12 @@
 - **Null guards matter:** When removing dead code, preserve unrelated guards (e.g., `newItems == null ||` in collector loops) — removal causes `NullReferenceException` when readers return `null`.
 - **EF DbContext not thread-safe:** Never use `Task.WhenAll` when managers share a single scoped DbContext. Use sequential awaits instead.
 - **Event Grid cleanup:** Deregister Event Grid services from host and remove simulator topic definitions when all subscribers are deleted.
+- **2026-05-26T11:17:08.070-07:00 — Per-user settings API CRUD pattern:**
+  New per-user publisher settings endpoints fit the existing
+  `Publishers/...` route family, use class-level `[Authorize]` +
+  `[IgnoreAntiforgeryToken]`, enforce `CreatedByEntraOid` ownership on item
+  routes, stamp owner OIDs from claims on create, and use separate
+  create/update DTOs so PUT can preserve omitted optional fields via
+  conditional AutoMapper mapping.
 - **For archived learnings:** See history-summary.md
 
