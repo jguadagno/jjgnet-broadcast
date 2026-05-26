@@ -19,7 +19,7 @@ public class RandomPostsTests
 {
     private const string OwnerOid = "test-owner-oid";
 
-    private readonly Mock<IUserRandomPostSettingsDataStore> _settingsDataStore;
+    private readonly Mock<IUserRandomPostSettingsManager> _settingsManager;
     private readonly Mock<ISyndicationFeedItemManager> _feedItemManager;
     private readonly Mock<IMessageTemplateManager> _messageTemplateManager;
     private readonly Mock<IPostComposer> _postComposer;
@@ -31,7 +31,7 @@ public class RandomPostsTests
 
     public RandomPostsTests()
     {
-        _settingsDataStore = new Mock<IUserRandomPostSettingsDataStore>();
+        _settingsManager = new Mock<IUserRandomPostSettingsManager>();
         _feedItemManager = new Mock<ISyndicationFeedItemManager>();
         _messageTemplateManager = new Mock<IMessageTemplateManager>();
         _postComposer = new Mock<IPostComposer>();
@@ -51,8 +51,15 @@ public class RandomPostsTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockSendResponse.Object);
 
+        _settingsManager
+            .Setup(s => s.UpdateNextRunAsync(
+                It.IsAny<int>(),
+                It.IsAny<DateTimeOffset?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
         _sut = new RandomPosts(
-            _settingsDataStore.Object,
+            _settingsManager.Object,
             _feedItemManager.Object,
             _messageTemplateManager.Object,
             _postComposer.Object,
@@ -63,7 +70,8 @@ public class RandomPostsTests
     private static UserRandomPostSettings ActiveSettings(
         string ownerOid = OwnerOid,
         int platformId = SocialMediaPlatformIds.Twitter,
-        string cronExpression = "* * * * *") =>
+        string cronExpression = "* * * * *",
+        DateTimeOffset? nextRunDateUtc = null) =>
         new()
         {
             Id = 1,
@@ -71,6 +79,7 @@ public class RandomPostsTests
             SocialMediaPlatformId = platformId,
             CronExpression = cronExpression,
             IsActive = true,
+            NextRunDateUtc = nextRunDateUtc,
             CreatedOn = DateTimeOffset.UtcNow,
             LastUpdatedOn = DateTimeOffset.UtcNow,
         };
@@ -90,30 +99,11 @@ public class RandomPostsTests
         };
 
     [Fact]
-    public async Task RunAsync_WhenNoActiveSettings_DoesNotDispatch()
+    public async Task RunAsync_WhenNoDueSettings_DoesNotDispatch()
     {
-        _settingsDataStore
-            .Setup(s => s.GetAllActiveAsync(It.IsAny<CancellationToken>()))
+        _settingsManager
+            .Setup(s => s.GetAllDueAsync(It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<UserRandomPostSettings>());
-
-        await _sut.RunAsync(FakeTimer);
-
-        _feedItemManager.Verify(
-            m => m.GetRandomSyndicationDataAsync(
-                It.IsAny<string>(), It.IsAny<DateTimeOffset>(),
-                It.IsAny<List<string>>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        _queueServiceClient.Verify(q => q.GetQueueClient(It.IsAny<string>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task RunAsync_WhenCronNotDue_DoesNotDispatch()
-    {
-        // Feb 31 never occurs — Cronos GetNextOccurrence returns null.
-        var settings = ActiveSettings(cronExpression: "0 0 31 2 *");
-        _settingsDataStore
-            .Setup(s => s.GetAllActiveAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<UserRandomPostSettings> { settings });
 
         await _sut.RunAsync(FakeTimer);
 
@@ -128,13 +118,12 @@ public class RandomPostsTests
     [Fact]
     public async Task RunAsync_WhenCronDueAndItemFound_DispatchesToCorrectQueue()
     {
-        // "* * * * *" fires every minute — guaranteed to be due.
         var settings = ActiveSettings(
             cronExpression: "* * * * *",
             platformId: SocialMediaPlatformIds.Twitter);
 
-        _settingsDataStore
-            .Setup(s => s.GetAllActiveAsync(It.IsAny<CancellationToken>()))
+        _settingsManager
+            .Setup(s => s.GetAllDueAsync(It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<UserRandomPostSettings> { settings });
 
         var feedItem = BuildFeedItem();
@@ -177,10 +166,153 @@ public class RandomPostsTests
     }
 
     [Fact]
+    public async Task RunAsync_WhenDispatchSucceeds_CallsUpdateNextRunAsync()
+    {
+        var settings = ActiveSettings(cronExpression: "* * * * *");
+
+        _settingsManager
+            .Setup(s => s.GetAllDueAsync(It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserRandomPostSettings> { settings });
+
+        var feedItem = BuildFeedItem();
+        _feedItemManager
+            .Setup(m => m.GetRandomSyndicationDataAsync(
+                OwnerOid, It.IsAny<DateTimeOffset>(),
+                It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(feedItem);
+
+        var template = new MessageTemplate
+        {
+            SocialMediaPlatformId = SocialMediaPlatformIds.Twitter,
+            MessageType = MessageTemplates.MessageTypes.RandomPost,
+            Template = "{{ title }} {{ link_url }}",
+            CreatedByEntraOid = OwnerOid,
+        };
+        _messageTemplateManager
+            .Setup(m => m.GetAsync(
+                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(template);
+
+        _postComposer
+            .Setup(c => c.ComposeAsync(
+                It.IsAny<SocialMediaPublishRequest>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Some composed text");
+
+        await _sut.RunAsync(FakeTimer);
+
+        _settingsManager.Verify(
+            s => s.UpdateNextRunAsync(
+                settings.Id,
+                It.IsAny<DateTimeOffset?>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenQueueSendThrows_StillCallsUpdateNextRunAsync()
+    {
+        var settings = ActiveSettings(cronExpression: "* * * * *");
+
+        _settingsManager
+            .Setup(s => s.GetAllDueAsync(It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserRandomPostSettings> { settings });
+
+        var feedItem = BuildFeedItem();
+        _feedItemManager
+            .Setup(m => m.GetRandomSyndicationDataAsync(
+                OwnerOid, It.IsAny<DateTimeOffset>(),
+                It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(feedItem);
+
+        var template = new MessageTemplate
+        {
+            SocialMediaPlatformId = SocialMediaPlatformIds.Twitter,
+            MessageType = MessageTemplates.MessageTypes.RandomPost,
+            Template = "{{ title }} {{ link_url }}",
+            CreatedByEntraOid = OwnerOid,
+        };
+        _messageTemplateManager
+            .Setup(m => m.GetAsync(
+                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(template);
+
+        _postComposer
+            .Setup(c => c.ComposeAsync(
+                It.IsAny<SocialMediaPublishRequest>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Composed text");
+
+        _queueClient
+            .Setup(q => q.SendMessageAsync(
+                It.IsAny<string>(),
+                It.IsAny<TimeSpan?>(),
+                It.IsAny<TimeSpan?>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Queue unavailable"));
+
+        await _sut.RunAsync(FakeTimer);
+
+        _settingsManager.Verify(
+            s => s.UpdateNextRunAsync(
+                settings.Id,
+                It.IsAny<DateTimeOffset?>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenNoFeedItemFound_StillAdvancesNextRunDateUtc()
+    {
+        var settings = ActiveSettings(cronExpression: "* * * * *");
+
+        _settingsManager
+            .Setup(s => s.GetAllDueAsync(It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserRandomPostSettings> { settings });
+
+        _feedItemManager
+            .Setup(m => m.GetRandomSyndicationDataAsync(
+                It.IsAny<string>(), It.IsAny<DateTimeOffset>(),
+                It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((SyndicationFeedItem?)null);
+
+        await _sut.RunAsync(FakeTimer);
+
+        _settingsManager.Verify(
+            m => m.UpdateNextRunAsync(
+                settings.Id, It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenInvalidCronExpression_SkipsSettingAndDoesNotUpdateNextRun()
+    {
+        var settings = ActiveSettings(cronExpression: "not-a-cron");
+
+        _settingsManager
+            .Setup(s => s.GetAllDueAsync(It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserRandomPostSettings> { settings });
+
+        await _sut.RunAsync(FakeTimer);
+
+        _feedItemManager.Verify(
+            m => m.GetRandomSyndicationDataAsync(
+                It.IsAny<string>(), It.IsAny<DateTimeOffset>(),
+                It.IsAny<List<string>>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _settingsManager.Verify(
+            m => m.UpdateNextRunAsync(
+                It.IsAny<int>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task RunAsync_WhenDataStoreThrows_PropagatesException()
     {
-        _settingsDataStore
-            .Setup(s => s.GetAllActiveAsync(It.IsAny<CancellationToken>()))
+        _settingsManager
+            .Setup(s => s.GetAllDueAsync(It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("DB unavailable"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.RunAsync(FakeTimer));
