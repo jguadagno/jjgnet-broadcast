@@ -565,5 +565,43 @@ The collector rewrite already established the direct-routing pattern, and the fo
 
 ---
 
+# Decision: Phase 3 Part 2 Web UI for per-user publisher settings
+
+**Date:** 2026-05-26T11:17:08.070-07:00  
+**Author:** Trinity  
+**Status:** ✅ IMPLEMENTED
+
+## Decision
+
+- Add Web MVC controllers under the `Publishers/...` route family for
+  `UserRandomPostSettings` and `UserEventPublisherMapping`.
+- Keep the Web layer on HTTP-client wrapper services
+  (`IUserRandomPostSettingsService`, `IUserEventPublisherMappingService`) rather
+  than injecting managers directly.
+- Resolve platform names through `ISocialMediaPlatformService` and centralize
+  event-type labels/icons in `Web/Constants/PublisherEventTypes.cs`.
+- For editable `DateTimeOffset` values, use a visible `datetime-local` input and
+  a hidden UTC field populated in the browser so the UI stays local-time
+  friendly while the API contract remains UTC.
+
+## Why
+
+- This matches the existing Web architecture where controllers consume
+  downstream API wrappers instead of domain managers.
+- The shared metadata helper avoids duplicating event-type labels and collector
+  icon choices across controllers and views.
+- The UTC hidden-field pattern satisfies the cross-cutting date decision without
+  adding server-side timezone assumptions.
+
+## Files
+
+- `src/JosephGuadagno.Broadcasting.Web/Controllers/UserRandomPostSettingsController.cs`
+- `src/JosephGuadagno.Broadcasting.Web/Controllers/UserEventPublisherMappingController.cs`
+- `src/JosephGuadagno.Broadcasting.Web/Services/UserRandomPostSettingsService.cs`
+- `src/JosephGuadagno.Broadcasting.Web/Services/UserEventPublisherMappingService.cs`
+- `src/JosephGuadagno.Broadcasting.Web/Constants/PublisherEventTypes.cs`
+
+---
+
 > Entries before 2026-05-18 archived to decisions-archive.md
 

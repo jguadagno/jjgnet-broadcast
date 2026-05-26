@@ -116,3 +116,45 @@
 ### Next
 - Phase 3 Part 2: Web app integration (consume the new API endpoints)
 
+---
+
+## Phase 3 Part 2 — Web UI for per-user publisher settings (2026-05-26T18:55:48Z)
+
+**Status:** ✅ COMPLETE — commit `e86fc661` on branch `issue-995-per-user-publisher-routing`
+
+### What was done
+
+- Created `UserRandomPostSettingsController` with Index/Create/Edit/Delete under `/Publishers/UserRandomPostSettings`
+  - Consumes API via `IUserRandomPostSettingsService` HTTP wrapper
+  - Ownership-based access control via Web middleware session context
+  - Datetime-local input pattern with hidden UTC field
+- Created `UserEventPublisherMappingController` with Index/Create/Edit/Delete under `/Publishers/UserEventPublisherMapping`
+  - Same HTTP wrapper + ownership pattern as UserRandomPostSettings
+  - Multi-select platform picker with icon rendering
+- Created `IUserRandomPostSettingsService` / `IUserEventPublisherMappingService` for API integration
+- Created `PublisherEventTypes.cs` constants file centralizing event-type labels and collector icons
+- Created Razor views (Index, Create, Edit, Delete) for both controllers with:
+  - `datetime-local` input fields + hidden UTC binding
+  - Platform/event-type dropdowns via metadata services
+  - Validation summaries and error handling
+- DI registration for controllers and services in `Program.cs`
+- Navigation link integration for Web sidebar menu
+- All tests passing, full build passing
+
+### Key technical patterns
+
+- **Web → API:** Controllers consume downstream API wrappers (services) rather than injecting managers. This matches existing Web architecture (Twitter/YouTube/etc. controllers).
+- **Datetime-local pattern:** For editable `DateTimeOffset` fields, use `<input type="datetime-local" />` visible to user + hidden UTC field populated by browser script. UI stays local-friendly, API contract remains UTC.
+- **Centralized event-type metadata:** Avoid duplicating event-type labels/icons across views. Use `PublisherEventTypes.cs` constant class.
+- **Platform metadata:** `ISocialMediaPlatformService` resolves platform names and icons; centralize filtering/sorting in service, not in views.
+
+### Phase 3 Complete
+
+All phases of issue #995 are now fully complete:
+- Phase 1: Database schema ✅
+- Phase 2: Collector/ScheduledItems event dispatch → per-user routing ✅
+- Phase 3 Part 1: API CRUD endpoints ✅
+- Phase 3 Part 2: Web UI ✅
+
+**Next:** Code review, merge to main, close issue #995.
+
