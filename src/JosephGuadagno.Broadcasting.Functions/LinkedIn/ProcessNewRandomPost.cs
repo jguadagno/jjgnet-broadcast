@@ -1,14 +1,11 @@
 using System.Text.Json;
-
 using Azure.Messaging.EventGrid;
-
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Composers;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
-using JosephGuadagno.Broadcasting.Domain.Utilities;
-using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -16,12 +13,13 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
 public class ProcessNewRandomPost(
     ISyndicationFeedItemManager syndicationFeedItemManager,
-    IUserOAuthTokenManager userOAuthTokenManager,
+    IMessageTemplateManager messageTemplateManager,
+    IPostComposer postComposer,
     ILogger<ProcessNewRandomPost> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInProcessRandomPostFired)]
     [QueueOutput(Queues.LinkedInPostLink)]
-    public async Task<LinkedInPostLink?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
@@ -44,38 +42,52 @@ public class ProcessNewRandomPost(
             }
             var syndicationFeedItem = await syndicationFeedItemManager.GetAsync(source.Id);
 
-            // Resolve per-user OAuth token — no silent fallback to shared token
-            var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
-                syndicationFeedItem.CreatedByEntraOid,
-                SocialMediaPlatformIds.LinkedIn);
-
-            if (token is null)
+            var ownerEntraOid = syndicationFeedItem.CreatedByEntraOid;
+            if (string.IsNullOrEmpty(ownerEntraOid))
             {
-                logger.LogWarning(
-                    "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping random post {ItemId}",
-                    LogSanitizer.Sanitize(syndicationFeedItem.CreatedByEntraOid),
+                logger.LogWarning("No owner OID for syndication item {Id} — skipping LinkedIn random post",
                     syndicationFeedItem.Id);
                 return null;
             }
 
-            var statusText = "ICYMI: ";
-            var post = new LinkedInPostLink
+            var request = new SocialMediaPublishRequest
             {
-                Text = $"{statusText} {syndicationFeedItem.Title} {HashTagLists.BuildHashTagList(syndicationFeedItem.Tags)}",
+                Text = "",
                 Title = syndicationFeedItem.Title,
                 LinkUrl = syndicationFeedItem.Url,
-                AccessToken = token.AccessToken
+                ShortenedUrl = syndicationFeedItem.ShortenedUrl,
+                Hashtags = syndicationFeedItem.Tags.Count > 0 ? syndicationFeedItem.Tags.ToList() : null,
+                OwnerEntraOid = ownerEntraOid
             };
+
+            var template = await messageTemplateManager.GetAsync(
+                MessageTemplates.Platforms.LinkedIn,
+                MessageTemplates.MessageTypes.RandomPost,
+                ownerEntraOid);
+            if (template is null)
+            {
+	            logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.RandomPost, ownerEntraOid);
+	            return null;
+            }
+
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
+            {
+                logger.LogWarning("Compose returned empty for random post item {Id}", syndicationFeedItem.Id);
+                return null;
+            }
 
             var properties = new Dictionary<string, string>
             {
                 {"title", syndicationFeedItem.Title},
                 {"url", syndicationFeedItem.Url},
-                {"post", post.Text}
+                {"post", composedText}
             };
             logger.LogCustomEvent(Metrics.LinkedInProcessedRandomPost, properties);
             logger.LogDebug("Picked a random post {Title}", syndicationFeedItem.Title);
-            return post;
+
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

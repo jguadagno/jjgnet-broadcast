@@ -23,7 +23,9 @@ ViewData["Title"] = "LinkedIn Token Refresh";
             <label for="HasToken">Token Present</label>
         </dt>
         <dd class="col-sm-10">
-            <input type="text" id="HasToken" name="HasToken" value="@Model.HasToken" class="form-control" readonly />
+	        <div class="form-check disabled">
+		        @Html.CheckBoxFor(m => m.HasToken, new { @class = "form-check-input", @disabled = "disabled" })
+	        </div>
         </dd>
     </dl>
 </div>

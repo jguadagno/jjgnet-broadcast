@@ -7,6 +7,4 @@ public class LinkedInPublisherSetting
     public string? ClientId { get; set; }
 
     public bool HasClientSecret { get; set; }
-
-    public bool HasAccessToken { get; set; }
 }

@@ -1,6 +1,7 @@
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
@@ -9,65 +10,59 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
-public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherFacebookSettingsManager facebookSettingsManager, ILogger<PostPageStatus> logger)
+public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherFacebookSettingsManager facebookSettingsManager, IUserOAuthTokenManager userOAuthTokenManager, ILogger<PostPageStatus> logger)
 {
     [Function(ConfigurationFunctionNames.FacebookPostPageStatus)]
     public async Task Run(
         [QueueTrigger(Queues.FacebookPostStatusToPage)]
-        Domain.Models.Messages.FacebookPostStatus facebookPostStatus)
+        SocialMediaPublishRequest request)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.FacebookPostPageStatus, startedAt);
 
-        if (string.IsNullOrEmpty(facebookPostStatus.CreatedByEntraOid))
+        if (string.IsNullOrEmpty(request.OwnerEntraOid))
         {
-            logger.LogWarning("Facebook post status missing CreatedByEntraOid. Skipping.");
+            logger.LogWarning("Facebook post status missing OwnerEntraOid. Skipping");
             return;
         }
 
-        var ownerOid = facebookPostStatus.CreatedByEntraOid;
+        var ownerOid = request.OwnerEntraOid;
         var settings = await facebookSettingsManager.GetAsync(ownerOid);
         if (settings is null || !settings.IsEnabled)
         {
-            logger.LogWarning("Facebook settings not found or not enabled for owner '{OwnerOid}'. Skipping.",
+            logger.LogWarning("Facebook settings not found or not enabled for owner '{OwnerOid}'. Skipping",
                 LogSanitizer.Sanitize(ownerOid));
             return;
         }
 
-        var pageAccessToken = await facebookSettingsManager.GetPageAccessTokenAsync(ownerOid)
-            ?? await facebookSettingsManager.GetLongLivedAccessTokenAsync(ownerOid);
-
-        if (string.IsNullOrEmpty(pageAccessToken))
+        var oauthToken = await userOAuthTokenManager.GetByUserAndPlatformAsync(ownerOid, SocialMediaPlatformIds.Facebook);
+        if (oauthToken is null)
         {
-            logger.LogWarning("Facebook credentials (PageAccessToken) not found for owner '{OwnerOid}'. Skipping.",
+            logger.LogWarning("No OAuth token found for owner '{OwnerOid}' on Facebook. Skipping",
                 LogSanitizer.Sanitize(ownerOid));
             return;
         }
 
         if (string.IsNullOrEmpty(settings.PageId))
         {
-            logger.LogWarning("Facebook PageId not found for owner '{OwnerOid}'. Skipping.",
+            logger.LogWarning("Facebook PageId not found for owner '{OwnerOid}'. Skipping",
                 LogSanitizer.Sanitize(ownerOid));
             return;
         }
 
+        request.AccessToken = oauthToken.AccessToken;
+        request.AuthorId = settings.PageId;
+
         try
         {
-            string? postId;
-            if (!string.IsNullOrEmpty(facebookPostStatus.ImageUrl))
-                postId = await facebookManager.PostMessageLinkAndPictureToPage(
-                    facebookPostStatus.StatusText, facebookPostStatus.LinkUri, facebookPostStatus.ImageUrl, settings.PageId, pageAccessToken);
-            else
-                postId = await facebookManager.PostMessageAndLinkToPage(
-                    facebookPostStatus.StatusText, facebookPostStatus.LinkUri, settings.PageId, pageAccessToken);
-
+            var postId = await facebookManager.PublishAsync(request);
             if (!string.IsNullOrEmpty(postId))
             {
                 var properties = new Dictionary<string, string>
                 {
-                    {"statusText", facebookPostStatus.StatusText}, 
-                    {"url", facebookPostStatus.LinkUri},
+                    {"statusText", request.Text}, 
+                    {"url", request.LinkUrl ?? string.Empty},
                 };
                 logger.LogCustomEvent(Metrics.FacebookPostPageStatus, properties);
             }

@@ -13,7 +13,7 @@ public class SocialMediaPlatformViewModel
     public int Id { get; set; }
 
     /// <summary>
-    /// The name of the social media platform (e.g., Twitter, BlueSky, LinkedIn)
+    /// The name of the social media platform (e.g., Twitter, Bluesky, LinkedIn)
     /// </summary>
     [Required(ErrorMessage = "Name is required")]
     [MaxLength(100, ErrorMessage = "Name cannot exceed 100 characters")]

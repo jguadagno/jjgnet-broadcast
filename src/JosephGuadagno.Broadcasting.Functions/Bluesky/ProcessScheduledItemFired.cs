@@ -4,10 +4,10 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Composers;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
-using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -18,14 +18,13 @@ public class ProcessScheduledItemFired(
     IEngagementManager engagementManager,
     ISyndicationFeedItemManager syndicationFeedItemManager,
     IYouTubeItemManager youTubeItemManager,
-    IBlueskyManager blueskyManager,
+    IMessageTemplateManager messageTemplateManager,
+    IPostComposer postComposer,
     ILogger<ProcessScheduledItemFired> logger)
 {
-    const int MaxPostLength = 300;
-
     [Function(ConfigurationFunctionNames.BlueskyProcessScheduledItemFired)]
     [QueueOutput(Queues.BlueskyPostToSend)]
-    public async Task<BlueskyPostMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.Now;
         logger.LogDebug("{FunctionName} started at: {StartedOn:f}",
@@ -50,35 +49,47 @@ public class ProcessScheduledItemFired(
             logger.LogDebug("Processing the event '{Id}' for '{TableName}', '{PartitionKey}'",
                 eventGridEvent.Id, scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
-            var blueskyPostText = await blueskyManager.ComposeMessageAsync(scheduledItem);
-
-            if (string.IsNullOrWhiteSpace(blueskyPostText))
+            var ownerEntraOid = scheduledItem.CreatedByEntraOid ?? string.Empty;
+            if (string.IsNullOrEmpty(ownerEntraOid))
             {
-                logger.LogWarning("No Bluesky post text for scheduled item {Id}", scheduledItem.Id);
+                logger.LogWarning("No owner OID on scheduled item {Id} — skipping Bluesky post",
+                    scheduledItem.Id);
                 return null;
             }
 
-            var sourceUrl = await GetSourceUrlAsync(scheduledItem);
+            var request = await BuildRequestForScheduledItemAsync(scheduledItem, ownerEntraOid);
+            if (request is null)
+                return null;
+
+            var template = await messageTemplateManager.GetAsync(
+                MessageTemplates.Platforms.Bluesky,
+                MessageTemplates.MessageTypes.ScheduledItem,
+                ownerEntraOid);
+            if (template is null)
+            {
+	            logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.Bluesky, MessageTemplates.MessageTypes.ScheduledItem, ownerEntraOid);
+	            return null;
+            }
+
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
+            {
+                logger.LogWarning("Compose returned empty for scheduled item {Id}", scheduledItem.Id);
+                return null;
+            }
 
             var properties = new Dictionary<string, string>
             {
                 { "tableName", scheduledItem.ItemTableName },
                 { "id", scheduledItem.ItemPrimaryKey.ToString() },
-                { "text", blueskyPostText }
+                { "text", composedText }
             };
             logger.LogCustomEvent(Metrics.BlueskyProcessedScheduledItemFired, properties);
-            logger.LogDebug("Generated the BlueSky post text for {TableName}, {PrimaryKey}",
+            logger.LogDebug("Generated the Bluesky post text for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
-            return new BlueskyPostMessage
-            {
-                Text = blueskyPostText.Length > MaxPostLength
-                    ? blueskyPostText[..MaxPostLength]
-                    : blueskyPostText,
-                Url = sourceUrl,
-                ImageUrl = scheduledItem.ImageUrl,
-                CreatedByEntraOid = scheduledItem.CreatedByEntraOid
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {
@@ -93,19 +104,59 @@ public class ProcessScheduledItemFired(
         }
     }
 
-    private async Task<string?> GetSourceUrlAsync(ScheduledItem scheduledItem)
+    private async Task<SocialMediaPublishRequest?> BuildRequestForScheduledItemAsync(
+        ScheduledItem scheduledItem, string ownerEntraOid)
     {
-        return scheduledItem.ItemType switch
+        switch (scheduledItem.ItemType)
         {
-            ScheduledItemType.SyndicationFeedItems =>
-                (await syndicationFeedItemManager.GetAsync(scheduledItem.ItemPrimaryKey)).Url,
-            ScheduledItemType.YouTubeItems =>
-                (await youTubeItemManager.GetAsync(scheduledItem.ItemPrimaryKey)).Url,
-            ScheduledItemType.Engagements =>
-                (await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey)).Url,
-            ScheduledItemType.Talks =>
-                (await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey)).UrlForConferenceTalk,
-            _ => null
-        };
+            case ScheduledItemType.SyndicationFeedItems:
+                var feedItem = await syndicationFeedItemManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = feedItem.Title,
+                    LinkUrl = feedItem.Url,
+                    ShortenedUrl = feedItem.ShortenedUrl,
+                    Hashtags = feedItem.Tags.Count > 0 ? feedItem.Tags.ToList() : null,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            case ScheduledItemType.YouTubeItems:
+                var ytItem = await youTubeItemManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = ytItem.Title,
+                    LinkUrl = ytItem.Url,
+                    ShortenedUrl = ytItem.ShortenedUrl,
+                    Hashtags = ytItem.Tags.Count > 0 ? ytItem.Tags.ToList() : null,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            case ScheduledItemType.Engagements:
+                var engagement = await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = engagement.Name,
+                    LinkUrl = engagement.Url,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            case ScheduledItemType.Talks:
+                var talk = await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = talk.Name,
+                    LinkUrl = talk.UrlForConferenceTalk,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            default:
+                logger.LogError("The item type '{ItemType}' is not supported",
+                    LogSanitizer.Sanitize(scheduledItem.ItemType.ToString()));
+                return null;
+        }
     }
 }

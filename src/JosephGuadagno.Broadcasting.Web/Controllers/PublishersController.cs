@@ -17,7 +17,7 @@ public class PublishersController(
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["Twitter"]  = "PublisherTwitterSettings",
-            ["BlueSky"]  = "PublisherBlueskySettings",
+            ["Bluesky"]  = "PublisherBlueskySettings",
             ["LinkedIn"] = "PublisherLinkedInSettings",
             ["Facebook"] = "PublisherFacebookSettings",
         };
@@ -54,7 +54,7 @@ public class PublishersController(
         platformName switch
         {
             "Twitter"  => aggregate?.Twitter is not null,
-            "BlueSky"  => aggregate?.Bluesky is not null,
+            "Bluesky"  => aggregate?.Bluesky is not null,
             "LinkedIn" => aggregate?.LinkedIn is not null,
             "Facebook" => aggregate?.Facebook is not null,
             _          => false,
@@ -64,7 +64,7 @@ public class PublishersController(
         platformName switch
         {
             "Twitter"  => aggregate?.Twitter?.IsEnabled ?? false,
-            "BlueSky"  => aggregate?.Bluesky?.IsEnabled ?? false,
+            "Bluesky"  => aggregate?.Bluesky?.IsEnabled ?? false,
             "LinkedIn" => aggregate?.LinkedIn?.IsEnabled ?? false,
             "Facebook" => aggregate?.Facebook?.IsEnabled ?? false,
             _          => false,

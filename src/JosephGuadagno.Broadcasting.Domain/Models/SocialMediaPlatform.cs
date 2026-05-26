@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace JosephGuadagno.Broadcasting.Domain.Models;
 
 /// <summary>
-/// Represents a social media platform (Twitter, BlueSky, LinkedIn, Facebook, Mastodon, etc.)
+/// Represents a social media platform (Twitter, Bluesky, LinkedIn, Facebook, Mastodon, etc.)
 /// </summary>
 public class SocialMediaPlatform
 {
@@ -14,7 +14,7 @@ public class SocialMediaPlatform
     public int Id { get; set; }
 
     /// <summary>
-    /// The name of the social media platform (e.g., Twitter, BlueSky, LinkedIn)
+    /// The name of the social media platform (e.g., Twitter, Bluesky, LinkedIn)
     /// </summary>
     [Required]
     [MaxLength(100)]

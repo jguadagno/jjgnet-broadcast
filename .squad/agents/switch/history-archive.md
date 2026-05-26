@@ -294,3 +294,13 @@ Implemented the complete Web layer for per-user collector settings:
 - XML doc comments on all public types
 
 
+
+
+# Switch — History
+
+## Summary
+
+Switch (Web/Frontend Developer) implements the ASP.NET MVC Web layer with Razor views, controllers, and Web-layer services. Primary focus: RBAC Phase 1/2 UI (user approval, role management), add-platform flows, form handling, and authorization enforcement. Key work includes EngagementService (maps API DTOs to Domain models), Web-layer ViewModels (prevents Domain model references in Web project), CSRF protection (@Html.AntiForgeryToken on all POST forms), double-submit prevention (button disable via site.js), and self-demotion guards. Established pattern: create Web-specific ViewModels using AutoMapper, consume API responses through explicit contract types, validate on server-side before calling managers, and enforce authorization at controller level with [RequireAdministrator]/[RequireContributor] attributes. Works closely with Trinity (API contracts), Tank (Web integration tests), and Sparks (UI refinements). Notable: Switch maintains separation of concerns by never allowing Web layer to reference Domain models directly, always mapping through ViewModels. Key decision: Web services act as adapters between controllers and API, handling both request payload construction and response DTO-to-ViewModel mapping. Pattern: double-check authorization boundaries when adding new forms—verify both GET (show form) and POST (submit form) enforce appropriate roles.
+
+## Learnings
+

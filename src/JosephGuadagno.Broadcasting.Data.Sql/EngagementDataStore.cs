@@ -20,9 +20,36 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
     {
         try
         {
-            var dbEngagement = mapper.Map<Models.Engagement>(engagement);
-            broadcastingContext.Entry(dbEngagement).State =
-                dbEngagement.Id == 0 ? EntityState.Added : EntityState.Modified;
+            ArgumentNullException.ThrowIfNull(engagement);
+
+            Models.Engagement dbEngagement;
+            if (engagement.Id == 0)
+            {
+                dbEngagement = new Models.Engagement();
+                mapper.Map(engagement, dbEngagement);
+                if (dbEngagement.CreatedOn == default)
+                    dbEngagement.CreatedOn = DateTimeOffset.UtcNow;
+                dbEngagement.LastUpdatedOn = DateTimeOffset.UtcNow;
+                broadcastingContext.Engagements.Add(dbEngagement);
+            }
+            else
+            {
+                dbEngagement = await broadcastingContext.Engagements
+                    .Include(e => e.Talks)
+                    .FirstOrDefaultAsync(e => e.Id == engagement.Id, cancellationToken);
+
+                if (dbEngagement is null)
+                {
+                    return OperationResult<Domain.Models.Engagement>.Failure($"Engagement '{engagement.Id}' not found");
+                }
+
+                mapper.Map(engagement, dbEngagement);
+                if (dbEngagement.CreatedOn == default)
+                    dbEngagement.CreatedOn = DateTimeOffset.UtcNow;
+                dbEngagement.LastUpdatedOn = DateTimeOffset.UtcNow;
+            }
+
+            SyncTalks(dbEngagement, engagement.Talks);
 
             var result = await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
             if (result)
@@ -35,6 +62,65 @@ public class EngagementDataStore(BroadcastingContext broadcastingContext, IMappe
         {
             logger.LogError(ex, "Failed to save engagement {EngagementId}", engagement.Id);
             return OperationResult<Domain.Models.Engagement>.Failure("An error occurred while saving the engagement", ex);
+        }
+    }
+
+    private void SyncTalks(Models.Engagement destination, IReadOnlyCollection<Domain.Models.Talk>? talks)
+    {
+        if (talks is null)
+        {
+            return;
+        }
+
+        foreach (var talk in talks)
+        {
+            var existingTalk = FindMatchingTalk(destination, talk);
+            if (existingTalk is null)
+            {
+                var dbTalk = mapper.Map<Models.Talk>(talk);
+                dbTalk.CreatedByEntraOid ??= destination.CreatedByEntraOid;
+                if (destination.Id != 0)
+                {
+                    dbTalk.EngagementId = destination.Id;
+                }
+
+                destination.Talks.Add(dbTalk);
+                continue;
+            }
+
+            ApplyTalkValues(talk, existingTalk, destination.CreatedByEntraOid);
+        }
+    }
+
+    private static Models.Talk? FindMatchingTalk(Models.Engagement destination, Domain.Models.Talk talk)
+    {
+        if (talk.Id > 0)
+        {
+            return destination.Talks.FirstOrDefault(existingTalk => existingTalk.Id == talk.Id);
+        }
+
+        return destination.Talks.FirstOrDefault(existingTalk =>
+            existingTalk.Name == talk.Name
+            && existingTalk.UrlForConferenceTalk == talk.UrlForConferenceTalk
+            && existingTalk.UrlForTalk == talk.UrlForTalk
+            && existingTalk.StartDateTime == talk.StartDateTime
+            && existingTalk.EndDateTime == talk.EndDateTime);
+    }
+
+    private static void ApplyTalkValues(Domain.Models.Talk source, Models.Talk destination, string? ownerEntraOid)
+    {
+        destination.Name = source.Name;
+        destination.UrlForConferenceTalk = source.UrlForConferenceTalk;
+        destination.UrlForTalk = source.UrlForTalk;
+        destination.StartDateTime = source.StartDateTime;
+        destination.EndDateTime = source.EndDateTime;
+        destination.TalkLocation = source.TalkLocation;
+        destination.Comments = source.Comments;
+        destination.CreatedByEntraOid = source.CreatedByEntraOid ?? ownerEntraOid;
+
+        if (source.EngagementId > 0)
+        {
+            destination.EngagementId = source.EngagementId;
         }
     }
 

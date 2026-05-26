@@ -39,4 +39,11 @@ public class MessageTemplate
     /// Empty string is the system sentinel for default/system-owned templates.
     /// </summary>
     public string CreatedByEntraOid { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The display name of the user who owns this template. Populated from an
+    /// ApplicationUsers join — not persisted in the MessageTemplates table.
+    /// Null for system default templates or when the user record is not found.
+    /// </summary>
+    public string? OwnerDisplayName { get; set; }
 }

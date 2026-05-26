@@ -49,7 +49,7 @@ public class SocialMediaPlatformsControllerTests
         var platforms = new List<SocialMediaPlatform>
         {
             new() { Id = 1, Name = "Twitter",  Url = "https://twitter.com",  IsActive = true },
-            new() { Id = 2, Name = "BlueSky",  Url = "https://bsky.app",     IsActive = true },
+            new() { Id = 2, Name = "Bluesky",  Url = "https://bsky.app",     IsActive = true },
             new() { Id = 3, Name = "LinkedIn", Url = "https://linkedin.com", IsActive = true }
         };
         _managerMock.Setup(m => m.GetAllAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))

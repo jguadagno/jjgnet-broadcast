@@ -3,25 +3,28 @@ using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Composers;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
-
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
-public class ProcessNewRandomPost(ISyndicationFeedItemManager syndicationFeedItemManager, ILogger<ProcessNewRandomPost> logger)
+public class ProcessNewRandomPost(
+    ISyndicationFeedItemManager syndicationFeedItemManager,
+    IMessageTemplateManager messageTemplateManager,
+    IPostComposer postComposer,
+    ILogger<ProcessNewRandomPost> logger)
 {
     [Function(ConfigurationFunctionNames.TwitterProcessRandomPostFired)]
     [QueueOutput(Queues.TwitterTweetsToSend)]
-    public async Task<TwitterTweetMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.TwitterProcessRandomPostFired, startedAt);
 
-        // Check to make sure the eventGridEvent.Data is not null
         if (eventGridEvent.Data is null)
         {
             logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
@@ -39,21 +42,52 @@ public class ProcessNewRandomPost(ISyndicationFeedItemManager syndicationFeedIte
             }
             var syndicationFeedItem = await syndicationFeedItemManager.GetAsync(source.Id);
 
-            // Handle the event - eventGridData to build the tweet
-            var hashtags = HashTagLists.BuildHashTagList(syndicationFeedItem.Tags);
-            var status =
-                $"ICYMI: ({syndicationFeedItem.PublicationDate.Date.ToShortDateString()}): \"{syndicationFeedItem.Title}.\" RTs and feedback are always appreciated! {syndicationFeedItem.ShortenedUrl} {hashtags}";
+            var ownerEntraOid = syndicationFeedItem.CreatedByEntraOid;
+            if (string.IsNullOrEmpty(ownerEntraOid))
+            {
+                logger.LogWarning("No owner OID for syndication item {Id} — skipping Twitter random post",
+                    syndicationFeedItem.Id);
+                return null;
+            }
 
-            // Return
+            var request = new SocialMediaPublishRequest
+            {
+                Text = "",
+                Title = syndicationFeedItem.Title,
+                LinkUrl = syndicationFeedItem.Url,
+                ShortenedUrl = syndicationFeedItem.ShortenedUrl,
+                Hashtags = syndicationFeedItem.Tags.Count > 0 ? syndicationFeedItem.Tags.ToList() : null,
+                OwnerEntraOid = ownerEntraOid
+            };
+
+            var template = await messageTemplateManager.GetAsync(
+                MessageTemplates.Platforms.Twitter,
+                MessageTemplates.MessageTypes.RandomPost,
+                ownerEntraOid);
+            if (template is null)
+            {
+	            logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.Twitter, MessageTemplates.MessageTypes.RandomPost, ownerEntraOid);
+	            return null;
+            }
+
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
+            {
+                logger.LogWarning("Compose returned empty for random post item {Id}", syndicationFeedItem.Id);
+                return null;
+            }
+
             var properties = new Dictionary<string, string>
             {
                 {"title", syndicationFeedItem.Title},
                 {"url", syndicationFeedItem.Url},
-                {"tweet", status}
+                {"tweet", composedText}
             };
             logger.LogCustomEvent(Metrics.TwitterProcessedRandomPost, properties);
             logger.LogDebug("Picked a random post {Title}", syndicationFeedItem.Title);
-            return new TwitterTweetMessage { Text = status };
+
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

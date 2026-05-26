@@ -112,3 +112,67 @@ GO
 **SaveAsync status:** Already correctly writes `PlaylistId` and `ResultSetPageSize`. Does NOT write `ApiKeySecretName` (already removed). Correctly writes `DisplayName`, `IsActive`, `LastUpdatedOn`. Correctly sets `CreatedOn` only on insert.
 
 **Migrations baseline check:** `table-create.sql` is the cumulative result of all migrations (PlaylistId and ResultSetPageSize present, ApiKeySecretName absent). The migrations sequence itself has the gap noted above but the baseline is authoritative for fresh environments.
+
+
+# Morpheus - History
+
+## Core Context
+
+**Role:** Data Engineer | Database schema, EF Core entities, migrations, data stores
+
+**Critical rules:**
+- NO EF migrations - schema via raw SQL in scripts/database/migrations/ (naming: YYYY-MM-DD-description.sql)
+- Base scripts MUST be updated alongside every migration: table-create.sql + data-create.sql
+- SQL conventions: USE JJGNet; GO, section headers, GO after each DDL, idempotent seed with IF NOT EXISTS
+- Domain models nullable string? and EF entity models must match, even in #nullable disable
+- EF config: primary constructor pattern, non-clustered PKs, .HasMaxLength(), no .HasDefaultValueSql() on value types
+- Junction table shared by multiple entities: discriminated direct queries - never Include() for reads
+- Concurrent sync (delete+re-insert): BeginTransactionAsync/CommitAsync + unique index on junction table
+
+**Key patterns:**
+- Paged data stores: IQueryable fork -> CountAsync() + OrderBy/Skip/Take/ToListAsync
+- Sort orders: ScheduledItems by SendOnDateTime, Engagements by StartDateTime, MessageTemplates by Platform/MessageType, Talks by Name
+- Soft delete via IsActive flag; AutoMapper: bidirectional ReverseMap()
+- Branch discipline: always confirm git branch --show-current before committing
+
+**Completed work:**
+- Sprint 8: DTO merge conflict PR #512; pagination guards PR #514
+- Sprint 9 PR #517: SQL Server 50MB cap removed; SaveChangesAsync error 1105 override
+- Sprint 10 PR #529: Social columns (BlueSkyHandle, ConferenceHashtag, ConferenceTwitterHandle)
+- RBAC #602: Roles, ApplicationUsers, UserRoles, UserApprovalLog tables + 3 role seeds
+- RBAC #607: CreatedByEntraOid nullable columns on 4 tables + domain/EF models
+- PR #662 (#323): SourceTags junction discriminator + unique index UX_SourceTags_SourceId_SourceType_Tag
+- Epic #667 Phase 1: SocialMediaPlatforms table, EngagementSocialMediaPlatforms junction, string→int FK migrations, 5 seeds
+- Issue #715: Removed AnyAsync pre-check from AddAsync; capped EF retry to 3×/5s; fixed DisableRetry flag on AddSqlServerDbContext
+- Issue #713: Exception logging audit (added LogError to 7 catch blocks)
+- Issue #727: Owner-filtered data store overloads (SyndicationFeedSource, YouTubeSource, Engagement, ScheduledItem, MessageTemplate)
+- PR #734: TODO comments for CreatedByEntraOid placeholders in SyndicationFeedReader, YouTubeReader
+- Role restructuring: Renamed Administrator → Site Administrator; introduced new narrower Administrator role
+
+**Key learnings:**
+- Nullable-to-NOT-NULL column promotion: two-step approach (add nullable + backfill, then tighten)
+- AnyAsync anti-pattern: Never guard AddAsync with pre-existence check — use PK + DbUpdateException handler
+- EF retry override: Set DisableRetry = true in configureSettings to prevent Aspire's default policy from silently overriding explicit cap
+- Owner-filtered overloads: Use derived interfaces (not base), apply owner filter before counting/paging, use It.IsAny<CancellationToken>() in Moq
+- Custom role seeds: Two-step idempotent block for renames: UPDATE if target doesn't exist, INSERT if still missing
+- Exception logging: Every catch block returning OperationResult MUST log the exception before returning
+
+**Team standing rules:** Only Joseph merges PRs; All mapping via AutoMapper; Paging at data layer only
+
+---
+
+
+## Executive Summary
+
+**Morpheus — Data Engineer**
+
+- **Recent focus:** Issue #866 (GetAll consistency), sort property refactoring, pagination/paging patterns
+- **Critical rules:** Raw SQL (no EF migrations), script-first approach, nullable matching between domain/EF
+- **Key patterns:** Paged data stores, soft delete (IsActive), owner-filtered overloads, concurrent sync with transactions
+- **Team impact:** Established data layer standards for pagination, filtering, RBAC integration
+- **Key files:** Data stores (paging logic), migration scripts (SQL), EF models with nullable matching
+
+---
+
+## Recent Sessions
+

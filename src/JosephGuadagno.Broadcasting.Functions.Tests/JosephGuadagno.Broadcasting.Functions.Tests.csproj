@@ -37,7 +37,7 @@
         <ProductVersion>$(VersionPrefix)($VersionSuffix)</ProductVersion>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.3.3" />
+        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.3.5" />
         <PackageReference Include="Azure.Data.Tables" Version="12.11.0" />
         <PackageReference Include="Azure.Identity" Version="1.21.0" />
         <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.11.0" />
@@ -86,7 +86,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="coverlet.collector" Version="10.0.0">
+        <PackageReference Include="coverlet.collector" Version="10.0.1">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
@@ -115,6 +115,7 @@
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.SyndicationFeedReader\JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj" />
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj" />
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj" />
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Composers\JosephGuadagno.Broadcasting.Composers.csproj" />
     </ItemGroup>
     <ItemGroup>
         <Using Include="Xunit" />

@@ -219,14 +219,14 @@ public class UserApprovalManager(
     {
         if (string.IsNullOrWhiteSpace(user.Email))
         {
-            logger.LogWarning("Cannot send '{TemplateName}' email: user {UserId} has no email address.", templateName, user.Id);
+            logger.LogWarning("Cannot send '{TemplateName}' email: user {UserId} has no email address", templateName, user.Id);
             return;
         }
 
         var template = await emailTemplateManager.GetTemplateAsync(templateName, cancellationToken);
         if (template is null)
         {
-            logger.LogWarning("Email template '{TemplateName}' not found. Skipping notification email for user {UserId}.", templateName, user.Id);
+            logger.LogWarning("Email template '{TemplateName}' not found. Skipping notification email for user {UserId}", templateName, user.Id);
             return;
         }
 
@@ -237,7 +237,7 @@ public class UserApprovalManager(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Failed to queue '{TemplateName}' email for user {UserId}. The approval action was still processed.", templateName, user.Id);
+            logger.LogWarning(ex, "Failed to queue '{TemplateName}' email for user {UserId}. The approval action was still processed", templateName, user.Id);
         }
     }
 }

@@ -14,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 [Route("Publishers/Facebook/Settings")]
 public class PublisherFacebookSettingsController(
     IUserPublisherFacebookSettingsService service,
+    ISetupService setupService,
     ILogger<PublisherFacebookSettingsController> logger) : Controller
 {
     [HttpGet("")]
@@ -73,6 +74,7 @@ public class PublisherFacebookSettingsController(
         }
 
         TempData["SuccessMessage"] = "Facebook settings saved.";
+        await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Index));
     }
 

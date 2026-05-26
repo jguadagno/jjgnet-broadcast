@@ -19,7 +19,6 @@ public class LinkedInSettingsResponse
     public string? AuthorId { get; set; }
     public string? ClientId { get; set; }
     public bool HasClientSecret { get; set; }
-    public bool HasAccessToken { get; set; }
     public DateTimeOffset CreatedOn { get; set; }
     public DateTimeOffset LastUpdatedOn { get; set; }
 }

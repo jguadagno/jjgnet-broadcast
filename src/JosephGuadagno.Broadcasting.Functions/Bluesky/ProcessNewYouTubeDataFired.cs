@@ -1,11 +1,11 @@
 using System.Text.Json;
 using Azure.Messaging.EventGrid;
-
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Composers;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -13,11 +13,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
 public class ProcessNewYouTubeDataFired(
     IYouTubeItemManager youTubeItemManager,
+    IMessageTemplateManager messageTemplateManager,
+    IPostComposer postComposer,
     ILogger<ProcessNewYouTubeDataFired> logger)
 {
     [Function(ConfigurationFunctionNames.BlueskyProcessNewYouTubeDataFired)]
     [QueueOutput(Queues.BlueskyPostToSend)]
-    public async Task<BlueskyPostMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         try
         {
@@ -25,14 +27,12 @@ public class ProcessNewYouTubeDataFired(
             logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
                 ConfigurationFunctionNames.BlueskyProcessNewYouTubeDataFired, startedAt);
 
-            // Check to make sure the eventGridEvent.Data is not null
             if (eventGridEvent.Data is null)
             {
                 logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
                 return null;
             }
 
-            // Process the EventGrid Event
             var eventGridData = eventGridEvent.Data.ToString();
             var newYouTubeItemEvent = JsonSerializer.Deserialize<NewYouTubeItemEvent>(eventGridData);
             if (newYouTubeItemEvent == null)
@@ -42,41 +42,55 @@ public class ProcessNewYouTubeDataFired(
             }
             var youTubeItem = await youTubeItemManager.GetAsync(newYouTubeItemEvent.Id);
 
-            // Create the scheduled BlueSky for it
-            logger.LogDebug("Processing New YouTube Feed Data Fired for '{Id}' with title of '{Title}'", youTubeItem.Id, youTubeItem.Title);
+            logger.LogDebug("Processing New YouTube Feed Data Fired for '{Id}' with title of '{Title}'",
+                youTubeItem.Id, youTubeItem.Title);
 
-            // Handle the event - eventGridData to build the post
-            // Need to create a PostBuilder to send this based on these docs
-            // https://github.com/blowdart/idunno.Bluesky/blob/main/docs/posting.md#links-to-external-web-sites
-            var postText = youTubeItem.ItemLastUpdatedOn > youTubeItem.PublicationDate
-                ? "Updated Video Post: "
-                : "New Video Post: ";
-            postText +=
-                $"({youTubeItem.PublicationDate.Date.ToShortDateString()}): \"{youTubeItem.Title}.\" RPs and feedback are always appreciated! ";
-
-            var blueskyPostMessage = new BlueskyPostMessage
+            var ownerEntraOid = youTubeItem.CreatedByEntraOid;
+            if (string.IsNullOrEmpty(ownerEntraOid))
             {
-                Text = postText,
-                Url = youTubeItem.Url,
-                ShortenedUrl = youTubeItem.ShortenedUrl
-            };
-            if (youTubeItem.Tags.Count > 0)
-            {
-                blueskyPostMessage.Hashtags = youTubeItem.Tags.ToList();
+                logger.LogWarning("No owner OID for YouTube item {Id} — skipping Bluesky post", youTubeItem.Id);
+                return null;
             }
 
-            blueskyPostMessage.CreatedByEntraOid = youTubeItem.CreatedByEntraOid;
-            // Return
+            var request = new SocialMediaPublishRequest
+            {
+                Text = "",
+                Title = youTubeItem.Title,
+                LinkUrl = youTubeItem.Url,
+                ShortenedUrl = youTubeItem.ShortenedUrl,
+                Hashtags = youTubeItem.Tags.Count > 0 ? youTubeItem.Tags.ToList() : null,
+                OwnerEntraOid = ownerEntraOid
+            };
+
+            var template = await messageTemplateManager.GetAsync(
+                MessageTemplates.Platforms.Bluesky,
+                MessageTemplates.MessageTypes.NewYouTubeItem,
+                ownerEntraOid);
+            if (template is null)
+            {
+	            logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.Bluesky, MessageTemplates.MessageTypes.NewYouTubeItem, ownerEntraOid);
+	            return null;
+            }
+
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
+            {
+                logger.LogWarning("Compose returned empty for YouTube item {Id}", youTubeItem.Id);
+                return null;
+            }
+
             var properties = new Dictionary<string, string>
             {
-                {"post", postText},
+                {"post", composedText},
                 {"title", youTubeItem.Title},
                 {"url", youTubeItem.Url},
                 {"id", youTubeItem.Id.ToString()}
             };
             logger.LogCustomEvent(Metrics.BlueskyProcessedNewYouTubeData, properties);
             logger.LogDebug("Posted to Bluesky: {Title}", youTubeItem.Title);
-            return blueskyPostMessage;
+
+            request.Text = composedText;
+            return request;
         }
         catch (Exception exception)
         {

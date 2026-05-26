@@ -125,7 +125,7 @@ public class EngagementServiceTests
                     SocialMediaPlatform = new SocialMediaPlatformApiResponse
                     {
                         Id = 5,
-                        Name = "BlueSky",
+                        Name = "Bluesky",
                         Url = "https://bsky.app",
                         Icon = "bi-bluesky",
                         IsActive = true
@@ -146,6 +146,6 @@ public class EngagementServiceTests
         result[0].SocialMediaPlatformId.Should().Be(5);
         result[0].Handle.Should().Be("@frontend");
         result[0].SocialMediaPlatform.Should().NotBeNull();
-        result[0].SocialMediaPlatform!.Name.Should().Be("BlueSky");
+        result[0].SocialMediaPlatform!.Name.Should().Be("Bluesky");
     }
 }

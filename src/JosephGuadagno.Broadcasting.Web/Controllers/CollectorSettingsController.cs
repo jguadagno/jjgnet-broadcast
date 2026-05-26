@@ -92,7 +92,7 @@ public class CollectorSettingsController(
         var currentUserOid = User.FindFirstValue(ApplicationClaimTypes.EntraObjectId);
         if (string.IsNullOrWhiteSpace(currentUserOid))
         {
-            logger.LogWarning("Unable to resolve collector settings because the current user's Entra object id claim is missing.");
+            logger.LogWarning("Unable to resolve collector settings because the current user's Entra object id claim is missing");
             TempData["ErrorMessage"] = "We couldn't determine which account to load collector settings for.";
             return (null, RedirectToAction("Index", "Home"));
         }

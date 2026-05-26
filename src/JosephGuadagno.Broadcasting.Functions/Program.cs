@@ -5,10 +5,10 @@ using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Data.Sql;
+using JosephGuadagno.Broadcasting.Composers;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.HealthChecks;
-using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Managers.Bluesky;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
@@ -30,8 +30,6 @@ using JosephGuadagno.Broadcasting.YouTubeReader;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 using JosephGuadagno.Utilities.Web.Shortener.Models;
-using LinqToTwitter;
-using LinqToTwitter.OAuth;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Azure.Functions.Worker.OpenTelemetry;
 using Microsoft.Extensions.Azure;
@@ -117,16 +115,15 @@ builder.Services.AddAutoMapper(mapperConfig =>
     mapperConfig.LicenseKey = autoMapperSettings.LicenseKey;
     mapperConfig.AddProfile<JosephGuadagno.Broadcasting.Data.Sql.MappingProfiles.BroadcastingProfile>();
 }, typeof(Program));
-    
+
 // Configure all the services
 builder.AddAzureQueueServiceClient("QueueAccount");
-builder.AddAzureBlobServiceClient("BlobAccount");
 builder.AddAzureTableServiceClient("TableAccount");
 
 ConfigureKeyVault(builder.Services);
 ConfigureFunction(builder.Services);
 ConfigureBitly(builder.Services, builder.Configuration);
-ConfigureTwitter(builder.Services, builder.Configuration);
+ConfigureTwitter(builder.Services);
 ConfigureSyndicationFeedReader(builder.Services, builder.Configuration);
 ConfigureYouTubeReader(builder.Services, builder.Configuration);
 ConfigureLinkedInManager(builder.Services, builder.Configuration);
@@ -138,7 +135,6 @@ builder.Services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader
 // Register external-dependency readiness health checks
 builder.Services.AddHealthChecks()
     .AddCheck<BitlyHealthCheck>("bitly", tags: ["ready"])
-    .AddCheck<TwitterHealthCheck>("twitter", tags: ["ready"])
     .AddCheck<FacebookHealthCheck>("facebook", tags: ["ready"])
     .AddCheck<LinkedInHealthCheck>("linkedin", tags: ["ready"])
     .AddCheck<BlueskyHealthCheck>("bluesky", tags: ["ready"])
@@ -234,6 +230,12 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IEmailTemplateDataStore, EmailTemplateDataStore>();
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
 
+    // PostComposer — shared Scriban template renderer (Phase 1 of publisher architecture refactor)
+    services.TryAddScoped<IPostComposer, PostComposer>();
+
+    // MessageTemplateManager handles both ID-based and platform-name-based lookups (Phase 2+3 of publisher architecture refactor)
+    services.TryAddScoped<IMessageTemplateManager, MessageTemplateManager>();
+
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();
     services.TryAddScoped<IEmailTemplateManager, EmailTemplateManager>();
@@ -257,31 +259,8 @@ void ConfigureBitly(IServiceCollection services, IConfiguration config)
     services.TryAddSingleton<IUrlShortener, UrlShortener>();
 }
 
-void ConfigureTwitter(IServiceCollection services, IConfiguration config)
+void ConfigureTwitter(IServiceCollection services)
 {
-    var twitterSettings = new InMemoryCredentialStore();
-    config.Bind("Twitter", twitterSettings);
-    services.TryAddSingleton(twitterSettings);
-
-    services.TryAddSingleton<IAuthorizer>(s =>
-    {
-        var credentialStore = s.GetService<InMemoryCredentialStore>();
-        if (credentialStore is null)
-        {
-            throw new ApplicationException("Failed to get credential store from ServiceCollection");
-        }
-
-        return new SingleUserAuthorizer { CredentialStore = credentialStore };
-    });
-    services.TryAddSingleton(s =>
-    {
-        var authorizer = s.GetService<IAuthorizer>();
-        if (authorizer is null)
-        {
-            throw new ApplicationException("Failed to get authorizer from ServiceCollection");
-        }
-        return new TwitterContext(authorizer);
-    });
     services.TryAddScoped<ITwitterManager, TwitterManager>();
     services.AddScoped<ISocialMediaPublisher>(sp =>
         sp.GetRequiredService<ITwitterManager>());

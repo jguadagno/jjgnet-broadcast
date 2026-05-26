@@ -18,6 +18,7 @@ public class MessageTemplatesController : Controller
 {
     private readonly IMessageTemplateService _messageTemplateService;
     private readonly ISocialMediaPlatformService _socialMediaPlatformService;
+    private readonly ISetupService _setupService;
     private readonly IMapper _mapper;
     private readonly ILogger<MessageTemplatesController> _logger;
 
@@ -26,14 +27,16 @@ public class MessageTemplatesController : Controller
     /// </summary>
     /// <param name="messageTemplateService">The message template service</param>
     /// <param name="socialMediaPlatformService">The social media platform service</param>
+    /// <param name="setupService">The setup service</param>
     /// <param name="mapper">The mapper service</param>
     /// <param name="logger">The logger</param>
     public MessageTemplatesController(IMessageTemplateService messageTemplateService,
-        ISocialMediaPlatformService socialMediaPlatformService, IMapper mapper,
+        ISocialMediaPlatformService socialMediaPlatformService, ISetupService setupService, IMapper mapper,
         ILogger<MessageTemplatesController> logger)
     {
         _messageTemplateService = messageTemplateService;
         _socialMediaPlatformService = socialMediaPlatformService;
+        _setupService = setupService;
         _mapper = mapper;
         _logger = logger;
     }
@@ -89,10 +92,15 @@ public class MessageTemplatesController : Controller
     /// </summary>
     /// <param name="platform">The platform name</param>
     /// <param name="messageType">The message type</param>
+    /// <param name="ownerId">Optional owner OID; admins may supply this to edit a specific user's template</param>
     [HttpGet]
-    public async Task<IActionResult> Edit(string platform, string messageType)
+    public async Task<IActionResult> Edit(string platform, string messageType, string? ownerId = null)
     {
-        var template = await _messageTemplateService.GetAsync(platform, messageType);
+        var lookupOid = User.IsInRole(RoleNames.SiteAdministrator) && !string.IsNullOrEmpty(ownerId)
+            ? ownerId
+            : null;
+
+        var template = await _messageTemplateService.GetAsync(platform, messageType, lookupOid);
         if (template is null)
         {
             return NotFound();
@@ -125,7 +133,10 @@ public class MessageTemplatesController : Controller
         }
 
         var template = _mapper.Map<Domain.Models.MessageTemplate>(model);
-        var saved = await _messageTemplateService.UpdateAsync(model.Platform, template);
+        var ownerIdForUpdate = User.IsInRole(RoleNames.SiteAdministrator)
+            ? model.CreatedByEntraOid
+            : null;
+        var saved = await _messageTemplateService.UpdateAsync(model.Platform, template, ownerIdForUpdate);
         if (saved is null)
         {
             _logger.LogWarning("Failed to save MessageTemplate for Platform={Platform}, MessageType={MessageType}",
@@ -189,6 +200,7 @@ public class MessageTemplatesController : Controller
         }
 
         TempData["SuccessMessage"] = "Message template created successfully.";
+        await _setupService.InvalidateAsync();
         return RedirectToAction(nameof(Index));
     }
 }

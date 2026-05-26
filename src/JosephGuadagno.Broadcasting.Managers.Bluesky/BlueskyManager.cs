@@ -3,15 +3,11 @@ using idunno.AtProto.Repo;
 using idunno.Bluesky;
 using idunno.Bluesky.Embed;
 using idunno.Bluesky.RichText;
-using JosephGuadagno.Broadcasting.Domain.Constants;
-using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Exceptions;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 using Microsoft.Extensions.Logging;
-using Scriban;
-using Scriban.Runtime;
 using X.Web.MetaExtractor;
 
 namespace JosephGuadagno.Broadcasting.Managers.Bluesky;
@@ -19,12 +15,7 @@ namespace JosephGuadagno.Broadcasting.Managers.Bluesky;
 public class BlueskyManager(
 	HttpClient httpClient,
 	IBlueskySettings blueskySettings,
-	ILogger<BlueskyManager> logger,
-	ISocialMediaPlatformManager socialMediaPlatformManager,
-	IMessageTemplateDataStore messageTemplateDataStore,
-	ISyndicationFeedItemManager syndicationFeedItemManager,
-	IYouTubeItemManager youTubeItemManager,
-	IEngagementManager engagementManager)
+	ILogger<BlueskyManager> logger)
 	: IBlueskyManager
 {
 		private BlueskyAgent? _agent;
@@ -69,6 +60,20 @@ public class BlueskyManager(
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Text);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.AuthorId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.AccessToken);
+
+        var agent = new BlueskyAgent();
+        var loginResult = await agent.Login(request.AuthorId, request.AccessToken);
+        if (!loginResult.Succeeded)
+        {
+            logger.LogError("Failed to log in to Bluesky for owner '{AuthorId}'. StatusCode: {StatusCode}",
+                request.AuthorId, loginResult.StatusCode);
+            throw new BlueskyPostException(
+                "Bluesky login failed.",
+                (int?)loginResult.StatusCode,
+                loginResult.AtErrorDetail?.Message);
+        }
 
         var postBuilder = new PostBuilder(request.Text);
 
@@ -82,8 +87,8 @@ public class BlueskyManager(
             postBuilder.Append(new Link(request.ShortenedUrl, request.ShortenedUrl));
 
             var embeddedExternalRecord = !string.IsNullOrEmpty(request.ImageUrl)
-                ? await GetEmbeddedExternalRecordWithThumbnail(request.LinkUrl, request.ImageUrl)
-                : await GetEmbeddedExternalRecord(request.LinkUrl);
+                ? await GetEmbeddedExternalRecordWithThumbnailAsync(agent, request.LinkUrl, request.ImageUrl)
+                : await GetEmbeddedExternalRecordAsync(agent, request.LinkUrl);
 
             if (embeddedExternalRecord is not null)
             {
@@ -93,14 +98,14 @@ public class BlueskyManager(
         else if (!string.IsNullOrEmpty(request.ImageUrl) && !string.IsNullOrEmpty(request.LinkUrl))
         {
             var embeddedExternalRecord =
-                await GetEmbeddedExternalRecordWithThumbnail(request.LinkUrl, request.ImageUrl);
+                await GetEmbeddedExternalRecordWithThumbnailAsync(agent, request.LinkUrl, request.ImageUrl);
             if (embeddedExternalRecord is not null)
             {
                 postBuilder.EmbedRecord(embeddedExternalRecord);
             }
         }
 
-        if (request.Hashtags is not null)
+        if (request.Hashtags is not null && request.Hashtags.Count > 0)
         {
             foreach (var hashtag in request.Hashtags)
             {
@@ -109,8 +114,19 @@ public class BlueskyManager(
             }
         }
 
-        var response = await Post(postBuilder);
-        return response?.Cid.ToString();
+        var response = await agent.Post(postBuilder);
+        if (response.Succeeded && response.Result is not null)
+        {
+            return response.Result.Cid.ToString();
+        }
+
+        logger.LogError(
+            "Bluesky Post failed! Status Code: {ResponseStatusCode}, Error Details {ResponseErrorDetail}",
+            response.StatusCode, response.AtErrorDetail?.Message);
+        throw new BlueskyPostException(
+            "Bluesky post failed.",
+            (int?)response.StatusCode,
+            response.AtErrorDetail?.Message);
     }
 
     public async Task<CreateRecordResult?> Post(PostBuilder postBuilder)
@@ -317,108 +333,94 @@ public class BlueskyManager(
         return null;
     }
 
-    public async Task<string> ComposeMessageAsync(
-        ScheduledItem scheduledItem,
-        CancellationToken cancellationToken = default)
+    private async Task<EmbeddedExternal?> GetEmbeddedExternalRecordAsync(BlueskyAgent agent, string? externalUrl)
     {
-        ArgumentNullException.ThrowIfNull(scheduledItem);
+        if (string.IsNullOrEmpty(externalUrl))
+            return null;
 
-        var blueskyPlatform =
-            await socialMediaPlatformManager.GetByNameAsync(MessageTemplates.Platforms.Bluesky, cancellationToken);
-        if (blueskyPlatform is null)
+        Uri page = new(externalUrl);
+        Extractor metadataExtractor = new();
+        var pageMetadata = await metadataExtractor.Extract(page, CancellationToken.None);
+
+        string title = pageMetadata.Title;
+        string? pageUri = pageMetadata.Source?.Url.ToString();
+        string description = pageMetadata.Description;
+
+        if (!string.IsNullOrEmpty(pageUri) && !string.IsNullOrEmpty(title))
         {
-            return scheduledItem.Message;
+            Blob? thumbnailBlob = null;
+
+            string? thumbnailUri = pageMetadata.Metadata.Where(o => o.Key == "og:image").Select(o => o.Value)
+                .FirstOrDefault();
+            if (!string.IsNullOrEmpty(thumbnailUri))
+            {
+                try
+                {
+                    using HttpResponseMessage response = await httpClient.GetAsync(thumbnailUri);
+                    response.EnsureSuccessStatusCode();
+
+                    var responseBody = await response.Content.ReadAsByteArrayAsync();
+                    if (response.Content.Headers.ContentType is not null &&
+                        response.Content.Headers.ContentType.MediaType is not null)
+                    {
+                        AtProtoHttpResult<Blob> uploadResult = await
+                            agent.UploadBlob(responseBody, response.Content.Headers.ContentType.MediaType);
+                        if (uploadResult.Succeeded)
+                            thumbnailBlob = uploadResult.Result;
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                } // Ignore any exceptions from trying to get the thumbnail and upload the image.
+
+                return new EmbeddedExternal(pageUri, title, description, thumbnailBlob);
+            }
         }
 
-        var messageTemplate = await messageTemplateDataStore.GetAsync(
-            blueskyPlatform.Id,
-            GetMessageType(scheduledItem.ItemType),
-            cancellationToken);
-
-        if (string.IsNullOrWhiteSpace(messageTemplate?.Template))
-        {
-            return scheduledItem.Message;
-        }
-
-        var renderedMessage = await TryRenderTemplateAsync(
-            scheduledItem,
-            messageTemplate.Template,
-            cancellationToken);
-
-        return renderedMessage ?? scheduledItem.Message;
+        return null;
     }
 
-    private static string GetMessageType(ScheduledItemType itemType) => itemType switch
+    private async Task<EmbeddedExternal?> GetEmbeddedExternalRecordWithThumbnailAsync(BlueskyAgent agent, string externalUrl, string thumbnailImageUrl)
     {
-        ScheduledItemType.Engagements => MessageTemplates.MessageTypes.NewSpeakingEngagement,
-        ScheduledItemType.Talks => MessageTemplates.MessageTypes.ScheduledItem,
-        ScheduledItemType.SyndicationFeedItems => MessageTemplates.MessageTypes.NewSyndicationFeedItem,
-        ScheduledItemType.YouTubeItems => MessageTemplates.MessageTypes.NewYouTubeItem,
-        _ => MessageTemplates.MessageTypes.RandomPost
-    };
+        if (string.IsNullOrEmpty(externalUrl))
+            return null;
 
-    private async Task<string?> TryRenderTemplateAsync(
-        ScheduledItem scheduledItem,
-        string templateContent,
-        CancellationToken cancellationToken)
-    {
-        try
+        Uri page = new(externalUrl);
+        Extractor metadataExtractor = new();
+        var pageMetadata = await metadataExtractor.Extract(page, CancellationToken.None);
+
+        string title = pageMetadata.Title;
+        string? pageUri = pageMetadata.Source?.Url.ToString();
+        string description = pageMetadata.Description;
+
+        if (!string.IsNullOrEmpty(pageUri) && !string.IsNullOrEmpty(title))
         {
-            string title = string.Empty;
-            string url = string.Empty;
-            string description = string.Empty;
-            string tags = string.Empty;
+            Blob? thumbnailBlob = null;
 
-            switch (scheduledItem.ItemType)
+            if (!string.IsNullOrEmpty(thumbnailImageUrl))
             {
-                case ScheduledItemType.SyndicationFeedItems:
-                    var feed = await syndicationFeedItemManager.GetAsync(
-                        scheduledItem.ItemPrimaryKey,
-                        cancellationToken);
-                    title = feed.Title;
-                    url = feed.ShortenedUrl ?? feed.Url;
-                    tags = feed.Tags?.Count > 0 ? string.Join(",", feed.Tags) : string.Empty;
-                    break;
-                case ScheduledItemType.YouTubeItems:
-                    var youTubeItem = await youTubeItemManager.GetAsync(
-                        scheduledItem.ItemPrimaryKey,
-                        cancellationToken);
-                    title = youTubeItem.Title;
-                    url = youTubeItem.ShortenedUrl ?? youTubeItem.Url;
-                    tags = youTubeItem.Tags?.Count > 0 ? string.Join(",", youTubeItem.Tags) : string.Empty;
-                    break;
-                case ScheduledItemType.Engagements:
-                    var engagement = await engagementManager.GetAsync(
-                        scheduledItem.ItemPrimaryKey,
-                        cancellationToken);
-                    title = engagement.Name;
-                    url = engagement.Url;
-                    description = engagement.Comments ?? string.Empty;
-                    break;
-                case ScheduledItemType.Talks:
-                    var talk = await engagementManager.GetTalkAsync(
-                        scheduledItem.ItemPrimaryKey,
-                        cancellationToken);
-                    title = talk.Name;
-                    url = talk.UrlForTalk ?? string.Empty;
-                    description = talk.Comments ?? string.Empty;
-                    break;
-                default:
-                    return null;
+                try
+                {
+                    using HttpResponseMessage response = await httpClient.GetAsync(thumbnailImageUrl);
+                    response.EnsureSuccessStatusCode();
+
+                    var responseBody = await response.Content.ReadAsByteArrayAsync();
+                    if (response.Content.Headers.ContentType?.MediaType is not null)
+                    {
+                        AtProtoHttpResult<Blob> uploadResult = await
+                            agent.UploadBlob(responseBody, response.Content.Headers.ContentType.MediaType);
+                        if (uploadResult.Succeeded)
+                            thumbnailBlob = uploadResult.Result;
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                } // Ignore any exceptions from trying to get the thumbnail.
             }
 
-            var template = Template.Parse(templateContent);
-            var scriptObject = new ScriptObject();
-            scriptObject.Import(new { title, url, description, tags, image_url = scheduledItem.ImageUrl });
-            var context = new TemplateContext();
-            context.PushGlobal(scriptObject);
-            var rendered = await template.RenderAsync(context);
-            return string.IsNullOrWhiteSpace(rendered) ? null : rendered.Trim();
+            return new EmbeddedExternal(pageUri, title, description, thumbnailBlob);
         }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Scriban template rendering failed for Bluesky scheduled item {Id}", scheduledItem.Id);
-            return null;
-        }
+
+        return null;
     }
 }

@@ -16,7 +16,7 @@
             <div class="mb-3">
                 <label asp-for="Name" class="form-label">Name <span class="text-danger">*</span></label>
                 <input asp-for="Name" type="text" class="form-control" autocomplete="off"
-                       placeholder="e.g. Twitter, BlueSky, LinkedIn" aria-describedby="val-Name" />
+                       placeholder="e.g. Twitter, Bluesky, LinkedIn" aria-describedby="val-Name" />
                 <span id="val-Name" asp-validation-for="Name" class="text-danger"></span>
             </div>
 
@@ -45,8 +45,8 @@
             </div>
 
             <div class="mb-3">
-                <div class="form-switch">
-                    <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                <div class="form-check form-switch">
+                    <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" />
                     <label asp-for="IsActive" class="form-check-label">Active</label>
                 </div>
                 <div class="form-text">Uncheck to create the platform in an inactive state.</div>

@@ -25,26 +25,4 @@
 
 ## Learnings
 
-- **Dirty worktree branch creation**: When the working tree has uncommitted changes but you need to convert unpushed commits to a PR, use `git branch <name> <sha>` (without switching branches) to create a new branch from HEAD without staging dirty content. This preserves uncommitted changes while allowing you to push a clean feature branch from the desired commit.
-- **Branch-behind-main CI failures**: When a PR branch pre-dates a merge to main that renames symbols (controllers, methods), the CI merge commit will fail to compile. Fix is always `git merge origin/main --no-edit` on the feature branch — no rebase needed when the changes are non-overlapping.
-- **Stash pop conflicts in shared workflow files**: Workflow files (`.github/workflows/*.yml`) change frequently across branches. When popping a stash onto a branch that has received main updates, expect conflicts in workflow steps. Always favour the `origin/main` version of vuln-scan logic since those decisions are made intentionally and tracked in PRs.
-- **Stash hygiene**: After a conflicted stash pop, git leaves the stash entry in the list. Always `git stash drop stash@{N}` after manually committing the resolution.
-- **Use `git worktree` for rebases in active repos**: When the main working tree has in-flight changes from other agents, `git worktree add ../tmp-wt <branch>` creates a clean isolated directory for rebasing. No stash juggling needed. Clean up with `git worktree remove` when done.
-- **Rebase conflicts in squad housekeeping commits**: The `862fd19` commit (merging squad inbox into decisions.md) conflicts with main whenever main also updates decisions.md. During rebase, this is always resolvable by `git checkout --ours .squad/decisions.md` (take origin/main's version) — it is more up-to-date and the inbox content is already incorporated via other paths.
-- **Rebase vs merge for CI fixes**: When branches are behind main due to a test fix, `git rebase origin/main` is preferred over merge — it produces a cleaner linear history on the PR and only the feature commit(s) show as new work.
-
-### Application Insights / Azure Monitor wiring (S8-328)
-- **ServiceDefaults was the gap**: `UseAzureMonitor()` was commented out in `ServiceDefaults/Extensions.cs` AND the `Azure.Monitor.OpenTelemetry.AspNetCore` package was missing from `ServiceDefaults.csproj`.
-- **Api and Web had redundant unconditional calls**: Both `Program.cs` files called `services.AddOpenTelemetry().UseAzureMonitor()` unconditionally in their `ConfigureTelemetryAndLogging` — no connection string guard. ServiceDefaults owns this now with a proper `APPLICATIONINSIGHTS_CONNECTION_STRING` guard.
-- **Functions uses a different pattern**: The isolated worker model uses `UseFunctionsWorkerDefaults()` (from `Microsoft.Azure.Functions.Worker.OpenTelemetry`) for worker-specific instrumentation. `UseAzureMonitorExporter()` was removed because ServiceDefaults' `UseAzureMonitor()` now handles the exporter centrally — including for Functions.
-- **host.json** already had `telemetryMode: OpenTelemetry` — no change needed there.
-- **Package versions**: Api and Web both referenced `Azure.Monitor.OpenTelemetry.AspNetCore` v1.4.0; ServiceDefaults now uses the same version for consistency.
-
-
-### 2026-04-01 — Issue Specs batch #591 #575 #574 #573
-- **Relevant specs:** `.squad/sessions/issue-specs-591-575-574-573.md`
-- Neo specced four issues. Once implemented, these will generate PRs requiring branch management: #591 (standalone), #575 (independent), #574 (two-phase: Morpheus then Trinity), #573 (depends on #574 Trinity).
-- Recommended ship order: #591 → #574-data → #575 → #574-api → #573.
-
-### 2026-04-01 — PR #594 Rebase After Dependency PR #592 Merged
-- **When a dependency PR merges, branches built on top must rebase onto main**: PR #594 (issue #314 Serilog deduplication) was originally branched from `issue-591-reduce-production-logging`. After PR #592 merged that work into main, the #314 branch needed to be rebased onto `origin/main`.
+> Earlier learnings archived to history-archive.md on 2026-05-25

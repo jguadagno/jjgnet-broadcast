@@ -5,9 +5,9 @@ using Projects;
 var builder = DistributedApplication.CreateBuilder(args);
 
 var storage = builder.AddAzureStorage("AzureStorage");
-var tableStorage = storage.AddTables("LogTable");
-var queueStorage = storage.AddQueues("QueueStorage");
-var blobStorage = storage.AddBlobs("BlobStorage");
+var tableStorage = storage.AddTables("TableAccount");
+var queueStorage = storage.AddQueues("QueueAccount");
+var blobStorage = storage.AddBlobs("BlobAccount");
 storage.RunAsEmulator(azurite =>
 {
     azurite.WithLifetime(ContainerLifetime.Persistent);
@@ -46,6 +46,10 @@ var functions = builder.AddAzureFunctionsProject<JosephGuadagno_Broadcasting_Fun
         StorageBuiltInRole.StorageAccountContributor, StorageBuiltInRole.StorageBlobDataOwner,
         // Queue Data Contributor role is required to send messages to the queue
         StorageBuiltInRole.StorageQueueDataContributor)
+    .WithEnvironment("ConnectionStrings__JJGNetDatabaseSqlServer", db)
+    .WithEnvironment("ConnectionStrings__BlobAccount", blobStorage)
+    .WithEnvironment("ConnectionStrings__TableAccount", tableStorage)
+    .WithEnvironment("ConnectionStrings__QueueAccount", queueStorage)
     .WithHostStorage(storage)
     .WithReference(tableStorage)
     .WithReference(blobStorage)
@@ -55,11 +59,7 @@ var functions = builder.AddAzureFunctionsProject<JosephGuadagno_Broadcasting_Fun
     .WaitFor(db)
     .WaitFor(tableStorage)
     .WaitFor(blobStorage)
-    .WaitFor(queueStorage)
-    .WithEnvironment("ConnectionStrings__JJGNetDatabaseSqlServer", db)
-    .WithEnvironment("ConnectionStrings__BlobAccount", blobStorage)
-    .WithEnvironment("ConnectionStrings__TableAccount", tableStorage)
-    .WithEnvironment("ConnectionStrings__QueueAccount", queueStorage);
+    .WaitFor(queueStorage);
 
 builder.AddProject<JosephGuadagno_Broadcasting_Web>("josephguadagno-broadcasting-web")
     .WithEnvironment("ConnectionStrings__JJGNetDatabaseSqlServer", db)

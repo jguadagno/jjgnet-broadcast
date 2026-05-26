@@ -413,7 +413,6 @@ BEGIN
         [AuthorId]         NVARCHAR(255)       NULL,
         [ClientId]         NVARCHAR(255)       NULL,
         [HasClientSecret]  BIT                 NOT NULL CONSTRAINT DF_UserPublisherLinkedInSettings_HasClientSecret DEFAULT (0),
-        [HasAccessToken]   BIT                 NOT NULL CONSTRAINT DF_UserPublisherLinkedInSettings_HasAccessToken DEFAULT (0),
         [CreatedOn]        DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPublisherLinkedInSettings_CreatedOn DEFAULT (GETUTCDATE()),
         [LastUpdatedOn]    DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPublisherLinkedInSettings_LastUpdatedOn DEFAULT (GETUTCDATE()),
 

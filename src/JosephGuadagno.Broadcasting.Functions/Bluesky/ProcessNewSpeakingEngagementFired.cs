@@ -1,15 +1,12 @@
 using System.Text.Json;
 using Azure.Messaging.EventGrid;
-
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
-using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Composers;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
-using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
-using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -17,14 +14,13 @@ namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
 public class ProcessNewSpeakingEngagementFired(
     IEngagementManager engagementManager,
-    IBlueskyManager blueskyManager,
+    IMessageTemplateManager messageTemplateManager,
+    IPostComposer postComposer,
     ILogger<ProcessNewSpeakingEngagementFired> logger)
 {
-    private const int MaxPostLength = 300;
-
     [Function(ConfigurationFunctionNames.BlueskyProcessNewSpeakingEngagementFired)]
     [QueueOutput(Queues.BlueskyPostToSend)]
-    public async Task<BlueskyPostMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedOn:f}",
@@ -49,33 +45,48 @@ public class ProcessNewSpeakingEngagementFired(
             var engagement = await engagementManager.GetAsync(newSpeakingEngagementEvent.Id);
             if (engagement is null)
             {
-                logger.LogWarning("Engagement {EngagementId} not found. Skipping.", newSpeakingEngagementEvent.Id);
+                logger.LogWarning("Engagement {EngagementId} not found. Skipping", newSpeakingEngagementEvent.Id);
                 return null;
             }
 
             logger.LogDebug("Processing new speaking engagement '{Id}' with name '{Name}'",
                 engagement.Id, LogSanitizer.Sanitize(engagement.Name));
 
-            var scheduledItem = new ScheduledItem
+            var ownerEntraOid = engagement.CreatedByEntraOid;
+            if (string.IsNullOrEmpty(ownerEntraOid))
             {
-                ItemType = ScheduledItemType.Engagements,
-                ItemPrimaryKey = engagement.Id,
-                Message = $"New Speaking Engagement: {engagement.Name} {engagement.Url}",
-                SendOnDateTime = DateTimeOffset.UtcNow,
-                CreatedByEntraOid = engagement.CreatedByEntraOid
+                logger.LogWarning("No owner OID on engagement {Id} — skipping Bluesky post", engagement.Id);
+                return null;
+            }
+
+            var request = new SocialMediaPublishRequest
+            {
+                Text = "",
+                Title = engagement.Name,
+                LinkUrl = engagement.Url,
+                OwnerEntraOid = ownerEntraOid
             };
 
-            var postText = await blueskyManager.ComposeMessageAsync(scheduledItem);
-
-            if (string.IsNullOrWhiteSpace(postText))
+            var template = await messageTemplateManager.GetAsync(
+                MessageTemplates.Platforms.Bluesky,
+                MessageTemplates.MessageTypes.NewSpeakingEngagement,
+                ownerEntraOid);
+            if (template is null)
             {
-                logger.LogWarning("No Bluesky post text for speaking engagement {Id}", engagement.Id);
+	            logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.Bluesky, MessageTemplates.MessageTypes.NewSpeakingEngagement, ownerEntraOid);
+	            return null;
+            }
+
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
+            {
+                logger.LogWarning("Compose returned empty for speaking engagement {Id}", engagement.Id);
                 return null;
             }
 
             var properties = new Dictionary<string, string>
             {
-                { "post", postText },
+                { "post", composedText },
                 { "name", engagement.Name },
                 { "url", engagement.Url },
                 { "id", engagement.Id.ToString() }
@@ -83,12 +94,8 @@ public class ProcessNewSpeakingEngagementFired(
             logger.LogCustomEvent(Metrics.BlueskyProcessedNewSpeakingEngagement, properties);
             logger.LogDebug("Generated the Bluesky post for speaking engagement {Id}", engagement.Id);
 
-            return new BlueskyPostMessage
-            {
-                Text = postText.Length > MaxPostLength ? postText[..MaxPostLength] : postText,
-                Url = engagement.Url,
-                CreatedByEntraOid = engagement.CreatedByEntraOid
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

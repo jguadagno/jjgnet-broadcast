@@ -26,4 +26,10 @@ public static class ApplicationClaimTypes
     /// Application approval notes claim type (populated for rejected users)
     /// </summary>
     public const string ApprovalNotes = "approval_notes";
+
+    /// <summary>
+    /// Indicates whether the user has completed all three onboarding areas
+    /// (collector, publisher, and message templates). Value is "true" or "false".
+    /// </summary>
+    public const string IsOnboarded = "is_onboarded";
 }

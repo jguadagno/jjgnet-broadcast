@@ -19,6 +19,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Publishers;
 [Produces("application/json")]
 public class FacebookSettingsController(
     IUserPublisherFacebookSettingsManager manager,
+    IOnboardingManager onboardingManager,
     ILogger<FacebookSettingsController> logger,
     IMapper mapper) : ControllerBase
 {
@@ -123,6 +124,7 @@ public class FacebookSettingsController(
             return BadRequest("Unable to save Facebook publisher settings");
         }
 
+        await onboardingManager.RecalculateAsync(resolvedOwnerOid);
         return Ok(mapper.Map<FacebookSettingsResponse>(saved));
     }
 
@@ -150,6 +152,7 @@ public class FacebookSettingsController(
             return NotFound();
         }
 
+        await onboardingManager.RecalculateAsync(resolvedOwnerOid);
         return NoContent();
     }
 }

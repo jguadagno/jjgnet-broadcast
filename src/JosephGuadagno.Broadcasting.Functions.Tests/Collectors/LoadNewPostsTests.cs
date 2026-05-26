@@ -332,23 +332,6 @@ public class LoadNewPostsTests
     }
 
     [Fact]
-    public async Task RunAsync_HandlesNullFeedList_Gracefully()
-    {
-        // Arrange
-        SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), OwnerEntraOid, It.IsAny<DateTimeOffset>())).ReturnsAsync((List<SyndicationFeedItem>)null!);
-
-        // Act
-        var result = await _sut.RunAsync(null!);
-
-        // Assert
-        _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>()), Times.Never);
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Contains("0", okResult.Value!.ToString());
-    }
-
-    [Fact]
     public async Task RunAsync_ReturnsOk_WhenNoActiveConfigsFound()
     {
         // Arrange

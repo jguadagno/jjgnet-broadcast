@@ -26,12 +26,6 @@ public class UserPublisherLinkedInSettings
     /// </summary>
     public bool HasClientSecret { get; set; }
 
-    /// <summary>
-    /// Gets or sets whether an access token is stored in Key Vault for this user.
-    /// KV secret name: <c>publisher-{ownerOid}-linkedin-access-token</c>
-    /// </summary>
-    public bool HasAccessToken { get; set; }
-
     /// <summary>Gets or sets when this configuration was created</summary>
     public DateTimeOffset CreatedOn { get; set; }
 

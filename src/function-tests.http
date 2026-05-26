@@ -1,27 +1,31 @@
+### Health Check
+# @name Health Check
+GET http://{{host}}/api/health
+
 ### Collectors - Syndication Feed
 
 # @name Run Collectors_Feed Load All Posts
-POST http://{{host}}/api/CollectorsFeedLoadAllPosts?CheckFrom=2026-01-01
+POST http://{{host}}/api/CollectorsFeedLoadAllPosts?userOid={{entraOid}}&CheckFrom=2026-01-01
 
 ###
 # @name Run Collectors_Feed Load All Posts - No Date
-POST http://{{host}}/api/CollectorsFeedLoadAllPosts
+POST http://{{host}}/api/CollectorsFeedLoadAllPosts?userOid={{entraOid}}
 
 ###
-# @name Run Collectors_SpeakingEngagements Load All Videos
-POST http://{{host}}/api/CollectorsSpeakingEngagementsLoadAll?CheckFrom=2026-02-02
+# @name Run Collectors_SpeakingEngagements Load All Engagements
+POST http://{{host}}/api/CollectorsSpeakingEngagementsLoadAll?userOid={{entraOid}}&CheckFrom=2026-02-02
 
 ###
-# @name Run Collectors_SpeakingEngagements Load All Videos - No Date
-POST http://{{host}}/api/CollectorsSpeakingEngagementsLoadAll
+# @name Run Collectors_SpeakingEngagements Load All Engagements - No Date
+POST http://{{host}}/api/CollectorsSpeakingEngagementsLoadAll?userOid={{entraOid}}
 
 ###
 # @name Run Collectors_YouTube Load All Videos
-POST http://{{host}}/api/CollectorsYouTubeLoadAllVideos?CheckFrom=2025-06-12
+POST http://{{host}}/api/CollectorsYouTubeLoadAllVideos?userOid={{entraOid}}&CheckFrom=2025-06-12
 
 ###
 # @name Run Collectors_YouTube Load All Videos - No Date
-POST http://{{host}}/api/CollectorsYouTubeLoadAllVideos
+POST http://{{host}}/api/CollectorsYouTubeLoadAllVideos?userOid={{entraOid}}
 
 ###
 # @name Refresh Facebook Token

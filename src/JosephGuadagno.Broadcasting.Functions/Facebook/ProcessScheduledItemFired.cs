@@ -4,9 +4,10 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Composers;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
-using JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -17,12 +18,13 @@ public class ProcessScheduledItemFired(
     IEngagementManager engagementManager,
     ISyndicationFeedItemManager syndicationFeedItemManager,
     IYouTubeItemManager youTubeItemManager,
-    IFacebookManager facebookManager,
+    IMessageTemplateManager messageTemplateManager,
+    IPostComposer postComposer,
     ILogger<ProcessScheduledItemFired> logger)
 {
     [Function(ConfigurationFunctionNames.FacebookProcessScheduledItemFired)]
     [QueueOutput(Queues.FacebookPostStatusToPage)]
-    public async Task<FacebookPostStatus?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.Now;
         logger.LogDebug("Started {FunctionName} at {StartedOn:f}",
@@ -47,42 +49,48 @@ public class ProcessScheduledItemFired(
             logger.LogDebug("Processing the event '{Id}' for '{TableName}', '{PartitionKey}'",
                 eventGridEvent.Id, scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
 
-            FacebookPostStatus facebookPostStatus;
-
-            switch (scheduledItem.ItemType)
+            var ownerEntraOid = scheduledItem.CreatedByEntraOid ?? string.Empty;
+            if (string.IsNullOrEmpty(ownerEntraOid))
             {
-                case ScheduledItemType.Engagements:
-                    facebookPostStatus = await GetFacebookPostStatusForEngagement(scheduledItem.ItemPrimaryKey);
-                    break;
-                case ScheduledItemType.Talks:
-                    facebookPostStatus = await GetFacebookPostStatusForTalk(scheduledItem.ItemPrimaryKey);
-                    break;
-                case ScheduledItemType.SyndicationFeedItems:
-                    facebookPostStatus = await GetFacebookPostStatusForSyndicationSource(scheduledItem.ItemPrimaryKey);
-                    break;
-                case ScheduledItemType.YouTubeItems:
-                    facebookPostStatus = await GetFacebookPostStatusForYouTubeItem(scheduledItem.ItemPrimaryKey);
-                    break;
-                default:
-                    logger.LogError("The table name '{TableName}' is not supported", scheduledItem.ItemTableName);
-                    return null;
+                logger.LogWarning("No owner OID on scheduled item {Id} — skipping Facebook post",
+                    scheduledItem.Id);
+                return null;
             }
 
-            facebookPostStatus.StatusText = await facebookManager.ComposeMessageAsync(scheduledItem);
-            facebookPostStatus.ImageUrl = scheduledItem.ImageUrl;
-            facebookPostStatus.CreatedByEntraOid = scheduledItem.CreatedByEntraOid;
+            var request = await BuildRequestForScheduledItemAsync(scheduledItem, ownerEntraOid);
+            if (request is null)
+                return null;
+
+            var template = await messageTemplateManager.GetAsync(
+                MessageTemplates.Platforms.Facebook,
+                MessageTemplates.MessageTypes.ScheduledItem,
+                ownerEntraOid);
+            if (template is null)
+            {
+	            logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.Facebook, MessageTemplates.MessageTypes.ScheduledItem, ownerEntraOid);
+	            return null;
+            }
+
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
+            {
+                logger.LogWarning("Compose returned empty for scheduled item {Id}", scheduledItem.Id);
+                return null;
+            }
 
             var properties = new Dictionary<string, string>
             {
                 { "tableName", scheduledItem.ItemTableName },
                 { "id", scheduledItem.ItemPrimaryKey.ToString() },
-                { "text", facebookPostStatus.StatusText },
-                { "url", facebookPostStatus.LinkUri }
+                { "text", composedText },
+                { "url", request.LinkUrl ?? "" }
             };
             logger.LogCustomEvent(Metrics.FacebookProcessedScheduledItemFired, properties);
             logger.LogDebug("Generated the Facebook status for {TableName}, {PrimaryKey}",
                 scheduledItem.ItemTableName, scheduledItem.ItemPrimaryKey);
-            return facebookPostStatus;
+
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {
@@ -97,27 +105,59 @@ public class ProcessScheduledItemFired(
         }
     }
 
-    private async Task<FacebookPostStatus> GetFacebookPostStatusForSyndicationSource(int primaryKey)
+    private async Task<SocialMediaPublishRequest?> BuildRequestForScheduledItemAsync(
+        ScheduledItem scheduledItem, string ownerEntraOid)
     {
-        var syndicationFeedItem = await syndicationFeedItemManager.GetAsync(primaryKey);
-        return new FacebookPostStatus { StatusText = string.Empty, LinkUri = syndicationFeedItem.Url };
-    }
-
-    private async Task<FacebookPostStatus> GetFacebookPostStatusForYouTubeItem(int primaryKey)
-    {
-        var youTubeItem = await youTubeItemManager.GetAsync(primaryKey);
-        return new FacebookPostStatus { StatusText = string.Empty, LinkUri = youTubeItem.Url };
-    }
-
-    private async Task<FacebookPostStatus> GetFacebookPostStatusForEngagement(int primaryKey)
-    {
-        var engagement = await engagementManager.GetAsync(primaryKey);
-        return new FacebookPostStatus { StatusText = string.Empty, LinkUri = engagement.Url };
-    }
-
-    private async Task<FacebookPostStatus> GetFacebookPostStatusForTalk(int primaryKey)
-    {
-        var talk = await engagementManager.GetTalkAsync(primaryKey);
-        return new FacebookPostStatus { StatusText = string.Empty, LinkUri = talk.UrlForConferenceTalk };
+        switch (scheduledItem.ItemType)
+        {
+            case ScheduledItemType.SyndicationFeedItems:
+                var feedItem = await syndicationFeedItemManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = feedItem.Title,
+                    LinkUrl = feedItem.Url,
+                    ShortenedUrl = feedItem.ShortenedUrl,
+                    Hashtags = feedItem.Tags.Count > 0 ? feedItem.Tags.ToList() : null,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            case ScheduledItemType.YouTubeItems:
+                var ytItem = await youTubeItemManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = ytItem.Title,
+                    LinkUrl = ytItem.Url,
+                    ShortenedUrl = ytItem.ShortenedUrl,
+                    Hashtags = ytItem.Tags.Count > 0 ? ytItem.Tags.ToList() : null,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            case ScheduledItemType.Engagements:
+                var engagement = await engagementManager.GetAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = engagement.Name,
+                    LinkUrl = engagement.Url,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            case ScheduledItemType.Talks:
+                var talk = await engagementManager.GetTalkAsync(scheduledItem.ItemPrimaryKey);
+                return new SocialMediaPublishRequest
+                {
+                    Text = "",
+                    Title = talk.Name,
+                    LinkUrl = talk.UrlForConferenceTalk,
+                    ImageUrl = scheduledItem.ImageUrl,
+                    OwnerEntraOid = ownerEntraOid
+                };
+            default:
+                logger.LogError("The table name '{TableName}' is not supported",
+                    LogSanitizer.Sanitize(scheduledItem.ItemTableName));
+                return null;
+        }
     }
 }

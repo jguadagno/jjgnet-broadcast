@@ -207,7 +207,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
             catch (Exception ex) when (attempt < MaxRetryAttempts)
             {
                 logger.LogWarning(ex,
-                    "Event Grid publish attempt {Attempt}/{MaxRetries} failed for event type '{EventType}' to '{TopicUrl}'. Retrying in {DelaySeconds}s.",
+                    "Event Grid publish attempt {Attempt}/{MaxRetries} failed for event type '{EventType}' to '{TopicUrl}'. Retrying in {DelaySeconds}s",
                     attempt, MaxRetryAttempts, eventType, topicUrl, delay.TotalSeconds);
                 await Task.Delay(delay, cancellationToken);
                 delay *= 2;
@@ -215,7 +215,7 @@ public class EventPublisher(IEventPublisherSettings eventPublisherSettings, ILog
             catch (Exception ex)
             {
                 logger.LogError(ex,
-                    "Event Grid publish failed after {MaxRetries} attempts for event type '{EventType}' to '{TopicUrl}'.",
+                    "Event Grid publish failed after {MaxRetries} attempts for event type '{EventType}' to '{TopicUrl}'",
                     MaxRetryAttempts, eventType, topicUrl);
                 throw new EventPublishException(
                     $"Failed to publish event type '{eventType}' to '{topicUrl}' after {MaxRetryAttempts} attempts.",

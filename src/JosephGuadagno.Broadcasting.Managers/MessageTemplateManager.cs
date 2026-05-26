@@ -1,16 +1,21 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Managers;
 
-public class MessageTemplateManager(IMessageTemplateDataStore messageTemplateDataStore, IMemoryCache cache)
+public class MessageTemplateManager(
+    IMessageTemplateDataStore messageTemplateDataStore,
+    IMemoryCache cache,
+    ISocialMediaPlatformManager socialMediaPlatformManager,
+    ILogger<MessageTemplateManager> logger)
 	: IMessageTemplateManager
 {
 	private const string CacheKeyAll = "MessageTemplate_All";
@@ -40,6 +45,21 @@ public class MessageTemplateManager(IMessageTemplateDataStore messageTemplateDat
             cache.Set(cacheKey, result, CacheOptions);
         }
         return result;
+    }
+
+    /// <inheritdoc />
+    public async Task<MessageTemplate?> GetAsync(string platformName, string messageType, string ownerEntraOid, CancellationToken cancellationToken = default)
+    {
+        var platform = await socialMediaPlatformManager.GetByNameAsync(platformName, cancellationToken);
+        if (platform is null)
+        {
+            logger.LogWarning(
+                "MessageTemplateManager: platform '{PlatformName}' not found — skipping template lookup",
+                LogSanitizer.Sanitize(platformName));
+            return null;
+        }
+
+        return await GetAsync(platform.Id, messageType, ownerEntraOid, cancellationToken);
     }
 
     public async Task<List<MessageTemplate>> GetAllDefaultsAsync(CancellationToken cancellationToken = default)
@@ -79,16 +99,16 @@ public class MessageTemplateManager(IMessageTemplateDataStore messageTemplateDat
         return result;
     }
 
-    public async Task<PagedResult<MessageTemplate>> GetAllAsync(int page, int pageSize, string sortBy = "messagetype", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    public Task<PagedResult<MessageTemplate>> GetAllAsync(int page, int pageSize, string sortBy = "messagetype", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
-        var all = await GetAllAsync(cancellationToken);
-        return ApplyFilterSortPage(all, ownerOid: null, page, pageSize, sortBy, sortDescending, filter);
+        // Delegate to the data store so the ApplicationUsers batch lookup runs and
+        // OwnerDisplayName is populated on each result.
+        return messageTemplateDataStore.GetAllAsync(page, pageSize, sortBy, sortDescending, filter, cancellationToken);
     }
 
-    public async Task<PagedResult<MessageTemplate>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "messagetype", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
+    public Task<PagedResult<MessageTemplate>> GetAllAsync(string ownerEntraOid, int page, int pageSize, string sortBy = "messagetype", bool sortDescending = false, string? filter = null, CancellationToken cancellationToken = default)
     {
-        var all = await GetAllAsync(cancellationToken);
-        return ApplyFilterSortPage(all, ownerOid: ownerEntraOid, page, pageSize, sortBy, sortDescending, filter);
+        return messageTemplateDataStore.GetAllAsync(ownerEntraOid, page, pageSize, sortBy, sortDescending, filter, cancellationToken);
     }
 
     public async Task<MessageTemplate?> UpdateAsync(MessageTemplate messageTemplate, CancellationToken cancellationToken = default)
@@ -106,44 +126,5 @@ public class MessageTemplateManager(IMessageTemplateDataStore messageTemplateDat
     {
         cache.Remove(CacheKeyAll);
         cache.Remove(CacheKeyDefaults);
-    }
-
-    private static PagedResult<MessageTemplate> ApplyFilterSortPage(
-        List<MessageTemplate> source,
-        string? ownerOid,
-        int page,
-        int pageSize,
-        string sortBy,
-        bool sortDescending,
-        string? filter)
-    {
-        IEnumerable<MessageTemplate> query = source;
-
-        if (ownerOid is not null)
-        {
-            query = query.Where(t => t.CreatedByEntraOid == ownerOid);
-        }
-
-        if (!string.IsNullOrWhiteSpace(filter))
-        {
-            query = query.Where(t =>
-                t.MessageType.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                (t.Template != null && t.Template.Contains(filter, StringComparison.OrdinalIgnoreCase)));
-        }
-
-        query = sortBy.ToLowerInvariant() switch
-        {
-            "messagetype" => sortDescending
-                ? query.OrderByDescending(t => t.MessageType)
-                : query.OrderBy(t => t.MessageType),
-            _ => sortDescending
-                ? query.OrderByDescending(t => t.MessageType)
-                : query.OrderBy(t => t.MessageType)
-        };
-
-        var totalCount = query.Count();
-        var items = query.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-        return new PagedResult<MessageTemplate> { Items = items, TotalCount = totalCount };
     }
 }

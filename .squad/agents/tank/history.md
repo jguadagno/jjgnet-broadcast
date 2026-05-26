@@ -1,8 +1,6 @@
-# Tank - History
+# History
 
-## Summary
-
-Tank (QA Engineer) builds comprehensive test coverage across unit, integration, security, and regression test categories using xUnit, FluentAssertions, and Moq. Primary focus: ensuring backend API contracts work correctly, authorization/RBAC logic is enforced, ownership isolation prevents data leaks, and authentication flows are secure. Key test patterns include: mocking external services (HttpClientFactory via Moq), testing async operations with Task.Delay and verification, ownership isolation regression tests (verify User A cannot access User B's resources), and RBAC authorization tests (verify Viewers cannot POST, Admins can manage users). Tank works closely with Trinity (API endpoint contracts), Switch (Web-layer integration tests), and Neo (security test patterns). Established pattern: write tests before implementation (TDD), test both happy path and error cases, use descriptive test names like `GetEngagements_WhenUserIsContributor_ShouldReturnOwnEngagementsOnly`, mock external dependencies, and verify authorization boundaries. Notable: Tank maintains ownership isolation test suite to prevent regressions as new features are added. Key decision: ownership tests go in integration test class alongside endpoint tests, not as separate security-only test file.
+> Learnings before 2026-04-25 archived to history-archive.md (2026-05-25)
 
 ## Recent Session: Issue #969 — Collector Controllers in ControllerAuthorizationPolicyTests (2026-05-15)
 
@@ -23,7 +21,24 @@ Tank (QA Engineer) builds comprehensive test coverage across unit, integration, 
 - **Fix 2:** `SaveLinkedIn_WhenValid_ShouldPersistAndRedirect` → redirect assertion changed from `Index` to `Edit`, added `id` route value check (`3`), kept `userOid` check.
 - **Commit:** `c44ad92` on branch `issue-950-sanity-check`
 
+## Recent Session: Full Test Verification Pass — `issue-980-publisher-architecture-refactor` (2026-05-21)
+
+- **Work:** Full build + test verification pass on the branch
+- **Result:** ⚠️ 2 failures found — both caused by uncommitted working-tree changes on the branch
+- **Build:** ✅ 0 errors, 0 warnings
+- **Tests:** 1275 total: 2 failed, 1232 passed, 41 skipped
+- **Failures:**
+  1. `LoadAllSpeakingEngagementsTests.RunAsync_HandlesNullEngagementsList_Gracefully` — NullReferenceException because `null ||` was removed from `if (newItems == null || newItems.Count == 0)` in uncommitted `LoadAllSpeakingEngagements.cs`
+  2. `LoadNewPostsTests.RunAsync_HandlesNullFeedList_Gracefully` — Same root cause in uncommitted `LoadNewPosts.cs`
+- **Root Cause:** Branch's uncommitted work removed the null guards that were introduced in commit `4b765f88` alongside the tests. `git show HEAD` still has the correct code; `git diff HEAD` reveals the working-tree regression.
+- **Report filed:** `.squad/decisions/inbox/tank-test-failures.md`
+
+---
+
 ## Learnings
+
+### Null guard regression pattern (2026-05-21)
+When production code has `if (x == null || x.Count == 0)` and tests assert graceful null handling (`OkObjectResult`), removing the `null ||` part converts a safe no-op into a NullReferenceException caught by the outer `catch`, which returns `BadRequestObjectResult`. Always check `git diff HEAD` before running tests — failing null-handling tests with `OkObjectResult` expected but `BadRequestObjectResult` actual is the telltale signature of this pattern.
 
 ### Post-save redirect target in PublisherSettingsController
 `SavePlatformAsync` always redirects to `Edit` (not `Index`) after both success and invalid model state. Tests for Save* actions must assert `View("Edit", ...)` on validation failure and `RedirectToAction("Edit", ...)` on success, with route values `{ id = platformId }` (non-admin) or `{ id = platformId, userOid = targetOid }` (site-admin).
@@ -111,6 +126,17 @@ _managerMock.Verify(m => m.SaveAsync(It.IsAny<ScheduledItem>()), Times.Never);
 
 When a controller method signature changes to add an `ownerOid` parameter, Moq will silently skip mismatched `.Setup()` calls rather than throwing. This causes the mock to return null and tests to behave incorrectly. Always verify the exact parameter types match the controller dispatch path.
 
----
+### Filtered full-suite baseline (2026-05-25)
 
+The repo-wide CI-aligned test pass remains clean after the recent
+LinkedInController test fix.
+
+`dotnet test .\src\ --no-build --configuration Release --filter
+"FullyQualifiedName!~SyndicationFeedReader"`
+
+That command completed with 1274 total tests, 1233 passed, 0 failed,
+and 41 skipped. When it regresses, compare against that baseline before
+assuming the expected skips indicate a new failure.
+
+---
 

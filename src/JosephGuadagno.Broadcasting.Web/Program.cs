@@ -1,3 +1,4 @@
+using JosephGuadagno.Broadcasting.Composers;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Constants;
@@ -22,6 +23,7 @@ using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.TokenCacheProviders.Distributed;
 using Microsoft.Identity.Web.UI;
 
 using OpenTelemetry.Logs;
@@ -84,11 +86,12 @@ builder.Services.AddSession(options =>
 });
 
 // Configure the logger
-var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, "logs\\logs.txt");
+var fullyQualifiedLogFile = Path.Combine(builder.Environment.ContentRootPath, $"logs{Path.DirectorySeparatorChar}logs.txt");
 ConfigureTelemetryAndLogging(builder.Services, fullyQualifiedLogFile, "Web");
 
 // Register DI services
 builder.AddAzureQueueServiceClient("QueueAccount");
+//builder.AddAzureTableServiceClient("TableAccount");
 ConfigureApplication(builder.Services);
 
 // Add in AutoMapper
@@ -110,6 +113,13 @@ var allScopes = builder.Configuration.GetSection("DownstreamApis")
 builder.Services.AddMicrosoftIdentityWebAppAuthentication(builder.Configuration)
     .EnableTokenAcquisitionToCallDownstreamApi(allScopes)
     .AddDistributedTokenCaches();
+builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
+{
+    options.DisableL1Cache = false;
+#if !DEBUG
+    options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+#endif
+});
 builder.Services.AddDownstreamApis(builder.Configuration.GetSection("DownstreamApis"));
 
 // Add OIDC event handlers for graceful error handling
@@ -121,7 +131,7 @@ builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.Authentic
         if (context.Failure?.Message != null)
         {
             var errorMessage = context.Failure.Message;
-            
+
             // AADSTS650052: The app needs access to a service that your organization hasn't subscribed to or enabled
             // AADSTS65001: The user or administrator hasn't consented to use the application
             // AADSTS700016: Application not found in the directory/tenant
@@ -131,16 +141,16 @@ builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.Authentic
                 errorMessage.Contains("AADSTS700016") ||
                 errorMessage.Contains("AADSTS70011"))
             {
-                context.Response.Redirect("/Home/AuthError?message=" + 
+                context.Response.Redirect("/Home/AuthError?message=" +
                     Uri.EscapeDataString("Your organization hasn't granted access to this application. " +
                     "Please contact your IT administrator to enable access."));
                 context.HandleResponse();
                 return Task.CompletedTask;
             }
         }
-        
+
         // For all other errors, redirect to generic auth error page
-        context.Response.Redirect("/Home/AuthError?message=" + 
+        context.Response.Redirect("/Home/AuthError?message=" +
             Uri.EscapeDataString("An error occurred during sign-in. Please try again or contact support."));
         context.HandleResponse();
         return Task.CompletedTask;
@@ -168,10 +178,10 @@ builder.Services.AddAuthorization(options =>
 
     options.AddPolicy(AuthorizationPolicyNames.RequireAdministrator, policy =>
         policy.RequireRole(RoleNames.SiteAdministrator, RoleNames.Administrator));
-    
+
     options.AddPolicy(AuthorizationPolicyNames.RequireContributor, policy =>
         policy.RequireRole(RoleNames.SiteAdministrator, RoleNames.Administrator, RoleNames.Contributor));
-    
+
     options.AddPolicy(AuthorizationPolicyNames.RequireViewer, policy =>
         policy.RequireRole(RoleNames.SiteAdministrator, RoleNames.Administrator, RoleNames.Contributor, RoleNames.Viewer));
 });
@@ -251,16 +261,16 @@ void ConfigureApplication(IServiceCollection services)
     services.AddHttpClient();
     services.AddMemoryCache();
     services.AddHttpContextAccessor();
-    
+
     // Register BroadcastingContext via transitive dependency (Managers ΓåÆ Data.Sql)
     // Note: BroadcastingContext type is fully qualified to avoid needing "using Data.Sql"
     builder.AddSqlServerDbContext<JosephGuadagno.Broadcasting.Data.Sql.BroadcastingContext>("JJGNetDatabaseSqlServer");
-    
+
     // Register all SQL data stores
     services.AddSqlDataStores();
 
     services.TryAddScoped<IUserOAuthTokenManager, UserOAuthTokenManager>();
-    
+
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
@@ -281,6 +291,9 @@ void ConfigureApplication(IServiceCollection services)
 
     // RBAC Phase 1
     services.TryAddScoped<IUserApprovalManager, UserApprovalManager>();
+
+    // PostComposer — pure Scriban renderer (from Composers project, no DB/network dependency)
+    services.TryAddScoped<IPostComposer, PostComposer>();
 
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();

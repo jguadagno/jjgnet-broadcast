@@ -28,9 +28,6 @@ public class UserPublisherLinkedInSettings
     /// <summary>Gets or sets whether a client secret is stored in Key Vault for this user</summary>
     public bool HasClientSecret { get; set; }
 
-    /// <summary>Gets or sets whether an access token is stored in Key Vault for this user</summary>
-    public bool HasAccessToken { get; set; }
-
     /// <summary>Gets or sets when this configuration was created</summary>
     public DateTimeOffset CreatedOn { get; set; }
 

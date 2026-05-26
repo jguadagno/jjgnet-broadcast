@@ -17,13 +17,20 @@ public class UserCollectorSpeakingEngagementDataStore(
 {
     /// <inheritdoc />
     public async Task<List<UserCollectorSpeakingEngagement>> GetByUserAsync(
-        string ownerOid, CancellationToken cancellationToken = default)
+        string ownerOid, bool activeOnly = false, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
 
-        var entities = await broadcastingContext.UserCollectorSpeakingEngagements
+        var query = broadcastingContext.UserCollectorSpeakingEngagements
             .AsNoTracking()
-            .Where(c => c.CreatedByEntraOid == ownerOid)
+            .Where(c => c.CreatedByEntraOid == ownerOid);
+
+        if (activeOnly)
+        {
+            query = query.Where(c => c.IsActive);
+        }
+
+        var entities = await query
             .OrderBy(c => c.DisplayName)
             .ToListAsync(cancellationToken);
 

@@ -21,6 +21,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
 [Produces("application/json")]
 public class CollectorFeedSourceSettingsController(
     IUserCollectorFeedSourceManager feedSourceManager,
+    IOnboardingManager onboardingManager,
     ILogger<CollectorFeedSourceSettingsController> logger,
     IMapper mapper) : ControllerBase
 {
@@ -154,6 +155,7 @@ public class CollectorFeedSourceSettingsController(
             return BadRequest("Unable to save feed source configuration");
         }
 
+        await onboardingManager.RecalculateAsync(resolvedOwnerOid);
         return Ok(mapper.Map<UserCollectorFeedSourceResponse>(saved));
     }
 
@@ -209,6 +211,7 @@ public class CollectorFeedSourceSettingsController(
             return BadRequest("Unable to update feed source configuration");
         }
 
+        await onboardingManager.RecalculateAsync(existing.CreatedByEntraOid);
         return Ok(mapper.Map<UserCollectorFeedSourceResponse>(saved));
     }
 
@@ -255,6 +258,7 @@ public class CollectorFeedSourceSettingsController(
             return NotFound();
         }
 
+        await onboardingManager.RecalculateAsync(config.CreatedByEntraOid);
         return NoContent();
     }
 }

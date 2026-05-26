@@ -89,7 +89,7 @@ IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Id = 1)
     VALUES (1, N'Twitter', N'https://twitter.com', N'bi-twitter-x', 1)
 IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Id = 2)
     INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Id, Name, Url, Icon, IsActive)
-    VALUES (2, N'BlueSky', N'https://bsky.app', N'bi-bluesky', 1)
+    VALUES (2, N'Bluesky', N'https://bsky.app', N'bi-bluesky', 1)
 IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.SocialMediaPlatforms WHERE Id = 3)
     INSERT INTO JJGNet.dbo.SocialMediaPlatforms (Id, Name, Url, Icon, IsActive)
     VALUES (3, N'LinkedIn', N'https://www.linkedin.com', N'bi-linkedin', 1)
@@ -105,7 +105,7 @@ SET IDENTITY_INSERT JJGNet.dbo.SocialMediaPlatforms OFF;
 UPDATE JJGNet.dbo.SocialMediaPlatforms SET CredentialSetupDocumentationUrl = N'/help/socialMediaPlatforms/twitter'
     WHERE CredentialSetupDocumentationUrl IS NULL AND Name = N'Twitter'
 UPDATE JJGNet.dbo.SocialMediaPlatforms SET CredentialSetupDocumentationUrl = N'/help/socialMediaPlatforms/bluesky'
-    WHERE CredentialSetupDocumentationUrl IS NULL AND Name = N'BlueSky'
+    WHERE CredentialSetupDocumentationUrl IS NULL AND Name = N'Bluesky'
 UPDATE JJGNet.dbo.SocialMediaPlatforms SET CredentialSetupDocumentationUrl = N'/help/socialMediaPlatforms/linkedin'
     WHERE CredentialSetupDocumentationUrl IS NULL AND Name = N'LinkedIn'
 UPDATE JJGNet.dbo.SocialMediaPlatforms SET CredentialSetupDocumentationUrl = N'/help/socialMediaPlatforms/facebook'
@@ -539,7 +539,7 @@ IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatfo
         N'LinkedIn template for generic scheduled item broadcasts', N'');
 
 -- ----- Bluesky (casual tone, max ~300 chars) -----
-SET @SocialMediaPlatformId = (SELECT Id FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'BlueSky');
+SET @SocialMediaPlatformId = (SELECT Id FROM JJGNet.dbo.SocialMediaPlatforms WHERE Name = N'Bluesky');
 IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'RandomPost' AND CreatedByEntraOid = N'')
     INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
     VALUES (@SocialMediaPlatformId, N'RandomPost', N'✨ {{ title }} - {{ url }}', N'Default Bluesky template for random/scheduled posts', N'');

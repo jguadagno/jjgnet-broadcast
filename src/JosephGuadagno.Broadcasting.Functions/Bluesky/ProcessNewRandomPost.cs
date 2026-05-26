@@ -5,73 +5,96 @@ using Azure.Messaging.EventGrid;
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Composers;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Managers.Bluesky.Models;
+
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
-public class ProcessNewRandomPost(ISyndicationFeedItemManager syndicationFeedItemManager, ILogger<ProcessNewRandomPost> logger)
+public class ProcessNewRandomPost(
+	ISyndicationFeedItemManager syndicationFeedItemManager,
+	IMessageTemplateManager messageTemplateManager,
+	IPostComposer postComposer,
+	ILogger<ProcessNewRandomPost> logger)
 {
-    [Function(ConfigurationFunctionNames.BlueskyProcessRandomPostFired)]
-    [QueueOutput(Queues.BlueskyPostToSend)]
-    public async Task<BlueskyPostMessage?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
-    {
-        var startedAt = DateTimeOffset.UtcNow;
-        logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
-            ConfigurationFunctionNames.BlueskyProcessRandomPostFired, startedAt);
-        
-        // Check to make sure the eventGridEvent.Data is not null
-        if (eventGridEvent.Data is null)
-        {
-            logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
-            throw new ArgumentNullException(nameof(eventGridEvent.Data), "EventGrid event data cannot be null");
-        }
+	[Function(ConfigurationFunctionNames.BlueskyProcessRandomPostFired)]
+	[QueueOutput(Queues.BlueskyPostToSend)]
+	public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+	{
+		var startedAt = DateTimeOffset.UtcNow;
+		logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
+			ConfigurationFunctionNames.BlueskyProcessRandomPostFired, startedAt);
 
-        try
-        {
-            var eventGridData = eventGridEvent.Data.ToString();
-            var source = JsonSerializer.Deserialize<RandomPostEvent>(eventGridData);
-            if (source is null)
-            {
-                logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
-                return null;
-            }
-            var sourceData = await syndicationFeedItemManager.GetAsync(source.Id);
+		if (eventGridEvent.Data is null)
+		{
+			logger.LogError("The event data was null for event '{Id}'", eventGridEvent.Id);
+			throw new ArgumentNullException(nameof(eventGridEvent.Data), "EventGrid event data cannot be null");
+		}
 
-            // Handle the event - eventGridData to build the post
-            // Need to create a PostBuilder to send this based on these docs
-            // https://github.com/blowdart/idunno.Bluesky/blob/main/docs/posting.md#links-to-external-web-sites
-            var postText =
-                $"ICYMI: ({sourceData.PublicationDate.Date.ToShortDateString()}): \"{sourceData.Title}.\" RPs and feedback are always appreciated! ";
+		try
+		{
+			var eventGridData = eventGridEvent.Data.ToString();
+			var source = JsonSerializer.Deserialize<RandomPostEvent>(eventGridData);
+			if (source is null)
+			{
+				logger.LogError("Failed to parse the data for event '{Id}'", eventGridEvent.Id);
+				return null;
+			}
 
-            var blueskyPostMessage = new BlueskyPostMessage
-            {
-                Text = postText,
-                Url = sourceData.Url,
-                ShortenedUrl = sourceData.ShortenedUrl
-            };
-            if (sourceData.Tags.Count > 0)
-            {
-                blueskyPostMessage.Hashtags = sourceData.Tags.ToList();
-            }
+			var sourceData = await syndicationFeedItemManager.GetAsync(source.Id);
 
-            // Return
-            var properties = new Dictionary<string, string>
-            {
-                {"title", sourceData.Title},
-                {"url", sourceData.Url},
-                {"post", postText}
-            };
-            logger.LogCustomEvent(Metrics.BlueskyProcessedRandomPost, properties);
-            logger.LogDebug("Picked a random post {Title}", sourceData.Title);
-            return blueskyPostMessage;
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to process the new random post. Exception: {ExceptionMessage}", e.Message);
-            throw;
-        }
-    }
+			var ownerEntraOid = sourceData.CreatedByEntraOid;
+			if (string.IsNullOrEmpty(ownerEntraOid))
+			{
+				logger.LogWarning("No owner OID for syndication item {Id} — skipping Bluesky random post",
+					sourceData.Id);
+				return null;
+			}
+
+			var request = new SocialMediaPublishRequest
+			{
+				Text = "",
+				Title = sourceData.Title,
+				LinkUrl = sourceData.Url,
+				ShortenedUrl = sourceData.ShortenedUrl,
+				Hashtags = sourceData.Tags.Count > 0 ? sourceData.Tags.ToList() : null,
+				OwnerEntraOid = ownerEntraOid
+			};
+
+			var template = await messageTemplateManager.GetAsync(
+				MessageTemplates.Platforms.Bluesky,
+				MessageTemplates.MessageTypes.RandomPost,
+				ownerEntraOid);
+			if (template is null)
+			{
+				logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.Bluesky, MessageTemplates.MessageTypes.RandomPost, ownerEntraOid);
+				return null;
+			}
+
+			var composedText = await postComposer.ComposeAsync(request, template.Template);
+			if (string.IsNullOrWhiteSpace(composedText))
+			{
+				logger.LogWarning("Compose returned empty for random post item {Id}", sourceData.Id);
+				return null;
+			}
+
+			var properties = new Dictionary<string, string>
+			{
+				{ "title", sourceData.Title }, { "url", sourceData.Url }, { "post", composedText }
+			};
+			logger.LogCustomEvent(Metrics.BlueskyProcessedRandomPost, properties);
+			logger.LogDebug("Picked a random post {Title}", sourceData.Title);
+
+			request.Text = composedText;
+			return request;
+		}
+		catch (Exception e)
+		{
+			logger.LogError(e, "Failed to process the new random post. Exception: {ExceptionMessage}", e.Message);
+			throw;
+		}
+	}
 }

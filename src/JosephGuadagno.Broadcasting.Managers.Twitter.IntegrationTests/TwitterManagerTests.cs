@@ -1,21 +1,32 @@
 using FluentAssertions;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers.Twitter.Exceptions;
 using LinqToTwitter;
+using LinqToTwitter.OAuth;
 
 namespace JosephGuadagno.Broadcasting.Managers.Twitter.IntegrationTests;
 
 [Trait("Category", "Integration")]
-public class TwitterManagerTests(ITwitterManager twitterManager, TwitterContext twitterContext)
+public class TwitterManagerTests(ITwitterManager twitterManager, InMemoryCredentialStore credentialStore, TwitterContext twitterContext)
 {
-	[Fact(Skip = "Manually run only")]
-    public async Task SendTweetAsync_WithValidTweetText_ReturnsTweetId()
+    private SocialMediaPublishRequest BuildRequest(string text) => new()
+    {
+        Text = text,
+        ConsumerKey = credentialStore.ConsumerKey,
+        ConsumerSecret = credentialStore.ConsumerSecret,
+        AccessToken = credentialStore.OAuthToken,
+        AccessTokenSecret = credentialStore.OAuthTokenSecret,
+    };
+
+    [Fact(Skip = "Manually run only")]
+    public async Task PublishAsync_WithValidTweetText_ReturnsTweetId()
     {
         // Arrange
         var tweetText = $"Integration test tweet [{DateTime.UtcNow:o}]";
 
         // Act
-        var tweetId = await twitterManager.SendTweetAsync(tweetText);
+        var tweetId = await twitterManager.PublishAsync(BuildRequest(tweetText));
 
         // Assert
         tweetId.Should().NotBeNullOrEmpty();
@@ -28,26 +39,23 @@ public class TwitterManagerTests(ITwitterManager twitterManager, TwitterContext 
     }
 
     [Fact(Skip = "Manually run only")]
-    public async Task SendTweetAsync_WithEmptyTweetText_ThrowsException()
+    public async Task PublishAsync_WithEmptyTweetText_ThrowsException()
     {
-        // Arrange
-        var tweetText = string.Empty;
-
-        // Act
-        var act = async () => await twitterManager.SendTweetAsync(tweetText);
+        // Arrange & Act
+        var act = async () => await twitterManager.PublishAsync(BuildRequest(string.Empty));
 
         // Assert
         await act.Should().ThrowAsync<TwitterPostException>();
     }
 
     [Fact(Skip = "Manually run only")]
-    public async Task SendTweetAsync_WithTweetTextAtMaxLength_ReturnsTweetId()
+    public async Task PublishAsync_WithTweetTextAtMaxLength_ReturnsTweetId()
     {
         // Arrange
         var tweetText = new string('a', 280);
 
         // Act
-        var tweetId = await twitterManager.SendTweetAsync(tweetText);
+        var tweetId = await twitterManager.PublishAsync(BuildRequest(tweetText));
 
         // Assert
         tweetId.Should().NotBeNullOrEmpty();
@@ -60,13 +68,10 @@ public class TwitterManagerTests(ITwitterManager twitterManager, TwitterContext 
     }
 
     [Fact(Skip = "Manually run only")]
-    public async Task SendTweetAsync_WithTweetTextExceedingMaxLength_ThrowsException()
+    public async Task PublishAsync_WithTweetTextExceedingMaxLength_ThrowsException()
     {
-        // Arrange
-        var tweetText = new string('a', 281);
-
-        // Act
-        var act = async () => await twitterManager.SendTweetAsync(tweetText);
+        // Arrange & Act
+        var act = async () => await twitterManager.PublishAsync(BuildRequest(new string('a', 281)));
 
         // Assert
         await act.Should().ThrowAsync<TwitterPostException>();

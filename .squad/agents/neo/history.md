@@ -1,179 +1,153 @@
-## Executive Summary
+# History
 
-**Neo — Architectural Lead, Code Reviewer**
+> Learnings before 2026-04-25 archived to history-archive.md (2026-05-25)
 
-- **Recent focus:** PR #963 (publisher settings), #967 (secret naming), #950 (collector sanity check)
-- **Key decisions:** .squad/-only CI bypass (PR #934), Enum type validation, Log sanitization in services
-- **Top finding:** All 3 recent PRs had blocking issues requiring fixes (log injection, missing enum, namespace gaps)
-- **Team impact:** Established pattern: DI constructor injection mandatory, LogSanitizer in service layer, enum types over raw strings
-- **Files:** UserPublisherSettingService.cs, KeyVaultSecretNameBuilder, PR #963/#967/#950
+## MSAL Session Persistence Regression — 2026-05-19
 
----
+**Trigger**: Joseph reported having to log in every time the Web app restarts after commit `3af53e7f` (fix(auth): suppress MSAL/IdentityModel debug noise and pin L1 cache TTL).
 
-## 2026-05-15 — PR #967 Formal Review: KeyVaultSecretNameBuilder Utility Extraction
+### Root Cause (confirmed from library source)
 
-**Status:** ✅ COMPLETE — BLOCKED ❌. Comment posted at https://github.com/jguadagno/jjgnet-broadcast/pull/967#issuecomment-4464503690.
+`MsalDistributedTokenCacheAdapterOptions` inherits from `DistributedCacheEntryOptions`. The `AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)` set in commit `3af53e7f` is passed **directly** to `IDistributedCache.SetAsync()` inside `MsalDistributedTokenCacheAdapter.WriteCacheBytesAsync()` as `DistributedCacheEntryOptions.AbsoluteExpirationRelativeToNow`. This overrides the `DefaultSlidingExpiration = TimeSpan.FromDays(14)` on `AddDistributedSqlServerCache`. SQL `TokenCache` entries now expire **15 minutes after the last write** instead of 14 days. After any 15+ minute idle period (including development restarts), MSAL finds no account in the SQL cache, `ValidatePrincipal` calls `context.RejectPrincipal()`, and the user is forced to log in.
 
-**Verdict:** BLOCKED ❌ — 1 blocking finding (directive violation: `KeyVaultSecretOwnerType` enum not implemented)
+Source confirmed: `AzureAD/microsoft-identity-web` → `MsalDistributedTokenCacheAdapter.WriteCacheBytesAsync()`:
+```csharp
+DistributedCacheEntryOptions distributedCacheEntryOptions = new DistributedCacheEntryOptions
+{
+    AbsoluteExpiration = cacheExpiry,
+    AbsoluteExpirationRelativeToNow = _distributedCacheOptions.AbsoluteExpirationRelativeToNow, // ← 15 min passed to SQL
+    SlidingExpiration = _distributedCacheOptions.SlidingExpiration,
+};
+```
 
-**What was verified:**
-- `KeyVaultSecretNameBuilder` static class: correct namespace, location, regex pattern ✅
-- All 5 managers refactored; local `BuildSecretName` + private `SecretNameSanitizer` deleted ✅
-- YouTube format preserved: `collector-{sanitizedOwner}-youtube-channel-{channelId}-api-key` ✅
-- `LogSanitizer.Sanitize()` intact on all log args in all 5 managers ✅
-- 11 new tests: all pass ✅
-- Build: 0 errors, 0 code warnings ✅
+### Exact Code Location
 
-**Blocking finding:**
-Architectural decision (decisions.md 2026-05-15T14:06) specifies `KeyVaultSecretOwnerType ownerType` (enum) as the first parameter. Implementation uses `string type`. No `KeyVaultSecretOwnerType` enum exists anywhere in the codebase. Directive violation — BLOCKING.
+`Program.cs`, lines 115–119:
+```csharp
+builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
+{
+    options.DisableL1Cache = false;
+    options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15); // ← CULPRIT
+});
+```
 
-**Fix required:** Create `KeyVaultSecretOwnerType` enum in Domain project, update `Build` signature, update all 5 call sites (4 `"publisher"` → `KeyVaultSecretOwnerType.Publisher`, 1 `"collector"` → `KeyVaultSecretOwnerType.Collector`).
+### Recommended Fix (pending Joseph approval)
 
-**Non-blocking observation:**
-- `discriminator` not sanitized — pre-existing behavior (old private method also didn't sanitize channelId). Not a regression, but utility should either sanitize it or document caller responsibility.
+Remove `AbsoluteExpirationRelativeToNow` from `MsalDistributedTokenCacheAdapterOptions`. The SQL cache's `DefaultSlidingExpiration = TimeSpan.FromDays(14)` is restored. The L1 (memory) cache reverts to using the token's `SuggestedCacheExpiry` (pre-change behavior).
 
-**Learnings:**
-- When the architectural decision spec says "enum for type parameter," verify the enum type exists; using a raw string is a directive violation even when callers are all hardcoded literals.
-- The `discriminator` concept (for YouTube channelId) was not in the original decision spec but is a correct additive improvement. Accept design additions that don't break the spec intent.
+```csharp
+builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
+{
+    options.DisableL1Cache = false;
+    // AbsoluteExpirationRelativeToNow intentionally omitted:
+    // setting it also sets the L2/SQL expiry (15 min forced re-login regression).
+    // L2 lifetime is controlled by AddDistributedSqlServerCache DefaultSlidingExpiration (14 days).
+});
+```
 
----
+**Trade-off**: The minor performance issue (~1.75s SQL read on first request when access token is near-expiry) may return. Pre-existing, preferable to forced re-login every restart.
 
-## 2026-05-15 — PR #963 Formal Review: Publisher Settings Phase 2
-
-**Status:** ✅ COMPLETE — BLOCKED ❌. Comment posted at https://github.com/jguadagno/jjgnet-broadcast/pull/963#issuecomment-4464281385. Decision written to `.squad/decisions/inbox/neo-pr963-review.md`.
-
-**Verdict:** BLOCKED ❌ — 1 blocking finding (3 instances of log injection).
-
-**What was verified:**
-- All 5 API controllers: `[IgnoreAntiforgeryToken]`, `[Authorize]`, per-action policies, `User.ResolveOwnerOid()`, `LogSanitizer` on all log args ✅
-- All 4 typed manager implementations: `BuildSecretName` with `SecretNameSanitizer`, `Has*` booleans only, constructor injection ✅
-- All 4 manager test classes: `[Theory]` `BuildSecretName` coverage; Bluesky has special-char test ✅
-- Functions migration (`SendPost`, `SendTweet`, `PostPageStatus`): shim replaced with typed managers ✅
-- DI registrations: API, Functions, `ServiceCollectionExtensions` all correct; shims removed ✅
-- `ApiBroadcastingProfile.cs`: all 4 publisher mappings present ✅
-- SQL migration: idempotent `IF OBJECT_ID` guard ✅
-- `ControllerAuthorizationPolicyTests`: all 5 new controllers registered ✅
-- Data store tests: `GetByIdAsync_ReturnsNullForMissingId` added to Twitter/LinkedIn/Facebook ✅
-- Build: 0 errors, 0 warnings ✅
-
-**Blocking finding:**
-`UserPublisherSettingService.cs` — 3 log call sites pass user-controlled strings without `LogSanitizer.Sanitize()`:
-1. Line 93: `setting.CreatedByEntraOid` in `SaveAsync` early-return warning
-2. Lines 156-157: `platform` and `setting.CreatedByEntraOid` in unrecognized platform warning
-3. Lines 164-167: both args in `LogSaveFailure` helper
-
-Fix: wrap all three sites with `LogSanitizer.Sanitize()` — the `using` directive is already present (line 8).
-
-**Non-blocking observations:**
-- Twitter/LinkedIn/Facebook `BuildSecretName` `[Theory]` tests use `"owner-1"` only (no special-char case) — coverage gap, not blocking
-- `SendTweet.cs` line 46: `tweetMessage.ImageUrl` pre-existing unsanitized log arg — predates this PR, track separately
-
-**Learnings:**
-- Web service rewrites (341 additions) can introduce log injection even when the API layer is clean. Always scan every `Log*` call in substantially-rewritten files against the `LogSanitizer.Sanitize()` requirement.
-- The `using JosephGuadagno.Broadcasting.Domain.Utilities;` directive may already be present from other `LogSanitizer` calls in the same file — check before flagging a missing import.
+**Status**: Diagnosis delivered to Joseph. No code changes made. Awaiting approval.
 
 ---
 
-## 2026-05-16 — GitHub Issue #975: Site Admin CRUD for Publisher/Collector Settings
+## OAuth Token Architecture Review — 2026-05-21
 
-**Status:** ✅ COMPLETE — issue created and opened
+**Requested by**: Joseph Guadagno  
+**Output**: `.squad/decisions/inbox/neo-oauth-token-architecture.md`
 
-**Issue Details:**
-- **Number:** #975
-- **Title:** feat: Build Site Admin section for CRUD management of publisher and collector settings for any user
-- **Labels:** squad, enhancement
-- **Scope:** New feature for administrators to manage publisher and collector settings on behalf of end users
+### Learnings
 
-**Context:**
-- Complements the per-user self-service settings pages already refactored (Trinity's 5 per-publisher controllers)
-- Operational requirement: admins need the ability to troubleshoot, override, or reset any user's settings without requiring that user's login
-- Self-contained architecture directive supports this: each publisher/collector already has dedicated controller/service
+**Three token storage mechanisms discovered (two of them inconsistent):**
 
-**Technical notes:**
-- New admin controller: parallel to existing per-publisher (Bluesky, LinkedIn, Facebook, Twitter) + per-collector (YouTube, FeedSource, SpeakingEngagement, ScheduledItem) pattern
-- API endpoint: `/Admin/Settings/{settingType}/{name}` where `settingType` ∈ {publishers, collectors} and `name` ∈ {bluesky, youtube, etc.}
-- Authorization: `[Authorize(Policy = "AdminOnly")]` — only admins with elevated role
-- Dependency: relies on Trinity's self-contained refactor being stable first
+1. `UserOAuthTokens` table (`scripts/database/table-create.sql` line 483) — per-user, per-platform SQL table with `AccessToken`, `RefreshToken`, expiry columns, `LastNotifiedAt`. Used by LinkedIn `PostLink.cs` and `NotifyExpiringTokens.cs`. Platform-agnostic by design (FK to `SocialMediaPlatforms`).
 
-**Learnings:**
-- Site admin CRUD is a planned follow-up, not a blocker for per-user refactors
-- Self-contained directive makes admin override simple: admin controller just delegates to existing typed managers/services with `?adminOverride=true` or separate logic path
-- Enqueuing this now keeps it visible for sprint planning
+2. Settings Manager KV path (`publisher-{ownerOid}-{platform}-{settingName}`) via `KeyVaultSecretNameBuilder` — used for app credentials (AppSecret, ClientSecret). For LinkedIn, also has dead `GetAccessTokenAsync`/`StoreAccessTokenAsync`/`HasAccessToken` that were never wired into the publisher pipeline.
 
----
+3. Global KV path (`jjg-net-facebook-{token-name}-access-token`) — used ONLY by `Facebook/RefreshTokens.cs` via `IFacebookApplicationSettings`. This is a non-user-scoped approach that is disconnected from `PostPageStatus.cs`, which reads per-user KV tokens instead.
 
----
+**Key file paths:**
+- `src/Functions/Facebook/RefreshTokens.cs` — uses `IFacebookApplicationSettings` (global) + `ITokenRefreshManager`; does NOT use `IUserPublisherFacebookSettingsManager`
+- `src/Functions/Facebook/PostPageStatus.cs` — uses `IUserPublisherFacebookSettingsManager` (per-user KV); does NOT use `IUserOAuthTokenManager`
+- `src/Functions/LinkedIn/PostLink.cs` — uses `IUserOAuthTokenManager` (SQL table) for token; uses `IUserPublisherLinkedInSettingsManager` for `AuthorId` only
+- `src/Functions/LinkedIn/NotifyExpiringTokens.cs` — queries `UserOAuthTokens` expiry window
+- `src/Managers/UserPublisherLinkedInSettingsManager.cs` — has dead `GetAccessTokenAsync`/`StoreAccessTokenAsync` (KV path never called by pipeline)
+- `src/Managers/UserPublisherFacebookSettingsManager.cs` — has `GetPageAccessTokenAsync`, `GetLongLivedAccessTokenAsync`, etc. (KV per-user); these are what PostPageStatus uses
+- `src/Domain/Interfaces/IUserOAuthTokenDataStore.cs` — needs `GetExpiringByPlatformAsync()` added
+- `src/Domain/Constants/SocialMediaPlatformIds.cs` — LinkedIn = 3, Facebook = 4
 
-## 2026-05-17 — Created GitHub Issues #978 and #979: Onboarding and Default Templates
-
-**Status:** ✅ COMPLETE — Issues created
-
-**Issue #978: feat: Add post-approval user onboarding setup flow**
-- **Goal:** Create guided onboarding flow post-approval for configuring collectors, publishers, and message templates
-- **Key requirements:** Multi-step flow showing status, skip capability, navigation indicator
-- **Integration point:** Existing `UseUserApprovalGate()` middleware in Web project
-- **URL:** https://github.com/jguadagno/jjgnet-broadcast/issues/978
-
-**Issue #979: feat: Provide default message templates for new publishers**
-- **Goal:** Offer system-provided default templates for Bluesky, Twitter, LinkedIn, Facebook
-- **Key requirements:** One-action adoption from defaults, full customization possible, no forced defaults if user already has template
-- **Related:** References Issue #978 — onboarding flow's template step should offer these defaults
-- **Service:** `MessageTemplateService.cs` (Web layer)
-- **URL:** https://github.com/jguadagno/jjgnet-broadcast/issues/979
-
-**Decisions:**
-- Both issues labeled `enhancement` (no `squad:*` labels — future work, not assigned)
-- Issue #979 explicitly references Issue #978 for workflow integration
-- Issues complement recent publisher/collector settings refactor work
+**Architectural decision made:**
+- `UserOAuthTokens` is the authoritative store for per-user OAuth access tokens with expiry (both LinkedIn and Facebook should use it)
+- Settings Manager (KV + SQL flags) is for app credentials only (AppSecret, ClientSecret, AppId, PageId)
+- Facebook `RefreshTokens.cs` needs full rewrite to iterate per-user via `UserOAuthTokens`
+- LinkedIn `HasAccessToken` KV path is dead code — should be removed
+- `TokenRefreshes` table becomes obsolete once Facebook migrates; defer deletion to cleanup pass
 
 ---
 
----
+### Learnings — 2026-05-25: AutoMapper Blast Radius — EngagementDataStore
 
-## 2026-05-18 — Publisher Architecture Analysis
+**Task:** Assess whether Trinity's manual mapping (`ApplyEngagementValues`/`ApplyTalkValues`) should be replaced with a corrected AutoMapper profile.
 
-**Status:** ✅ COMPLETE — Proposal written to `.squad/decisions/inbox/neo-publisher-architecture-proposal.md`
+**Findings:**
 
-**Scope:** Full analysis of Bluesky/Facebook/LinkedIn/Twitter publisher managers and their Azure Functions.
+1. **Both manual helpers are complete.** Every scalar field on `Domain.Models.Engagement` and `Domain.Models.Talk` is covered. `Talks`, `SocialMediaPlatforms`, and PKs are intentionally excluded.
 
-**Key findings:**
+2. **Root cause of the original bug:** `BroadcastingProfile.cs` line `CreateMap<Models.Engagement, Domain.Models.Engagement>().ReverseMap()` generates a domain→data map that copies the `Talks` collection from the domain object — replacing the EF-tracked `ICollection<Talk>` with untracked AutoMapper-created objects, causing the "Detached" error.
 
-1. **All four publisher managers carry five composition dependencies they should not own**: `ISocialMediaPlatformManager`, `IMessageTemplateDataStore`, `ISyndicationFeedItemManager`, `IYouTubeItemManager`, `IEngagementManager`. Their `ComposeMessageAsync()` + `TryRenderTemplateAsync()` logic is copy-pasted verbatim across all four.
+3. **The fix pattern is already established in this codebase.** `Domain.Models.Talk → Models.Talk` already has `.ForMember(d => d.Engagement, opt => opt.Ignore())`. `MessageTemplate` and `SyndicationFeedItem` do the same for their nav props. The Engagement mapping simply needs the same treatment.
 
-2. **Composition is inconsistent across function types**: ScheduledItemFired functions delegate to manager; NewSyndication/RandomPost functions compose inline with hardcoded text. No Scriban in the non-scheduled path.
+4. **Blast radius is minimal.** Only one extra call site uses the generated reverse map (`AddTalkToEngagementAsync`, new-entity path). Ignoring `Talks` and `SocialMediaPlatforms` in that path is safe.
 
-3. **`Twitter/SendTweet.cs` bypasses `TwitterManager` entirely** — builds its own `TwitterContext` from per-user credentials and calls `twitterContext.TweetAsync()` directly. The `TwitterContext` injected into `TwitterManager` is a global shared context — irreconcilable with per-user posting.
+5. **Timestamp logic must stay in data store code.** `CreatedOn` and `LastUpdatedOn` have conditional defaults (UtcNow fallback, isNew gate) that cannot be deterministically expressed in a mapping profile. Keep as explicit post-map assignments.
 
-4. **`Bluesky/SendPost.cs` reimplements PostBuilder logic** that already exists in `BlueskyManager.PublishAsync()`.
-
-5. **`MessageTemplate.CreatedByEntraOid` field is unused** in template lookup — all users share the same template; user-scoped templates are architecturally impossible today.
-
-6. **Four redundant queue DTOs** (`BlueskyPostMessage`, `TwitterTweetMessage`, `FacebookPostStatus`, `LinkedInPostLink`) for structurally identical data. `LinkedInPostLink` in `Managers.LinkedIn.Models` referenced by Functions project — layering violation.
-
-**Proposed solution (6 phases):**
-- Phase 1: Extract `IPostComposer`/`PostComposer` (centralizes Scriban rendering)
-- Phase 2: Extract `IMessageTemplateLookup` (user-scoped template resolution)
-- Phase 3: Migrate all `Process*` Functions to use new utilities
-- Phase 4: Strip composition from all four publisher managers
-- Phase 5: Unify `Send*` Functions to use `manager.PublishAsync(SocialMediaPublishRequest)`
-- Phase 6 (optional): Unify queue DTOs to `SocialMediaPublishRequest`
-
-**Key files examined:**
-- `src/JosephGuadagno.Broadcasting.Managers.Bluesky/BlueskyManager.cs`
-- `src/JosephGuadagno.Broadcasting.Managers.Facebook/FacebookManager.cs`
-- `src/JosephGuadagno.Broadcasting.Managers.LinkedIn/LinkedInManager.cs`
-- `src/JosephGuadagno.Broadcasting.Managers.Twitter/TwitterManager.cs`
-- `src/JosephGuadagno.Broadcasting.Functions/Bluesky/{SendPost,ProcessScheduledItemFired,ProcessNewSyndicationDataFired,ProcessNewRandomPost}.cs`
-- `src/JosephGuadagno.Broadcasting.Functions/Twitter/{SendTweet,ProcessScheduledItemFired,ProcessNewSyndicationDataFired}.cs`
-- `src/JosephGuadagno.Broadcasting.Functions/Facebook/{PostPageStatus,ProcessScheduledItemFired,ProcessNewSyndicationDataFired,ProcessNewRandomPost}.cs`
-- `src/JosephGuadagno.Broadcasting.Functions/LinkedIn/{PostLink,ProcessScheduledItemFired,ProcessNewSyndicationDataFired}.cs`
-- `src/JosephGuadagno.Broadcasting.Domain/Models/SocialMediaPublishRequest.cs`
-- `src/JosephGuadagno.Broadcasting.Domain/Models/MessageTemplate.cs`
-- `src/JosephGuadagno.Broadcasting.Domain/Interfaces/ISocialMediaPublisher.cs`
+**Recommendation filed:** `.squad/decisions/inbox/neo-engagement-automapper-blast-radius.md` — REFACTOR (low risk, 3-line profile change + delete `ApplyEngagementValues`).
 
 ---
 
-## Learnings
+## Event Grid vs Per-User Dispatch Analysis — 2026-05-26
 
-### 2026-05-15 — PR #963 Formal Review: Publisher Settings Phase 2
+**Trigger:** Issue #995 — Random Post interface needed (Joseph's architecture question)
 
+### Findings
+
+**Event Grid is confirmed incompatible with per-user publisher selection.** Subscriptions are statically registered infrastructure; every subscriber on a topic gets every event. Per-user routing within Event Grid requires either per-user topic provisioning (unmanageable) or embedding routing hints in the payload and having every subscriber check them anyway (defeats the purpose).
+
+**Current `RandomPosts.cs`** picks a single random post for the system-level collector owner OID using global `IRandomPostSettings` (app config). It is not per-user today.
+
+**The four `ProcessNewRandomPost` functions** (Bluesky, Facebook, LinkedIn, Twitter) are purely intermediate — they bridge an Event Grid event to a Storage Queue. Storage Queues are already the actual delivery mechanism. Event Grid is only a fan-out hop.
+
+### Architecture Decision Filed
+
+Decision: replace Event Grid publisher dispatch with direct per-user queue dispatch. The publisher function iterates all users with Random Post enabled, applies per-user settings, and enqueues `SocialMediaPublishRequest` directly to the appropriate platform queues — only for platforms that user has configured.
+
+**New tables needed:** `UserRandomPostSettings` (per-user frequency, cutoff, excluded categories), `UserPublisherEventTypes` (user × platform × event type junction).
+
+**File:** `.squad/decisions/inbox/neo-event-grid-vs-per-user-dispatch.md`
+
+**Comment posted:** GitHub issue #995
+
+### Key File Paths (for future reference)
+
+- `src/Functions/Publishers/RandomPosts.cs` — global timer, single OID, Event Grid dispatch
+- `src/Data/EventPublisher.cs` — all Event Grid publish methods
+- `src/Functions/event-grid-simulator-config.json` — five topics: new-random-post, new-speaking-engagement, new-syndication-feed-item, new-youtube-item, scheduled-item-fired
+- `src/Domain/Interfaces/IRandomPostSettings.cs` — global settings (ExcludedCategories, CutoffDate)
+- `scripts/database/table-create.sql` — `UserPublisherSettings` table is the right FK anchor for event-type flags
+
+---
+
+### Architecture confirmation — 2026-05-26T08:59:04.287-07:00
+
+- Joseph confirmed the **Option B** direction: use dedicated normalized
+  tables for user routing and scheduling instead of extending the existing
+  `UserPublisher*Settings` tables with event flags.
+- Scheduling is **CRON-like** and supports **multiple schedules per event
+  type per user**, with each schedule owning its target publishers.
+- **Event Grid is removed for collector events too**; all event types move
+  to user-selectable publisher routing.
+- `Publishers\RandomPosts.cs` should run **every minute** as one global
+  poller across all users, mirroring the broad execution model of
+  `Publishers\ScheduledItems.cs`.
+- The new `UserRandomPostSettings` table should be **seeded from Joseph's
+  current global defaults** before the global settings path is removed.

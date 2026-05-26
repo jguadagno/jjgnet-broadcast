@@ -17,7 +17,7 @@ public class UserCollectorFeedSourceManager(IUserCollectorFeedSourceDataStore da
         string ownerOid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerOid);
-        return dataStore.GetByUserAsync(ownerOid, cancellationToken);
+        return dataStore.GetByUserAsync(ownerOid, cancellationToken: cancellationToken);
     }
 
     /// <inheritdoc />

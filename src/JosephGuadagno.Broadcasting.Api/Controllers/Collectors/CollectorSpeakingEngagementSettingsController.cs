@@ -21,6 +21,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
 [Produces("application/json")]
 public class CollectorSpeakingEngagementSettingsController(
     IUserCollectorSpeakingEngagementManager speakingEngagementManager,
+    IOnboardingManager onboardingManager,
     ILogger<CollectorSpeakingEngagementSettingsController> logger,
     IMapper mapper) : ControllerBase
 {
@@ -154,6 +155,7 @@ public class CollectorSpeakingEngagementSettingsController(
             return BadRequest("Unable to save speaking engagement configuration");
         }
 
+        await onboardingManager.RecalculateAsync(resolvedOwnerOid);
         return Ok(mapper.Map<UserCollectorSpeakingEngagementResponse>(saved));
     }
 
@@ -209,6 +211,7 @@ public class CollectorSpeakingEngagementSettingsController(
             return BadRequest("Unable to update speaking engagement configuration");
         }
 
+        await onboardingManager.RecalculateAsync(existing.CreatedByEntraOid);
         return Ok(mapper.Map<UserCollectorSpeakingEngagementResponse>(saved));
     }
 
@@ -255,6 +258,7 @@ public class CollectorSpeakingEngagementSettingsController(
             return NotFound();
         }
 
+        await onboardingManager.RecalculateAsync(config.CreatedByEntraOid);
         return NoContent();
     }
 }

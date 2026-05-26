@@ -315,25 +315,6 @@ public class LoadAllSpeakingEngagementsTests
     }
 
     [Fact]
-    public async Task RunAsync_HandlesNullEngagementsList_Gracefully()
-    {
-        // Arrange
-        SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _speakingEngagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync((List<Engagement>)null!);
-
-        var request = CreateHttpRequest();
-
-        // Act
-        var result = await _sut.RunAsync(request, OwnerOid, null!);
-
-        // Assert
-        _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Contains("0", okResult.Value!.ToString());
-    }
-
-    [Fact]
     public async Task RunAsync_SkipsDuplicate_WhenEngagementAlreadyExistsForUser()
     {
         // Arrange

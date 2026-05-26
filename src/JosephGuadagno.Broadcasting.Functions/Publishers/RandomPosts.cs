@@ -34,7 +34,7 @@ public class RandomPosts(
         var ownerOid = await syndicationFeedItemManager.GetCollectorOwnerOidAsync();
         if (string.IsNullOrWhiteSpace(ownerOid))
         {
-            logger.LogWarning("Could not resolve a collector owner OID from existing syndication feed source records.");
+            logger.LogWarning("Could not resolve a collector owner OID from existing syndication feed source records");
             return;
         }
         var syndicationFeedItem = await syndicationFeedItemManager.GetRandomSyndicationDataAsync(ownerOid, cutoffDate, randomPostSettings.ExcludedCategories);

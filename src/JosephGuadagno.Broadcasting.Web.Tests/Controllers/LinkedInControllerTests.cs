@@ -1,3 +1,4 @@
+using FluentAssertions;
 using Moq;
 using Moq.Protected;
 
@@ -177,24 +178,20 @@ public class LinkedInControllerTests
     [Fact]
     public async Task Index_WhenOidClaimMissing_ShouldReturnViewWithHasTokenFalse()
     {
-        // Arrange
         var controller = CreateController();
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = BuildAuthenticatedHttpContext(oid: null)
         };
 
-        // Act
-        var result = await controller.Index();
+        var act = () => controller.Index();
 
-        // Assert
-        var viewResult = Assert.IsType<ViewResult>(result);
-        var model = Assert.IsType<SavedTokenInfo>(viewResult.Model);
-        Assert.False(model.HasToken);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*Entra Object ID claim not found*");
     }
 
     [Fact]
-    public async Task RefreshToken_WhenCallbackUrlIsValid_ShouldRedirectToLinkedInAuthUrl()
+    public void RefreshToken_WhenCallbackUrlIsValid_ShouldRedirectToLinkedInAuthUrl()
     {
         // Arrange
         var controller = CreateController();
@@ -211,7 +208,7 @@ public class LinkedInControllerTests
         controller.Url = mockUrlHelper.Object;
 
         // Act
-        var result = await controller.RefreshToken();
+        var result = controller.RefreshToken();
 
         // Assert
         var redirectResult = Assert.IsType<RedirectResult>(result);

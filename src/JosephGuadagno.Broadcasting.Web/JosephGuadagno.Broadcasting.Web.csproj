@@ -43,9 +43,10 @@
         <!-- Override transitive Microsoft.AspNetCore.DataProtection pulled in by Microsoft.Identity.Web 4.8.0.
              Version 10.0.0 is Critical (GHSA-9mv3-2cwr-p262); pin to 10.0.7 which contains the fix. -->
         <!-- Security: override transitive 10.0.2 → 13.0.3 to resolve GHSA-5crp-9r3c-p9vr (High: NU1903) -->
+        <PackageReference Include="Aspire.Azure.Data.Tables" Version="13.3.5" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-        <PackageReference Include="Aspire.Azure.Storage.Queues" Version="13.3.3" />
-        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.3.3" />
+        <PackageReference Include="Aspire.Azure.Storage.Queues" Version="13.3.5" />
+        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.3.5" />
         <PackageReference Include="AutoMapper" Version="16.1.1" />
         <PackageReference Include="Azure.Identity" Version="1.21.0" />
         <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.5.0" />
@@ -75,6 +76,7 @@
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.Managers\JosephGuadagno.Broadcasting.Managers.csproj" />
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.Serilog\JosephGuadagno.Broadcasting.Serilog.csproj" />
         <ProjectReference Include="..\JosephGuadagno.Broadcasting.ServiceDefaults\JosephGuadagno.Broadcasting.ServiceDefaults.csproj" />
+        <ProjectReference Include="..\JosephGuadagno.Broadcasting.Composers\JosephGuadagno.Broadcasting.Composers.csproj" />
     </ItemGroup>
     <ItemGroup>
         <None Remove=".gitignore" />

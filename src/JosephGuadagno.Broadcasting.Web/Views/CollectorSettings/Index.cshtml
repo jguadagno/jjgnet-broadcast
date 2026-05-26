@@ -9,7 +9,7 @@
 <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
 		<div>
 				<h1 class="mb-1">
-						<i class="bi bi-collection me-2"></i>Collector Settings
+						<i class="bi @CollectorIcons.Collection me-2"></i>Collector Settings
 				</h1>
 				<p class="text-muted mb-0">
 						Configure the RSS/Atom/JSON feeds, YouTube channels, and speaking engagements collector.
@@ -29,7 +29,7 @@
 <div class="card mb-4">
 		<div class="card-header d-flex justify-content-between align-items-center">
 				<h3 class="mb-0">
-						<i class="bi bi-rss me-2"></i>RSS / Atom / JSON Feed Sources
+						<i class="bi @CollectorIcons.FeedSource.Icon me-2"></i>RSS / Atom / JSON Feed Sources
 				</h3>
 				<a asp-controller="CollectorFeedSources" asp-action="Add" class="btn btn-primary">
 						<i class="bi bi-plus-circle me-1"></i>Add Feed Source
@@ -86,7 +86,7 @@
 <div class="card mb-4">
 		<div class="card-header d-flex justify-content-between align-items-center">
 				<h3 class="mb-0">
-						<i class="bi bi-youtube me-2"></i>YouTube Channels
+						<i class="bi @CollectorIcons.YouTubeChannel.Icon me-2"></i>YouTube Channels
 				</h3>
 				<a asp-controller="CollectorYouTubeChannels" asp-action="Add" class="btn btn-primary">
 						<i class="bi bi-plus-circle me-1"></i>Add YouTube Channel
@@ -141,7 +141,7 @@
 <div class="card mb-4">
 		<div class="card-header d-flex justify-content-between align-items-center">
 				<h3 class="mb-0">
-						<i class="bi bi-mic-fill me-2"></i>Speaking Engagements
+						<i class="bi @CollectorIcons.SpeakingEngagement.Icon me-2"></i>Speaking Engagements
 				</h3>
 				<a asp-controller="CollectorSpeakingEngagements" asp-action="Add" class="btn btn-primary">
 						<i class="bi bi-plus-circle me-1"></i>Add Speaking Engagement

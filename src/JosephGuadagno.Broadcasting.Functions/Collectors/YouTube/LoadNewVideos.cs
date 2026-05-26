@@ -2,7 +2,6 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Models;
@@ -115,7 +114,7 @@ public class LoadNewVideos(
                     try
                     {
                         var saveResult = await SavePipeline.ExecuteAsync(
-                            async ct => await youTubeItemManager.SaveAsync(item));
+                            async ct => await youTubeItemManager.SaveAsync(item, ct));
 
                         if (!saveResult.IsSuccess || saveResult.Value is null)
                         {
@@ -138,7 +137,6 @@ public class LoadNewVideos(
                         logger.LogError(e,
                             "Failed to save the video with the VideoId of: '{VideoId}' Url:'{Url}'. Exception: {ExceptionMessage}",
                             item.VideoId, item.Url, e);
-                        continue;
                     }
                 }
 

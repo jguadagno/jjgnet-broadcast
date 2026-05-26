@@ -2,7 +2,6 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
-using JosephGuadagno.Broadcasting.Functions.Interfaces;
 using JosephGuadagno.Broadcasting.Functions.Models;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using JosephGuadagno.Extensions.Types;
@@ -27,16 +26,16 @@ public class LoadAllVideos(
     public async Task<IActionResult> RunAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post")]
         HttpRequest req,
-        string ownerOid,
+        string userOid,
         string checkFrom)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.CollectorsYouTubeLoadAllVideos, startedAt);
 
-        if (string.IsNullOrWhiteSpace(ownerOid))
+        if (string.IsNullOrWhiteSpace(userOid))
         {
-            return new BadRequestObjectResult("The 'ownerOid' query parameter is required.");
+            return new BadRequestObjectResult("The 'userOid' query parameter is required.");
         }
 
         // Check for the date to check from
@@ -55,7 +54,7 @@ public class LoadAllVideos(
         {
 
             logger.LogDebug("Getting all items from YouTube for the playlist since '{DateToCheckFrom}'", dateToCheckFrom);
-            var newItems = await youTubeReader.GetAsync(ownerOid, dateToCheckFrom);
+            var newItems = await youTubeReader.GetAsync(userOid, dateToCheckFrom);
 
             // If there is nothing new, save the last checked value and exit
             if (newItems.Count == 0)
@@ -69,7 +68,7 @@ public class LoadAllVideos(
             foreach (var item in newItems)
             {
                 // Skip if item already exists for this user
-                if (!await youTubeItemManager.IsVideoUniqueToUser(item.VideoId, ownerOid))
+                if (!await youTubeItemManager.IsVideoUniqueToUser(item.VideoId, userOid))
                 {
                     logger.LogDebug("Skipping duplicate YouTube video with VideoId: '{VideoId}'", item.VideoId);
                     continue;
@@ -109,13 +108,13 @@ public class LoadAllVideos(
 
             // Save the last checked value
             var feedCheck =
-                await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos, ownerOid) ??
+                await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos, userOid) ??
                 new FeedCheck
                 {
                     Name = ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos,
                     LastCheckedFeed = startedAt,
                     LastItemAddedOrUpdated = DateTimeOffset.Now,
-                    EntraOId = ownerOid
+                    EntraOId = userOid
                 };
             var latestAdded = newItems.Max(item => item.PublicationDate);
             var latestUpdated = newItems.Max(item => item.LastUpdatedOn);

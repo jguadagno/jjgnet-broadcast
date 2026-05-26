@@ -29,7 +29,7 @@ WHERE [CredentialSetupDocumentationUrl] IS NULL
 UPDATE [dbo].[SocialMediaPlatforms]
 SET [CredentialSetupDocumentationUrl] = N'/help/socialMediaPlatforms/bluesky'
 WHERE [CredentialSetupDocumentationUrl] IS NULL
-  AND [Name] = N'BlueSky';
+  AND [Name] = N'Bluesky';
 
 UPDATE [dbo].[SocialMediaPlatforms]
 SET [CredentialSetupDocumentationUrl] = N'/help/socialMediaPlatforms/linkedin'

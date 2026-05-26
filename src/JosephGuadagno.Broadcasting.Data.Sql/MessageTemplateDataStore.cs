@@ -126,9 +126,23 @@ public class MessageTemplateDataStore(BroadcastingContext broadcastingContext, I
         query = ApplyFilterAndSort(query, filter, sortBy, sortDescending);
         var totalCount = await query.CountAsync(cancellationToken);
         var dbItems = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+
+        var distinctOids = dbItems.Select(mt => mt.CreatedByEntraOid).Distinct().ToList();
+        var ownerNames = await broadcastingContext.ApplicationUsers
+            .AsNoTracking()
+            .Where(au => distinctOids.Contains(au.EntraObjectId))
+            .ToDictionaryAsync(au => au.EntraObjectId, au => au.DisplayName, cancellationToken);
+
+        var items = dbItems.Select(mt =>
+        {
+            var domain = mapper.Map<Domain.Models.MessageTemplate>(mt);
+            domain.OwnerDisplayName = ownerNames.GetValueOrDefault(mt.CreatedByEntraOid);
+            return domain;
+        }).ToList();
+
         return new Domain.Models.PagedResult<Domain.Models.MessageTemplate>
         {
-            Items = mapper.Map<List<Domain.Models.MessageTemplate>>(dbItems),
+            Items = items,
             TotalCount = totalCount
         };
     }

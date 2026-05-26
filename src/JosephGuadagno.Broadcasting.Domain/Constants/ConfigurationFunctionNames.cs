@@ -25,8 +25,6 @@ public static class ConfigurationFunctionNames
     public const string TwitterProcessScheduledItemFired = "TwitterProcessScheduledItemFired";
     public const string TwitterProcessRandomPostFired = "TwitterProcessRandomPostFired";
     public const string LinkedInPostLink = "LinkedInPostLink";
-    public const string LinkedInPostText = "LinkedInPostText";
-    public const string LinkedInPostImage = "LinkedInPostImage";
     public const string LinkedInProcessNewSyndicationDataFired = "LinkedInProcessNewSyndicationDataFired";
     public const string LinkedInProcessNewYouTubeDataFired = "LinkedInProcessNewYouTubeDataFired";
     public const string LinkedInProcessScheduledItemFired = "LinkedInProcessScheduledItemFired";

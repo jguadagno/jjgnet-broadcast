@@ -19,6 +19,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Publishers;
 [Produces("application/json")]
 public class TwitterSettingsController(
     IUserPublisherTwitterSettingsManager manager,
+    IOnboardingManager onboardingManager,
     ILogger<TwitterSettingsController> logger,
     IMapper mapper) : ControllerBase
 {
@@ -115,6 +116,7 @@ public class TwitterSettingsController(
             return BadRequest("Unable to save Twitter publisher settings");
         }
 
+        await onboardingManager.RecalculateAsync(resolvedOwnerOid);
         return Ok(mapper.Map<TwitterSettingsResponse>(saved));
     }
 
@@ -142,6 +144,7 @@ public class TwitterSettingsController(
             return NotFound();
         }
 
+        await onboardingManager.RecalculateAsync(resolvedOwnerOid);
         return NoContent();
     }
 }

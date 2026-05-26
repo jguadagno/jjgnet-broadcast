@@ -21,6 +21,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
 [Produces("application/json")]
 public class CollectorYouTubeSettingsController(
     IUserCollectorYouTubeChannelManager youTubeChannelManager,
+    IOnboardingManager onboardingManager,
     ILogger<CollectorYouTubeSettingsController> logger,
     IMapper mapper) : ControllerBase
 {
@@ -162,6 +163,7 @@ public class CollectorYouTubeSettingsController(
             return BadRequest("Unable to save YouTube channel configuration");
         }
 
+        await onboardingManager.RecalculateAsync(resolvedOwnerOid);
         return Ok(mapper.Map<UserCollectorYouTubeChannelResponse>(saved));
     }
 
@@ -230,6 +232,7 @@ public class CollectorYouTubeSettingsController(
             return BadRequest("Unable to update YouTube channel configuration");
         }
 
+        await onboardingManager.RecalculateAsync(existing.CreatedByEntraOid);
         return Ok(mapper.Map<UserCollectorYouTubeChannelResponse>(saved));
     }
 
@@ -276,6 +279,7 @@ public class CollectorYouTubeSettingsController(
             return NotFound();
         }
 
+        await onboardingManager.RecalculateAsync(config.CreatedByEntraOid);
         return NoContent();
     }
 }

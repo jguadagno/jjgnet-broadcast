@@ -18,22 +18,12 @@ public class BlueskyManagerUnitTests
     private readonly Mock<ILogger<BlueskyManager>> _mockLogger;
     private readonly Mock<IBlueskySettings> _mockBlueskySettings;
     private readonly HttpClient _httpClient;
-    private readonly Mock<ISocialMediaPlatformManager> _mockSocialMediaPlatformManager;
-    private readonly Mock<IMessageTemplateDataStore> _mockMessageTemplateDataStore;
-    private readonly Mock<ISyndicationFeedItemManager> _mockSyndicationFeedItemManager;
-    private readonly Mock<IYouTubeItemManager> _mockYouTubeItemManager;
-    private readonly Mock<IEngagementManager> _mockEngagementManager;
 
     public BlueskyManagerUnitTests()
     {
         _mockLogger = new Mock<ILogger<BlueskyManager>>();
         _mockBlueskySettings = new Mock<IBlueskySettings>();
         _httpClient = new HttpClient();
-        _mockSocialMediaPlatformManager = new Mock<ISocialMediaPlatformManager>();
-        _mockMessageTemplateDataStore = new Mock<IMessageTemplateDataStore>();
-        _mockSyndicationFeedItemManager = new Mock<ISyndicationFeedItemManager>();
-        _mockYouTubeItemManager = new Mock<IYouTubeItemManager>();
-        _mockEngagementManager = new Mock<IEngagementManager>();
 
         // Setup default settings
         _mockBlueskySettings.Setup(s => s.BlueskyUserName).Returns("testuser");
@@ -43,12 +33,7 @@ public class BlueskyManagerUnitTests
     private BlueskyManager CreateSut() => new(
         _httpClient,
         _mockBlueskySettings.Object,
-        _mockLogger.Object,
-        _mockSocialMediaPlatformManager.Object,
-        _mockMessageTemplateDataStore.Object,
-        _mockSyndicationFeedItemManager.Object,
-        _mockYouTubeItemManager.Object,
-        _mockEngagementManager.Object);
+        _mockLogger.Object);
 
     #region GetEmbeddedExternalRecord Tests
 

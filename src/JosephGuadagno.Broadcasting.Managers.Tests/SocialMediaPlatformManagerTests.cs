@@ -28,7 +28,7 @@ public class SocialMediaPlatformManagerTests
         var platforms = new List<SocialMediaPlatform>
         {
             new SocialMediaPlatform { Id = 1, Name = "Twitter", IsActive = true },
-            new SocialMediaPlatform { Id = 2, Name = "BlueSky", IsActive = true }
+            new SocialMediaPlatform { Id = 2, Name = "Bluesky", IsActive = true }
         };
         _dataStore
             .Setup(d => d.GetAllAsync(false, default))
@@ -280,18 +280,18 @@ public class SocialMediaPlatformManagerTests
     public async Task GetByNameAsync_WhenPlatformExists_ShouldReturnPlatform()
     {
         // Arrange
-        var platform = new SocialMediaPlatform { Id = 3, Name = "BlueSky", IsActive = true };
+        var platform = new SocialMediaPlatform { Id = 3, Name = "Bluesky", IsActive = true };
         _dataStore
-            .Setup(d => d.GetByNameAsync("BlueSky", default))
+            .Setup(d => d.GetByNameAsync("Bluesky", default))
             .ReturnsAsync(platform);
 
         // Act
-        var result = await _sut.GetByNameAsync("BlueSky");
+        var result = await _sut.GetByNameAsync("Bluesky");
 
         // Assert
         result.Should().NotBeNull();
-        result!.Name.Should().Be("BlueSky");
-        _dataStore.Verify(d => d.GetByNameAsync("BlueSky", default), Times.Once);
+        result!.Name.Should().Be("Bluesky");
+        _dataStore.Verify(d => d.GetByNameAsync("Bluesky", default), Times.Once);
     }
 
     [Fact]
@@ -456,15 +456,15 @@ public class SocialMediaPlatformManagerTests
         // Arrange — pre-populate list and by-id caches
         var platformList = new List<SocialMediaPlatform>
         {
-            new SocialMediaPlatform { Id = 3, Name = "BlueSky", IsActive = true }
+            new SocialMediaPlatform { Id = 3, Name = "Bluesky", IsActive = true }
         };
-        var platform = new SocialMediaPlatform { Id = 3, Name = "BlueSky", IsActive = true };
+        var platform = new SocialMediaPlatform { Id = 3, Name = "Bluesky", IsActive = true };
         _dataStore.Setup(d => d.GetAllAsync(false, It.IsAny<CancellationToken>())).ReturnsAsync(platformList);
         _dataStore.Setup(d => d.GetAsync(3, It.IsAny<CancellationToken>())).ReturnsAsync(platform);
         await _sut.GetAllAsync();
         await _sut.GetByIdAsync(3);
 
-        var updated = new SocialMediaPlatform { Id = 3, Name = "BlueSky Updated" };
+        var updated = new SocialMediaPlatform { Id = 3, Name = "Bluesky Updated" };
         _dataStore.Setup(d => d.UpdateAsync(It.IsAny<SocialMediaPlatform>(), default)).ReturnsAsync(updated);
 
         // Act

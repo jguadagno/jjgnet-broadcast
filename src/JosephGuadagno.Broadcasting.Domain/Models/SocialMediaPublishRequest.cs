@@ -54,4 +54,19 @@ public class SocialMediaPublishRequest
     /// Optional hashtags appended by platforms that support them.
     /// </summary>
     public IReadOnlyCollection<string>? Hashtags { get; set; }
+
+    /// <summary>
+    /// The Entra Object ID of the user who owns the content.
+    /// Used by the Send function to resolve per-user credentials before calling PublishAsync.
+    /// </summary>
+    public string? OwnerEntraOid { get; set; }
+
+    /// <summary>OAuth consumer key (Twitter only).</summary>
+    public string? ConsumerKey { get; set; }
+
+    /// <summary>OAuth consumer secret (Twitter only).</summary>
+    public string? ConsumerSecret { get; set; }
+
+    /// <summary>OAuth access token secret (Twitter only).</summary>
+    public string? AccessTokenSecret { get; set; }
 }

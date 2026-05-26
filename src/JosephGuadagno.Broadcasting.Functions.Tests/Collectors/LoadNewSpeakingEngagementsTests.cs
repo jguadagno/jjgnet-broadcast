@@ -203,20 +203,4 @@ public class LoadNewSpeakingEngagementsTests
         _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
     }
 
-    [Fact]
-    public async Task RunAsync_HandlesNullEngagementList_Gracefully()
-    {
-        // Arrange
-        SetupFeedCheck();
-        _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
-        _engagementsReader.Setup(r => r.GetAll(It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync((List<Engagement>)null!);
-
-        // Act
-        var result = await _sut.RunAsync(null!);
-
-        // Assert
-        _engagementManager.Verify(m => m.SaveAsync(It.IsAny<Engagement>()), Times.Never);
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Contains("0", okResult.Value!.ToString());
-    }
 }

@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Managers;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -13,15 +14,30 @@ namespace JosephGuadagno.Broadcasting.Web.Tests;
 public class EntraClaimsTransformationTests
 {
     private readonly Mock<IUserApprovalManager> _mockUserApprovalManager;
+    private readonly Mock<IMemoryCache> _mockMemoryCache;
     private readonly Mock<ILogger<EntraClaimsTransformation>> _mockLogger;
     private readonly EntraClaimsTransformation _sut;
 
     public EntraClaimsTransformationTests()
     {
         _mockUserApprovalManager = new Mock<IUserApprovalManager>();
+        _mockMemoryCache = new Mock<IMemoryCache>();
         _mockLogger = new Mock<ILogger<EntraClaimsTransformation>>();
+
+        // Default: cache miss — TryGetValue(object key, out object value) returns false
+        object? nullOut = null;
+        _mockMemoryCache
+            .Setup(c => c.TryGetValue(It.IsAny<object>(), out nullOut))
+            .Returns(false);
+
+        // CreateEntry stub so Set() extensions don't throw
+        _mockMemoryCache
+            .Setup(c => c.CreateEntry(It.IsAny<object>()))
+            .Returns(Mock.Of<ICacheEntry>());
+
         _sut = new EntraClaimsTransformation(
             _mockUserApprovalManager.Object,
+            _mockMemoryCache.Object,
             _mockLogger.Object);
     }
 

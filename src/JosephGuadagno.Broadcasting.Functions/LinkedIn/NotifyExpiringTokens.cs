@@ -54,7 +54,7 @@ public class NotifyExpiringTokens(
 
         if (expiringTokens.Count == 0)
         {
-            logger.LogDebug("{FunctionName}: No expiring tokens found for window [{From:O}, {To:O}] using template '{TemplateName}'.",
+            logger.LogDebug("{FunctionName}: No expiring tokens found for window [{From:O}, {To:O}] using template '{TemplateName}'",
                 ConfigurationFunctionNames.LinkedInNotifyExpiringTokens, from, to, templateName);
             return;
         }
@@ -62,7 +62,7 @@ public class NotifyExpiringTokens(
         var template = await emailTemplateManager.GetTemplateAsync(templateName, cancellationToken);
         if (template is null)
         {
-            logger.LogWarning("{FunctionName}: Email template '{TemplateName}' not found. Skipping notification pass.",
+            logger.LogWarning("{FunctionName}: Email template '{TemplateName}' not found. Skipping notification pass",
                 ConfigurationFunctionNames.LinkedInNotifyExpiringTokens, templateName);
             return;
         }
@@ -74,7 +74,7 @@ public class NotifyExpiringTokens(
             if (token.LastNotifiedAt.HasValue &&
                 token.LastNotifiedAt.Value.UtcDateTime.Date >= todayUtc)
             {
-                logger.LogDebug("{FunctionName}: Skipping already-notified token for OID {OwnerOid}, platform {PlatformId} (last notified: {LastNotifiedAt:O}).",
+                logger.LogDebug("{FunctionName}: Skipping already-notified token for OID {OwnerOid}, platform {PlatformId} (last notified: {LastNotifiedAt:O})",
                     ConfigurationFunctionNames.LinkedInNotifyExpiringTokens,
                     LogSanitizer.Sanitize(token.CreatedByEntraOid),
                     token.SocialMediaPlatformId,
@@ -97,7 +97,7 @@ public class NotifyExpiringTokens(
 
         if (user is null || string.IsNullOrWhiteSpace(user.Email))
         {
-            logger.LogWarning("{FunctionName}: Cannot send notification for OID {OwnerOid}, platform {PlatformId}: user not found or has no email address.",
+            logger.LogWarning("{FunctionName}: Cannot send notification for OID {OwnerOid}, platform {PlatformId}: user not found or has no email address",
                 ConfigurationFunctionNames.LinkedInNotifyExpiringTokens,
                 LogSanitizer.Sanitize(token.CreatedByEntraOid),
                 token.SocialMediaPlatformId);
@@ -118,7 +118,7 @@ public class NotifyExpiringTokens(
             await userOAuthTokenManager.UpdateLastNotifiedAtAsync(
                 token.CreatedByEntraOid, token.SocialMediaPlatformId, notifiedAt, cancellationToken);
 
-            logger.LogInformation("{FunctionName}: Queued expiry notification for OID {OwnerOid}, platform {PlatformId}. Token expires {ExpiresAt:O}.",
+            logger.LogInformation("{FunctionName}: Queued expiry notification for OID {OwnerOid}, platform {PlatformId}. Token expires {ExpiresAt:O}",
                 ConfigurationFunctionNames.LinkedInNotifyExpiringTokens,
                 LogSanitizer.Sanitize(token.CreatedByEntraOid),
                 token.SocialMediaPlatformId,
@@ -126,7 +126,7 @@ public class NotifyExpiringTokens(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "{FunctionName}: Failed to send notification for OID {OwnerOid}, platform {PlatformId}.",
+            logger.LogError(ex, "{FunctionName}: Failed to send notification for OID {OwnerOid}, platform {PlatformId}",
                 ConfigurationFunctionNames.LinkedInNotifyExpiringTokens,
                 LogSanitizer.Sanitize(token.CreatedByEntraOid),
                 token.SocialMediaPlatformId);
@@ -139,7 +139,7 @@ public class NotifyExpiringTokens(
         if (string.IsNullOrWhiteSpace(webBaseUrl))
         {
             logger.LogWarning(
-                "{FunctionName}: Settings:WebBaseUrl is not configured. Re-auth links in LinkedIn expiry emails will be relative paths.",
+                "{FunctionName}: Settings:WebBaseUrl is not configured. Re-auth links in LinkedIn expiry emails will be relative paths",
                 ConfigurationFunctionNames.LinkedInNotifyExpiringTokens);
             return string.Empty;
         }

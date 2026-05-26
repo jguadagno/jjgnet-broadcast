@@ -29,18 +29,18 @@ internal class RejectSessionCookieWhenAccountNotInCacheEvents : CookieAuthentica
         }
         catch (MicrosoftIdentityWebChallengeUserException ex) when (AccountDoesNotExitInTokenCache(ex))
         {
-            logger?.LogWarning("Token cache issue detected during cookie validation: {ErrorCode}. Rejecting principal to force re-authentication.", 
+            logger?.LogWarning("Token cache issue detected during cookie validation: {ErrorCode}. Rejecting principal to force re-authentication", 
                 ex.InnerException is MsalUiRequiredException msalEx ? msalEx.ErrorCode : "unknown");
             context.RejectPrincipal();
         }
         catch (MsalServiceException ex) when (IsTokenCacheCollision(ex))
         {
-            logger?.LogWarning("Multiple tokens detected in cache after app recycle: {ErrorCode}. Rejecting principal to force re-authentication.", ex.ErrorCode);
+            logger?.LogWarning("Multiple tokens detected in cache after app recycle: {ErrorCode}. Rejecting principal to force re-authentication", ex.ErrorCode);
             context.RejectPrincipal();
         }
         catch (MsalClientException ex) when (IsTokenCacheCollision(ex))
         {
-            logger?.LogWarning("Token cache collision detected: {ErrorCode}. Rejecting principal to force re-authentication.", ex.ErrorCode);
+            logger?.LogWarning("Token cache collision detected: {ErrorCode}. Rejecting principal to force re-authentication", ex.ErrorCode);
             context.RejectPrincipal();
         }
     }

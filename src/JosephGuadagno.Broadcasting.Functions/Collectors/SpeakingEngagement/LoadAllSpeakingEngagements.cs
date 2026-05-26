@@ -22,16 +22,16 @@ public class LoadAllSpeakingEngagements(
     public async Task<IActionResult> RunAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post")]
         HttpRequest req,
-        string ownerOid,
+        string userOid,
         string checkFrom)
     {
         var startedAt = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
             ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadAll, startedAt);
 
-        if (string.IsNullOrWhiteSpace(ownerOid))
+        if (string.IsNullOrWhiteSpace(userOid))
         {
-            return new BadRequestObjectResult("The 'ownerOid' query parameter is required.");
+            return new BadRequestObjectResult("The 'userOid' query parameter is required.");
         }
 
         // Check for the date to check from
@@ -48,10 +48,10 @@ public class LoadAllSpeakingEngagements(
 
         try
         {
-            var userConfigs = await userCollectorSpeakingEngagementManager.GetByUserAsync(ownerOid);
+            var userConfigs = await userCollectorSpeakingEngagementManager.GetByUserAsync(userOid);
             if (userConfigs.Count == 0)
             {
-                return new BadRequestObjectResult($"No speaking engagement configuration found for owner '{ownerOid}'.");
+                return new BadRequestObjectResult($"No speaking engagement configuration found for owner '{userOid}'.");
             }
 
             var totalSavedCount = 0;
@@ -60,11 +60,11 @@ public class LoadAllSpeakingEngagements(
             foreach (var config in userConfigs.Where(c => c.IsActive))
             {
                 logger.LogDebug("Getting all speaking engagements from '{FileUrl}' for owner '{OwnerOid}' since '{DateToCheckFrom}'",
-                    config.SpeakingEngagementsFile, ownerOid, dateToCheckFrom);
+                    config.SpeakingEngagementsFile, userOid, dateToCheckFrom);
 
                 var newItems = await speakerEngagementsReader.GetAll(config.SpeakingEngagementsFile, dateToCheckFrom);
 
-                if (newItems == null || newItems.Count == 0)
+                if (newItems.Count == 0)
                 {
                     logger.LogDebug("No speaking engagements found in '{FileUrl}'", config.SpeakingEngagementsFile);
                     continue;
@@ -76,11 +76,11 @@ public class LoadAllSpeakingEngagements(
                 foreach (var item in newItems)
                 {
                     if (!await engagementManager.IsEngagementUniqueToUser(
-                        item.Name, item.Url, item.StartDateTime.Year, ownerOid))
+                        item.Name, item.Url, item.StartDateTime.Year, userOid))
                     {
                         logger.LogDebug(
                             "Skipping duplicate speaking engagement '{Name}' ({Url}, {Year}) for owner '{OwnerOid}'",
-                            item.Name, item.Url, item.StartDateTime.Year, ownerOid);
+                            item.Name, item.Url, item.StartDateTime.Year, userOid);
                         continue;
                     }
 
@@ -114,13 +114,13 @@ public class LoadAllSpeakingEngagements(
                 }
 
                 var feedCheck =
-                    await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew, ownerOid) ??
+                    await feedCheckManager.GetByNameAsync(ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew, userOid) ??
                     new FeedCheck
                     {
                         Name = ConfigurationFunctionNames.CollectorsSpeakingEngagementsLoadNew,
                         LastCheckedFeed = startedAt,
                         LastItemAddedOrUpdated = DateTimeOffset.Now,
-                        EntraOId = ownerOid
+                        EntraOId = userOid
                     };
                 var latestAdded = newItems.Max(item => item.CreatedOn);
                 var latestUpdated = newItems.Max(item => item.LastUpdatedOn);
@@ -132,7 +132,7 @@ public class LoadAllSpeakingEngagements(
 
                 totalSavedCount += savedCount;
                 logger.LogInformation("Loaded {SavedCount} of {TotalCount} speaking engagement(s) for owner '{OwnerOid}'",
-                    savedCount, newItems.Count, ownerOid);
+                    savedCount, newItems.Count, userOid);
             }
 
             return new OkObjectResult($"Loaded {totalSavedCount} of {totalFoundCount} speaking engagement(s)");

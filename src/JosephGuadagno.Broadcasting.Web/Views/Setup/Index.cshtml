@@ -76,6 +76,19 @@ else
                     Collectors gather content to broadcast — RSS / Atom / JSON feeds, YouTube channels,
                     or speaking engagements. Add at least one source to get started.
                 </p>
+                @if (Model.ConfiguredCollectorTypes.Count > 0)
+                {
+                    <p class="mb-2">
+                        <strong>Configured:</strong>
+                        @foreach (var collectorType in Model.ConfiguredCollectorTypes)
+                        {
+                            var display = CollectorIcons.ByMessageType.GetValueOrDefault(collectorType, (Icon: CollectorIcons.Collection, Label: collectorType));
+                            <span class="badge text-bg-success ms-1">
+                                <i class="bi @display.Icon me-1"></i>@display.Label
+                            </span>
+                        }
+                    </p>
+                }
                 @if (Model.HasCollector)
                 {
                     <a asp-controller="CollectorSettings" asp-action="Index" class="btn btn-outline-success">
@@ -125,13 +138,15 @@ else
                     Publishers send your content to social media platforms.
                     Enable at least one platform: Bluesky, Twitter, LinkedIn, or Facebook.
                 </p>
-                @if (Model.ConfiguredPublisherPlatforms.Count > 0)
+                @if (Model.ConfiguredPublisherSummaries.Count > 0)
                 {
                     <p class="mb-2">
                         <strong>Enabled:</strong>
-                        @foreach (var platform in Model.ConfiguredPublisherPlatforms)
+                        @foreach (var summary in Model.ConfiguredPublisherSummaries)
                         {
-                            <span class="badge text-bg-success ms-1">@platform</span>
+                            <span class="badge text-bg-success ms-1">
+                                <i class="bi @summary.Icon me-1"></i>@summary.Name
+                            </span>
                         }
                     </p>
                 }

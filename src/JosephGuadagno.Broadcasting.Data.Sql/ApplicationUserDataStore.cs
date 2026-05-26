@@ -95,4 +95,25 @@ public class ApplicationUserDataStore(BroadcastingContext broadcastingContext, I
 
         throw new ApplicationException("Failed to update user");
     }
+
+    public async Task<bool> UpdateIsOnboardedAsync(string entraObjectId, bool isOnboarded, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(entraObjectId);
+
+        var dbUser = await broadcastingContext.ApplicationUsers
+            .FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId, cancellationToken);
+
+        if (dbUser is null)
+        {
+            return false;
+        }
+
+        dbUser.IsOnboarded = isOnboarded;
+        dbUser.UpdatedAt = DateTimeOffset.UtcNow;
+
+        broadcastingContext.Entry(dbUser).Property(u => u.IsOnboarded).IsModified = true;
+        broadcastingContext.Entry(dbUser).Property(u => u.UpdatedAt).IsModified = true;
+
+        return await broadcastingContext.SaveChangesAsync(cancellationToken) != 0;
+    }
 }

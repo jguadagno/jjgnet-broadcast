@@ -89,7 +89,6 @@ public class UserPublisherLinkedInSettingsDataStore(
             existing.AuthorId = settings.AuthorId;
             existing.ClientId = settings.ClientId;
             existing.HasClientSecret = settings.HasClientSecret;
-            existing.HasAccessToken = settings.HasAccessToken;
             existing.LastUpdatedOn = DateTimeOffset.UtcNow;
 
             await broadcastingContext.SaveChangesAsync(cancellationToken);

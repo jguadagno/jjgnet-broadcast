@@ -1,15 +1,12 @@
 using System.Text.Json;
 using Azure.Messaging.EventGrid;
-
 using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
-using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
+using JosephGuadagno.Broadcasting.Composers;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Models.Events;
-using JosephGuadagno.Broadcasting.Domain.Models.Messages;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
-using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
@@ -17,13 +14,13 @@ namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
 public class ProcessNewSpeakingEngagementFired(
     IEngagementManager engagementManager,
-    ILinkedInManager linkedInManager,
-    IUserOAuthTokenManager userOAuthTokenManager,
+    IMessageTemplateManager messageTemplateManager,
+    IPostComposer postComposer,
     ILogger<ProcessNewSpeakingEngagementFired> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInProcessNewSpeakingEngagementFired)]
     [QueueOutput(Queues.LinkedInPostLink)]
-    public async Task<LinkedInPostLink?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
+    public async Task<SocialMediaPublishRequest?> RunAsync([EventGridTrigger] EventGridEvent eventGridEvent)
     {
         var startedOn = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedOn:f}",
@@ -48,53 +45,48 @@ public class ProcessNewSpeakingEngagementFired(
             var engagement = await engagementManager.GetAsync(newSpeakingEngagementEvent.Id);
             if (engagement is null)
             {
-                logger.LogWarning("Engagement {EngagementId} not found. Skipping.", newSpeakingEngagementEvent.Id);
+                logger.LogWarning("Engagement {EngagementId} not found. Skipping", newSpeakingEngagementEvent.Id);
                 return null;
             }
 
             logger.LogDebug("Processing new speaking engagement '{Id}' with name '{Name}'",
                 engagement.Id, LogSanitizer.Sanitize(engagement.Name));
 
-            if (engagement.CreatedByEntraOid is null)
+            var ownerEntraOid = engagement.CreatedByEntraOid;
+            if (string.IsNullOrEmpty(ownerEntraOid))
             {
                 logger.LogWarning("No owner OID on engagement {Id} — skipping LinkedIn post", engagement.Id);
                 return null;
             }
 
-            // Per-user OAuth token — no silent fallback to shared token
-            var token = await userOAuthTokenManager.GetByUserAndPlatformAsync(
-                engagement.CreatedByEntraOid,
-                SocialMediaPlatformIds.LinkedIn);
-
-            if (token is null)
+            var request = new SocialMediaPublishRequest
             {
-                logger.LogWarning(
-                    "No OAuth token found for owner {OwnerOid} on LinkedIn — skipping engagement {Id}",
-                    LogSanitizer.Sanitize(engagement.CreatedByEntraOid),
-                    engagement.Id);
-                return null;
-            }
-
-            var scheduledItem = new ScheduledItem
-            {
-                ItemType = ScheduledItemType.Engagements,
-                ItemPrimaryKey = engagement.Id,
-                Message = $"New Speaking Engagement: {engagement.Name} {engagement.Url}",
-                SendOnDateTime = DateTimeOffset.UtcNow,
-                CreatedByEntraOid = engagement.CreatedByEntraOid
+                Text = "",
+                Title = engagement.Name,
+                LinkUrl = engagement.Url,
+                OwnerEntraOid = ownerEntraOid
             };
 
-            var postText = await linkedInManager.ComposeMessageAsync(scheduledItem);
-
-            if (string.IsNullOrWhiteSpace(postText))
+            var template = await messageTemplateManager.GetAsync(
+                MessageTemplates.Platforms.LinkedIn,
+                MessageTemplates.MessageTypes.NewSpeakingEngagement,
+                ownerEntraOid);
+            if (template is null)
             {
-                logger.LogWarning("Composed message was empty for engagement {EngagementId}. Skipping.", engagement.Id);
+	            logger.LogWarning("No template found for {Platform} / {MessageType} for owner {Id}", MessageTemplates.Platforms.LinkedIn, MessageTemplates.MessageTypes.NewSpeakingEngagement, ownerEntraOid);
+	            return null;
+            }
+
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
+            {
+                logger.LogWarning("Composed message was empty for engagement {EngagementId}. Skipping", engagement.Id);
                 return null;
             }
 
-            var properties= new Dictionary<string, string>
+            var properties = new Dictionary<string, string>
             {
-                { "post", postText },
+                { "post", composedText },
                 { "name", engagement.Name },
                 { "url", engagement.Url },
                 { "id", engagement.Id.ToString() }
@@ -102,13 +94,8 @@ public class ProcessNewSpeakingEngagementFired(
             logger.LogCustomEvent(Metrics.LinkedInProcessedNewSpeakingEngagement, properties);
             logger.LogDebug("Generated the LinkedIn post for speaking engagement {Id}", engagement.Id);
 
-            return new LinkedInPostLink
-            {
-                Text = postText,
-                Title = engagement.Name,
-                LinkUrl = engagement.Url,
-                AccessToken = token.AccessToken
-            };
+            request.Text = composedText;
+            return request;
         }
         catch (Exception e)
         {

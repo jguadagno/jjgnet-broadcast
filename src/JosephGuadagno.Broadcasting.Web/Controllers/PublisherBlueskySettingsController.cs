@@ -14,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 [Route("Publishers/Bluesky/Settings")]
 public class PublisherBlueskySettingsController(
     IUserPublisherBlueskySettingsService service,
+    ISetupService setupService,
     ILogger<PublisherBlueskySettingsController> logger) : Controller
 {
     [HttpGet("")]
@@ -61,6 +62,7 @@ public class PublisherBlueskySettingsController(
         }
 
         TempData["SuccessMessage"] = "Bluesky settings saved.";
+        await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Index));
     }
 
