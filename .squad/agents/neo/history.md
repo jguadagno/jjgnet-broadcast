@@ -105,4 +105,35 @@ builder.Services.Configure<MsalDistributedTokenCacheAdapterOptions>(options =>
 
 ---
 
+## Event Grid vs Per-User Dispatch Analysis — 2026-05-26
+
+**Trigger:** Issue #995 — Random Post interface needed (Joseph's architecture question)
+
+### Findings
+
+**Event Grid is confirmed incompatible with per-user publisher selection.** Subscriptions are statically registered infrastructure; every subscriber on a topic gets every event. Per-user routing within Event Grid requires either per-user topic provisioning (unmanageable) or embedding routing hints in the payload and having every subscriber check them anyway (defeats the purpose).
+
+**Current `RandomPosts.cs`** picks a single random post for the system-level collector owner OID using global `IRandomPostSettings` (app config). It is not per-user today.
+
+**The four `ProcessNewRandomPost` functions** (Bluesky, Facebook, LinkedIn, Twitter) are purely intermediate — they bridge an Event Grid event to a Storage Queue. Storage Queues are already the actual delivery mechanism. Event Grid is only a fan-out hop.
+
+### Architecture Decision Filed
+
+Decision: replace Event Grid publisher dispatch with direct per-user queue dispatch. The publisher function iterates all users with Random Post enabled, applies per-user settings, and enqueues `SocialMediaPublishRequest` directly to the appropriate platform queues — only for platforms that user has configured.
+
+**New tables needed:** `UserRandomPostSettings` (per-user frequency, cutoff, excluded categories), `UserPublisherEventTypes` (user × platform × event type junction).
+
+**File:** `.squad/decisions/inbox/neo-event-grid-vs-per-user-dispatch.md`
+
+**Comment posted:** GitHub issue #995
+
+### Key File Paths (for future reference)
+- `src/Functions/Publishers/RandomPosts.cs` — global timer, single OID, Event Grid dispatch
+- `src/Data/EventPublisher.cs` — all Event Grid publish methods
+- `src/Functions/event-grid-simulator-config.json` — five topics: new-random-post, new-speaking-engagement, new-syndication-feed-item, new-youtube-item, scheduled-item-fired
+- `src/Domain/Interfaces/IRandomPostSettings.cs` — global settings (ExcludedCategories, CutoffDate)
+- `scripts/database/table-create.sql` — `UserPublisherSettings` table is the right FK anchor for event-type flags
+
+---
+
 

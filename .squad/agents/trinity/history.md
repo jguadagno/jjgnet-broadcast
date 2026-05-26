@@ -2,6 +2,50 @@
 
 > Learnings before 2026-04-25 archived to history-archive.md (2026-05-25)
 
+## Issue #995 — Per-User Publisher Routing Architecture (2026-05-26)
+
+**Status:** Architecture CONFIRMED by Joseph. Ready for implementation.
+
+**Assigned to:** Trinity
+
+### Architecture Decision (from Neo's analysis, Joseph-confirmed)
+
+Event Grid subscriptions are incompatible with per-user publisher selection. **Decision: Remove Event Grid from publisher dispatch; replace with direct per-user queue dispatch.**
+
+**Why:** Storage Queues are already the terminal delivery mechanism. The four `ProcessNewRandomPost*` intermediate functions are pure bridge code. Moving publisher routing logic into SQL query layer (Data.Sql) allows per-user settings to drive queue dispatch directly.
+
+### Implementation Requirements (Confirmed)
+
+1. **Event type storage:** New junction table `UserPublisherEventTypes` (not denormalized columns) — extensible for future event types
+2. **Per-user scheduling:** Fixed intervals (`FrequencyMinutes`) with `NextRunAt` tracking
+3. **Collector events:** Keep Event Grid for SyndicationFeed/YouTube/Engagements fan-out (Phase 2 deferred)
+4. **Backward compatibility:** Auto-seed existing users' global settings into `UserRandomPostSettings`
+
+### New Tables
+
+**`UserRandomPostSettings`** — per-user Random Post frequency, cutoff date, excluded categories, next run time  
+**`UserPublisherEventTypes`** — user × platform × event type junction (currently for 'RandomPost', future-proof for 'ScheduledItem', 'NewContent')
+
+### Phase 1 Scope (#995)
+
+1. Create SQL tables
+2. Domain/Managers: `IUserRandomPostSettings`, `IUserRandomPostSettingsManager`, `IUserPublisherEventTypeManager`
+3. Functions: Rewrite `Publishers/RandomPosts.cs` for per-user dispatch; remove four `ProcessNewRandomPost*` intermediate functions
+4. API: CRUD endpoints for user settings
+5. Web: Settings page with per-publisher toggles
+
+### Phase 2 (Deferred)
+
+- Migrate ScheduledItems and New Content to same per-user dispatch pattern
+- Evaluate whether collector events still need Event Grid or can migrate to direct dispatch
+
+### Key Files (Reference)
+
+- `src/Functions/Publishers/RandomPosts.cs` — rewrite entry point
+- `src/Data/EventPublisher.cs` — contains all Event Grid publish methods (review for removal scope)
+- `src/Functions/event-grid-simulator-config.json` — five Event Grid topics defined
+- `scripts/database/table-create.sql` — add new tables here
+
 ---
 
 ---
