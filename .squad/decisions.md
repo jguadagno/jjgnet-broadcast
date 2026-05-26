@@ -5,6 +5,108 @@ Compiled record of team decisions, architecture choices, and resolutions.
 > Entries before 2026-05-22 archived to decisions-archive.md (last archived: 2026-05-25)
 
 ---
+
+# Decision: UTC Storage + User Local Display (Cross-Cutting DateTime Standard)
+
+**Date:** 2026-05-26T09:22:15-07:00  
+**Author:** Joseph Guadagno  
+**Status:** ✅ DECIDED & POSTED
+
+---
+
+## Summary
+
+All datetime and schedule/cron fields across the entire application follow a unified pattern:
+- **Storage:** Always UTC (`datetimeoffset` in SQL, `DateTimeOffset` in C#)
+- **Cron/schedule evaluation:** Evaluated in UTC — no per-schedule `TimeZoneId` needed
+- **Display:** Convert from UTC to user's local time before presenting in UI
+- **Edit:** Present fields in user's local time; convert back to UTC before saving
+
+This is a **cross-cutting standard** that applies to ALL datetime fields, not just schedule cron expressions.
+
+---
+
+## Why
+
+Ensures consistent, predictable datetime handling with no ambiguity about storage vs. display timezone. Answers Trinity's open question on GitHub issue #995.
+
+## Posted to GitHub
+
+Trinity confirmed this decision via GitHub comment on issue #995.
+
+---
+
+## Impact
+
+- `UserPublisherSchedules`, `UserRandomPostSettings`, and all other time-aware tables use `datetimeoffset` columns (no `TimeZoneId` needed)
+- Cron expression evaluation always uses UTC
+- UI layer is responsible for timezone conversion on display and edit
+- No per-schedule timezone configuration required
+
+---
+
+# Decision: Issue #995 Architecture Confirmed
+
+**Date:** 2026-05-26T08:59:04.287-07:00  
+**Author:** Neo (Lead)  
+**Status:** ✅ CONFIRMED
+
+---
+
+## Confirmed Decisions
+
+1. **Storage model**
+   - Joseph confirmed **Option B** from the earlier analysis.
+   - In practice, that means using **dedicated normalized user-owned tables** for routing and scheduling instead of adding event-type flags onto the existing `UserPublisher*Settings` tables.
+   - Existing per-platform publisher settings tables remain responsible for publisher-specific configuration only.
+
+2. **Scheduling model**
+   - Scheduling is **CRON-like**.
+   - A user can define **multiple schedules per event type**.
+   - Each schedule combines **event type + cron expression/frequency + target publisher(s)**.
+
+3. **Collector event routing**
+   - **Event Grid is removed for collector events too**, not just Random Post.
+   - New speaking engagements, blog posts, videos, and other collector-driven events will use the same **user-selectable publisher routing** model.
+
+4. **Random Post execution model**
+   - `Publishers\RandomPosts.cs` should run on **one global timer every minute**.
+   - It should poll **all users** and determine which schedules are due, following the same broad execution pattern as `Publishers\ScheduledItems.cs`.
+   - Do **not** create per-user timer functions or per-user function instances.
+
+5. **Migration and seeding**
+   - Seed the new `UserRandomPostSettings` table with **Joseph's current global defaults**.
+   - After the seed path exists, the old **global Random Post settings** can be removed.
+
+---
+
+## Resulting Implementation Scope
+
+- Add new per-user scheduling and routing tables.
+- Add `UserRandomPostSettings` for per-user content filtering (`CutoffDate`, `ExcludedCategories`).
+- Replace Event Grid dispatch with direct per-user publisher routing for both Random Post and collector events.
+- Add API and Web support so users can manage schedules, publisher targets, and Random Post settings.
+- Remove the old global Random Post settings path after seed migration is in place.
+
+---
+
+# Decision: Issue #995 Schema Review (Recommendation)
+
+**Date:** 2026-05-26  
+**Author:** Trinity (Backend Dev)  
+**Status:** RECOMMENDATION → ADDRESSED by UTC Storage decision
+
+---
+
+## Summary
+
+Trinity recommended that the new per-user scheduling/routing tables use `CreatedByEntraOid nvarchar(36)`, `datetimeoffset` timestamps, platform FKs, and normalized junction tables; also flagged that `UserPublisherSchedules` likely needs `TimeZoneId` unless Joseph declares all cron schedules UTC-only.
+
+## Resolution
+
+Joseph confirmed all cron schedules are UTC-only (see "UTC Storage + User Local Display" decision above). Table design uses `datetimeoffset` with no `TimeZoneId` column. Trinity confirmed via GitHub issue #995.
+
+---
 ## Action Required
 
 **Owner of this branch:** Restore the `null ||` guards in both collector files before committing the branch's changes.
