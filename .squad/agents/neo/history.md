@@ -128,6 +128,7 @@ Decision: replace Event Grid publisher dispatch with direct per-user queue dispa
 **Comment posted:** GitHub issue #995
 
 ### Key File Paths (for future reference)
+
 - `src/Functions/Publishers/RandomPosts.cs` — global timer, single OID, Event Grid dispatch
 - `src/Data/EventPublisher.cs` — all Event Grid publish methods
 - `src/Functions/event-grid-simulator-config.json` — five topics: new-random-post, new-speaking-engagement, new-syndication-feed-item, new-youtube-item, scheduled-item-fired
@@ -136,4 +137,17 @@ Decision: replace Event Grid publisher dispatch with direct per-user queue dispa
 
 ---
 
+### Architecture confirmation — 2026-05-26T08:59:04.287-07:00
 
+- Joseph confirmed the **Option B** direction: use dedicated normalized
+  tables for user routing and scheduling instead of extending the existing
+  `UserPublisher*Settings` tables with event flags.
+- Scheduling is **CRON-like** and supports **multiple schedules per event
+  type per user**, with each schedule owning its target publishers.
+- **Event Grid is removed for collector events too**; all event types move
+  to user-selectable publisher routing.
+- `Publishers\RandomPosts.cs` should run **every minute** as one global
+  poller across all users, mirroring the broad execution model of
+  `Publishers\ScheduledItems.cs`.
+- The new `UserRandomPostSettings` table should be **seeded from Joseph's
+  current global defaults** before the global settings path is removed.

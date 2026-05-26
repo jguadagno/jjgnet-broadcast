@@ -161,3 +161,22 @@ Wrapped `options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);` in
 
 Any Web service that calls `IDownstreamApi.GetForUserAsync<T>` for a **single nullable object** (not a collection) MUST wrap the call in `catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)` and return `null`. The API legitimately returns 404 for first-time users who have no configuration yet; without the catch the exception propagates and crashes the page. The controller already handles `null` gracefully. Log the 404 as `LogInformation` (not `LogWarning`) — it is expected, not an error. Always sanitize the OID via `LogSanitizer.Sanitize(ownerOid)`.
 
+### 2026-05-26 — Issue #995 review: per-user scheduling schema follows existing owner-config patterns
+
+New user-owned configuration tables in this repo should keep the
+existing ownership shape: `CreatedByEntraOid nvarchar(36)` on config
+rows, `datetimeoffset` timestamps, identity PKs for top-level config
+entities, and composite PKs only for pure junction tables. For Issue
+#995 specifically, `UserRandomPostSettings` and
+`UserPublisherSchedules` should be top-level tables, while
+`UserPublisherSchedulePlatforms` and `UserPublisherEventRoutes` are
+better modeled as normalized route/junction tables keyed by owner +
+event type + platform rather than by publisher-name strings or numeric
+user IDs.
+
+Cron-based schedules also need an explicit timezone decision before
+implementation. The repo currently has no existing cron parser/scheduler
+abstraction, so if schedules are not UTC-only the schedule table needs a
+`TimeZoneId` column; otherwise `NextRunAt` cannot be recalculated
+deterministically from a stored cron expression.
+
