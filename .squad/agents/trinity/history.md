@@ -79,6 +79,13 @@
   routes, stamp owner OIDs from claims on create, and use separate
   create/update DTOs so PUT can preserve omitted optional fields via
   conditional AutoMapper mapping.
+- **2026-05-26T11:17:08.070-07:00 — Per-user settings Web UI pattern:**
+  Web controllers for per-user publisher settings should stay behind
+  `I...Service` HTTP wrappers, populate platform dropdowns through
+  `ISocialMediaPlatformService`, centralize event-type labels/icons in a shared
+  constant, and round-trip editable `DateTimeOffset` values through a
+  `datetime-local` input plus hidden UTC field so the browser shows local time
+  while the API still receives UTC.
 - **For archived learnings:** See history-summary.md
 
 ---

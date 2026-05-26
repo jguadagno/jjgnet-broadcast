@@ -282,6 +282,8 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IUserPublisherTwitterSettingsService, UserPublisherTwitterSettingsService>();
     services.TryAddScoped<IUserPublisherLinkedInSettingsService, UserPublisherLinkedInSettingsService>();
     services.TryAddScoped<IUserPublisherFacebookSettingsService, UserPublisherFacebookSettingsService>();
+    services.TryAddScoped<IUserRandomPostSettingsService, UserRandomPostSettingsService>();
+    services.TryAddScoped<IUserEventPublisherMappingService, UserEventPublisherMappingService>();
     services.TryAddScoped<IUserCollectorFeedSourceService, UserCollectorFeedSourceService>();
     services.TryAddScoped<IUserCollectorYouTubeChannelService, UserCollectorYouTubeChannelService>();
     services.TryAddScoped<IUserCollectorSpeakingEngagementService, UserCollectorSpeakingEngagementService>();
