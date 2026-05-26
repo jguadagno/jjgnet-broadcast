@@ -9,6 +9,7 @@ using JosephGuadagno.Broadcasting.Composers;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.HealthChecks;
+using JosephGuadagno.Broadcasting.Functions.Services;
 using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Managers.Bluesky;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
@@ -239,6 +240,9 @@ void ConfigureFunction(IServiceCollection services)
 
     // MessageTemplateManager handles both ID-based and platform-name-based lookups (Phase 2+3 of publisher architecture refactor)
     services.TryAddScoped<IMessageTemplateManager, MessageTemplateManager>();
+
+    // CollectorEventPublisher — replaces Event Grid dispatch for collector functions with per-user queue routing
+    services.AddScoped<ICollectorEventPublisher, CollectorEventPublisher>();
 
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();

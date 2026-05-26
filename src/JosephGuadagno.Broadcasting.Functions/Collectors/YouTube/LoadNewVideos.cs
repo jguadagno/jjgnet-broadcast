@@ -3,6 +3,7 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Models;
+using JosephGuadagno.Broadcasting.Functions.Services;
 using JosephGuadagno.Broadcasting.YouTubeReader.Interfaces;
 using JosephGuadagno.Broadcasting.YouTubeReader.Models;
 
@@ -23,7 +24,7 @@ public class LoadNewVideos(
     IUserCollectorYouTubeChannelManager userCollectorYouTubeChannelManager,
     IYouTubeItemManager youTubeItemManager,
     IUrlShortener urlShortener,
-    IEventPublisher eventPublisher,
+    ICollectorEventPublisher collectorEventPublisher,
     ILogger<LoadNewVideos> logger)
 {
     private static readonly ResiliencePipeline SavePipeline = new ResiliencePipelineBuilder()
@@ -140,9 +141,10 @@ public class LoadNewVideos(
                     }
                 }
 
-                await eventPublisher.PublishYouTubeEventsAsync(
-                    ConfigurationFunctionNames.CollectorsYouTubeLoadNewVideos,
-                    eventsToPublish);
+                foreach (var savedItem in eventsToPublish)
+                {
+                    await collectorEventPublisher.PublishYouTubeItemAsync(savedItem, config.CreatedByEntraOid);
+                }
 
                 feedCheck.LastCheckedFeed = startedAt;
                 feedCheck.LastUpdatedOn = DateTimeOffset.UtcNow;

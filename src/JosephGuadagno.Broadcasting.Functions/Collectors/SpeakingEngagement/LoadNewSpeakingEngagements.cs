@@ -2,6 +2,7 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Functions.Services;
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
 
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +19,7 @@ public class LoadNewSpeakingEngagements(
     IEngagementManager engagementManager,
     IUserCollectorSpeakingEngagementManager userCollectorSpeakingEngagementManager,
     IFeedCheckManager feedCheckManager,
+    ICollectorEventPublisher collectorEventPublisher,
     ILogger<LoadNewSpeakingEngagements> logger)
 {
     private static readonly ResiliencePipeline SavePipeline = new ResiliencePipelineBuilder()
@@ -108,6 +110,7 @@ public class LoadNewSpeakingEngagements(
                             { "EndDateTime", engagement.EndDateTime.ToString("o") }
                         };
                         logger.LogCustomEvent(Metrics.SpeakingEngagementAddedOrUpdated, properties);
+                        await collectorEventPublisher.PublishSpeakingEngagementAsync(engagement, config.CreatedByEntraOid);
                         savedCount++;
                     }
                     catch (Exception e)
