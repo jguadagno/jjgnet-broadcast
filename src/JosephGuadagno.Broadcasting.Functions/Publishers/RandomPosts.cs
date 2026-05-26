@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.Publishers;
 
 public class RandomPosts(
-    IUserRandomPostSettingsDataStore userRandomPostSettingsDataStore,
+    IUserRandomPostSettingsManager userRandomPostSettingsManager,
     ISyndicationFeedItemManager syndicationFeedItemManager,
     IMessageTemplateManager messageTemplateManager,
     IPostComposer postComposer,
@@ -29,114 +29,102 @@ public class RandomPosts(
     };
 
     [Function(ConfigurationFunctionNames.PublishersRandomPosts)]
-    public async Task RunAsync([TimerTrigger("0 * * * * *")] TimerInfo myTimer)
+    public async Task RunAsync([TimerTrigger("%publishers_random_post_cron_settings%")] TimerInfo myTimer)
     {
-        var startedAt = DateTimeOffset.UtcNow;
+        var utcNow = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
-            ConfigurationFunctionNames.PublishersRandomPosts, startedAt);
+            ConfigurationFunctionNames.PublishersRandomPosts, utcNow);
 
-        var allSettings = await userRandomPostSettingsDataStore.GetAllActiveAsync();
-        if (allSettings.Count == 0)
+        var dueSettings = await userRandomPostSettingsManager.GetAllDueAsync(utcNow);
+        if (dueSettings.Count == 0)
         {
-            logger.LogDebug("No active per-user random post settings found");
+            logger.LogDebug("No due per-user random post settings found");
             return;
         }
 
-        var utcNow = DateTimeOffset.UtcNow;
-        var currentMinute = new DateTimeOffset(
-            utcNow.Year, utcNow.Month, utcNow.Day,
-            utcNow.Hour, utcNow.Minute, 0, TimeSpan.Zero);
-        var lastMinute = currentMinute.AddMinutes(-1);
-
-        var settingsByOwner = allSettings
-            .Where(s => !string.IsNullOrWhiteSpace(s.CreatedByEntraOid))
-            .GroupBy(s => s.CreatedByEntraOid!)
-            .ToList();
-
-        foreach (var ownerGroup in settingsByOwner)
+        foreach (var settings in dueSettings)
         {
-            var ownerOid = ownerGroup.Key;
-            foreach (var settings in ownerGroup)
+            var ownerOid = settings.CreatedByEntraOid;
+
+            if (!PlatformQueues.TryGetValue(settings.SocialMediaPlatformId, out var queueName))
             {
-                if (!PlatformQueues.TryGetValue(settings.SocialMediaPlatformId, out var queueName))
-                {
-                    logger.LogWarning(
-                        "Unknown SocialMediaPlatformId {PlatformId} for owner '{OwnerOid}' — skipping",
-                        settings.SocialMediaPlatformId, LogSanitizer.Sanitize(ownerOid));
-                    continue;
-                }
+                logger.LogWarning(
+                    "Unknown SocialMediaPlatformId {PlatformId} for owner '{OwnerOid}' — skipping",
+                    settings.SocialMediaPlatformId, LogSanitizer.Sanitize(ownerOid));
+                await AdvanceNextRunAsync(settings, utcNow);
+                continue;
+            }
 
-                CronExpression cronExpression;
-                try
-                {
-                    cronExpression = CronExpression.Parse(settings.CronExpression);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex,
-                        "Invalid cron expression '{Cron}' for owner '{OwnerOid}' — skipping",
-                        LogSanitizer.Sanitize(settings.CronExpression), LogSanitizer.Sanitize(ownerOid));
-                    continue;
-                }
+            CronExpression cronExpression;
+            try
+            {
+                cronExpression = CronExpression.Parse(settings.CronExpression);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "Invalid cron expression '{Cron}' for owner '{OwnerOid}' — skipping",
+                    LogSanitizer.Sanitize(settings.CronExpression), LogSanitizer.Sanitize(ownerOid));
+                continue;
+            }
 
-                var nextOccurrence = cronExpression.GetNextOccurrence(lastMinute.UtcDateTime, TimeZoneInfo.Utc);
-                if (nextOccurrence is null || nextOccurrence.Value > utcNow.UtcDateTime)
-                {
-                    continue;
-                }
+            var cutoffDate = settings.CutoffDate ?? DateTimeOffset.MinValue;
+            var syndicationFeedItem = await syndicationFeedItemManager.GetRandomSyndicationDataAsync(
+                ownerOid, cutoffDate, settings.ExcludedCategories);
 
-                var cutoffDate = settings.CutoffDate ?? DateTimeOffset.MinValue;
-                var syndicationFeedItem = await syndicationFeedItemManager.GetRandomSyndicationDataAsync(
-                    ownerOid, cutoffDate, settings.ExcludedCategories);
+            if (syndicationFeedItem is null)
+            {
+                logger.LogDebug(
+                    "No random syndication item found for owner '{OwnerOid}' since '{CutoffDate:u}'",
+                    LogSanitizer.Sanitize(ownerOid), cutoffDate);
+                await AdvanceNextRunAsync(settings, cronExpression);
+                continue;
+            }
 
-                if (syndicationFeedItem is null)
-                {
-                    logger.LogDebug(
-                        "No random syndication item found for owner '{OwnerOid}' since '{CutoffDate:u}'",
-                        LogSanitizer.Sanitize(ownerOid), cutoffDate);
-                    continue;
-                }
+            var request = new SocialMediaPublishRequest
+            {
+                Text = string.Empty,
+                Title = syndicationFeedItem.Title,
+                LinkUrl = syndicationFeedItem.Url,
+                ShortenedUrl = syndicationFeedItem.ShortenedUrl,
+                Hashtags = syndicationFeedItem.Tags.Count > 0 ? syndicationFeedItem.Tags.ToList() : null,
+                OwnerEntraOid = ownerOid,
+            };
 
-                var request = new SocialMediaPublishRequest
-                {
-                    Text = string.Empty,
-                    Title = syndicationFeedItem.Title,
-                    LinkUrl = syndicationFeedItem.Url,
-                    ShortenedUrl = syndicationFeedItem.ShortenedUrl,
-                    Hashtags = syndicationFeedItem.Tags.Count > 0 ? syndicationFeedItem.Tags.ToList() : null,
-                    OwnerEntraOid = ownerOid,
-                };
+            var template = await messageTemplateManager.GetAsync(
+                settings.SocialMediaPlatformId, MessageTemplates.MessageTypes.RandomPost, ownerOid);
+            if (template is null)
+            {
+                logger.LogWarning(
+                    "No message template found for platform {PlatformId} / {MessageType} for owner '{OwnerOid}'",
+                    settings.SocialMediaPlatformId, MessageTemplates.MessageTypes.RandomPost,
+                    LogSanitizer.Sanitize(ownerOid));
+                await AdvanceNextRunAsync(settings, cronExpression);
+                continue;
+            }
 
-                var template = await messageTemplateManager.GetAsync(
-                    settings.SocialMediaPlatformId, MessageTemplates.MessageTypes.RandomPost, ownerOid);
-                if (template is null)
-                {
-                    logger.LogWarning(
-                        "No message template found for platform {PlatformId} / {MessageType} for owner '{OwnerOid}'",
-                        settings.SocialMediaPlatformId, MessageTemplates.MessageTypes.RandomPost,
-                        LogSanitizer.Sanitize(ownerOid));
-                    continue;
-                }
+            var composedText = await postComposer.ComposeAsync(request, template.Template);
+            if (string.IsNullOrWhiteSpace(composedText))
+            {
+                logger.LogWarning(
+                    "Post composition returned empty for platform {PlatformId} / item {ItemId} for owner '{OwnerOid}'",
+                    settings.SocialMediaPlatformId, syndicationFeedItem.Id,
+                    LogSanitizer.Sanitize(ownerOid));
+                await AdvanceNextRunAsync(settings, cronExpression);
+                continue;
+            }
 
-                var composedText = await postComposer.ComposeAsync(request, template.Template);
-                if (string.IsNullOrWhiteSpace(composedText))
-                {
-                    logger.LogWarning(
-                        "Post composition returned empty for platform {PlatformId} / item {ItemId} for owner '{OwnerOid}'",
-                        settings.SocialMediaPlatformId, syndicationFeedItem.Id,
-                        LogSanitizer.Sanitize(ownerOid));
-                    continue;
-                }
+            request.Text = composedText;
 
-                request.Text = composedText;
-
+            try
+            {
                 var queueClient = queueServiceClient.GetQueueClient(queueName);
                 await queueClient.CreateIfNotExistsAsync();
                 await queueClient.SendMessageAsync(JsonSerializer.Serialize(request));
 
                 logger.LogCustomEvent(Metrics.RandomPostFired, new Dictionary<string, string>
                 {
-                    { "title",    syndicationFeedItem.Title },
+                    { "title",    LogSanitizer.Sanitize(syndicationFeedItem.Title) },
                     { "url",      syndicationFeedItem.Url },
                     { "id",       syndicationFeedItem.Id.ToString() },
                     { "platform", settings.SocialMediaPlatformId.ToString() },
@@ -145,11 +133,42 @@ public class RandomPosts(
 
                 logger.LogInformation(
                     "Dispatched random post '{Title}' (Id: {Id}) to queue '{Queue}' for owner '{OwnerOid}'",
-                    syndicationFeedItem.Title, syndicationFeedItem.Id, queueName,
+                    LogSanitizer.Sanitize(syndicationFeedItem.Title), syndicationFeedItem.Id, queueName,
                     LogSanitizer.Sanitize(ownerOid));
             }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,
+                    "Failed to dispatch random post to queue '{Queue}' for owner '{OwnerOid}'",
+                    queueName, LogSanitizer.Sanitize(ownerOid));
+            }
+
+            // Advance NextRunDateUtc regardless of dispatch outcome to prevent immediate retry.
+            await AdvanceNextRunAsync(settings, cronExpression);
         }
 
         logger.LogDebug("{FunctionName} completed", ConfigurationFunctionNames.PublishersRandomPosts);
+    }
+
+    private async Task AdvanceNextRunAsync(UserRandomPostSettings settings, CronExpression cronExpression)
+    {
+        var nextRun = cronExpression.GetNextOccurrence(DateTimeOffset.UtcNow, TimeZoneInfo.Utc);
+        await userRandomPostSettingsManager.UpdateNextRunAsync(settings.Id, nextRun);
+    }
+
+    private async Task AdvanceNextRunAsync(UserRandomPostSettings settings, DateTimeOffset utcNow)
+    {
+        try
+        {
+            var cronExpression = CronExpression.Parse(settings.CronExpression);
+            var nextRun = cronExpression.GetNextOccurrence(utcNow, TimeZoneInfo.Utc);
+            await userRandomPostSettingsManager.UpdateNextRunAsync(settings.Id, nextRun);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex,
+                "Could not compute next run for settings ID {Id} with cron '{Cron}'",
+                settings.Id, LogSanitizer.Sanitize(settings.CronExpression));
+        }
     }
 }
