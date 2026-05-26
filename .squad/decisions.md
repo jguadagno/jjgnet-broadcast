@@ -507,5 +507,29 @@ not in a mapping profile.
 
 
 
+# Decision: ScheduledItems direct per-user routing
+
+**Date:** 2026-05-26T10:48:34.944-07:00  
+**Author:** Trinity  
+**Status:** ✅ IMPLEMENTED
+
+---
+
+## Decision
+
+Migrate `Publishers\ScheduledItems.cs` off Event Grid and onto a dedicated `IScheduledItemEventPublisher` service that routes each due item directly to the owner's active `UserEventPublisherMapping` targets for `ScheduledItem`.
+
+## Why
+
+The collector rewrite already established the direct-routing pattern, and the four `ProcessScheduledItemFired` functions were only Event Grid bridge code. Keeping scheduled item routing in a dedicated service preserves the same per-user queue dispatch contract while keeping the timer trigger focused on orchestration and sent-flag updates.
+
+## Notes
+
+- `ScheduledItem` was already present in both `scripts\database\table-create.sql` and `scripts\database\migrations\2026-05-26-per-user-publisher-routing-tables.sql`, so no schema change was required.
+- `IEventPublisher` is no longer registered in the Functions host or Functions test startup.
+- The scheduled-item Event Grid simulator topic was removed because its subscribers were deleted with this migration.
+
+---
+
 > Entries before 2026-05-18 archived to decisions-archive.md
 

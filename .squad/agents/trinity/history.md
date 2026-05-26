@@ -29,12 +29,48 @@
 
 ---
 
+## Phase 2 Task 3 — ScheduledItems Event Grid → Per-User Routing (2026-05-26)
+
+**Status:** ✅ COMPLETE — commit `0d071bbe` on branch `issue-995-per-user-publisher-routing`
+
+### What was done
+
+- Created `IScheduledItemEventPublisher` / `ScheduledItemEventPublisher` service that:
+  - Takes a due `ScheduledItem` and queries `UserEventPublisherMapping` for the owner
+  - Renders message via `IMessageTemplateManager` + `IPostComposer`
+  - Dispatches to all active target platforms' queues
+  - Creates fresh `SocialMediaPublishRequest` per platform
+- Replaced `IEventPublisher` in `Publishers\ScheduledItems.cs` with `IScheduledItemEventPublisher.PublishAsync`
+- Deleted 4 dead `ProcessScheduledItemFired` Event Grid subscriber functions
+- No schema changes — `ScheduledItem` event type already in `2026-05-26-per-user-publisher-routing-tables.sql`
+- Added 9 unit tests validating per-user routing logic
+- Deregistered `IEventPublisher` from Functions host; Event Grid simulator topic removed
+
+### Key technical learnings
+
+- **Event Grid Topic cleanup** — When deleting Event Grid subscriber functions, also remove the corresponding topic/simulator definition from Aspire AppHost to prevent orphaned topics and unused container resources.
+- **ScheduledItem context complete** — `ScheduledItem` model now carries owner, event type, target platforms, and message composition in the same sequential DbContext-safe flow as `ICollectorEventPublisher`. The `Publishers\ScheduledItems.cs` timer focuses on orchestration (what's due?) and sent-flag updates, while `ScheduledItemEventPublisher` handles all dispatch.
+- **Phase 2 unified:** All event dispatch (collectors + scheduled) is now direct per-user routing. No Event Grid bridge layer remains.
+
+---
+
+## Phase 2 Complete (All 3 Tasks)
+
+**Status:** ✅ FULLY COMPLETE
+
+- Task 1: Collector dispatch routing ✅
+- Task 2: Cron-scheduled item routing ✅
+- Task 3: ScheduledItems Event Grid → per-user ✅
+
+**Next:** Phase 3 — Random Posts per-user scheduling and routing.
+
+---
+
 ## Key Learnings (Recent)
 
 - **AutoMapper `ReverseMap()` with EF tracked entities:** Never use `ReverseMap()` on collections without explicit `Ignore()` — AutoMapper will replace tracked EF collections with untracked objects, causing "Unexpected entry.EntityState: Detached" errors.
 - **Null guards matter:** When removing dead code, preserve unrelated guards (e.g., `newItems == null ||` in collector loops) — removal causes `NullReferenceException` when readers return `null`.
 - **EF DbContext not thread-safe:** Never use `Task.WhenAll` when managers share a single scoped DbContext. Use sequential awaits instead.
+- **Event Grid cleanup:** Deregister Event Grid services from host and remove simulator topic definitions when all subscribers are deleted.
 - **For archived learnings:** See history-summary.md
-
-- **2026-05-26T10:48:34.944-07:00 — Scheduled item routing belongs in a dedicated publisher service:** Keep `Publishers\ScheduledItems.cs` focused on timer orchestration, sent-flag updates, and `FeedCheck` persistence, and move per-user mapping lookup, source-item shaping, template resolution, and queue dispatch into a dedicated service that mirrors `CollectorEventPublisher`. That preserves sequential `DbContext`-safe processing, makes the routing logic unit-testable, and lets the Event Grid bridge functions be deleted cleanly.
 
