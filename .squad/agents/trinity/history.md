@@ -180,3 +180,25 @@ abstraction, so if schedules are not UTC-only the schedule table needs a
 `TimeZoneId` column; otherwise `NextRunAt` cannot be recalculated
 deterministically from a stored cron expression.
 
+---
+
+### 2026-05-26 — Issue #995 Phase 2: RandomPosts per-user timer rewrite
+
+**Status:** ✅ COMPLETE — 2 commits on `issue-995-per-user-publisher-routing`; all tests pass
+
+**What was delivered:**
+1. `scripts/database/migrations/2026-05-26-per-user-publisher-routing-tables.sql` — idempotent migration for `UserRandomPostSettings` and `UserEventPublisherMapping`
+2. `src/JosephGuadagno.Broadcasting.Functions/Publishers/RandomPosts.cs` — rewritten from global Event Grid dispatcher to per-user per-minute Cronos timer
+3. `src/JosephGuadagno.Broadcasting.Functions.Tests/Publishers/RandomPostsTests.cs` — 4 unit tests (no-settings fast-path, cron-not-due skip, correct-queue dispatch, data-store exception propagation)
+4. Cronos 0.13.0 added to Functions.csproj
+
+**Key learnings:**
+
+**QueueClient.SendMessageAsync overload resolution with Moq:** `QueueClient` has two virtual `SendMessageAsync` methods: a 2-arg `(string, CancellationToken = default)` convenience wrapper and a 4-arg `(string, TimeSpan?, TimeSpan?, CancellationToken)` core method. When `SendMessageAsync(json)` is called, Moq records the invocation but `Verify(q => q.SendMessageAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))` does NOT match — the setup expression resolves to a different overload than the production call. **Working fix:** assert via raw invocations: `Assert.Contains(_mock.Invocations, i => i.Method.Name == "SendMessageAsync")`.
+
+**Azure SDK `CreateIfNotExistsAsync(IDictionary, CancellationToken)` returns `Task<Response>` (non-generic):** NOT `Task<Response<QueueProperties>?>`. Moq `ReturnsAsync((Azure.Response<QueueProperties>?)null)` fails at compile time. With `MockBehavior.Loose`, just omit the setup — Moq returns a completed Task automatically.
+
+**Cronos 5-field cron evaluation window:** For a per-minute timer, check: `GetNextOccurrence(lastMinute.UtcDateTime, TimeZoneInfo.Utc) <= utcNow`. The expression `"0 0 31 2 *"` (Feb 31) reliably returns `null` — useful for "never due" test cases. The expression `"* * * * *"` is always due — useful for "always fires" test cases.
+
+**MessageTemplate gotcha:** Domain model has `CreatedByEntraOid` (not `OwnerEntraOid`) and has no `Id` property. Confirmed from `src/JosephGuadagno.Broadcasting.Domain/Models/MessageTemplate.cs`.
+
