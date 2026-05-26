@@ -6,6 +6,40 @@ Compiled record of team decisions, architecture choices, and resolutions.
 
 ---
 
+# Decision: Phase 3 Part 1 API Endpoints (RandomPostSettings & EventPublisherMapping)
+
+**Date:** 2026-05-26T11:17:08.070-07:00  
+**Author:** Trinity  
+**Issue:** #995  
+**Status:** ✅ PROPOSED
+
+---
+
+## Summary
+
+Phase 3 Part 1 API work adds two per-user CRUD controllers under the existing `Publishers/...` route family:
+
+- `Publishers/RandomPostSettings`
+- `Publishers/EventPublisherMappings`
+
+Both controllers:
+
+- use class-level `[Authorize]` and `[IgnoreAntiforgeryToken]`
+- stamp `CreatedByEntraOid` from the authenticated user's claims on create
+- enforce owner-based access checks on get-by-id, update, and delete
+- use separate create/update DTOs so PUT can preserve omitted optional fields
+- recalculate onboarding after successful create, update, and delete operations
+
+## Why
+
+This keeps the new Phase 1 issue #995 models aligned with the established publisher and collector API patterns already used in the API project. It also avoids accidental field resets during updates and keeps IDOR protections explicit at each item endpoint.
+
+## Follow-up
+
+If the Web app consumes these endpoints next, it should use the same event type values enforced by the manager layer: `NewSyndicationFeedItem`, `NewYouTubeItem`, `NewSpeakingEngagement`, `RandomPost`, and `ScheduledItem`.
+
+---
+
 # Decision: Collector Dispatch Routing — Phase 2 of Issue #995
 
 **Date:** 2026-05-26  

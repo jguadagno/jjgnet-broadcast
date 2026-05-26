@@ -81,3 +81,31 @@
   conditional AutoMapper mapping.
 - **For archived learnings:** See history-summary.md
 
+---
+
+## Phase 3 Part 1 — API CRUD Endpoints (2026-05-26T18:17:08Z)
+
+**Status:** ✅ COMPLETE — commit `ca59c43b` on branch `issue-995-per-user-publisher-routing`
+
+### What was done
+
+- Created `RandomPostSettingsController` with GET, POST, PUT, DELETE under `/api/Publishers/RandomPostSettings`
+  - Class-level `[Authorize]` and `[IgnoreAntiforgeryToken]`
+  - Stamp `CreatedByEntraOid` from authenticated user claims on create
+  - Owner-based access checks on item routes (get-by-id, update, delete)
+  - Recalculate onboarding after mutations
+- Created `EventPublisherMappingController` with GET, POST, PUT, DELETE under `/api/Publishers/EventPublisherMappings`
+  - Same auth + ownership pattern as RandomPostSettings
+  - Recalculate onboarding after mutations
+- Created separate Create/Update DTOs for both controllers to preserve omitted optional fields during PUT
+- Added AutoMapper profiles in `Data.Sql/MappingProfiles` and `Api/MappingProfiles` for DTO mappings
+- Added comprehensive xUnit unit tests (both controllers) with:
+  - Happy path CRUD operations
+  - Ownership checks (IDOR prevention)
+  - Authorization enforcement
+  - Recalculate onboarding side effects
+- All tests passing, build passing
+
+### Next
+- Phase 3 Part 2: Web app integration (consume the new API endpoints)
+
