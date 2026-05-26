@@ -6,6 +6,44 @@ Compiled record of team decisions, architecture choices, and resolutions.
 
 ---
 
+# Decision: Collector Dispatch Routing — Phase 2 of Issue #995
+
+**Date:** 2026-05-26  
+**Author:** Trinity  
+**Branch:** `issue-995-per-user-publisher-routing`  
+**Commit:** `41db74f6`  
+**Status:** ✅ COMPLETE
+
+---
+
+## Context
+
+The collector functions (`LoadNewPosts`, `LoadNewVideos`, `LoadNewSpeakingEngagements`) previously fired Azure Event Grid events after saving items. Sixteen `ProcessNew*` subscriber functions (four per platform) then routed those events to storage queues. This architecture was incompatible with per-user publisher selection — Event Grid subscriptions are per-topic, not per-user.
+
+## Decision
+
+Replace Event Grid dispatch with a new `ICollectorEventPublisher` / `CollectorEventPublisher` service that:
+
+1. Queries `UserEventPublisherMapping` to find which platforms a given user has enabled for a given event type.
+2. Renders a per-platform message via `IMessageTemplateManager` + `IPostComposer`.
+3. Sends directly to the platform's storage queue.
+
+The 16 dead `ProcessNew*` functions were deleted.
+
+## Alternatives Considered
+
+- **Keep Event Grid, add per-user metadata to events** — Event Grid subscription filters can't route by per-user data embedded in the event payload. Would require one subscription per user per platform, which is unmanageable.
+- **Fan-out in a single new function subscribed to all events** — Moved the problem rather than solving it; still a single function with no user context.
+
+## Consequences
+
+- `IEventPublisher` is no longer injected into the three collector functions. The existing interface may still be used elsewhere (e.g. `RandomPosts`) and should not be deleted.
+- Per-item dispatch is sequential (foreach, not `Task.WhenAll`) per team policy on shared scoped `BroadcastingContext` operations.
+- Each queue send creates a fresh `SocialMediaPublishRequest` (with composed `Text`) rather than mutating the shared base request, preventing cross-platform contamination.
+- All three collector test files needed updating to swap `IEventPublisher` for `ICollectorEventPublisher`.
+
+---
+
 # Decision: UTC Storage + User Local Display (Cross-Cutting DateTime Standard)
 
 **Date:** 2026-05-26T09:22:15-07:00  
