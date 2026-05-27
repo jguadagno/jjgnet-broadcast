@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Bluesky;
 
-public class SendPost(IBlueskyManager blueskyManager, IUserPublisherBlueskySettingsManager blueskySettingsManager, ILogger<SendPost> logger)
+public class SendPost(IBlueskyManager blueskyManager, IUserPlatformBlueskySettingsManager blueskySettingsManager, ILogger<SendPost> logger)
 {
     [Function(ConfigurationFunctionNames.BlueskyPostMessage)]
     public async Task Run(

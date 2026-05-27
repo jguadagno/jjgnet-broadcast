@@ -278,10 +278,10 @@ void ConfigureApplication(IServiceCollection services)
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
     services.TryAddScoped<IScheduledItemValidationService, ScheduledItemValidationService>();
     services.TryAddScoped<IDispatchersAggregateService, DispatchersAggregateService>();
-    services.TryAddScoped<IUserPublisherBlueskySettingsService, UserPublisherBlueskySettingsService>();
-    services.TryAddScoped<IUserPublisherTwitterSettingsService, UserPublisherTwitterSettingsService>();
-    services.TryAddScoped<IUserPublisherLinkedInSettingsService, UserPublisherLinkedInSettingsService>();
-    services.TryAddScoped<IUserPublisherFacebookSettingsService, UserPublisherFacebookSettingsService>();
+    services.TryAddScoped<IUserPlatformBlueskySettingsService, UserPlatformBlueskySettingsService>();
+    services.TryAddScoped<IUserPlatformTwitterSettingsService, UserPlatformTwitterSettingsService>();
+    services.TryAddScoped<IUserPlatformLinkedInSettingsService, UserPlatformLinkedInSettingsService>();
+    services.TryAddScoped<IUserPlatformFacebookSettingsService, UserPlatformFacebookSettingsService>();
     services.TryAddScoped<IUserRandomPostSettingsService, UserRandomPostSettingsService>();
     services.TryAddScoped<IUserEventDispatcherMappingService, UserEventDispatcherMappingService>();
     services.TryAddScoped<IUserCollectorFeedSourceService, UserCollectorFeedSourceService>();
@@ -314,3 +314,4 @@ void ConfigureKeyVault(IServiceCollection services)
     });
     services.TryAddScoped<IKeyVault, KeyVault>();
 }
+

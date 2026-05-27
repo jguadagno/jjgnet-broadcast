@@ -18,7 +18,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Dispatchers;
 [Route("Dispatchers/Bluesky")]
 [Produces("application/json")]
 public class BlueskySettingsController(
-    IUserPublisherBlueskySettingsManager manager,
+    IUserPlatformBlueskySettingsManager manager,
     IOnboardingManager onboardingManager,
     ILogger<BlueskySettingsController> logger,
     IMapper mapper) : ControllerBase
@@ -86,7 +86,7 @@ public class BlueskySettingsController(
         }
 
         var settings = await manager.GetAsync(resolvedOwnerOid)
-            ?? new UserPublisherBlueskySettings { CreatedByEntraOid = resolvedOwnerOid };
+            ?? new UserPlatformBlueskySettings { CreatedByEntraOid = resolvedOwnerOid };
 
         settings.IsEnabled = request.IsEnabled;
         settings.UserName = request.UserName;
@@ -141,3 +141,4 @@ public class BlueskySettingsController(
         return NoContent();
     }
 }
+

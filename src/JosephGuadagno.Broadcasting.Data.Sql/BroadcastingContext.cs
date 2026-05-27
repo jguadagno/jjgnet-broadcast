@@ -41,15 +41,15 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
     public virtual DbSet<SourceTag> SourceTags { get; set; } = null!;
     public virtual DbSet<SocialMediaPlatform> SocialMediaPlatforms { get; set; } = null!;
     public virtual DbSet<EngagementSocialMediaPlatform> EngagementSocialMediaPlatforms { get; set; } = null!;
-    public virtual DbSet<UserPublisherSetting> UserPublisherSettings { get; set; } = null!;
+    public virtual DbSet<UserPlatformSetting> UserPlatformSettings { get; set; } = null!;
     public DbSet<Models.UserOAuthToken> UserOAuthTokens => Set<Models.UserOAuthToken>();
     public DbSet<Models.UserCollectorFeedSource> UserCollectorFeedSources => Set<Models.UserCollectorFeedSource>();
     public DbSet<Models.UserCollectorYouTubeChannel> UserCollectorYouTubeChannels => Set<Models.UserCollectorYouTubeChannel>();
     public DbSet<Models.UserCollectorSpeakingEngagement> UserCollectorSpeakingEngagements => Set<Models.UserCollectorSpeakingEngagement>();
-    public DbSet<Models.UserPublisherBlueskySettings> UserPublisherBlueskySettings => Set<Models.UserPublisherBlueskySettings>();
-    public DbSet<Models.UserPublisherTwitterSettings> UserPublisherTwitterSettings => Set<Models.UserPublisherTwitterSettings>();
-    public DbSet<Models.UserPublisherLinkedInSettings> UserPublisherLinkedInSettings => Set<Models.UserPublisherLinkedInSettings>();
-    public DbSet<Models.UserPublisherFacebookSettings> UserPublisherFacebookSettings => Set<Models.UserPublisherFacebookSettings>();
+    public DbSet<Models.UserPlatformBlueskySettings> UserPlatformBlueskySettings => Set<Models.UserPlatformBlueskySettings>();
+    public DbSet<Models.UserPlatformTwitterSettings> UserPlatformTwitterSettings => Set<Models.UserPlatformTwitterSettings>();
+    public DbSet<Models.UserPlatformLinkedInSettings> UserPlatformLinkedInSettings => Set<Models.UserPlatformLinkedInSettings>();
+    public DbSet<Models.UserPlatformFacebookSettings> UserPlatformFacebookSettings => Set<Models.UserPlatformFacebookSettings>();
     public DbSet<Models.UserRandomPostSettings> UserRandomPostSettings => Set<Models.UserRandomPostSettings>();
     public DbSet<Models.UserEventDispatcherMapping> UserEventDispatcherMappings => Set<Models.UserEventDispatcherMapping>();
 
@@ -518,13 +518,13 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
                 .HasSentinel(true);
         });
 
-        modelBuilder.Entity<UserPublisherSetting>(entity =>
+        modelBuilder.Entity<UserPlatformSetting>(entity =>
         {
             entity.HasKey(e => e.Id)
-                .HasName("PK_UserPublisherSettings")
+                .HasName("PK_UserPlatformSettings")
                 .IsClustered();
 
-            entity.HasIndex(e => new { e.CreatedByEntraOid, e.SocialMediaPlatformId }, "UQ_UserPublisherSettings_User_Platform")
+            entity.HasIndex(e => new { e.CreatedByEntraOid, e.SocialMediaPlatformId }, "UQ_UserPlatformSettings_User_Platform")
                 .IsUnique();
 
             entity.Property(e => e.CreatedByEntraOid)
@@ -550,9 +550,9 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
                 .HasDefaultValueSql("(getutcdate())");
 
             entity.HasOne(e => e.SocialMediaPlatform)
-                .WithMany(platform => platform.UserPublisherSettings)
+                .WithMany(platform => platform.UserPlatformSettings)
                 .HasForeignKey(e => e.SocialMediaPlatformId)
-                .HasConstraintName("FK_UserPublisherSettings_SocialMediaPlatforms");
+                .HasConstraintName("FK_UserPlatformSettings_SocialMediaPlatforms");
         });
 
         modelBuilder.Entity<Models.UserOAuthToken>(entity =>
@@ -729,13 +729,13 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
                 .HasConstraintName("FK_EngagementSocialMediaPlatforms_SocialMediaPlatforms");
         });
 
-        modelBuilder.Entity<Models.UserPublisherBlueskySettings>(entity =>
+        modelBuilder.Entity<Models.UserPlatformBlueskySettings>(entity =>
         {
             entity.HasKey(e => e.Id)
-                .HasName("PK_UserPublisherBlueskySettings")
+                .HasName("PK_UserPlatformBlueskySettings")
                 .IsClustered();
 
-            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserPublisherBlueskySettings_Owner")
+            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserPlatformBlueskySettings_Owner")
                 .IsUnique();
 
             entity.Property(e => e.CreatedByEntraOid)
@@ -759,13 +759,13 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
                 .HasDefaultValueSql("(getutcdate())");
         });
 
-        modelBuilder.Entity<Models.UserPublisherTwitterSettings>(entity =>
+        modelBuilder.Entity<Models.UserPlatformTwitterSettings>(entity =>
         {
             entity.HasKey(e => e.Id)
-                .HasName("PK_UserPublisherTwitterSettings")
+                .HasName("PK_UserPlatformTwitterSettings")
                 .IsClustered();
 
-            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserPublisherTwitterSettings_Owner")
+            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserPlatformTwitterSettings_Owner")
                 .IsUnique();
 
             entity.Property(e => e.CreatedByEntraOid)
@@ -786,13 +786,13 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
                 .HasDefaultValueSql("(getutcdate())");
         });
 
-        modelBuilder.Entity<Models.UserPublisherLinkedInSettings>(entity =>
+        modelBuilder.Entity<Models.UserPlatformLinkedInSettings>(entity =>
         {
             entity.HasKey(e => e.Id)
-                .HasName("PK_UserPublisherLinkedInSettings")
+                .HasName("PK_UserPlatformLinkedInSettings")
                 .IsClustered();
 
-            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserPublisherLinkedInSettings_Owner")
+            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserPlatformLinkedInSettings_Owner")
                 .IsUnique();
 
             entity.Property(e => e.CreatedByEntraOid)
@@ -819,13 +819,13 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
                 .HasDefaultValueSql("(getutcdate())");
         });
 
-        modelBuilder.Entity<Models.UserPublisherFacebookSettings>(entity =>
+        modelBuilder.Entity<Models.UserPlatformFacebookSettings>(entity =>
         {
             entity.HasKey(e => e.Id)
-                .HasName("PK_UserPublisherFacebookSettings")
+                .HasName("PK_UserPlatformFacebookSettings")
                 .IsClustered();
 
-            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserPublisherFacebookSettings_Owner")
+            entity.HasIndex(e => e.CreatedByEntraOid, "UQ_UserPlatformFacebookSettings_Owner")
                 .IsUnique();
 
             entity.Property(e => e.CreatedByEntraOid)
@@ -948,4 +948,5 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
+
 

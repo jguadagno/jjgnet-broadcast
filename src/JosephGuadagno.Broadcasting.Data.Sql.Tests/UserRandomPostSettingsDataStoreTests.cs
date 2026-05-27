@@ -26,7 +26,7 @@ public class UserRandomPostSettingsDataStoreTests : IDisposable
 
         var mapperConfiguration = new MapperConfiguration(cfg =>
         {
-            cfg.AddProfile<MappingProfiles.UserPublisherSettingsMappingProfile>();
+            cfg.AddProfile<MappingProfiles.UserPlatformSettingsMappingProfile>();
         }, new LoggerFactory());
 
         _dataStore = new UserRandomPostSettingsDataStore(

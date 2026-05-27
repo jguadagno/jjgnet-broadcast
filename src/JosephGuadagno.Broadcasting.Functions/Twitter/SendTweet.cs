@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
-public class SendTweet(ITwitterManager twitterManager, IUserPublisherTwitterSettingsManager twitterSettingsManager, ILogger<SendTweet> logger)
+public class SendTweet(ITwitterManager twitterManager, IUserPlatformTwitterSettingsManager twitterSettingsManager, ILogger<SendTweet> logger)
 {
 
     [Function(ConfigurationFunctionNames.TwitterSendTweet)]
@@ -78,3 +78,4 @@ public class SendTweet(ITwitterManager twitterManager, IUserPublisherTwitterSett
         }
     }
 }
+

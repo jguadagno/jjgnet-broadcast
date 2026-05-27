@@ -18,7 +18,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Dispatchers;
 [Route("Dispatchers/Twitter")]
 [Produces("application/json")]
 public class TwitterSettingsController(
-    IUserPublisherTwitterSettingsManager manager,
+    IUserPlatformTwitterSettingsManager manager,
     IOnboardingManager onboardingManager,
     ILogger<TwitterSettingsController> logger,
     IMapper mapper) : ControllerBase
@@ -81,7 +81,7 @@ public class TwitterSettingsController(
         }
 
         var settings = await manager.GetAsync(resolvedOwnerOid)
-            ?? new UserPublisherTwitterSettings { CreatedByEntraOid = resolvedOwnerOid };
+            ?? new UserPlatformTwitterSettings { CreatedByEntraOid = resolvedOwnerOid };
 
         settings.IsEnabled = request.IsEnabled;
 
@@ -148,3 +148,4 @@ public class TwitterSettingsController(
         return NoContent();
     }
 }
+

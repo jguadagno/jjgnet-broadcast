@@ -25,10 +25,10 @@ public static class BroadcastingDataSqlServiceCollectionExtensions
         services.TryAddScoped<IUserCollectorFeedSourceDataStore, UserCollectorFeedSourceDataStore>();
         services.TryAddScoped<IUserCollectorYouTubeChannelDataStore, UserCollectorYouTubeChannelDataStore>();
         services.TryAddScoped<IUserCollectorSpeakingEngagementDataStore, UserCollectorSpeakingEngagementDataStore>();
-        services.TryAddScoped<IUserPublisherBlueskySettingsDataStore, UserPublisherBlueskySettingsDataStore>();
-        services.TryAddScoped<IUserPublisherTwitterSettingsDataStore, UserPublisherTwitterSettingsDataStore>();
-        services.TryAddScoped<IUserPublisherLinkedInSettingsDataStore, UserPublisherLinkedInSettingsDataStore>();
-        services.TryAddScoped<IUserPublisherFacebookSettingsDataStore, UserPublisherFacebookSettingsDataStore>();
+        services.TryAddScoped<IUserPlatformBlueskySettingsDataStore, UserPlatformBlueskySettingsDataStore>();
+        services.TryAddScoped<IUserPlatformTwitterSettingsDataStore, UserPlatformTwitterSettingsDataStore>();
+        services.TryAddScoped<IUserPlatformLinkedInSettingsDataStore, UserPlatformLinkedInSettingsDataStore>();
+        services.TryAddScoped<IUserPlatformFacebookSettingsDataStore, UserPlatformFacebookSettingsDataStore>();
         services.TryAddScoped<IUserRandomPostSettingsDataStore, UserRandomPostSettingsDataStore>();
         services.TryAddScoped<IUserEventDispatcherMappingDataStore, UserEventDispatcherMappingDataStore>();
         services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
@@ -48,6 +48,7 @@ public static class BroadcastingDataSqlServiceCollectionExtensions
         config.AddProfile<RbacProfile>();
         config.AddProfile<UserOAuthTokenMappingProfile>();
         config.AddProfile<UserCollectorMappingProfile>();
-        config.AddProfile<UserPublisherSettingsMappingProfile>();
+        config.AddProfile<UserPlatformSettingsMappingProfile>();
     }
 }
+

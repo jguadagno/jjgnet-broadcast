@@ -231,16 +231,16 @@ void ConfigureRepositories(IServiceCollection services)
     // SocialMediaPlatform
     services.TryAddScoped<ISocialMediaPlatformDataStore, SocialMediaPlatformDataStore>();
     services.TryAddScoped<ISocialMediaPlatformManager, SocialMediaPlatformManager>();
-    services.TryAddScoped<IUserPublisherBlueskySettingsDataStore, UserPublisherBlueskySettingsDataStore>();
-    services.TryAddScoped<IUserPublisherTwitterSettingsDataStore, UserPublisherTwitterSettingsDataStore>();
-    services.TryAddScoped<IUserPublisherLinkedInSettingsDataStore, UserPublisherLinkedInSettingsDataStore>();
-    services.TryAddScoped<IUserPublisherFacebookSettingsDataStore, UserPublisherFacebookSettingsDataStore>();
+    services.TryAddScoped<IUserPlatformBlueskySettingsDataStore, UserPlatformBlueskySettingsDataStore>();
+    services.TryAddScoped<IUserPlatformTwitterSettingsDataStore, UserPlatformTwitterSettingsDataStore>();
+    services.TryAddScoped<IUserPlatformLinkedInSettingsDataStore, UserPlatformLinkedInSettingsDataStore>();
+    services.TryAddScoped<IUserPlatformFacebookSettingsDataStore, UserPlatformFacebookSettingsDataStore>();
     services.TryAddScoped<IUserRandomPostSettingsDataStore, UserRandomPostSettingsDataStore>();
     services.TryAddScoped<IUserEventDispatcherMappingDataStore, UserEventDispatcherMappingDataStore>();
-    services.TryAddScoped<IUserPublisherBlueskySettingsManager, UserPublisherBlueskySettingsManager>();
-    services.TryAddScoped<IUserPublisherTwitterSettingsManager, UserPublisherTwitterSettingsManager>();
-    services.TryAddScoped<IUserPublisherLinkedInSettingsManager, UserPublisherLinkedInSettingsManager>();
-    services.TryAddScoped<IUserPublisherFacebookSettingsManager, UserPublisherFacebookSettingsManager>();
+    services.TryAddScoped<IUserPlatformBlueskySettingsManager, UserPlatformBlueskySettingsManager>();
+    services.TryAddScoped<IUserPlatformTwitterSettingsManager, UserPlatformTwitterSettingsManager>();
+    services.TryAddScoped<IUserPlatformLinkedInSettingsManager, UserPlatformLinkedInSettingsManager>();
+    services.TryAddScoped<IUserPlatformFacebookSettingsManager, UserPlatformFacebookSettingsManager>();
     services.TryAddScoped<IUserRandomPostSettingsManager, UserRandomPostSettingsManager>();
     services.TryAddScoped<IUserEventDispatcherMappingManager, UserEventDispatcherMappingManager>();
     services.TryAddScoped<IUserCollectorFeedSourceDataStore, UserCollectorFeedSourceDataStore>();

@@ -18,7 +18,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Dispatchers;
 [Route("Dispatchers/Facebook")]
 [Produces("application/json")]
 public class FacebookSettingsController(
-    IUserPublisherFacebookSettingsManager manager,
+    IUserPlatformFacebookSettingsManager manager,
     IOnboardingManager onboardingManager,
     ILogger<FacebookSettingsController> logger,
     IMapper mapper) : ControllerBase
@@ -81,7 +81,7 @@ public class FacebookSettingsController(
         }
 
         var settings = await manager.GetAsync(resolvedOwnerOid)
-            ?? new UserPublisherFacebookSettings { CreatedByEntraOid = resolvedOwnerOid };
+            ?? new UserPlatformFacebookSettings { CreatedByEntraOid = resolvedOwnerOid };
 
         settings.IsEnabled = request.IsEnabled;
         settings.PageId = request.PageId;
@@ -156,3 +156,4 @@ public class FacebookSettingsController(
         return NoContent();
     }
 }
+

@@ -14,7 +14,7 @@ public class PostLinkTests
 {
     private readonly Mock<ILinkedInManager> _linkedInManager = new();
     private readonly Mock<IUserOAuthTokenManager> _userOAuthTokenManager = new();
-    private readonly Mock<IUserPublisherLinkedInSettingsManager> _linkedInSettingsManager = new();
+    private readonly Mock<IUserPlatformLinkedInSettingsManager> _linkedInSettingsManager = new();
 
     private Functions.LinkedIn.PostLink BuildSut() => new(
         _linkedInManager.Object,
@@ -40,7 +40,7 @@ public class PostLinkTests
     {
         _linkedInSettingsManager
             .Setup(m => m.GetAsync(oid, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new UserPublisherLinkedInSettings
+            .ReturnsAsync(new UserPlatformLinkedInSettings
             {
                 CreatedByEntraOid = oid,
                 IsEnabled = true,
@@ -82,7 +82,7 @@ public class PostLinkTests
         var request = BuildPublishRequest();
         _linkedInSettingsManager
             .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((UserPublisherLinkedInSettings?)null);
+            .ReturnsAsync((UserPlatformLinkedInSettings?)null);
         var sut = BuildSut();
 
         var exception = await Record.ExceptionAsync(() => sut.Run(request));
@@ -101,7 +101,7 @@ public class PostLinkTests
         var request = BuildPublishRequest();
         _linkedInSettingsManager
             .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new UserPublisherLinkedInSettings
+            .ReturnsAsync(new UserPlatformLinkedInSettings
             {
                 CreatedByEntraOid = "test-oid",
                 IsEnabled = true,
@@ -186,3 +186,4 @@ public class PostLinkTests
         await Assert.ThrowsAsync<Exception>(() => sut.Run(request));
     }
 }
+

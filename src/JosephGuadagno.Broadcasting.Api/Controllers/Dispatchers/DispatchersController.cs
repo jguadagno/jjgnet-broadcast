@@ -16,10 +16,10 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Dispatchers;
 [Route("[controller]")]
 [Produces("application/json")]
 public class DispatchersController(
-    IUserPublisherBlueskySettingsManager blueskyManager,
-    IUserPublisherTwitterSettingsManager twitterManager,
-    IUserPublisherLinkedInSettingsManager linkedInManager,
-    IUserPublisherFacebookSettingsManager facebookManager,
+    IUserPlatformBlueskySettingsManager blueskyManager,
+    IUserPlatformTwitterSettingsManager twitterManager,
+    IUserPlatformLinkedInSettingsManager linkedInManager,
+    IUserPlatformFacebookSettingsManager facebookManager,
     IMapper mapper) : ControllerBase
 {
     /// <summary>
@@ -56,3 +56,4 @@ public class DispatchersController(
         });
     }
 }
+

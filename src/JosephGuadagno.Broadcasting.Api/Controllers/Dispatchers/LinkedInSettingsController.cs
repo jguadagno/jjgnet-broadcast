@@ -18,7 +18,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Dispatchers;
 [Route("Dispatchers/LinkedIn")]
 [Produces("application/json")]
 public class LinkedInSettingsController(
-    IUserPublisherLinkedInSettingsManager manager,
+    IUserPlatformLinkedInSettingsManager manager,
     IOnboardingManager onboardingManager,
     ILogger<LinkedInSettingsController> logger,
     IMapper mapper) : ControllerBase
@@ -81,7 +81,7 @@ public class LinkedInSettingsController(
         }
 
         var settings = await manager.GetAsync(resolvedOwnerOid)
-            ?? new UserPublisherLinkedInSettings { CreatedByEntraOid = resolvedOwnerOid };
+            ?? new UserPlatformLinkedInSettings { CreatedByEntraOid = resolvedOwnerOid };
 
         settings.IsEnabled = request.IsEnabled;
         settings.AuthorId = request.AuthorId;
@@ -137,3 +137,4 @@ public class LinkedInSettingsController(
         return NoContent();
     }
 }
+

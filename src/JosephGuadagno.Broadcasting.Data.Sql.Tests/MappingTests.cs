@@ -16,7 +16,7 @@ public class MappingTests
         {
             cfg.AddProfile<MappingProfiles.BroadcastingProfile>();
             cfg.AddProfile<MappingProfiles.RbacProfile>();
-            cfg.AddProfile<MappingProfiles.UserPublisherSettingsMappingProfile>();
+            cfg.AddProfile<MappingProfiles.UserPlatformSettingsMappingProfile>();
         }, new LoggerFactory());
 
         try

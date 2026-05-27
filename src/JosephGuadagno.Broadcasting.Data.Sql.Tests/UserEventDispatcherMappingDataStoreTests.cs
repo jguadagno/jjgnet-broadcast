@@ -26,7 +26,7 @@ public class UserEventDispatcherMappingDataStoreTests : IDisposable
 
         var mapperConfiguration = new MapperConfiguration(cfg =>
         {
-            cfg.AddProfile<MappingProfiles.UserPublisherSettingsMappingProfile>();
+            cfg.AddProfile<MappingProfiles.UserPlatformSettingsMappingProfile>();
         }, new LoggerFactory());
 
         _dataStore = new UserEventDispatcherMappingDataStore(
@@ -167,3 +167,4 @@ public class UserEventDispatcherMappingDataStoreTests : IDisposable
         Assert.NotNull(await _context.UserEventDispatcherMappings.FindAsync(entity.Id));
     }
 }
+

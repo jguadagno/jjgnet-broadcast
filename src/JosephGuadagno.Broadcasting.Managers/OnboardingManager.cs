@@ -29,10 +29,10 @@ public class OnboardingManager(
     IUserCollectorFeedSourceDataStore feedSourceDataStore,
     IUserCollectorYouTubeChannelDataStore youTubeChannelDataStore,
     IUserCollectorSpeakingEngagementDataStore speakingEngagementDataStore,
-    IUserPublisherBlueskySettingsDataStore blueskyDataStore,
-    IUserPublisherTwitterSettingsDataStore twitterDataStore,
-    IUserPublisherLinkedInSettingsDataStore linkedInDataStore,
-    IUserPublisherFacebookSettingsDataStore facebookDataStore,
+    IUserPlatformBlueskySettingsDataStore blueskyDataStore,
+    IUserPlatformTwitterSettingsDataStore twitterDataStore,
+    IUserPlatformLinkedInSettingsDataStore linkedInDataStore,
+    IUserPlatformFacebookSettingsDataStore facebookDataStore,
     IMessageTemplateDataStore messageTemplateDataStore,
     IMemoryCache cache,
     ILogger<OnboardingManager> logger) : IOnboardingManager
@@ -138,3 +138,4 @@ public class OnboardingManager(
         return Task.FromResult(true);
     }
 }
+

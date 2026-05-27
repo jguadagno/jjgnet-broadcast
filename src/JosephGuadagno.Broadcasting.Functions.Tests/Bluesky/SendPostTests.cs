@@ -13,7 +13,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Bluesky;
 public class SendPostTests
 {
     private readonly Mock<IBlueskyManager> _blueskyManager = new();
-    private readonly Mock<IUserPublisherBlueskySettingsManager> _blueskySettingsManager = new();
+    private readonly Mock<IUserPlatformBlueskySettingsManager> _blueskySettingsManager = new();
 
     private Functions.Bluesky.SendPost BuildSut() => new(
         _blueskyManager.Object,
@@ -40,7 +40,7 @@ public class SendPostTests
     {
         _blueskySettingsManager
             .Setup(m => m.GetAsync(oid, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new UserPublisherBlueskySettings
+            .ReturnsAsync(new UserPlatformBlueskySettings
             {
                 CreatedByEntraOid = oid,
                 IsEnabled = true,
@@ -79,7 +79,7 @@ public class SendPostTests
         var request = BuildPublishRequest(ownerEntraOid: "test-oid");
         _blueskySettingsManager
             .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((UserPublisherBlueskySettings?)null);
+            .ReturnsAsync((UserPlatformBlueskySettings?)null);
         var sut = BuildSut();
 
         var exception = await Record.ExceptionAsync(() => sut.Run(request));
@@ -98,7 +98,7 @@ public class SendPostTests
         var request = BuildPublishRequest(ownerEntraOid: "test-oid");
         _blueskySettingsManager
             .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new UserPublisherBlueskySettings
+            .ReturnsAsync(new UserPlatformBlueskySettings
             {
                 CreatedByEntraOid = "test-oid",
                 IsEnabled = true,
@@ -154,3 +154,4 @@ public class SendPostTests
         await Assert.ThrowsAsync<BlueskyPostException>(() => sut.Run(request));
     }
 }
+

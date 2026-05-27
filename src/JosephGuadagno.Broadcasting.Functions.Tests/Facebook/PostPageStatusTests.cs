@@ -14,7 +14,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Facebook;
 public class PostPageStatusTests
 {
     private readonly Mock<IFacebookManager> _facebookManager = new();
-    private readonly Mock<IUserPublisherFacebookSettingsManager> _facebookSettingsManager = new();
+    private readonly Mock<IUserPlatformFacebookSettingsManager> _facebookSettingsManager = new();
     private readonly Mock<IUserOAuthTokenManager> _userOAuthTokenManager = new();
 
     private Functions.Facebook.PostPageStatus BuildSut() => new(
@@ -39,7 +39,7 @@ public class PostPageStatusTests
     {
         _facebookSettingsManager
             .Setup(m => m.GetAsync(oid, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new UserPublisherFacebookSettings
+            .ReturnsAsync(new UserPlatformFacebookSettings
             {
                 CreatedByEntraOid = oid,
                 IsEnabled = true,
@@ -83,7 +83,7 @@ public class PostPageStatusTests
         var request = BuildPublishRequest();
         _facebookSettingsManager
             .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((UserPublisherFacebookSettings?)null);
+            .ReturnsAsync((UserPlatformFacebookSettings?)null);
         var sut = BuildSut();
 
         var exception = await Record.ExceptionAsync(() => sut.Run(request));
@@ -102,7 +102,7 @@ public class PostPageStatusTests
         var request = BuildPublishRequest();
         _facebookSettingsManager
             .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new UserPublisherFacebookSettings
+            .ReturnsAsync(new UserPlatformFacebookSettings
             {
                 CreatedByEntraOid = "test-oid",
                 IsEnabled = true,
@@ -189,3 +189,4 @@ public class PostPageStatusTests
         await Assert.ThrowsAsync<Exception>(() => sut.Run(request));
     }
 }
+

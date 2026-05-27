@@ -5,10 +5,10 @@ namespace JosephGuadagno.Broadcasting.Web.Models;
 /// <summary>View model for the dispatchers aggregate page.</summary>
 public class DispatchersAggregateViewModel
 {
-    public UserPublisherBlueskySettings? Bluesky { get; set; }
-    public UserPublisherTwitterSettings? Twitter { get; set; }
-    public UserPublisherLinkedInSettings? LinkedIn { get; set; }
-    public UserPublisherFacebookSettings? Facebook { get; set; }
+    public UserPlatformBlueskySettings? Bluesky { get; set; }
+    public UserPlatformTwitterSettings? Twitter { get; set; }
+    public UserPlatformLinkedInSettings? LinkedIn { get; set; }
+    public UserPlatformFacebookSettings? Facebook { get; set; }
 
     /// <summary>Platform cards driven from the SocialMediaPlatform service (excludes platforms with no controller).</summary>
     public IReadOnlyList<DispatcherPlatformCardViewModel> Platforms { get; set; } = [];
@@ -26,3 +26,4 @@ public class DispatcherPlatformCardViewModel
     public bool IsConfigured { get; init; }
     public bool IsEnabled { get; init; }
 }
+

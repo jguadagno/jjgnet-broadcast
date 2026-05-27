@@ -16,10 +16,10 @@ public class DispatchersController(
     private static readonly IReadOnlyDictionary<string, string> PlatformControllerMap =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Twitter"] = "PublisherTwitterSettings",
-            ["Bluesky"] = "PublisherBlueskySettings",
-            ["LinkedIn"] = "PublisherLinkedInSettings",
-            ["Facebook"] = "PublisherFacebookSettings",
+            ["Twitter"] = "PlatformTwitterSettings",
+            ["Bluesky"] = "PlatformBlueskySettings",
+            ["LinkedIn"] = "PlatformLinkedInSettings",
+            ["Facebook"] = "PlatformFacebookSettings",
         };
 
     [HttpGet("")]

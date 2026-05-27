@@ -16,10 +16,10 @@ public class ApiBroadcastingProfile : Profile
         CreateMap<MessageTemplate, MessageTemplateResponse>();
         CreateMap<SocialMediaPlatform, SocialMediaPlatformResponse>();
         CreateMap<EngagementSocialMediaPlatform, EngagementSocialMediaPlatformResponse>();
-        CreateMap<UserPublisherBlueskySettings, BlueskySettingsResponse>();
-        CreateMap<UserPublisherTwitterSettings, TwitterSettingsResponse>();
-        CreateMap<UserPublisherLinkedInSettings, LinkedInSettingsResponse>();
-        CreateMap<UserPublisherFacebookSettings, FacebookSettingsResponse>();
+        CreateMap<UserPlatformBlueskySettings, BlueskySettingsResponse>();
+        CreateMap<UserPlatformTwitterSettings, TwitterSettingsResponse>();
+        CreateMap<UserPlatformLinkedInSettings, LinkedInSettingsResponse>();
+        CreateMap<UserPlatformFacebookSettings, FacebookSettingsResponse>();
         CreateMap<UserRandomPostSettings, UserRandomPostSettingsResponse>();
         CreateMap<UserEventDispatcherMapping, UserEventDispatcherMappingResponse>();
 
@@ -129,3 +129,4 @@ public class ApiBroadcastingProfile : Profile
             .ForAllMembers(o => o.Condition((_, _, sourceMember) => sourceMember is not null));
     }
 }
+

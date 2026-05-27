@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.LinkedIn;
 
-public class PostLink(ILinkedInManager linkedInManager, IUserOAuthTokenManager userOAuthTokenManager, IUserPublisherLinkedInSettingsManager linkedInSettingsManager, ILogger<PostLink> logger)
+public class PostLink(ILinkedInManager linkedInManager, IUserOAuthTokenManager userOAuthTokenManager, IUserPlatformLinkedInSettingsManager linkedInSettingsManager, ILogger<PostLink> logger)
 {
     [Function(ConfigurationFunctionNames.LinkedInPostLink)]
     public async Task Run(
