@@ -151,3 +151,74 @@ Decision: replace Event Grid publisher dispatch with direct per-user queue dispa
   `Publishers\ScheduledItems.cs`.
 - The new `UserRandomPostSettings` table should be **seeded from Joseph's
   current global defaults** before the global settings path is removed.
+
+---
+
+## RandomPosts Query Efficiency Analysis — 2026-05-26T15:39:38.587-07:00
+
+**Trigger:** Joseph flagged 1,440 full-table reads/day with mostly-discarded results.
+
+### Confirmed: Joseph's reading is accurate
+
+`RandomPosts.cs` calls `GetAllActiveAsync()` (returns all active rows for all users),
+groups in C#, then for every row parses the `CronExpression` via Cronos and evaluates
+whether it fired in the last minute. No state is written back to the DB after a row fires.
+
+The `UserRandomPostSettings` schema has NO `NextRunDateUtc` column. The domain model
+and EF entity confirm this. The inefficiency is real.
+
+### `ScheduledItems` comparison
+
+`ScheduledItemDataStore.GetScheduledItemsToSendAsync()` does:
+`WHERE MessageSent = 0 AND SendOnDateTime <= GETUTCDATE()`
+Only due rows come back. This is the correct pattern. `UserRandomPostSettings` needs
+the equivalent, adjusted for recurring schedules (advance `NextRunDateUtc` on fire, not
+flip a one-shot flag).
+
+### Recommendation filed
+
+Add `NextRunDateUtc DATETIMEOFFSET NULL` to `UserRandomPostSettings`. Replace
+`GetAllActiveAsync()` in `RandomPosts.cs` with a new `GetAllDueAsync(utcNow)` that
+filters `WHERE IsActive = 1 AND (NextRunDateUtc IS NULL OR NextRunDateUtc <= @utcNow)`.
+After each successful dispatch, call a new `UpdateNextRunAsync(id, nextOccurrence)`.
+
+Full details: `.squad/decisions/inbox/neo-randomposts-query-efficiency.md`
+
+---
+
+## PR #998 Review — NextRunDateUtc Efficiency Fix — 2026-05-26T16:12:32.404-07:00
+
+**Verdict:** BLOCKED — one hard gate violation found.
+
+### Blocking finding
+
+`RandomPosts.cs` line 136: `syndicationFeedItem.Title` passed directly to `logger.LogInformation()`
+without `LogSanitizer.Sanitize()`. Model property from externally-sourced RSS feed content.
+Per the `cs/log-forging` hard pre-commit gate, this is a blocking violation.
+
+Fix: `LogSanitizer.Sanitize(syndicationFeedItem.Title)` as the first structured log param.
+
+### What passed all hard gates
+
+- `DATETIMEOFFSET` in SQL and `DateTimeOffset` in C# — ✅
+- Both migrations are idempotent — ✅
+- `table-create.sql` matches migrations (has `NextRunDateUtc` + filtered index) — ✅
+- `GetAllDueAsync` LINQ handles NULL `NextRunDateUtc` (first-run always-eligible) — ✅
+- `UpdateNextRunAsync` called outside try/catch — executes after both success and failure — ✅
+- `[IgnoreAntiforgeryToken]` at class + method level on API controllers — ✅
+- 1,279 tests pass — ✅
+
+### Observations (non-blocking)
+
+- No test for "dispatch throws → UpdateNextRunAsync still called". Code is correct; test coverage gap.
+- Invalid cron → no AdvanceNextRunAsync call → row loops forever (intentional per test but noisy).
+- `AdvanceNextRunAsync(CronExpression)` uses `DateTimeOffset.UtcNow` at call time not function-entry utcNow. Negligible.
+
+### Key file paths (for implementer)
+
+- `src/Functions/Publishers/RandomPosts.cs` — needs `GetAllDueAsync` + `UpdateNextRunAsync` call
+- `src/Data.Sql/UserRandomPostSettingsDataStore.cs` — add both new methods
+- `src/Domain/Interfaces/IUserRandomPostSettingsDataStore.cs` — add both to interface
+- `src/Domain/Models/UserRandomPostSettings.cs` — add `NextRunDateUtc` property
+- `src/Data.Sql/Models/UserRandomPostSettings.cs` — add EF property
+- `scripts/database/table-create.sql` — add column + index to `UserRandomPostSettings` table

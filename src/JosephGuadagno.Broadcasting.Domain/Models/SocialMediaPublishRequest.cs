@@ -57,7 +57,7 @@ public class SocialMediaPublishRequest
 
     /// <summary>
     /// The Entra Object ID of the user who owns the content.
-    /// Used by the Send function to resolve per-user credentials before calling PublishAsync.
+    /// Used by the Send function to resolve per-user credentials before calling DispatchAsync.
     /// </summary>
     public string? OwnerEntraOid { get; set; }
 

@@ -1,5 +1,5 @@
 -- Migration: 2026-05-26 — Per-user publisher routing tables (Issue #995 Phase 1)
--- Creates UserRandomPostSettings and UserEventPublisherMapping tables.
+-- Creates UserRandomPostSettings and UserEventPublisherMappings tables.
 
 -- ============================================================
 -- UserRandomPostSettings
@@ -37,13 +37,13 @@ END
 GO
 
 -- ============================================================
--- UserEventPublisherMapping
+-- UserEventPublisherMappings
 -- Maps collector event types to publisher platforms per user.
 -- EventType valid values align with MessageTemplates.MessageTypes.
 -- ============================================================
-IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserEventPublisherMapping')
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserEventPublisherMappings')
 BEGIN
-    CREATE TABLE [dbo].[UserEventPublisherMapping]
+    CREATE TABLE [dbo].[UserEventPublisherMappings]
     (
         [Id]                    INT IDENTITY(1,1)   NOT NULL,
         [CreatedByEntraOid]     NVARCHAR(36)        NOT NULL,
@@ -62,11 +62,11 @@ BEGIN
             CHECK ([EventType] IN ('NewSyndicationFeedItem', 'NewYouTubeItem', 'NewSpeakingEngagement', 'RandomPost', 'ScheduledItem'))
     );
     CREATE NONCLUSTERED INDEX IX_UserEventPublisherMapping_Active
-        ON [dbo].[UserEventPublisherMapping] ([IsActive] ASC, [CreatedByEntraOid] ASC);
-    PRINT 'Created table UserEventPublisherMapping';
+        ON [dbo].[UserEventPublisherMappings] ([IsActive] ASC, [CreatedByEntraOid] ASC);
+    PRINT 'Created table UserEventPublisherMappings';
 END
 ELSE
 BEGIN
-    PRINT 'Table UserEventPublisherMapping already exists — skipped';
+    PRINT 'Table UserEventPublisherMappings already exists — skipped';
 END
 GO

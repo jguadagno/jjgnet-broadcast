@@ -70,7 +70,7 @@ public class PostLinkTests
             m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
         _linkedInManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
@@ -89,7 +89,7 @@ public class PostLinkTests
 
         Assert.Null(exception);
         _linkedInManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
@@ -116,26 +116,26 @@ public class PostLinkTests
 
         Assert.Null(exception);
         _linkedInManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
-    // Credentials valid → PublishAsync is called
+    // Credentials valid → DispatchAsync is called
 
     [Fact]
-    public async Task Run_WhenCredentialsAreValid_CallsPublishAsync()
+    public async Task Run_WhenCredentialsAreValid_CallsDispatchAsync()
     {
         var request = BuildPublishRequest();
         SetupValidCredentials();
         _linkedInManager
-            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .Setup(m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ReturnsAsync("share-id-123");
         var sut = BuildSut();
 
         await sut.Run(request);
 
         _linkedInManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Once);
     }
 
@@ -147,7 +147,7 @@ public class PostLinkTests
         var request = BuildPublishRequest();
         SetupValidCredentials();
         _linkedInManager
-            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .Setup(m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ReturnsAsync((string?)null);
         var sut = BuildSut();
 
@@ -164,7 +164,7 @@ public class PostLinkTests
         var request = BuildPublishRequest();
         SetupValidCredentials();
         _linkedInManager
-            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .Setup(m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ThrowsAsync(new LinkedInPostException("API Error", 403, "Forbidden"));
         var sut = BuildSut();
 
@@ -179,7 +179,7 @@ public class PostLinkTests
         var request = BuildPublishRequest();
         SetupValidCredentials();
         _linkedInManager
-            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .Setup(m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ThrowsAsync(new Exception("Service unavailable"));
         var sut = BuildSut();
 

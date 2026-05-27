@@ -19,7 +19,7 @@ public class UserPublisherSettingsMappingProfile : Profile
             .ReverseMap()
             .ForMember(destination => destination.ExcludedCategories, options => options.MapFrom(source => JoinCsv(source.ExcludedCategories)));
 
-        CreateMap<Models.UserEventPublisherMapping, Domain.Models.UserEventPublisherMapping>().ReverseMap();
+        CreateMap<Models.UserEventDispatcherMapping, Domain.Models.UserEventDispatcherMapping>().ReverseMap();
     }
 
     private static List<string> SplitCsv(string? value)

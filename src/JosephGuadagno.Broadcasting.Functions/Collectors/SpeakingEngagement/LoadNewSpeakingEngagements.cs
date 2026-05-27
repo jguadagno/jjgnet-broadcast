@@ -19,7 +19,7 @@ public class LoadNewSpeakingEngagements(
     IEngagementManager engagementManager,
     IUserCollectorSpeakingEngagementManager userCollectorSpeakingEngagementManager,
     IFeedCheckManager feedCheckManager,
-    ICollectorEventPublisher collectorEventPublisher,
+    ICollectorEventDispatcher collectorEventDispatcher,
     ILogger<LoadNewSpeakingEngagements> logger)
 {
     private static readonly ResiliencePipeline SavePipeline = new ResiliencePipelineBuilder()
@@ -110,7 +110,7 @@ public class LoadNewSpeakingEngagements(
                             { "EndDateTime", engagement.EndDateTime.ToString("o") }
                         };
                         logger.LogCustomEvent(Metrics.SpeakingEngagementAddedOrUpdated, properties);
-                        await collectorEventPublisher.PublishSpeakingEngagementAsync(engagement, config.CreatedByEntraOid);
+                        await collectorEventDispatcher.DispatchSpeakingEngagementAsync(engagement, config.CreatedByEntraOid);
                         savedCount++;
                     }
                     catch (Exception e)

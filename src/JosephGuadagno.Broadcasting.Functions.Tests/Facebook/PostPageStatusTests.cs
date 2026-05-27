@@ -71,7 +71,7 @@ public class PostPageStatusTests
             m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
         _facebookManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
@@ -90,7 +90,7 @@ public class PostPageStatusTests
 
         Assert.Null(exception);
         _facebookManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
@@ -117,45 +117,45 @@ public class PostPageStatusTests
 
         Assert.Null(exception);
         _facebookManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
-    // Successful post → PublishAsync is called
+    // Successful post → DispatchAsync is called
 
     [Fact]
-    public async Task Run_WithValidStatus_CallsPublishAsync()
+    public async Task Run_WithValidStatus_CallsDispatchAsync()
     {
         var request = BuildPublishRequest();
         SetupValidCredentials();
         _facebookManager
-            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .Setup(m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ReturnsAsync("post-id-123");
         var sut = BuildSut();
 
         await sut.Run(request);
 
         _facebookManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Once);
     }
 
-    // Successful post with image → PublishAsync is called
+    // Successful post with image → DispatchAsync is called
 
     [Fact]
-    public async Task Run_WithValidStatusWithImage_CallsPublishAsync()
+    public async Task Run_WithValidStatusWithImage_CallsDispatchAsync()
     {
         var request = BuildPublishRequest(imageUrl: "https://example.com/image.jpg");
         SetupValidCredentials();
         _facebookManager
-            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .Setup(m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ReturnsAsync("post-id-456");
         var sut = BuildSut();
 
         await sut.Run(request);
 
         _facebookManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Once);
     }
 
@@ -167,7 +167,7 @@ public class PostPageStatusTests
         var request = BuildPublishRequest();
         SetupValidCredentials();
         _facebookManager
-            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .Setup(m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ThrowsAsync(new FacebookPostException("API Error", 400, "Invalid token"));
         var sut = BuildSut();
 
@@ -182,7 +182,7 @@ public class PostPageStatusTests
         var request = BuildPublishRequest();
         SetupValidCredentials();
         _facebookManager
-            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .Setup(m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ThrowsAsync(new Exception("Network failure"));
         var sut = BuildSut();
 

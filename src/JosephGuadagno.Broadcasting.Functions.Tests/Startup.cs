@@ -178,10 +178,10 @@ public class Startup
         services.AddSingleton<ITokenRefreshManager, TokenRefreshManager>();
 
         services.TryAddScoped<IMessageTemplateDataStore, MessageTemplateDataStore>();
-        services.TryAddScoped<IUserEventPublisherMappingDataStore, UserEventPublisherMappingDataStore>();
+        services.TryAddScoped<IUserEventDispatcherMappingDataStore, UserEventDispatcherMappingDataStore>();
         services.TryAddScoped<IMessageTemplateManager, MessageTemplateManager>();
         services.TryAddScoped<IPostComposer, PostComposer>();
-        services.AddScoped<IScheduledItemEventPublisher, ScheduledItemEventPublisher>();
+        services.AddScoped<IScheduledItemEventDispatcher, ScheduledItemEventDispatcher>();
 
         services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader.SpeakingEngagementsReader>();
     }
@@ -225,7 +225,7 @@ public class Startup
             return new TwitterContext(authorizer);
         });
         services.TryAddScoped<ITwitterManager, TwitterManager>();
-        services.AddScoped<ISocialMediaPublisher>(sp =>
+        services.AddScoped<ISocialMediaDispatcher>(sp =>
             sp.GetRequiredService<ITwitterManager>());
     }
 
@@ -263,7 +263,7 @@ public class Startup
             return linkedInApplicationSettings;
         });
         services.TryAddScoped<ILinkedInManager, LinkedInManager>();
-        services.AddScoped<ISocialMediaPublisher>(sp =>
+        services.AddScoped<ISocialMediaDispatcher>(sp =>
             sp.GetRequiredService<ILinkedInManager>());
     }
 
@@ -276,7 +276,7 @@ public class Startup
             return facebookApplicationSettings;
         });
         services.TryAddSingleton<IFacebookManager, FacebookManager>();
-        services.AddSingleton<ISocialMediaPublisher>(sp =>
+        services.AddSingleton<ISocialMediaDispatcher>(sp =>
             sp.GetRequiredService<IFacebookManager>());
     }
 
@@ -289,7 +289,7 @@ public class Startup
             return blueskySettings;
         });
         services.TryAddScoped<IBlueskyManager, BlueskyManager>();
-        services.AddScoped<ISocialMediaPublisher>(sp =>
+        services.AddScoped<ISocialMediaDispatcher>(sp =>
             sp.GetRequiredService<IBlueskyManager>());
     }
 }

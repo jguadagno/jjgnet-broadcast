@@ -271,19 +271,19 @@ void ConfigureApplication(IServiceCollection services)
 
     services.TryAddScoped<IUserOAuthTokenManager, UserOAuthTokenManager>();
     services.TryAddScoped<IUserRandomPostSettingsManager, UserRandomPostSettingsManager>();
-    services.TryAddScoped<IUserEventPublisherMappingManager, UserEventPublisherMappingManager>();
+    services.TryAddScoped<IUserEventDispatcherMappingManager, UserEventDispatcherMappingManager>();
 
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
     services.TryAddScoped<IScheduledItemValidationService, ScheduledItemValidationService>();
-    services.TryAddScoped<IPublishersAggregateService, PublishersAggregateService>();
+    services.TryAddScoped<IDispatchersAggregateService, DispatchersAggregateService>();
     services.TryAddScoped<IUserPublisherBlueskySettingsService, UserPublisherBlueskySettingsService>();
     services.TryAddScoped<IUserPublisherTwitterSettingsService, UserPublisherTwitterSettingsService>();
     services.TryAddScoped<IUserPublisherLinkedInSettingsService, UserPublisherLinkedInSettingsService>();
     services.TryAddScoped<IUserPublisherFacebookSettingsService, UserPublisherFacebookSettingsService>();
     services.TryAddScoped<IUserRandomPostSettingsService, UserRandomPostSettingsService>();
-    services.TryAddScoped<IUserEventPublisherMappingService, UserEventPublisherMappingService>();
+    services.TryAddScoped<IUserEventDispatcherMappingService, UserEventDispatcherMappingService>();
     services.TryAddScoped<IUserCollectorFeedSourceService, UserCollectorFeedSourceService>();
     services.TryAddScoped<IUserCollectorYouTubeChannelService, UserCollectorYouTubeChannelService>();
     services.TryAddScoped<IUserCollectorSpeakingEngagementService, UserCollectorSpeakingEngagementService>();

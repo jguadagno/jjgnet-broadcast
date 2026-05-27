@@ -3,7 +3,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 namespace JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 
 public interface ILinkedInManager
-    : ISocialMediaPublisher
+    : ISocialMediaDispatcher
 {
     /// <summary>
     /// Gets the current user's profile based on the access token

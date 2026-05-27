@@ -10,9 +10,9 @@ public static class ConfigurationFunctionNames
     public const string CollectorsYouTubeLoadNewVideos = "CollectorsYouTubeLoadNewVideos";
     public const string CollectorsYouTubeLoadAllVideos = "CollectorsYouTubeLoadAllVideos";
 
-    // Publishers
-    public const string PublishersRandomPosts = "PublishersRandomPosts";
-    public const string PublishersScheduledItems = "PublishersScheduledItems";
+    // Dispatchers
+    public const string DispatchersRandomPosts = "DispatchersRandomPosts";
+    public const string DispatchersScheduledItems = "DispatchersScheduledItems";
 
     // Social media platforms
     public const string FacebookPostPageStatus = "FacebookPostPageStatus";

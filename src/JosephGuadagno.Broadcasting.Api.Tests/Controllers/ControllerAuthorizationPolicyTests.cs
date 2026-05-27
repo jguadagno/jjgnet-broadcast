@@ -2,7 +2,7 @@ using System.Reflection;
 using FluentAssertions;
 using JosephGuadagno.Broadcasting.Api.Controllers;
 using JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
-using JosephGuadagno.Broadcasting.Api.Controllers.Publishers;
+using JosephGuadagno.Broadcasting.Api.Controllers.Dispatchers;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 
@@ -15,7 +15,7 @@ public class ControllerAuthorizationPolicyTests
         { typeof(EngagementsController), nameof(EngagementsController) },
         { typeof(SchedulesController), nameof(SchedulesController) },
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController) },
-        { typeof(PublishersController), nameof(PublishersController) },
+        { typeof(DispatchersController), nameof(DispatchersController) },
         { typeof(CollectorsController), nameof(CollectorsController) },
         { typeof(CollectorYouTubeSettingsController), nameof(CollectorYouTubeSettingsController) },
         { typeof(CollectorFeedSourceSettingsController), nameof(CollectorFeedSourceSettingsController) },
@@ -25,7 +25,7 @@ public class ControllerAuthorizationPolicyTests
         { typeof(LinkedInSettingsController), nameof(LinkedInSettingsController) },
         { typeof(FacebookSettingsController), nameof(FacebookSettingsController) },
         { typeof(UserRandomPostSettingsController), nameof(UserRandomPostSettingsController) },
-        { typeof(UserEventPublisherMappingController), nameof(UserEventPublisherMappingController) },
+        { typeof(UserEventDispatcherMappingController), nameof(UserEventDispatcherMappingController) },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController) },
         { typeof(YouTubeItemsController), nameof(YouTubeItemsController) }
     };
@@ -60,7 +60,7 @@ public class ControllerAuthorizationPolicyTests
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController.CreateAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(SocialMediaPlatformsController), nameof(SocialMediaPlatformsController.DeleteAsync), AuthorizationPolicyNames.RequireAdministrator },
-        { typeof(PublishersController), nameof(PublishersController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(DispatchersController), nameof(DispatchersController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(CollectorsController), nameof(CollectorsController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(CollectorYouTubeSettingsController), nameof(CollectorYouTubeSettingsController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(CollectorYouTubeSettingsController), nameof(CollectorYouTubeSettingsController.GetAsync), AuthorizationPolicyNames.RequireViewer },
@@ -94,11 +94,11 @@ public class ControllerAuthorizationPolicyTests
         { typeof(UserRandomPostSettingsController), nameof(UserRandomPostSettingsController.CreateAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(UserRandomPostSettingsController), nameof(UserRandomPostSettingsController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(UserRandomPostSettingsController), nameof(UserRandomPostSettingsController.DeleteAsync), AuthorizationPolicyNames.RequireContributor },
-        { typeof(UserEventPublisherMappingController), nameof(UserEventPublisherMappingController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
-        { typeof(UserEventPublisherMappingController), nameof(UserEventPublisherMappingController.GetAsync), AuthorizationPolicyNames.RequireViewer },
-        { typeof(UserEventPublisherMappingController), nameof(UserEventPublisherMappingController.CreateAsync), AuthorizationPolicyNames.RequireContributor },
-        { typeof(UserEventPublisherMappingController), nameof(UserEventPublisherMappingController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },
-        { typeof(UserEventPublisherMappingController), nameof(UserEventPublisherMappingController.DeleteAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(UserEventDispatcherMappingController), nameof(UserEventDispatcherMappingController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(UserEventDispatcherMappingController), nameof(UserEventDispatcherMappingController.GetAsync), AuthorizationPolicyNames.RequireViewer },
+        { typeof(UserEventDispatcherMappingController), nameof(UserEventDispatcherMappingController.CreateAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(UserEventDispatcherMappingController), nameof(UserEventDispatcherMappingController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },
+        { typeof(UserEventDispatcherMappingController), nameof(UserEventDispatcherMappingController.DeleteAsync), AuthorizationPolicyNames.RequireContributor },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.GetAllAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.GetAsync), AuthorizationPolicyNames.RequireViewer },
         { typeof(MessageTemplatesController), nameof(MessageTemplatesController.UpdateAsync), AuthorizationPolicyNames.RequireContributor },

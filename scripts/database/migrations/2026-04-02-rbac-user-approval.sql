@@ -53,9 +53,9 @@ CREATE TABLE [dbo].[UserRoles] (
 GO
 
 -- ============================================================
--- Table 4: UserApprovalLog — audit trail
+-- Table 4: UserApprovalLogs — audit trail
 -- ============================================================
-CREATE TABLE [dbo].[UserApprovalLog] (
+CREATE TABLE [dbo].[UserApprovalLogs] (
     [Id]          INT            NOT NULL IDENTITY(1,1),
     [UserId]      INT            NOT NULL,
     [AdminUserId] INT            NULL,   -- NULL for system-generated entries
@@ -105,9 +105,9 @@ GO
 IF NOT EXISTS (
     SELECT 1 FROM sys.check_constraints
     WHERE name = 'CK_UserApprovalLog_Action'
-      AND parent_object_id = OBJECT_ID('dbo.UserApprovalLog'))
+      AND parent_object_id = OBJECT_ID('dbo.UserApprovalLogs'))
 BEGIN
-    ALTER TABLE [dbo].[UserApprovalLog]
+    ALTER TABLE [dbo].[UserApprovalLogs]
         ADD CONSTRAINT [CK_UserApprovalLog_Action]
             CHECK ([Action] IN ('Registered', 'Approved', 'Rejected', 'RoleAssigned', 'RoleRemoved'));
 END
@@ -131,7 +131,7 @@ GO
 -- CROSS JOIN [dbo].[Roles] r
 -- WHERE u.[EntraObjectId] = @adminOid AND r.[Name] = 'Administrator';
 --
--- INSERT INTO [dbo].[UserApprovalLog] ([UserId], [Action], [Notes])
+-- INSERT INTO [dbo].[UserApprovalLogs] ([UserId], [Action], [Notes])
 -- SELECT [Id], 'Approved', 'Initial administrator seed'
 -- FROM [dbo].[ApplicationUsers]
 -- WHERE [EntraObjectId] = @adminOid;

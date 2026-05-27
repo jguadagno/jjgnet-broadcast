@@ -90,6 +90,32 @@
 
 ---
 
+## NextRunDateUtc Efficiency Fix (RandomPosts) — 2026-05-26
+
+**Status:** ✅ COMPLETE — branch `issue-995-per-user-publisher-routing`
+
+### What was done
+
+- Added `NextRunDateUtc DATETIMEOFFSET NULL` column to `UserRandomPostSettings` in SQL (`table-create.sql` + idempotent migration `2026-05-26-userrandomposts-add-nextrundate.sql`)
+- Added filtered index `IX_UserRandomPostSettings_IsActive_NextRunDateUtc WHERE [IsActive] = 1`
+- Added `NextRunDateUtc` property to both domain and EF models
+- Added `GetAllDueAsync(DateTimeOffset utcNow, …)` and `UpdateNextRunAsync(int id, DateTimeOffset? nextRun, …)` to `IUserRandomPostSettingsDataStore`, `IUserRandomPostSettingsManager`, and their implementations
+- Rewrote `RandomPosts.cs` to: inject `IUserRandomPostSettingsManager`, call `GetAllDueAsync` (SQL does the due-check, no more cron parsing per-row just to filter), flat `foreach`, always advance `NextRunDateUtc` after each attempt (dispatch success, no feed item, no template, compose failure), skip `UpdateNextRunAsync` only for invalid cron expressions
+- Updated `RandomPostsTests.cs` to mock `IUserRandomPostSettingsManager` instead of the data store, and assert that `UpdateNextRunAsync` is called once per dispatch (including no-feed-item path)
+- Added 8 new `UserRandomPostSettingsDataStoreTests` covering `GetAllDueAsync` and `UpdateNextRunAsync` (null, past, future, inactive, unknown-id)
+- All 286 tests pass
+
+### Key technical learnings
+
+- **SQL-first filtering:** Moving cron scheduling to a `WHERE NextRunDateUtc IS NULL OR NextRunDateUtc <= @utcNow` query eliminates O(n × cron-parse) work in the function host; cron parsing remains only for computing the *next* occurrence after dispatch.
+- **Always advance on attempt:** Advancing `NextRunDateUtc` regardless of dispatch outcome (except invalid cron) prevents an infinite retry storm for recoverable failures (no feed item, no template). Invalid cron cannot compute next occurrence, so those rows are skipped entirely.
+- **`AdvanceNextRunAsync` overloads:** One overload takes a pre-parsed `CronExpression` (main dispatch path, already parsed). A second takes `DateTimeOffset utcNow` and re-parses internally (early-exit paths like unknown platform). This avoids re-parsing on the happy path while still being safe on edge paths.
+- **`CronExpression.GetNextOccurrence` returns `DateTimeOffset?`:** Null for impossible expressions (e.g., Feb 31). Passing null to `UpdateNextRunAsync` clears the field, which re-includes the row on the next invocation — handled gracefully.
+- **No AutoMapper profile changes needed:** `NextRunDateUtc` is a same-name same-type scalar; AutoMapper maps it automatically through the existing `ReverseMap()` profile.
+
+
+---
+
 ## Phase 3 Part 1 — API CRUD Endpoints (2026-05-26T18:17:08Z)
 
 **Status:** ✅ COMPLETE — commit `ca59c43b` on branch `issue-995-per-user-publisher-routing`
@@ -157,4 +183,13 @@ All phases of issue #995 are now fully complete:
 - Phase 3 Part 2: Web UI ✅
 
 **Next:** Code review, merge to main, close issue #995.
+
+---
+
+## PR Opened — Issue #995 Per-User Publisher Routing (2026-05-26T11:56:31.095-07:00)
+
+- Cleanup commit `83e4a8a5` removed dead global `RandomPostSettings`, `IEventPublisher`, Event Grid topic configuration, and simulator/test scaffolding after the per-user routing migration.
+- Manual production steps issue opened: #997 (`squad:Joe`).
+- Pull request opened: #998 — `feat(#995): per-user publisher routing — replace Event Grid dispatch`.
+- Validation before push: `dotnet build .\src\ --no-restore --configuration Release` ✅ and `dotnet test .\src\ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"` ✅.
 

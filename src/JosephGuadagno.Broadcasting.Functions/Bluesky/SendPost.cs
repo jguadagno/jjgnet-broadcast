@@ -46,7 +46,7 @@ public class SendPost(IBlueskyManager blueskyManager, IUserPublisherBlueskySetti
         try
         {
             logger.LogDebug("Bluesky Post Received '{Text}'", request.Text);
-            var cid = await blueskyManager.PublishAsync(request);
+            var cid = await blueskyManager.DispatchAsync(request);
             if (cid is not null)
             {
                 var properties = new Dictionary<string, string>

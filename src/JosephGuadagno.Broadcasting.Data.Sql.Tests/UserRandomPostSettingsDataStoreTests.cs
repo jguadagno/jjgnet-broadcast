@@ -47,7 +47,8 @@ public class UserRandomPostSettingsDataStoreTests : IDisposable
         string cronExpression,
         bool isActive = true,
         DateTimeOffset? cutoffDate = null,
-        string? excludedCategories = null)
+        string? excludedCategories = null,
+        DateTimeOffset? nextRunDateUtc = null)
     {
         _context.UserRandomPostSettings.Add(new UserRandomPostSettings
         {
@@ -57,6 +58,7 @@ public class UserRandomPostSettingsDataStoreTests : IDisposable
             CutoffDate = cutoffDate,
             ExcludedCategories = excludedCategories,
             IsActive = isActive,
+            NextRunDateUtc = nextRunDateUtc,
             CreatedOn = DateTimeOffset.UtcNow,
             LastUpdatedOn = DateTimeOffset.UtcNow
         });
@@ -191,5 +193,129 @@ public class UserRandomPostSettingsDataStoreTests : IDisposable
 
         Assert.False(result);
         Assert.NotNull(await _context.UserRandomPostSettings.FindAsync(entity.Id));
+    }
+
+    [Fact]
+    public async Task GetAllDueAsync_ReturnsSettingsWhereNextRunDateIsNull()
+    {
+        const string ownerOid = "user-a-oid-11111111";
+        await CreateSettingsAsync(ownerOid, 1, "0 * * * *", isActive: true, nextRunDateUtc: null);
+
+        var utcNow = DateTimeOffset.UtcNow;
+        var result = await _dataStore.GetAllDueAsync(utcNow);
+
+        Assert.Single(result);
+        Assert.Null(result[0].NextRunDateUtc);
+    }
+
+    [Fact]
+    public async Task GetAllDueAsync_ReturnsSettingsWhereNextRunDateIsDue()
+    {
+        const string ownerOid = "user-a-oid-11111111";
+        var pastRun = DateTimeOffset.UtcNow.AddHours(-1);
+        await CreateSettingsAsync(ownerOid, 1, "0 * * * *", isActive: true, nextRunDateUtc: pastRun);
+
+        var utcNow = DateTimeOffset.UtcNow;
+        var result = await _dataStore.GetAllDueAsync(utcNow);
+
+        Assert.Single(result);
+        Assert.Equal(pastRun, result[0].NextRunDateUtc);
+    }
+
+    [Fact]
+    public async Task GetAllDueAsync_DoesNotReturnSettingsWhereNextRunDateIsInFuture()
+    {
+        const string ownerOid = "user-a-oid-11111111";
+        var futureRun = DateTimeOffset.UtcNow.AddHours(1);
+        await CreateSettingsAsync(ownerOid, 1, "0 * * * *", isActive: true, nextRunDateUtc: futureRun);
+
+        var utcNow = DateTimeOffset.UtcNow;
+        var result = await _dataStore.GetAllDueAsync(utcNow);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAllDueAsync_DoesNotReturnInactiveSettings()
+    {
+        const string ownerOid = "user-a-oid-11111111";
+        await CreateSettingsAsync(ownerOid, 1, "0 * * * *", isActive: false, nextRunDateUtc: null);
+
+        var utcNow = DateTimeOffset.UtcNow;
+        var result = await _dataStore.GetAllDueAsync(utcNow);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAllDueAsync_ReturnsEmptyWhenNoneAreDue()
+    {
+        const string ownerOid = "user-a-oid-11111111";
+        var futureRun = DateTimeOffset.UtcNow.AddDays(1);
+        await CreateSettingsAsync(ownerOid, 1, "0 * * * *", isActive: true, nextRunDateUtc: futureRun);
+
+        var utcNow = DateTimeOffset.UtcNow;
+        var result = await _dataStore.GetAllDueAsync(utcNow);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAllDueAsync_ReturnsMixOfNullAndDueButNotFuture()
+    {
+        const string ownerOid = "user-a-oid-11111111";
+        var pastRun = DateTimeOffset.UtcNow.AddHours(-1);
+        var futureRun = DateTimeOffset.UtcNow.AddHours(1);
+
+        await CreateSettingsAsync(ownerOid, 1, "0 * * * *",  isActive: true, nextRunDateUtc: null);
+        await CreateSettingsAsync(ownerOid, 2, "0 * * * *",  isActive: true, nextRunDateUtc: pastRun);
+        await CreateSettingsAsync(ownerOid, 3, "0 * * * *",  isActive: true, nextRunDateUtc: futureRun);
+        await CreateSettingsAsync(ownerOid, 4, "15 * * * *", isActive: false, nextRunDateUtc: null);
+
+        var utcNow = DateTimeOffset.UtcNow;
+        var result = await _dataStore.GetAllDueAsync(utcNow);
+
+        Assert.Equal(2, result.Count);
+        Assert.All(result, s => Assert.True(s.IsActive));
+    }
+
+    [Fact]
+    public async Task UpdateNextRunAsync_UpdatesNextRunDateUtc()
+    {
+        const string ownerOid = "user-a-oid-11111111";
+        await CreateSettingsAsync(ownerOid, 1, "0 * * * *");
+        var entity = await _context.UserRandomPostSettings.FirstAsync(s => s.CreatedByEntraOid == ownerOid);
+        var nextRun = new DateTimeOffset(2026, 6, 1, 12, 0, 0, TimeSpan.Zero);
+
+        var result = await _dataStore.UpdateNextRunAsync(entity.Id, nextRun);
+
+        Assert.True(result);
+        var updated = await _context.UserRandomPostSettings.FindAsync(entity.Id);
+        Assert.NotNull(updated);
+        Assert.Equal(nextRun, updated.NextRunDateUtc);
+    }
+
+    [Fact]
+    public async Task UpdateNextRunAsync_WithNullNextRunUtc_ClearsNextRunDate()
+    {
+        const string ownerOid = "user-a-oid-11111111";
+        var existingRun = new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero);
+        await CreateSettingsAsync(ownerOid, 1, "0 * * * *", nextRunDateUtc: existingRun);
+        var entity = await _context.UserRandomPostSettings.FirstAsync(s => s.CreatedByEntraOid == ownerOid);
+
+        var result = await _dataStore.UpdateNextRunAsync(entity.Id, null);
+
+        Assert.True(result);
+        var updated = await _context.UserRandomPostSettings.FindAsync(entity.Id);
+        Assert.NotNull(updated);
+        Assert.Null(updated.NextRunDateUtc);
+    }
+
+    [Fact]
+    public async Task UpdateNextRunAsync_ReturnsFalseForUnknownId()
+    {
+        var result = await _dataStore.UpdateNextRunAsync(99999, DateTimeOffset.UtcNow);
+
+        Assert.False(result);
     }
 }

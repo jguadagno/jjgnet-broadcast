@@ -26,7 +26,7 @@ public class LoadNewPostsTests
     private readonly Mock<IUserCollectorFeedSourceManager> _userCollectorFeedSourceManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly Mock<IUrlShortener> _urlShortener;
-    private readonly Mock<ICollectorEventPublisher> _collectorEventPublisher;
+    private readonly Mock<ICollectorEventDispatcher> _collectorEventDispatcher;
     private readonly LoadNewPosts _sut;
 
     public LoadNewPostsTests()
@@ -36,7 +36,7 @@ public class LoadNewPostsTests
         _userCollectorFeedSourceManager = new Mock<IUserCollectorFeedSourceManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
         _urlShortener = new Mock<IUrlShortener>();
-        _collectorEventPublisher = new Mock<ICollectorEventPublisher>();
+        _collectorEventDispatcher = new Mock<ICollectorEventDispatcher>();
 
         _userCollectorFeedSourceManager.Setup(m => m.GetAllActiveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<UserCollectorFeedSource>
@@ -51,7 +51,7 @@ public class LoadNewPostsTests
             _userCollectorFeedSourceManager.Object,
             _feedCheckManager.Object,
             _urlShortener.Object,
-            _collectorEventPublisher.Object,
+            _collectorEventDispatcher.Object,
             NullLogger<LoadNewPosts>.Instance);
     }
 
@@ -98,8 +98,8 @@ public class LoadNewPostsTests
 
         // Assert
         _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>()), Times.Never);
-        _collectorEventPublisher.Verify(
-            e => e.PublishSyndicationFeedItemAsync(It.IsAny<SyndicationFeedItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+        _collectorEventDispatcher.Verify(
+            e => e.DispatchSyndicationFeedItemAsync(It.IsAny<SyndicationFeedItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
@@ -125,8 +125,8 @@ public class LoadNewPostsTests
 
         // Assert
         _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>()), Times.Once);
-        _collectorEventPublisher.Verify(
-            e => e.PublishSyndicationFeedItemAsync(It.IsAny<SyndicationFeedItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+        _collectorEventDispatcher.Verify(
+            e => e.DispatchSyndicationFeedItemAsync(It.IsAny<SyndicationFeedItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("1", okResult.Value!.ToString());
@@ -242,8 +242,8 @@ public class LoadNewPostsTests
 
         // Assert
         _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>()), Times.Exactly(2));
-        _collectorEventPublisher.Verify(
-            e => e.PublishSyndicationFeedItemAsync(It.IsAny<SyndicationFeedItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+        _collectorEventDispatcher.Verify(
+            e => e.DispatchSyndicationFeedItemAsync(It.IsAny<SyndicationFeedItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2));
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("2", okResult.Value!.ToString());
@@ -318,8 +318,8 @@ public class LoadNewPostsTests
         // Assert
         _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "transaction-failure")), Times.Exactly(4));
         _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "transaction-success")), Times.Once);
-        _collectorEventPublisher.Verify(
-            e => e.PublishSyndicationFeedItemAsync(
+        _collectorEventDispatcher.Verify(
+            e => e.DispatchSyndicationFeedItemAsync(
                 It.Is<SyndicationFeedItem>(item => item.FeedIdentifier == "transaction-success"),
                 It.IsAny<string>(),
                 It.IsAny<CancellationToken>()),

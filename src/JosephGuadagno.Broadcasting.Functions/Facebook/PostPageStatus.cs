@@ -56,7 +56,7 @@ public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherFace
 
         try
         {
-            var postId = await facebookManager.PublishAsync(request);
+            var postId = await facebookManager.DispatchAsync(request);
             if (!string.IsNullOrEmpty(postId))
             {
                 var properties = new Dictionary<string, string>

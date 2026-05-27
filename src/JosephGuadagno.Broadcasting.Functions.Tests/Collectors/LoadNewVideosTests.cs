@@ -26,7 +26,7 @@ public class LoadNewVideosTests
     private readonly Mock<IUserCollectorYouTubeChannelManager> _userCollectorYouTubeChannelManager;
     private readonly Mock<IYouTubeItemManager> _youTubeItemManager;
     private readonly Mock<IUrlShortener> _urlShortener;
-    private readonly Mock<ICollectorEventPublisher> _collectorEventPublisher;
+    private readonly Mock<ICollectorEventDispatcher> _collectorEventDispatcher;
     private readonly LoadNewVideos _sut;
 
     public LoadNewVideosTests()
@@ -36,7 +36,7 @@ public class LoadNewVideosTests
         _userCollectorYouTubeChannelManager = new Mock<IUserCollectorYouTubeChannelManager>();
         _youTubeItemManager = new Mock<IYouTubeItemManager>();
         _urlShortener = new Mock<IUrlShortener>();
-        _collectorEventPublisher = new Mock<ICollectorEventPublisher>();
+        _collectorEventDispatcher = new Mock<ICollectorEventDispatcher>();
 
         _userCollectorYouTubeChannelManager.Setup(m => m.GetAllActiveAsync())
             .ReturnsAsync(new List<UserCollectorYouTubeChannel>
@@ -54,7 +54,7 @@ public class LoadNewVideosTests
             _userCollectorYouTubeChannelManager.Object,
             _youTubeItemManager.Object,
             _urlShortener.Object,
-            _collectorEventPublisher.Object,
+            _collectorEventDispatcher.Object,
             NullLogger<LoadNewVideos>.Instance);
     }
 
@@ -101,8 +101,8 @@ public class LoadNewVideosTests
 
         // Assert
         _youTubeItemManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeItem>()), Times.Never);
-        _collectorEventPublisher.Verify(
-            e => e.PublishYouTubeItemAsync(It.IsAny<YouTubeItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+        _collectorEventDispatcher.Verify(
+            e => e.DispatchYouTubeItemAsync(It.IsAny<YouTubeItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
@@ -128,8 +128,8 @@ public class LoadNewVideosTests
 
         // Assert
         _youTubeItemManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeItem>()), Times.Once);
-        _collectorEventPublisher.Verify(
-            e => e.PublishYouTubeItemAsync(It.IsAny<YouTubeItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+        _collectorEventDispatcher.Verify(
+            e => e.DispatchYouTubeItemAsync(It.IsAny<YouTubeItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("1", okResult.Value!.ToString());
@@ -244,8 +244,8 @@ public class LoadNewVideosTests
 
         // Assert
         _youTubeItemManager.Verify(m => m.SaveAsync(It.IsAny<YouTubeItem>()), Times.Exactly(2));
-        _collectorEventPublisher.Verify(
-            e => e.PublishYouTubeItemAsync(It.IsAny<YouTubeItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+        _collectorEventDispatcher.Verify(
+            e => e.DispatchYouTubeItemAsync(It.IsAny<YouTubeItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2));
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("2", okResult.Value!.ToString());

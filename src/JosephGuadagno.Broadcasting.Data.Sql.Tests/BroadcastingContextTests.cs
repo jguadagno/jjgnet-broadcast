@@ -36,6 +36,16 @@ public class BroadcastingContextTests : IDisposable
     }
 
     [Fact]
+    public void BroadcastingContext_SingularTables_UseExplicitSqlNames()
+    {
+        var userApprovalLogTable = _context.Model.FindEntityType(typeof(UserApprovalLog))?.GetTableName();
+        var userEventDispatcherMappingTable = _context.Model.FindEntityType(typeof(UserEventDispatcherMapping))?.GetTableName();
+
+        Assert.Equal("UserApprovalLog", userApprovalLogTable);
+        Assert.Equal("UserEventDispatcherMappings", userEventDispatcherMappingTable);
+    }
+
+    [Fact]
     public async Task BroadcastingContext_AddEngagement_CanBeRetrieved()
     {
         // Arrange
@@ -252,3 +262,4 @@ public class BroadcastingContextTests : IDisposable
         Assert.True(retrieved.IsEnabled);
     }
 }
+

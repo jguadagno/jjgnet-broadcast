@@ -45,7 +45,7 @@ public class PostLink(ILinkedInManager linkedInManager, IUserOAuthTokenManager u
 
         try
         {
-            var linkedInShareId = await linkedInManager.PublishAsync(request);
+            var linkedInShareId = await linkedInManager.DispatchAsync(request);
             if (!string.IsNullOrEmpty(linkedInShareId))
             {
                 var properties = new Dictionary<string, string>

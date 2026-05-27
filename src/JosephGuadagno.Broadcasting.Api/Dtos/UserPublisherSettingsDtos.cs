@@ -129,9 +129,9 @@ public class UserRandomPostSettingsResponse
 }
 
 /// <summary>
-/// Request DTO for creating a per-user event-to-publisher mapping.
+/// Request DTO for creating a per-user event-to-dispatcher mapping.
 /// </summary>
-public class CreateUserEventPublisherMappingRequest
+public class CreateUserEventDispatcherMappingRequest
 {
     /// <summary>
     /// The event type to route.
@@ -152,17 +152,17 @@ public class CreateUserEventPublisherMappingRequest
     public int SocialMediaPlatformId { get; set; }
 
     /// <summary>
-    /// Indicates whether this event publisher mapping is active.
+    /// Indicates whether this event dispatcher mapping is active.
     /// Defaults to <c>true</c>.
     /// </summary>
     public bool IsActive { get; set; } = true;
 }
 
 /// <summary>
-/// Request DTO for updating a per-user event-to-publisher mapping.
+/// Request DTO for updating a per-user event-to-dispatcher mapping.
 /// Any null property is ignored so the existing persisted value is preserved.
 /// </summary>
-public class UpdateUserEventPublisherMappingRequest
+public class UpdateUserEventDispatcherMappingRequest
 {
     /// <summary>
     /// The event type to route.
@@ -181,24 +181,24 @@ public class UpdateUserEventPublisherMappingRequest
     public int? SocialMediaPlatformId { get; set; }
 
     /// <summary>
-    /// Indicates whether this event publisher mapping is active.
+    /// Indicates whether this event dispatcher mapping is active.
     /// Leave null to keep the existing value.
     /// </summary>
     public bool? IsActive { get; set; }
 }
 
 /// <summary>
-/// Response DTO for a per-user event-to-publisher mapping.
+/// Response DTO for a per-user event-to-dispatcher mapping.
 /// </summary>
-public class UserEventPublisherMappingResponse
+public class UserEventDispatcherMappingResponse
 {
     /// <summary>
-    /// The unique identifier of this event publisher mapping record.
+    /// The unique identifier of this event dispatcher mapping record.
     /// </summary>
     public int Id { get; set; }
 
     /// <summary>
-    /// The Entra Object ID of the user who owns this event publisher mapping record.
+    /// The Entra Object ID of the user who owns this event dispatcher mapping record.
     /// </summary>
     public string CreatedByEntraOid { get; set; } = string.Empty;
 
@@ -213,7 +213,7 @@ public class UserEventPublisherMappingResponse
     public int SocialMediaPlatformId { get; set; }
 
     /// <summary>
-    /// Indicates whether this event publisher mapping is active.
+    /// Indicates whether this event dispatcher mapping is active.
     /// </summary>
     public bool IsActive { get; set; }
 

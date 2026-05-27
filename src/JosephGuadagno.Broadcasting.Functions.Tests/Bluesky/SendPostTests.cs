@@ -67,7 +67,7 @@ public class SendPostTests
             m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
         _blueskyManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
@@ -86,7 +86,7 @@ public class SendPostTests
 
         Assert.Null(exception);
         _blueskyManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
@@ -113,26 +113,26 @@ public class SendPostTests
 
         Assert.Null(exception);
         _blueskyManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
-    // Credentials valid → PublishAsync is called
+    // Credentials valid → DispatchAsync is called
 
     [Fact]
-    public async Task Run_WhenCredentialsAreValid_CallsPublishAsync()
+    public async Task Run_WhenCredentialsAreValid_CallsDispatchAsync()
     {
         var request = BuildPublishRequest(ownerEntraOid: "test-oid");
         SetupValidCredentials("test-oid");
         _blueskyManager
-            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .Setup(m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ReturnsAsync("cid-abc123");
         var sut = BuildSut();
 
         await sut.Run(request);
 
         _blueskyManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Once);
     }
 
@@ -147,7 +147,7 @@ public class SendPostTests
             ownerEntraOid: "test-oid");
         SetupValidCredentials("test-oid");
         _blueskyManager
-            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .Setup(m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ThrowsAsync(new BlueskyPostException("API Error", 400, "Invalid request"));
         var sut = BuildSut();
 

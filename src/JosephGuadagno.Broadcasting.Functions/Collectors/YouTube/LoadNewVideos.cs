@@ -24,7 +24,7 @@ public class LoadNewVideos(
     IUserCollectorYouTubeChannelManager userCollectorYouTubeChannelManager,
     IYouTubeItemManager youTubeItemManager,
     IUrlShortener urlShortener,
-    ICollectorEventPublisher collectorEventPublisher,
+    ICollectorEventDispatcher collectorEventDispatcher,
     ILogger<LoadNewVideos> logger)
 {
     private static readonly ResiliencePipeline SavePipeline = new ResiliencePipelineBuilder()
@@ -143,7 +143,7 @@ public class LoadNewVideos(
 
                 foreach (var savedItem in eventsToPublish)
                 {
-                    await collectorEventPublisher.PublishYouTubeItemAsync(savedItem, config.CreatedByEntraOid);
+                    await collectorEventDispatcher.DispatchYouTubeItemAsync(savedItem, config.CreatedByEntraOid);
                 }
 
                 feedCheck.LastCheckedFeed = startedAt;

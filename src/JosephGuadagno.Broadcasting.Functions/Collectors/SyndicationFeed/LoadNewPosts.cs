@@ -23,7 +23,7 @@ public class LoadNewPosts(
     IUserCollectorFeedSourceManager userCollectorFeedSourceManager,
     IFeedCheckManager feedCheckManager,
     IUrlShortener urlShortener,
-    ICollectorEventPublisher collectorEventPublisher,
+    ICollectorEventDispatcher collectorEventDispatcher,
     ILogger<LoadNewPosts> logger)
 {
     private static readonly ResiliencePipeline SavePipeline = new ResiliencePipelineBuilder()
@@ -125,7 +125,7 @@ public class LoadNewPosts(
 
                 foreach (var savedItem in eventsToPublish)
                 {
-                    await collectorEventPublisher.PublishSyndicationFeedItemAsync(savedItem, config.CreatedByEntraOid);
+                    await collectorEventDispatcher.DispatchSyndicationFeedItemAsync(savedItem, config.CreatedByEntraOid);
                 }
 
                 feedCheck.LastCheckedFeed = startedAt;

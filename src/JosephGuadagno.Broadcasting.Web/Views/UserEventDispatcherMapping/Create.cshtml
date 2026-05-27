@@ -1,0 +1,51 @@
+@model JosephGuadagno.Broadcasting.Web.Models.UserEventDispatcherMappingViewModel
+
+@{
+    ViewData["Title"] = "Create Event Dispatcher Mapping";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="mb-1"><i class="bi bi-diagram-3 me-2"></i>Create Event Dispatcher Mapping</h1>
+        <p class="text-muted mb-0">Send specific event types to the dispatchers you choose.</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form asp-action="Create" asp-controller="UserEventDispatcherMapping" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="EventType" class="form-label"></label>
+                <select asp-for="EventType" asp-items="Model.EventTypes" class="form-select"></select>
+                <span asp-validation-for="EventType" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="SocialMediaPlatformId" class="form-label"></label>
+                <select asp-for="SocialMediaPlatformId" asp-items="Model.SocialMediaPlatforms" class="form-select"></select>
+                <span asp-validation-for="SocialMediaPlatformId" class="text-danger"></span>
+            </div>
+
+            <div class="form-check form-switch mb-3">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label"></label>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" data-loading-text="Saving...">
+                    <i class="bi bi-floppy me-1"></i>Save
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

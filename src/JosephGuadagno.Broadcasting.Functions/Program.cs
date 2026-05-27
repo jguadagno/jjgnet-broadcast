@@ -195,13 +195,13 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IUserPublisherLinkedInSettingsDataStore, UserPublisherLinkedInSettingsDataStore>();
     services.TryAddScoped<IUserPublisherFacebookSettingsDataStore, UserPublisherFacebookSettingsDataStore>();
     services.TryAddScoped<IUserRandomPostSettingsDataStore, UserRandomPostSettingsDataStore>();
-    services.TryAddScoped<IUserEventPublisherMappingDataStore, UserEventPublisherMappingDataStore>();
+    services.TryAddScoped<IUserEventDispatcherMappingDataStore, UserEventDispatcherMappingDataStore>();
     services.TryAddScoped<IUserPublisherBlueskySettingsManager, UserPublisherBlueskySettingsManager>();
     services.TryAddScoped<IUserPublisherTwitterSettingsManager, UserPublisherTwitterSettingsManager>();
     services.TryAddScoped<IUserPublisherLinkedInSettingsManager, UserPublisherLinkedInSettingsManager>();
     services.TryAddScoped<IUserPublisherFacebookSettingsManager, UserPublisherFacebookSettingsManager>();
     services.TryAddScoped<IUserRandomPostSettingsManager, UserRandomPostSettingsManager>();
-    services.TryAddScoped<IUserEventPublisherMappingManager, UserEventPublisherMappingManager>();
+    services.TryAddScoped<IUserEventDispatcherMappingManager, UserEventDispatcherMappingManager>();
 
     // RBAC Phase 1
     services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
@@ -216,11 +216,11 @@ void ConfigureFunction(IServiceCollection services)
     // MessageTemplateManager handles both ID-based and platform-name-based lookups (Phase 2+3 of publisher architecture refactor)
     services.TryAddScoped<IMessageTemplateManager, MessageTemplateManager>();
 
-    // CollectorEventPublisher — replaces Event Grid dispatch for collector functions with per-user queue routing
-    services.AddScoped<ICollectorEventPublisher, CollectorEventPublisher>();
+    // CollectorEventDispatcher — replaces Event Grid dispatch for collector functions with per-user queue routing
+    services.AddScoped<ICollectorEventDispatcher, CollectorEventDispatcher>();
 
-    // ScheduledItemEventPublisher — replaces Event Grid dispatch for scheduled items with per-user queue routing
-    services.AddScoped<IScheduledItemEventPublisher, ScheduledItemEventPublisher>();
+    // ScheduledItemEventDispatcher — replaces Event Grid dispatch for scheduled items with per-user queue routing
+    services.AddScoped<IScheduledItemEventDispatcher, ScheduledItemEventDispatcher>();
 
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();
@@ -248,7 +248,7 @@ void ConfigureBitly(IServiceCollection services, IConfiguration config)
 void ConfigureTwitter(IServiceCollection services)
 {
     services.TryAddScoped<ITwitterManager, TwitterManager>();
-    services.AddScoped<ISocialMediaPublisher>(sp =>
+    services.AddScoped<ISocialMediaDispatcher>(sp =>
         sp.GetRequiredService<ITwitterManager>());
 }
 
@@ -289,7 +289,7 @@ void ConfigureLinkedInManager(IServiceCollection services, IConfiguration config
         return linkedInApplicationSettings;
     });
     services.TryAddScoped<ILinkedInManager, LinkedInManager>();
-    services.AddScoped<ISocialMediaPublisher>(sp =>
+    services.AddScoped<ISocialMediaDispatcher>(sp =>
         sp.GetRequiredService<ILinkedInManager>());
 }
 
@@ -302,7 +302,7 @@ void ConfigureFacebookManager(IServiceCollection services, IConfiguration config
         return facebookApplicationSettings;
     });
     services.TryAddScoped<IFacebookManager, FacebookManager>();
-    services.AddScoped<ISocialMediaPublisher>(sp =>
+    services.AddScoped<ISocialMediaDispatcher>(sp =>
         sp.GetRequiredService<IFacebookManager>());
 }
 
@@ -315,7 +315,7 @@ void ConfigureBlueskyManager(IServiceCollection services, IConfiguration config)
         return blueskySettings;
     });
     services.TryAddScoped<IBlueskyManager, BlueskyManager>();
-    services.AddScoped<ISocialMediaPublisher>(sp =>
+    services.AddScoped<ISocialMediaDispatcher>(sp =>
         sp.GetRequiredService<IBlueskyManager>());
 }
 

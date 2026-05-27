@@ -20,7 +20,7 @@ public class LoadNewSpeakingEngagementsTests
     private readonly Mock<IEngagementManager> _engagementManager;
     private readonly Mock<IUserCollectorSpeakingEngagementManager> _userCollectorSpeakingEngagementManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
-    private readonly Mock<ICollectorEventPublisher> _collectorEventPublisher;
+    private readonly Mock<ICollectorEventDispatcher> _collectorEventDispatcher;
     private readonly LoadNewSpeakingEngagements _sut;
 
     public LoadNewSpeakingEngagementsTests()
@@ -29,7 +29,7 @@ public class LoadNewSpeakingEngagementsTests
         _engagementManager = new Mock<IEngagementManager>();
         _userCollectorSpeakingEngagementManager = new Mock<IUserCollectorSpeakingEngagementManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
-        _collectorEventPublisher = new Mock<ICollectorEventPublisher>();
+        _collectorEventDispatcher = new Mock<ICollectorEventDispatcher>();
 
         _userCollectorSpeakingEngagementManager.Setup(m => m.GetAllActiveAsync())
             .ReturnsAsync(new List<UserCollectorSpeakingEngagement>
@@ -42,7 +42,7 @@ public class LoadNewSpeakingEngagementsTests
             _engagementManager.Object,
             _userCollectorSpeakingEngagementManager.Object,
             _feedCheckManager.Object,
-            _collectorEventPublisher.Object,
+            _collectorEventDispatcher.Object,
             NullLogger<LoadNewSpeakingEngagements>.Instance);
     }
 
