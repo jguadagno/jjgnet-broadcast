@@ -58,6 +58,13 @@ public class RandomPostsTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
+        _settingsManager
+            .Setup(s => s.IncrementCronFailureAsync(
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
         _sut = new RandomPosts(
             _settingsManager.Object,
             _feedItemManager.Object,
