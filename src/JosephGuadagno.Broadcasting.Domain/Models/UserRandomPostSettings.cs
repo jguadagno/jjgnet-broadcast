@@ -41,6 +41,19 @@ public class UserRandomPostSettings
     public bool IsActive { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets the UTC timestamp of the next scheduled run.
+    /// Null means the schedule has never run and is always eligible to run.
+    /// Written back after each dispatch to avoid re-running within the same window.
+    /// </summary>
+    public DateTimeOffset? NextRunDateUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of consecutive cron expression parse failures.
+    /// Reset to 0 after a successful parse. When this reaches 5, the setting is automatically deactivated.
+    /// </summary>
+    public int CronParseFailureCount { get; set; }
+
+    /// <summary>
     /// Gets or sets when this configuration was created.
     /// </summary>
     public DateTimeOffset CreatedOn { get; set; }

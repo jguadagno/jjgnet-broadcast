@@ -1,4 +1,5 @@
 using AutoMapper;
+using Cronos;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
@@ -84,7 +85,7 @@ public class UserRandomPostSettingsController(
     /// <param name="request">The random post settings payload to create.</param>
     /// <returns>The created random post settings record.</returns>
     /// <response code="201">Returns the created random post settings record.</response>
-    /// <response code="400">The request payload was invalid or the random post settings record could not be saved.</response>
+    /// <response code="400">The request payload was invalid, the cron expression was invalid, or the random post settings record could not be saved.</response>
     /// <response code="401">The caller is not authenticated.</response>
     [HttpPost]
     [IgnoreAntiforgeryToken]
@@ -98,6 +99,11 @@ public class UserRandomPostSettingsController(
         {
             logger.LogWarning("CreateAsync called with invalid model state");
             return BadRequest(ModelState);
+        }
+
+        if (!CronExpression.TryParse(request.CronExpression, CronFormat.Standard, out _))
+        {
+            return BadRequest($"Invalid cron expression: '{request.CronExpression}'");
         }
 
         var ownerOid = User.GetOwnerOid();
@@ -126,7 +132,7 @@ public class UserRandomPostSettingsController(
     /// <param name="request">The random post settings payload. Null properties keep their existing values.</param>
     /// <returns>The updated random post settings record.</returns>
     /// <response code="200">Returns the updated random post settings record.</response>
-    /// <response code="400">The request payload was invalid or the random post settings record could not be saved.</response>
+    /// <response code="400">The request payload was invalid, the cron expression was invalid, or the random post settings record could not be saved.</response>
     /// <response code="401">The caller is not authenticated.</response>
     /// <response code="403">The caller is not allowed to update this random post settings record.</response>
     /// <response code="404">No random post settings record exists with the specified identifier.</response>
@@ -144,6 +150,11 @@ public class UserRandomPostSettingsController(
         {
             logger.LogWarning("UpdateAsync called with invalid model state for ID {Id}", id);
             return BadRequest(ModelState);
+        }
+
+        if (request.CronExpression is not null && !CronExpression.TryParse(request.CronExpression, CronFormat.Standard, out _))
+        {
+            return BadRequest($"Invalid cron expression: '{request.CronExpression}'");
         }
 
         var existing = await manager.GetByIdAsync(id);

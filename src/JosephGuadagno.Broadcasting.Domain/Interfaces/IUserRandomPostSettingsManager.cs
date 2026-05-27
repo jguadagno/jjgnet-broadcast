@@ -32,6 +32,36 @@ public interface IUserRandomPostSettingsManager
     Task<List<UserRandomPostSettings>> GetAllActiveAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Retrieves all active random post settings that are due to run at or before <paramref name="utcNow"/>.
+    /// A record is due when <c>NextRunDateUtc IS NULL</c> (never run) or <c>NextRunDateUtc &lt;= utcNow</c>.
+    /// </summary>
+    /// <param name="utcNow">The current UTC instant to compare against <c>NextRunDateUtc</c>.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of due, active random post settings.</returns>
+    Task<List<UserRandomPostSettings>> GetAllDueAsync(DateTimeOffset utcNow, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates the <c>NextRunDateUtc</c> field for a single random post settings record after a successful dispatch.
+    /// Resets <c>CronParseFailureCount</c> to 0 when the record is successfully updated.
+    /// </summary>
+    /// <param name="id">The record ID.</param>
+    /// <param name="nextRunUtc">The next scheduled UTC run time, or null when no future occurrence exists.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if the record was found and updated; false otherwise.</returns>
+    Task<bool> UpdateNextRunAsync(int id, DateTimeOffset? nextRunUtc, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Increments the consecutive cron parse failure count for a random post settings record.
+    /// If the count reaches or exceeds <paramref name="failureThreshold"/>, the record is deactivated
+    /// (IsActive set to false) and the method returns true to signal deactivation.
+    /// </summary>
+    /// <param name="id">The record ID.</param>
+    /// <param name="failureThreshold">The consecutive failure count at which deactivation occurs.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if the record was deactivated; false if merely incremented or not found.</returns>
+    Task<bool> IncrementCronFailureAsync(int id, int failureThreshold = 5, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Creates or updates random post settings.
     /// </summary>
     /// <param name="settings">The settings to save.</param>

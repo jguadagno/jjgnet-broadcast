@@ -36,6 +36,31 @@ public class UserRandomPostSettingsManager(IUserRandomPostSettingsDataStore data
     }
 
     /// <inheritdoc />
+    public Task<List<UserRandomPostSettings>> GetAllDueAsync(
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        return dataStore.GetAllDueAsync(utcNow, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<bool> UpdateNextRunAsync(
+        int id,
+        DateTimeOffset? nextRunUtc,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(id);
+        return dataStore.UpdateNextRunAsync(id, nextRunUtc, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<bool> IncrementCronFailureAsync(int id, int failureThreshold = 5, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(id);
+        return dataStore.IncrementCronFailureAsync(id, failureThreshold, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<UserRandomPostSettings?> SaveAsync(
         UserRandomPostSettings settings,
         CancellationToken cancellationToken = default)

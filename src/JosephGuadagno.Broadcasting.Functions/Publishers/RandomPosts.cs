@@ -65,6 +65,25 @@ public class RandomPosts(
                 logger.LogWarning(ex,
                     "Invalid cron expression '{Cron}' for owner '{OwnerOid}' — skipping",
                     LogSanitizer.Sanitize(settings.CronExpression), LogSanitizer.Sanitize(ownerOid));
+
+                var deactivated = await userRandomPostSettingsManager.IncrementCronFailureAsync(settings.Id);
+                if (deactivated)
+                {
+                    logger.LogCustomEvent(Metrics.RandomPostCronCircuitBroken, new Dictionary<string, string>
+                    {
+                        { "settingsId", settings.Id.ToString() },
+                        { "cron", LogSanitizer.Sanitize(settings.CronExpression) },
+                        { "owner", LogSanitizer.Sanitize(ownerOid) },
+                        { "platform", settings.SocialMediaPlatformId.ToString() },
+                    });
+
+                    logger.LogWarning(
+                        "Random post settings ID {Id} deactivated after 5 consecutive cron parse failures for owner '{OwnerOid}' — cron: '{Cron}'",
+                        settings.Id,
+                        LogSanitizer.Sanitize(ownerOid),
+                        LogSanitizer.Sanitize(settings.CronExpression));
+                }
+
                 continue;
             }
 

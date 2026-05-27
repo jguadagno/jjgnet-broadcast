@@ -7,6 +7,7 @@ public static class Metrics
     public const string SpeakingEngagementAddedOrUpdated = "SpeakingEngagementAddedOrUpdated";
     public const string ScheduledItemFired = "ScheduledItemFired";
     public const string RandomPostFired = "RandomPostFired";
+    public const string RandomPostCronCircuitBroken = "RandomPostCronCircuitBroken";
     public const string ClearOldLogs = "ClearOldLogs";
 
     public const string BlueskyProcessedNewSyndicationData = "BlueskyProcessedNewSyndicationData";

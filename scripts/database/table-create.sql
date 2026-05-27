@@ -689,6 +689,8 @@ BEGIN
         [CutoffDate]            DATETIMEOFFSET      NULL,
         [ExcludedCategories]    NVARCHAR(MAX)       NULL,
         [IsActive]              BIT                 NOT NULL CONSTRAINT DF_UserRandomPostSettings_IsActive DEFAULT (1),
+        [NextRunDateUtc]        DATETIMEOFFSET      NULL,
+        [CronParseFailureCount] INT                 NOT NULL CONSTRAINT DF_UserRandomPostSettings_CronParseFailureCount DEFAULT (0),
         [CreatedOn]             DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserRandomPostSettings_CreatedOn DEFAULT (GETUTCDATE()),
         [LastUpdatedOn]         DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserRandomPostSettings_LastUpdatedOn DEFAULT (GETUTCDATE()),
 
@@ -700,6 +702,9 @@ BEGIN
     );
     CREATE NONCLUSTERED INDEX IX_UserRandomPostSettings_Active
         ON [dbo].[UserRandomPostSettings] ([IsActive] ASC, [CreatedByEntraOid] ASC);
+    CREATE NONCLUSTERED INDEX IX_UserRandomPostSettings_IsActive_NextRunDateUtc
+        ON [dbo].[UserRandomPostSettings] ([IsActive], [NextRunDateUtc])
+        WHERE [IsActive] = 1;
     PRINT 'Created table UserRandomPostSettings';
 END
 ELSE

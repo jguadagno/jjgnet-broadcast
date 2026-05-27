@@ -77,6 +77,91 @@ public class UserRandomPostSettingsDataStore(
     }
 
     /// <inheritdoc />
+    public async Task<List<UserRandomPostSettings>> GetAllDueAsync(
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        var entities = await broadcastingContext.UserRandomPostSettings
+            .AsNoTracking()
+            .Where(s => s.IsActive && (s.NextRunDateUtc == null || s.NextRunDateUtc <= utcNow))
+            .OrderBy(s => s.CreatedByEntraOid)
+            .ThenBy(s => s.SocialMediaPlatformId)
+            .ThenBy(s => s.CronExpression)
+            .ToListAsync(cancellationToken);
+
+        return mapper.Map<List<UserRandomPostSettings>>(entities);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UpdateNextRunAsync(
+        int id,
+        DateTimeOffset? nextRunUtc,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(id);
+
+        try
+        {
+            var existing = await broadcastingContext.UserRandomPostSettings
+                .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+
+            if (existing is null)
+            {
+                return false;
+            }
+
+            existing.NextRunDateUtc = nextRunUtc;
+            existing.LastUpdatedOn = DateTimeOffset.UtcNow;
+            existing.CronParseFailureCount = 0;
+
+            return await broadcastingContext.SaveChangesAsync(cancellationToken) > 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to update next run date for random post settings ID {Id}", id);
+            return false;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> IncrementCronFailureAsync(
+        int id,
+        int failureThreshold = 5,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(id);
+
+        try
+        {
+            var existing = await broadcastingContext.UserRandomPostSettings
+                .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+
+            if (existing is null)
+            {
+                return false;
+            }
+
+            existing.CronParseFailureCount++;
+            existing.LastUpdatedOn = DateTimeOffset.UtcNow;
+
+            var deactivated = false;
+            if (existing.CronParseFailureCount >= failureThreshold)
+            {
+                existing.IsActive = false;
+                deactivated = true;
+            }
+
+            await broadcastingContext.SaveChangesAsync(cancellationToken);
+            return deactivated;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to increment cron failure count for random post settings ID {Id}", id);
+            return false;
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<UserRandomPostSettings?> SaveAsync(
         UserRandomPostSettings settings,
         CancellationToken cancellationToken = default)
