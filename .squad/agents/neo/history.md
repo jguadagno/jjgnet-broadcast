@@ -246,3 +246,7 @@ ASP.NET Core OpenAPI/Scalar groups controller endpoints from class-level
 `using Microsoft.AspNetCore.Http;` and place a single `[Tags("...")]`
 attribute directly below `[ApiController]` on every controller so Scalar
 groups endpoints predictably without extra OpenAPI wiring.
+
+### Web service logging pattern established — 2026-05-28T21:21:12.261Z
+
+Trinity added ILogger injection to all 18 Web service files in `src\JosephGuadagno.Broadcasting.Web\Services\`, establishing the pattern for reporting downstream API failures as observable events. GetForUserAsync/PostForUserAsync null returns and delete failures now log warnings with LogSanitizer.Sanitize() applied to user-sourced identifiers. This pattern is ready for adoption in API service layers and other downstream components.
