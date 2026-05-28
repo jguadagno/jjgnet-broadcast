@@ -2,9 +2,7 @@
 
 Compiled record of team decisions, architecture choices, and resolutions.
 
-> Entries before 2026-05-22 archived to decisions-archive.md (last archived: 2026-05-25)
-
----
+> Entries before 2026-05-21 archived to decisions-archive.md (last archived: 2026-05-28)
 
 # Decision: Phase 3 Part 1 API Endpoints (RandomPostSettings & EventPublisherMapping)
 
@@ -256,56 +254,6 @@ Speaking engagement saves can now persist engagements that include imported
 Talks without tripping EF Core's detached-entity path, and repeated imports
 update matching talks instead of blindly inserting duplicates.
 
-
-# Decision: Fix LinkedInControllerTests Signature Mismatch
-
-**Date:** 2026-05-21  
-**Author:** Trinity (Backend Dev)  
-**Status:** ✅ COMPLETE
-
-
----
-## Summary
-
-Fixed a pre-existing compiler error in `LinkedInControllerTests.cs` where the test called `await controller.RefreshToken()`, but the production `LinkedInController.RefreshToken()` method returns synchronous `IActionResult`.
-
-
----
-## Change
-
-**File:** `src/JosephGuadagno.Broadcasting.Web.Tests/Controllers/LinkedInControllerTests.cs`
-
-- Test method `RefreshToken_WhenCallbackUrlIsValid_ShouldRedirectToLinkedInAuthUrl` changed from `async Task` → `void`
-- Removed `await` keyword from `controller.RefreshToken()` call (line 214)
-
-**No production code was modified.**
-
-
----
-## Root Cause
-
-A prior change to `LinkedInController.RefreshToken()` simplified its return type from `async Task<IActionResult>` to synchronous `IActionResult` (the method only builds a URL string and calls `Redirect()` — no async work needed). The test was not updated at that time, leaving a CS1061 compiler error.
-
-
----
-## Impact
-
-- Build: 0 errors (was 1 error)
-- `LinkedInControllerTests`: 12/12 pass
-- No other test regressions introduced
-
-
----
-## Pre-existing Failures (out of scope)
-
-Two Functions tests remain failing and are unrelated:
-- `LoadAllSpeakingEngagementsTests.RunAsync_HandlesNullEngagementsList_Gracefully`
-- `LoadNewPostsTests.RunAsync_HandlesNullFeedList_Gracefully`
-
-These fail with `Assert.IsType() Failure` and predate this fix.
-
-
----
 
 # Decision: Refactor EngagementDataStore to Use AutoMapper
 
