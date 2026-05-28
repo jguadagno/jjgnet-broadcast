@@ -2,6 +2,14 @@
 
 > Learnings before 2026-04-25 archived to history-archive.md (2026-05-25)
 
+## Scalar Documentation Tags (API Controllers) — 2026-05-28
+
+**Task**: Added [Tags] attributes to all 17 API controllers for Scalar documentation grouping.
+
+**Outcome**: All controllers now emit tag metadata for Scalar API docs. Build and tests passed. Ready for Web app integration to consume tagged endpoints.
+
+**Decision**: See neo-scalar-tags.md in decisions.md.
+
 ## MSAL Session Persistence Regression — 2026-05-19
 
 **Trigger**: Joseph reported having to log in every time the Web app restarts after commit `3af53e7f` (fix(auth): suppress MSAL/IdentityModel debug noise and pin L1 cache TTL).
@@ -222,3 +230,19 @@ Fix: `LogSanitizer.Sanitize(syndicationFeedItem.Title)` as the first structured 
 - `src/Domain/Models/UserRandomPostSettings.cs` — add `NextRunDateUtc` property
 - `src/Data.Sql/Models/UserRandomPostSettings.cs` — add EF property
 - `scripts/database/table-create.sql` — add column + index to `UserRandomPostSettings` table
+
+---
+
+## Learnings
+
+### Collector-distributor-publisher architecture document — 2026-05-28T14:21:12.261-07:00
+
+Created `docs/process-flows/collector-distributor-publisher.md` to document the live Functions pipeline. Key finding: collector, scheduled-item, and random-post routing now bypass Event Grid and fan out directly to Azure Storage queues through `CollectorEventDispatcher`, `ScheduledItemEventDispatcher`, and `Dispatchers\\RandomPosts`, with per-user routing driven by `UserEventDispatcherMappings`, `UserRandomPostSettings`, and `MessageTemplates`.
+
+### Scalar controller grouping — 2026-05-28T14:15:57.412-07:00
+
+ASP.NET Core OpenAPI/Scalar groups controller endpoints from class-level
+`[Tags("...")]` metadata. For this API project, use
+`using Microsoft.AspNetCore.Http;` and place a single `[Tags("...")]`
+attribute directly below `[ApiController]` on every controller so Scalar
+groups endpoints predictably without extra OpenAPI wiring.
