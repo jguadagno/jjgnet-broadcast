@@ -1,5 +1,5 @@
 -- Rename table
-EXEC sp_rename 'dbo.UserEventPublisherMappings', 'UserEventDispatcherMappings';
+EXEC sp_rename 'dbo.UserEventPublisherMapping', 'UserEventDispatcherMappings';
 GO
 
 -- Rename default constraints
