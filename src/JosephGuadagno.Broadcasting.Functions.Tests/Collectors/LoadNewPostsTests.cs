@@ -46,7 +46,7 @@ public class LoadNewPostsTests
 
         _sut = new LoadNewPosts(
             _feedReader.Object,
-            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com", OwnerEntraOid = OwnerEntraOid }),
+            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com" }),
             _feedSourceManager.Object,
             _userCollectorFeedSourceManager.Object,
             _feedCheckManager.Object,
@@ -222,18 +222,18 @@ public class LoadNewPostsTests
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), OwnerEntraOid, It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<SyndicationFeedItem> { newPost1, duplicatePost, newPost2 });
-        
+
         _feedSourceManager.Setup(m => m.IsFeedItemUniqueToUser("new-1", OwnerEntraOid, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _feedSourceManager.Setup(m => m.IsFeedItemUniqueToUser("new-2", OwnerEntraOid, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _feedSourceManager.Setup(m => m.IsFeedItemUniqueToUser("duplicate-1", OwnerEntraOid, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        
+
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("https://short.example.com/xyz");
-        
+
         var savedPost1 = CreateFeedSource("new-1");
         savedPost1.Id = 1;
         var savedPost2 = CreateFeedSource("new-2");
         savedPost2.Id = 2;
-        
+
         _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "new-1"))).ReturnsAsync(OperationResult<SyndicationFeedItem>.Success(savedPost1));
         _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "new-2"))).ReturnsAsync(OperationResult<SyndicationFeedItem>.Success(savedPost2));
 

@@ -1,15 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Reflection;
-
-using Azure.Monitor.OpenTelemetry.Exporter;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
@@ -31,7 +27,6 @@ using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using JosephGuadagno.Broadcasting.Managers.Twitter;
-using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
@@ -43,11 +38,6 @@ using LinqToTwitter.OAuth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using Azure.Storage.Queues;
-
-using OpenTelemetry.Logs;
-
-using Serilog;
-using Serilog.Exceptions;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests;
 
@@ -73,8 +63,7 @@ public class Startup
         var settings =
             new JosephGuadagno.Broadcasting.Functions.Models.Settings
             {
-                ShortenedDomainToUse = null!,
-                OwnerEntraOid = null!
+                ShortenedDomainToUse = null!
             };
         config.Bind("Settings", settings);
         services.TryAddSingleton<ISettings>(settings);
@@ -103,44 +92,6 @@ public class Startup
         ConfigureFacebookManager(services, config);
         ConfigureBlueskyManager(services, config);
 
-    }
-
-    void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorageAccount, string logPath, string applicationName)
-    {
-
-        services.AddOpenTelemetry().UseAzureMonitorExporter();
-
-        var logger = new LoggerConfiguration()
-#if DEBUG
-            .MinimumLevel.Debug()
-#else
-        .MinimumLevel.Warning()
-#endif
-            .Enrich.FromLogContext()
-            .Enrich.WithMachineName()
-            .Enrich.WithThreadId()
-            .Enrich.WithEnvironmentName()
-            .Enrich.WithAssemblyName()
-            .Enrich.WithAssemblyVersion(true)
-            .Enrich.WithExceptionDetails()
-            .Enrich.WithProperty("Application", applicationName)
-            .Destructure.ToMaximumDepth(4)
-            .Destructure.ToMaximumStringLength(100)
-            .Destructure.ToMaximumCollectionCount(10)
-            .WriteTo.Console()
-            .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-            .WriteTo.AzureTableStorage(logStorageAccount, storageTableName: "Logging",
-                keyGenerator: new SerilogKeyGenerator())
-            .WriteTo.OpenTelemetry()
-            .CreateLogger();
-        services.AddLogging(loggingBuilder =>
-        {
-            loggingBuilder.AddOpenTelemetry(options =>
-            {
-                options.AddConsoleExporter();
-            });
-            loggingBuilder.AddSerilog(logger);
-        });
     }
 
     private void ConfigureKeyVault(IServiceCollection services, IConfiguration configuration)
