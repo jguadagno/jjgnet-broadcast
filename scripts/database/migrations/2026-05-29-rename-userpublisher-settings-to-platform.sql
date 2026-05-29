@@ -20,15 +20,15 @@ IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'FK_UserPublisherSettings_Soci
 GO
 
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'DF_UserPublisherSettings_CreatedOn')
-    EXEC sp_rename 'dbo.UserPlatformSettings.DF_UserPublisherSettings_CreatedOn', 'DF_UserPlatformSettings_CreatedOn', 'OBJECT';
+    EXEC sp_rename 'DF_UserPublisherSettings_CreatedOn', 'DF_UserPlatformSettings_CreatedOn', 'OBJECT';
 GO
 
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'DF_UserPublisherSettings_LastUpdatedOn')
-    EXEC sp_rename 'dbo.UserPlatformSettings.DF_UserPublisherSettings_LastUpdatedOn', 'DF_UserPlatformSettings_LastUpdatedOn', 'OBJECT';
+    EXEC sp_rename 'DF_UserPublisherSettings_LastUpdatedOn', 'DF_UserPlatformSettings_LastUpdatedOn', 'OBJECT';
 GO
 
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'UQ_UserPublisherSettings_User_Platform')
-    EXEC sp_rename 'dbo.UserPlatformSettings.UQ_UserPublisherSettings_User_Platform', 'UQ_UserPlatformSettings_User_Platform', 'OBJECT';
+    EXEC sp_rename 'UQ_UserPublisherSettings_User_Platform', 'UQ_UserPlatformSettings_User_Platform', 'OBJECT';
 GO
 
 -- ============================================================
@@ -43,7 +43,7 @@ IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'PK_UserPublisherBlueskySettin
 GO
 
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'UQ_UserPublisherBlueskySettings_Owner')
-    EXEC sp_rename 'dbo.UserPlatformBlueskySettings.UQ_UserPublisherBlueskySettings_Owner', 'UQ_UserPlatformBlueskySettings_Owner', 'OBJECT';
+    EXEC sp_rename 'UQ_UserPublisherBlueskySettings_Owner', 'UQ_UserPlatformBlueskySettings_Owner', 'OBJECT';
 GO
 
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'DF_UserPublisherBlueskySettings_IsEnabled')

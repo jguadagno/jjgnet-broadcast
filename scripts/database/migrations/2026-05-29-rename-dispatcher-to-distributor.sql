@@ -19,15 +19,15 @@ GO
 
 -- A.2 Rename default constraints
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'DF_UserEventDispatcherMapping_IsActive')
-    EXEC sp_rename 'dbo.UserEventDistributorMappings.DF_UserEventDispatcherMapping_IsActive', 'DF_UserEventDistributorMapping_IsActive', 'OBJECT';
+    EXEC sp_rename 'DF_UserEventDispatcherMapping_IsActive', 'DF_UserEventDistributorMapping_IsActive', 'OBJECT';
 GO
 
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'DF_UserEventDispatcherMapping_CreatedOn')
-    EXEC sp_rename 'dbo.UserEventDistributorMappings.DF_UserEventDispatcherMapping_CreatedOn', 'DF_UserEventDistributorMapping_CreatedOn', 'OBJECT';
+    EXEC sp_rename 'DF_UserEventDispatcherMapping_CreatedOn', 'DF_UserEventDistributorMapping_CreatedOn', 'OBJECT';
 GO
 
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'DF_UserEventDispatcherMapping_LastUpdatedOn')
-    EXEC sp_rename 'dbo.UserEventDistributorMappings.DF_UserEventDispatcherMapping_LastUpdatedOn', 'DF_UserEventDistributorMapping_LastUpdatedOn', 'OBJECT';
+    EXEC sp_rename 'DF_UserEventDispatcherMapping_LastUpdatedOn', 'DF_UserEventDistributorMapping_LastUpdatedOn', 'OBJECT';
 GO
 
 -- A.3 Rename primary key constraint
@@ -42,17 +42,17 @@ GO
 
 -- A.5 Rename unique constraint
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'UQ_UserEventDispatcherMapping_Owner_Event_Platform')
-    EXEC sp_rename 'dbo.UserEventDistributorMappings.UQ_UserEventDispatcherMapping_Owner_Event_Platform', 'UQ_UserEventDistributorMapping_Owner_Event_Platform', 'OBJECT';
+    EXEC sp_rename 'UQ_UserEventDispatcherMapping_Owner_Event_Platform', 'UQ_UserEventDistributorMapping_Owner_Event_Platform', 'OBJECT';
 GO
 
 -- A.6 Rename check constraint
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'CK_UserEventDispatcherMapping_EventType')
-    EXEC sp_rename 'dbo.UserEventDistributorMappings.CK_UserEventDispatcherMapping_EventType', 'CK_UserEventDistributorMapping_EventType', 'OBJECT';
+    EXEC sp_rename 'CK_UserEventDispatcherMapping_EventType', 'CK_UserEventDistributorMapping_EventType', 'OBJECT';
 GO
 
 -- A.7 Rename index
 IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_UserEventDispatcherMapping_Active' AND object_id = OBJECT_ID('dbo.UserEventDistributorMappings'))
-    EXEC sp_rename 'dbo.UserEventDistributorMappings.IX_UserEventDispatcherMapping_Active', 'IX_UserEventDistributorMapping_Active', 'INDEX';
+    EXEC sp_rename 'IX_UserEventDispatcherMapping_Active', 'IX_UserEventDistributorMapping_Active', 'INDEX';
 GO
 
 -- A.8 Update FeedChecks seed row
@@ -71,15 +71,15 @@ GO
 
 -- B.2 Rename default constraints
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'DF_UserEventPublisherMapping_IsActive')
-    EXEC sp_rename 'dbo.UserEventDistributorMappings.DF_UserEventPublisherMapping_IsActive', 'DF_UserEventDistributorMapping_IsActive', 'OBJECT';
+    EXEC sp_rename 'DF_UserEventPublisherMapping_IsActive', 'DF_UserEventDistributorMapping_IsActive', 'OBJECT';
 GO
 
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'DF_UserEventPublisherMapping_CreatedOn')
-    EXEC sp_rename 'dbo.UserEventDistributorMappings.DF_UserEventPublisherMapping_CreatedOn', 'DF_UserEventDistributorMapping_CreatedOn', 'OBJECT';
+    EXEC sp_rename 'DF_UserEventPublisherMapping_CreatedOn', 'DF_UserEventDistributorMapping_CreatedOn', 'OBJECT';
 GO
 
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'DF_UserEventPublisherMapping_LastUpdatedOn')
-    EXEC sp_rename 'dbo.UserEventDistributorMappings.DF_UserEventPublisherMapping_LastUpdatedOn', 'DF_UserEventDistributorMapping_LastUpdatedOn', 'OBJECT';
+    EXEC sp_rename 'DF_UserEventPublisherMapping_LastUpdatedOn', 'DF_UserEventDistributorMapping_LastUpdatedOn', 'OBJECT';
 GO
 
 -- B.3 Rename primary key constraint
@@ -94,17 +94,17 @@ GO
 
 -- B.5 Rename unique constraint
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'UQ_UserEventPublisherMapping_Owner_Event_Platform')
-    EXEC sp_rename 'dbo.UserEventDistributorMappings.UQ_UserEventPublisherMapping_Owner_Event_Platform', 'UQ_UserEventDistributorMapping_Owner_Event_Platform', 'OBJECT';
+    EXEC sp_rename 'UQ_UserEventPublisherMapping_Owner_Event_Platform', 'UQ_UserEventDistributorMapping_Owner_Event_Platform', 'OBJECT';
 GO
 
 -- B.6 Rename check constraint
 IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'CK_UserEventPublisherMapping_EventType')
-    EXEC sp_rename 'dbo.UserEventDistributorMappings.CK_UserEventPublisherMapping_EventType', 'CK_UserEventDistributorMapping_EventType', 'OBJECT';
+    EXEC sp_rename 'CK_UserEventPublisherMapping_EventType', 'CK_UserEventDistributorMapping_EventType', 'OBJECT';
 GO
 
 -- B.7 Rename index
 IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_UserEventPublisherMapping_Active' AND object_id = OBJECT_ID('dbo.UserEventDistributorMappings'))
-    EXEC sp_rename 'dbo.UserEventDistributorMappings.IX_UserEventPublisherMapping_Active', 'IX_UserEventDistributorMapping_Active', 'INDEX';
+    EXEC sp_rename 'IX_UserEventPublisherMapping_Active', 'IX_UserEventDistributorMapping_Active', 'INDEX';
 GO
 
 -- B.8 Update FeedChecks seed row
