@@ -503,7 +503,157 @@ Migrate `Publishers\ScheduledItems.cs` off Event Grid and onto a dedicated `ISch
 
 ## Why
 
-The collector rewrite already established the direct-routing pattern, and the four `ProcessScheduledItemFired` functions were only Event Grid bridge code. Keeping scheduled item routing in a dedicated service preserves the same per-user queue dispatch contract while keeping the timer trigger focused on orchestration and sent-flag updates.
+---
+
+# Decision: Dispatcher vs distributor terminology remediation plan
+
+**Date:** 2026-05-29T11:04:30.725-07:00  
+**By:** Neo  
+**Status:** ✅ APPROVED FOR IMPLEMENTATION
+
+---
+
+### Summary
+
+Use **Distributor** for the middle routing layer, rename the Functions/domain/data/API/Web routing artifacts that currently say "Dispatcher" to "Distributor", and rename the Web/API aggregate "Dispatchers" settings surface to **Platforms** because it configures social platform accounts rather than performing distributor work. Keep `UserRandomPostSettings` in the existing **Publishers** family, and do **not** bulk-rename `ISocialMediaDispatcher` in this pass because it belongs to publisher delivery rather than the collector-to-distributor routing layer.
+
+### Why
+
+The architecture doc defines the canonical flow as **Collector -> Distributor -> Publisher**, but the recent work used "Dispatchers" for both routing code and platform settings screens. A blanket rename to "Distributor" would still leave the platform settings UI/API mislabeled, while leaving the routing layer inconsistent with the documented architecture.
+
+### Key Decisions
+
+1. The canonical architecture term for the middle stage is **Distributor**. `docs\process-flows\collector-distributor-publisher.md` explicitly defines the three stages as **Collectors**, **Distributors**, and **Publishers**.
+2. The Functions routing artifacts currently named `Dispatchers` are semantically **distributor** code.
+3. The Web/API `Dispatchers` aggregate surface should be renamed to **Platforms**, not to `Distributor`.
+4. `UserEventDispatcherMapping` becomes **`UserEventDistributorMapping`**.
+5. `ISocialMediaDispatcher` stays out of scope — it is a publisher-layer abstraction.
+
+### Scope
+
+- **Estimated direct renames:** about **35** explicitly named files, folders, classes, routes, docs, SQL objects, and solution items.
+- **Estimated total touch points:** about **75 to 90 files** once dependent imports, DI registrations, tests, views, help content, setup links, mapping profiles, and references are updated.
+- **Breaking changes:** API routes, MVC routes, Azure Function names, SQL object names, namespace and public type renames.
+
+### Recommended Fix Order
+
+1. Lock the terminology split: distributor for routing, platforms for social account settings, publishers for publish-specific features.
+2. Rename the distributor data model first: SQL table/object names, Domain models/interfaces, Data.Sql store/model, Managers layer, and tests.
+3. Rename the Functions distributor layer next: folder/namespace, service interfaces/classes, function-name constants, DI registrations, collector call sites, and Functions tests.
+4. Rename distributor-facing API/Web mapping surfaces: `UserEventDispatcherMapping*` controllers, DTOs, services, view models, constants, routes, views, and tests.
+5. Split the Web/API aggregate settings surface away from distributor terminology.
+6. Align the random-post settings route to the `Publishers` family.
+7. Finish with docs and solution items.
+
+---
+
+# Decision: SQL dispatcher → distributor rename complete
+
+**Date:** 2026-05-29T11:14:24.577-07:00  
+**By:** Morpheus  
+**Status:** ✅ COMPLETE  
+
+---
+
+### Summary
+
+Renamed the `UserEventDispatcherMappings` SQL table and all associated constraints/indexes to `UserEventDistributorMappings` across `table-create.sql`, updated the `DispatchersScheduledItems` seed row in `data-seed.sql` to `DistributorsScheduledItems`, and added idempotent migration `scripts\database\migrations\2026-05-29-rename-dispatcher-to-distributor.sql` for existing databases.
+
+### Why
+
+Part of the terminology cleanup decision recorded in `neo-dispatcher-distributor-terminology.md`: the routing layer is canonically a **Distributor**, not a Dispatcher. SQL scripts were the data layer's portion of that cross-cutting rename.
+
+### Objects Renamed
+
+| Old name | New name | Type |
+| --- | --- | --- |
+| `UserEventDispatcherMappings` | `UserEventDistributorMappings` | table |
+| `DF_UserEventDispatcherMapping_IsActive` | `DF_UserEventDistributorMapping_IsActive` | default constraint |
+| `DF_UserEventDispatcherMapping_CreatedOn` | `DF_UserEventDistributorMapping_CreatedOn` | default constraint |
+| `DF_UserEventDispatcherMapping_LastUpdatedOn` | `DF_UserEventDistributorMapping_LastUpdatedOn` | default constraint |
+| `PK_UserEventDispatcherMapping` | `PK_UserEventDistributorMapping` | primary key |
+| `FK_UserEventDispatcherMapping_SocialMediaPlatforms` | `FK_UserEventDistributorMapping_SocialMediaPlatforms` | foreign key |
+| `UQ_UserEventDispatcherMapping_Owner_Event_Platform` | `UQ_UserEventDistributorMapping_Owner_Event_Platform` | unique constraint |
+| `CK_UserEventDispatcherMapping_EventType` | `CK_UserEventDistributorMapping_EventType` | check constraint |
+| `IX_UserEventDispatcherMapping_Active` | `IX_UserEventDistributorMapping_Active` | index |
+| `DispatchersScheduledItems` (FeedChecks seed row) | `DistributorsScheduledItems` | seed data |
+
+---
+
+# Decision: Dispatcher → Distributor / Platforms rename sweep complete
+
+**Date:** 2026-05-29T11:14:24.577-07:00  
+**By:** Trinity  
+**Status:** ✅ COMPLETE  
+
+---
+
+### Summary
+
+Renamed all routing/distribution layer symbols from `*Dispatcher*` to `*Distributor*` and renamed the platform-settings aggregate surface from `Dispatchers` to `Platforms` across Domain, Data.Sql, Managers, Functions, API, Web, and all test projects. 82 files changed, commit `63d6c7c6` on branch `issue-995-per-user-publisher-routing`.
+
+### Why
+
+Neo's audit found that "Dispatcher" was incorrectly applied to two distinct concepts — the middle routing/distribution layer (now "Distributor") and the platform account configuration surface (now "Platforms"). The rename disambiguates the architecture and aligns naming with the actual responsibilities of each layer.
+
+### What Was Renamed
+
+**Domain**
+- `UserEventDispatcherMapping` → `UserEventDistributorMapping` (model, file)
+- `IUserEventDispatcherMappingDataStore` → `IUserEventDistributorMappingDataStore` (interface, file)
+- `IUserEventDispatcherMappingManager` → `IUserEventDistributorMappingManager` (interface, file)
+- `ConfigurationFunctionNames.DispatchersRandomPosts` → `DistributorsRandomPosts` (constant + string value)
+- `ConfigurationFunctionNames.DispatchersScheduledItems` → `DistributorsScheduledItems` (constant + string value)
+
+**Data.Sql**
+- `UserEventDispatcherMapping` EF model → `UserEventDistributorMapping`
+- `UserEventDispatcherMappingDataStore` → `UserEventDistributorMappingDataStore`
+- `BroadcastingContext.UserEventDispatcherMappings` DbSet → `UserEventDistributorMappings`
+
+**Managers**
+- `UserEventDispatcherMappingManager` → `UserEventDistributorMappingManager`
+
+**Functions**
+- `ICollectorEventDispatcher` → `ICollectorEventDistributor`
+- `CollectorEventDispatcher` → `CollectorEventDistributor`
+- `IScheduledItemEventDispatcher` → `IScheduledItemEventDistributor`
+- `ScheduledItemEventDispatcher` → `ScheduledItemEventDistributor`
+- `Functions/Dispatchers/` folder → `Functions/Distributors/`
+- `[Function("DispatchersRandomPosts")]` → `[Function("DistributorsRandomPosts")]`
+- `[Function("DispatchersScheduledItems")]` → `[Function("DistributorsScheduledItems")]`
+
+**API**
+- `UserEventDispatcherMappingController` → `UserEventDistributorMappingController`, moved to `Controllers/Distributors/`, route updated to `/Distributors/EventDistributorMappings`
+- `DispatchersController` → `PlatformsController`, moved to `Controllers/Platforms/`, route updated to `/Platforms`
+- Platform settings controllers moved to `Controllers/Platforms/`, routes updated to `/Platforms/{platform}`
+- `UserRandomPostSettingsController` — moved to `Controllers/Publishers/`, route updated to `/Publishers/RandomPostSettings`
+- DTOs updated from `*Dispatcher*` to `*Distributor*`
+
+**Web**
+- `DispatcherEventTypes` constant class → `DistributorEventTypes`
+- `UserEventDispatcherMappingViewModel` → `UserEventDistributorMappingViewModel`
+- `IDispatchersAggregateService` → `IPlatformsAggregateService`
+- `DispatchersAggregateService` → `PlatformsAggregateService`
+- `DispatchersAggregateViewModel` → `PlatformsAggregateViewModel`
+- `DispatchersController` → `PlatformsController`, route updated to `/Platforms`
+- `IUserEventDispatcherMappingService` → `IUserEventDistributorMappingService`
+- `UserEventDispatcherMappingService` → `UserEventDistributorMappingService`
+- `UserEventDispatcherMappingController` → `UserEventDistributorMappingController`, route updated to `/Distributors/EventDistributorMappings`
+- Views folder `Views/Dispatchers/` → `Views/Platforms/`
+- Views folder `Views/UserEventDispatcherMapping/` → `Views/UserEventDistributorMapping/`
+- Platform settings service URLs and navigation updated
+
+**Tests**
+- All test files referencing renamed types updated accordingly
+
+### Intentionally NOT Renamed
+
+- `ISocialMediaDispatcher` — publisher-layer abstraction, out of scope per Neo's audit.
+
+### Validation
+
+- `dotnet build .\src\ --no-restore --configuration Release` ✅ — 0 errors, 0 warnings
+- `dotnet test .\src\ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"` ✅ — 371 tests passedThe collector rewrite already established the direct-routing pattern, and the four `ProcessScheduledItemFired` functions were only Event Grid bridge code. Keeping scheduled item routing in a dedicated service preserves the same per-user queue dispatch contract while keeping the timer trigger focused on orchestration and sent-flag updates.
 
 ## Notes
 
