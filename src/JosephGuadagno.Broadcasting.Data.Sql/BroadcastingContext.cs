@@ -51,7 +51,7 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
     public DbSet<Models.UserPlatformLinkedInSettings> UserPlatformLinkedInSettings => Set<Models.UserPlatformLinkedInSettings>();
     public DbSet<Models.UserPlatformFacebookSettings> UserPlatformFacebookSettings => Set<Models.UserPlatformFacebookSettings>();
     public DbSet<Models.UserRandomPostSettings> UserRandomPostSettings => Set<Models.UserRandomPostSettings>();
-    public DbSet<Models.UserEventDispatcherMapping> UserEventDispatcherMappings => Set<Models.UserEventDispatcherMapping>();
+    public DbSet<Models.UserEventDistributorMapping> UserEventDistributorMappings => Set<Models.UserEventDistributorMapping>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -898,20 +898,20 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
                 .HasConstraintName("FK_UserRandomPostSettings_SocialMediaPlatforms");
         });
 
-        modelBuilder.Entity<Models.UserEventDispatcherMapping>(entity =>
+        modelBuilder.Entity<Models.UserEventDistributorMapping>(entity =>
         {
-            entity.ToTable("UserEventDispatcherMappings", table => table.HasCheckConstraint(
-                "CK_UserEventDispatcherMapping_EventType",
+            entity.ToTable("UserEventDistributorMappings", table => table.HasCheckConstraint(
+                "CK_UserEventDistributorMapping_EventType",
                 "[EventType] IN ('NewSyndicationFeedItem', 'NewYouTubeItem', 'NewSpeakingEngagement', 'RandomPost', 'ScheduledItem')"));
 
             entity.HasKey(e => e.Id)
-                .HasName("PK_UserEventDispatcherMapping")
+                .HasName("PK_UserEventDistributorMapping")
                 .IsClustered();
 
-            entity.HasIndex(e => new { e.CreatedByEntraOid, e.EventType, e.SocialMediaPlatformId }, "UQ_UserEventDispatcherMapping_Owner_Event_Platform")
+            entity.HasIndex(e => new { e.CreatedByEntraOid, e.EventType, e.SocialMediaPlatformId }, "UQ_UserEventDistributorMapping_Owner_Event_Platform")
                 .IsUnique();
 
-            entity.HasIndex(e => new { e.IsActive, e.CreatedByEntraOid }, "IX_UserEventDispatcherMapping_Active");
+            entity.HasIndex(e => new { e.IsActive, e.CreatedByEntraOid }, "IX_UserEventDistributorMapping_Active");
 
             entity.Property(e => e.CreatedByEntraOid)
                 .HasMaxLength(36)
@@ -940,7 +940,7 @@ public partial class BroadcastingContext(DbContextOptions<BroadcastingContext> o
             entity.HasOne(e => e.SocialMediaPlatform)
                 .WithMany()
                 .HasForeignKey(e => e.SocialMediaPlatformId)
-                .HasConstraintName("FK_UserEventDispatcherMapping_SocialMediaPlatforms");
+                .HasConstraintName("FK_UserEventDistributorMapping_SocialMediaPlatforms");
         });
 
         OnModelCreatingPartial(modelBuilder);

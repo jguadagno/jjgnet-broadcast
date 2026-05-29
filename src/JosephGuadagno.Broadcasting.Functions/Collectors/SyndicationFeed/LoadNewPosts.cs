@@ -23,7 +23,7 @@ public class LoadNewPosts(
     IUserCollectorFeedSourceManager userCollectorFeedSourceManager,
     IFeedCheckManager feedCheckManager,
     IUrlShortener urlShortener,
-    ICollectorEventDispatcher collectorEventDispatcher,
+    ICollectorEventDistributor collectorEventDispatcher,
     ILogger<LoadNewPosts> logger)
 {
     private static readonly ResiliencePipeline SavePipeline = new ResiliencePipelineBuilder()

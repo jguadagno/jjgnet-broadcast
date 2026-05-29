@@ -30,7 +30,7 @@ public static class BroadcastingDataSqlServiceCollectionExtensions
         services.TryAddScoped<IUserPlatformLinkedInSettingsDataStore, UserPlatformLinkedInSettingsDataStore>();
         services.TryAddScoped<IUserPlatformFacebookSettingsDataStore, UserPlatformFacebookSettingsDataStore>();
         services.TryAddScoped<IUserRandomPostSettingsDataStore, UserRandomPostSettingsDataStore>();
-        services.TryAddScoped<IUserEventDispatcherMappingDataStore, UserEventDispatcherMappingDataStore>();
+        services.TryAddScoped<IUserEventDistributorMappingDataStore, UserEventDistributorMappingDataStore>();
         services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
         services.TryAddScoped<IRoleDataStore, RoleDataStore>();
         services.TryAddScoped<IUserApprovalLogDataStore, UserApprovalLogDataStore>();

@@ -195,13 +195,13 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IUserPlatformLinkedInSettingsDataStore, UserPlatformLinkedInSettingsDataStore>();
     services.TryAddScoped<IUserPlatformFacebookSettingsDataStore, UserPlatformFacebookSettingsDataStore>();
     services.TryAddScoped<IUserRandomPostSettingsDataStore, UserRandomPostSettingsDataStore>();
-    services.TryAddScoped<IUserEventDispatcherMappingDataStore, UserEventDispatcherMappingDataStore>();
+    services.TryAddScoped<IUserEventDistributorMappingDataStore, UserEventDistributorMappingDataStore>();
     services.TryAddScoped<IUserPlatformBlueskySettingsManager, UserPlatformBlueskySettingsManager>();
     services.TryAddScoped<IUserPlatformTwitterSettingsManager, UserPlatformTwitterSettingsManager>();
     services.TryAddScoped<IUserPlatformLinkedInSettingsManager, UserPlatformLinkedInSettingsManager>();
     services.TryAddScoped<IUserPlatformFacebookSettingsManager, UserPlatformFacebookSettingsManager>();
     services.TryAddScoped<IUserRandomPostSettingsManager, UserRandomPostSettingsManager>();
-    services.TryAddScoped<IUserEventDispatcherMappingManager, UserEventDispatcherMappingManager>();
+    services.TryAddScoped<IUserEventDistributorMappingManager, UserEventDistributorMappingManager>();
 
     // RBAC Phase 1
     services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
@@ -216,11 +216,11 @@ void ConfigureFunction(IServiceCollection services)
     // MessageTemplateManager handles both ID-based and platform-name-based lookups (Phase 2+3 of publisher architecture refactor)
     services.TryAddScoped<IMessageTemplateManager, MessageTemplateManager>();
 
-    // CollectorEventDispatcher — replaces Event Grid dispatch for collector functions with per-user queue routing
-    services.AddScoped<ICollectorEventDispatcher, CollectorEventDispatcher>();
+    // CollectorEventDistributor — replaces Event Grid dispatch for collector functions with per-user queue routing
+    services.AddScoped<ICollectorEventDistributor, CollectorEventDistributor>();
 
-    // ScheduledItemEventDispatcher — replaces Event Grid dispatch for scheduled items with per-user queue routing
-    services.AddScoped<IScheduledItemEventDispatcher, ScheduledItemEventDispatcher>();
+    // ScheduledItemEventDistributor — replaces Event Grid dispatch for scheduled items with per-user queue routing
+    services.AddScoped<IScheduledItemEventDistributor, ScheduledItemEventDistributor>();
 
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();

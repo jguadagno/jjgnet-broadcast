@@ -6,13 +6,13 @@ using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
-/// <summary>Calls the Twitter dispatcher settings API on behalf of the current user.</summary>
+/// <summary>Calls the Twitter platform settings API on behalf of the current user.</summary>
 public class UserPlatformTwitterSettingsService(
     IDownstreamApi apiClient,
     ILogger<UserPlatformTwitterSettingsService> logger) : IUserPlatformTwitterSettingsService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
-    private const string TwitterBaseUrl = "/Dispatchers/Twitter";
+    private const string TwitterBaseUrl = "/Platforms/Twitter";
 
     public async Task<UserPlatformTwitterSettings?> GetCurrentUserAsync()
     {

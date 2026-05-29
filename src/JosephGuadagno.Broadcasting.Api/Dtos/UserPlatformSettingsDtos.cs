@@ -131,7 +131,7 @@ public class UserRandomPostSettingsResponse
 /// <summary>
 /// Request DTO for creating a per-user event-to-dispatcher mapping.
 /// </summary>
-public class CreateUserEventDispatcherMappingRequest
+public class CreateUserEventDistributorMappingRequest
 {
     /// <summary>
     /// The event type to route.
@@ -162,7 +162,7 @@ public class CreateUserEventDispatcherMappingRequest
 /// Request DTO for updating a per-user event-to-dispatcher mapping.
 /// Any null property is ignored so the existing persisted value is preserved.
 /// </summary>
-public class UpdateUserEventDispatcherMappingRequest
+public class UpdateUserEventDistributorMappingRequest
 {
     /// <summary>
     /// The event type to route.
@@ -190,7 +190,7 @@ public class UpdateUserEventDispatcherMappingRequest
 /// <summary>
 /// Response DTO for a per-user event-to-dispatcher mapping.
 /// </summary>
-public class UserEventDispatcherMappingResponse
+public class UserEventDistributorMappingResponse
 {
     /// <summary>
     /// The unique identifier of this event dispatcher mapping record.

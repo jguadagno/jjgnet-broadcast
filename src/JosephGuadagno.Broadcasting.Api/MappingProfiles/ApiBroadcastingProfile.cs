@@ -21,7 +21,7 @@ public class ApiBroadcastingProfile : Profile
         CreateMap<UserPlatformLinkedInSettings, LinkedInSettingsResponse>();
         CreateMap<UserPlatformFacebookSettings, FacebookSettingsResponse>();
         CreateMap<UserRandomPostSettings, UserRandomPostSettingsResponse>();
-        CreateMap<UserEventDispatcherMapping, UserEventDispatcherMappingResponse>();
+        CreateMap<UserEventDistributorMapping, UserEventDistributorMappingResponse>();
 
         // Request DTOs → Domain
         CreateMap<YouTubeItemRequest, YouTubeItem>()
@@ -116,12 +116,12 @@ public class ApiBroadcastingProfile : Profile
             .ForAllMembers(o => o.Condition((_, _, sourceMember) => sourceMember is not null));
 
         // User Event Publisher Mapping
-        CreateMap<CreateUserEventDispatcherMappingRequest, UserEventDispatcherMapping>()
+        CreateMap<CreateUserEventDistributorMappingRequest, UserEventDistributorMapping>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
             .ForMember(d => d.CreatedOn, o => o.Ignore())
             .ForMember(d => d.LastUpdatedOn, o => o.Ignore());
-        CreateMap<UpdateUserEventDispatcherMappingRequest, UserEventDispatcherMapping>()
+        CreateMap<UpdateUserEventDistributorMappingRequest, UserEventDistributorMapping>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.CreatedByEntraOid, o => o.Ignore())
             .ForMember(d => d.CreatedOn, o => o.Ignore())

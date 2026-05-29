@@ -236,13 +236,13 @@ void ConfigureRepositories(IServiceCollection services)
     services.TryAddScoped<IUserPlatformLinkedInSettingsDataStore, UserPlatformLinkedInSettingsDataStore>();
     services.TryAddScoped<IUserPlatformFacebookSettingsDataStore, UserPlatformFacebookSettingsDataStore>();
     services.TryAddScoped<IUserRandomPostSettingsDataStore, UserRandomPostSettingsDataStore>();
-    services.TryAddScoped<IUserEventDispatcherMappingDataStore, UserEventDispatcherMappingDataStore>();
+    services.TryAddScoped<IUserEventDistributorMappingDataStore, UserEventDistributorMappingDataStore>();
     services.TryAddScoped<IUserPlatformBlueskySettingsManager, UserPlatformBlueskySettingsManager>();
     services.TryAddScoped<IUserPlatformTwitterSettingsManager, UserPlatformTwitterSettingsManager>();
     services.TryAddScoped<IUserPlatformLinkedInSettingsManager, UserPlatformLinkedInSettingsManager>();
     services.TryAddScoped<IUserPlatformFacebookSettingsManager, UserPlatformFacebookSettingsManager>();
     services.TryAddScoped<IUserRandomPostSettingsManager, UserRandomPostSettingsManager>();
-    services.TryAddScoped<IUserEventDispatcherMappingManager, UserEventDispatcherMappingManager>();
+    services.TryAddScoped<IUserEventDistributorMappingManager, UserEventDistributorMappingManager>();
     services.TryAddScoped<IUserCollectorFeedSourceDataStore, UserCollectorFeedSourceDataStore>();
     services.TryAddScoped<IUserCollectorFeedSourceManager, UserCollectorFeedSourceManager>();
     services.TryAddScoped<IUserCollectorYouTubeChannelDataStore, UserCollectorYouTubeChannelDataStore>();

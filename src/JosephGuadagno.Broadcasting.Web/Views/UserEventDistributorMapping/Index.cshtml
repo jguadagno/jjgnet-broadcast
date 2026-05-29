@@ -1,0 +1,69 @@
+@model List<JosephGuadagno.Broadcasting.Web.Models.UserEventDistributorMappingViewModel>
+
+@{
+    ViewData["Title"] = "Event Dispatcher Mappings";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="mb-1"><i class="bi bi-diagram-3 me-2"></i>Event Dispatcher Mappings</h1>
+        <p class="text-muted mb-0">Choose which dispatchers receive each event type.</p>
+    </div>
+    @if (User.IsInRole(RoleNames.Contributor) ||
+         User.IsInRole(RoleNames.Administrator) ||
+         User.IsInRole(RoleNames.SiteAdministrator))
+    {
+        <a asp-action="Create" asp-controller="UserEventDistributorMapping" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Create
+        </a>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">No event dispatcher mappings have been configured yet.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered">
+            <thead>
+                <tr>
+                    <th scope="col">Event Type</th>
+                    <th scope="col">Platform</th>
+                    <th scope="col">Active</th>
+                    <th scope="col">Updated</th>
+                    <th scope="col" class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td><i class="bi @item.EventTypeIcon me-2"></i>@item.EventTypeDisplayName</td>
+                        <td><i class="bi @item.SocialMediaPlatformIcon me-2"></i>@item.SocialMediaPlatformName</td>
+                        <td>
+                            <span class="badge @(item.IsActive ? "text-bg-success" : "text-bg-secondary")">
+                                @(item.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td><local-time value="@item.LastUpdatedOn" /></td>
+                        <td class="text-end">
+                            @if (User.IsInRole(RoleNames.Contributor) ||
+                                 User.IsInRole(RoleNames.Administrator) ||
+                                 User.IsInRole(RoleNames.SiteAdministrator))
+                            {
+                                <a asp-action="Edit" asp-controller="UserEventDistributorMapping" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a asp-action="Delete" asp-controller="UserEventDistributorMapping" asp-route-id="@item.Id" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -26,7 +26,7 @@ public class LoadNewPostsTests
     private readonly Mock<IUserCollectorFeedSourceManager> _userCollectorFeedSourceManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly Mock<IUrlShortener> _urlShortener;
-    private readonly Mock<ICollectorEventDispatcher> _collectorEventDispatcher;
+    private readonly Mock<ICollectorEventDistributor> _collectorEventDispatcher;
     private readonly LoadNewPosts _sut;
 
     public LoadNewPostsTests()
@@ -36,7 +36,7 @@ public class LoadNewPostsTests
         _userCollectorFeedSourceManager = new Mock<IUserCollectorFeedSourceManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
         _urlShortener = new Mock<IUrlShortener>();
-        _collectorEventDispatcher = new Mock<ICollectorEventDispatcher>();
+        _collectorEventDispatcher = new Mock<ICollectorEventDistributor>();
 
         _userCollectorFeedSourceManager.Setup(m => m.GetAllActiveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<UserCollectorFeedSource>

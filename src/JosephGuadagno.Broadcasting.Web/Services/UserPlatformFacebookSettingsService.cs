@@ -6,13 +6,13 @@ using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
-/// <summary>Calls the Facebook dispatcher settings API on behalf of the current user.</summary>
+/// <summary>Calls the Facebook platform settings API on behalf of the current user.</summary>
 public class UserPlatformFacebookSettingsService(
     IDownstreamApi apiClient,
     ILogger<UserPlatformFacebookSettingsService> logger) : IUserPlatformFacebookSettingsService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
-    private const string FacebookBaseUrl = "/Dispatchers/Facebook";
+    private const string FacebookBaseUrl = "/Platforms/Facebook";
 
     public async Task<UserPlatformFacebookSettings?> GetCurrentUserAsync()
     {

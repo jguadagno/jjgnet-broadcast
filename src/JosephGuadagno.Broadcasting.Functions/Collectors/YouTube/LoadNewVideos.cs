@@ -24,7 +24,7 @@ public class LoadNewVideos(
     IUserCollectorYouTubeChannelManager userCollectorYouTubeChannelManager,
     IYouTubeItemManager youTubeItemManager,
     IUrlShortener urlShortener,
-    ICollectorEventDispatcher collectorEventDispatcher,
+    ICollectorEventDistributor collectorEventDispatcher,
     ILogger<LoadNewVideos> logger)
 {
     private static readonly ResiliencePipeline SavePipeline = new ResiliencePipelineBuilder()

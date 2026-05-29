@@ -26,7 +26,7 @@ public class LoadNewVideosTests
     private readonly Mock<IUserCollectorYouTubeChannelManager> _userCollectorYouTubeChannelManager;
     private readonly Mock<IYouTubeItemManager> _youTubeItemManager;
     private readonly Mock<IUrlShortener> _urlShortener;
-    private readonly Mock<ICollectorEventDispatcher> _collectorEventDispatcher;
+    private readonly Mock<ICollectorEventDistributor> _collectorEventDispatcher;
     private readonly LoadNewVideos _sut;
 
     public LoadNewVideosTests()
@@ -36,7 +36,7 @@ public class LoadNewVideosTests
         _userCollectorYouTubeChannelManager = new Mock<IUserCollectorYouTubeChannelManager>();
         _youTubeItemManager = new Mock<IYouTubeItemManager>();
         _urlShortener = new Mock<IUrlShortener>();
-        _collectorEventDispatcher = new Mock<ICollectorEventDispatcher>();
+        _collectorEventDispatcher = new Mock<ICollectorEventDistributor>();
 
         _userCollectorYouTubeChannelManager.Setup(m => m.GetAllActiveAsync())
             .ReturnsAsync(new List<UserCollectorYouTubeChannel>

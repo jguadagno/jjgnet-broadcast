@@ -19,7 +19,7 @@ public class LoadNewSpeakingEngagements(
     IEngagementManager engagementManager,
     IUserCollectorSpeakingEngagementManager userCollectorSpeakingEngagementManager,
     IFeedCheckManager feedCheckManager,
-    ICollectorEventDispatcher collectorEventDispatcher,
+    ICollectorEventDistributor collectorEventDispatcher,
     ILogger<LoadNewSpeakingEngagements> logger)
 {
     private static readonly ResiliencePipeline SavePipeline = new ResiliencePipelineBuilder()

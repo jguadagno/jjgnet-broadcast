@@ -6,13 +6,13 @@ using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
-/// <summary>Calls the LinkedIn dispatcher settings API on behalf of the current user.</summary>
+/// <summary>Calls the LinkedIn platform settings API on behalf of the current user.</summary>
 public class UserPlatformLinkedInSettingsService(
     IDownstreamApi apiClient,
     ILogger<UserPlatformLinkedInSettingsService> logger) : IUserPlatformLinkedInSettingsService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
-    private const string LinkedInBaseUrl = "/Dispatchers/LinkedIn";
+    private const string LinkedInBaseUrl = "/Platforms/LinkedIn";
 
     public async Task<UserPlatformLinkedInSettings?> GetCurrentUserAsync()
     {

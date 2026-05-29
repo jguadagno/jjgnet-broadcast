@@ -39,10 +39,10 @@ public class BroadcastingContextTests : IDisposable
     public void BroadcastingContext_SingularTables_UseExplicitSqlNames()
     {
         var userApprovalLogTable = _context.Model.FindEntityType(typeof(UserApprovalLog))?.GetTableName();
-        var userEventDispatcherMappingTable = _context.Model.FindEntityType(typeof(UserEventDispatcherMapping))?.GetTableName();
+        var userEventDispatcherMappingTable = _context.Model.FindEntityType(typeof(UserEventDistributorMapping))?.GetTableName();
 
         Assert.Equal("UserApprovalLog", userApprovalLogTable);
-        Assert.Equal("UserEventDispatcherMappings", userEventDispatcherMappingTable);
+        Assert.Equal("UserEventDistributorMappings", userEventDispatcherMappingTable);
     }
 
     [Fact]

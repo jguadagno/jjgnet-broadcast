@@ -12,7 +12,7 @@ public class UserPlatformBlueskySettingsService(
     ILogger<UserPlatformBlueskySettingsService> logger) : IUserPlatformBlueskySettingsService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
-    private const string BlueskyBaseUrl = "/Dispatchers/Bluesky";
+    private const string BlueskyBaseUrl = "/Platforms/Bluesky";
 
     public async Task<UserPlatformBlueskySettings?> GetCurrentUserAsync()
     {

@@ -1,6 +1,6 @@
 using AutoMapper;
 using FluentAssertions;
-using JosephGuadagno.Broadcasting.Api.Controllers.Dispatchers;
+using JosephGuadagno.Broadcasting.Api.Controllers.Publishers;
 using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Api.Tests.Helpers;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;

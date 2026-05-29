@@ -178,10 +178,10 @@ public class Startup
         services.AddSingleton<ITokenRefreshManager, TokenRefreshManager>();
 
         services.TryAddScoped<IMessageTemplateDataStore, MessageTemplateDataStore>();
-        services.TryAddScoped<IUserEventDispatcherMappingDataStore, UserEventDispatcherMappingDataStore>();
+        services.TryAddScoped<IUserEventDistributorMappingDataStore, UserEventDistributorMappingDataStore>();
         services.TryAddScoped<IMessageTemplateManager, MessageTemplateManager>();
         services.TryAddScoped<IPostComposer, PostComposer>();
-        services.AddScoped<IScheduledItemEventDispatcher, ScheduledItemEventDispatcher>();
+        services.AddScoped<IScheduledItemEventDistributor, ScheduledItemEventDistributor>();
 
         services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader.SpeakingEngagementsReader>();
     }

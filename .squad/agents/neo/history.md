@@ -57,6 +57,12 @@ and tests passed.
 - 2026-05-29T08:10:34.554-07:00 — Mermaid flow node labels that include
   method signatures need double-quoted text, and process-flow docs should use
   repo-relative Markdown links for resolvable code and SQL references.
+- 2026-05-29T11:04:30.725-07:00 — The current "Dispatchers" label spans two
+  different concerns: the distributor routing layer and publisher/platform
+  settings UI/API. Future cleanup should rename routing artifacts to
+  "Distributor" while renaming the platform settings surface to a separate term
+  such as "Platforms" instead of blanket-replacing everything with
+  "Distributor".
 
 ## Recent Review Outcomes
 
