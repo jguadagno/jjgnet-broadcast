@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using FluentAssertions;
 using JosephGuadagno.Broadcasting.Web.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Abstractions;
 using Moq;
 
@@ -9,6 +10,7 @@ namespace JosephGuadagno.Broadcasting.Web.Tests.Services;
 public class EngagementServiceTests
 {
     private readonly Mock<IDownstreamApi> _apiClient = new();
+    private readonly Mock<ILogger<EngagementService>> _logger = new();
 
     [Fact]
     public async Task AddPlatformToEngagementAsync_ShouldSendExpectedApiContractAndMapCreatedResource()
@@ -50,7 +52,7 @@ public class EngagementServiceTests
                 }
             });
 
-        var sut = new EngagementService(_apiClient.Object);
+        var sut = new EngagementService(_apiClient.Object, _logger.Object);
 
         // Act
         var result = await sut.AddPlatformToEngagementAsync(engagementId, socialMediaPlatformId, handle);
@@ -86,7 +88,7 @@ public class EngagementServiceTests
                 (_, request, _, _, _) => capturedRequest = request)
             .ReturnsAsync((EngagementSocialMediaPlatformApiResponse?)null);
 
-        var sut = new EngagementService(_apiClient.Object);
+        var sut = new EngagementService(_apiClient.Object, _logger.Object);
 
         // Act
         var result = await sut.AddPlatformToEngagementAsync(42, 9, null);
@@ -133,7 +135,7 @@ public class EngagementServiceTests
                 }
             ]);
 
-        var sut = new EngagementService(_apiClient.Object);
+        var sut = new EngagementService(_apiClient.Object, _logger.Object);
 
         // Act
         var result = await sut.GetPlatformsForEngagementAsync(42);

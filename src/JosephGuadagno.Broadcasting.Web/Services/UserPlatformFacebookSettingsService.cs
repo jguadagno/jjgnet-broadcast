@@ -6,13 +6,13 @@ using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
-/// <summary>Calls the Facebook publisher settings API on behalf of the current user.</summary>
+/// <summary>Calls the Facebook dispatcher settings API on behalf of the current user.</summary>
 public class UserPlatformFacebookSettingsService(
     IDownstreamApi apiClient,
     ILogger<UserPlatformFacebookSettingsService> logger) : IUserPlatformFacebookSettingsService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
-    private const string FacebookBaseUrl = "/Publishers/Facebook";
+    private const string FacebookBaseUrl = "/Dispatchers/Facebook";
 
     public async Task<UserPlatformFacebookSettings?> GetCurrentUserAsync()
     {
@@ -51,8 +51,10 @@ public class UserPlatformFacebookSettingsService(
         if (response is null)
         {
             logger.LogWarning(
-                "Facebook settings save returned no content for owner '{OwnerOid}'",
-                LogSanitizer.Sanitize(settings.CreatedByEntraOid));
+                "API returned null for {Operation} with ownerOid '{OwnerOid}' and pageId '{PageId}'",
+                nameof(SaveCurrentUserAsync),
+                LogSanitizer.Sanitize(settings.CreatedByEntraOid),
+                LogSanitizer.Sanitize(settings.PageId));
         }
 
         return response;

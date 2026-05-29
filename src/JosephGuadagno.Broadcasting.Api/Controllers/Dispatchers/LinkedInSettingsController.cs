@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers.Dispatchers;
@@ -13,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Dispatchers;
 /// Manages per-user LinkedIn publisher settings.
 /// </summary>
 [ApiController]
+[Tags("Dispatchers")]
 [Authorize]
 [IgnoreAntiforgeryToken]
 [Route("Dispatchers/LinkedIn")]

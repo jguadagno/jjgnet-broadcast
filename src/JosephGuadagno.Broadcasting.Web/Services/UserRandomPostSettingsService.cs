@@ -24,6 +24,11 @@ public class UserRandomPostSettingsService(
             options.RelativePath = BaseUrl;
         });
 
+        if (response is null)
+        {
+            logger.LogWarning("GetAllAsync downstream returned null for random post settings");
+        }
+
         return response ?? [];
     }
 
@@ -50,7 +55,11 @@ public class UserRandomPostSettingsService(
 
         if (response is null)
         {
-            logger.LogWarning("Random post settings create returned no content for platform {PlatformId}", settings.SocialMediaPlatformId);
+            logger.LogWarning(
+                "API returned null for {Operation} with randomPostSettingsId {SettingsId} and platformId {PlatformId}",
+                nameof(AddAsync),
+                settings.Id,
+                settings.SocialMediaPlatformId);
         }
 
         return response;
@@ -70,7 +79,11 @@ public class UserRandomPostSettingsService(
 
         if (response is null)
         {
-            logger.LogWarning("Random post settings update returned no content for id {Id}", settings.Id);
+            logger.LogWarning(
+                "API returned null for {Operation} with randomPostSettingsId {SettingsId} and platformId {PlatformId}",
+                nameof(UpdateAsync),
+                settings.Id,
+                settings.SocialMediaPlatformId);
         }
 
         return response;
@@ -90,7 +103,11 @@ public class UserRandomPostSettingsService(
             return true;
         }
 
-        logger.LogWarning("Unexpected status {StatusCode} deleting random post settings {Id}", response?.StatusCode, id);
+        logger.LogWarning(
+            "API returned unexpected status for {Operation} with randomPostSettingsId {SettingsId}: {StatusCode}",
+            nameof(DeleteAsync),
+            id,
+            response?.StatusCode);
         return false;
     }
 

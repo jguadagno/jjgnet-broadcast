@@ -6,13 +6,13 @@ using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
-/// <summary>Calls the Twitter publisher settings API on behalf of the current user.</summary>
+/// <summary>Calls the Twitter dispatcher settings API on behalf of the current user.</summary>
 public class UserPlatformTwitterSettingsService(
     IDownstreamApi apiClient,
     ILogger<UserPlatformTwitterSettingsService> logger) : IUserPlatformTwitterSettingsService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
-    private const string TwitterBaseUrl = "/Publishers/Twitter";
+    private const string TwitterBaseUrl = "/Dispatchers/Twitter";
 
     public async Task<UserPlatformTwitterSettings?> GetCurrentUserAsync()
     {
@@ -47,7 +47,8 @@ public class UserPlatformTwitterSettingsService(
         if (response is null)
         {
             logger.LogWarning(
-                "Twitter settings save returned no content for owner '{OwnerOid}'",
+                "API returned null for {Operation} with ownerOid '{OwnerOid}'",
+                nameof(SaveCurrentUserAsync),
                 LogSanitizer.Sanitize(settings.CreatedByEntraOid));
         }
 

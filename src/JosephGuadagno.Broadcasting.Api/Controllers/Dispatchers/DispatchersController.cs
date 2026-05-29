@@ -3,6 +3,7 @@ using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers.Dispatchers;
@@ -11,6 +12,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Dispatchers;
 /// Returns an aggregate view of all dispatcher settings for the resolved owner.
 /// </summary>
 [ApiController]
+[Tags("Dispatchers")]
 [Authorize]
 [IgnoreAntiforgeryToken]
 [Route("[controller]")]

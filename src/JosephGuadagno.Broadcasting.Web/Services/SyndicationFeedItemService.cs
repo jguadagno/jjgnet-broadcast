@@ -10,7 +10,7 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// <summary>
 /// Calls out to the Syndication Feed Sources API
 /// </summary>
-public class SyndicationFeedItemService(IDownstreamApi apiClient): ISyndicationFeedItemService
+public class SyndicationFeedItemService(IDownstreamApi apiClient, ILogger<SyndicationFeedItemService> logger) : ISyndicationFeedItemService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
     private const string BaseUrl = "/SyndicationFeedItems";
@@ -30,7 +30,11 @@ public class SyndicationFeedItemService(IDownstreamApi apiClient): ISyndicationF
             options.RelativePath = $"{BaseUrl}?{queryParams}";
         });
 
-        if (pagedResponse is null) return new PagedResult<SyndicationFeedItem>();
+        if (pagedResponse is null)
+        {
+            logger.LogWarning("GetAllAsync downstream returned null (page={Page}, pageSize={PageSize})", page, pageSize);
+            return new PagedResult<SyndicationFeedItem>();
+        }
         return new PagedResult<SyndicationFeedItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
 
@@ -59,6 +63,12 @@ public class SyndicationFeedItemService(IDownstreamApi apiClient): ISyndicationF
         {
             options.RelativePath = BaseUrl;
         });
+
+        if (savedSource is null)
+        {
+            logger.LogWarning("SaveAsync downstream returned null for syndication feed item {ItemId}", source.Id);
+        }
+
         return savedSource;
     }
 
@@ -75,6 +85,12 @@ public class SyndicationFeedItemService(IDownstreamApi apiClient): ISyndicationF
             options.HttpMethod = HttpMethod.Delete.Method;
         });
 
-        return response is { StatusCode: HttpStatusCode.NoContent };
+        if (response is { StatusCode: HttpStatusCode.NoContent })
+        {
+            return true;
+        }
+
+        logger.LogWarning("DeleteAsync unexpected status {StatusCode} for syndication feed item {ItemId}", response?.StatusCode, id);
+        return false;
     }
 }

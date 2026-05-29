@@ -1,6 +1,7 @@
 using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 
@@ -11,7 +12,7 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// <summary>
 /// Calls out to the Engagement Api
 /// </summary>
-public class EngagementService(IDownstreamApi apiClient): IEngagementService
+public class EngagementService(IDownstreamApi apiClient, ILogger<EngagementService> logger) : IEngagementService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
     private const string EngagementBaseUrl = "/engagements";
@@ -37,7 +38,11 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
             options.RelativePath = $"{EngagementBaseUrl}?{queryParams}";
         });
 
-        if (pagedResponse is null) return new PagedResult<Engagement>();
+        if (pagedResponse is null)
+        {
+            logger.LogWarning("GetEngagementsAsync downstream returned null (page={Page}, pageSize={PageSize})", page, pageSize);
+            return new PagedResult<Engagement>();
+        }
         return new PagedResult<Engagement> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
     
@@ -67,6 +72,12 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
         {
             options.RelativePath = EngagementBaseUrl;
         });
+
+        if (savedEngagement is null)
+        {
+            logger.LogWarning("SaveEngagementAsync downstream returned null for engagement {EngagementId}", engagement.Id);
+        }
+
         return savedEngagement;
     }
     
@@ -83,7 +94,13 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
             options.HttpMethod = HttpMethod.Delete.Method;
         });
 
-        return response is { StatusCode: HttpStatusCode.NoContent };
+        if (response is { StatusCode: HttpStatusCode.NoContent })
+        {
+            return true;
+        }
+
+        logger.LogWarning("DeleteEngagementAsync unexpected status {StatusCode} for engagement {EngagementId}", response?.StatusCode, engagementId);
+        return false;
     }
 
     /// <summary>
@@ -100,7 +117,11 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
             options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/talks?page={page}&pageSize={pageSize}";
         });
 
-        if (pagedResponse is null) return new PagedResult<Talk>();
+        if (pagedResponse is null)
+        {
+            logger.LogWarning("GetEngagementTalksAsync downstream returned null for engagement {EngagementId}", engagementId);
+            return new PagedResult<Talk>();
+        }
         return new PagedResult<Talk> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
     
@@ -116,6 +137,11 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
         {
             options.RelativePath = $"{EngagementBaseUrl}/{talk.EngagementId}/talks";
         });
+
+        if (savedTalk is null)
+        {
+            logger.LogWarning("SaveEngagementTalkAsync downstream returned null for engagement {EngagementId}", talk.EngagementId);
+        }
 
         return savedTalk;
     }
@@ -149,7 +175,13 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
             options.HttpMethod = HttpMethod.Delete.Method;
         });
 
-        return response is { StatusCode: HttpStatusCode.NoContent };
+        if (response is { StatusCode: HttpStatusCode.NoContent })
+        {
+            return true;
+        }
+
+        logger.LogWarning("DeleteEngagementTalkAsync unexpected status {StatusCode} for engagement {EngagementId} talk {TalkId}", response?.StatusCode, engagementId, talkId);
+        return false;
     }
 
     /// <summary>
@@ -163,7 +195,14 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
         {
             options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/platforms";
         });
-        return platforms?.Select(MapPlatform).ToList() ?? [];
+
+        if (platforms is null)
+        {
+            logger.LogWarning("GetPlatformsForEngagementAsync downstream returned null for engagement {EngagementId}", engagementId);
+            return [];
+        }
+
+        return platforms.Select(MapPlatform).ToList();
     }
 
     /// <summary>
@@ -184,6 +223,13 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
         {
             options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/platforms";
         });
+
+        if (result is null)
+        {
+            logger.LogWarning("AddPlatformToEngagementAsync downstream returned null for engagement {EngagementId} platform {PlatformId} handle '{Handle}'",
+                engagementId, socialMediaPlatformId, LogSanitizer.Sanitize(handle));
+        }
+
         return result is null ? null : MapPlatform(result);
     }
 
@@ -200,7 +246,14 @@ public class EngagementService(IDownstreamApi apiClient): IEngagementService
             options.RelativePath = $"{EngagementBaseUrl}/{engagementId}/platforms/{platformId}";
             options.HttpMethod = HttpMethod.Delete.Method;
         });
-        return response is { StatusCode: HttpStatusCode.NoContent };
+
+        if (response is { StatusCode: HttpStatusCode.NoContent })
+        {
+            return true;
+        }
+
+        logger.LogWarning("RemovePlatformFromEngagementAsync unexpected status {StatusCode} for engagement {EngagementId} platform {PlatformId}", response?.StatusCode, engagementId, platformId);
+        return false;
     }
 
     private static EngagementSocialMediaPlatform MapPlatform(EngagementSocialMediaPlatformApiResponse response) => new()

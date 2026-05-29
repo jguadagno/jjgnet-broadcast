@@ -7,7 +7,8 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 
 /// <summary>Calls the dispatchers aggregate endpoint on behalf of the current user.</summary>
 public class DispatchersAggregateService(
-    IDownstreamApi apiClient) : IDispatchersAggregateService
+    IDownstreamApi apiClient,
+    ILogger<DispatchersAggregateService> logger) : IDispatchersAggregateService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
     private const string DispatchersBaseUrl = "/Dispatchers";
@@ -21,6 +22,7 @@ public class DispatchersAggregateService(
 
         if (response is null)
         {
+            logger.LogWarning("GetCurrentUserAsync downstream returned null for dispatchers aggregate");
             return null;
         }
 

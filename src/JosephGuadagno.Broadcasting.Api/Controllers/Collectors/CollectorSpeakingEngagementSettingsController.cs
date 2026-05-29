@@ -6,6 +6,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
@@ -15,6 +16,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
 /// <c>/Collectors/SpeakingEngagement/Settings</c> route.
 /// </summary>
 [ApiController]
+[Tags("Collectors")]
 [Authorize]
 [IgnoreAntiforgeryToken]
 [Route("Collectors/SpeakingEngagement/Settings")]

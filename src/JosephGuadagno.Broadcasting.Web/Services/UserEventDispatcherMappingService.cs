@@ -1,5 +1,6 @@
 using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
@@ -23,6 +24,11 @@ public class UserEventDispatcherMappingService(
         {
             options.RelativePath = BaseUrl;
         });
+
+        if (response is null)
+        {
+            logger.LogWarning("GetAllAsync downstream returned null for event dispatcher mappings");
+        }
 
         return response ?? [];
     }
@@ -50,7 +56,12 @@ public class UserEventDispatcherMappingService(
 
         if (response is null)
         {
-            logger.LogWarning("Event dispatcher mapping create returned no content for platform {PlatformId}", mapping.SocialMediaPlatformId);
+            logger.LogWarning(
+                "API returned null for {Operation} with mappingId {MappingId}, platformId {PlatformId}, and eventType '{EventType}'",
+                nameof(AddAsync),
+                mapping.Id,
+                mapping.SocialMediaPlatformId,
+                LogSanitizer.Sanitize(mapping.EventType));
         }
 
         return response;
@@ -70,7 +81,12 @@ public class UserEventDispatcherMappingService(
 
         if (response is null)
         {
-            logger.LogWarning("Event dispatcher mapping update returned no content for id {Id}", mapping.Id);
+            logger.LogWarning(
+                "API returned null for {Operation} with mappingId {MappingId}, platformId {PlatformId}, and eventType '{EventType}'",
+                nameof(UpdateAsync),
+                mapping.Id,
+                mapping.SocialMediaPlatformId,
+                LogSanitizer.Sanitize(mapping.EventType));
         }
 
         return response;
@@ -90,7 +106,11 @@ public class UserEventDispatcherMappingService(
             return true;
         }
 
-        logger.LogWarning("Unexpected status {StatusCode} deleting event dispatcher mapping {Id}", response?.StatusCode, id);
+        logger.LogWarning(
+            "API returned unexpected status for {Operation} with mappingId {MappingId}: {StatusCode}",
+            nameof(DeleteAsync),
+            id,
+            response?.StatusCode);
         return false;
     }
 

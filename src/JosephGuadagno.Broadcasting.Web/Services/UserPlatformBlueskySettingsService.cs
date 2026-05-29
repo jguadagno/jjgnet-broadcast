@@ -12,7 +12,7 @@ public class UserPlatformBlueskySettingsService(
     ILogger<UserPlatformBlueskySettingsService> logger) : IUserPlatformBlueskySettingsService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
-    private const string BlueskyBaseUrl = "/Publishers/Bluesky";
+    private const string BlueskyBaseUrl = "/Dispatchers/Bluesky";
 
     public async Task<UserPlatformBlueskySettings?> GetCurrentUserAsync()
     {
@@ -42,8 +42,10 @@ public class UserPlatformBlueskySettingsService(
         if (response is null)
         {
             logger.LogWarning(
-                "Bluesky settings save returned no content for owner '{OwnerOid}'",
-                LogSanitizer.Sanitize(settings.CreatedByEntraOid));
+                "API returned null for {Operation} with ownerOid '{OwnerOid}' and userName '{UserName}'",
+                nameof(SaveCurrentUserAsync),
+                LogSanitizer.Sanitize(settings.CreatedByEntraOid),
+                LogSanitizer.Sanitize(settings.UserName));
         }
 
         return response;

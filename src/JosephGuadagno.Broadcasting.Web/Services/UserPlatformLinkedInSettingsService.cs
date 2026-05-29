@@ -6,13 +6,13 @@ using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
-/// <summary>Calls the LinkedIn publisher settings API on behalf of the current user.</summary>
+/// <summary>Calls the LinkedIn dispatcher settings API on behalf of the current user.</summary>
 public class UserPlatformLinkedInSettingsService(
     IDownstreamApi apiClient,
     ILogger<UserPlatformLinkedInSettingsService> logger) : IUserPlatformLinkedInSettingsService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
-    private const string LinkedInBaseUrl = "/Publishers/LinkedIn";
+    private const string LinkedInBaseUrl = "/Dispatchers/LinkedIn";
 
     public async Task<UserPlatformLinkedInSettings?> GetCurrentUserAsync()
     {
@@ -45,8 +45,10 @@ public class UserPlatformLinkedInSettingsService(
         if (response is null)
         {
             logger.LogWarning(
-                "LinkedIn settings save returned no content for owner '{OwnerOid}'",
-                LogSanitizer.Sanitize(settings.CreatedByEntraOid));
+                "API returned null for {Operation} with ownerOid '{OwnerOid}' and authorId '{AuthorId}'",
+                nameof(SaveCurrentUserAsync),
+                LogSanitizer.Sanitize(settings.CreatedByEntraOid),
+                LogSanitizer.Sanitize(settings.AuthorId));
         }
 
         return response;

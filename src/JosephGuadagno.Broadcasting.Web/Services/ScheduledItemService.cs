@@ -35,10 +35,14 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
         {
             options.RelativePath = url;
         });
-        if (pagedResponse is null) return new PagedResult<ScheduledItem>();
+        if (pagedResponse is null)
+        {
+            logger.LogWarning("GetScheduledItemsAsync downstream returned null (page={Page}, pageSize={PageSize})", page, pageSize);
+            return new PagedResult<ScheduledItem>();
+        }
         return new PagedResult<ScheduledItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
-    
+
     /// <summary>
     /// Gets a scheduled item
     /// </summary>
@@ -65,6 +69,12 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
         {
             options.RelativePath = ScheduledItemBaseUrl;
         });
+
+        if (savedScheduledItem is null)
+        {
+            logger.LogWarning("SaveScheduledItemAsync downstream returned null for scheduled item {ScheduledItemId}", scheduledItem.Id);
+        }
+
         return savedScheduledItem;
     }
     
@@ -81,7 +91,13 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
             options.HttpMethod = HttpMethod.Delete.Method;
         });
 
-        return response is { StatusCode: HttpStatusCode.NoContent };
+        if (response is { StatusCode: HttpStatusCode.NoContent })
+        {
+            return true;
+        }
+
+        logger.LogWarning("DeleteScheduledItemAsync unexpected status {StatusCode} for scheduled item {ScheduledItemId}", response?.StatusCode, scheduledItemId);
+        return false;
     }
 
     /// <summary>
@@ -98,7 +114,11 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
             {
                 options.RelativePath = $"{ScheduledItemBaseUrl}/unsent?page={page}&pageSize={pageSize}";
             });
-            if (pagedResponse is null) return new PagedResult<ScheduledItem>();
+            if (pagedResponse is null)
+            {
+                logger.LogWarning("GetUnsentScheduledItemsAsync downstream returned null (page={Page}, pageSize={PageSize})", page, pageSize);
+                return new PagedResult<ScheduledItem>();
+            }
             return new PagedResult<ScheduledItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
         }
         catch (HttpRequestException exception)
@@ -132,7 +152,11 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
             {
                 options.RelativePath = $"{ScheduledItemBaseUrl}/upcoming?page={page}&pageSize={pageSize}";
             });
-            if (pagedResponse is null) return new PagedResult<ScheduledItem>();
+            if (pagedResponse is null)
+            {
+                logger.LogWarning("GetScheduledItemsToSendAsync downstream returned null (page={Page}, pageSize={PageSize})", page, pageSize);
+                return new PagedResult<ScheduledItem>();
+            }
             return new PagedResult<ScheduledItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
         }
         catch (HttpRequestException exception)
@@ -169,7 +193,11 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
                 options.RelativePath =
                     $"{ScheduledItemBaseUrl}/calendar/{year}/{month}?page={page}&pageSize={pageSize}";
             });
-            if (pagedResponse is null) return new PagedResult<ScheduledItem>();
+            if (pagedResponse is null)
+            {
+                logger.LogWarning("GetScheduledItemsByCalendarMonthAsync downstream returned null for {Year}/{Month} (page={Page}, pageSize={PageSize})", year, month, page, pageSize);
+                return new PagedResult<ScheduledItem>();
+            }
             return new PagedResult<ScheduledItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
         }
         catch (HttpRequestException exception)
@@ -203,7 +231,11 @@ public class ScheduledItemService (IDownstreamApi apiClient, ILogger<ScheduledIt
             {
                 options.RelativePath = $"{ScheduledItemBaseUrl}/orphaned/?page={page}&pageSize={pageSize}";
             });
-            if (pagedResponse is null) return new PagedResult<ScheduledItem>();
+            if (pagedResponse is null)
+            {
+                logger.LogWarning("GetOrphanedScheduledItemsAsync downstream returned null (page={Page}, pageSize={PageSize})", page, pageSize);
+                return new PagedResult<ScheduledItem>();
+            }
             return new PagedResult<ScheduledItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
         }
         catch (HttpRequestException exception)

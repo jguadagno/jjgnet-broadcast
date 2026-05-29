@@ -1,5 +1,7 @@
+using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
@@ -23,6 +25,11 @@ public class UserCollectorSpeakingEngagementService(
             options.RelativePath = $"{BaseUrl}?pageSize={Pagination.MaxPageSize}";
         });
 
+        if (response is null)
+        {
+            logger.LogWarning("GetCurrentUserAsync downstream returned null for speaking engagements");
+        }
+
         return response?.Items.ToList() ?? [];
     }
 
@@ -32,6 +39,11 @@ public class UserCollectorSpeakingEngagementService(
         {
             options.RelativePath = BuildRelativePath(ownerOid) + $"&pageSize={Pagination.MaxPageSize}";
         });
+
+        if (response is null)
+        {
+            logger.LogWarning("GetByUserAsync downstream returned null for speaking engagements (ownerOid='{OwnerOid}')", LogSanitizer.Sanitize(ownerOid));
+        }
 
         return response?.Items.ToList() ?? [];
     }
@@ -68,12 +80,12 @@ public class UserCollectorSpeakingEngagementService(
 
     public async Task<bool> DeleteCurrentUserAsync(int id)
     {
-        return await DeleteAsync($"{BaseUrl}/{id}");
+        return await DeleteAsync($"{BaseUrl}/{id}", id);
     }
 
     public async Task<bool> DeleteByUserAsync(string ownerOid, int id)
     {
-        return await DeleteAsync($"{BuildRelativePath(ownerOid)}/{id}");
+        return await DeleteAsync($"{BuildRelativePath(ownerOid)}/{id}", id, ownerOid);
     }
 
     private async Task<UserCollectorSpeakingEngagement?> AddAsync(string relativePath, UserCollectorSpeakingEngagement engagement)
@@ -89,8 +101,10 @@ public class UserCollectorSpeakingEngagementService(
         if (response is null)
         {
             logger.LogWarning(
-                "Speaking engagement add returned no content for owner {OwnerOid}",
-                engagement.CreatedByEntraOid);
+                "API returned null for {Operation} with engagementId {EngagementId} and ownerOid '{OwnerOid}'",
+                nameof(AddAsync),
+                engagement.Id,
+                LogSanitizer.Sanitize(engagement.CreatedByEntraOid));
         }
 
         return response;
@@ -109,32 +123,34 @@ public class UserCollectorSpeakingEngagementService(
         if (response is null)
         {
             logger.LogWarning(
-                "Speaking engagement update returned no content for id {Id}",
+                "API returned null for {Operation} with engagementId {EngagementId}",
+                nameof(UpdateAsync),
                 engagement.Id);
         }
 
         return response;
     }
 
-    private async Task<bool> DeleteAsync(string relativePath)
+    private async Task<bool> DeleteAsync(string relativePath, int id, string? ownerOid = null)
     {
-        try
+        var response = await apiClient.CallApiForUserAsync<HttpResponseMessage>(ApiServiceName, options =>
         {
-            await apiClient.CallApiForUserAsync(
-                ApiServiceName,
-                options =>
-                {
-                    options.HttpMethod = HttpMethod.Delete.Method;
-                    options.RelativePath = relativePath;
-                });
+            options.HttpMethod = HttpMethod.Delete.Method;
+            options.RelativePath = relativePath;
+        });
 
+        if (response is { StatusCode: HttpStatusCode.NoContent })
+        {
             return true;
         }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to delete speaking engagement at {RelativePath}", relativePath);
-            return false;
-        }
+
+        logger.LogWarning(
+            "API returned unexpected status for {Operation} with id {Id} and ownerOid '{OwnerOid}': {StatusCode}",
+            nameof(DeleteAsync),
+            id,
+            LogSanitizer.Sanitize(ownerOid),
+            response?.StatusCode);
+        return false;
     }
 
     private static string BuildRelativePath(string? ownerOid = null)

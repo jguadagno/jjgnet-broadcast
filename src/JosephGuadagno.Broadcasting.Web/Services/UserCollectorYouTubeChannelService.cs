@@ -1,5 +1,7 @@
+using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using Microsoft.Identity.Abstractions;
@@ -23,6 +25,11 @@ public class UserCollectorYouTubeChannelService(
             options.RelativePath = $"{YouTubeChannelBaseUrl}?pageSize={Pagination.MaxPageSize}";
         });
 
+        if (response is null)
+        {
+            logger.LogWarning("GetCurrentUserAsync downstream returned null for YouTube channels");
+        }
+
         return response?.Items.ToList() ?? [];
     }
 
@@ -32,6 +39,11 @@ public class UserCollectorYouTubeChannelService(
         {
             options.RelativePath = BuildRelativePath(ownerOid) + $"&pageSize={Pagination.MaxPageSize}";
         });
+
+        if (response is null)
+        {
+            logger.LogWarning("GetByUserAsync downstream returned null for YouTube channels (ownerOid='{OwnerOid}')", LogSanitizer.Sanitize(ownerOid));
+        }
 
         return response?.Items.ToList() ?? [];
     }
@@ -68,12 +80,12 @@ public class UserCollectorYouTubeChannelService(
 
     public async Task<bool> DeleteCurrentUserAsync(int id)
     {
-        return await DeleteAsync($"{YouTubeChannelBaseUrl}/{id}");
+        return await DeleteAsync($"{YouTubeChannelBaseUrl}/{id}", id);
     }
 
     public async Task<bool> DeleteByUserAsync(string ownerOid, int id)
     {
-        return await DeleteAsync($"{BuildRelativePath(ownerOid)}/{id}");
+        return await DeleteAsync($"{BuildRelativePath(ownerOid)}/{id}", id, ownerOid);
     }
 
     private async Task<UserCollectorYouTubeChannel?> AddAsync(string relativePath, UserCollectorYouTubeChannel channel)
@@ -89,8 +101,10 @@ public class UserCollectorYouTubeChannelService(
         if (response is null)
         {
             logger.LogWarning(
-                "YouTube channel add returned no content for owner {OwnerOid}",
-                channel.CreatedByEntraOid);
+                "API returned null for {Operation} with channelId {ChannelId} and ownerOid '{OwnerOid}'",
+                nameof(AddAsync),
+                channel.Id,
+                LogSanitizer.Sanitize(channel.CreatedByEntraOid));
         }
 
         return response;
@@ -109,32 +123,34 @@ public class UserCollectorYouTubeChannelService(
         if (response is null)
         {
             logger.LogWarning(
-                "YouTube channel update returned no content for id {Id}",
+                "API returned null for {Operation} with channelId {ChannelId}",
+                nameof(UpdateAsync),
                 channel.Id);
         }
 
         return response;
     }
 
-    private async Task<bool> DeleteAsync(string relativePath)
+    private async Task<bool> DeleteAsync(string relativePath, int id, string? ownerOid = null)
     {
-        try
+        var response = await apiClient.CallApiForUserAsync<HttpResponseMessage>(ApiServiceName, options =>
         {
-            await apiClient.CallApiForUserAsync(
-                ApiServiceName,
-                options =>
-                {
-                    options.HttpMethod = HttpMethod.Delete.Method;
-                    options.RelativePath = relativePath;
-                });
+            options.HttpMethod = HttpMethod.Delete.Method;
+            options.RelativePath = relativePath;
+        });
 
+        if (response is { StatusCode: HttpStatusCode.NoContent })
+        {
             return true;
         }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to delete YouTube channel at {RelativePath}", relativePath);
-            return false;
-        }
+
+        logger.LogWarning(
+            "API returned unexpected status for {Operation} with id {Id} and ownerOid '{OwnerOid}': {StatusCode}",
+            nameof(DeleteAsync),
+            id,
+            LogSanitizer.Sanitize(ownerOid),
+            response?.StatusCode);
+        return false;
     }
 
     private static string BuildRelativePath(string? ownerOid = null)
