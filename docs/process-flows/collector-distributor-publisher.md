@@ -155,9 +155,9 @@ flowchart TD
   - [collector-youtube-load-all-videos.md](collector-youtube-load-all-videos.md)
   - [collector-speaking-engagements-load-new.md](collector-speaking-engagements-load-new.md)
   - [collector-speaking-engagements-load-all.md](collector-speaking-engagements-load-all.md)
-  - [dispatcher-collector-event.md](dispatcher-collector-event.md)
-  - [dispatcher-scheduled-items.md](dispatcher-scheduled-items.md)
-  - [dispatcher-random-posts.md](dispatcher-random-posts.md)
+  - [distributor-collector-event.md](distributor-collector-event.md)
+  - [distributor-scheduled-items.md](distributor-scheduled-items.md)
+  - [distributor-random-posts.md](distributor-random-posts.md)
 
 ---
 
@@ -166,25 +166,25 @@ flowchart TD
 The distributor stage is the routing brain of the system. It converts a saved item or scheduled event into one or more queue messages by combining three inputs:
 
 - the **event type** (`NewSyndicationFeedItem`, `NewYouTubeItem`, `NewSpeakingEngagement`, `RandomPost`, `ScheduledItem`)
-- the owner's active **`UserEventDispatcherMappings`**
+- the owner's active **`UserEventDistributorMappings`**
 - the owner's per-platform **`MessageTemplates`**
 
-`PostComposer` renders the final text, then the dispatcher writes a fresh `SocialMediaPublishRequest` into the platform queue. This is the point where the system fans out from one saved item to many publisher targets.
+`PostComposer` renders the final text, then the distributor writes a fresh `SocialMediaPublishRequest` into the platform queue. This is the point where the system fans out from one saved item to many publisher targets.
 
 ### Routing rules
 
 | Event type | Producer | Distributor | Queue decision source |
 | --- | --- | --- | --- |
-| `NewSyndicationFeedItem` | `CollectorsFeedLoadNewPosts` | `CollectorEventDispatcher.DispatchSyndicationFeedItemAsync` | `UserEventDispatcherMappings` + `MessageTemplates` |
-| `NewYouTubeItem` | `CollectorsYouTubeLoadNewVideos` | `CollectorEventDispatcher.DispatchYouTubeItemAsync` | `UserEventDispatcherMappings` + `MessageTemplates` |
-| `NewSpeakingEngagement` | `CollectorsSpeakingEngagementsLoadNew` | `CollectorEventDispatcher.DispatchSpeakingEngagementAsync` | `UserEventDispatcherMappings` + `MessageTemplates` |
-| `ScheduledItem` | `DispatchersScheduledItems` | `ScheduledItemEventDispatcher.DispatchAsync` | `UserEventDispatcherMappings` + `MessageTemplates` |
+| `NewSyndicationFeedItem` | `CollectorsFeedLoadNewPosts` | `CollectorEventDistributor.DispatchSyndicationFeedItemAsync` | `UserEventDistributorMappings` + `MessageTemplates` |
+| `NewYouTubeItem` | `CollectorsYouTubeLoadNewVideos` | `CollectorEventDistributor.DispatchYouTubeItemAsync` | `UserEventDistributorMappings` + `MessageTemplates` |
+| `NewSpeakingEngagement` | `CollectorsSpeakingEngagementsLoadNew` | `CollectorEventDistributor.DispatchSpeakingEngagementAsync` | `UserEventDistributorMappings` + `MessageTemplates` |
+| `ScheduledItem` | `DistributorsScheduledItems` | `ScheduledItemEventDistributor.DispatchAsync` | `UserEventDistributorMappings` + `MessageTemplates` |
 | `RandomPost` | `DispatchersRandomPosts` | In-function queue routing | `UserRandomPostSettings` + `MessageTemplates` |
 
-### Scheduled and random dispatch
+### Scheduled and random distribution
 
-- `DispatchersScheduledItems` polls due `ScheduledItems`, builds a publish request from the referenced source item type, dispatches through `ScheduledItemEventDispatcher`, and then marks the item as sent.
-- `DispatchersRandomPosts` polls due `UserRandomPostSettings`, picks a random syndication item for that owner, composes text immediately, enqueues it, and advances `NextRunDateUtc`.
+- `DistributorsScheduledItems` polls due `ScheduledItems`, builds a publish request from the referenced source item type, distributes through `ScheduledItemEventDistributor`, and then marks the item as sent.
+- `DistributorsRandomPosts` polls due `UserRandomPostSettings`, picks a random syndication item for that owner, composes text immediately, enqueues it, and advances `NextRunDateUtc`.
 - The current implementation has **no active Event Grid hop** in this path. Routing is direct from distributor code to Azure Storage queues.
 
 ---
@@ -281,7 +281,7 @@ flowchart TD
 | --- | --- | --- | --- |
 | Collector input | `ISyndicationFeedReader`, `IYouTubeReader`, `ISpeakingEngagementsReader` | External source endpoints/files, user collector config, Key Vault for YouTube API key | In-memory source models |
 | Persistence | `ISyndicationFeedItemManager`, `IYouTubeItemManager`, `IEngagementManager`, `IFeedCheckManager` | Domain models from readers | SQL content tables and `FeedChecks` |
-| Distribution | `CollectorEventDispatcher`, `ScheduledItemEventDispatcher`, `DispatchersRandomPosts` | SQL routing tables and templates | Azure Storage queues |
+| Distribution | `CollectorEventDistributor`, `ScheduledItemEventDistributor`, `DistributorsRandomPosts` | SQL routing tables and templates | Azure Storage queues |
 | Publishing | Queue-trigger functions and platform managers | Queue messages, publisher settings, Key Vault, `UserOAuthTokens` | External social APIs |
 
 ---
@@ -296,10 +296,10 @@ flowchart TD
 | `CollectorsFeedLoadAllPosts` | Azure Function | Manual full/backfill feed import | HTTP POST |
 | `CollectorsYouTubeLoadAllVideos` | Azure Function | Manual full/backfill YouTube import | HTTP POST |
 | `CollectorsSpeakingEngagementsLoadAll` | Azure Function | Manual full/backfill speaking engagement import | HTTP POST |
-| `CollectorEventDispatcher` | Service | Resolves owner mappings, templates, and target queue for collector events | Called by collector functions |
-| `DispatchersScheduledItems` | Azure Function | Finds due scheduled items and orchestrates dispatch | Timer |
-| `ScheduledItemEventDispatcher` | Service | Loads source item, composes text, and enqueues per mapped platform | Called by `DispatchersScheduledItems` |
-| `DispatchersRandomPosts` | Azure Function | Selects random posts per due user/platform schedule and enqueues them | Timer |
+| `CollectorEventDistributor` | Service | Resolves owner mappings, templates, and target queue for collector events | Called by collector functions |
+| `DistributorsScheduledItems` | Azure Function | Finds due scheduled items and orchestrates distribution | Timer |
+| `ScheduledItemEventDistributor` | Service | Loads source item, composes text, and enqueues per mapped platform | Called by `DistributorsScheduledItems` |
+| `DistributorsRandomPosts` | Azure Function | Selects random posts per due user/platform schedule and enqueues them | Timer |
 | `MessageTemplateManager` | Manager | Loads per-owner, per-platform templates | Called by dispatchers |
 | `PostComposer` | Service | Renders final post text from a template and source payload | Called by dispatchers |
 | `UserEventDispatcherMappingManager` | Manager | Validates and manages event-to-platform routing metadata | Called by API/Web and dispatcher path through data store |
@@ -333,7 +333,7 @@ flowchart TD
 | SQL table | `Engagements` and `Talks` | Persisted speaking events and nested talks |
 | SQL table | `ScheduledItems` | Deferred publish work sourced from existing content |
 | SQL table | `MessageTemplates` | Per-platform template text used before queue dispatch |
-| SQL table | `UserEventDispatcherMappings` | User-controlled routing rules from event type to publisher platform |
+| SQL table | `UserEventDistributorMappings` | User-controlled routing rules from event type to publisher platform |
 | SQL table | `UserRandomPostSettings` | Per-user random post schedules, filters, and next-run state |
 | SQL table | `UserPlatformTwitterSettings` | Twitter/X enablement and non-secret metadata |
 | SQL table | `UserPlatformBlueskySettings` | Bluesky enablement and author metadata |
@@ -358,8 +358,8 @@ flowchart TD
 
 - `src\JosephGuadagno.Broadcasting.Functions\Collectors\`
 - `src\JosephGuadagno.Broadcasting.Functions\Dispatchers\`
-- `src\JosephGuadagno.Broadcasting.Functions\Services\CollectorEventDispatcher.cs`
-- `src\JosephGuadagno.Broadcasting.Functions\Services\ScheduledItemEventDispatcher.cs`
+- `src\JosephGuadagno.Broadcasting.Functions\Services\CollectorEventDistributor.cs`
+- `src\JosephGuadagno.Broadcasting.Functions\Services\ScheduledItemEventDistributor.cs`
 - `src\JosephGuadagno.Broadcasting.Functions\Twitter\SendTweet.cs`
 - `src\JosephGuadagno.Broadcasting.Functions\Bluesky\SendPost.cs`
 - `src\JosephGuadagno.Broadcasting.Functions\LinkedIn\PostLink.cs`

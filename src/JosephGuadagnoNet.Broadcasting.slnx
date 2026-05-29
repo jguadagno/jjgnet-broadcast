@@ -70,9 +70,9 @@
     <File Path="../docs/process-flows/collector-speaking-engagements-load-new.md" />
     <File Path="../docs/process-flows/collector-youtube-load-all-videos.md" />
     <File Path="../docs/process-flows/collector-youtube-load-new-videos.md" />
-    <File Path="../docs/process-flows/dispatcher-collector-event.md" />
-    <File Path="../docs/process-flows/dispatcher-random-posts.md" />
-    <File Path="../docs/process-flows/dispatcher-scheduled-items.md" />
+    <File Path="../docs/process-flows/distributor-collector-event.md" />
+    <File Path="../docs/process-flows/distributor-random-posts.md" />
+    <File Path="../docs/process-flows/distributor-scheduled-items.md" />
   </Folder>
   <Folder Name="/Scripts/">
     <File Path="bitly-tests.http" />
