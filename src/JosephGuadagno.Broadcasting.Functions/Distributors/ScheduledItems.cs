@@ -17,7 +17,7 @@ public class ScheduledItems(
     ILogger<ScheduledItems> logger)
 {
     [Function(ConfigurationFunctionNames.DistributorsScheduledItems)]
-    public async Task RunAsync([TimerTrigger("%dispatchers_scheduled_items_cron_settings%")]
+    public async Task RunAsync([TimerTrigger("%distributors_scheduled_items_cron_settings%")]
         TimerInfo myTimer)
     {
         var startedAt = DateTimeOffset.UtcNow;

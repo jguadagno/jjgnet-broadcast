@@ -29,7 +29,7 @@ public class RandomPosts(
     };
 
     [Function(ConfigurationFunctionNames.DistributorsRandomPosts)]
-    public async Task RunAsync([TimerTrigger("%dispatchers_random_post_cron_settings%")] TimerInfo myTimer)
+    public async Task RunAsync([TimerTrigger("%distributors_random_post_cron_settings%")] TimerInfo myTimer)
     {
         var utcNow = DateTimeOffset.UtcNow;
         logger.LogDebug("{FunctionName} started at: {StartedAt:f}",
