@@ -1,0 +1,140 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/AI/" />
+  <Folder Name="/AI/.claude/">
+    <File Path="../.claude/settings.local.json" />
+  </Folder>
+  <Folder Name="/AI/.claude/commands/">
+    <File Path="../.claude/commands/db-change.md" />
+    <File Path="../.claude/commands/docs.md" />
+    <File Path="../.claude/commands/feature.md" />
+    <File Path="../.claude/commands/test.md" />
+  </Folder>
+  <Folder Name="/AI/.claude/skills/" />
+  <Folder Name="/AI/.claude/skills/dotnet-feature/">
+    <File Path="../.claude/skills/dotnet-feature/SKILL.md" />
+  </Folder>
+  <Folder Name="/AI/.claude/skills/qa-engineer/">
+    <File Path="../.claude/skills/qa-engineer/SKILL.md" />
+  </Folder>
+  <Folder Name="/AI/.claude/skills/sql-schema/">
+    <File Path="../.claude/skills/sql-schema/SKILL.md" />
+  </Folder>
+  <Folder Name="/AI/.github/">
+    <File Path="../.github/copilot-instructions.md" />
+  </Folder>
+  <Folder Name="/AI/.github/agents/">
+    <File Path="../.github/agents/agents.md" />
+    <File Path="../.github/agents/api-agent.md" />
+    <File Path="../.github/agents/dev-deploy-agent.md" />
+    <File Path="../.github/agents/docs-agent.md" />
+    <File Path="../.github/agents/lint-agent.md" />
+    <File Path="../.github/agents/test-agent.md" />
+  </Folder>
+  <Folder Name="/AI/.junie/">
+    <File Path="../.junie/guidelines.md" />
+  </Folder>
+  <Folder Name="/AI/Squad/">
+    <File Path="../.github/agents/squad.agent.md" />
+    <File Path="../.squad/ceremonies.md" />
+    <File Path="../.squad/decisions.md" />
+    <File Path="../.squad/routing.md" />
+    <File Path="../.squad/team.md" />
+  </Folder>
+  <Folder Name="/Database/">
+    <File Path="../scripts/database/data-seed.sql" />
+    <File Path="../scripts/database/database-create.sql" />
+    <File Path="../scripts/database/reset-feed-check-data-tests-scripts.sql" />
+    <File Path="../scripts/database/table-create.sql" />
+    <File Path="../scripts/database/truncate-data.sql" />
+  </Folder>
+  <Folder Name="/ExtraStuff/">
+    <File Path="../.gitignore" />
+    <File Path="../CONTRIBUTING.md" />
+    <File Path="../developer-getting-started.md" />
+    <File Path="../docs/scope-instructions.md" />
+    <File Path="../docs/YouTube-README.md" />
+    <File Path="../infrastructure.md" />
+    <File Path="../README.md" />
+    <File Path=".editorconfig" />
+  </Folder>
+  <Folder Name="/Flows/">
+    <File Path="../docs/process-flows/collector-distributor-publisher.md" />
+    <File Path="../docs/process-flows/collector-feed-load-all-posts.md" />
+    <File Path="../docs/process-flows/collector-feed-load-new-posts.md" />
+    <File Path="../docs/process-flows/collector-speaking-engagements-load-all.md" />
+    <File Path="../docs/process-flows/collector-speaking-engagements-load-new.md" />
+    <File Path="../docs/process-flows/collector-youtube-load-all-videos.md" />
+    <File Path="../docs/process-flows/collector-youtube-load-new-videos.md" />
+    <File Path="../docs/process-flows/dispatcher-collector-event.md" />
+    <File Path="../docs/process-flows/dispatcher-random-posts.md" />
+    <File Path="../docs/process-flows/dispatcher-scheduled-items.md" />
+  </Folder>
+  <Folder Name="/Scripts/">
+    <File Path="bitly-tests.http" />
+    <File Path="facebook-access-tokens.http" />
+    <File Path="function-tests.http" />
+    <File Path="install-libman.ps1" />
+    <File Path="libman-restore.ps1" />
+    <File Path="LinkedIn.http" />
+  </Folder>
+  <Folder Name="/Workflows/">
+    <File Path="../.github/pull_request_template.md" />
+    <File Path="../.github/workflows/ci.yml" />
+    <File Path="../.github/workflows/main_api-jjgnet-broadcast.yml" />
+    <File Path="../.github/workflows/main_jjgnet-broadcast.yml" />
+    <File Path="../.github/workflows/main_web-jjgnet-broadcast.yml" />
+    <File Path="../.github/workflows/squad-heartbeat.yml" />
+    <File Path="../.github/workflows/squad-issue-assign.yml" />
+    <File Path="../.github/workflows/squad-label-enforce.yml" />
+    <File Path="../.github/workflows/squad-triage.yml" />
+    <File Path="../.github/workflows/sync-squad-labels.yml" />
+  </Folder>
+  <Project Path="JosephGuadagno.Broadcasting.Api.Tests/JosephGuadagno.Broadcasting.Api.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Api/JosephGuadagno.Broadcasting.Api.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.AppHost/JosephGuadagno.Broadcasting.AppHost.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Composers/JosephGuadagno.Broadcasting.Composers.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Data.KeyVault.Tests/JosephGuadagno.Broadcasting.Data.KeyVault.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Data.KeyVault/JosephGuadagno.Broadcasting.Data.KeyVault.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Data.Sql.Tests/JosephGuadagno.Broadcasting.Data.Sql.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Data.Sql/JosephGuadagno.Broadcasting.Data.Sql.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Data.Tests/JosephGuadagno.Broadcasting.Data.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Data/JosephGuadagno.Broadcasting.Data.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Domain/JosephGuadagno.Broadcasting.Domain.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.FixSourceDataShortUrl/JosephGuadagno.Broadcasting.FixSourceDataShortUrl.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Functions.IntegrationTests/JosephGuadagno.Broadcasting.Functions.IntegrationTests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Functions.Tests/JosephGuadagno.Broadcasting.Functions.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Functions/JosephGuadagno.Broadcasting.Functions.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.JsonFeedReader.Tests/JosephGuadagno.Broadcasting.JsonFeedReader.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.JsonFeedReader/JosephGuadagno.Broadcasting.JsonFeedReader.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.Bluesky.IntegrationTests/JosephGuadagno.Broadcasting.Managers.Bluesky.IntegrationTests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.Bluesky.Tests/JosephGuadagno.Broadcasting.Managers.Bluesky.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.Bluesky/JosephGuadagno.Broadcasting.Managers.Bluesky.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.Facebook.IntegrationTests/JosephGuadagno.Broadcasting.Managers.Facebook.IntegrationTests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.Facebook.Tests/JosephGuadagno.Broadcasting.Managers.Facebook.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.Facebook/JosephGuadagno.Broadcasting.Managers.Facebook.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.LinkedIn.IntegrationTests/JosephGuadagno.Broadcasting.Managers.LinkedIn.IntegrationTests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.LinkedIn.Tests/JosephGuadagno.Broadcasting.Managers.LinkedIn.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.LinkedIn/JosephGuadagno.Broadcasting.Managers.LinkedIn.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.Tests/JosephGuadagno.Broadcasting.Managers.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.Twitter.IntegrationTests/JosephGuadagno.Broadcasting.Managers.Twitter.IntegrationTests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.Twitter.Tests/JosephGuadagno.Broadcasting.Managers.Twitter.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers.Twitter/JosephGuadagno.Broadcasting.Managers.Twitter.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Managers/JosephGuadagno.Broadcasting.Managers.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Serilog/JosephGuadagno.Broadcasting.Serilog.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.ServiceDefaults/JosephGuadagno.Broadcasting.ServiceDefaults.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Tests/JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.SpeakingEngagementsReader/JosephGuadagno.Broadcasting.SpeakingEngagementsReader.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.SyndicationFeedReader.IntegrationTests/JosephGuadagno.Broadcasting.SyndicationFeedReader.IntegrationTests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests/JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.SyndicationFeedReader/JosephGuadagno.Broadcasting.SyndicationFeedReader.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Web.Tests/JosephGuadagno.Broadcasting.Web.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.Web/JosephGuadagno.Broadcasting.Web.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.YouTubeReader.IntegrationTests/JosephGuadagno.Broadcasting.YouTubeReader.IntegrationTests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.YouTubeReader.Tests/JosephGuadagno.Broadcasting.YouTubeReader.Tests.csproj" />
+  <Project Path="JosephGuadagno.Broadcasting.YouTubeReader/JosephGuadagno.Broadcasting.YouTubeReader.csproj" />
+</Solution>
