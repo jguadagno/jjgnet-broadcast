@@ -714,36 +714,36 @@ END
 GO
 
 -- ============================================================
--- UserEventDispatcherMappings (Issue #995)
--- Maps collector event types to dispatcher platforms per user
+-- UserEventDistributorMappings (Issue #995)
+-- Maps collector event types to distributor platforms per user
 -- EventType valid values align with MessageTemplates.MessageTypes
 -- ============================================================
-IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserEventDispatcherMappings')
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserEventDistributorMappings')
 BEGIN
-    CREATE TABLE [dbo].[UserEventDispatcherMappings]
+    CREATE TABLE [dbo].[UserEventDistributorMappings]
     (
         [Id]                    INT IDENTITY(1,1)   NOT NULL,
         [CreatedByEntraOid]     NVARCHAR(36)        NOT NULL,
         [EventType]             NVARCHAR(50)        NOT NULL,
         [SocialMediaPlatformId] INT                 NOT NULL,
-        [IsActive]              BIT                 NOT NULL CONSTRAINT DF_UserEventDispatcherMapping_IsActive DEFAULT (1),
-        [CreatedOn]             DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserEventDispatcherMapping_CreatedOn DEFAULT (GETUTCDATE()),
-        [LastUpdatedOn]         DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserEventDispatcherMapping_LastUpdatedOn DEFAULT (GETUTCDATE()),
+        [IsActive]              BIT                 NOT NULL CONSTRAINT DF_UserEventDistributorMapping_IsActive DEFAULT (1),
+        [CreatedOn]             DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserEventDistributorMapping_CreatedOn DEFAULT (GETUTCDATE()),
+        [LastUpdatedOn]         DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserEventDistributorMapping_LastUpdatedOn DEFAULT (GETUTCDATE()),
 
-        CONSTRAINT PK_UserEventDispatcherMapping PRIMARY KEY CLUSTERED ([Id] ASC),
-        CONSTRAINT FK_UserEventDispatcherMapping_SocialMediaPlatforms
+        CONSTRAINT PK_UserEventDistributorMapping PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT FK_UserEventDistributorMapping_SocialMediaPlatforms
             FOREIGN KEY ([SocialMediaPlatformId]) REFERENCES [dbo].[SocialMediaPlatforms]([Id]),
-        CONSTRAINT UQ_UserEventDispatcherMapping_Owner_Event_Platform
+        CONSTRAINT UQ_UserEventDistributorMapping_Owner_Event_Platform
             UNIQUE ([CreatedByEntraOid], [EventType], [SocialMediaPlatformId]),
-        CONSTRAINT CK_UserEventDispatcherMapping_EventType
+        CONSTRAINT CK_UserEventDistributorMapping_EventType
             CHECK ([EventType] IN ('NewSyndicationFeedItem', 'NewYouTubeItem', 'NewSpeakingEngagement', 'RandomPost', 'ScheduledItem'))
     );
-    CREATE NONCLUSTERED INDEX IX_UserEventDispatcherMapping_Active
-        ON [dbo].[UserEventDispatcherMappings] ([IsActive] ASC, [CreatedByEntraOid] ASC);
-    PRINT 'Created table UserEventDispatcherMappings';
+    CREATE NONCLUSTERED INDEX IX_UserEventDistributorMapping_Active
+        ON [dbo].[UserEventDistributorMappings] ([IsActive] ASC, [CreatedByEntraOid] ASC);
+    PRINT 'Created table UserEventDistributorMappings';
 END
 ELSE
 BEGIN
-    PRINT 'Table UserEventDispatcherMappings already exists — skipped';
+    PRINT 'Table UserEventDistributorMappings already exists — skipped';
 END
 GO

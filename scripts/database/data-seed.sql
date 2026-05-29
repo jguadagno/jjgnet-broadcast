@@ -56,7 +56,7 @@ INSERT INTO JJGNet.dbo.FeedChecks (Name, LastCheckedFeed, LastItemAddedOrUpdated
 INSERT INTO JJGNet.dbo.FeedChecks (Name, LastCheckedFeed, LastItemAddedOrUpdated, LastUpdatedOn) VALUES
     ('CollectorsYouTubeLoadNewVideos', '2026-01-28 04:06:00.0076283 -07:00', '2025-06-13 19:02:32 -07:00', '2026-01-28 04:07:47.4046872 -07:00')
 INSERT INTO JJGNet.dbo.FeedChecks (Name, LastCheckedFeed, LastItemAddedOrUpdated, LastUpdatedOn) VALUES
-    ('DispatchersScheduledItems', '2026-01-28 02:44:29.6178073 -07:00',	'2022-02-26 17:40:00.3057055 -07:00', '2026-01-28 04:07:47.4046873 -07:00')
+    ('DistributorsScheduledItems', '2026-01-28 02:44:29.6178073 -07:00',	'2022-02-26 17:40:00.3057055 -07:00', '2026-01-28 04:07:47.4046873 -07:00')
 
 -- Seed the TokenRefresh table
 INSERT INTO JJGNet.dbo.TokenRefreshes (Name, Expires, LastChecked, LastRefreshed, LastUpdatedOn) VALUES ('long-lived', '2026-02-06 01:00:00.4204227 -07:00', '2025-12-08 01:00:02.4382065 -07:00', '2025-12-08 01:00:02.4382065 -07:00', '2026-01-28 04:07:47.4046874 -07:00');
