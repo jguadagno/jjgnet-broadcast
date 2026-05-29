@@ -21,6 +21,20 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraStuff", "ExtraStuff", 
 		..\docs\scope-instructions.md = ..\docs\scope-instructions.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Flows", "Flows", "{6C5ABEE4-5D2B-48A5-A15D-5605DB65F0CA}"
+	ProjectSection(SolutionItems) = preProject
+		..\docs\process-flows\collector-distributor-publisher.md = ..\docs\process-flows\collector-distributor-publisher.md
+		..\docs\process-flows\collector-feed-load-all-posts.md = ..\docs\process-flows\collector-feed-load-all-posts.md
+		..\docs\process-flows\collector-feed-load-new-posts.md = ..\docs\process-flows\collector-feed-load-new-posts.md
+		..\docs\process-flows\collector-speaking-engagements-load-all.md = ..\docs\process-flows\collector-speaking-engagements-load-all.md
+		..\docs\process-flows\collector-speaking-engagements-load-new.md = ..\docs\process-flows\collector-speaking-engagements-load-new.md
+		..\docs\process-flows\collector-youtube-load-all-videos.md = ..\docs\process-flows\collector-youtube-load-all-videos.md
+		..\docs\process-flows\collector-youtube-load-new-videos.md = ..\docs\process-flows\collector-youtube-load-new-videos.md
+		..\docs\process-flows\dispatcher-collector-event.md = ..\docs\process-flows\dispatcher-collector-event.md
+		..\docs\process-flows\dispatcher-random-posts.md = ..\docs\process-flows\dispatcher-random-posts.md
+		..\docs\process-flows\dispatcher-scheduled-items.md = ..\docs\process-flows\dispatcher-scheduled-items.md
+	EndProjectSection
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.YouTubeReader", "JosephGuadagno.Broadcasting.YouTubeReader\JosephGuadagno.Broadcasting.YouTubeReader.csproj", "{C7A60E25-3A0F-48BB-97B3-5A4BBD187F0D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JosephGuadagno.Broadcasting.YouTubeReader.Tests", "JosephGuadagno.Broadcasting.YouTubeReader.Tests\JosephGuadagno.Broadcasting.YouTubeReader.Tests.csproj", "{8F9E3C2D-4A5B-6F7C-8D9E-0A1B2C3D4E5F}"

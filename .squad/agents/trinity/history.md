@@ -193,3 +193,9 @@ All phases of issue #995 are now fully complete:
 - Pull request opened: #998 — `feat(#995): per-user publisher routing — replace Event Grid dispatch`.
 - Validation before push: `dotnet build .\src\ --no-restore --configuration Release` ✅ and `dotnet test .\src\ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"` ✅.
 
+---
+
+## Learnings
+
+- 2026-05-28: Web `IDownstreamApi` service wrappers should inject `ILogger<TService>` and log `GetForUserAsync`/`PostForUserAsync`/`PutForUserAsync` nulls plus delete calls that return anything other than `204 NoContent`; only `GetOptionalForUserAsync` nulls stay silent, and any logged string identifiers (owner OIDs, platform names, event types, handles) must be wrapped with `LogSanitizer.Sanitize()`.
+
