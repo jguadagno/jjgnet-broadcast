@@ -1951,3 +1951,27 @@ No build blocker surfaced from **Switch** during this phase.
 - Cleanup commit: `83e4a8a5`
 - Notes: Cleanup removed dead global RandomPost/Event Grid plumbing after the per-user routing migration. Full build and CI-aligned tests passed before the branch was pushed and the PR was opened.
 
+
+
+
+<!-- markdownlint-disable MD013 -->
+# Mermaid process-flow docs
+
+**Date:** 2026-05-29T07:57:36.967-07:00  
+**Author:** Neo  
+**Status:** ✅ Documented
+
+## Summary
+
+The current process-flow docs in `docs\process-flows` should be maintained as Markdown files with Mermaid diagrams instead of checked-in SVG exports. The active routing boundary in the Functions app is direct Azure Queue Storage dispatch, so diagrams should show CollectorEventDispatcher, ScheduledItemEventDispatcher, and RandomPosts against the live per-user SQL mapping and template flow.
+
+## Why
+
+The older SVGs reflected superseded routing assumptions and were easy to leave stale after code changes. Keeping one Markdown file per collector or dispatcher beside the overview doc makes future updates easier to review and keeps the diagram source close to the narrative documentation.
+
+## Scope
+
+- Replace the four outdated collector SVG files with Mermaid-based Markdown docs.
+- Add missing docs for the speaking engagement collectors and the current dispatcher paths.
+- Treat Event Grid as legacy reference only, not as part of the live collector, scheduled-item, or random-post flow.
+
