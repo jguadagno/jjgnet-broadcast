@@ -16,4 +16,5 @@ public interface IUserCollectorFeedSourceService
     Task<UserCollectorFeedSource?> UpdateByUserAsync(string ownerOid, UserCollectorFeedSource feedSource);
     Task<bool> DeleteCurrentUserAsync(int id);
     Task<bool> DeleteByUserAsync(string ownerOid, int id);
+    Task<bool> ToggleActiveAsync(int id);
 }

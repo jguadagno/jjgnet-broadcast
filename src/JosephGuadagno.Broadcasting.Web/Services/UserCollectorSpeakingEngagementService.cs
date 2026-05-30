@@ -88,6 +88,15 @@ public class UserCollectorSpeakingEngagementService(
         return await DeleteAsync($"{BuildRelativePath(ownerOid)}/{id}", id, ownerOid);
     }
 
+    public async Task<bool> ToggleActiveAsync(int id)
+    {
+        var item = await GetByIdAsync(id);
+        if (item is null) return false;
+        item.IsActive = !item.IsActive;
+        var updated = await UpdateCurrentUserAsync(item);
+        return updated is not null;
+    }
+
     private async Task<UserCollectorSpeakingEngagement?> AddAsync(string relativePath, UserCollectorSpeakingEngagement engagement)
     {
         var response = await apiClient.PostForUserAsync<UserCollectorSpeakingEngagement, UserCollectorSpeakingEngagement>(

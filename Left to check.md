@@ -2,12 +2,12 @@
 
 ## Web UI
 
-- [X] Engagements - CRUD
-- [X] Schedules - CRUD
+- [ ] Engagements - CRUD
+- [ ] Schedules - CRUD
 - [X] Admin - Message Templates - These should be unique per user and work in the Functions
 - [X] Admin - Syndication Feed Sources - These should be unique per user and work in the Functions
 - [X] Admin - YouTube Sources - These should be unique per user and work in the Functions
-- [X] Site Admin - Social Media Platforms - CRUD
+- [ ] Site Admin - Social Media Platforms - CRUD
 - [X] Site Admin - Users
 - [X] LinkedIn - validate the token rotation works
 - [X] Update the page description - TODOs
@@ -21,8 +21,8 @@
 ## Database
 
 - [ ] Make sure local and prod are the same
-- [X] Make sure the `table-create` scripts are accurate
-- [X] Make sure the `data-seed` scripts are accurate
+- [ ] Make sure the `table-create` scripts are accurate
+- [ ] Make sure the `data-seed` scripts are accurate
 - [ ] Get my "secrets" for publishers and collectors from configuration/key vault into the database
   - [ ] YouTube
   - [ ] LinkedIn

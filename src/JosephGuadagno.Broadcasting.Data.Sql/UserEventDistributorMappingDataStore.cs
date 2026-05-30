@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Data.Sql;
 
 /// <summary>
-/// SQL data store for per-user event-to-dispatcher mappings.
+/// SQL data store for per-user event-to-distributor mappings.
 /// </summary>
 public class UserEventDistributorMappingDataStore(
     BroadcastingContext broadcastingContext,
@@ -63,7 +63,7 @@ public class UserEventDistributorMappingDataStore(
         {
             logger.LogError(
                 ex,
-                "Failed to retrieve event dispatcher mappings for owner {OwnerOid} and event type {EventType}",
+                "Failed to retrieve event distributor mappings for owner {OwnerOid} and event type {EventType}",
                 LogSanitizer.Sanitize(ownerOid),
                 LogSanitizer.Sanitize(eventType));
             return [];
@@ -87,7 +87,7 @@ public class UserEventDistributorMappingDataStore(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to retrieve event dispatcher mapping for ID {Id}", id);
+            logger.LogError(ex, "Failed to retrieve event distributor mapping for ID {Id}", id);
             return null;
         }
     }
@@ -142,7 +142,7 @@ public class UserEventDistributorMappingDataStore(
         {
             logger.LogError(
                 ex,
-                "Failed to save event dispatcher mapping for owner {OwnerOid}, event type {EventType}, platform {PlatformId}",
+                "Failed to save event distributor mapping for owner {OwnerOid}, event type {EventType}, platform {PlatformId}",
                 LogSanitizer.Sanitize(mapping.CreatedByEntraOid),
                 LogSanitizer.Sanitize(mapping.EventType),
                 mapping.SocialMediaPlatformId);
@@ -178,7 +178,7 @@ public class UserEventDistributorMappingDataStore(
         {
             logger.LogError(
                 ex,
-                "Failed to delete event dispatcher mapping for ID {Id} and owner {OwnerOid}",
+                "Failed to delete event distributor mapping for ID {Id} and owner {OwnerOid}",
                 id,
                 LogSanitizer.Sanitize(ownerOid));
             return false;

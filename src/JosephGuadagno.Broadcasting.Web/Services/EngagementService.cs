@@ -4,7 +4,7 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
-
+using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
@@ -272,27 +272,4 @@ public class EngagementService(IDownstreamApi apiClient, ILogger<EngagementServi
                 IsActive = response.SocialMediaPlatform.IsActive
             }
     };
-}
-
-internal sealed class EngagementSocialMediaPlatformApiRequest
-{
-    public int SocialMediaPlatformId { get; set; }
-    public string? Handle { get; set; }
-}
-
-internal sealed class EngagementSocialMediaPlatformApiResponse
-{
-    public int EngagementId { get; set; }
-    public int SocialMediaPlatformId { get; set; }
-    public string? Handle { get; set; }
-    public SocialMediaPlatformApiResponse? SocialMediaPlatform { get; set; }
-}
-
-internal sealed class SocialMediaPlatformApiResponse
-{
-    public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string? Url { get; set; }
-    public string? Icon { get; set; }
-    public bool IsActive { get; set; }
 }

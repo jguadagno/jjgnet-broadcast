@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace JosephGuadagno.Broadcasting.Web.Models;
 
 /// <summary>
-/// View model for creating and editing per-user event dispatcher mappings.
+/// View model for creating and editing per-user event distributor mappings.
 /// </summary>
 public class UserEventDistributorMappingViewModel
 {

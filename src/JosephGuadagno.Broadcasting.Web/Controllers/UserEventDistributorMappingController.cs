@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace JosephGuadagno.Broadcasting.Web.Controllers;
 
 /// <summary>
-/// Manages per-user event dispatcher mappings in the Web UI.
+/// Manages per-user event distributor mappings in the Web UI.
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
 [Route("Distributors/EventDistributorMappings")]
@@ -21,7 +21,7 @@ public class UserEventDistributorMappingController(
     ISetupService setupService) : Controller
 {
     /// <summary>
-    /// Lists all event dispatcher mappings for the authenticated user.
+    /// Lists all event distributor mappings for the authenticated user.
     /// </summary>
     [HttpGet("")]
     [HttpGet("Index")]
@@ -55,7 +55,7 @@ public class UserEventDistributorMappingController(
     }
 
     /// <summary>
-    /// Creates a new event dispatcher mapping.
+    /// Creates a new event distributor mapping.
     /// </summary>
     [HttpPost("Create")]
     [ValidateAntiForgeryToken]
@@ -71,12 +71,12 @@ public class UserEventDistributorMappingController(
         var created = await mappingService.AddAsync(MapToDomainModel(viewModel));
         if (created is null)
         {
-            TempData["ErrorMessage"] = "Unable to save the event dispatcher mapping.";
+            TempData["ErrorMessage"] = "Unable to save the event distributor mapping.";
             await PopulateOptionsAsync(viewModel);
             return View(viewModel);
         }
 
-        TempData["SuccessMessage"] = "Event dispatcher mapping saved successfully.";
+        TempData["SuccessMessage"] = "Event distributor mapping saved successfully.";
         await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Index));
     }
@@ -99,7 +99,7 @@ public class UserEventDistributorMappingController(
     }
 
     /// <summary>
-    /// Updates an existing event dispatcher mapping.
+    /// Updates an existing event distributor mapping.
     /// </summary>
     [HttpPost("Edit/{id:int}")]
     [ValidateAntiForgeryToken]
@@ -131,12 +131,12 @@ public class UserEventDistributorMappingController(
         var saved = await mappingService.UpdateAsync(updated);
         if (saved is null)
         {
-            TempData["ErrorMessage"] = "Unable to update the event dispatcher mapping.";
+            TempData["ErrorMessage"] = "Unable to update the event distributor mapping.";
             await PopulateOptionsAsync(viewModel);
             return View(viewModel);
         }
 
-        TempData["SuccessMessage"] = "Event dispatcher mapping updated successfully.";
+        TempData["SuccessMessage"] = "Event distributor mapping updated successfully.";
         await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Index));
     }
@@ -159,7 +159,7 @@ public class UserEventDistributorMappingController(
     }
 
     /// <summary>
-    /// Deletes the selected event dispatcher mapping.
+    /// Deletes the selected event distributor mapping.
     /// </summary>
     [HttpPost("Delete/{id:int}")]
     [ActionName("Delete")]
@@ -176,12 +176,12 @@ public class UserEventDistributorMappingController(
         var deleted = await mappingService.DeleteAsync(id);
         if (!deleted)
         {
-            TempData["ErrorMessage"] = "Unable to delete the event dispatcher mapping.";
+            TempData["ErrorMessage"] = "Unable to delete the event distributor mapping.";
             var viewModel = await BuildViewModelAsync(mapping);
             return View(viewModel);
         }
 
-        TempData["SuccessMessage"] = "Event dispatcher mapping deleted successfully.";
+        TempData["SuccessMessage"] = "Event distributor mapping deleted successfully.";
         await setupService.InvalidateAsync();
         return RedirectToAction(nameof(Index));
     }
@@ -261,5 +261,25 @@ public class UserEventDistributorMappingController(
             SocialMediaPlatformId = viewModel.SocialMediaPlatformId,
             IsActive = viewModel.IsActive
         };
+    }
+
+    /// <summary>
+    /// Toggles the IsActive status of an event distributor mapping (activate / deactivate).
+    /// </summary>
+    [HttpPost("ToggleActive/{id:int}")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
+    public async Task<IActionResult> ToggleActive(int id)
+    {
+        var success = await mappingService.ToggleActiveAsync(id);
+        if (!success)
+        {
+            TempData["ErrorMessage"] = "Failed to toggle the active status.";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Active status toggled successfully.";
+        }
+        return RedirectToAction(nameof(Index));
     }
 }

@@ -13,7 +13,9 @@
     string SortIcon(string col)
     {
         if ((ViewBag.SortBy as string) != col) return "";
-        return (bool)ViewBag.SortDescending ? " <i class=\"bi bi-arrow-down\"></i>" : " <i class=\"bi bi-arrow-up\"></i>";
+        return (bool)ViewBag.SortDescending
+            ? "<i class=\"bi bi-sort-alpha-up\"></i>"
+            : "<i class=\"bi bi-sort-alpha-down\"></i>";
     }
 }
 
@@ -89,13 +91,13 @@
                 {
                     <td>@ownerLabel</td>
                 }
-                <td class="text-end">
+                    <td class="text-end">
                     <a asp-action="Edit" asp-controller="MessageTemplates"
                        asp-route-platform="@template.Platform"
                        asp-route-messageType="@template.MessageType"
                        asp-route-ownerId="@template.CreatedByEntraOid"
-                       class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-pencil"></i>
+                       class="btn btn-outline-primary btn-sm" title="Edit">
+                        <i class="bi bi-pencil-square"></i>
                     </a>
                 </td>
             </tr>

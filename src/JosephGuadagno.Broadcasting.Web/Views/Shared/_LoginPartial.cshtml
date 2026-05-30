@@ -28,9 +28,11 @@
 								class="fa-solid fa-person-chalkboard me-2"></i>Speaking Engagements</a></li>
 					<li><a class="dropdown-item" asp-controller="CollectorYouTubeChannels" asp-action="Index"><i
 								class="bi @CollectorIcons.YouTubeChannel.Icon me-2"></i>YouTube Channels</a></li>
-					<li><h6 class="dropdown-header">Platform Settings</h6></li>
-					<li><a class="dropdown-item" asp-controller="Platforms" asp-action="Index">
-						<i class="bi bi-broadcast-pin me-2"></i>All Platform Settings</a></li>
+					<li>
+						<hr class="dropdown-divider">
+					</li>
+					<li><h6 class="dropdown-header">Distributor Settings</h6></li>
+
 					<li><a class="dropdown-item" asp-controller="UserRandomPostSettings" asp-action="Index">
 						<i class="bi bi-shuffle me-2"></i>Random Post Settings</a></li>
 					<li><a class="dropdown-item" asp-controller="UserEventDistributorMapping" asp-action="Index">
@@ -39,6 +41,8 @@
 						<hr class="dropdown-divider">
 					</li>
 					<li><h6 class="dropdown-header">Platform Settings</h6></li>
+					<li><a class="dropdown-item" asp-controller="Platforms" asp-action="Index">
+						<i class="bi bi-broadcast-pin me-2"></i>All Platform Settings</a></li>
 					<li><a class="dropdown-item" asp-controller="PlatformBlueskySettings" asp-action="Index">
 							<i class="bi bi-bluesky me-2"></i>Bluesky</a></li>
 					<li><a class="dropdown-item" asp-controller="PlatformFacebookSettings" asp-action="Index">
@@ -47,9 +51,6 @@
 							<i class="bi bi-linkedin me-2"></i>LinkedIn</a></li>
 					<li><a class="dropdown-item" asp-controller="PlatformTwitterSettings" asp-action="Index">
 						<i class="bi bi-twitter-x me-2"></i>Twitter / X</a></li>
-					<li>
-						<hr class="dropdown-divider">
-					</li>
 					<li>
 						<hr class="dropdown-divider">
 					</li>

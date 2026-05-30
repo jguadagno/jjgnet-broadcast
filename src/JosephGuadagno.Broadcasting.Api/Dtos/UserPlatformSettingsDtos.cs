@@ -129,7 +129,7 @@ public class UserRandomPostSettingsResponse
 }
 
 /// <summary>
-/// Request DTO for creating a per-user event-to-dispatcher mapping.
+/// Request DTO for creating a per-user event-to-distributor mapping.
 /// </summary>
 public class CreateUserEventDistributorMappingRequest
 {
@@ -152,14 +152,14 @@ public class CreateUserEventDistributorMappingRequest
     public int SocialMediaPlatformId { get; set; }
 
     /// <summary>
-    /// Indicates whether this event dispatcher mapping is active.
+    /// Indicates whether this event distributor mapping is active.
     /// Defaults to <c>true</c>.
     /// </summary>
     public bool IsActive { get; set; } = true;
 }
 
 /// <summary>
-/// Request DTO for updating a per-user event-to-dispatcher mapping.
+/// Request DTO for updating a per-user event-to-distributor mapping.
 /// Any null property is ignored so the existing persisted value is preserved.
 /// </summary>
 public class UpdateUserEventDistributorMappingRequest
@@ -181,24 +181,24 @@ public class UpdateUserEventDistributorMappingRequest
     public int? SocialMediaPlatformId { get; set; }
 
     /// <summary>
-    /// Indicates whether this event dispatcher mapping is active.
+    /// Indicates whether this event distributor mapping is active.
     /// Leave null to keep the existing value.
     /// </summary>
     public bool? IsActive { get; set; }
 }
 
 /// <summary>
-/// Response DTO for a per-user event-to-dispatcher mapping.
+/// Response DTO for a per-user event-to-distributor mapping.
 /// </summary>
 public class UserEventDistributorMappingResponse
 {
     /// <summary>
-    /// The unique identifier of this event dispatcher mapping record.
+    /// The unique identifier of this event distributor mapping record.
     /// </summary>
     public int Id { get; set; }
 
     /// <summary>
-    /// The Entra Object ID of the user who owns this event dispatcher mapping record.
+    /// The Entra Object ID of the user who owns this event distributor mapping record.
     /// </summary>
     public string CreatedByEntraOid { get; set; } = string.Empty;
 
@@ -213,7 +213,7 @@ public class UserEventDistributorMappingResponse
     public int SocialMediaPlatformId { get; set; }
 
     /// <summary>
-    /// Indicates whether this event dispatcher mapping is active.
+    /// Indicates whether this event distributor mapping is active.
     /// </summary>
     public bool IsActive { get; set; }
 

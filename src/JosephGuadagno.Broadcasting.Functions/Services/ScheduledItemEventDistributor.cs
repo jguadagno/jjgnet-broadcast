@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.Services;
 
 public class ScheduledItemEventDistributor(
-    IUserEventDistributorMappingDataStore userEventDispatcherMappingDataStore,
+    IUserEventDistributorMappingDataStore userEventDistributorMappingDataStore,
     IEngagementManager engagementManager,
     ISyndicationFeedItemManager syndicationFeedItemManager,
     IYouTubeItemManager youTubeItemManager,
@@ -40,12 +40,12 @@ public class ScheduledItemEventDistributor(
         }
 
         var ownerOid = scheduledItem.CreatedByEntraOid;
-        var mappings = await userEventDispatcherMappingDataStore.GetByUserAndEventTypeAsync(
+        var mappings = await userEventDistributorMappingDataStore.GetByUserAndEventTypeAsync(
             ownerOid, MessageTemplates.MessageTypes.ScheduledItem, cancellationToken);
 
         if (mappings.Count == 0)
         {
-            logger.LogDebug("No active dispatcher mappings for owner '{OwnerOid}' / {EventType}",
+            logger.LogDebug("No active distributor mappings for owner '{OwnerOid}' / {EventType}",
                 LogSanitizer.Sanitize(ownerOid), MessageTemplates.MessageTypes.ScheduledItem);
             return;
         }

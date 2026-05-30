@@ -1,8 +1,12 @@
 using System.Net;
+using AutoMapper;
 using FluentAssertions;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Web.MappingProfiles;
+using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Identity.Abstractions;
 using Moq;
 
@@ -12,6 +16,9 @@ public class UserRandomPostSettingsServiceTests
 {
     private readonly Mock<IDownstreamApi> _apiClient = new();
     private readonly Mock<ILogger<UserRandomPostSettingsService>> _logger = new();
+
+    private static IMapper CreateMapper() =>
+        new MapperConfiguration(cfg => cfg.AddProfile<WebMappingProfile>(), new NullLoggerFactory()).CreateMapper();
 
     [Fact]
     public async Task AddAsync_ShouldSendExpectedApiContract()
@@ -26,16 +33,16 @@ public class UserRandomPostSettingsServiceTests
         };
 
         var capturedOptions = default(DownstreamApiOptionsReadOnlyHttpMethod);
-        object? capturedRequest = null;
+        RandomPostSettingsApiRequest? capturedRequest = null;
 
         _apiClient
-            .Setup(api => api.PostForUserAsync<object, UserRandomPostSettings>(
+            .Setup(api => api.PostForUserAsync<RandomPostSettingsApiRequest, UserRandomPostSettings>(
                 It.IsAny<string>(),
-                It.IsAny<object>(),
+                It.IsAny<RandomPostSettingsApiRequest>(),
                 It.IsAny<Action<DownstreamApiOptionsReadOnlyHttpMethod>>(),
                 It.IsAny<System.Security.Claims.ClaimsPrincipal>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<string, object, Action<DownstreamApiOptionsReadOnlyHttpMethod>, System.Security.Claims.ClaimsPrincipal, CancellationToken>((_, request, configure, _, _) =>
+            .Callback<string, RandomPostSettingsApiRequest, Action<DownstreamApiOptionsReadOnlyHttpMethod>, System.Security.Claims.ClaimsPrincipal, CancellationToken>((_, request, configure, _, _) =>
             {
                 capturedRequest = request;
                 capturedOptions = new DownstreamApiOptionsReadOnlyHttpMethod(new DownstreamApiOptions(), HttpMethod.Post.Method);
@@ -43,16 +50,16 @@ public class UserRandomPostSettingsServiceTests
             })
             .ReturnsAsync(new UserRandomPostSettings { Id = 11, SocialMediaPlatformId = 7, CronExpression = settings.CronExpression });
 
-        var sut = new UserRandomPostSettingsService(_apiClient.Object, _logger.Object);
+        var sut = new UserRandomPostSettingsService(_apiClient.Object, _logger.Object, CreateMapper());
 
         var result = await sut.AddAsync(settings);
 
         capturedOptions.Should().NotBeNull();
         capturedOptions!.RelativePath.Should().Be("/Publishers/RandomPostSettings");
         capturedRequest.Should().NotBeNull();
-        capturedRequest!.GetType().GetProperty("SocialMediaPlatformId")!.GetValue(capturedRequest).Should().Be(7);
-        capturedRequest.GetType().GetProperty("CronExpression")!.GetValue(capturedRequest).Should().Be("0 * * * *");
-        ((IEnumerable<string>)capturedRequest.GetType().GetProperty("ExcludedCategories")!.GetValue(capturedRequest)!).Should().BeEquivalentTo(["Announcements", "Events"]);
+        capturedRequest!.SocialMediaPlatformId.Should().Be(7);
+        capturedRequest.CronExpression.Should().Be("0 * * * *");
+        capturedRequest.ExcludedCategories.Should().BeEquivalentTo(["Announcements", "Events"]);
         result!.Id.Should().Be(11);
     }
 
@@ -67,7 +74,7 @@ public class UserRandomPostSettingsServiceTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.NoContent));
 
-        var sut = new UserRandomPostSettingsService(_apiClient.Object, _logger.Object);
+        var sut = new UserRandomPostSettingsService(_apiClient.Object, _logger.Object, CreateMapper());
 
         var result = await sut.DeleteAsync(42);
 

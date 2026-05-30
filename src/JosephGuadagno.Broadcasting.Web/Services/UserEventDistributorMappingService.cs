@@ -1,18 +1,21 @@
 using System.Net;
+using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
+using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
 
 /// <summary>
-/// Calls the event dispatcher mappings API on behalf of the current user.
+/// Calls the event distributor mappings API on behalf of the current user.
 /// </summary>
 public class UserEventDistributorMappingService(
     IDownstreamApi apiClient,
-    ILogger<UserEventDistributorMappingService> logger) : IUserEventDistributorMappingService
+    ILogger<UserEventDistributorMappingService> logger,
+    IMapper mapper) : IUserEventDistributorMappingService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
     private const string BaseUrl = "/Distributors/EventDistributorMappings";
@@ -27,7 +30,7 @@ public class UserEventDistributorMappingService(
 
         if (response is null)
         {
-            logger.LogWarning("GetAllAsync downstream returned null for event dispatcher mappings");
+            logger.LogWarning("GetAllAsync downstream returned null for event distributor mappings");
         }
 
         return response ?? [];
@@ -45,8 +48,8 @@ public class UserEventDistributorMappingService(
     /// <inheritdoc />
     public async Task<UserEventDistributorMapping?> AddAsync(UserEventDistributorMapping mapping)
     {
-        var request = MapRequest(mapping);
-        var response = await apiClient.PostForUserAsync<EventDispatcherMappingApiRequest, UserEventDistributorMapping>(
+        var request = mapper.Map<EventDistributorMappingApiRequest>(mapping);
+        var response = await apiClient.PostForUserAsync<EventDistributorMappingApiRequest, UserEventDistributorMapping>(
             ApiServiceName,
             request,
             options =>
@@ -70,8 +73,8 @@ public class UserEventDistributorMappingService(
     /// <inheritdoc />
     public async Task<UserEventDistributorMapping?> UpdateAsync(UserEventDistributorMapping mapping)
     {
-        var request = MapRequest(mapping);
-        var response = await apiClient.PutForUserAsync<EventDispatcherMappingApiRequest, UserEventDistributorMapping>(
+        var request = mapper.Map<EventDistributorMappingApiRequest>(mapping);
+        var response = await apiClient.PutForUserAsync<EventDistributorMappingApiRequest, UserEventDistributorMapping>(
             ApiServiceName,
             request,
             options =>
@@ -114,20 +117,14 @@ public class UserEventDistributorMappingService(
         return false;
     }
 
-    private static EventDispatcherMappingApiRequest MapRequest(UserEventDistributorMapping mapping) =>
-        new()
-        {
-            EventType = mapping.EventType,
-            SocialMediaPlatformId = mapping.SocialMediaPlatformId,
-            IsActive = mapping.IsActive
-        };
-
-    private sealed class EventDispatcherMappingApiRequest
+    /// <inheritdoc />
+    public async Task<bool> ToggleActiveAsync(int id)
     {
-        public string EventType { get; set; } = string.Empty;
-
-        public int SocialMediaPlatformId { get; set; }
-
-        public bool IsActive { get; set; }
+        var item = await GetAsync(id);
+        if (item is null) return false;
+        item.IsActive = !item.IsActive;
+        var updated = await UpdateAsync(item);
+        return updated is not null;
     }
+
 }

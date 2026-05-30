@@ -10,12 +10,22 @@
     string SortIcon(string col)
     {
         if ((ViewBag.SortBy as string) != col) return "";
-        return (bool)ViewBag.SortDescending ? " <i class=\"bi bi-arrow-down\"></i>" : " <i class=\"bi bi-arrow-up\"></i>";
+        return (bool)ViewBag.SortDescending
+            ? "<i class=\"bi bi-sort-alpha-up\"></i>"
+            : "<i class=\"bi bi-sort-alpha-down\"></i>";
     }
 }
 
-<div class="d-flex justify-content-between mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h1><i class="bi @CollectorIcons.FeedSource.Icon me-2"></i>Syndication Feed Items</h1>
+    @if (User.IsInRole(RoleNames.Contributor) ||
+         User.IsInRole(RoleNames.Administrator) ||
+         User.IsInRole(RoleNames.SiteAdministrator))
+    {
+        <a asp-action="Add" asp-controller="SyndicationFeedItems" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Add New Syndication Feed Source
+        </a>
+    }
 </div>
 <p class="lead">
     A list of all of the syndication items that the system has retrieved

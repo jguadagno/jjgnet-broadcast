@@ -1,4 +1,4 @@
-using JosephGuadagno.Broadcasting.Domain.Models;
+using AutoMapper;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.Identity.Abstractions;
@@ -8,7 +8,8 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// <summary>Calls the platforms aggregate endpoint on behalf of the current user.</summary>
 public class PlatformsAggregateService(
     IDownstreamApi apiClient,
-    ILogger<PlatformsAggregateService> logger) : IPlatformsAggregateService
+    ILogger<PlatformsAggregateService> logger,
+    IMapper mapper) : IPlatformsAggregateService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
     private const string PlatformsBaseUrl = "/Platforms";
@@ -26,24 +27,7 @@ public class PlatformsAggregateService(
             return null;
         }
 
-        return new PlatformsAggregateViewModel
-        {
-            Bluesky = response.Bluesky,
-            Twitter = response.Twitter,
-            LinkedIn = response.LinkedIn,
-            Facebook = response.Facebook
-        };
-    }
-
-    private sealed class PlatformsAggregateWebResponse
-    {
-        public UserPlatformBlueskySettings? Bluesky { get; set; }
-
-        public UserPlatformTwitterSettings? Twitter { get; set; }
-
-        public UserPlatformLinkedInSettings? LinkedIn { get; set; }
-
-        public UserPlatformFacebookSettings? Facebook { get; set; }
+        return mapper.Map<PlatformsAggregateViewModel>(response);
     }
 }
 

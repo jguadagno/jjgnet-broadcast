@@ -31,4 +31,9 @@ public interface IUserRandomPostSettingsService
     /// Deletes a random post settings record for the current user.
     /// </summary>
     Task<bool> DeleteAsync(int id);
+
+    /// <summary>
+    /// Toggles the IsActive status of a random post settings record.
+    /// </summary>
+    Task<bool> ToggleActiveAsync(int id);
 }

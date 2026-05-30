@@ -87,6 +87,8 @@ builder.Services.AddControllers(options =>
 {
     // API uses Bearer token auth - antiforgery tokens are not applicable
     options.Filters.Add(new IgnoreAntiforgeryTokenAttribute());
+    // Keep "Async" suffix in action names so CreatedAtAction(nameof(GetAsync), ...) resolves correctly
+    options.SuppressAsyncSuffixInActionNames = false;
 });
 
 // Rate limiting - 100 requests per minute (fixed window), applied globally

@@ -9,8 +9,10 @@
 
 		string SortIcon(string col)
 		{
-				if ((ViewBag.SortBy as string) != col) return "<i class=\"bi bi-sort\"></i>";
-				return (bool)ViewBag.SortDescending ? "<i class=\"bi bi-sort-down\"></i>" : "<i class=\"bi bi-sort-up\"></i>";
+				if ((ViewBag.SortBy as string) != col) return "";
+				return (bool)ViewBag.SortDescending
+						? "<i class=\"bi bi-sort-alpha-up\"></i>"
+						: "<i class=\"bi bi-sort-alpha-down\"></i>";
 		}
 }
 
@@ -99,17 +101,17 @@ else
 								<td>
 										@if (item.IsActive)
 										{
-												<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Active</span>
+												<i class="bi bi-check-circle-fill text-success fs-5" title="Active"></i>
 										}
 										else
 										{
-												<span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Inactive</span>
+												<i class="bi bi-x-circle-fill text-danger fs-5" title="Inactive"></i>
 										}
 								</td>
 								<td><local-time value="@item.CreatedOn" /></td>
 								<td class="text-end">
 										<a asp-action="Details" asp-controller="CollectorYouTubeChannels" asp-route-id="@item.Id"
-										   class="btn btn-sm btn-outline-primary">
+										   class="btn btn-sm btn-outline-primary" title="View">
 												<i class="bi bi-eye"></i>
 										</a>
 										@if (User.IsInRole(RoleNames.Contributor) ||
@@ -117,11 +119,18 @@ else
 										     User.IsInRole(RoleNames.SiteAdministrator))
 										{
 												<a asp-action="Edit" asp-controller="CollectorYouTubeChannels" asp-route-id="@item.Id"
-												   class="btn btn-sm btn-warning">
-														<i class="bi bi-pencil"></i>
+												   class="btn btn-sm btn-outline-primary" title="Edit">
+														<i class="bi bi-pencil-square"></i>
 												</a>
+												<form asp-action="ToggleActive" asp-controller="CollectorYouTubeChannels" asp-route-id="@item.Id" method="post" class="d-inline">
+														@Html.AntiForgeryToken()
+														<button type="submit" class="btn btn-sm btn-warning"
+														        title="@(item.IsActive ? "Deactivate" : "Activate")">
+																<i class="bi @(item.IsActive ? "bi-toggle-off" : "bi-toggle-on")"></i>
+														</button>
+												</form>
 												<a asp-action="Delete" asp-controller="CollectorYouTubeChannels" asp-route-id="@item.Id"
-												   class="btn btn-sm btn-danger">
+												   class="btn btn-sm btn-danger" title="Delete">
 														<i class="bi bi-trash"></i>
 												</a>
 										}
@@ -133,3 +142,11 @@ else
 }
 
 <partial name="_PaginationPartial"/>
+@if (User.IsInRole(RoleNames.Contributor) ||
+     User.IsInRole(RoleNames.Administrator) ||
+     User.IsInRole(RoleNames.SiteAdministrator))
+{
+    <a asp-action="Add" asp-controller="CollectorYouTubeChannels" class="btn btn-primary mt-2">
+        <i class="bi bi-plus-circle me-1"></i>Add New
+    </a>
+}

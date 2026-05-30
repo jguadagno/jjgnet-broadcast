@@ -2,6 +2,7 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
+using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
@@ -54,13 +55,5 @@ public class UserPlatformLinkedInSettingsService(
         return response;
     }
 
-    private sealed class LinkedInApiRequest
-    {
-        public bool IsEnabled { get; set; }
-        public string? AuthorId { get; set; }
-        public string? ClientId { get; set; }
-        public string? ClientSecret { get; set; }
-        public string? AccessToken { get; set; }
-    }
 }
 

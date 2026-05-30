@@ -10,31 +10,8 @@ public static class Metrics
     public const string RandomPostCronCircuitBroken = "RandomPostCronCircuitBroken";
     public const string ClearOldLogs = "ClearOldLogs";
 
-    public const string BlueskyProcessedNewSyndicationData = "BlueskyProcessedNewSyndicationData";
-    public const string BlueskyProcessedNewYouTubeData = "BlueskyProcessedNewYouTubeData";
-    public const string BlueskyProcessedScheduledItemFired = "BlueskyProcessedScheduledItemFired";
-    public const string BlueskyProcessedRandomPost = "BlueskyProcessedRandomPost";
     public const string BlueskyPostSent = "BlueskyPostSent";
-    public const string BlueskyProcessedNewSpeakingEngagement = "BlueskyProcessedNewSpeakingEngagement";
-
-    public const string FacebookProcessedNewSyndicationData = "FacebookProcessedNewSyndicationData";
-    public const string FacebookProcessedRandomPost = "FacebookProcessedRandomPost";
-    public const string FacebookProcessedNewYouTubeData = "FacebookProcessedNewYouTubeData";
-    public const string FacebookProcessedScheduledItemFired = "FacebookProcessedScheduledItemFired";
     public const string FacebookPostPageStatus = "FacebookPostPageStatus";
-    public const string FacebookProcessedNewSpeakingEngagement = "FacebookProcessedNewSpeakingEngagement";
-
-    public const string LinkedInProcessedNewSyndicationData = "LinkedInProcessedNewSyndicationData";
-    public const string LinkedInProcessedRandomPost = "LinkedInProcessedRandomPost";
-    public const string LinkedInProcessedNewYouTubeData = "LinkedInProcessedNewYouTubeData";
-    public const string LinkedInProcessedScheduledItemFired = "LinkedInProcessedScheduledItemFired";
     public const string LinkedInPostLink = "LinkedInPostLink";
-    public const string LinkedInProcessedNewSpeakingEngagement = "LinkedInProcessedNewSpeakingEngagement";
-
-    public const string TwitterProcessedNewSyndicationData = "TwitterProcessedNewSyndicationData";
-    public const string TwitterProcessedNewYouTubeData = "TwitterProcessedNewYouTubeData";
-    public const string TwitterProcessScheduledItemFired = "TwitterProcessScheduledItemFired";
-    public const string TwitterProcessedRandomPost = "TwitterProcessedRandomPost";
     public const string TwitterPostSent = "TwitterPostSent";
-    public const string TwitterProcessedNewSpeakingEngagement = "TwitterProcessedNewSpeakingEngagement";
 }

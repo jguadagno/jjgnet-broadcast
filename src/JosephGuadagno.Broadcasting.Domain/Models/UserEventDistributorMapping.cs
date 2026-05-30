@@ -1,7 +1,7 @@
 namespace JosephGuadagno.Broadcasting.Domain.Models;
 
 /// <summary>
-/// Represents a per-user event-to-dispatcher routing configuration.
+/// Represents a per-user event-to-distributor routing configuration.
 /// </summary>
 public class UserEventDistributorMapping
 {
@@ -16,7 +16,7 @@ public class UserEventDistributorMapping
     public string CreatedByEntraOid { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the event type that should route to the configured dispatcher.
+    /// Gets or sets the event type that should route to the configured distributor.
     /// </summary>
     public string EventType { get; set; } = string.Empty;
 
@@ -26,7 +26,7 @@ public class UserEventDistributorMapping
     public int SocialMediaPlatformId { get; set; }
 
     /// <summary>
-    /// Gets or sets whether this event dispatcher mapping is active.
+    /// Gets or sets whether this event distributor mapping is active.
     /// </summary>
     public bool IsActive { get; set; } = true;
 

@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD013 -->
 # YouTube collector: load all videos
 
-This HTTP backfill collector reloads videos for one owner from an optional starting date. It saves unique rows and updates the shared YouTube watermark, but it never calls the dispatcher service.
+This HTTP backfill collector reloads videos for one owner from an optional starting date. It saves unique rows and updates the shared YouTube watermark, but it never calls the distributor service.
 
 ## Flow
 

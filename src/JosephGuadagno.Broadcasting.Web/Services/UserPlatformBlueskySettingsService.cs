@@ -2,6 +2,7 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
+using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
@@ -51,11 +52,5 @@ public class UserPlatformBlueskySettingsService(
         return response;
     }
 
-    private sealed class BlueskyApiRequest
-    {
-        public bool IsEnabled { get; set; }
-        public string? UserName { get; set; }
-        public string? AppPassword { get; set; }
-    }
 }
 

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using FluentAssertions;
+using JosephGuadagno.Broadcasting.Web.Models;
 using JosephGuadagno.Broadcasting.Web.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Abstractions;

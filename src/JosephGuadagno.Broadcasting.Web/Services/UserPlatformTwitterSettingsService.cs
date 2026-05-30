@@ -2,6 +2,7 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
+using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
@@ -55,13 +56,5 @@ public class UserPlatformTwitterSettingsService(
         return response;
     }
 
-    private sealed class TwitterApiRequest
-    {
-        public bool IsEnabled { get; set; }
-        public string? ConsumerKey { get; set; }
-        public string? ConsumerSecret { get; set; }
-        public string? AccessToken { get; set; }
-        public string? AccessTokenSecret { get; set; }
-    }
 }
 

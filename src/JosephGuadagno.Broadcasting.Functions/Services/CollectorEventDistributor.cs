@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Azure.Storage.Queues;
 using JosephGuadagno.Broadcasting.Composers;
-using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
@@ -11,7 +10,7 @@ using Microsoft.Extensions.Logging;
 namespace JosephGuadagno.Broadcasting.Functions.Services;
 
 public class CollectorEventDistributor(
-    IUserEventDistributorMappingDataStore userEventDispatcherMappingDataStore,
+    IUserEventDistributorMappingDataStore userEventDistributorMappingDataStore,
     IMessageTemplateManager messageTemplateManager,
     IPostComposer postComposer,
     QueueServiceClient queueServiceClient,
@@ -27,12 +26,12 @@ public class CollectorEventDistributor(
 
     public async Task DispatchSyndicationFeedItemAsync(SyndicationFeedItem item, string ownerOid, CancellationToken cancellationToken = default)
     {
-        var mappings = await userEventDispatcherMappingDataStore.GetByUserAndEventTypeAsync(
+        var mappings = await userEventDistributorMappingDataStore.GetByUserAndEventTypeAsync(
             ownerOid, MessageTemplates.MessageTypes.NewSyndicationFeedItem, cancellationToken);
 
         if (mappings.Count == 0)
         {
-            logger.LogDebug("No active dispatcher mappings for owner '{OwnerOid}' / {EventType}",
+            logger.LogDebug("No active distributor mappings for owner '{OwnerOid}' / {EventType}",
                 LogSanitizer.Sanitize(ownerOid), MessageTemplates.MessageTypes.NewSyndicationFeedItem);
             return;
         }
@@ -56,12 +55,12 @@ public class CollectorEventDistributor(
 
     public async Task DispatchYouTubeItemAsync(YouTubeItem item, string ownerOid, CancellationToken cancellationToken = default)
     {
-        var mappings = await userEventDispatcherMappingDataStore.GetByUserAndEventTypeAsync(
+        var mappings = await userEventDistributorMappingDataStore.GetByUserAndEventTypeAsync(
             ownerOid, MessageTemplates.MessageTypes.NewYouTubeItem, cancellationToken);
 
         if (mappings.Count == 0)
         {
-            logger.LogDebug("No active dispatcher mappings for owner '{OwnerOid}' / {EventType}",
+            logger.LogDebug("No active distributor mappings for owner '{OwnerOid}' / {EventType}",
                 LogSanitizer.Sanitize(ownerOid), MessageTemplates.MessageTypes.NewYouTubeItem);
             return;
         }
@@ -85,12 +84,12 @@ public class CollectorEventDistributor(
 
     public async Task DispatchSpeakingEngagementAsync(Engagement item, string ownerOid, CancellationToken cancellationToken = default)
     {
-        var mappings = await userEventDispatcherMappingDataStore.GetByUserAndEventTypeAsync(
+        var mappings = await userEventDistributorMappingDataStore.GetByUserAndEventTypeAsync(
             ownerOid, MessageTemplates.MessageTypes.NewSpeakingEngagement, cancellationToken);
 
         if (mappings.Count == 0)
         {
-            logger.LogDebug("No active dispatcher mappings for owner '{OwnerOid}' / {EventType}",
+            logger.LogDebug("No active distributor mappings for owner '{OwnerOid}' / {EventType}",
                 LogSanitizer.Sanitize(ownerOid), MessageTemplates.MessageTypes.NewSpeakingEngagement);
             return;
         }

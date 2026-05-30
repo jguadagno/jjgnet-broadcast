@@ -2,7 +2,7 @@
 # Collector, distributor, and publisher flow
 
 > [!NOTE]
-> This document describes the current code path in `src\JosephGuadagno.Broadcasting.Functions`. The legacy Event Grid fan-out has been removed from the active collector and scheduled-item pipeline. Individual Mermaid flow docs for the current collectors and dispatchers now live in this same folder.
+> This document describes the current code path in `src\JosephGuadagno.Broadcasting.Functions`. The legacy Event Grid fan-out has been removed from the active collector and scheduled-item pipeline. Individual Mermaid flow docs for the current collectors and distributors now live in this same folder.
 
 ## Overview
 
@@ -12,7 +12,7 @@ The broadcasting pipeline has three stages:
 2. **Distributors** decide which user/platform combinations should receive each event, compose platform-specific text, and enqueue a `SocialMediaPublishRequest`.
 3. **Publishers** consume platform queues, resolve user credentials, and call the external social API.
 
-The current implementation is **user-aware at every stage**. Collector functions run once on a schedule, but they process per-user collector configurations. Distributor services route by `CreatedByEntraOid` plus `UserEventDispatcherMappings`, so one user's blog post can go to LinkedIn and Bluesky while another user's video only goes to Twitter.
+The current implementation is **user-aware at every stage**. Collector functions run once on a schedule, but they process per-user collector configurations. Distributor services route by `CreatedByEntraOid` plus `UserEventDistributorMappings`, so one user's blog post can go to LinkedIn and Bluesky while another user's video only goes to Twitter.
 
 ---
 
@@ -30,14 +30,14 @@ flowchart LR
         CFG[User collector config tables]
         CONTENT[SyndicationFeedItems\nYouTubeItems\nEngagements]
         CHECKS[FeedChecks]
-        MAP[UserEventDispatcherMappings]
+        MAP[UserEventDistributorMappings]
         TPL[MessageTemplates]
     end
 
     subgraph Distributor[Distributor layer]
-        D1[CollectorEventDispatcher]
-        D2[ScheduledItemEventDispatcher]
-        D3[DispatchersRandomPosts]
+        D1[CollectorEventDistributor]
+        D2[ScheduledItemEventDistributor]
+        D3[DistributorsRandomPosts]
     end
 
     subgraph Queues[Azure Queue Storage]
@@ -87,7 +87,7 @@ flowchart LR
 
 ## Collector stage
 
-Collectors are Azure Functions that run on timers and read **per-user collector configuration** from SQL. Each collector saves only new content, updates `FeedChecks`, and then hands each saved item to `CollectorEventDispatcher` for per-user routing.
+Collectors are Azure Functions that run on timers and read **per-user collector configuration** from SQL. Each collector saves only new content, updates `FeedChecks`, and then hands each saved item to `CollectorEventDistributor` for per-user routing.
 
 ### Collector flow
 
@@ -116,7 +116,7 @@ flowchart TD
     end
 
     FCHECK[FeedChecks]
-    DISP[CollectorEventDispatcher]
+    DISP[CollectorEventDistributor]
 
     FCFG --> F1 --> FR --> FDB --> DISP
     YCFG --> Y1 --> YKV
@@ -136,9 +136,9 @@ flowchart TD
 
 | Collector | Trigger | Source | What it saves | What it emits |
 | --- | --- | --- | --- | --- |
-| `CollectorsFeedLoadNewPosts` | Timer `%collectors_feed_load_new_posts_cron_settings%` | User-configured feed URL | `SyndicationFeedItems`, `SourceTags`, `FeedChecks` | `NewSyndicationFeedItem` via `CollectorEventDispatcher` |
-| `CollectorsYouTubeLoadNewVideos` | Timer `%collectors_youtube_load_new_videos_cron_settings%` | User-configured YouTube playlist/channel and per-user API key | `YouTubeItems`, `SourceTags`, `FeedChecks` | `NewYouTubeItem` via `CollectorEventDispatcher` |
-| `CollectorsSpeakingEngagementsLoadNew` | Timer `%collectors_speaking_engagements_load_new_speaking_engagements_cron_settings%` | User-configured speaking engagements file | `Engagements`, `Talks`, `FeedChecks` | `NewSpeakingEngagement` via `CollectorEventDispatcher` |
+| `CollectorsFeedLoadNewPosts` | Timer `%collectors_feed_load_new_posts_cron_settings%` | User-configured feed URL | `SyndicationFeedItems`, `SourceTags`, `FeedChecks` | `NewSyndicationFeedItem` via `CollectorEventDistributor` |
+| `CollectorsYouTubeLoadNewVideos` | Timer `%collectors_youtube_load_new_videos_cron_settings%` | User-configured YouTube playlist/channel and per-user API key | `YouTubeItems`, `SourceTags`, `FeedChecks` | `NewYouTubeItem` via `CollectorEventDistributor` |
+| `CollectorsSpeakingEngagementsLoadNew` | Timer `%collectors_speaking_engagements_load_new_speaking_engagements_cron_settings%` | User-configured speaking engagements file | `Engagements`, `Talks`, `FeedChecks` | `NewSpeakingEngagement` via `CollectorEventDistributor` |
 | `CollectorsFeedLoadAllPosts` | Anonymous HTTP POST | Same feed source, manual backfill | `SyndicationFeedItems`, `FeedChecks` | No automatic publish |
 | `CollectorsYouTubeLoadAllVideos` | Anonymous HTTP POST | Same YouTube source, manual backfill | `YouTubeItems`, `FeedChecks` | No automatic publish |
 | `CollectorsSpeakingEngagementsLoadAll` | Anonymous HTTP POST | Same speaking source, manual backfill | `Engagements`, `Talks`, `FeedChecks` | No automatic publish |
@@ -148,7 +148,7 @@ flowchart TD
 - `LoadNewPosts` and `LoadNewVideos` shorten canonical URLs before save.
 - `LoadNewVideos` resolves the YouTube API key from Key Vault through `UserCollectorYouTubeChannelManager`.
 - All three timer-based collectors use uniqueness checks before save, then dispatch only newly persisted items.
-- Individual Mermaid flow docs in this folder cover the current collector and dispatcher paths:
+- Individual Mermaid flow docs in this folder cover the current collector and Distributor paths:
   - [collector-feed-load-new-posts.md](collector-feed-load-new-posts.md)
   - [collector-feed-load-all-posts.md](collector-feed-load-all-posts.md)
   - [collector-youtube-load-new-videos.md](collector-youtube-load-new-videos.md)
@@ -179,7 +179,7 @@ The distributor stage is the routing brain of the system. It converts a saved it
 | `NewYouTubeItem` | `CollectorsYouTubeLoadNewVideos` | `CollectorEventDistributor.DispatchYouTubeItemAsync` | `UserEventDistributorMappings` + `MessageTemplates` |
 | `NewSpeakingEngagement` | `CollectorsSpeakingEngagementsLoadNew` | `CollectorEventDistributor.DispatchSpeakingEngagementAsync` | `UserEventDistributorMappings` + `MessageTemplates` |
 | `ScheduledItem` | `DistributorsScheduledItems` | `ScheduledItemEventDistributor.DispatchAsync` | `UserEventDistributorMappings` + `MessageTemplates` |
-| `RandomPost` | `DispatchersRandomPosts` | In-function queue routing | `UserRandomPostSettings` + `MessageTemplates` |
+| `RandomPost` | `DistributorsRandomPosts` | In-function queue routing | `UserRandomPostSettings` + `MessageTemplates` |
 
 ### Scheduled and random distribution
 
@@ -300,9 +300,9 @@ flowchart TD
 | `DistributorsScheduledItems` | Azure Function | Finds due scheduled items and orchestrates distribution | Timer |
 | `ScheduledItemEventDistributor` | Service | Loads source item, composes text, and enqueues per mapped platform | Called by `DistributorsScheduledItems` |
 | `DistributorsRandomPosts` | Azure Function | Selects random posts per due user/platform schedule and enqueues them | Timer |
-| `MessageTemplateManager` | Manager | Loads per-owner, per-platform templates | Called by dispatchers |
-| `PostComposer` | Service | Renders final post text from a template and source payload | Called by dispatchers |
-| `UserEventDispatcherMappingManager` | Manager | Validates and manages event-to-platform routing metadata | Called by API/Web and dispatcher path through data store |
+| `MessageTemplateManager` | Manager | Loads per-owner, per-platform templates | Called by Distributors |
+| `PostComposer` | Service | Renders final post text from a template and source payload | Called by Distributors |
+| `UserEventDistributorMappingManager` | Manager | Validates and manages event-to-platform routing metadata | Called by API/Web and Distributor path through data store |
 | `TwitterSendTweet` | Azure Function | Publishes queue messages to Twitter/X | Queue trigger |
 | `BlueskyPostMessage` | Azure Function | Publishes queue messages to Bluesky | Queue trigger |
 | `LinkedInPostLink` | Azure Function | Publishes queue messages to LinkedIn | Queue trigger |
@@ -316,7 +316,7 @@ flowchart TD
 
 | Resource | Current name or table | Why it is required |
 | --- | --- | --- |
-| SQL Server database | `JJGNet` | Stores collector configs, content, dispatcher mappings, templates, scheduled items, OAuth tokens, and feed checkpoints |
+| SQL Server database | `JJGNet` | Stores collector configs, content, Distributor mappings, templates, scheduled items, OAuth tokens, and feed checkpoints |
 | Azure Queue Storage | `twitter-tweets-to-send` | Queue for Twitter/X publisher work |
 | Azure Queue Storage | `bluesky-post-to-send` | Queue for Bluesky publisher work |
 | Azure Queue Storage | `linkedin-post-link` | Queue for LinkedIn publisher work |
@@ -352,12 +352,12 @@ flowchart TD
 
 - `Topics.cs` still defines historical Event Grid topic names, but the active collector, scheduled-item, and random-post publish paths do not use Event Grid triggers.
 - The active fan-out boundary is Azure Queue Storage, not Event Grid.
-- The Mermaid files in `docs\process-flows` are the current visual reference for the individual collector and dispatcher paths.
+- The Mermaid files in `docs\process-flows` are the current visual reference for the individual collector and Distributor paths.
 
 ## Related files
 
 - `src\JosephGuadagno.Broadcasting.Functions\Collectors\`
-- `src\JosephGuadagno.Broadcasting.Functions\Dispatchers\`
+- `src\JosephGuadagno.Broadcasting.Functions\Distributors\`
 - `src\JosephGuadagno.Broadcasting.Functions\Services\CollectorEventDistributor.cs`
 - `src\JosephGuadagno.Broadcasting.Functions\Services\ScheduledItemEventDistributor.cs`
 - `src\JosephGuadagno.Broadcasting.Functions\Twitter\SendTweet.cs`

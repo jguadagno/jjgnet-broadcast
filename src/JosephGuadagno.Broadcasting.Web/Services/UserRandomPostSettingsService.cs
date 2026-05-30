@@ -1,7 +1,9 @@
 using System.Net;
+using AutoMapper;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
+using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
@@ -11,7 +13,8 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// </summary>
 public class UserRandomPostSettingsService(
     IDownstreamApi apiClient,
-    ILogger<UserRandomPostSettingsService> logger) : IUserRandomPostSettingsService
+    ILogger<UserRandomPostSettingsService> logger,
+    IMapper mapper) : IUserRandomPostSettingsService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
     private const string BaseUrl = "/Publishers/RandomPostSettings";
@@ -44,7 +47,7 @@ public class UserRandomPostSettingsService(
     /// <inheritdoc />
     public async Task<UserRandomPostSettings?> AddAsync(UserRandomPostSettings settings)
     {
-        var request = MapRequest(settings);
+        var request = mapper.Map<RandomPostSettingsApiRequest>(settings);
         var response = await apiClient.PostForUserAsync<RandomPostSettingsApiRequest, UserRandomPostSettings>(
             ApiServiceName,
             request,
@@ -68,7 +71,7 @@ public class UserRandomPostSettingsService(
     /// <inheritdoc />
     public async Task<UserRandomPostSettings?> UpdateAsync(UserRandomPostSettings settings)
     {
-        var request = MapRequest(settings);
+        var request = mapper.Map<RandomPostSettingsApiRequest>(settings);
         var response = await apiClient.PutForUserAsync<RandomPostSettingsApiRequest, UserRandomPostSettings>(
             ApiServiceName,
             request,
@@ -111,26 +114,14 @@ public class UserRandomPostSettingsService(
         return false;
     }
 
-    private static RandomPostSettingsApiRequest MapRequest(UserRandomPostSettings settings) =>
-        new()
-        {
-            SocialMediaPlatformId = settings.SocialMediaPlatformId,
-            CronExpression = settings.CronExpression,
-            CutoffDate = settings.CutoffDate,
-            ExcludedCategories = settings.ExcludedCategories,
-            IsActive = settings.IsActive
-        };
-
-    private sealed class RandomPostSettingsApiRequest
+    /// <inheritdoc />
+    public async Task<bool> ToggleActiveAsync(int id)
     {
-        public int SocialMediaPlatformId { get; set; }
-
-        public string CronExpression { get; set; } = string.Empty;
-
-        public DateTimeOffset? CutoffDate { get; set; }
-
-        public List<string> ExcludedCategories { get; set; } = [];
-
-        public bool IsActive { get; set; }
+        var item = await GetAsync(id);
+        if (item is null) return false;
+        item.IsActive = !item.IsActive;
+        var updated = await UpdateAsync(item);
+        return updated is not null;
     }
+
 }

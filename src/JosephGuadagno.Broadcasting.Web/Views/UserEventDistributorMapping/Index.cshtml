@@ -1,13 +1,13 @@
 @model List<JosephGuadagno.Broadcasting.Web.Models.UserEventDistributorMappingViewModel>
 
 @{
-    ViewData["Title"] = "Event Dispatcher Mappings";
+    ViewData["Title"] = "Event Distributor Mappings";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="mb-1"><i class="bi bi-diagram-3 me-2"></i>Event Dispatcher Mappings</h1>
-        <p class="text-muted mb-0">Choose which dispatchers receive each event type.</p>
+        <h1 class="mb-1"><i class="bi bi-diagram-3 me-2"></i>Event Distributor Mappings</h1>
+        <p class="text-muted mb-0">Choose which distributors receive each event type.</p>
     </div>
     @if (User.IsInRole(RoleNames.Contributor) ||
          User.IsInRole(RoleNames.Administrator) ||
@@ -21,7 +21,7 @@
 
 @if (!Model.Any())
 {
-    <p class="text-muted">No event dispatcher mappings have been configured yet.</p>
+    <p class="text-muted">No event distributor mappings have been configured yet.</p>
 }
 else
 {
@@ -43,9 +43,14 @@ else
                         <td><i class="bi @item.EventTypeIcon me-2"></i>@item.EventTypeDisplayName</td>
                         <td><i class="bi @item.SocialMediaPlatformIcon me-2"></i>@item.SocialMediaPlatformName</td>
                         <td>
-                            <span class="badge @(item.IsActive ? "text-bg-success" : "text-bg-secondary")">
-                                @(item.IsActive ? "Active" : "Inactive")
-                            </span>
+                            @if (item.IsActive)
+                            {
+                                <i class="bi bi-check-circle-fill text-success fs-5" title="Active"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-x-circle-fill text-danger fs-5" title="Inactive"></i>
+                            }
                         </td>
                         <td><local-time value="@item.LastUpdatedOn" /></td>
                         <td class="text-end">
@@ -53,10 +58,17 @@ else
                                  User.IsInRole(RoleNames.Administrator) ||
                                  User.IsInRole(RoleNames.SiteAdministrator))
                             {
-                                <a asp-action="Edit" asp-controller="UserEventDistributorMapping" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-pencil"></i>
+                                <a asp-action="Edit" asp-controller="UserEventDistributorMapping" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <i class="bi bi-pencil-square"></i>
                                 </a>
-                                <a asp-action="Delete" asp-controller="UserEventDistributorMapping" asp-route-id="@item.Id" class="btn btn-sm btn-danger">
+                                <form asp-action="ToggleActive" asp-controller="UserEventDistributorMapping" asp-route-id="@item.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-warning"
+                                            title="@(item.IsActive ? "Deactivate" : "Activate")">
+                                        <i class="bi @(item.IsActive ? "bi-toggle-off" : "bi-toggle-on")"></i>
+                                    </button>
+                                </form>
+                                <a asp-action="Delete" asp-controller="UserEventDistributorMapping" asp-route-id="@item.Id" class="btn btn-sm btn-danger" title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </a>
                             }
@@ -66,4 +78,15 @@ else
             </tbody>
         </table>
     </div>
+}
+
+<partial name="_PaginationPartial" />
+
+@if (User.IsInRole(RoleNames.Contributor) ||
+     User.IsInRole(RoleNames.Administrator) ||
+     User.IsInRole(RoleNames.SiteAdministrator))
+{
+    <a asp-action="Create" asp-controller="UserEventDistributorMapping" class="btn btn-primary mt-2">
+        <i class="bi bi-plus-circle me-1"></i>Add New
+    </a>
 }

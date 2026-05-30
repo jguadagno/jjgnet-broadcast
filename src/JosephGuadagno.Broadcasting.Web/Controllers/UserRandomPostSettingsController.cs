@@ -13,7 +13,7 @@ namespace JosephGuadagno.Broadcasting.Web.Controllers;
 /// Manages per-user random post settings in the Web UI.
 /// </summary>
 [Authorize(Policy = AuthorizationPolicyNames.RequireViewer)]
-[Route("Publishers/RandomPostSettings")]
+[Route("Distributors/RandomPostSettings")]
 public class UserRandomPostSettingsController(
     IUserRandomPostSettingsService settingsService,
     ISocialMediaPlatformService socialMediaPlatformService,
@@ -192,6 +192,26 @@ public class UserRandomPostSettingsController(
 
         TempData["SuccessMessage"] = "Random post settings deleted successfully.";
         await setupService.InvalidateAsync();
+        return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>
+    /// Toggles the IsActive status of a random post settings record (activate / deactivate).
+    /// </summary>
+    [HttpPost("ToggleActive/{id:int}")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
+    public async Task<IActionResult> ToggleActive(int id)
+    {
+        var success = await settingsService.ToggleActiveAsync(id);
+        if (!success)
+        {
+            TempData["ErrorMessage"] = "Failed to toggle the active status.";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Active status toggled successfully.";
+        }
         return RedirectToAction(nameof(Index));
     }
 

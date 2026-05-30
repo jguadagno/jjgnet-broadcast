@@ -2,6 +2,7 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
+using JosephGuadagno.Broadcasting.Web.Models;
 using Microsoft.Identity.Abstractions;
 
 namespace JosephGuadagno.Broadcasting.Web.Services;
@@ -60,16 +61,5 @@ public class UserPlatformFacebookSettingsService(
         return response;
     }
 
-    private sealed class FacebookApiRequest
-    {
-        public bool IsEnabled { get; set; }
-        public string? PageId { get; set; }
-        public string? AppId { get; set; }
-        public string? PageAccessToken { get; set; }
-        public string? AppSecret { get; set; }
-        public string? ClientToken { get; set; }
-        public string? ShortLivedAccessToken { get; set; }
-        public string? LongLivedAccessToken { get; set; }
-    }
 }
 

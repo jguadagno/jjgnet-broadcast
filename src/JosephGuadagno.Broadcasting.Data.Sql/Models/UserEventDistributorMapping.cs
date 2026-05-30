@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace JosephGuadagno.Broadcasting.Data.Sql.Models;
 
 /// <summary>
-/// EF Core entity representing a per-user event-to-dispatcher routing configuration.
+/// EF Core entity representing a per-user event-to-distributor routing configuration.
 /// </summary>
 public class UserEventDistributorMapping
 {
@@ -19,7 +19,7 @@ public class UserEventDistributorMapping
     public string CreatedByEntraOid { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the event type that should route to the configured dispatcher.
+    /// Gets or sets the event type that should route to the configured distributor.
     /// </summary>
     [MaxLength(50)]
     public string EventType { get; set; } = string.Empty;
@@ -35,7 +35,7 @@ public class UserEventDistributorMapping
     public SocialMediaPlatform? SocialMediaPlatform { get; set; }
 
     /// <summary>
-    /// Gets or sets whether this event dispatcher mapping is active.
+    /// Gets or sets whether this event distributor mapping is active.
     /// </summary>
     public bool IsActive { get; set; } = true;
 

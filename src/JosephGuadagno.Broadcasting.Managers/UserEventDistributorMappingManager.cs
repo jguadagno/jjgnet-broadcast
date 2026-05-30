@@ -9,7 +9,7 @@ using JosephGuadagno.Broadcasting.Domain.Models;
 namespace JosephGuadagno.Broadcasting.Managers;
 
 /// <summary>
-/// Manager for per-user event-to-dispatcher mappings.
+/// Manager for per-user event-to-distributor mappings.
 /// </summary>
 public class UserEventDistributorMappingManager(IUserEventDistributorMappingDataStore dataStore) : IUserEventDistributorMappingManager
 {

@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace JosephGuadagno.Broadcasting.Api.Controllers.Distributors;
 
 /// <summary>
-/// Manages per-user event-to-dispatcher mappings.
+/// Manages per-user event-to-distributor mappings.
 /// </summary>
 [ApiController]
 [Tags("Distributors")]
