@@ -4,6 +4,129 @@ Compiled record of team decisions, architecture choices, and resolutions.
 
 > Entries before 2026-05-21 archived to decisions-archive.md (last archived: 2026-05-28)
 
+# Decision: Table-Based Index Page UI Standard
+
+**Date:** 2026-05-30T13:36:35-07:00  
+**Author:** Joseph Guadagno (via Copilot directive)  
+**Status:** ✅ DECIDED
+
+---
+
+## Summary
+
+All table-based Index pages in the Web project follow a unified UI standard for consistency and accessibility. This standard covers table styling, sort icons, active status indicators, button patterns, and layout.
+
+## Standard Details
+
+### Table Classes
+```html
+<table class="table table-striped table-hover table-bordered">
+```
+
+### Sort Icons (SortIcon helper)
+- **Ascending (a-z):** `bi-sort-alpha-down`
+- **Descending (z-a):** `bi-sort-alpha-up`
+- **Unsorted:** Empty string `""` (no default icon)
+
+Sort links use class `text-decoration-none text-body`.
+
+### Active Status Indicators
+Replace all badge spans with icon pairs:
+```html
+@if (item.IsActive)
+{
+    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+}
+else
+{
+    <i class="bi bi-x-circle-fill text-danger fs-5"></i>
+}
+```
+
+### Button Patterns
+
+| Action | Classes | Icon |
+|--------|---------|------|
+| View/Details | `btn btn-sm btn-outline-primary` | `bi-eye` |
+| Edit | `btn btn-sm btn-outline-primary` | `bi-pencil-square` |
+| Toggle Active | `btn btn-sm btn-warning` + form post | `bi-toggle-off` (active) / `bi-toggle-on` (inactive) |
+| Delete | `btn btn-sm btn-danger` | `bi-trash` |
+
+**Toggle convention:** Active item shows `bi-toggle-off` (click to deactivate); inactive item shows `bi-toggle-on` (click to activate).
+
+### Page Layout
+
+Header with "Add New" button:
+```html
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>...</h1>
+    @if (User.IsInRole(...))
+    {
+        <a asp-action="Add" ... class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Add New
+        </a>
+    }
+</div>
+```
+
+Post-pagination "Add New" button:
+```html
+<partial name="_PaginationPartial" />
+@if (User.IsInRole(...))
+{
+    <a asp-action="Add" ... class="btn btn-primary mt-2">
+        <i class="bi bi-plus-circle me-1"></i>Add New
+    </a>
+}
+```
+
+## Exceptions
+
+- **MessageTemplates/Index:** No Add/Create action → no Add New button
+- **SocialMediaPlatforms, UserEventDistributorMapping, UserRandomPostSettings:** No View action → no View button
+- **Engagements, Schedules, SyndicationFeedItems, YouTubeItems:** No IsActive property → no toggle button
+- **CollectorSettings/Index:** Card-embedded tables; no toggle or pagination
+
+## Consequences
+
+- All 12 table-based Index views standardized
+- 5 service interfaces + 5 controller implementations gained `ToggleActiveAsync` / `ToggleActive` POST action
+- New Index views must follow this standard
+
+---
+
+# Decision: Distributor Rename Stragglers — Verification Complete
+
+**Date:** 2026-05-30T13:36:35-07:00  
+**Author:** Trinity (verification sweep)  
+**Issue:** Joseph Guadagno manual dispatcher → distributor rename (2026-05-30)  
+**Status:** ✅ ACKNOWLEDGED
+
+---
+
+## Summary
+
+Manual rename of "Dispatcher" → "Distributor" across 24+ files completed by Joseph. Verification identified 35 remaining code-level stragglers — all non-breaking naming leftovers in local symbols and view-model names (e.g., `collectorEventDispatcher` variable, `DispatcherPlatformCardViewModel` class, `userEventDispatcherMappingTable` local).
+
+## Verification Details
+
+- **Build:** ✅ `dotnet restore .\src\ && dotnet build .\src\ --no-restore --configuration Release`
+- **Tests:** ✅ `dotnet test .\src\ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"` — 1320 total, 1281 passed, 0 failed, 39 skipped
+- **No regressions found**
+
+## Intentional Omissions
+
+- `ISocialMediaDispatcher` references left unchanged (publisher-layer abstraction)
+- SQL migration script rename treated as authoritative; not rechecked
+
+## Action Taken
+
+Stragglers documented and left for future refactoring cycle (all are non-breaking cosmetic renames that do not affect functionality or external contracts).
+
+---
+
+
+
 # Decision: Phase 3 Part 1 API Endpoints (RandomPostSettings & EventPublisherMapping)
 
 **Date:** 2026-05-26T11:17:08.070-07:00  
