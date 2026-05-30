@@ -12,6 +12,15 @@
 - **FeedChecks seed row:** `DispatchersScheduledItems` in `data-seed.sql` needed updating to `DistributorsScheduledItems`; the migration also does a live `UPDATE dbo.FeedChecks` for existing environments.
 - **Status:** ✅ COMPLETE
 
+### 2026-05-30 — Dispatcher → Distributor Full Codebase Rename Completion
+
+- **Work:** Joseph Guadagno completed comprehensive manual rename of "Dispatcher" → "Distributor" across 24+ files covering all layers
+- **Scope:** Domain models, interfaces, EF entities, data stores, managers, API controllers, Web controllers, Functions services, views
+- **Verification:** Trinity spawned to verify build success, test suite pass, and scan for missed references
+- **Expected outcome:** Complete naming consistency across all codebase layers, zero regressions
+- **Session logged:** `.squad/log/2026-05-30T09-42-44-distributor-rename.md`
+- **Status:** ✅ COMPLETION VERIFIED PENDING
+
 ### 2026-05-16 — Issue #972 Missing Publisher Settings Tables
 
 - **Work:** Added four per-publisher settings tables to `scripts\database\table-create.sql`
