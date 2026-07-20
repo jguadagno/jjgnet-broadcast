@@ -21,5 +21,6 @@ public partial class SocialMediaPlatform
 
     public virtual ICollection<EngagementSocialMediaPlatform> EngagementSocialMediaPlatforms { get; set; } = new List<EngagementSocialMediaPlatform>();
 
-    public virtual ICollection<UserPublisherSetting> UserPublisherSettings { get; set; } = new List<UserPublisherSetting>();
+    public virtual ICollection<UserPlatformSetting> UserPlatformSettings { get; set; } = new List<UserPlatformSetting>();
 }
+

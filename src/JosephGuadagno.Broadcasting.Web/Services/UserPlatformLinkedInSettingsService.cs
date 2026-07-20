@@ -1,0 +1,59 @@
+using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
+using JosephGuadagno.Broadcasting.Web.Extensions;
+using JosephGuadagno.Broadcasting.Web.Interfaces;
+using JosephGuadagno.Broadcasting.Web.Models;
+using Microsoft.Identity.Abstractions;
+
+namespace JosephGuadagno.Broadcasting.Web.Services;
+
+/// <summary>Calls the LinkedIn platform settings API on behalf of the current user.</summary>
+public class UserPlatformLinkedInSettingsService(
+    IDownstreamApi apiClient,
+    ILogger<UserPlatformLinkedInSettingsService> logger) : IUserPlatformLinkedInSettingsService
+{
+    private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
+    private const string LinkedInBaseUrl = "/Platforms/LinkedIn";
+
+    public async Task<UserPlatformLinkedInSettings?> GetCurrentUserAsync()
+    {
+        return await apiClient.GetOptionalForUserAsync<UserPlatformLinkedInSettings>(ApiServiceName, options =>
+        {
+            options.RelativePath = LinkedInBaseUrl;
+        });
+    }
+
+    public async Task<UserPlatformLinkedInSettings?> SaveCurrentUserAsync(
+        UserPlatformLinkedInSettings settings,
+        string? clientSecret = null,
+        string? accessToken = null)
+    {
+        var request = new LinkedInApiRequest
+        {
+            IsEnabled = settings.IsEnabled,
+            AuthorId = settings.AuthorId,
+            ClientId = settings.ClientId,
+            ClientSecret = clientSecret,
+            AccessToken = accessToken
+        };
+
+        var response = await apiClient.PutForUserAsync<LinkedInApiRequest, UserPlatformLinkedInSettings>(
+            ApiServiceName, request, options =>
+            {
+                options.RelativePath = LinkedInBaseUrl;
+            });
+
+        if (response is null)
+        {
+            logger.LogWarning(
+                "API returned null for {Operation} with ownerOid '{OwnerOid}' and authorId '{AuthorId}'",
+                nameof(SaveCurrentUserAsync),
+                LogSanitizer.Sanitize(settings.CreatedByEntraOid),
+                LogSanitizer.Sanitize(settings.AuthorId));
+        }
+
+        return response;
+    }
+
+}
+

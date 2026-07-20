@@ -10,35 +10,15 @@ public static class ConfigurationFunctionNames
     public const string CollectorsYouTubeLoadNewVideos = "CollectorsYouTubeLoadNewVideos";
     public const string CollectorsYouTubeLoadAllVideos = "CollectorsYouTubeLoadAllVideos";
 
-    // Publishers
-    public const string PublishersRandomPosts = "PublishersRandomPosts";
-    public const string PublishersScheduledItems = "PublishersScheduledItems";
+    // Distributors
+    public const string DistributorsRandomPosts = "DistributorsRandomPosts";
+    public const string DistributorsScheduledItems = "DistributorsScheduledItems";
 
     // Social media platforms
-    public const string FacebookPostPageStatus = "FacebookPostPageStatus";
-    public const string FacebookProcessNewSyndicationDataFired = "FacebookProcessNewSyndicationDataFired";
-    public const string FacebookProcessNewYouTubeDataFired = "FacebookProcessNewYouTubeDataFired";
-    public const string FacebookProcessScheduledItemFired = "FacebookProcessScheduledItemFired";
-    public const string TwitterSendTweet = "TwitterSendTweet";
-    public const string TwitterProcessNewSyndicationDataFired = "TwitterProcessNewSyndicationDataFired";
-    public const string TwitterProcessNewYouTubeDataFired = "TwitterProcessNewYouTubeDataFired";
-    public const string TwitterProcessScheduledItemFired = "TwitterProcessScheduledItemFired";
-    public const string TwitterProcessRandomPostFired = "TwitterProcessRandomPostFired";
-    public const string LinkedInPostLink = "LinkedInPostLink";
-    public const string LinkedInProcessNewSyndicationDataFired = "LinkedInProcessNewSyndicationDataFired";
-    public const string LinkedInProcessNewYouTubeDataFired = "LinkedInProcessNewYouTubeDataFired";
-    public const string LinkedInProcessScheduledItemFired = "LinkedInProcessScheduledItemFired";
     public const string BlueskyPostMessage = "BlueskyPostMessage";
-    public const string BlueskyProcessRandomPostFired = "BlueskyProcessRandomPostFired";
-    public const string FacebookProcessRandomPostFired = "FacebookProcessRandomPostFired";
-    public const string LinkedInProcessRandomPostFired = "LinkedInProcessRandomPostFired";
-    public const string BlueskyProcessNewSyndicationDataFired = "BlueskyProcessNewSyndicationDataFired";
-    public const string BlueskyProcessNewYouTubeDataFired = "BlueskyProcessNewYouTubeDataFired";
-    public const string BlueskyProcessScheduledItemFired = "BlueskyProcessScheduledItemFired";
-    public const string BlueskyProcessNewSpeakingEngagementFired = "BlueskyProcessNewSpeakingEngagementFired";
-    public const string FacebookProcessNewSpeakingEngagementFired = "FacebookProcessNewSpeakingEngagementFired";
-    public const string LinkedInProcessNewSpeakingEngagementFired = "LinkedInProcessNewSpeakingEngagementFired";
-    public const string TwitterProcessNewSpeakingEngagementFired = "TwitterProcessNewSpeakingEngagementFired";
+    public const string FacebookPostPageStatus = "FacebookPostPageStatus";
+    public const string LinkedInPostLink = "LinkedInPostLink";
+    public const string TwitterSendTweet = "TwitterSendTweet";
 
     // Email
     public const string EmailSendEmail = "EmailSendEmail";

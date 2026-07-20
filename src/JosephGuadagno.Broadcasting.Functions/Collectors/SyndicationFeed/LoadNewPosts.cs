@@ -3,6 +3,7 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Models;
+using JosephGuadagno.Broadcasting.Functions.Services;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 
 using Microsoft.AspNetCore.Mvc;
@@ -22,7 +23,7 @@ public class LoadNewPosts(
     IUserCollectorFeedSourceManager userCollectorFeedSourceManager,
     IFeedCheckManager feedCheckManager,
     IUrlShortener urlShortener,
-    IEventPublisher eventPublisher,
+    ICollectorEventDistributor collectorEventDispatcher,
     ILogger<LoadNewPosts> logger)
 {
     private static readonly ResiliencePipeline SavePipeline = new ResiliencePipelineBuilder()
@@ -122,8 +123,10 @@ public class LoadNewPosts(
                     }
                 }
 
-                await eventPublisher.PublishSyndicationFeedEventsAsync(
-                    ConfigurationFunctionNames.CollectorsFeedLoadNewPosts, eventsToPublish);
+                foreach (var savedItem in eventsToPublish)
+                {
+                    await collectorEventDispatcher.DispatchSyndicationFeedItemAsync(savedItem, config.CreatedByEntraOid);
+                }
 
                 feedCheck.LastCheckedFeed = startedAt;
                 feedCheck.LastUpdatedOn = DateTimeOffset.UtcNow;

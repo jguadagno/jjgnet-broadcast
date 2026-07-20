@@ -56,7 +56,7 @@ INSERT INTO JJGNet.dbo.FeedChecks (Name, LastCheckedFeed, LastItemAddedOrUpdated
 INSERT INTO JJGNet.dbo.FeedChecks (Name, LastCheckedFeed, LastItemAddedOrUpdated, LastUpdatedOn) VALUES
     ('CollectorsYouTubeLoadNewVideos', '2026-01-28 04:06:00.0076283 -07:00', '2025-06-13 19:02:32 -07:00', '2026-01-28 04:07:47.4046872 -07:00')
 INSERT INTO JJGNet.dbo.FeedChecks (Name, LastCheckedFeed, LastItemAddedOrUpdated, LastUpdatedOn) VALUES
-    ('PublishersScheduledItems', '2026-01-28 02:44:29.6178073 -07:00',	'2022-02-26 17:40:00.3057055 -07:00', '2026-01-28 04:07:47.4046873 -07:00')
+    ('DistributorsScheduledItems', '2026-01-28 02:44:29.6178073 -07:00',	'2022-02-26 17:40:00.3057055 -07:00', '2026-01-28 04:07:47.4046873 -07:00')
 
 -- Seed the TokenRefresh table
 INSERT INTO JJGNet.dbo.TokenRefreshes (Name, Expires, LastChecked, LastRefreshed, LastUpdatedOn) VALUES ('long-lived', '2026-02-06 01:00:00.4204227 -07:00', '2025-12-08 01:00:02.4382065 -07:00', '2025-12-08 01:00:02.4382065 -07:00', '2026-01-28 04:07:47.4046874 -07:00');
@@ -559,3 +559,37 @@ IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatfo
 IF NOT EXISTS (SELECT 1 FROM JJGNet.dbo.MessageTemplates WHERE SocialMediaPlatformId = @SocialMediaPlatformId AND MessageType = N'ScheduledItem' AND CreatedByEntraOid = N'')
     INSERT INTO JJGNet.dbo.MessageTemplates (SocialMediaPlatformId, MessageType, Template, Description, CreatedByEntraOid)
     VALUES (@SocialMediaPlatformId, N'ScheduledItem', N'{{ title }} {{ url }}', N'Bluesky template for generic scheduled item broadcasts', N'');
+
+-- Seed per-user Random Post defaults (Issue #995)
+IF NOT EXISTS (
+    SELECT 1
+    FROM JJGNet.dbo.UserRandomPostSettings
+    WHERE CreatedByEntraOid = @SeededOwnerEntraOid
+      AND SocialMediaPlatformId = 1
+      AND CronExpression = N'0 * * * *')
+    INSERT INTO JJGNet.dbo.UserRandomPostSettings
+        (CreatedByEntraOid, SocialMediaPlatformId, CronExpression, CutoffDate, ExcludedCategories, IsActive)
+    VALUES
+        (@SeededOwnerEntraOid, 1, N'0 * * * *', '0001-01-01 00:00:00 +00:00', N'', 1);
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM JJGNet.dbo.UserRandomPostSettings
+    WHERE CreatedByEntraOid = @SeededOwnerEntraOid
+      AND SocialMediaPlatformId = 2
+      AND CronExpression = N'0 * * * *')
+    INSERT INTO JJGNet.dbo.UserRandomPostSettings
+        (CreatedByEntraOid, SocialMediaPlatformId, CronExpression, CutoffDate, ExcludedCategories, IsActive)
+    VALUES
+        (@SeededOwnerEntraOid, 2, N'0 * * * *', '0001-01-01 00:00:00 +00:00', N'', 1);
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM JJGNet.dbo.UserRandomPostSettings
+    WHERE CreatedByEntraOid = @SeededOwnerEntraOid
+      AND SocialMediaPlatformId = 3
+      AND CronExpression = N'0 * * * *')
+    INSERT INTO JJGNet.dbo.UserRandomPostSettings
+        (CreatedByEntraOid, SocialMediaPlatformId, CronExpression, CutoffDate, ExcludedCategories, IsActive)
+    VALUES
+        (@SeededOwnerEntraOid, 3, N'0 * * * *', '0001-01-01 00:00:00 +00:00', N'', 1);

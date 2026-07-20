@@ -1,0 +1,116 @@
+@model List<JosephGuadagno.Broadcasting.Web.Models.UserRandomPostSettingsViewModel>
+
+@{
+    ViewData["Title"] = "Random Post Settings";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="mb-1"><i class="bi bi-shuffle me-2"></i>Random Post Settings</h1>
+        <p class="text-muted mb-0">Manage per-platform random post schedules and category exclusions.</p>
+    </div>
+    @if (User.IsInRole(RoleNames.Contributor) ||
+         User.IsInRole(RoleNames.Administrator) ||
+         User.IsInRole(RoleNames.SiteAdministrator))
+    {
+        <a asp-action="Create" asp-controller="UserRandomPostSettings" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Create
+        </a>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">No random post settings have been configured yet.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered">
+            <thead>
+                <tr>
+                    <th scope="col">Platform</th>
+                    <th scope="col">Cron Expression</th>
+                    <th scope="col">Cutoff Date</th>
+                    <th scope="col">Excluded Categories</th>
+                    <th scope="col">Active</th>
+                    <th scope="col">Updated</th>
+                    <th scope="col" class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <i class="bi @item.SocialMediaPlatformIcon me-2"></i>@item.SocialMediaPlatformName
+                        </td>
+                        <td><code>@item.CronExpression</code></td>
+                        <td>
+                            @if (string.IsNullOrWhiteSpace(item.CutoffDateUtc))
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                            else
+                            {
+                                <local-time value="@DateTimeOffset.Parse(item.CutoffDateUtc)" />
+                            }
+                        </td>
+                        <td>
+                            @if (string.IsNullOrWhiteSpace(item.ExcludedCategoriesText))
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                            else
+                            {
+                                @item.ExcludedCategoriesText
+                            }
+                        </td>
+                        <td>
+                            @if (item.IsActive)
+                            {
+                                <i class="bi bi-check-circle-fill text-success fs-5" title="Active"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-x-circle-fill text-danger fs-5" title="Inactive"></i>
+                            }
+                        </td>
+                        <td><local-time value="@item.LastUpdatedOn" /></td>
+                        <td class="text-end">
+                            @if (User.IsInRole(RoleNames.Contributor) ||
+                                 User.IsInRole(RoleNames.Administrator) ||
+                                 User.IsInRole(RoleNames.SiteAdministrator))
+                            {
+                                <a asp-action="Edit" asp-controller="UserRandomPostSettings" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <form asp-action="ToggleActive" asp-controller="UserRandomPostSettings" asp-route-id="@item.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-warning"
+                                            title="@(item.IsActive ? "Deactivate" : "Activate")">
+                                        <i class="bi @(item.IsActive ? "bi-toggle-off" : "bi-toggle-on")"></i>
+                                    </button>
+                                </form>
+                                <a asp-action="Delete" asp-controller="UserRandomPostSettings" asp-route-id="@item.Id" class="btn btn-sm btn-danger" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<partial name="_PaginationPartial" />
+
+@if (User.IsInRole(RoleNames.Contributor) ||
+     User.IsInRole(RoleNames.Administrator) ||
+     User.IsInRole(RoleNames.SiteAdministrator))
+{
+    <a asp-action="Create" asp-controller="UserRandomPostSettings" class="btn btn-primary mt-2">
+        <i class="bi bi-plus-circle me-1"></i>Create
+    </a>
+}

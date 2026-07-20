@@ -250,8 +250,27 @@ public class CollectorYouTubeChannelsController(
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = mapper.Map<UserCollectorYouTubeChannelViewModel>(channel);
-        ModelState.AddModelError(string.Empty, "Failed to delete the YouTube channel.");
-        return View(viewModel);
+        TempData["ErrorMessage"] = "Failed to delete the YouTube channel.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>
+    /// Toggles the IsActive status of a YouTube channel (activate / deactivate).
+    /// </summary>
+    [HttpPost("ToggleActive")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
+    public async Task<IActionResult> ToggleActive(int id)
+    {
+        var success = await service.ToggleActiveAsync(id);
+        if (!success)
+        {
+            TempData["ErrorMessage"] = "Failed to toggle the active status.";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Active status toggled successfully.";
+        }
+        return RedirectToAction(nameof(Index));
     }
 }

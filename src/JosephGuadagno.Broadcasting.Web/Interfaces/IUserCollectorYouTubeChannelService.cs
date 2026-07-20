@@ -16,4 +16,5 @@ public interface IUserCollectorYouTubeChannelService
     Task<UserCollectorYouTubeChannel?> UpdateByUserAsync(string ownerOid, UserCollectorYouTubeChannel channel);
     Task<bool> DeleteCurrentUserAsync(int id);
     Task<bool> DeleteByUserAsync(string ownerOid, int id);
+    Task<bool> ToggleActiveAsync(int id);
 }

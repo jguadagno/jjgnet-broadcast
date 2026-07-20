@@ -20,13 +20,13 @@ public class TwitterManagerTests(ITwitterManager twitterManager, InMemoryCredent
     };
 
     [Fact(Skip = "Manually run only")]
-    public async Task PublishAsync_WithValidTweetText_ReturnsTweetId()
+    public async Task DispatchAsync_WithValidTweetText_ReturnsTweetId()
     {
         // Arrange
         var tweetText = $"Integration test tweet [{DateTime.UtcNow:o}]";
 
         // Act
-        var tweetId = await twitterManager.PublishAsync(BuildRequest(tweetText));
+        var tweetId = await twitterManager.DispatchAsync(BuildRequest(tweetText));
 
         // Assert
         tweetId.Should().NotBeNullOrEmpty();
@@ -39,23 +39,23 @@ public class TwitterManagerTests(ITwitterManager twitterManager, InMemoryCredent
     }
 
     [Fact(Skip = "Manually run only")]
-    public async Task PublishAsync_WithEmptyTweetText_ThrowsException()
+    public async Task DispatchAsync_WithEmptyTweetText_ThrowsException()
     {
         // Arrange & Act
-        var act = async () => await twitterManager.PublishAsync(BuildRequest(string.Empty));
+        var act = async () => await twitterManager.DispatchAsync(BuildRequest(string.Empty));
 
         // Assert
         await act.Should().ThrowAsync<TwitterPostException>();
     }
 
     [Fact(Skip = "Manually run only")]
-    public async Task PublishAsync_WithTweetTextAtMaxLength_ReturnsTweetId()
+    public async Task DispatchAsync_WithTweetTextAtMaxLength_ReturnsTweetId()
     {
         // Arrange
         var tweetText = new string('a', 280);
 
         // Act
-        var tweetId = await twitterManager.PublishAsync(BuildRequest(tweetText));
+        var tweetId = await twitterManager.DispatchAsync(BuildRequest(tweetText));
 
         // Assert
         tweetId.Should().NotBeNullOrEmpty();
@@ -68,10 +68,10 @@ public class TwitterManagerTests(ITwitterManager twitterManager, InMemoryCredent
     }
 
     [Fact(Skip = "Manually run only")]
-    public async Task PublishAsync_WithTweetTextExceedingMaxLength_ThrowsException()
+    public async Task DispatchAsync_WithTweetTextExceedingMaxLength_ThrowsException()
     {
         // Arrange & Act
-        var act = async () => await twitterManager.PublishAsync(BuildRequest(new string('a', 281)));
+        var act = async () => await twitterManager.DispatchAsync(BuildRequest(new string('a', 281)));
 
         // Assert
         await act.Should().ThrowAsync<TwitterPostException>();

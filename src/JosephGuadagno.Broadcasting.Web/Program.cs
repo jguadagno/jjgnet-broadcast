@@ -270,16 +270,20 @@ void ConfigureApplication(IServiceCollection services)
     services.AddSqlDataStores();
 
     services.TryAddScoped<IUserOAuthTokenManager, UserOAuthTokenManager>();
+    services.TryAddScoped<IUserRandomPostSettingsManager, UserRandomPostSettingsManager>();
+    services.TryAddScoped<IUserEventDistributorMappingManager, UserEventDistributorMappingManager>();
 
     services.TryAddScoped<IEngagementService, EngagementService>();
     services.TryAddScoped<ISocialMediaPlatformService, SocialMediaPlatformService>();
     services.TryAddScoped<IScheduledItemService, ScheduledItemService>();
     services.TryAddScoped<IScheduledItemValidationService, ScheduledItemValidationService>();
-    services.TryAddScoped<IPublishersAggregateService, PublishersAggregateService>();
-    services.TryAddScoped<IUserPublisherBlueskySettingsService, UserPublisherBlueskySettingsService>();
-    services.TryAddScoped<IUserPublisherTwitterSettingsService, UserPublisherTwitterSettingsService>();
-    services.TryAddScoped<IUserPublisherLinkedInSettingsService, UserPublisherLinkedInSettingsService>();
-    services.TryAddScoped<IUserPublisherFacebookSettingsService, UserPublisherFacebookSettingsService>();
+    services.TryAddScoped<IPlatformsAggregateService, PlatformsAggregateService>();
+    services.TryAddScoped<IUserPlatformBlueskySettingsService, UserPlatformBlueskySettingsService>();
+    services.TryAddScoped<IUserPlatformTwitterSettingsService, UserPlatformTwitterSettingsService>();
+    services.TryAddScoped<IUserPlatformLinkedInSettingsService, UserPlatformLinkedInSettingsService>();
+    services.TryAddScoped<IUserPlatformFacebookSettingsService, UserPlatformFacebookSettingsService>();
+    services.TryAddScoped<IUserRandomPostSettingsService, UserRandomPostSettingsService>();
+    services.TryAddScoped<IUserEventDistributorMappingService, UserEventDistributorMappingService>();
     services.TryAddScoped<IUserCollectorFeedSourceService, UserCollectorFeedSourceService>();
     services.TryAddScoped<IUserCollectorYouTubeChannelService, UserCollectorYouTubeChannelService>();
     services.TryAddScoped<IUserCollectorSpeakingEngagementService, UserCollectorSpeakingEngagementService>();
@@ -310,3 +314,4 @@ void ConfigureKeyVault(IServiceCollection services)
     });
     services.TryAddScoped<IKeyVault, KeyVault>();
 }
+

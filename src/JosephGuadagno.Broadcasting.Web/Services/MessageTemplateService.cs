@@ -1,5 +1,6 @@
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 
@@ -10,7 +11,7 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// <summary>
 /// Calls out to the MessageTemplates API
 /// </summary>
-public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplateService
+public class MessageTemplateService(IDownstreamApi apiClient, ILogger<MessageTemplateService> logger) : IMessageTemplateService
 
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
@@ -35,7 +36,11 @@ public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplate
             }
             options.RelativePath = url;
         });
-        if (pagedResponse is null) return null;
+        if (pagedResponse is null)
+        {
+            logger.LogWarning("GetAllAsync downstream returned null (page={Page}, pageSize={PageSize})", page, pageSize);
+            return null;
+        }
         return new PagedResult<MessageTemplate> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
 
@@ -82,10 +87,18 @@ public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplate
     /// </summary>
     public async Task<MessageTemplate?> CreateAsync(string platform, MessageTemplate messageTemplate)
     {
-        return await apiClient.PostForUserAsync<MessageTemplate, MessageTemplate>(ApiServiceName, messageTemplate, options =>
+        var result = await apiClient.PostForUserAsync<MessageTemplate, MessageTemplate>(ApiServiceName, messageTemplate, options =>
         {
             options.RelativePath = $"{MessageTemplateBaseUrl}/{platform}/{messageTemplate.MessageType}";
         });
+
+        if (result is null)
+        {
+            logger.LogWarning("CreateAsync downstream returned null for platform '{Platform}' messageType '{MessageType}'",
+                LogSanitizer.Sanitize(platform), LogSanitizer.Sanitize(messageTemplate.MessageType));
+        }
+
+        return result;
     }
 
 
@@ -101,6 +114,12 @@ public class MessageTemplateService(IDownstreamApi apiClient) : IMessageTemplate
                 url += $"?ownerId={Uri.EscapeDataString(ownerId)}";
             options.RelativePath = url;
         });
+
+        if (savedMessageTemplate is null)
+        {
+            logger.LogWarning("UpdateAsync downstream returned null for platform '{Platform}' messageType '{MessageType}'",
+                LogSanitizer.Sanitize(platform), LogSanitizer.Sanitize(messageTemplate.MessageType));
+        }
 
         return savedMessageTemplate;
     }

@@ -8,9 +8,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Models;
-
 using LinqToTwitter;
 using LinqToTwitter.OAuth;
 using Microsoft.Extensions.Azure;
@@ -35,17 +32,6 @@ public class Startup
     {
         var config = hostBuilderContext.Configuration;
         services.AddSingleton(config);
-
-        var eventPublisherSettings = new EventPublisherSettings { TopicEndpointSettings = [] };
-        var endpoints = config.GetSection("EventGridTopics:TopicEndpointSettings").Get<List<TopicEndpointSettings>>();
-        if (endpoints != null)
-        {
-            foreach (var endpoint in endpoints)
-            {
-                eventPublisherSettings.TopicEndpointSettings.Add(endpoint);
-            }
-        }
-        services.TryAddSingleton<IEventPublisherSettings>(eventPublisherSettings);
 
         services.AddLogging(loggingBuilder =>
         {

@@ -29,11 +29,17 @@ public class ScheduledItemValidationService(
                 options.RelativePath = $"{ValidateSourceItemUrl}?itemType={itemType}&itemPrimaryKey={itemPrimaryKey}";
             });
 
-            return response ?? new ScheduledItemLookupResult
+            if (response is null)
             {
-                IsValid = false,
-                ErrorMessage = "Validation service returned no response"
-            };
+                logger.LogWarning("ValidateItemAsync downstream returned null for item type {ItemType} key {ItemPrimaryKey}", itemType, itemPrimaryKey);
+                return new ScheduledItemLookupResult
+                {
+                    IsValid = false,
+                    ErrorMessage = "Validation service returned no response"
+                };
+            }
+
+            return response;
         }
         catch (Exception ex)
         {

@@ -2,6 +2,25 @@
 
 > Learnings before 2026-04-25 archived to history-archive.md (2026-05-25)
 
+## Learnings
+
+### 2026-05-29T11:14:24.577-07:00 — Dispatcher → Distributor SQL rename
+
+- **Work:** Renamed `UserEventDispatcherMappings` table and all associated objects in `table-create.sql`, updated seed row in `data-seed.sql`, created migration `2026-05-29-rename-dispatcher-to-distributor.sql`.
+- **Constraint naming pattern:** Constraints on this table use the singular suffix `*Mapping` (not `*Mappings`) — e.g. `PK_UserEventDistributorMapping`, `FK_UserEventDistributorMapping_SocialMediaPlatforms`. Double-check actual constraint names against `table-create.sql` before writing migrations.
+- **Migration conventions:** Use `IF EXISTS (SELECT 1 FROM sys.objects WHERE name = '...')` guards for constraints/defaults; use `IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = '...' AND object_id = OBJECT_ID(...))` for indexes; `EXEC sp_rename` with `'INDEX'` type qualifier for indexes.
+- **FeedChecks seed row:** `DispatchersScheduledItems` in `data-seed.sql` needed updating to `DistributorsScheduledItems`; the migration also does a live `UPDATE dbo.FeedChecks` for existing environments.
+- **Status:** ✅ COMPLETE
+
+### 2026-05-30 — Dispatcher → Distributor Full Codebase Rename Completion
+
+- **Work:** Joseph Guadagno completed comprehensive manual rename of "Dispatcher" → "Distributor" across 24+ files covering all layers
+- **Scope:** Domain models, interfaces, EF entities, data stores, managers, API controllers, Web controllers, Functions services, views
+- **Verification:** Trinity spawned to verify build success, test suite pass, and scan for missed references
+- **Expected outcome:** Complete naming consistency across all codebase layers, zero regressions
+- **Session logged:** `.squad/log/2026-05-30T09-42-44-distributor-rename.md`
+- **Status:** ✅ COMPLETION VERIFIED PENDING
+
 ### 2026-05-16 — Issue #972 Missing Publisher Settings Tables
 
 - **Work:** Added four per-publisher settings tables to `scripts\database\table-create.sql`

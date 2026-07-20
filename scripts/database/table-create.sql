@@ -245,7 +245,7 @@ go
 
 -- Action valid values: 'Registered', 'Approved', 'Rejected', 'RoleAssigned', 'RoleRemoved'
 -- AdminUserId is NULL for system-generated entries
-create table dbo.UserApprovalLog
+create table dbo.UserApprovalLogs
 (
     Id          int identity
         constraint PK_UserApprovalLog
@@ -321,142 +321,142 @@ create nonclustered index IX_EngagementSocialMediaPlatforms_SocialMediaPlatformI
     on dbo.EngagementSocialMediaPlatforms (SocialMediaPlatformId)
 go
 
--- Create the UserPublisherSettings table (Issue #731)
-create table dbo.UserPublisherSettings
+-- Create the UserPlatformSettings table (Issue #731)
+create table dbo.UserPlatformSettings
 (
     Id                    int identity
-        constraint PK_UserPublisherSettings
+        constraint PK_UserPlatformSettings
             primary key clustered,
     CreatedByEntraOid     nvarchar(36)   not null,
     SocialMediaPlatformId int            not null
-        constraint FK_UserPublisherSettings_SocialMediaPlatforms
+        constraint FK_UserPlatformSettings_SocialMediaPlatforms
             references dbo.SocialMediaPlatforms,
     IsEnabled             bit default 0  not null,
     Settings              nvarchar(max)  null,
     CreatedOn             datetimeoffset not null
-        constraint DF_UserPublisherSettings_CreatedOn
+        constraint DF_UserPlatformSettings_CreatedOn
             default (getutcdate()),
     LastUpdatedOn         datetimeoffset not null
-        constraint DF_UserPublisherSettings_LastUpdatedOn
+        constraint DF_UserPlatformSettings_LastUpdatedOn
             default (getutcdate()),
-    constraint UQ_UserPublisherSettings_User_Platform
+    constraint UQ_UserPlatformSettings_User_Platform
         unique (CreatedByEntraOid, SocialMediaPlatformId)
 )
 go
 
 -- ============================================================
--- UserPublisherBlueskySettings (Issue #958 — Phase 1)
+-- UserPlatformBlueskySettings (Issue #958 — Phase 1)
 -- ============================================================
-IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserPublisherBlueskySettings')
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserPlatformBlueskySettings')
 BEGIN
-    CREATE TABLE [dbo].[UserPublisherBlueskySettings]
+    CREATE TABLE [dbo].[UserPlatformBlueskySettings]
     (
         [Id]                 INT IDENTITY(1,1)   NOT NULL,
         [CreatedByEntraOid]  NVARCHAR(36)        NOT NULL,
-        [IsEnabled]          BIT                 NOT NULL CONSTRAINT DF_UserPublisherBlueskySettings_IsEnabled DEFAULT (0),
+        [IsEnabled]          BIT                 NOT NULL CONSTRAINT DF_UserPlatformBlueskySettings_IsEnabled DEFAULT (0),
         [UserName]           NVARCHAR(255)       NULL,
-        [HasAppPassword]     BIT                 NOT NULL CONSTRAINT DF_UserPublisherBlueskySettings_HasAppPassword DEFAULT (0),
-        [CreatedOn]          DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPublisherBlueskySettings_CreatedOn DEFAULT (GETUTCDATE()),
-        [LastUpdatedOn]      DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPublisherBlueskySettings_LastUpdatedOn DEFAULT (GETUTCDATE()),
+        [HasAppPassword]     BIT                 NOT NULL CONSTRAINT DF_UserPlatformBlueskySettings_HasAppPassword DEFAULT (0),
+        [CreatedOn]          DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPlatformBlueskySettings_CreatedOn DEFAULT (GETUTCDATE()),
+        [LastUpdatedOn]      DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPlatformBlueskySettings_LastUpdatedOn DEFAULT (GETUTCDATE()),
 
-        CONSTRAINT PK_UserPublisherBlueskySettings PRIMARY KEY CLUSTERED ([Id] ASC),
-        CONSTRAINT UQ_UserPublisherBlueskySettings_Owner UNIQUE ([CreatedByEntraOid])
+        CONSTRAINT PK_UserPlatformBlueskySettings PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT UQ_UserPlatformBlueskySettings_Owner UNIQUE ([CreatedByEntraOid])
     );
 
-    PRINT 'Created table UserPublisherBlueskySettings';
+    PRINT 'Created table UserPlatformBlueskySettings';
 END
 ELSE
 BEGIN
-    PRINT 'Table UserPublisherBlueskySettings already exists — skipped';
+    PRINT 'Table UserPlatformBlueskySettings already exists — skipped';
 END
 GO
 
 -- ============================================================
--- UserPublisherTwitterSettings (Issue #958 — Phase 1)
+-- UserPlatformTwitterSettings (Issue #958 — Phase 1)
 -- ============================================================
-IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserPublisherTwitterSettings')
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserPlatformTwitterSettings')
 BEGIN
-    CREATE TABLE [dbo].[UserPublisherTwitterSettings]
+    CREATE TABLE [dbo].[UserPlatformTwitterSettings]
     (
         [Id]                   INT IDENTITY(1,1)   NOT NULL,
         [CreatedByEntraOid]    NVARCHAR(36)        NOT NULL,
-        [IsEnabled]            BIT                 NOT NULL CONSTRAINT DF_UserPublisherTwitterSettings_IsEnabled DEFAULT (0),
-        [HasConsumerKey]       BIT                 NOT NULL CONSTRAINT DF_UserPublisherTwitterSettings_HasConsumerKey DEFAULT (0),
-        [HasConsumerSecret]    BIT                 NOT NULL CONSTRAINT DF_UserPublisherTwitterSettings_HasConsumerSecret DEFAULT (0),
-        [HasAccessToken]       BIT                 NOT NULL CONSTRAINT DF_UserPublisherTwitterSettings_HasAccessToken DEFAULT (0),
-        [HasAccessTokenSecret] BIT                 NOT NULL CONSTRAINT DF_UserPublisherTwitterSettings_HasAccessTokenSecret DEFAULT (0),
-        [CreatedOn]            DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPublisherTwitterSettings_CreatedOn DEFAULT (GETUTCDATE()),
-        [LastUpdatedOn]        DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPublisherTwitterSettings_LastUpdatedOn DEFAULT (GETUTCDATE()),
+        [IsEnabled]            BIT                 NOT NULL CONSTRAINT DF_UserPlatformTwitterSettings_IsEnabled DEFAULT (0),
+        [HasConsumerKey]       BIT                 NOT NULL CONSTRAINT DF_UserPlatformTwitterSettings_HasConsumerKey DEFAULT (0),
+        [HasConsumerSecret]    BIT                 NOT NULL CONSTRAINT DF_UserPlatformTwitterSettings_HasConsumerSecret DEFAULT (0),
+        [HasAccessToken]       BIT                 NOT NULL CONSTRAINT DF_UserPlatformTwitterSettings_HasAccessToken DEFAULT (0),
+        [HasAccessTokenSecret] BIT                 NOT NULL CONSTRAINT DF_UserPlatformTwitterSettings_HasAccessTokenSecret DEFAULT (0),
+        [CreatedOn]            DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPlatformTwitterSettings_CreatedOn DEFAULT (GETUTCDATE()),
+        [LastUpdatedOn]        DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPlatformTwitterSettings_LastUpdatedOn DEFAULT (GETUTCDATE()),
 
-        CONSTRAINT PK_UserPublisherTwitterSettings PRIMARY KEY CLUSTERED ([Id] ASC),
-        CONSTRAINT UQ_UserPublisherTwitterSettings_Owner UNIQUE ([CreatedByEntraOid])
+        CONSTRAINT PK_UserPlatformTwitterSettings PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT UQ_UserPlatformTwitterSettings_Owner UNIQUE ([CreatedByEntraOid])
     );
 
-    PRINT 'Created table UserPublisherTwitterSettings';
+    PRINT 'Created table UserPlatformTwitterSettings';
 END
 ELSE
 BEGIN
-    PRINT 'Table UserPublisherTwitterSettings already exists — skipped';
+    PRINT 'Table UserPlatformTwitterSettings already exists — skipped';
 END
 GO
 
 -- ============================================================
--- UserPublisherLinkedInSettings (Issue #958 — Phase 1)
+-- UserPlatformLinkedInSettings (Issue #958 — Phase 1)
 -- ============================================================
-IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserPublisherLinkedInSettings')
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserPlatformLinkedInSettings')
 BEGIN
-    CREATE TABLE [dbo].[UserPublisherLinkedInSettings]
+    CREATE TABLE [dbo].[UserPlatformLinkedInSettings]
     (
         [Id]               INT IDENTITY(1,1)   NOT NULL,
         [CreatedByEntraOid] NVARCHAR(36)       NOT NULL,
-        [IsEnabled]        BIT                 NOT NULL CONSTRAINT DF_UserPublisherLinkedInSettings_IsEnabled DEFAULT (0),
+        [IsEnabled]        BIT                 NOT NULL CONSTRAINT DF_UserPlatformLinkedInSettings_IsEnabled DEFAULT (0),
         [AuthorId]         NVARCHAR(255)       NULL,
         [ClientId]         NVARCHAR(255)       NULL,
-        [HasClientSecret]  BIT                 NOT NULL CONSTRAINT DF_UserPublisherLinkedInSettings_HasClientSecret DEFAULT (0),
-        [CreatedOn]        DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPublisherLinkedInSettings_CreatedOn DEFAULT (GETUTCDATE()),
-        [LastUpdatedOn]    DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPublisherLinkedInSettings_LastUpdatedOn DEFAULT (GETUTCDATE()),
+        [HasClientSecret]  BIT                 NOT NULL CONSTRAINT DF_UserPlatformLinkedInSettings_HasClientSecret DEFAULT (0),
+        [CreatedOn]        DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPlatformLinkedInSettings_CreatedOn DEFAULT (GETUTCDATE()),
+        [LastUpdatedOn]    DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPlatformLinkedInSettings_LastUpdatedOn DEFAULT (GETUTCDATE()),
 
-        CONSTRAINT PK_UserPublisherLinkedInSettings PRIMARY KEY CLUSTERED ([Id] ASC),
-        CONSTRAINT UQ_UserPublisherLinkedInSettings_Owner UNIQUE ([CreatedByEntraOid])
+        CONSTRAINT PK_UserPlatformLinkedInSettings PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT UQ_UserPlatformLinkedInSettings_Owner UNIQUE ([CreatedByEntraOid])
     );
 
-    PRINT 'Created table UserPublisherLinkedInSettings';
+    PRINT 'Created table UserPlatformLinkedInSettings';
 END
 ELSE
 BEGIN
-    PRINT 'Table UserPublisherLinkedInSettings already exists — skipped';
+    PRINT 'Table UserPlatformLinkedInSettings already exists — skipped';
 END
 GO
 
 -- ============================================================
--- UserPublisherFacebookSettings (Issue #958 — Phase 1)
+-- UserPlatformFacebookSettings (Issue #958 — Phase 1)
 -- ============================================================
-IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserPublisherFacebookSettings')
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserPlatformFacebookSettings')
 BEGIN
-    CREATE TABLE [dbo].[UserPublisherFacebookSettings]
+    CREATE TABLE [dbo].[UserPlatformFacebookSettings]
     (
         [Id]                       INT IDENTITY(1,1)   NOT NULL,
         [CreatedByEntraOid]        NVARCHAR(36)        NOT NULL,
-        [IsEnabled]                BIT                 NOT NULL CONSTRAINT DF_UserPublisherFacebookSettings_IsEnabled DEFAULT (0),
+        [IsEnabled]                BIT                 NOT NULL CONSTRAINT DF_UserPlatformFacebookSettings_IsEnabled DEFAULT (0),
         [PageId]                   NVARCHAR(255)       NULL,
         [AppId]                    NVARCHAR(255)       NULL,
-        [HasPageAccessToken]       BIT                 NOT NULL CONSTRAINT DF_UserPublisherFacebookSettings_HasPageAccessToken DEFAULT (0),
-        [HasAppSecret]             BIT                 NOT NULL CONSTRAINT DF_UserPublisherFacebookSettings_HasAppSecret DEFAULT (0),
-        [HasClientToken]           BIT                 NOT NULL CONSTRAINT DF_UserPublisherFacebookSettings_HasClientToken DEFAULT (0),
-        [HasShortLivedAccessToken] BIT                 NOT NULL CONSTRAINT DF_UserPublisherFacebookSettings_HasShortLivedAccessToken DEFAULT (0),
-        [HasLongLivedAccessToken]  BIT                 NOT NULL CONSTRAINT DF_UserPublisherFacebookSettings_HasLongLivedAccessToken DEFAULT (0),
-        [CreatedOn]                DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPublisherFacebookSettings_CreatedOn DEFAULT (GETUTCDATE()),
-        [LastUpdatedOn]            DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPublisherFacebookSettings_LastUpdatedOn DEFAULT (GETUTCDATE()),
+        [HasPageAccessToken]       BIT                 NOT NULL CONSTRAINT DF_UserPlatformFacebookSettings_HasPageAccessToken DEFAULT (0),
+        [HasAppSecret]             BIT                 NOT NULL CONSTRAINT DF_UserPlatformFacebookSettings_HasAppSecret DEFAULT (0),
+        [HasClientToken]           BIT                 NOT NULL CONSTRAINT DF_UserPlatformFacebookSettings_HasClientToken DEFAULT (0),
+        [HasShortLivedAccessToken] BIT                 NOT NULL CONSTRAINT DF_UserPlatformFacebookSettings_HasShortLivedAccessToken DEFAULT (0),
+        [HasLongLivedAccessToken]  BIT                 NOT NULL CONSTRAINT DF_UserPlatformFacebookSettings_HasLongLivedAccessToken DEFAULT (0),
+        [CreatedOn]                DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPlatformFacebookSettings_CreatedOn DEFAULT (GETUTCDATE()),
+        [LastUpdatedOn]            DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserPlatformFacebookSettings_LastUpdatedOn DEFAULT (GETUTCDATE()),
 
-        CONSTRAINT PK_UserPublisherFacebookSettings PRIMARY KEY CLUSTERED ([Id] ASC),
-        CONSTRAINT UQ_UserPublisherFacebookSettings_Owner UNIQUE ([CreatedByEntraOid])
+        CONSTRAINT PK_UserPlatformFacebookSettings PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT UQ_UserPlatformFacebookSettings_Owner UNIQUE ([CreatedByEntraOid])
     );
 
-    PRINT 'Created table UserPublisherFacebookSettings';
+    PRINT 'Created table UserPlatformFacebookSettings';
 END
 ELSE
 BEGIN
-    PRINT 'Table UserPublisherFacebookSettings already exists — skipped';
+    PRINT 'Table UserPlatformFacebookSettings already exists — skipped';
 END
 GO
 
@@ -671,4 +671,79 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_SocialMediaPlatforms_IsActive_Name' AND object_id = OBJECT_ID('dbo.SocialMediaPlatforms'))
     CREATE INDEX IX_SocialMediaPlatforms_IsActive_Name ON dbo.SocialMediaPlatforms (IsActive, Name);
+GO
+
+-- ============================================================
+-- UserRandomPostSettings (Issue #995)
+-- Per-user random post scheduling + content filtering
+-- Each row = one schedule: (user, publisher, cron, content-filter settings)
+-- ============================================================
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserRandomPostSettings')
+BEGIN
+    CREATE TABLE [dbo].[UserRandomPostSettings]
+    (
+        [Id]                    INT IDENTITY(1,1)   NOT NULL,
+        [CreatedByEntraOid]     NVARCHAR(36)        NOT NULL,
+        [SocialMediaPlatformId] INT                 NOT NULL,
+        [CronExpression]        NVARCHAR(100)       NOT NULL,
+        [CutoffDate]            DATETIMEOFFSET      NULL,
+        [ExcludedCategories]    NVARCHAR(MAX)       NULL,
+        [IsActive]              BIT                 NOT NULL CONSTRAINT DF_UserRandomPostSettings_IsActive DEFAULT (1),
+        [NextRunDateUtc]        DATETIMEOFFSET      NULL,
+        [CronParseFailureCount] INT                 NOT NULL CONSTRAINT DF_UserRandomPostSettings_CronParseFailureCount DEFAULT (0),
+        [CreatedOn]             DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserRandomPostSettings_CreatedOn DEFAULT (GETUTCDATE()),
+        [LastUpdatedOn]         DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserRandomPostSettings_LastUpdatedOn DEFAULT (GETUTCDATE()),
+
+        CONSTRAINT PK_UserRandomPostSettings PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT FK_UserRandomPostSettings_SocialMediaPlatforms
+            FOREIGN KEY ([SocialMediaPlatformId]) REFERENCES [dbo].[SocialMediaPlatforms]([Id]),
+        CONSTRAINT UQ_UserRandomPostSettings_Owner_Platform_Cron
+            UNIQUE ([CreatedByEntraOid], [SocialMediaPlatformId], [CronExpression])
+    );
+    CREATE NONCLUSTERED INDEX IX_UserRandomPostSettings_Active
+        ON [dbo].[UserRandomPostSettings] ([IsActive] ASC, [CreatedByEntraOid] ASC);
+    CREATE NONCLUSTERED INDEX IX_UserRandomPostSettings_IsActive_NextRunDateUtc
+        ON [dbo].[UserRandomPostSettings] ([IsActive], [NextRunDateUtc])
+        WHERE [IsActive] = 1;
+    PRINT 'Created table UserRandomPostSettings';
+END
+ELSE
+BEGIN
+    PRINT 'Table UserRandomPostSettings already exists — skipped';
+END
+GO
+
+-- ============================================================
+-- UserEventDistributorMappings (Issue #995)
+-- Maps collector event types to distributor platforms per user
+-- EventType valid values align with MessageTemplates.MessageTypes
+-- ============================================================
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'UserEventDistributorMappings')
+BEGIN
+    CREATE TABLE [dbo].[UserEventDistributorMappings]
+    (
+        [Id]                    INT IDENTITY(1,1)   NOT NULL,
+        [CreatedByEntraOid]     NVARCHAR(36)        NOT NULL,
+        [EventType]             NVARCHAR(50)        NOT NULL,
+        [SocialMediaPlatformId] INT                 NOT NULL,
+        [IsActive]              BIT                 NOT NULL CONSTRAINT DF_UserEventDistributorMapping_IsActive DEFAULT (1),
+        [CreatedOn]             DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserEventDistributorMapping_CreatedOn DEFAULT (GETUTCDATE()),
+        [LastUpdatedOn]         DATETIMEOFFSET      NOT NULL CONSTRAINT DF_UserEventDistributorMapping_LastUpdatedOn DEFAULT (GETUTCDATE()),
+
+        CONSTRAINT PK_UserEventDistributorMapping PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT FK_UserEventDistributorMapping_SocialMediaPlatforms
+            FOREIGN KEY ([SocialMediaPlatformId]) REFERENCES [dbo].[SocialMediaPlatforms]([Id]),
+        CONSTRAINT UQ_UserEventDistributorMapping_Owner_Event_Platform
+            UNIQUE ([CreatedByEntraOid], [EventType], [SocialMediaPlatformId]),
+        CONSTRAINT CK_UserEventDistributorMapping_EventType
+            CHECK ([EventType] IN ('NewSyndicationFeedItem', 'NewYouTubeItem', 'NewSpeakingEngagement', 'RandomPost', 'ScheduledItem'))
+    );
+    CREATE NONCLUSTERED INDEX IX_UserEventDistributorMapping_Active
+        ON [dbo].[UserEventDistributorMappings] ([IsActive] ASC, [CreatedByEntraOid] ASC);
+    PRINT 'Created table UserEventDistributorMappings';
+END
+ELSE
+BEGIN
+    PRINT 'Table UserEventDistributorMappings already exists — skipped';
+END
 GO

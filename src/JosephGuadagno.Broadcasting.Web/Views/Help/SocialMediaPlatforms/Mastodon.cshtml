@@ -4,7 +4,7 @@
 
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-controller="PublisherSettings" asp-action="Index">Publisher Settings</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Platforms" asp-action="Index">Platform Settings</a></li>
         <li class="breadcrumb-item active" aria-current="page">Mastodon Help</li>
     </ol>
 </nav>
@@ -48,13 +48,13 @@
 
         <div class="card shadow-sm">
             <div class="card-header">
-                <i class="bi bi-input-cursor-text me-2"></i><strong>Where Each Value Goes in Publisher Settings</strong>
+                <i class="bi bi-input-cursor-text me-2"></i><strong>Where Each Value Goes in Platform Settings</strong>
             </div>
             <div class="card-body">
                 <table class="table table-sm mb-0">
                     <thead>
                         <tr>
-                            <th>Field in Publisher Settings</th>
+                            <th>Field in Platform Settings</th>
                             <th>Value from your Mastodon instance</th>
                         </tr>
                     </thead>
@@ -90,8 +90,8 @@
 
         <div class="card shadow-sm mt-4">
             <div class="card-body text-center">
-                <a asp-controller="PublisherSettings" asp-action="Index" class="btn btn-secondary w-100">
-                    <i class="bi bi-arrow-left me-2"></i>Back to Publisher Settings
+                <a asp-controller="Platforms" asp-action="Index" class="btn btn-secondary w-100">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Platform Settings
                 </a>
             </div>
         </div>

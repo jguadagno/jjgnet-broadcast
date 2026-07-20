@@ -1,0 +1,104 @@
+@model JosephGuadagno.Broadcasting.Web.Models.UserRandomPostSettingsViewModel
+
+@{
+    ViewData["Title"] = "Edit Random Post Settings";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="mb-1"><i class="bi bi-shuffle me-2"></i>Edit Random Post Settings</h1>
+        <p class="text-muted mb-0">Update scheduling and filtering for this random post configuration.</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form asp-action="Edit" asp-controller="UserRandomPostSettings" asp-route-id="@Model.Id" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <input asp-for="Id" type="hidden" />
+
+            <div class="mb-3">
+                <label asp-for="SocialMediaPlatformId" class="form-label"></label>
+                <select asp-for="SocialMediaPlatformId" asp-items="Model.SocialMediaPlatforms" class="form-select"></select>
+                <span asp-validation-for="SocialMediaPlatformId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="CronExpression" class="form-label"></label>
+                <input asp-for="CronExpression" class="form-control" autocomplete="off" />
+                <span asp-validation-for="CronExpression" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="CutoffDateLocal" class="form-label"></label>
+                <input asp-for="CutoffDateLocal" type="datetime-local" class="form-control js-local-datetime" autocomplete="off" />
+                <input asp-for="CutoffDateUtc" type="hidden" class="js-utc-datetime" />
+                <div class="form-text">Displayed in your local time and saved in UTC.</div>
+                <span asp-validation-for="CutoffDateLocal" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ExcludedCategoriesText" class="form-label"></label>
+                <input asp-for="ExcludedCategoriesText" class="form-control" autocomplete="off" />
+                <div class="form-text">Enter comma-separated categories to exclude.</div>
+                <span asp-validation-for="ExcludedCategoriesText" class="text-danger"></span>
+            </div>
+
+            <div class="form-check form-switch mb-3">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label"></label>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" data-loading-text="Saving...">
+                    <i class="bi bi-floppy me-1"></i>Save
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        (function () {
+            function formatLocal(date) {
+                var pad = function (value) { return value.toString().padStart(2, '0'); };
+                return date.getFullYear() + '-'
+                    + pad(date.getMonth() + 1) + '-'
+                    + pad(date.getDate()) + 'T'
+                    + pad(date.getHours()) + ':'
+                    + pad(date.getMinutes());
+            }
+
+            document.querySelectorAll('form').forEach(function (form) {
+                var localInput = form.querySelector('.js-local-datetime');
+                var utcInput = form.querySelector('.js-utc-datetime');
+                if (!localInput || !utcInput) {
+                    return;
+                }
+
+                if (utcInput.value) {
+                    var existingDate = new Date(utcInput.value);
+                    if (!isNaN(existingDate.getTime())) {
+                        localInput.value = formatLocal(existingDate);
+                    }
+                }
+
+                form.addEventListener('submit', function () {
+                    if (!localInput.value) {
+                        utcInput.value = '';
+                        return;
+                    }
+
+                    var localDate = new Date(localInput.value);
+                    utcInput.value = isNaN(localDate.getTime()) ? '' : localDate.toISOString();
+                });
+            });
+        })();
+    </script>
+}

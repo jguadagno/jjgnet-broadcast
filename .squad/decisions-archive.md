@@ -4,6 +4,56 @@ Archive of team decisions from before 2026-05-18.
 See decisions.md for current decisions.
 
 ---
+
+# Decision: Fix LinkedInControllerTests Signature Mismatch
+
+**Date:** 2026-05-21  
+**Author:** Trinity (Backend Dev)  
+**Status:** ✅ COMPLETE
+
+---
+
+## Summary
+
+Fixed a pre-existing compiler error in `LinkedInControllerTests.cs` where the test called `await controller.RefreshToken()`, but the production `LinkedInController.RefreshToken()` method returns synchronous `IActionResult`.
+
+---
+
+## Change
+
+**File:** `src/JosephGuadagno.Broadcasting.Web.Tests/Controllers/LinkedInControllerTests.cs`
+
+- Test method `RefreshToken_WhenCallbackUrlIsValid_ShouldRedirectToLinkedInAuthUrl` changed from `async Task` → `void`
+- Removed `await` keyword from `controller.RefreshToken()` call (line 214)
+
+**No production code was modified.**
+
+---
+
+## Root Cause
+
+A prior change to `LinkedInController.RefreshToken()` simplified its return type from `async Task<IActionResult>` to synchronous `IActionResult` (the method only builds a URL string and calls `Redirect()` — no async work needed). The test was not updated at that time, leaving a CS1061 compiler error.
+
+---
+
+## Impact
+
+- Build: 0 errors (was 1 error)
+- `LinkedInControllerTests`: 12/12 pass
+- No other test regressions introduced
+
+---
+
+## Pre-existing Failures (out of scope)
+
+Two Functions tests remain failing and are unrelated:
+- `LoadAllSpeakingEngagementsTests.RunAsync_HandlesNullEngagementsList_Gracefully`
+- `LoadNewPostsTests.RunAsync_HandlesNullFeedList_Gracefully`
+
+These fail with `Assert.IsType() Failure` and predate this fix.
+
+---
+
 ## # Phase 6 Complete — #980 Publisher Architecture Refactor
 
 **Date:** 2026-05-15  

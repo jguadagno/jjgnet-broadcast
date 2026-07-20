@@ -21,7 +21,7 @@ public class LinkedInManager(
     
     private const string LinkedInAuthorUrn = "urn:li:person:{0}";
 
-    public async Task<string?> PublishAsync(SocialMediaPublishRequest request)
+    public async Task<string?> DispatchAsync(SocialMediaPublishRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Text);

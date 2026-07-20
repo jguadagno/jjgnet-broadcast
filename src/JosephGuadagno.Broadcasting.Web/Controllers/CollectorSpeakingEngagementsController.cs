@@ -242,8 +242,27 @@ public class CollectorSpeakingEngagementsController(
             return RedirectToAction(nameof(Index));
         }
 
-        var viewModel = mapper.Map<UserCollectorSpeakingEngagementViewModel>(engagement);
-        ModelState.AddModelError(string.Empty, "Failed to delete the speaking engagement.");
-        return View(viewModel);
+        TempData["ErrorMessage"] = "Failed to delete the speaking engagement.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>
+    /// Toggles the IsActive status of a speaking engagement (activate / deactivate).
+    /// </summary>
+    [HttpPost("ToggleActive")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = AuthorizationPolicyNames.RequireContributor)]
+    public async Task<IActionResult> ToggleActive(int id)
+    {
+        var success = await service.ToggleActiveAsync(id);
+        if (!success)
+        {
+            TempData["ErrorMessage"] = "Failed to toggle the active status.";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Active status toggled successfully.";
+        }
+        return RedirectToAction(nameof(Index));
     }
 }

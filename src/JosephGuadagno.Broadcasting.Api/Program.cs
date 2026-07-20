@@ -87,6 +87,8 @@ builder.Services.AddControllers(options =>
 {
     // API uses Bearer token auth - antiforgery tokens are not applicable
     options.Filters.Add(new IgnoreAntiforgeryTokenAttribute());
+    // Keep "Async" suffix in action names so CreatedAtAction(nameof(GetAsync), ...) resolves correctly
+    options.SuppressAsyncSuffixInActionNames = false;
 });
 
 // Rate limiting - 100 requests per minute (fixed window), applied globally
@@ -231,14 +233,18 @@ void ConfigureRepositories(IServiceCollection services)
     // SocialMediaPlatform
     services.TryAddScoped<ISocialMediaPlatformDataStore, SocialMediaPlatformDataStore>();
     services.TryAddScoped<ISocialMediaPlatformManager, SocialMediaPlatformManager>();
-    services.TryAddScoped<IUserPublisherBlueskySettingsDataStore, UserPublisherBlueskySettingsDataStore>();
-    services.TryAddScoped<IUserPublisherTwitterSettingsDataStore, UserPublisherTwitterSettingsDataStore>();
-    services.TryAddScoped<IUserPublisherLinkedInSettingsDataStore, UserPublisherLinkedInSettingsDataStore>();
-    services.TryAddScoped<IUserPublisherFacebookSettingsDataStore, UserPublisherFacebookSettingsDataStore>();
-    services.TryAddScoped<IUserPublisherBlueskySettingsManager, UserPublisherBlueskySettingsManager>();
-    services.TryAddScoped<IUserPublisherTwitterSettingsManager, UserPublisherTwitterSettingsManager>();
-    services.TryAddScoped<IUserPublisherLinkedInSettingsManager, UserPublisherLinkedInSettingsManager>();
-    services.TryAddScoped<IUserPublisherFacebookSettingsManager, UserPublisherFacebookSettingsManager>();
+    services.TryAddScoped<IUserPlatformBlueskySettingsDataStore, UserPlatformBlueskySettingsDataStore>();
+    services.TryAddScoped<IUserPlatformTwitterSettingsDataStore, UserPlatformTwitterSettingsDataStore>();
+    services.TryAddScoped<IUserPlatformLinkedInSettingsDataStore, UserPlatformLinkedInSettingsDataStore>();
+    services.TryAddScoped<IUserPlatformFacebookSettingsDataStore, UserPlatformFacebookSettingsDataStore>();
+    services.TryAddScoped<IUserRandomPostSettingsDataStore, UserRandomPostSettingsDataStore>();
+    services.TryAddScoped<IUserEventDistributorMappingDataStore, UserEventDistributorMappingDataStore>();
+    services.TryAddScoped<IUserPlatformBlueskySettingsManager, UserPlatformBlueskySettingsManager>();
+    services.TryAddScoped<IUserPlatformTwitterSettingsManager, UserPlatformTwitterSettingsManager>();
+    services.TryAddScoped<IUserPlatformLinkedInSettingsManager, UserPlatformLinkedInSettingsManager>();
+    services.TryAddScoped<IUserPlatformFacebookSettingsManager, UserPlatformFacebookSettingsManager>();
+    services.TryAddScoped<IUserRandomPostSettingsManager, UserRandomPostSettingsManager>();
+    services.TryAddScoped<IUserEventDistributorMappingManager, UserEventDistributorMappingManager>();
     services.TryAddScoped<IUserCollectorFeedSourceDataStore, UserCollectorFeedSourceDataStore>();
     services.TryAddScoped<IUserCollectorFeedSourceManager, UserCollectorFeedSourceManager>();
     services.TryAddScoped<IUserCollectorYouTubeChannelDataStore, UserCollectorYouTubeChannelDataStore>();

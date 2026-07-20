@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Facebook;
 
-public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherFacebookSettingsManager facebookSettingsManager, IUserOAuthTokenManager userOAuthTokenManager, ILogger<PostPageStatus> logger)
+public class PostPageStatus(IFacebookManager facebookManager, IUserPlatformFacebookSettingsManager facebookSettingsManager, IUserOAuthTokenManager userOAuthTokenManager, ILogger<PostPageStatus> logger)
 {
     [Function(ConfigurationFunctionNames.FacebookPostPageStatus)]
     public async Task Run(
@@ -56,7 +56,7 @@ public class PostPageStatus(IFacebookManager facebookManager, IUserPublisherFace
 
         try
         {
-            var postId = await facebookManager.PublishAsync(request);
+            var postId = await facebookManager.DispatchAsync(request);
             if (!string.IsNullOrEmpty(postId))
             {
                 var properties = new Dictionary<string, string>

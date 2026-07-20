@@ -6,6 +6,7 @@ using JosephGuadagno.Broadcasting.Domain.Enums;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers;
@@ -14,6 +15,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 /// Handles the interactions with the scheduled items
 /// </summary>
 [ApiController]
+[Tags("Schedules")]
 [Authorize]
 [IgnoreAntiforgeryToken]
 [Route("[controller]")]

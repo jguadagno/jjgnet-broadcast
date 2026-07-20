@@ -54,6 +54,7 @@ var functions = builder.AddAzureFunctionsProject<JosephGuadagno_Broadcasting_Fun
     .WithReference(tableStorage)
     .WithReference(blobStorage)
     .WithReference(queueStorage)
+    .WithReference(db)
     .WithExternalHttpEndpoints()
     .WithHttpEndpoint(port: 7071, isProxied: false)
     .WaitFor(db)

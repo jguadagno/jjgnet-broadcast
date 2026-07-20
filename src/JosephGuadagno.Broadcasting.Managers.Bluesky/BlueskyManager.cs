@@ -56,7 +56,7 @@ public class BlueskyManager(
         return await Post(new PostBuilder(postText));
     }
 
-    public async Task<string?> PublishAsync(SocialMediaPublishRequest request)
+    public async Task<string?> DispatchAsync(SocialMediaPublishRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Text);

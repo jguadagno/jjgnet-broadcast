@@ -9,7 +9,7 @@ namespace JosephGuadagno.Broadcasting.Managers.Twitter;
 
 public class TwitterManager(ILogger<TwitterManager> logger) : ITwitterManager
 {
-	public async Task<string?> PublishAsync(SocialMediaPublishRequest request)
+	public async Task<string?> DispatchAsync(SocialMediaPublishRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Text);

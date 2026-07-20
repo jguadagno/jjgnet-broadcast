@@ -4,12 +4,12 @@
 
 - [ ] Engagements - CRUD
 - [ ] Schedules - CRUD
-- [ ] Admin - Message Templates - These should be unique per user and work in the Functions
-- [ ] Admin - Syndication Feed Sources - These should be unique per user and work in the Functions
-- [ ] Admin - YouTube Sources - These should be unique per user and work in the Functions
+- [X] Admin - Message Templates - These should be unique per user and work in the Functions
+- [X] Admin - Syndication Feed Sources - These should be unique per user and work in the Functions
+- [X] Admin - YouTube Sources - These should be unique per user and work in the Functions
 - [ ] Site Admin - Social Media Platforms - CRUD
-- [ ] Site Admin - Users
-- [ ] LinkedIn - validate the token rotation works
+- [X] Site Admin - Users
+- [X] LinkedIn - validate the token rotation works
 - [X] Update the page description - TODOs
 - [ ] Synchronize application settings in App with local, production, and settings class
 - [X] Fix the broken links to the Scriban docs on MessageTemplates/Edit
@@ -21,8 +21,8 @@
 ## Database
 
 - [ ] Make sure local and prod are the same
-- [X] Make sure the `table-create` scripts are accurate
-- [X] Make sure the `data-seed` scripts are accurate
+- [ ] Make sure the `table-create` scripts are accurate
+- [ ] Make sure the `data-seed` scripts are accurate
 - [ ] Get my "secrets" for publishers and collectors from configuration/key vault into the database
   - [ ] YouTube
   - [ ] LinkedIn
@@ -44,8 +44,8 @@
 - [ ] Remove the "temporary" setting of `OwnerEntraOid`
 - [ ] Synchronize application settings in App with local, production, and settings class
 
-- [ ] LoadAllPosts, needs a parameter added for EntraOid
-- [ ] LoadAllVideos, needs a parameter added for EntraOid
+- [X] LoadAllPosts, needs a parameter added for EntraOid
+- [X] LoadAllVideos, needs a parameter added for EntraOid
 
 ### Validate Functions for posting - Bluesky
 
@@ -81,7 +81,7 @@
             
 ## Miscellaneous
 
-- [ ] Register Health Checks with Aspire
+- [] Register Health Checks with Aspire
   - [ ] Functions
   - [ ] Web
   - [ ] API
@@ -92,16 +92,16 @@
 
 - [ ] Make sure the message templates are correct
 
-  - [ ] Make sure there is a public model for each type of message
-  - [ ] One message template in the database for each message used in code
+  - [X] Make sure there is a public model for each type of message
+  - [X] One message template in the database for each message used in code
   - [ ] Update the `data-seed.sql` with my corrected version
-  - [ ] Each message template is unique to the EntraOId
+  - [X] Each message template is unique to the EntraOId
 
 - [ ] Delete the MessageTemplates folder in the Functions app
 
 ### Questions
 
 - [ ] Do we need to create a message template editing page per user/type of message. Validate with the Web and code.
-- [ ] How are the message types stored, loaded and displayed?
+- [X] How are the message types stored, loaded and displayed?
 - [ ] Do we need a nice editor for it?  Should we display the model that is passed to it.
 

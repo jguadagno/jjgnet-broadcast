@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers;
@@ -13,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 /// Works with Social Media Platforms for JosephGuadagno.NET Broadcasting
 /// </summary>
 [ApiController]
+[Tags("Social Media Platforms")]
 [Authorize]
 [IgnoreAntiforgeryToken]
 [Route("[controller]")]
