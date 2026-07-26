@@ -47,7 +47,7 @@
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Google.Apis.YouTube.v3" Version="1.74.0.4137" />
+        <PackageReference Include="Google.Apis.YouTube.v3" Version="1.75.0.4207" />
     </ItemGroup>
 
     <ItemGroup>

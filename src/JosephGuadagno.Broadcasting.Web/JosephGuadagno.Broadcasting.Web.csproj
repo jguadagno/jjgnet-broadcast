@@ -46,7 +46,7 @@
         <PackageReference Include="Aspire.Azure.Data.Tables" Version="13.4.6" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="Aspire.Azure.Storage.Queues" Version="13.4.6" />
-        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.3.5" />
+        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.4.6" />
         <PackageReference Include="AutoMapper" Version="16.1.1" />
         <PackageReference Include="Azure.Identity" Version="1.21.0" />
         <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.5.0" />
