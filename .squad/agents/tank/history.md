@@ -2,6 +2,19 @@
 
 > Learnings before 2026-04-25 archived to history-archive.md (2026-05-25)
 
+## Recent Session: `NextRunDateUtc` Tests — RandomPosts Efficiency Fix (2026-05-28)
+
+- **Work:** Wrote tests for Trinity's `GetAllDueAsync` / `UpdateNextRunAsync` implementation and `RandomPosts.cs` rewrite
+- **Result:** ✅ COMPLETE — 1279 passed, 0 failed, 39 skipped (up 46 from baseline 1233)
+- **Branch:** `issue-995-per-user-publisher-routing`
+- **Tests added by layer:**
+  - `RandomPostsTests.cs` — 6 tests (replaced all `GetAllActiveAsync` setups with `GetAllDueAsync`; added `UpdateNextRunAsync` default setup; covers dispatch, no-feed-item, invalid-cron, empty-due-list paths)
+  - `UserRandomPostSettingsManagerTests.cs` — 6 new tests (`GetAllDueAsync_DelegatesToDataStore`, `GetAllDueAsync_WhenNoneAreDue_ReturnsEmptyList`, `UpdateNextRunAsync_WhenSuccessful_ReturnsTrue`, `UpdateNextRunAsync_WhenRecordNotFound_ReturnsFalse`, `UpdateNextRunAsync_WithNullNextRunUtc_DelegatesToDataStore`, `UpdateNextRunAsync_WhenIdIsInvalid_ThrowsArgumentOutOfRangeException`)
+  - `UserRandomPostSettingsDataStoreTests.cs` — 10 new tests covering `GetAllDueAsync` filter (null, past, future, mixed) and `UpdateNextRunAsync` (found, not-found, clear-to-null)
+- **Key issue hit:** Trinity had already committed `NextRunDateUtc`, `GetAllDueAsync`, and `UpdateNextRunAsync` to the working tree but NOT to HEAD. Tank read stale HEAD content and created duplicate definitions. Fix: always check `git diff HEAD` for working-tree-vs-index changes before adding new members.
+
+---
+
 ## Recent Session: Issue #969 — Collector Controllers in ControllerAuthorizationPolicyTests (2026-05-15)
 
 - **Work:** Added 5 Collector API controllers to `ControllerAuthorizationPolicyTests`
@@ -137,6 +150,9 @@ LinkedInController test fix.
 That command completed with 1274 total tests, 1233 passed, 0 failed,
 and 41 skipped. When it regresses, compare against that baseline before
 assuming the expected skips indicate a new failure.
+
+### RandomPosts log sanitization hard gate (2026-05-26T16:27:09.011-07:00)
+`RandomPosts.cs` already imports `JosephGuadagno.Broadcasting.Domain.Utilities`; when an externally controlled RSS field like `syndicationFeedItem.Title` is sent to any logger path, wrap it with `LogSanitizer.Sanitize(...)` before passing it into the logger payload. For this fix, sanitize both the structured `LogInformation` title argument and the `LogCustomEvent` `title` property so telemetry cannot carry forged control characters either.
 
 ---
 

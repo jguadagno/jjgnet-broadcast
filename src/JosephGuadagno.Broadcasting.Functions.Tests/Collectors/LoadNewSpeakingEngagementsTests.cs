@@ -6,6 +6,7 @@ using JosephGuadagno.Broadcasting.Domain;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.SpeakingEngagement;
+using JosephGuadagno.Broadcasting.Functions.Services;
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -19,6 +20,7 @@ public class LoadNewSpeakingEngagementsTests
     private readonly Mock<IEngagementManager> _engagementManager;
     private readonly Mock<IUserCollectorSpeakingEngagementManager> _userCollectorSpeakingEngagementManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
+    private readonly Mock<ICollectorEventDistributor> _collectorEventDispatcher;
     private readonly LoadNewSpeakingEngagements _sut;
 
     public LoadNewSpeakingEngagementsTests()
@@ -27,6 +29,7 @@ public class LoadNewSpeakingEngagementsTests
         _engagementManager = new Mock<IEngagementManager>();
         _userCollectorSpeakingEngagementManager = new Mock<IUserCollectorSpeakingEngagementManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
+        _collectorEventDispatcher = new Mock<ICollectorEventDistributor>();
 
         _userCollectorSpeakingEngagementManager.Setup(m => m.GetAllActiveAsync())
             .ReturnsAsync(new List<UserCollectorSpeakingEngagement>
@@ -39,6 +42,7 @@ public class LoadNewSpeakingEngagementsTests
             _engagementManager.Object,
             _userCollectorSpeakingEngagementManager.Object,
             _feedCheckManager.Object,
+            _collectorEventDispatcher.Object,
             NullLogger<LoadNewSpeakingEngagements>.Instance);
     }
 

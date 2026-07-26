@@ -1,6 +1,4 @@
 using System.Reflection;
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
-using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
 using Microsoft.Extensions.Configuration;
@@ -31,13 +29,6 @@ public class Startup
             
         services.AddSingleton(config);
 
-        var randomPostSettings = new RandomPostSettings
-        {
-            ExcludedCategories = []
-        };
-        config.Bind("Settings:RandomPost", randomPostSettings);
-        services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
-            
         // Configure the logger
         services.AddLogging((loggingBuilder =>
         {

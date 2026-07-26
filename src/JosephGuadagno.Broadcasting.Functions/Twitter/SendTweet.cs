@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JosephGuadagno.Broadcasting.Functions.Twitter;
 
-public class SendTweet(ITwitterManager twitterManager, IUserPublisherTwitterSettingsManager twitterSettingsManager, ILogger<SendTweet> logger)
+public class SendTweet(ITwitterManager twitterManager, IUserPlatformTwitterSettingsManager twitterSettingsManager, ILogger<SendTweet> logger)
 {
 
     [Function(ConfigurationFunctionNames.TwitterSendTweet)]
@@ -48,7 +48,7 @@ public class SendTweet(ITwitterManager twitterManager, IUserPublisherTwitterSett
                     "ImageUrl '{ImageUrl}' was present in the tweet message but Twitter media API image upload is not yet implemented. The tweet will be posted without an image attachment",
                     request.ImageUrl);
 
-            var tweetId = await twitterManager.PublishAsync(request);
+            var tweetId = await twitterManager.DispatchAsync(request);
             if (tweetId is null)
             {
                 logger.LogError("Failed to send the tweet: '{TweetText}'. ", request.Text);
@@ -78,3 +78,4 @@ public class SendTweet(ITwitterManager twitterManager, IUserPublisherTwitterSett
         }
     }
 }
+

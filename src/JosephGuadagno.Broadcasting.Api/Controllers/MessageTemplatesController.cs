@@ -6,6 +6,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Domain.Utilities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers;
@@ -14,6 +15,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 /// Works with Message Templates for JosephGuadagno.NET Broadcasting
 /// </summary>
 [ApiController]
+[Tags("Message Templates")]
 [Authorize]
 [IgnoreAntiforgeryToken]
 [Route("[controller]")]

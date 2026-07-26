@@ -3,6 +3,7 @@ using JosephGuadagno.Broadcasting.Api.Dtos;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
@@ -11,6 +12,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers.Collectors;
 /// Returns an aggregate summary of all collector configurations for the resolved owner.
 /// </summary>
 [ApiController]
+[Tags("Collectors")]
 [Authorize]
 [IgnoreAntiforgeryToken]
 [Route("Collectors")]

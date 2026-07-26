@@ -214,17 +214,17 @@ public class FacebookManagerUnitTests
     }
 
     [Fact]
-    public async Task PublishAsync_WithImageUrl_UsesPicturePublishingPath()
+    public async Task DispatchAsync_WithImageUrl_UsesPicturePublishingPath()
     {
         // Arrange
         var expectedId = "12345_67890";
         var jsonResponse = $"{{\"id\": \"{expectedId}\"}}";
         SetupHttpMessageHandler(System.Net.HttpStatusCode.OK, jsonResponse);
-        ISocialMediaPublisher sut =
+        ISocialMediaDispatcher sut =
             CreateSut();
 
         // Act
-        var result = await sut.PublishAsync(new SocialMediaPublishRequest
+        var result = await sut.DispatchAsync(new SocialMediaPublishRequest
         {
             Text = "Test Message",
             LinkUrl = "https://example.com",
@@ -238,17 +238,17 @@ public class FacebookManagerUnitTests
     }
 
     [Fact]
-    public async Task PublishAsync_WithoutLinkOrImage_PostsTextOnlyStatus()
+    public async Task DispatchAsync_WithoutLinkOrImage_PostsTextOnlyStatus()
     {
         // Arrange
         var expectedId = "12345_67890";
         var jsonResponse = $"{{\"id\": \"{expectedId}\"}}";
         SetupHttpMessageHandler(System.Net.HttpStatusCode.OK, jsonResponse);
-        ISocialMediaPublisher sut =
+        ISocialMediaDispatcher sut =
             CreateSut();
 
         // Act
-        var result = await sut.PublishAsync(new SocialMediaPublishRequest
+        var result = await sut.DispatchAsync(new SocialMediaPublishRequest
         {
             Text = "Test Message",
             AuthorId = "test-page-id",
@@ -260,14 +260,14 @@ public class FacebookManagerUnitTests
     }
 
     [Fact]
-    public async Task PublishAsync_WithImageUrlAndNoLink_ThrowsArgumentNullException()
+    public async Task DispatchAsync_WithImageUrlAndNoLink_ThrowsArgumentNullException()
     {
         // Arrange
-        ISocialMediaPublisher sut =
+        ISocialMediaDispatcher sut =
             CreateSut();
 
         // Act
-        var act = () => sut.PublishAsync(new SocialMediaPublishRequest
+        var act = () => sut.DispatchAsync(new SocialMediaPublishRequest
         {
             Text = "Test Message",
             ImageUrl = "https://example.com/image.png"
@@ -278,9 +278,9 @@ public class FacebookManagerUnitTests
     }
 
     [Fact]
-    public void IFacebookManager_Implements_ISocialMediaPublisher()
+    public void IFacebookManager_Implements_ISocialMediaDispatcher()
     {
-        Assert.True(typeof(ISocialMediaPublisher).IsAssignableFrom(typeof(IFacebookManager)));
+        Assert.True(typeof(ISocialMediaDispatcher).IsAssignableFrom(typeof(IFacebookManager)));
     }
 
     #region Exception Inheritance Tests

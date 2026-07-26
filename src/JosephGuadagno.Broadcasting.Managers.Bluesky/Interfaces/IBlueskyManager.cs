@@ -6,7 +6,7 @@ using idunno.Bluesky.Embed;
 namespace JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
 
 public interface IBlueskyManager
-    : ISocialMediaPublisher
+    : ISocialMediaDispatcher
 {
     Task<CreateRecordResult?> PostText(string postText);
     Task<CreateRecordResult?> Post(PostBuilder postBuilder);

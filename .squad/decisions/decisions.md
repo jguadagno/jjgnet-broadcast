@@ -82,6 +82,31 @@ CREATE TABLE dbo.UserPublisherEventTypes (
 
 ---
 
+## Decision: Web downstream service logging pattern
+
+- **Date:** 2026-05-28
+- **Author:** Trinity
+- **Status:** Proposed
+
+### Summary
+
+Web service wrappers under `src\JosephGuadagno.Broadcasting.Web\Services\` now treat downstream API nulls and delete failures as observable events instead of silent fallbacks.
+
+### Pattern
+
+- Inject `ILogger<TService>` alongside `IDownstreamApi` using the existing primary constructor pattern.
+- `GetForUserAsync<T>()` returning `null` logs a warning with the operation name and relevant identifiers before returning the existing empty/null fallback.
+- `GetOptionalForUserAsync<T>()` returning `null` is treated as a legitimate not-found case and does not warn.
+- `PostForUserAsync<TRequest, TResponse>()` and `PutForUserAsync<TRequest, TResponse>()` returning `null` log a warning with the operation name and identifiers before returning `null`.
+- Delete calls check for `204 NoContent`; `null` or any other status logs a warning and returns `false`.
+- Any string value that could come from user input or route/query data must be sanitized with `LogSanitizer.Sanitize()` before it is written to a log.
+
+### Why
+
+This keeps the Web layer's current null/bool return contracts intact while giving Joe enough telemetry to diagnose downstream API failures and distinguish them from legitimate not-found responses.
+
+---
+
 # Decision: Issue #995 Architecture Confirmed
 
 **Date:** 2026-05-26T08:59:04.287-07:00  

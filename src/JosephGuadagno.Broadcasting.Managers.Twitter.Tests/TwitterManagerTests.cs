@@ -17,11 +17,11 @@ public class TwitterManagerTests
         => new(_mockLogger.Object, tweetResult, exception);
 
     [Fact]
-    public async Task PublishAsync_WhenRequestIsValid_ReturnsTweetId()
+    public async Task DispatchAsync_WhenRequestIsValid_ReturnsTweetId()
     {
         var expectedId = "123456789";
-        ISocialMediaPublisher sut = CreateSut(new Tweet { ID = expectedId });
-        var result = await sut.PublishAsync(new SocialMediaPublishRequest
+        ISocialMediaDispatcher sut = CreateSut(new Tweet { ID = expectedId });
+        var result = await sut.DispatchAsync(new SocialMediaPublishRequest
         {
             Text = "Hello world!",
             ConsumerKey = "key",
@@ -33,26 +33,26 @@ public class TwitterManagerTests
     }
 
     [Fact]
-    public async Task PublishAsync_WhenTextIsMissing_ThrowsArgumentException()
+    public async Task DispatchAsync_WhenTextIsMissing_ThrowsArgumentException()
     {
-        ISocialMediaPublisher sut = CreateSut(new Tweet { ID = "123456789" });
-        var act = () => sut.PublishAsync(new SocialMediaPublishRequest { Text = " " });
+        ISocialMediaDispatcher sut = CreateSut(new Tweet { ID = "123456789" });
+        var act = () => sut.DispatchAsync(new SocialMediaPublishRequest { Text = " " });
         await act.Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
-    public async Task PublishAsync_WhenTweetReturnsNull_ThrowsTwitterPostException()
+    public async Task DispatchAsync_WhenTweetReturnsNull_ThrowsTwitterPostException()
     {
-        ISocialMediaPublisher sut = CreateSut(tweetResult: null);
-        var act = () => sut.PublishAsync(new SocialMediaPublishRequest { Text = "Hello world!" });
+        ISocialMediaDispatcher sut = CreateSut(tweetResult: null);
+        var act = () => sut.DispatchAsync(new SocialMediaPublishRequest { Text = "Hello world!" });
         await act.Should().ThrowAsync<TwitterPostException>().WithMessage("*Hello world!*");
     }
 
     [Fact]
-    public async Task PublishAsync_WhenExceptionThrown_ThrowsTwitterPostException()
+    public async Task DispatchAsync_WhenExceptionThrown_ThrowsTwitterPostException()
     {
-        ISocialMediaPublisher sut = CreateSut(tweetResult: null, exception: new InvalidOperationException("Twitter API error"));
-        var act = () => sut.PublishAsync(new SocialMediaPublishRequest { Text = "Hello world!" });
+        ISocialMediaDispatcher sut = CreateSut(tweetResult: null, exception: new InvalidOperationException("Twitter API error"));
+        var act = () => sut.DispatchAsync(new SocialMediaPublishRequest { Text = "Hello world!" });
         await act.Should().ThrowAsync<TwitterPostException>().WithMessage("*Hello world!*");
     }
 
@@ -63,15 +63,15 @@ public class TwitterManagerTests
     }
 
     [Fact]
-    public void ITwitterManager_Implements_ISocialMediaPublisher()
+    public void ITwitterManager_Implements_ISocialMediaDispatcher()
     {
-        typeof(ISocialMediaPublisher).IsAssignableFrom(typeof(ITwitterManager)).Should().BeTrue();
+        typeof(ISocialMediaDispatcher).IsAssignableFrom(typeof(ITwitterManager)).Should().BeTrue();
     }
 
     [Fact]
-    public void ISocialMediaPublisher_DefinesPublishAsync_WithCommonRequestShape()
+    public void ISocialMediaDispatcher_DefinesDispatchAsync_WithCommonRequestShape()
     {
-        var publishAsync = typeof(ISocialMediaPublisher).GetMethod(nameof(ISocialMediaPublisher.PublishAsync));
+        var publishAsync = typeof(ISocialMediaDispatcher).GetMethod(nameof(ISocialMediaDispatcher.DispatchAsync));
         publishAsync.Should().NotBeNull();
         publishAsync!.ReturnType.Should().Be(typeof(Task<string?>));
         publishAsync.GetParameters().Should().ContainSingle();

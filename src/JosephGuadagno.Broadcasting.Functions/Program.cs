@@ -9,6 +9,7 @@ using JosephGuadagno.Broadcasting.Composers;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.HealthChecks;
+using JosephGuadagno.Broadcasting.Functions.Services;
 using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Managers.Bluesky;
 using JosephGuadagno.Broadcasting.Managers.Bluesky.Interfaces;
@@ -72,15 +73,6 @@ builder.Services.TryAddSingleton<IEmailSettings>(emailSettings);
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
 builder.Services.AddOptions<EmailSettings>().ValidateDataAnnotations();
 
-var randomPostSettings = new RandomPostSettings
-{
-    ExcludedCategories = []
-};
-builder.Configuration.Bind("RandomPost", randomPostSettings);
-builder.Services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
-builder.Services.Configure<RandomPostSettings>(builder.Configuration.GetSection("RandomPost"));
-builder.Services.AddOptions<RandomPostSettings>().ValidateDataAnnotations();
-
 var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings
 {
     SpeakingEngagementsFile = null!
@@ -89,19 +81,6 @@ builder.Configuration.Bind("SpeakingEngagementsReader", speakerEngagementsSettin
 builder.Services.TryAddSingleton<ISpeakingEngagementsReaderSettings>(speakerEngagementsSettings);
 builder.Services.Configure<SpeakingEngagementsReaderSettings>(builder.Configuration.GetSection("SpeakingEngagementsReader"));
 builder.Services.AddOptions<SpeakingEngagementsReaderSettings>().ValidateDataAnnotations();
-
-var eventPublisherSettings = new EventPublisherSettings { TopicEndpointSettings = [] };
-var endpoints = builder.Configuration.GetSection("EventGridTopics:TopicEndpointSettings").Get<List<TopicEndpointSettings>>();
-if (endpoints != null)
-{
-    foreach (var endpoint in endpoints)
-    {
-        eventPublisherSettings.TopicEndpointSettings.Add(endpoint);
-    }
-}
-builder.Services.TryAddSingleton<IEventPublisherSettings>(eventPublisherSettings);
-builder.Services.Configure<EventPublisherSettings>(builder.Configuration.GetSection("EventGridTopics"));
-builder.Services.AddOptions<EventPublisherSettings>().ValidateDataAnnotations();
 
 // Configure the telemetry and logging
 string loggerFile = Path.Combine(currentDirectory, $"logs{Path.DirectorySeparatorChar}logs.txt");
@@ -137,8 +116,7 @@ builder.Services.AddHealthChecks()
     .AddCheck<BitlyHealthCheck>("bitly", tags: ["ready"])
     .AddCheck<FacebookHealthCheck>("facebook", tags: ["ready"])
     .AddCheck<LinkedInHealthCheck>("linkedin", tags: ["ready"])
-    .AddCheck<BlueskyHealthCheck>("bluesky", tags: ["ready"])
-    .AddCheck<EventGridHealthCheck>("event-grid", tags: ["ready"]);
+    .AddCheck<BlueskyHealthCheck>("bluesky", tags: ["ready"]);
 
 builder.Build().Run();
 
@@ -173,8 +151,6 @@ void ConfigureFunction(IServiceCollection services)
 {
     services.AddHttpClient();
     services.AddMemoryCache();
-
-    services.TryAddSingleton<IEventPublisher, EventPublisher>();
 
     builder.AddSqlServerDbContext<BroadcastingContext>("JJGNetDatabaseSqlServer");
     builder.EnrichSqlServerDbContext<BroadcastingContext>(
@@ -214,14 +190,18 @@ void ConfigureFunction(IServiceCollection services)
     services.TryAddScoped<IUserCollectorYouTubeChannelManager, UserCollectorYouTubeChannelManager>();
     services.TryAddScoped<IUserCollectorSpeakingEngagementDataStore, UserCollectorSpeakingEngagementDataStore>();
     services.TryAddScoped<IUserCollectorSpeakingEngagementManager, UserCollectorSpeakingEngagementManager>();
-    services.TryAddScoped<IUserPublisherBlueskySettingsDataStore, UserPublisherBlueskySettingsDataStore>();
-    services.TryAddScoped<IUserPublisherTwitterSettingsDataStore, UserPublisherTwitterSettingsDataStore>();
-    services.TryAddScoped<IUserPublisherLinkedInSettingsDataStore, UserPublisherLinkedInSettingsDataStore>();
-    services.TryAddScoped<IUserPublisherFacebookSettingsDataStore, UserPublisherFacebookSettingsDataStore>();
-    services.TryAddScoped<IUserPublisherBlueskySettingsManager, UserPublisherBlueskySettingsManager>();
-    services.TryAddScoped<IUserPublisherTwitterSettingsManager, UserPublisherTwitterSettingsManager>();
-    services.TryAddScoped<IUserPublisherLinkedInSettingsManager, UserPublisherLinkedInSettingsManager>();
-    services.TryAddScoped<IUserPublisherFacebookSettingsManager, UserPublisherFacebookSettingsManager>();
+    services.TryAddScoped<IUserPlatformBlueskySettingsDataStore, UserPlatformBlueskySettingsDataStore>();
+    services.TryAddScoped<IUserPlatformTwitterSettingsDataStore, UserPlatformTwitterSettingsDataStore>();
+    services.TryAddScoped<IUserPlatformLinkedInSettingsDataStore, UserPlatformLinkedInSettingsDataStore>();
+    services.TryAddScoped<IUserPlatformFacebookSettingsDataStore, UserPlatformFacebookSettingsDataStore>();
+    services.TryAddScoped<IUserRandomPostSettingsDataStore, UserRandomPostSettingsDataStore>();
+    services.TryAddScoped<IUserEventDistributorMappingDataStore, UserEventDistributorMappingDataStore>();
+    services.TryAddScoped<IUserPlatformBlueskySettingsManager, UserPlatformBlueskySettingsManager>();
+    services.TryAddScoped<IUserPlatformTwitterSettingsManager, UserPlatformTwitterSettingsManager>();
+    services.TryAddScoped<IUserPlatformLinkedInSettingsManager, UserPlatformLinkedInSettingsManager>();
+    services.TryAddScoped<IUserPlatformFacebookSettingsManager, UserPlatformFacebookSettingsManager>();
+    services.TryAddScoped<IUserRandomPostSettingsManager, UserRandomPostSettingsManager>();
+    services.TryAddScoped<IUserEventDistributorMappingManager, UserEventDistributorMappingManager>();
 
     // RBAC Phase 1
     services.TryAddScoped<IApplicationUserDataStore, ApplicationUserDataStore>();
@@ -235,6 +215,12 @@ void ConfigureFunction(IServiceCollection services)
 
     // MessageTemplateManager handles both ID-based and platform-name-based lookups (Phase 2+3 of publisher architecture refactor)
     services.TryAddScoped<IMessageTemplateManager, MessageTemplateManager>();
+
+    // CollectorEventDistributor — replaces Event Grid dispatch for collector functions with per-user queue routing
+    services.AddScoped<ICollectorEventDistributor, CollectorEventDistributor>();
+
+    // ScheduledItemEventDistributor — replaces Event Grid dispatch for scheduled items with per-user queue routing
+    services.AddScoped<IScheduledItemEventDistributor, ScheduledItemEventDistributor>();
 
     // Email
     services.TryAddScoped<IEmailSender, EmailSender>();
@@ -262,7 +248,7 @@ void ConfigureBitly(IServiceCollection services, IConfiguration config)
 void ConfigureTwitter(IServiceCollection services)
 {
     services.TryAddScoped<ITwitterManager, TwitterManager>();
-    services.AddScoped<ISocialMediaPublisher>(sp =>
+    services.AddScoped<ISocialMediaDispatcher>(sp =>
         sp.GetRequiredService<ITwitterManager>());
 }
 
@@ -303,7 +289,7 @@ void ConfigureLinkedInManager(IServiceCollection services, IConfiguration config
         return linkedInApplicationSettings;
     });
     services.TryAddScoped<ILinkedInManager, LinkedInManager>();
-    services.AddScoped<ISocialMediaPublisher>(sp =>
+    services.AddScoped<ISocialMediaDispatcher>(sp =>
         sp.GetRequiredService<ILinkedInManager>());
 }
 
@@ -316,7 +302,7 @@ void ConfigureFacebookManager(IServiceCollection services, IConfiguration config
         return facebookApplicationSettings;
     });
     services.TryAddScoped<IFacebookManager, FacebookManager>();
-    services.AddScoped<ISocialMediaPublisher>(sp =>
+    services.AddScoped<ISocialMediaDispatcher>(sp =>
         sp.GetRequiredService<IFacebookManager>());
 }
 
@@ -329,7 +315,8 @@ void ConfigureBlueskyManager(IServiceCollection services, IConfiguration config)
         return blueskySettings;
     });
     services.TryAddScoped<IBlueskyManager, BlueskyManager>();
-    services.AddScoped<ISocialMediaPublisher>(sp =>
+    services.AddScoped<ISocialMediaDispatcher>(sp =>
         sp.GetRequiredService<IBlueskyManager>());
 }
+
 

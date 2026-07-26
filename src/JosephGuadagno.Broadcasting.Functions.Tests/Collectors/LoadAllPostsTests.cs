@@ -37,7 +37,7 @@ public class LoadAllPostsTests
 
         _sut = new LoadAllPosts(
             _syndicationFeedReader.Object,
-            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com", OwnerEntraOid = OwnerEntraOid }),
+            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com" }),
             _syndicationFeedItemManager.Object,
             _feedCheckManager.Object,
             _urlShortener.Object,

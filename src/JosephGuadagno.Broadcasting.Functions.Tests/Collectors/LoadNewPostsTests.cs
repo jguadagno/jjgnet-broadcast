@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JosephGuadagno.Broadcasting.Domain;
@@ -8,6 +7,7 @@ using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Collectors.SyndicationFeed;
 using JosephGuadagno.Broadcasting.Functions.Models;
+using JosephGuadagno.Broadcasting.Functions.Services;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -26,7 +26,7 @@ public class LoadNewPostsTests
     private readonly Mock<IUserCollectorFeedSourceManager> _userCollectorFeedSourceManager;
     private readonly Mock<IFeedCheckManager> _feedCheckManager;
     private readonly Mock<IUrlShortener> _urlShortener;
-    private readonly Mock<IEventPublisher> _eventPublisher;
+    private readonly Mock<ICollectorEventDistributor> _collectorEventDispatcher;
     private readonly LoadNewPosts _sut;
 
     public LoadNewPostsTests()
@@ -36,10 +36,8 @@ public class LoadNewPostsTests
         _userCollectorFeedSourceManager = new Mock<IUserCollectorFeedSourceManager>();
         _feedCheckManager = new Mock<IFeedCheckManager>();
         _urlShortener = new Mock<IUrlShortener>();
-        _eventPublisher = new Mock<IEventPublisher>();
+        _collectorEventDispatcher = new Mock<ICollectorEventDistributor>();
 
-        _eventPublisher.Setup(e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<SyndicationFeedItem>>()))
-            .Returns(Task.CompletedTask);
         _userCollectorFeedSourceManager.Setup(m => m.GetAllActiveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<UserCollectorFeedSource>
             {
@@ -48,12 +46,12 @@ public class LoadNewPostsTests
 
         _sut = new LoadNewPosts(
             _feedReader.Object,
-            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com", OwnerEntraOid = OwnerEntraOid }),
+            Options.Create(new Settings { ShortenedDomainToUse = "short.example.com" }),
             _feedSourceManager.Object,
             _userCollectorFeedSourceManager.Object,
             _feedCheckManager.Object,
             _urlShortener.Object,
-            _eventPublisher.Object,
+            _collectorEventDispatcher.Object,
             NullLogger<LoadNewPosts>.Instance);
     }
 
@@ -100,9 +98,9 @@ public class LoadNewPostsTests
 
         // Assert
         _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>()), Times.Never);
-        _eventPublisher.Verify(
-            e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<SyndicationFeedItem>>(l => l.Count == 0)),
-            Times.Once);
+        _collectorEventDispatcher.Verify(
+            e => e.DispatchSyndicationFeedItemAsync(It.IsAny<SyndicationFeedItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("0", okResult.Value!.ToString());
     }
@@ -127,8 +125,8 @@ public class LoadNewPostsTests
 
         // Assert
         _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>()), Times.Once);
-        _eventPublisher.Verify(
-            e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<SyndicationFeedItem>>(l => l.Count == 1)),
+        _collectorEventDispatcher.Verify(
+            e => e.DispatchSyndicationFeedItemAsync(It.IsAny<SyndicationFeedItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("1", okResult.Value!.ToString());
@@ -224,18 +222,18 @@ public class LoadNewPostsTests
         _feedCheckManager.Setup(f => f.SaveAsync(It.IsAny<FeedCheck>())).ReturnsAsync(OperationResult<FeedCheck>.Success(new FeedCheck()));
         _feedReader.Setup(r => r.GetAsync(It.IsAny<string>(), OwnerEntraOid, It.IsAny<DateTimeOffset>()))
             .ReturnsAsync(new List<SyndicationFeedItem> { newPost1, duplicatePost, newPost2 });
-        
+
         _feedSourceManager.Setup(m => m.IsFeedItemUniqueToUser("new-1", OwnerEntraOid, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _feedSourceManager.Setup(m => m.IsFeedItemUniqueToUser("new-2", OwnerEntraOid, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _feedSourceManager.Setup(m => m.IsFeedItemUniqueToUser("duplicate-1", OwnerEntraOid, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        
+
         _urlShortener.Setup(u => u.GetShortenedUrlAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("https://short.example.com/xyz");
-        
+
         var savedPost1 = CreateFeedSource("new-1");
         savedPost1.Id = 1;
         var savedPost2 = CreateFeedSource("new-2");
         savedPost2.Id = 2;
-        
+
         _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "new-1"))).ReturnsAsync(OperationResult<SyndicationFeedItem>.Success(savedPost1));
         _feedSourceManager.Setup(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "new-2"))).ReturnsAsync(OperationResult<SyndicationFeedItem>.Success(savedPost2));
 
@@ -244,9 +242,9 @@ public class LoadNewPostsTests
 
         // Assert
         _feedSourceManager.Verify(m => m.SaveAsync(It.IsAny<SyndicationFeedItem>()), Times.Exactly(2));
-        _eventPublisher.Verify(
-            e => e.PublishSyndicationFeedEventsAsync(It.IsAny<string>(), It.Is<IReadOnlyCollection<SyndicationFeedItem>>(l => l.Count == 2)),
-            Times.Once);
+        _collectorEventDispatcher.Verify(
+            e => e.DispatchSyndicationFeedItemAsync(It.IsAny<SyndicationFeedItem>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Contains("2", okResult.Value!.ToString());
     }
@@ -320,11 +318,11 @@ public class LoadNewPostsTests
         // Assert
         _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "transaction-failure")), Times.Exactly(4));
         _feedSourceManager.Verify(m => m.SaveAsync(It.Is<SyndicationFeedItem>(p => p.FeedIdentifier == "transaction-success")), Times.Once);
-        _eventPublisher.Verify(
-            e => e.PublishSyndicationFeedEventsAsync(
+        _collectorEventDispatcher.Verify(
+            e => e.DispatchSyndicationFeedItemAsync(
+                It.Is<SyndicationFeedItem>(item => item.FeedIdentifier == "transaction-success"),
                 It.IsAny<string>(),
-                It.Is<IReadOnlyCollection<SyndicationFeedItem>>(items =>
-                    items.Count == 1 && items.Single().FeedIdentifier == "transaction-success")),
+                It.IsAny<CancellationToken>()),
             Times.Once);
 
         var okResult = Assert.IsType<OkObjectResult>(result);

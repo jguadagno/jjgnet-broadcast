@@ -64,35 +64,35 @@ public class BlueskyManagerUnitTests
     }
 
     [Fact]
-    public async Task PublishAsync_WithNullRequest_ThrowsArgumentNullException()
+    public async Task DispatchAsync_WithNullRequest_ThrowsArgumentNullException()
     {
         // Arrange
-        ISocialMediaPublisher sut = CreateSut();
+        ISocialMediaDispatcher sut = CreateSut();
 
         // Act
-        var act = () => sut.PublishAsync(null!);
+        var act = () => sut.DispatchAsync(null!);
 
         // Assert
         await Assert.ThrowsAsync<ArgumentNullException>(act);
     }
 
     [Fact]
-    public async Task PublishAsync_WithBlankText_ThrowsArgumentException()
+    public async Task DispatchAsync_WithBlankText_ThrowsArgumentException()
     {
         // Arrange
-        ISocialMediaPublisher sut = CreateSut();
+        ISocialMediaDispatcher sut = CreateSut();
 
         // Act
-        var act = () => sut.PublishAsync(new Domain.Models.SocialMediaPublishRequest { Text = " " });
+        var act = () => sut.DispatchAsync(new Domain.Models.SocialMediaPublishRequest { Text = " " });
 
         // Assert
         await Assert.ThrowsAsync<ArgumentException>(act);
     }
 
     [Fact]
-    public void IBlueskyManager_Implements_ISocialMediaPublisher()
+    public void IBlueskyManager_Implements_ISocialMediaDispatcher()
     {
-        Assert.True(typeof(ISocialMediaPublisher).IsAssignableFrom(typeof(IBlueskyManager)));
+        Assert.True(typeof(ISocialMediaDispatcher).IsAssignableFrom(typeof(IBlueskyManager)));
     }
 
     #endregion

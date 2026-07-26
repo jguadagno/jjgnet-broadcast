@@ -94,5 +94,11 @@ public class WebMappingProfile: Profile
         CreateMap<Models.UserCollectorSpeakingEngagementViewModel, Domain.Models.UserCollectorSpeakingEngagement>()
             .ForMember(dest => dest.CreatedByEntraOid, opt => opt.Ignore());
 
+        // API request/response model mappings
+        CreateMap<Domain.Models.UserEventDistributorMapping, Models.EventDistributorMappingApiRequest>();
+        CreateMap<Domain.Models.UserRandomPostSettings, Models.RandomPostSettingsApiRequest>();
+        CreateMap<Models.PlatformsAggregateWebResponse, Models.PlatformsAggregateViewModel>()
+            .ForMember(dest => dest.Platforms, opt => opt.Ignore());
+
     }
 }

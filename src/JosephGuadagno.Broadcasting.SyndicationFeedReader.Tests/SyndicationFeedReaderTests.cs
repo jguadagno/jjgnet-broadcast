@@ -1,4 +1,3 @@
-using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
 using Microsoft.Extensions.Logging;
@@ -7,11 +6,9 @@ namespace JosephGuadagno.Broadcasting.SyndicationFeedReader.Tests;
 
 public class SyndicationFeedReaderTests(
 	ISyndicationFeedReader syndicationFeedReader,
-	IRandomPostSettings randomPostSettings,
 	ITestOutputHelper testOutputHelper)
 {
     private readonly ISyndicationFeedReader _syndicationFeedReader = syndicationFeedReader;
-    private readonly IRandomPostSettings _randomPostSettings = randomPostSettings;
     private readonly ITestOutputHelper _testOutputHelper = testOutputHelper;
 
     // ### Constructor Tests ###

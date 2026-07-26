@@ -13,7 +13,7 @@ namespace JosephGuadagno.Broadcasting.Functions.Tests.Bluesky;
 public class SendPostTests
 {
     private readonly Mock<IBlueskyManager> _blueskyManager = new();
-    private readonly Mock<IUserPublisherBlueskySettingsManager> _blueskySettingsManager = new();
+    private readonly Mock<IUserPlatformBlueskySettingsManager> _blueskySettingsManager = new();
 
     private Functions.Bluesky.SendPost BuildSut() => new(
         _blueskyManager.Object,
@@ -40,7 +40,7 @@ public class SendPostTests
     {
         _blueskySettingsManager
             .Setup(m => m.GetAsync(oid, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new UserPublisherBlueskySettings
+            .ReturnsAsync(new UserPlatformBlueskySettings
             {
                 CreatedByEntraOid = oid,
                 IsEnabled = true,
@@ -67,7 +67,7 @@ public class SendPostTests
             m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
         _blueskyManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
@@ -79,14 +79,14 @@ public class SendPostTests
         var request = BuildPublishRequest(ownerEntraOid: "test-oid");
         _blueskySettingsManager
             .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((UserPublisherBlueskySettings?)null);
+            .ReturnsAsync((UserPlatformBlueskySettings?)null);
         var sut = BuildSut();
 
         var exception = await Record.ExceptionAsync(() => sut.Run(request));
 
         Assert.Null(exception);
         _blueskyManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
@@ -98,7 +98,7 @@ public class SendPostTests
         var request = BuildPublishRequest(ownerEntraOid: "test-oid");
         _blueskySettingsManager
             .Setup(m => m.GetAsync("test-oid", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new UserPublisherBlueskySettings
+            .ReturnsAsync(new UserPlatformBlueskySettings
             {
                 CreatedByEntraOid = "test-oid",
                 IsEnabled = true,
@@ -113,26 +113,26 @@ public class SendPostTests
 
         Assert.Null(exception);
         _blueskyManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Never);
     }
 
-    // Credentials valid → PublishAsync is called
+    // Credentials valid → DispatchAsync is called
 
     [Fact]
-    public async Task Run_WhenCredentialsAreValid_CallsPublishAsync()
+    public async Task Run_WhenCredentialsAreValid_CallsDispatchAsync()
     {
         var request = BuildPublishRequest(ownerEntraOid: "test-oid");
         SetupValidCredentials("test-oid");
         _blueskyManager
-            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .Setup(m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ReturnsAsync("cid-abc123");
         var sut = BuildSut();
 
         await sut.Run(request);
 
         _blueskyManager.Verify(
-            m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()),
+            m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()),
             Times.Once);
     }
 
@@ -147,10 +147,11 @@ public class SendPostTests
             ownerEntraOid: "test-oid");
         SetupValidCredentials("test-oid");
         _blueskyManager
-            .Setup(m => m.PublishAsync(It.IsAny<SocialMediaPublishRequest>()))
+            .Setup(m => m.DispatchAsync(It.IsAny<SocialMediaPublishRequest>()))
             .ThrowsAsync(new BlueskyPostException("API Error", 400, "Invalid request"));
         var sut = BuildSut();
 
         await Assert.ThrowsAsync<BlueskyPostException>(() => sut.Run(request));
     }
 }
+

@@ -3,6 +3,14 @@
 @{
     ViewData["Title"] = "Unsent Scheduled Items";
 }
+
+<div class="d-flex justify-content-between mb-3">
+	<h1><i class="bi bi-envelope-dash me-2"></i>Unsent Scheduled Items</h1>
+</div>
+<p class="lead">
+	All of the scheduled messages that have not been sent and should have been
+</p>
+
 @if (Model.Count == 0)
 {
     <p class="lead">There are no items that have not been sent.</p>
@@ -57,7 +65,7 @@ else
             }
             </tbody>
         </table>
-        
+
         <partial name="_PaginationPartial" />
     </div>
 }

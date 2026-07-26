@@ -5,6 +5,7 @@ using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JosephGuadagno.Broadcasting.Api.Controllers;
@@ -13,6 +14,7 @@ namespace JosephGuadagno.Broadcasting.Api.Controllers;
 /// Works with the YouTube Sources of JosephGuadagno.NET Broadcasting
 /// </summary>
 [ApiController]
+[Tags("YouTube Items")]
 [Authorize]
 [IgnoreAntiforgeryToken]
 [Route("[controller]")]

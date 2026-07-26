@@ -9,40 +9,33 @@
     "collectors_feed_load_new_posts_cron_settings": "0 */2 * * * *",
     "collectors_speaking_engagements_load_new_speaking_engagements_cron_settings": "0 */2 * * * *",
     "collectors_youtube_load_new_videos_cron_settings": "0 */2 * * * *",
-    "facebook_refresh_tokens_cron_settings": "0 */2 * * * *",
-    "linkedin_refresh_tokens_cron_settings": "0 0 9 * * *",
+
+	  "distributors_random_post_cron_settings": "0 */2 * * * *",
+	  "distributors_scheduled_items_cron_settings": "0 */2 * * * *",
+
+	  "facebook_refresh_tokens_cron_settings": "0 */2 * * * *",
     "linkedin_notify_expiring_tokens_cron_settings": "0 0 8 * * *",
     "maintenance_clear_old_logs_cron_settings": "0 */2 * * * *",
-    "publishers_random_post_cron_settings": "0 */2 * * * *",
-    "publishers_scheduled_items_cron_settings": "0 */2 * * * *",
-    "AzureWebJobs.CollectorsFeedLoadNewPosts.Disabled": true,
-    "AzureWebJobs.CollectorsFeedLoadAllPosts.Disabled": false,
+
+	"AzureWebJobs.CollectorsFeedLoadNewPosts.Disabled": true,
+    "AzureWebJobs.CollectorsFeedLoadAllPosts.Disabled": true,
     "AzureWebJobs.CollectorsSpeakingEngagementsLoadNew.Disabled": true,
-    "AzureWebJobs.CollectorsSpeakingEngagementsLoadAll.Disabled": false,
+    "AzureWebJobs.CollectorsSpeakingEngagementsLoadAll.Disabled": true,
     "AzureWebJobs.CollectorsYouTubeLoadNewVideos.Disabled": true,
-    "AzureWebJobs.CollectorsYouTubeLoadAllVideos.Disabled": false,
-    "AzureWebJobs.PublishersRandomPosts.Disabled": true,
-    "AzureWebJobs.PublishersScheduledItems.Disabled": true,
-    "AzureWebJobs.FacebookPostPageStatus.Disabled": true,
-    "AzureWebJobs.FacebookProcessNewSourceData.Disabled": true,
-    "AzureWebJobs.FacebookProcessScheduledItemFired.Disabled": true,
-    "AzureWebJobs.FacebookTokenRefresh.Disabled": true,
-    "AzureWebJobs.LinkedInTokenRefresh.Disabled": true,
-    "AzureWebJobs.LinkedInNotifyExpiringTokens.Disabled": true,
-    "AzureWebJobs.TwitterSendTweet.Disabled": true,
-    "AzureWebJobs.TwitterProcessNewSourceData.Disabled": true,
-    "AzureWebJobs.TwitterProcessScheduledItemFired.Disabled": true,
-    "AzureWebJobs.TwitterProcessRandomPostFired.Disabled": true,
-    "AzureWebJobs.MaintenanceClearOldLogs.Disabled": true,
-    "AzureWebJobs.MaintenanceAdClientSecretRefresh.Disabled": true,
-    "AzureWebJobs.LinkedInPostLink.Disabled": true,
-    "AzureWebJobs.LinkedInPostText.Disabled": true,
-    "AzureWebJobs.LinkedInPostImage.Disabled": true,
-    "AzureWebJobs.LinkedInProcessNewSourceData.Disabled": true,
-    "AzureWebJobs.LinkedInProcessScheduledItemFired.Disabled": true,
+    "AzureWebJobs.CollectorsYouTubeLoadAllVideos.Disabled": true,
+
+    "AzureWebJobs.DistributorsRandomPosts.Disabled": true,
+    "AzureWebJobs.DistributorsScheduledItems.Disabled": true,
+
     "AzureWebJobs.BlueskyPostMessage.Disabled": true,
-    "AzureWebJobs.BlueskyProcessRandomPostFired.Disabled": true,
-    "AzureWebJobs.BlueskyProcessNewSourceDataFired.Disabled": true,
+    "AzureWebJobs.FacebookPostPageStatus.Disabled": true,
+    "AzureWebJobs.LinkedInPostLink.Disabled": true,
+    "AzureWebJobs.TwitterSendTweet.Disabled": true,
+
+    "AzureWebJobs.FacebookTokenRefresh.Disabled": true,
+    "AzureWebJobs.LinkedInNotifyExpiringTokens.Disabled": true,
+	"AzureWebJobs.MaintenanceClearOldLogs.Disabled": true,
+
     "AzureWebJobs.EmailSendEmail.Disabled": true,
     "AzureWebJobs.EmailSendEmailPoison.Disabled": true
   },
@@ -83,35 +76,6 @@
     "BlueskyUserName": "jguadagno.com",
     "BlueskyPassword": ""
   },
-  "EventGridTopics": {
-    "TopicEndpointSettings": [
-      {
-        "TopicName": "new-random-post",
-        "Endpoint": "https://localhost:60101/api/events",
-        "Key": "Set in Users Secrets/Azure App Service Settings"
-      },
-      {
-        "TopicName": "new-speaking-engagement",
-        "Endpoint": "https://localhost:60102/api/events",
-        "Key": "Set in Users Secrets/Azure App Service Settings"
-      },
-      {
-        "TopicName": "new-syndication-feed-item",
-        "Endpoint": "https://localhost:60103/api/events",
-        "Key": "Set in Users Secrets/Azure App Service Settings"
-      },
-      {
-        "TopicName": "new-youtube-item",
-        "Endpoint": "https://localhost:60104/api/events",
-        "Key": "Set in Users Secrets/Azure App Service Settings"
-      },
-      {
-        "TopicName": "scheduled-item-fired",
-        "Endpoint": "https://localhost:60105/api/events",
-        "Key": "Set in Users Secrets/Azure App Service Settings"
-      }
-    ]
-  },
   "Facebook": {
     "AppId": "",
     "AppSecret": "",
@@ -136,17 +100,6 @@
     "AccessToken": "",
     "AuthorId": "",
     "AccessTokenUrl": "https://www.linkedin.com/oauth/v2/accessToken"
-  },
-  "RandomPost": {
-    "ExcludedCategories": [
-      "books",
-      "book reviews",
-      "news",
-      "arizona technology news",
-      "technology news",
-      "archive"
-    ],
-    "CutoffDate": "2019-01-01"
   },
   "SpeakingEngagementsReader": {
     "SpeakingEngagementsFile": "http://localhost:4000/_data/engagements.json"

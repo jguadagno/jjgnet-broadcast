@@ -1,23 +1,21 @@
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Reflection;
-
-using Azure.Monitor.OpenTelemetry.Exporter;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 using JosephGuadagno.Broadcasting.Data;
 using JosephGuadagno.Broadcasting.Data.KeyVault;
 using JosephGuadagno.Broadcasting.Data.KeyVault.Interfaces;
 using JosephGuadagno.Broadcasting.Data.Sql;
+using JosephGuadagno.Broadcasting.Composers;
 using JosephGuadagno.Broadcasting.Domain.Interfaces;
 using JosephGuadagno.Broadcasting.Domain.Models;
 using JosephGuadagno.Broadcasting.Functions.Interfaces;
+using JosephGuadagno.Broadcasting.Functions.Services;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Interfaces;
 using JosephGuadagno.Broadcasting.Managers;
 using JosephGuadagno.Broadcasting.Managers.Bluesky;
@@ -29,7 +27,6 @@ using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn;
 using JosephGuadagno.Broadcasting.Managers.LinkedIn.Models;
 using JosephGuadagno.Broadcasting.Managers.Twitter;
-using JosephGuadagno.Broadcasting.Serilog;
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Interfaces;
 using JosephGuadagno.Broadcasting.SpeakingEngagementsReader.Models;
 using JosephGuadagno.Broadcasting.SyndicationFeedReader.Models;
@@ -40,11 +37,7 @@ using LinqToTwitter;
 using LinqToTwitter.OAuth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
-
-using OpenTelemetry.Logs;
-
-using Serilog;
-using Serilog.Exceptions;
+using Azure.Storage.Queues;
 
 namespace JosephGuadagno.Broadcasting.Functions.Tests;
 
@@ -70,30 +63,14 @@ public class Startup
         var settings =
             new JosephGuadagno.Broadcasting.Functions.Models.Settings
             {
-                ShortenedDomainToUse = null!,
-                OwnerEntraOid = null!
+                ShortenedDomainToUse = null!
             };
         config.Bind("Settings", settings);
         services.TryAddSingleton<ISettings>(settings);
 
-        var randomPostSettings = new RandomPostSettings { ExcludedCategories = [] };
-        config.Bind("RandomPost", randomPostSettings);
-        services.TryAddSingleton<IRandomPostSettings>(randomPostSettings);
-
         var speakerEngagementsSettings = new SpeakingEngagementsReaderSettings { SpeakingEngagementsFile = null! };
         config.Bind("SpeakingEngagementsReader", speakerEngagementsSettings);
         services.TryAddSingleton<ISpeakingEngagementsReaderSettings>(speakerEngagementsSettings);
-
-        var eventPublisherSettings = new EventPublisherSettings { TopicEndpointSettings = [] };
-        var endpoints = config.GetSection("EventGridTopics:TopicEndpointSettings").Get<List<TopicEndpointSettings>>();
-        if (endpoints != null)
-        {
-            foreach (var endpoint in endpoints)
-            {
-                eventPublisherSettings.TopicEndpointSettings.Add(endpoint);
-            }
-        }
-        services.TryAddSingleton<IEventPublisherSettings>(eventPublisherSettings);
 
         // Add in AutoMapper
         var autoMapperSettings = new AutoMapperSettings();
@@ -117,44 +94,6 @@ public class Startup
 
     }
 
-    void ConfigureTelemetryAndLogging(IServiceCollection services, string logStorageAccount, string logPath, string applicationName)
-    {
-
-        services.AddOpenTelemetry().UseAzureMonitorExporter();
-
-        var logger = new LoggerConfiguration()
-#if DEBUG
-            .MinimumLevel.Debug()
-#else
-        .MinimumLevel.Warning()
-#endif
-            .Enrich.FromLogContext()
-            .Enrich.WithMachineName()
-            .Enrich.WithThreadId()
-            .Enrich.WithEnvironmentName()
-            .Enrich.WithAssemblyName()
-            .Enrich.WithAssemblyVersion(true)
-            .Enrich.WithExceptionDetails()
-            .Enrich.WithProperty("Application", applicationName)
-            .Destructure.ToMaximumDepth(4)
-            .Destructure.ToMaximumStringLength(100)
-            .Destructure.ToMaximumCollectionCount(10)
-            .WriteTo.Console()
-            .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-            .WriteTo.AzureTableStorage(logStorageAccount, storageTableName: "Logging",
-                keyGenerator: new SerilogKeyGenerator())
-            .WriteTo.OpenTelemetry()
-            .CreateLogger();
-        services.AddLogging(loggingBuilder =>
-        {
-            loggingBuilder.AddOpenTelemetry(options =>
-            {
-                options.AddConsoleExporter();
-            });
-            loggingBuilder.AddSerilog(logger);
-        });
-    }
-
     private void ConfigureKeyVault(IServiceCollection services, IConfiguration configuration)
     {
         services.AddAzureClients(clientBuilder =>
@@ -167,8 +106,7 @@ public class Startup
     private void ConfigureFunction(IServiceCollection services)
     {
         services.AddHttpClient();
-
-        services.TryAddSingleton<IEventPublisher, EventPublisher>();
+        services.TryAddSingleton(_ => new QueueServiceClient("UseDevelopmentStorage=true"));
 
         services.AddDbContext<BroadcastingContext>(options => options.UseSqlServer("name=ConnectionStrings:JJGNetDatabaseSqlServer"));
 
@@ -189,6 +127,12 @@ public class Startup
 
         services.AddSingleton<ITokenRefreshDataStore, TokenRefreshDataStore>();
         services.AddSingleton<ITokenRefreshManager, TokenRefreshManager>();
+
+        services.TryAddScoped<IMessageTemplateDataStore, MessageTemplateDataStore>();
+        services.TryAddScoped<IUserEventDistributorMappingDataStore, UserEventDistributorMappingDataStore>();
+        services.TryAddScoped<IMessageTemplateManager, MessageTemplateManager>();
+        services.TryAddScoped<IPostComposer, PostComposer>();
+        services.AddScoped<IScheduledItemEventDistributor, ScheduledItemEventDistributor>();
 
         services.AddScoped<ISpeakingEngagementsReader, SpeakingEngagementsReader.SpeakingEngagementsReader>();
     }
@@ -232,7 +176,7 @@ public class Startup
             return new TwitterContext(authorizer);
         });
         services.TryAddScoped<ITwitterManager, TwitterManager>();
-        services.AddScoped<ISocialMediaPublisher>(sp =>
+        services.AddScoped<ISocialMediaDispatcher>(sp =>
             sp.GetRequiredService<ITwitterManager>());
     }
 
@@ -270,7 +214,7 @@ public class Startup
             return linkedInApplicationSettings;
         });
         services.TryAddScoped<ILinkedInManager, LinkedInManager>();
-        services.AddScoped<ISocialMediaPublisher>(sp =>
+        services.AddScoped<ISocialMediaDispatcher>(sp =>
             sp.GetRequiredService<ILinkedInManager>());
     }
 
@@ -283,7 +227,7 @@ public class Startup
             return facebookApplicationSettings;
         });
         services.TryAddSingleton<IFacebookManager, FacebookManager>();
-        services.AddSingleton<ISocialMediaPublisher>(sp =>
+        services.AddSingleton<ISocialMediaDispatcher>(sp =>
             sp.GetRequiredService<IFacebookManager>());
     }
 
@@ -296,7 +240,7 @@ public class Startup
             return blueskySettings;
         });
         services.TryAddScoped<IBlueskyManager, BlueskyManager>();
-        services.AddScoped<ISocialMediaPublisher>(sp =>
+        services.AddScoped<ISocialMediaDispatcher>(sp =>
             sp.GetRequiredService<IBlueskyManager>());
     }
 }

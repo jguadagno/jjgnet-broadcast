@@ -10,7 +10,7 @@ namespace JosephGuadagno.Broadcasting.Web.Services;
 /// <summary>
 /// Calls out to the YouTube Sources API
 /// </summary>
-public class YouTubeItemService(IDownstreamApi apiClient): IYouTubeItemService
+public class YouTubeItemService(IDownstreamApi apiClient, ILogger<YouTubeItemService> logger) : IYouTubeItemService
 {
     private const string ApiServiceName = "JosephGuadagnoBroadcastingApi";
     private const string BaseUrl = "/YouTubeItems";
@@ -30,7 +30,11 @@ public class YouTubeItemService(IDownstreamApi apiClient): IYouTubeItemService
             options.RelativePath = $"{BaseUrl}?{queryParams}";
         });
 
-        if (pagedResponse is null) return new PagedResult<YouTubeItem>();
+        if (pagedResponse is null)
+        {
+            logger.LogWarning("GetAllAsync downstream returned null (page={Page}, pageSize={PageSize})", page, pageSize);
+            return new PagedResult<YouTubeItem>();
+        }
         return new PagedResult<YouTubeItem> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
 
@@ -59,6 +63,12 @@ public class YouTubeItemService(IDownstreamApi apiClient): IYouTubeItemService
         {
             options.RelativePath = BaseUrl;
         });
+
+        if (savedSource is null)
+        {
+            logger.LogWarning("SaveAsync downstream returned null for YouTube item {ItemId}", source.Id);
+        }
+
         return savedSource;
     }
 
@@ -75,6 +85,12 @@ public class YouTubeItemService(IDownstreamApi apiClient): IYouTubeItemService
             options.HttpMethod = HttpMethod.Delete.Method;
         });
 
-        return response is { StatusCode: HttpStatusCode.NoContent };
+        if (response is { StatusCode: HttpStatusCode.NoContent })
+        {
+            return true;
+        }
+
+        logger.LogWarning("DeleteAsync unexpected status {StatusCode} for YouTube item {ItemId}", response?.StatusCode, id);
+        return false;
     }
 }

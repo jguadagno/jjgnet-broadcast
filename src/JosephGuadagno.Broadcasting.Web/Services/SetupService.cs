@@ -15,10 +15,10 @@ public class SetupService(
     IUserCollectorFeedSourceService feedSourceService,
     IUserCollectorYouTubeChannelService youTubeChannelService,
     IUserCollectorSpeakingEngagementService speakingEngagementService,
-    IUserPublisherBlueskySettingsService blueskySettingsService,
-    IUserPublisherTwitterSettingsService twitterSettingsService,
-    IUserPublisherLinkedInSettingsService linkedInSettingsService,
-    IUserPublisherFacebookSettingsService facebookSettingsService,
+    IUserPlatformBlueskySettingsService blueskySettingsService,
+    IUserPlatformTwitterSettingsService twitterSettingsService,
+    IUserPlatformLinkedInSettingsService linkedInSettingsService,
+    IUserPlatformFacebookSettingsService facebookSettingsService,
     IMessageTemplateService messageTemplateService,
     ISocialMediaPlatformService socialMediaPlatformService,
     IMemoryCache cache,
@@ -190,3 +190,4 @@ public class SetupService(
         return Task.CompletedTask;
     }
 }
+

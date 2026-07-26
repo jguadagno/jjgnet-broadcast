@@ -1,6 +1,7 @@
 using System.Net;
 using JosephGuadagno.Broadcasting.Domain.Constants;
 using JosephGuadagno.Broadcasting.Domain.Models;
+using JosephGuadagno.Broadcasting.Domain.Utilities;
 using JosephGuadagno.Broadcasting.Web.Extensions;
 using JosephGuadagno.Broadcasting.Web.Interfaces;
 
@@ -31,7 +32,11 @@ public class SocialMediaPlatformService(IDownstreamApi apiClient, ILogger<Social
             options.RelativePath = $"{PlatformBaseUrl}?{queryParams}";
         });
 
-        if (pagedResponse is null) return new PagedResult<SocialMediaPlatform>();
+        if (pagedResponse is null)
+        {
+            logger.LogWarning("GetAllAsync downstream returned null (page={Page}, pageSize={PageSize})", page, pageSize);
+            return new PagedResult<SocialMediaPlatform>();
+        }
         return new PagedResult<SocialMediaPlatform> { Items = pagedResponse.Items.ToList(), TotalCount = pagedResponse.TotalCount };
     }
 
@@ -51,10 +56,17 @@ public class SocialMediaPlatformService(IDownstreamApi apiClient, ILogger<Social
     /// </summary>
     public async Task<SocialMediaPlatform?> AddAsync(SocialMediaPlatform platform)
     {
-        return await apiClient.PostForUserAsync<SocialMediaPlatform, SocialMediaPlatform>(ApiServiceName, platform, options =>
+        var result = await apiClient.PostForUserAsync<SocialMediaPlatform, SocialMediaPlatform>(ApiServiceName, platform, options =>
         {
             options.RelativePath = PlatformBaseUrl;
         });
+
+        if (result is null)
+        {
+            logger.LogWarning("AddAsync downstream returned null for platform '{PlatformName}'", LogSanitizer.Sanitize(platform.Name));
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -62,10 +74,17 @@ public class SocialMediaPlatformService(IDownstreamApi apiClient, ILogger<Social
     /// </summary>
     public async Task<SocialMediaPlatform?> UpdateAsync(SocialMediaPlatform platform)
     {
-        return await apiClient.PutForUserAsync<SocialMediaPlatform, SocialMediaPlatform>(ApiServiceName, platform, options =>
+        var result = await apiClient.PutForUserAsync<SocialMediaPlatform, SocialMediaPlatform>(ApiServiceName, platform, options =>
         {
             options.RelativePath = $"{PlatformBaseUrl}/{platform.Id}";
         });
+
+        if (result is null)
+        {
+            logger.LogWarning("UpdateAsync downstream returned null for platform {PlatformId}", platform.Id);
+        }
+
+        return result;
     }
 
     /// <summary>

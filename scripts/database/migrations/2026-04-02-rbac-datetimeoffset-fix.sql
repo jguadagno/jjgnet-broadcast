@@ -1,5 +1,5 @@
 -- Migration: Fix datetime2 → datetimeoffset for RBAC tables
--- Affected tables: ApplicationUsers (CreatedAt, UpdatedAt), UserApprovalLog (CreatedAt)
+-- Affected tables: ApplicationUsers (CreatedAt, UpdatedAt), UserApprovalLogs (CreatedAt)
 -- These columns were created with datetime2 but EF entities use DateTimeOffset,
 -- causing runtime exceptions on read/write.
 
@@ -31,16 +31,16 @@ BEGIN
 END
 GO
 
--- UserApprovalLog.CreatedAt
+-- UserApprovalLogs.CreatedAt
 IF EXISTS (
     SELECT 1 FROM sys.columns
-    WHERE object_id = OBJECT_ID('dbo.UserApprovalLog')
+    WHERE object_id = OBJECT_ID('dbo.UserApprovalLogs')
       AND name = 'CreatedAt'
       AND system_type_id = TYPE_ID('datetime2')
 )
 BEGIN
-    ALTER TABLE dbo.UserApprovalLog
+    ALTER TABLE dbo.UserApprovalLogs
         ALTER COLUMN CreatedAt datetimeoffset NOT NULL;
-    PRINT 'UserApprovalLog.CreatedAt converted to datetimeoffset';
+    PRINT 'UserApprovalLogs.CreatedAt converted to datetimeoffset';
 END
 GO

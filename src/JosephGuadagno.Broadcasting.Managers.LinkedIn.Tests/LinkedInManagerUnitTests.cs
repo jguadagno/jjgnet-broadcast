@@ -235,7 +235,7 @@ public class LinkedInManagerUnitTests
     }
 
     [Fact]
-    public async Task PublishAsync_WithImageUrlDownloadFailure_FallsBackToLinkShare()
+    public async Task DispatchAsync_WithImageUrlDownloadFailure_FallsBackToLinkShare()
     {
         // Arrange
         _mockHttpMessageHandler
@@ -255,10 +255,10 @@ public class LinkedInManagerUnitTests
                 Content = new StringContent("{\"id\": \"share-123\"}", System.Text.Encoding.UTF8, "application/json")
             });
 
-        ISocialMediaPublisher sut = CreateSut();
+        ISocialMediaDispatcher sut = CreateSut();
 
         // Act
-        var result = await sut.PublishAsync(new SocialMediaPublishRequest
+        var result = await sut.DispatchAsync(new SocialMediaPublishRequest
         {
             AccessToken = "validToken",
             AuthorId = "authorId123",
@@ -274,13 +274,13 @@ public class LinkedInManagerUnitTests
     }
 
     [Fact]
-    public async Task PublishAsync_WithoutAccessToken_ThrowsArgumentNullException()
+    public async Task DispatchAsync_WithoutAccessToken_ThrowsArgumentNullException()
     {
         // Arrange
-        ISocialMediaPublisher sut = CreateSut();
+        ISocialMediaDispatcher sut = CreateSut();
 
         // Act
-        var act = () => sut.PublishAsync(new SocialMediaPublishRequest
+        var act = () => sut.DispatchAsync(new SocialMediaPublishRequest
         {
             AuthorId = "authorId123",
             Text = "Hello LinkedIn!"
@@ -291,9 +291,9 @@ public class LinkedInManagerUnitTests
     }
 
     [Fact]
-    public void ILinkedInManager_Implements_ISocialMediaPublisher()
+    public void ILinkedInManager_Implements_ISocialMediaDispatcher()
     {
-        Assert.True(typeof(ISocialMediaPublisher).IsAssignableFrom(typeof(ILinkedInManager)));
+        Assert.True(typeof(ISocialMediaDispatcher).IsAssignableFrom(typeof(ILinkedInManager)));
     }
 
     [Fact]

@@ -16,4 +16,5 @@ public interface IUserCollectorSpeakingEngagementService
     Task<UserCollectorSpeakingEngagement?> UpdateByUserAsync(string ownerOid, UserCollectorSpeakingEngagement engagement);
     Task<bool> DeleteCurrentUserAsync(int id);
     Task<bool> DeleteByUserAsync(string ownerOid, int id);
+    Task<bool> ToggleActiveAsync(int id);
 }

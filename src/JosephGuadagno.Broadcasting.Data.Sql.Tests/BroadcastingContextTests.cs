@@ -32,7 +32,17 @@ public class BroadcastingContextTests : IDisposable
         Assert.NotNull(_context.TokenRefreshes);
         Assert.NotNull(_context.SyndicationFeedItems);
         Assert.NotNull(_context.YouTubeItems);
-        Assert.NotNull(_context.UserPublisherSettings);
+        Assert.NotNull(_context.UserPlatformSettings);
+    }
+
+    [Fact]
+    public void BroadcastingContext_SingularTables_UseExplicitSqlNames()
+    {
+        var userApprovalLogTable = _context.Model.FindEntityType(typeof(UserApprovalLog))?.GetTableName();
+        var userEventDispatcherMappingTable = _context.Model.FindEntityType(typeof(UserEventDistributorMapping))?.GetTableName();
+
+        Assert.Equal("UserApprovalLog", userApprovalLogTable);
+        Assert.Equal("UserEventDistributorMappings", userEventDispatcherMappingTable);
     }
 
     [Fact]
@@ -215,7 +225,7 @@ public class BroadcastingContextTests : IDisposable
     }
 
     [Fact]
-    public async Task BroadcastingContext_AddUserPublisherSetting_CanBeRetrieved()
+    public async Task BroadcastingContext_AddUserPlatformSetting_CanBeRetrieved()
     {
         // Arrange
         var platform = new SocialMediaPlatform
@@ -228,7 +238,7 @@ public class BroadcastingContextTests : IDisposable
         _context.SocialMediaPlatforms.Add(platform);
         await _context.SaveChangesAsync();
 
-        var setting = new UserPublisherSetting
+        var setting = new UserPlatformSetting
         {
             CreatedByEntraOid = "owner-oid",
             SocialMediaPlatformId = platform.Id,
@@ -239,11 +249,11 @@ public class BroadcastingContextTests : IDisposable
         };
 
         // Act
-        _context.UserPublisherSettings.Add(setting);
+        _context.UserPlatformSettings.Add(setting);
         await _context.SaveChangesAsync();
 
         // Assert
-        var retrieved = await _context.UserPublisherSettings
+        var retrieved = await _context.UserPlatformSettings
             .Include(item => item.SocialMediaPlatform)
             .FirstOrDefaultAsync(item => item.Id == setting.Id);
         Assert.NotNull(retrieved);
@@ -252,3 +262,5 @@ public class BroadcastingContextTests : IDisposable
         Assert.True(retrieved.IsEnabled);
     }
 }
+
+

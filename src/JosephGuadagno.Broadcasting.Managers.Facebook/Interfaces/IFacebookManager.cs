@@ -4,7 +4,7 @@ using JosephGuadagno.Broadcasting.Managers.Facebook.Models;
 namespace JosephGuadagno.Broadcasting.Managers.Facebook.Interfaces;
 
 public interface IFacebookManager
-    : ISocialMediaPublisher
+    : ISocialMediaDispatcher
 {
     /// <summary>
     /// Posts a message with a link to a Facebook Page

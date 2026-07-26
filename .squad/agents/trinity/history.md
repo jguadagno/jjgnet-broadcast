@@ -1,182 +1,92 @@
 # History
 
 > Learnings before 2026-04-25 archived to history-archive.md (2026-05-25)
+> Earlier learnings (2026-05-16 to 2026-05-25) archived to history-summary.md
 
-## Issue #995 — Per-User Publisher Routing Architecture (2026-05-26)
+## Issue #995 Phase 2 & 3 — 2026-05-26 to 2026-05-29
 
-**Status:** Architecture CONFIRMED by Joseph. Ready for implementation.
+**Status:** ✅ FULLY COMPLETE (see history-summary.md for detailed learnings)
 
-**Assigned to:** Trinity
-
-### Architecture Decision (from Neo's analysis, Joseph-confirmed)
-
-Event Grid subscriptions are incompatible with per-user publisher selection. **Decision: Remove Event Grid from publisher dispatch; replace with direct per-user queue dispatch.**
-
-**Why:** Storage Queues are already the terminal delivery mechanism. The four `ProcessNewRandomPost*` intermediate functions are pure bridge code. Moving publisher routing logic into SQL query layer (Data.Sql) allows per-user settings to drive queue dispatch directly.
-
-### Implementation Requirements (Confirmed)
-
-1. **Event type storage:** New junction table `UserPublisherEventTypes` (not denormalized columns) — extensible for future event types
-2. **Per-user scheduling:** Fixed intervals (`FrequencyMinutes`) with `NextRunAt` tracking
-3. **Collector events:** Keep Event Grid for SyndicationFeed/YouTube/Engagements fan-out (Phase 2 deferred)
-4. **Backward compatibility:** Auto-seed existing users' global settings into `UserRandomPostSettings`
-
-### New Tables
-
-**`UserRandomPostSettings`** — per-user Random Post frequency, cutoff date, excluded categories, next run time  
-**`UserPublisherEventTypes`** — user × platform × event type junction (currently for 'RandomPost', future-proof for 'ScheduledItem', 'NewContent')
-
-### Phase 1 Scope (#995)
-
-1. Create SQL tables
-2. Domain/Managers: `IUserRandomPostSettings`, `IUserRandomPostSettingsManager`, `IUserPublisherEventTypeManager`
-3. Functions: Rewrite `Publishers/RandomPosts.cs` for per-user dispatch; remove four `ProcessNewRandomPost*` intermediate functions
-4. API: CRUD endpoints for user settings
-5. Web: Settings page with per-publisher toggles
-
-### Phase 2 (Deferred)
-
-- Migrate ScheduledItems and New Content to same per-user dispatch pattern
-- Evaluate whether collector events still need Event Grid or can migrate to direct dispatch
-
-### Key Files (Reference)
-
-- `src/Functions/Publishers/RandomPosts.cs` — rewrite entry point
-- `src/Data/EventPublisher.cs` — contains all Event Grid publish methods (review for removal scope)
-- `src/Functions/event-grid-simulator-config.json` — five Event Grid topics defined
-- `scripts/database/table-create.sql` — add new tables here
+**Scope:** Collector dispatch routing (Task 1–3), Event Grid removal, NextRunDateUtc efficiency, Phase 3 API CRUD + Web UI, PR #998 opened with cleanup
 
 ---
 
+## Key Learnings (Recent)
+
+- **AutoMapper `ReverseMap()` with EF tracked entities:** Never use `ReverseMap()` on collections without explicit `Ignore()` — AutoMapper will replace tracked EF collections with untracked objects, causing "Unexpected entry.EntityState: Detached" errors.
+- **Null guards matter:** When removing dead code, preserve unrelated guards (e.g., `newItems == null ||` in collector loops) — removal causes `NullReferenceException` when readers return `null`.
+- **EF DbContext not thread-safe:** Never use `Task.WhenAll` when managers share a single scoped DbContext. Use sequential awaits instead.
+- **Event Grid cleanup:** Deregister Event Grid services from host and remove simulator topic definitions when all subscribers are deleted.
+- **2026-05-26T11:17:08.070-07:00 — Per-user settings API CRUD pattern:**
+  New per-user publisher settings endpoints fit the existing
+  `Publishers/...` route family, use class-level `[Authorize]` +
+  `[IgnoreAntiforgeryToken]`, enforce `CreatedByEntraOid` ownership on item
+  routes, stamp owner OIDs from claims on create, and use separate
+  create/update DTOs so PUT can preserve omitted optional fields via
+  conditional AutoMapper mapping.
+- **2026-05-26T11:17:08.070-07:00 — Per-user settings Web UI pattern:**
+  Web controllers for per-user publisher settings should stay behind
+  `I...Service` HTTP wrappers, populate platform dropdowns through
+  `ISocialMediaPlatformService`, centralize event-type labels/icons in a shared
+  constant, and round-trip editable `DateTimeOffset` values through a
+  `datetime-local` input plus hidden UTC field so the browser shows local time
+  while the API still receives UTC.
+- **For archived learnings:** See history-summary.md
+
 ---
 
-### 2026-05-21 — Fix LinkedInControllerTests Signature Mismatch
+## NextRunDateUtc Efficiency & Phase 3 API/Web (2026-05-26–2026-05-26)
 
-**Status:** ✅ COMPLETE — 12/12 LinkedInControllerTests pass; 0 new failures introduced
+**Status:** ✅ COMPLETE (see history-summary.md for technical details)
 
-**What changed:**
-- `src/JosephGuadagno.Broadcasting.Web.Tests/Controllers/LinkedInControllerTests.cs` line 197–214: changed `public async Task RefreshToken_WhenCallbackUrlIsValid_ShouldRedirectToLinkedInAuthUrl()` to `public void` and removed `await` from `controller.RefreshToken()` call. The production `LinkedInController.RefreshToken()` returns `IActionResult` synchronously; the test was incorrectly awaiting it.
-
-**Root cause:** A prior session changed `LinkedInController.RefreshToken()` from `async Task<IActionResult>` to synchronous `IActionResult` (it no longer needs async — just builds a URL and redirects). The test was not updated at that time.
-
-**Pre-existing unrelated failures:** 2 Functions tests (`LoadAllSpeakingEngagementsTests.RunAsync_HandlesNullEngagementsList_Gracefully`, `LoadNewPostsTests.RunAsync_HandlesNullFeedList_Gracefully`) fail with `Assert.IsType() Failure` — these predate this fix and are out of scope.
+---
 
 ## Learnings
 
-**2026-05-25 — AutoMapper `ReverseMap()` is unsafe for EF navigation collections:**
-`CreateMap<A, B>().ReverseMap()` generates the B→A direction without any `Ignore()` directives, so navigation collection properties are included in the reverse map. When used with `mapper.Map(source, destination)` on a tracked EF entity, AutoMapper replaces the tracked `ICollection<T>` with new untracked objects, causing "Unexpected entry.EntityState: Detached" errors on `SaveChanges`. The fix is to split into two explicit `CreateMap` declarations and add `.ForMember(dest => dest.NavProp, opt => opt.Ignore())` on the domain→data direction — the same pattern already used for `Talk`, `MessageTemplate`, and `SyndicationFeedItem`. Timestamp fields with conditional default logic must remain explicit assignments after `mapper.Map(source, destination)` rather than being expressed in the profile, since putting `DateTimeOffset.UtcNow` in a profile makes tests non-deterministic.
-
-**Null guards and test consistency must travel together:** When removing dead code (e.g., `HasAccessToken`), be precise about what is changed. The `newItems == null ||` guard in collector loops is not related to the removed feature — stripping it causes `NullReferenceException` when the reader returns `null`, which the outer `catch` converts to `BadRequestObjectResult`, breaking tests that expect `OkObjectResult`. Always verify each modified line is actually related to the removal before committing.
-
-**When a controller method goes sync, update the test too:** If `async Task<IActionResult>` is simplified to `IActionResult`, any test that `await`s the result will fail to compile with CS1061 (`IActionResult` has no `GetAwaiter`). Change the test method to `void` (or drop the `async`/`await` pair) to match. The assertion chain doesn't change.
-
-**`HasAccessToken` was a DB column, not just a C# flag:** When removing a bool flag that was persisted to SQL, EF Core's "ignore unmapped columns" behavior means the app still works after removing the C# property — but the column is orphaned. Always note the pending SQL cleanup in the decisions inbox so it can be tracked as a separate migration.
-
-**Twitter `HasAccessToken` is still active:** `UserPublisherTwitterSettings` has both `HasAccessToken` and `HasAccessTokenSecret` — these are live, Twitter still uses the Key Vault token pattern. Do NOT remove them when cleaning up LinkedIn.
-
-**2026-05-25T10:47:45.368-07:00 — Engagement saves must update a tracked aggregate:**
-`SpeakingEngagementsReader` populates `Engagement.Talks`, so remapping a domain
-engagement to a fresh EF `Models.Engagement` and only forcing the root
-`EntityState` leaves child `Talk` rows detached. Fix
-`EngagementDataStore.SaveAsync` by loading/creating the tracked engagement,
-copying scalar fields onto that tracked entity, and then upserting talks onto
-the tracked aggregate (matching existing talks by ID or stable talk fields when
-imported talks have no IDs).
+- 2026-05-28: Web `IDownstreamApi` service wrappers should inject `ILogger<TService>` and log `GetForUserAsync`/`PostForUserAsync`/`PutForUserAsync` nulls plus delete calls that return anything other than `204 NoContent`; only `GetOptionalForUserAsync` nulls stay silent, and any logged string identifiers (owner OIDs, platform names, event types, handles) must be wrapped with `LogSanitizer.Sanitize()`.
+- 2026-05-29: Dispatcher → Distributor / Platforms full rename sweep (82 files, commit `63d6c7c6`). Key file locations: Domain models at `Domain/Models/UserEventDistributorMapping.cs`, interfaces at `Domain/Interfaces/IUserEventDistributorMapping*.cs`, EF model at `Data.Sql/Models/UserEventDistributorMapping.cs`, data store at `Data.Sql/UserEventDistributorMappingDataStore.cs`, manager at `Managers/UserEventDistributorMappingManager.cs`. Functions distributor services live in `Functions/Services/CollectorEventDistributor.cs` + `ScheduledItemEventDistributor.cs`, trigger functions in `Functions/Distributors/`. API platform controllers live in `Api/Controllers/Platforms/`, distributor mapping controller in `Api/Controllers/Distributors/`, RandomPostSettings controller moved to `Api/Controllers/Publishers/`. Web views live under `Views/Platforms/` and `Views/UserEventDistributorMapping/`. `ISocialMediaDispatcher` was intentionally left unchanged (publisher-layer abstraction). The `local.settings.json` Azure Function names were also updated by the sub-agent.
+- 2026-05-30: Verification after Joseph's manual Dispatcher → Distributor sweep found 35 remaining code-level stragglers, all non-breaking naming leftovers in local symbols/view-model names (`collectorEventDispatcher`, `scheduledItemEventDispatcher`, `DispatcherPlatformCardViewModel`, `userEventDispatcherMappingTable`). `ISocialMediaDispatcher` references and the SQL migration rename script are intentional and should remain. Release build and CI-aligned tests still passed (`dotnet build .\src\ --no-restore --configuration Release`, `dotnet test .\src\ --no-build --verbosity normal --configuration Release --filter "FullyQualifiedName!~SyndicationFeedReader"`).
 
 ---
 
-### 2026-05-21 — Facebook OAuth Token Architecture Fix
+## 2026-06-05 — Full Table-Based Index UI Consistency Sweep
 
-**Status:** ✅ COMPLETE — changes unstaged; GitHub issue #988 created
+**Status:** ✅ COMPLETE
 
-**What changed:**
-- `PostPageStatus.cs` — replaced per-user KV token retrieval (`GetPageAccessTokenAsync` / `GetLongLivedAccessTokenAsync`) with `IUserOAuthTokenManager.GetByUserAndPlatformAsync(ownerOid, SocialMediaPlatformIds.Facebook)`. Kept `facebookSettingsManager` for settings (`PageId`, `IsEnabled`). Added `IUserOAuthTokenManager` as a constructor parameter.
-- `RefreshTokens.cs` — rewrote entirely. Removed `IFacebookApplicationSettings`, `ITokenRefreshManager`, `IKeyVault` (global KV approach). New logic: query `GetExpiringWindowAsync(now-10y, now+5d)`, filter by `SocialMediaPlatformId == 4`, call `facebookManager.RefreshToken(token)` per user, store result via `StoreOAuthCallbackTokenAsync`. Errors per-user are caught and logged without aborting the loop.
-- `PostPageStatusTests.cs` — added `IUserOAuthTokenManager` mock, updated `BuildSut()`, updated `SetupValidCredentials()`, added `Run_WhenOAuthTokenNotFound_SkipsPostingWithoutException` test case. 14 tests pass.
-- GitHub issue #988 created with label `squad:Joe` for the manual data migration (seed existing KV tokens into `UserOAuthTokens` before deploy).
+**Scope:** Standardized all 12 table-based Index views across the Web project, added `ToggleActiveAsync` to 5 service interfaces/implementations, added `ToggleActive` POST actions to 5 controllers.
 
-## Learnings
+### Learnings
 
-**`TokenInfo.ExpiresOn` is `DateTime`, not `DateTimeOffset`:** The `FacebookManager.RefreshToken` returns `TokenInfo` with `ExpiresOn` as `DateTime`. When writing to `UserOAuthTokens` (which uses `DateTimeOffset`), convert via `new DateTimeOffset(DateTime.SpecifyKind(newToken.ExpiresOn, DateTimeKind.Utc))` to avoid timezone ambiguity.
-
-**Pre-existing branch break in `LinkedInControllerTests.cs`:** Line 214 tries `await controller.RefreshToken()` but `LinkedInController.RefreshToken()` returns `IActionResult` (sync). This is a pre-existing break from other uncommitted changes on the branch (`LinkedInController.cs` was already modified). Not related to the Facebook OAuth fix.
-
-**`UserOAuthToken.SocialMediaPlatformId` exists:** Confirmed the domain model has the property, so `GetExpiringWindowAsync` + LINQ filter by `SocialMediaPlatformId` works cleanly — no need to add `GetAllByPlatformAsync`.
-
-**RefreshTokens no longer uses `ITokenRefreshManager` or `IKeyVault`:** The `TokenRefreshes` table and global KV path are dead code for Facebook after this change. Cleanup of those is deferred to a future issue.
-
----
-2. **No defensive fallback in data stores** — Without a try/catch, the `SqlException` propagated through the manager to `PublishersController.GetAllAsync`, which uses `Task.WhenAll` for all 4 platforms. One failure caused the entire aggregate to fail and the page to error. Fixed in commit `3ef227a2`: try/catch added to all 4 operations (`GetByUserAsync`, `GetByIdAsync`, `SaveAsync`, `DeleteAsync`) across all 4 data stores.
-
-**Schema analysis:**
-- EF entity model: 12 properties (including `CreatedOn`, `LastUpdatedOn`) ✓
-- Domain model: 12 properties ✓
-- Migration SQL: 12 columns ✓
-- `table-create.sql` (post-fix): 12 columns ✓
-- `BroadcastingContext` Fluent API: all 12 mapped, `CreatedOn`/`LastUpdatedOn` with `HasDefaultValueSql("(getutcdate())")` ✓
-- **No schema mismatch existed** between EF model and DB.
-
-**Anomaly note — missing `CreatedOn` in the error query:**
-The failing SQL shown in the task description omits `[u].[CreatedOn]` (11 columns instead of 12). The current code generates 12-column SELECT. This indicates the error was captured against an older compiled binary. The actual SQL Server error would have been "Invalid object name 'UserPublisherFacebookSettings'" — EF logs the attempted SQL, not the SQL Server error text.
-
-**No migration script needed** — the tables were already created by the migration; `table-create.sql` is only for fresh environments. Adding them idempotently (with `IF NOT EXISTS`) to `table-create.sql` was the correct fix.
-
-**Pattern reinforced:** Whenever adding tables via a migration, also backfill `scripts/database/table-create.sql` with an `IF NOT EXISTS` guard so Aspire fresh-environment bootstrapping stays in sync.
+- **ToggleActive controller insertion bug:** When appending a new method to a controller whose Delete action has a one-branch `if (result)` with no fallthrough return, the ToggleActive was accidentally inserted *inside* the `if` block, placing it outside the class scope. Always verify the Delete method closes properly (`TempData["ErrorMessage"]` + `return RedirectToAction` after the `if`) before appending.
+- **Private helper method preservation:** When adding `ToggleActive` to `UserEventDistributorMappingController`, the `MapToDomainModel` private method was accidentally displaced. Always read the full tail of a controller before editing the closing region.
+- **SortIcon function standard:** All Index views must use `bi-sort-alpha-up`/`bi-sort-alpha-down` (not `bi-arrow-down`/`bi-arrow-up` or `bi-sort-down`/`bi-sort-up`). Returning empty string `""` (not a default icon) when the column is not the current sort column is correct.
+- **Toggle button convention:** Active items use `bi-toggle-off` (click to deactivate), inactive items use `bi-toggle-on` (click to activate). Previous SocialMediaPlatforms view had this backwards. Button class is always `btn-warning` regardless of state.
+- **Add New button placement:** Two instances needed — one in the `d-flex` header div (visible at page top), one after `<partial name="_PaginationPartial" />` at page bottom. Both must be inside a role check.
+- **Pagination partial for newer views:** `UserEventDistributorMapping` and `UserRandomPostSettings` Index views were missing `<partial name="_PaginationPartial" />` entirely — always add it after the table's closing `</div>`.
 
 ---
 
-### 2026-05-16 — Concurrent DbContext Fix: Task.WhenAll → Sequential Awaits
+## 2026-06-05 — UI Standard Decision & Build/Test Verification
 
-**Status:** ✅ COMPLETE — commit 20fc6b79; 247 tests passed (0 errors, 0 failures)
+**Status:** ✅ COMPLETE — Merged to decisions.md
 
-**Root cause:**
-`PublishersController.GetAllAsync`, `CollectorsController.GetAllAsync`, and `SchedulesController.Index` all used `Task.WhenAll` to fan out calls to managers that share a single scoped `BroadcastingContext`. EF Core's `DbContext` is not thread-safe for concurrent operations — simultaneous queries on the same context caused the SQL connection to enter a closed/corrupt state:
-> "BeginExecuteReader requires an open and available Connection. The connection's current state is closed."
+**Standards established:**
+- Table classes: `table table-striped table-hover table-bordered`
+- Sort icons: `bi-sort-alpha-down` (asc), `bi-sort-alpha-up` (desc), `""` (unsorted)
+- Active status: Icon pair (`bi-check-circle-fill` green / `bi-x-circle-fill` red), no badges
+- Buttons: View/Edit `btn-outline-primary`, Toggle `btn-warning`, Delete `btn-danger`
+- Toggle convention: Active → `bi-toggle-off`, Inactive → `bi-toggle-on`
+- Layout: Header flex div + post-pagination Add New button (both required inside role check)
 
-**Fix:** Replaced all three `Task.WhenAll` fan-outs with sequential `await` calls. The DbContext is scoped per HTTP request, so each await completes before the next begins — no concurrent access.
+**Build/Test results:**
+- Release build: ✅
+- Tests (CI-aligned, excluding SyndicationFeedReader): ✅ 239 passed, 0 failed
+- No regressions
 
-**Files changed:**
-- `src\JosephGuadagno.Broadcasting.Api\Controllers\Publishers\PublishersController.cs`
-- `src\JosephGuadagno.Broadcasting.Api\Controllers\Collectors\CollectorsController.cs`
-- `src\JosephGuadagno.Broadcasting.Web\Controllers\SchedulesController.cs`
 
-**Learning:** Never use `Task.WhenAll` (or fire-and-forget task creation before the first await) when the underlying managers share a single scoped `DbContext`. The pattern `var t1 = Foo(); var t2 = Bar(); await Task.WhenAll(t1, t2)` looks like a safe optimization but is a correctness bug with EF Core scoped contexts. Use sequential awaits instead.
-
-### 2026-05-19 — Fix: MSAL L1 Cache Pin Scoped to Release Builds Only
-
-**Status:** ✅ COMPLETE — commit c5242189; Release and Debug builds both pass (0 errors, 0 warnings)
-
-**Root cause:**
-`MsalDistributedTokenCacheAdapterOptions.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)` was set unconditionally in `Web/Program.cs`. While intended to pin the L1 (in-memory) cache and prevent per-request SQL reads, it propagated to the SQL (L2) distributed cache, overriding its 14-day sliding expiration. Result: forced re-login after 15 minutes of inactivity and on every app restart in development.
-
-**Fix:**
-Wrapped `options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);` in `#if !DEBUG` / `#endif`. In Debug builds, the setting is omitted → SQL cache keeps 14-day sliding expiry. In Release, the L1 pin remains → production performance optimization preserved.
-
-**Learning:**
-`MsalDistributedTokenCacheAdapterOptions` applies to **both** L1 (in-memory) and L2 (distributed/SQL) cache layers. Properties set here are not L1-exclusive — `AbsoluteExpirationRelativeToNow` silently overrides the distributed cache TTL configured at the SQL store level.
-
----
-
-### GetForUserAsync<T> — 404 handling pattern (2026-05-17)
-
-Any Web service that calls `IDownstreamApi.GetForUserAsync<T>` for a **single nullable object** (not a collection) MUST wrap the call in `catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)` and return `null`. The API legitimately returns 404 for first-time users who have no configuration yet; without the catch the exception propagates and crashes the page. The controller already handles `null` gracefully. Log the 404 as `LogInformation` (not `LogWarning`) — it is expected, not an error. Always sanitize the OID via `LogSanitizer.Sanitize(ownerOid)`.
-
-### 2026-05-26 — Issue #995 review: per-user scheduling schema follows existing owner-config patterns
-
-New user-owned configuration tables in this repo should keep the
-existing ownership shape: `CreatedByEntraOid nvarchar(36)` on config
-rows, `datetimeoffset` timestamps, identity PKs for top-level config
-entities, and composite PKs only for pure junction tables. For Issue
-#995 specifically, `UserRandomPostSettings` and
-`UserPublisherSchedules` should be top-level tables, while
-`UserPublisherSchedulePlatforms` and `UserPublisherEventRoutes` are
-better modeled as normalized route/junction tables keyed by owner +
-event type + platform rather than by publisher-name strings or numeric
-user IDs.
-
-Cron-based schedules also need an explicit timezone decision before
-implementation. The repo currently has no existing cron parser/scheduler
-abstraction, so if schedules are not UTC-only the schedule table needs a
-`TimeZoneId` column; otherwise `NextRunAt` cannot be recalculated
-deterministically from a stored cron expression.
+- Comprehensive manual rename of "Dispatcher" → "Distributor" across 24+ files completed by Joseph Guadagno
+- Trinity spawned to verify: build success, CI-aligned test suite pass, straggler scan for missed references
+- Session logged to `.squad/log/2026-05-30T09-42-44-distributor-rename.md`
+- All naming now consistent across domain, data, managers, API, Web, and Functions layers
+- No regressions expected; straggler scan will confirm zero missed "Dispatcher" references
 
